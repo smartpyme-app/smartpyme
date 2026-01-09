@@ -12,6 +12,7 @@ use App\Models\Admin\Empresa;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Partidas\Partida;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\Contabilidad\Catalogo\CuentaMayorizada;
@@ -88,7 +89,7 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrfail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
+
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
         $year = $startDate->year;
@@ -146,7 +147,7 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrfail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
+
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
         $year = $startDate->year;
@@ -223,7 +224,7 @@ class GenerarReportesController extends Controller
         $empresa_id = auth()->user()->id_empresa;
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
+
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
         $year = $startDate->year;
@@ -271,7 +272,7 @@ class GenerarReportesController extends Controller
         $empresa_id = auth()->user()->id_empresa;
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
+
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
         $year = $startDate->year;
@@ -323,7 +324,7 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrFail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
+
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
         $year = $startDate->year;
@@ -446,7 +447,7 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrFail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
+
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
         $year = $startDate->year;
@@ -641,7 +642,7 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrFail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
+
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
         $year = $startDate->year;
@@ -685,8 +686,14 @@ class GenerarReportesController extends Controller
         // Consolidar hacia cuentas padre
         $this->reporteContabilidadService->consolidarSaldosHaciaPadre($cuentasJerarquicas, $cuentas_saldos, $idACodigo);
 
+        // Obtener solo las cuentas de nivel 0 (cuentas padre) para el balance general
+        $cuentas = Cuenta::where('id_empresa', $empresa_id)
+            ->where('nivel', 0)
+            ->orderBy('codigo')
+            ->get();
+
         // Clasificar por rubros del Balance General
-        $balance_general = $this->reporteContabilidadService->clasificarCuentasPorRubroBalanceGeneral($cuentasJerarquicas, $cuentas_saldos);
+        $balance_general = $this->reporteContabilidadService->clasificarCuentasPorRubroBalanceGeneral($cuentas, $cuentas_saldos);
 
         $pdf = \PDF::loadView('reportes.contabilidad.balance_general', compact('balance_general', 'empresa', 'month_name', 'year'));
         $pdf->setPaper('US Letter', 'portrait');
@@ -700,7 +707,7 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrFail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
+
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
         $year = $startDate->year;
@@ -785,20 +792,25 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrFail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
+
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
         $year = $startDate->year;
         $month_name = $startDate->translatedFormat('F');
 
-        // Obtener todas las cuentas padre (nivel 0) con sus saldos consolidados
-        $cuentas = Cuenta::where('id_empresa', $empresa_id)
-            ->where('nivel', 0) // Solo cuentas padre
+        // Obtener todas las cuentas con jerarquía completa
+        $cuentasJerarquicas = Cuenta::where('id_empresa', $empresa_id)
             ->orderBy('codigo')
             ->get();
 
         // Obtener los movimientos del rango de fechas filtrado para todas las cuentas
         $partida_detalles = $this->reporteContabilidadService->obtenerMovimientosPartidas($startDate, $endDate, $empresa_id);
+
+        // Obtener solo las cuentas de nivel 0 (cuentas padre) para el estado de resultados
+        $cuentas = Cuenta::where('id_empresa', $empresa_id)
+            ->where('nivel', 0)
+            ->orderBy('codigo')
+            ->get();
 
         // Clasificar cuentas por rubros del Estado de Resultados
         $estado_resultados = $this->reporteContabilidadService->clasificarCuentasPorRubroEstadoResultados($cuentas, $partida_detalles);
@@ -822,20 +834,25 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrFail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
+
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
         $year = $startDate->year;
         $month_name = $startDate->translatedFormat('F');
 
-        // Obtener todas las cuentas padre (nivel 0) con sus saldos consolidados
-        $cuentas = Cuenta::where('id_empresa', $empresa_id)
-            ->where('nivel', 0) // Solo cuentas padre
+        // Obtener todas las cuentas con jerarquía completa
+        $cuentasJerarquicas = Cuenta::where('id_empresa', $empresa_id)
             ->orderBy('codigo')
             ->get();
 
         // Obtener los movimientos del rango de fechas filtrado para todas las cuentas
         $partida_detalles = $this->reporteContabilidadService->obtenerMovimientosPartidas($startDate, $endDate, $empresa_id);
+
+        // Obtener solo las cuentas de nivel 0 (cuentas padre) para el estado de resultados
+        $cuentas = Cuenta::where('id_empresa', $empresa_id)
+            ->where('nivel', 0)
+            ->orderBy('codigo')
+            ->get();
 
         // Clasificar cuentas por rubros del Estado de Resultados
         $estado_resultados = $this->reporteContabilidadService->clasificarCuentasPorRubroEstadoResultados($cuentas, $partida_detalles);

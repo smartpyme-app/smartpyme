@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ declare var $:any;
     templateUrl: './historial-compras.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 
@@ -31,7 +32,8 @@ export class HistorialComprasComponent implements OnInit {
 
     constructor(
         public apiService: ApiService, private alertService: AlertService, 
-        private modalService: BsModalService
+        private modalService: BsModalService,
+        private cdr: ChangeDetectorRef
     ){}
 
     ngOnInit() {
@@ -53,7 +55,8 @@ export class HistorialComprasComponent implements OnInit {
             .subscribe(compras => { 
                 this.compras = compras;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 

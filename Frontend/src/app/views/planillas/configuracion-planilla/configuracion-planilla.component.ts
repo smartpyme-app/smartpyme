@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './configuracion-planilla.component.html',
     standalone: true,
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfiguracionPlanillaComponent implements OnInit {
 
@@ -67,7 +67,8 @@ export class ConfiguracionPlanillaComponent implements OnInit {
     private configService: ConfiguracionPlanillaService,
     private alertService: AlertService,
     private modalService: BsModalService,
-    public apiService: ApiService
+    public apiService: ApiService,
+    private cdr: ChangeDetectorRef
   ) {
     this.configuracionForm = this.createConfiguracionForm();
     this.conceptoForm = this.createConceptoForm();
@@ -95,10 +96,12 @@ export class ConfiguracionPlanillaComponent implements OnInit {
       
       this.poblarFormulario();
       this.loading = false;
+      this.cdr.markForCheck();
     },
     error: (error) => {
       console.error('Error cargando configuración:', error);
       this.loading = false;
+      this.cdr.markForCheck();
     }
   });
     
@@ -108,9 +111,11 @@ export class ConfiguracionPlanillaComponent implements OnInit {
       const data = response.data || response;
       this.tiposConceptos = data.tipos_conceptos;
       this.basesCalculo = data.bases_calculo;
+      this.cdr.markForCheck();
     },
     error: (error) => {
       console.error('Error cargando tipos de conceptos:', error);
+      this.cdr.markForCheck();
     }
   });
   
@@ -120,10 +125,12 @@ export class ConfiguracionPlanillaComponent implements OnInit {
         // ✅ MANEJAR AMBOS CASOS
         const data = response.data || response;
         this.plantillasPaises = data;
+        this.cdr.markForCheck();
 
       },
       error: (error) => {
         console.error('Error cargando plantillas:', error);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -271,10 +278,12 @@ export class ConfiguracionPlanillaComponent implements OnInit {
         this.cargarDatosIniciales(); // Recargar datos
         this.modoEdicion = false;
         this.saving = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error guardando configuración:', error);
         this.saving = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -282,6 +291,7 @@ export class ConfiguracionPlanillaComponent implements OnInit {
   cancelarEdicion(): void {
     this.modoEdicion = false;
     this.poblarFormulario(); // Restaurar valores originales
+    this.cdr.markForCheck();
   }
 
   abrirModalConcepto(template: TemplateRef<any>, concepto?: ConceptoPlanilla, indice?: number): void {
@@ -438,9 +448,11 @@ guardarConcepto(): void {
         this.poblarConceptos(configuracion.conceptos || {});
         this.modoEdicion = true;
         this.alertService.success(`Plantilla de ${this.plantillasPaises[codPais]?.nombre} aplicada`, 'success');
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error aplicando plantilla:', error);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -472,10 +484,12 @@ guardarConcepto(): void {
         this.resultadoPrueba = response.data;
         this.probandoCalculo = false;
         this.tabActiva = 'prueba';
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error probando cálculo:', error);
         this.probandoCalculo = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -504,9 +518,11 @@ guardarConcepto(): void {
         this.poblarConceptos(configuracion.conceptos || {});
         this.modoEdicion = true;
         this.alertService.success('Configuración importada exitosamente', 'success');
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error importando configuración:', error);
+        this.cdr.markForCheck();
       }
     });
 
@@ -520,6 +536,7 @@ guardarConcepto(): void {
 
   cambiarTab(tab: string): void {
     this.tabActiva = tab;
+    this.cdr.markForCheck();
   }
 
   onTipoConceptoCambiado(): void {
@@ -615,11 +632,13 @@ guardarConcepto(): void {
         // Recargar configuración
         this.cargarConfiguracionSinLoading();
         this.saving = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error guardando automáticamente:', error);
         this.alertService.error('Error al guardar cambios');
         this.saving = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -629,9 +648,11 @@ guardarConcepto(): void {
       next: (response: any) => {
         this.configuracion = response;
         this.poblarFormulario();
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error recargando configuración:', error);
+        this.cdr.markForCheck();
       }
     });
   }

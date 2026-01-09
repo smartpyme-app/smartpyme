@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     templateUrl: './cliente-detalles.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, TagInputModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClienteDetallesComponent extends BaseModalComponent implements OnInit {
 
@@ -48,6 +48,8 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
         '37': 'Otro'
     };
 
+    private cdr = inject(ChangeDetectorRef);
+
     constructor(
         private apiService: ApiService,
         protected override alertService: AlertService,
@@ -70,11 +72,13 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
                 this.apiService.read('cliente/', params.id).pipe(this.untilDestroyed()).subscribe(cliente => {
                     this.cliente = cliente;
                     this.loading = false;
-                }, error => { this.alertService.error(error); this.loading = false; });
+                    this.cdr.markForCheck();
+                }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
             } else {
                 this.cliente = {};
                 this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
                 this.cliente.id_usuario = this.apiService.auth_user().id;
+                this.cdr.markForCheck();
             }
         });
     }

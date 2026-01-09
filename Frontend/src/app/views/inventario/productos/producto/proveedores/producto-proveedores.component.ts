@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,8 +15,8 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
     selector: 'app-producto-proveedores',
     templateUrl: './producto-proveedores.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe],
-    
+    imports: [CommonModule, RouterModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoProveedoresComponent extends BaseModalComponent implements OnInit {
 
@@ -30,7 +30,8 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private route: ActivatedRoute, 
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ){
         super(modalManager, alertService);
     }
@@ -41,10 +42,12 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
 
     public loadAll(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
             this.proveedores = proveedores;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     override openModal(template: TemplateRef<any>, proveedor:any) {
@@ -59,19 +62,22 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
             this.proveedores.push(proveedor);
         }
         this.proveedor.id_proveedor = proveedor.id;
+        this.cdr.markForCheck();
     }
 
     public onSubmit() {
         this.loading = true;
+        this.cdr.markForCheck();
         this.proveedor.id_producto = this.producto.id;
         this.apiService.store('producto/proveedor', this.proveedor).pipe(this.untilDestroyed()).subscribe(proveedor => {
             if(!this.proveedor.id)
                 this.producto.proveedores.push(proveedor);
             this.proveedor = {};
             this.loading = false;
+            this.cdr.markForCheck();
             this.closeModal();
             this.alertService.success('Proveedor agregado', 'El proveedor fue agregado exitosamente.');
-        },error => {this.alertService.error(error); this.loading = false; });
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public delete(proveedor:any) {
@@ -82,7 +88,8 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
                         this.producto.proveedores.splice(i, 1);
                 }
                 this.alertService.success('Proveedor eliminado', 'El proveedor fue eliminado exitosamente.');
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
                    
         }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     styleUrls: ['./ver-producto.component.css'],
     standalone: true,
     imports: [CommonModule, RouterModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VerProductoComponent {
 
@@ -29,7 +29,7 @@ export class VerProductoComponent {
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-  constructor(public apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute){}
+  constructor(public apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute, private cdr: ChangeDetectorRef){}
 
   ngOnInit(){
     let param = this.route.snapshot.params;
@@ -37,7 +37,8 @@ export class VerProductoComponent {
     if(param['id']){
       this.apiService.read('producto/', param['id']).pipe(this.untilDestroyed()).subscribe(producto => {
         this.producto = producto;
-      },error => {this.alertService.error(error);this.loading = false;});
+        this.cdr.markForCheck();
+      },error => {this.alertService.error(error);this.loading = false; this.cdr.markForCheck();});
     }
   }
   

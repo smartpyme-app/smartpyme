@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './ajuste.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AjusteComponent implements OnInit {
 
@@ -26,7 +26,8 @@ export class AjusteComponent implements OnInit {
 
    constructor(private apiService: ApiService, private alertService: AlertService,  
     	private route: ActivatedRoute, private router: Router,
-    	private modalService: BsModalService
+    	private modalService: BsModalService,
+    	private cdr: ChangeDetectorRef
     ){ }
 
 	ngOnInit() {
@@ -43,7 +44,8 @@ export class AjusteComponent implements OnInit {
           .subscribe(ajuste => {
         this.ajuste = ajuste;
         this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, TemplateRef } from '@angular/core';
+import { Component, OnInit, Input, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,6 +15,7 @@ import { TruncatePipe } from '../../../pipes/truncate.pipe';
     templateUrl: './notificaciones.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, TruncatePipe],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 
@@ -31,7 +32,8 @@ export class NotificacionesComponent extends BaseCrudComponent<any> implements O
     constructor(
         protected override apiService:ApiService,
         protected override alertService:AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'notificacion',
@@ -84,7 +86,8 @@ export class NotificacionesComponent extends BaseCrudComponent<any> implements O
             if(this.modalRef){
                 this.closeModal();
             }
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     override openModal(template: TemplateRef<any>, notificacion?: any, modalConfig?: any) {

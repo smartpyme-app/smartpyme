@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     templateUrl: './metodos-de-pago.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MetodosDePagoComponent extends BaseModalComponent implements OnInit {
 
@@ -27,7 +27,8 @@ export class MetodosDePagoComponent extends BaseModalComponent implements OnInit
         private apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
-        private sumPipe:SumPipe
+        private sumPipe:SumPipe,
+        private cdr: ChangeDetectorRef
     ) {
         super(modalManager, alertService);
     }

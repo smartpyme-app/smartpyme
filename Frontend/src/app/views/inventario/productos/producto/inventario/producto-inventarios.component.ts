@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     templateUrl: './producto-inventarios.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, SumPipe],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoInventariosComponent extends BaseModalComponent implements OnInit {
 
@@ -32,7 +32,8 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private route: ActivatedRoute, 
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ){
         super(modalManager, alertService);
     }
@@ -52,7 +53,8 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
           .subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
         if(!this.inventario.id) {
             this.inventario.stock = 0;
@@ -67,6 +69,7 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
 
     public onSubmit() {
         this.loading = true;
+        this.cdr.markForCheck();
 
         this.apiService.store('inventario', this.inventario)
           .pipe(this.untilDestroyed())
@@ -80,12 +83,14 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
 
             this.inventario = {};
             this.loading = false;
+            this.cdr.markForCheck();
             this.closeModal();
         }, error => {
             const errorMessage = error.error?.error || error.error?.message || error.message || 'Error desconocido';
 
             this.alertService.error(errorMessage);
             this.loading = false;
+            this.cdr.markForCheck();
         });
     }
 
@@ -99,7 +104,8 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
                         this.producto.inventarios.splice(i, 1);
                 }
                 this.alertService.success('Inventario eliminado', 'El inventario fue eliminado exitosamente.');
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         }
 

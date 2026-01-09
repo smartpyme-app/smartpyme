@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import * as moment from 'moment';
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
     providers: [FilterPipe],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PromocionesComponent extends BaseCrudComponent<any> implements OnInit {
 
@@ -37,7 +37,8 @@ export class PromocionesComponent extends BaseCrudComponent<any> implements OnIn
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private filterPipe:FilterPipe
+        private filterPipe:FilterPipe,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'producto/promocion',
@@ -71,7 +72,8 @@ export class PromocionesComponent extends BaseCrudComponent<any> implements OnIn
             .pipe(this.untilDestroyed())
             .subscribe(categorias => {
                 this.categorias = categorias;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
     public override loadAll() {
@@ -83,10 +85,12 @@ export class PromocionesComponent extends BaseCrudComponent<any> implements OnIn
                     this.promociones = promociones;
                     this.loading = false;
                     this.filtrado = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -114,10 +118,12 @@ export class PromocionesComponent extends BaseCrudComponent<any> implements OnIn
                     }
                     this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
                     this.loading = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error: any) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -131,10 +137,12 @@ export class PromocionesComponent extends BaseCrudComponent<any> implements OnIn
                     next: () => {
                         this.loadAll();
                         this.loading = false;
+                        this.cdr.markForCheck();
                     },
                     error: (error) => {
                         this.alertService.error(error);
                         this.loading = false;
+                        this.cdr.markForCheck();
                     }
                 });
         }
@@ -194,10 +202,12 @@ export class PromocionesComponent extends BaseCrudComponent<any> implements OnIn
                         this.promociones.push(promocion);
                     }
                     this.loading = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -225,11 +235,13 @@ export class PromocionesComponent extends BaseCrudComponent<any> implements OnIn
                             this.loading = false;
                             this.closeModal();
                             this.loadAll();
+                            this.cdr.markForCheck();
                         }
                     },
                     error: (error) => {
                         this.alertService.error(error);
                         this.loading = false;
+                        this.cdr.markForCheck();
                     }
                 });
         }

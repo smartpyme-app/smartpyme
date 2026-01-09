@@ -1,5 +1,5 @@
 // src/app/components/shared/ver-historial-button/ver-historial-button.component.ts
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,7 +13,8 @@ import { Router } from '@angular/router';
     </a>
   `,
     standalone: true,
-    imports: [CommonModule, RouterModule]
+    imports: [CommonModule, RouterModule],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VerHistorialButtonComponent {
   @Input() empleado: any;

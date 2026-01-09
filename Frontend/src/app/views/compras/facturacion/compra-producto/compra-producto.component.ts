@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,7 +21,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     templateUrl: './compra-producto.component.html',
     standalone: true,
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CrearProductoComponent, SumPipe, FilterPipe, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CompraProductoComponent extends BasePaginatedModalComponent implements OnInit {
 
@@ -45,7 +45,7 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private sumPipe:SumPipe,
-
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager);
     }
@@ -102,6 +102,7 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
                     this.productos = results || {} as PaginatedResponse;
                 }
                 this.loading = false;
+                this.cdr.markForCheck();
 
                 if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) {
                     this.selectProducto(results[0]);
@@ -124,12 +125,14 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
 
     public filtrarProductos(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('productos', this.filtros)
             .pipe(this.untilDestroyed())
             .subscribe(productos => {
                 this.productos = productos;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     public setOrden(columna: string) {
@@ -158,7 +161,8 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
             .pipe(this.untilDestroyed())
             .subscribe(categorias => {
                 this.categorias = categorias;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         if (this.filtros.id_categoria == null) {
             this.filtros.id_categoria = '';
@@ -168,12 +172,14 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
         }
 
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('productos', this.filtros)
             .pipe(this.untilDestroyed())
             .subscribe(productos => {
                 this.productos = productos;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
         super.openModal(template, config || { class: 'modal-xl', backdrop: 'static' });
     }
@@ -301,6 +307,7 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
         event.stopPropagation(); // Previene que se seleccione el producto
         const estadoActual = this.descripcionesExpandidas[producto.id] || false;
         this.descripcionesExpandidas[producto.id] = !estadoActual;
+        this.cdr.markForCheck();
     }
 
 }

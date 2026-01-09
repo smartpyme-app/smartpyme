@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,6 +21,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     templateUrl: './tienda-venta-citas.component.html',
     standalone: true,
     imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, LazyImageDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class TiendaVentaCitasComponent extends BasePaginatedModalComponent implements OnInit {
@@ -39,7 +40,8 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private sumPipe:SumPipe
+        private sumPipe:SumPipe,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager);
     }
@@ -61,6 +63,7 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
             .pipe(this.untilDestroyed())
             .subscribe(clientes => { 
             this.clientes = clientes;
+            this.cdr.markForCheck();
         }, error => {this.alertService.error(error); });
         this.citas = {} as PaginatedResponse;
         this.loadAll();
@@ -88,10 +91,12 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
         this.filtros.inicio = moment().startOf(this.filtros.time).format('YYYY-MM-DD');
         this.filtros.fin = moment().endOf(this.filtros.time).format('YYYY-MM-DD');
         this.filtrarCitas();
+        this.cdr.markForCheck();
     }
 
     public filtrarCitas(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.venta.id_cliente = this.filtros.id_cliente;
         this.apiService.getAll('eventos', this.filtros).pipe(this.untilDestroyed()).subscribe(citas => { 
             this.citas = citas;
@@ -101,7 +106,8 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
             radio.checked = false;
 
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 
@@ -159,13 +165,14 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
 
                     this.detalles.unshift(detalle);
                     this.saving = false;
-                }, error => {this.alertService.error(error); this.saving = false;});
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
             });
 
         }else{
             
             this.detalles = this.detalles.filter((item:any) => item.id_cita !== cita.id);
-
+            this.cdr.markForCheck();
         }
 
         console.log(this.detalles);
@@ -178,6 +185,7 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
             radio.checked = marcarPaquetes.checked;
             this.onCheckPaquete(cita);
         });
+        this.cdr.markForCheck();
     }
 
     onSubmit(){
@@ -186,6 +194,7 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
         if(this.modalRef){
             this.closeModal();
         }
+        this.cdr.markForCheck();
     }
 
     agregarDetalles(){
@@ -196,6 +205,7 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
         if(this.modalRef){
             this.closeModal();
         }
+        this.cdr.markForCheck();
     }
 
 

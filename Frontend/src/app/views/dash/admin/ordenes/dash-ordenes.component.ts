@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ import { ApiService } from '../../../../services/api.service';
     templateUrl: './dash-ordenes.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class DashOrdenesComponent implements OnInit {
@@ -21,7 +22,10 @@ export class DashOrdenesComponent implements OnInit {
     @Input() dash:any = {};
     @Input() loading:boolean = false;
 
-	constructor( private alertService:AlertService, private apiService:ApiService
+	constructor( 
+        private alertService:AlertService, 
+        private apiService:ApiService,
+        private cdr: ChangeDetectorRef
 	) { }
 
 	ngOnInit() {  }

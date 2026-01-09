@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, forwardRef, OnInit, OnDestroy, OnChanges, DestroyRef, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, forwardRef, OnInit, OnDestroy, OnChanges, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,7 +21,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
             multi: true
         }
     ],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDestroy, OnChanges {
   @Input() name: string = '';
@@ -48,6 +48,7 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
   
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
+  private cdr = inject(ChangeDetectorRef);
   
   // Getter para los items procesados que usa ng-select
   get processedItems() {
@@ -83,6 +84,7 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
     ).subscribe(results => {
       this.filteredItems = results;
       this.isLoading = false;
+      this.cdr.markForCheck();
     });
 
     // Inicializar: si hay searchFunction, empezar vacío; si no, mostrar todos
@@ -111,6 +113,7 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
         this.filteredItems.push(selectedItem);
       }
     }
+    this.cdr.markForCheck();
   }
 
   ngOnDestroy() {
@@ -166,6 +169,7 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
         this.filteredItems.push(selectedItem);
       }
     }
+    this.cdr.markForCheck();
   }
 
   registerOnChange(fn: any): void {

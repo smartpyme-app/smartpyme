@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import Swal from 'sweetalert2';
     templateUrl: './partida-detalles.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PartidaDetallesComponent extends BaseModalComponent implements OnInit {
 
@@ -38,7 +38,8 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
     constructor( 
         public apiService: ApiService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ) {
         super(modalManager, alertService);
     }
@@ -48,7 +49,8 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
           .pipe(this.untilDestroyed())
           .subscribe(catalogo => {
             this.catalogo = catalogo;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
     public selectCuenta(){
@@ -95,6 +97,7 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
 
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
+        this.cdr.markForCheck();
         this.update.emit(this.partida);
     }
     
@@ -163,6 +166,7 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
                     this.partida.haber = parseFloat(response.total_haber).toFixed(2);
                     this.partida.diferencia = parseFloat(response.diferencia).toFixed(2);
                     
+                    this.cdr.markForCheck();
                     // Emitir evento para que el componente padre sepa que los totales cambiaron
                     this.totalesActualizados.emit({
                         debe: this.partida.debe,
@@ -209,6 +213,7 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
     public onsubmit(){
         this.partida.detalles.push(this.detalle);
 
+        this.cdr.markForCheck();
         this.update.emit(this.partida);
         
         // Si es una partida nueva, recalcular totales inmediatamente
@@ -242,19 +247,21 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
                                 this.partida.detalles.splice(indexAEliminar, 1);
                             }
                             this.alertService.success('Detalle eliminado', 'El detalle fue eliminado exitosamente.');
+                            this.cdr.markForCheck();
                             this.update.emit(this.partida);
                             
                             // Si es una partida nueva, recalcular totales después de eliminar
                             if (!this.partida.id) {
                                 this.sumTotal.emit();
                             }
-                        }, error => {this.alertService.error(error); });
+                        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
                     }else{
                         let indexAEliminar = this.partida.detalles.findIndex((item:any) => item.id_cuenta === detalle.id_cuenta);
                         if (indexAEliminar !== -1) {
                             this.partida.detalles.splice(indexAEliminar, 1);
                         }
                         this.alertService.success('Detalle eliminado', 'El detalle fue eliminado exitosamente.');
+                        this.cdr.markForCheck();
                         this.update.emit(this.partida);
                         
                         // Si es una partida nueva, recalcular totales después de eliminar

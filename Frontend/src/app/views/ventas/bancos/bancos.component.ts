@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,13 +13,14 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './bancos.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class BancosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public bancos:any = [];
     public banco:any = {};
+    private cdr = inject(ChangeDetectorRef);
 
     constructor(
         apiService: ApiService,

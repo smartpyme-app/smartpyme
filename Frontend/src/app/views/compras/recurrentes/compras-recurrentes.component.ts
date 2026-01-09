@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ declare var $:any;
     templateUrl: './compras-recurrentes.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PaginationComponent],
-
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class ComprasRecurrentesComponent extends BasePaginatedModalComponent implements OnInit {
@@ -38,7 +38,8 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager);
     }
@@ -57,7 +58,8 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
             .pipe(this.untilDestroyed())
             .subscribe(proveedores => { 
                 this.proveedores = proveedores;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public loadAll() {
@@ -86,7 +88,8 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
                 this.compras = compras;
                 this.loading = false;
                 this.closeModal();
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public setOrden(columna: string) {
@@ -130,9 +133,11 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
             this.compra = {};
             this.loadAll();
             this.alertService.success('Compra guardada', 'La compra se marco como no recurrente exitosamente.');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
             this.saving = false;
+            this.cdr.markForCheck();
         }
     }
     
@@ -147,8 +152,10 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
                     if (this.compras['data'][i].id == data.id )
                         this.compras['data'].splice(i, 1);
                 }
+                this.cdr.markForCheck();
             } catch (error: any) {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
             }
         }
     }
@@ -160,13 +167,15 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
             .pipe(this.untilDestroyed())
             .subscribe(documentos => {
                 this.documentos = documentos;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('formas-de-pago')
             .pipe(this.untilDestroyed())
             .subscribe(formaPagos => { 
                 this.formaPagos = formaPagos;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.openModal(template);
     }
@@ -179,7 +188,8 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
             .subscribe(compras => { 
                 this.compras = compras;
                 this.loading = false;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
     }
 
@@ -195,10 +205,13 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
                 this.modalRef.hide();
             }
             this.alertService.success('Venta guardado', 'La compra fue guardada exitosamente.');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.saving = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -219,7 +232,8 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => {this.alertService.error(error); this.downloading = false;}
+            this.cdr.markForCheck();
+          }, (error) => {this.alertService.error(error); this.downloading = false; this.cdr.markForCheck();}
         );
     }
 
@@ -228,13 +242,15 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
             .pipe(this.untilDestroyed())
             .subscribe(sucursales => { 
                 this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('usuarios/list')
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => { 
                 this.usuarios = usuarios;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.openModal(template);
     }

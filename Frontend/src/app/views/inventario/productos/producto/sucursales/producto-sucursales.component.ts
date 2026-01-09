@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     templateUrl: './producto-sucursales.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoSucursalesComponent extends BaseModalComponent implements OnInit {
 
@@ -31,7 +31,8 @@ export class ProductoSucursalesComponent extends BaseModalComponent implements O
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private route: ActivatedRoute, 
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ){
         super(modalManager, alertService);
     }
@@ -42,11 +43,13 @@ export class ProductoSucursalesComponent extends BaseModalComponent implements O
 
     public loadAll(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
             this.validate();
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public validate(){
@@ -70,11 +73,13 @@ export class ProductoSucursalesComponent extends BaseModalComponent implements O
         this.sucursal.id = sucursal.sucursal_id;
 
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.store('producto/sucursal', this.sucursal).pipe(this.untilDestroyed()).subscribe(sucursal => {
             this.sucursal = {};
             this.loading = false;
+            this.cdr.markForCheck();
             this.alertService.success('Sucursal guardada', 'El inventario fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.loading = false; });
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
 }

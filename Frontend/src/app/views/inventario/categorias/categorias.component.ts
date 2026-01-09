@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
     templateUrl: './categorias.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, CategoriaCuentasComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
 export class CategoriasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -30,7 +30,8 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private funcionalidadesService: FuncionalidadesService
+        private funcionalidadesService: FuncionalidadesService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'categoria',
@@ -63,6 +64,7 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
             .pipe(this.untilDestroyed())
             .subscribe(sucursales => { 
                 this.sucursales = sucursales;
+                this.cdr.markForCheck();
             }, error => {this.alertService.error(error); });
 
         // Solo cargar catálogo si tiene contabilidad habilitada
@@ -71,6 +73,7 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
                 .pipe(this.untilDestroyed())
                 .subscribe(catalogo => {
                     this.catalogo = catalogo;
+                    this.cdr.markForCheck();
                 }, error => { this.alertService.error(error); });
         }
 
@@ -90,8 +93,10 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
                             .pipe(this.untilDestroyed())
                             .subscribe(catalogo => {
                                 this.catalogo = catalogo;
+                                this.cdr.markForCheck();
                             }, error => { this.alertService.error(error); });
                     }
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     console.error('Error al verificar acceso a contabilidad:', error);
@@ -116,7 +121,8 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
                 // El backend devuelve un objeto de paginación de Laravel
                 this.categorias = response;
                 this.loading = false;
-            }, error => { this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
@@ -135,6 +141,7 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
                             class: 'modal-lg',
                             backdrop: 'static'
                         });
+                        this.cdr.markForCheck();
                     },
                     error: (error) => {
                         this.loading = false;

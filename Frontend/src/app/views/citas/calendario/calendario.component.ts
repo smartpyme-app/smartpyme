@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter, LOCALE_ID, AfterViewInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter, LOCALE_ID, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CalendarOptions, Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -31,6 +31,7 @@ registerLocaleData(localeEs);
     standalone: true,
     imports: [CommonModule, FullCalendarModule, FormsModule, NgSelectModule, CrearEventoComponent],
     providers: [{ provide: LOCALE_ID, useValue: 'es-ES' }],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class CalendarioComponent extends BaseComponent implements OnInit {
@@ -55,7 +56,8 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
 
   constructor(public apiService: ApiService, public alertService: AlertService,
     private route: ActivatedRoute, private router: Router,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private cdr: ChangeDetectorRef
   ) {
     super();
   }
@@ -85,6 +87,7 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
       .pipe(this.untilDestroyed())
       .subscribe(usuarios => {
       this.usuarios = usuarios;
+      this.cdr.markForCheck();
     }, error => { this.alertService.error(error); });
 
 
@@ -92,12 +95,14 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
       .pipe(this.untilDestroyed())
       .subscribe(clientes => {
       this.clientes = clientes;
+      this.cdr.markForCheck();
     }, error => { this.alertService.error(error); });
 
     this.apiService.getAll('sucursales/list')
       .pipe(this.untilDestroyed())
       .subscribe(sucursales => {
       this.sucursales = sucursales;
+      this.cdr.markForCheck();
     }, error => { this.alertService.error(error); });
 
     forwardRef(() => Calendar);
@@ -216,6 +221,7 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     }
 
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.getAll('eventos/list', filtrosEnvio)
       .pipe(this.untilDestroyed())
       .subscribe(eventos => {
@@ -230,7 +236,8 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
         this.modalRef.hide();
       }
       this.update.emit();
-    }, error => { this.alertService.error(error); this.loading = false; });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
   }
 
 
@@ -390,6 +397,7 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
 
   public onSubmit() {
     this.saving = true;
+    this.cdr.markForCheck();
     this.apiService.store('evento', this.evento)
       .pipe(this.untilDestroyed())
       .subscribe(evento => {
@@ -404,7 +412,8 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
         this.modalRef.hide();
       }
       this.alertService.modal = false;
-    }, error => { this.alertService.error(error); this.saving = false; });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
   }
 
   onEventoUpdate() {
@@ -416,31 +425,36 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
       this.modalRef.hide();
       this.alertService.modal = false;
     }
+    this.cdr.markForCheck();
   }
   setNowSelection() {
     this.selectedPeriodType = "day";
     this.calendar?.changeView('timeGridDay');
+    this.cdr.markForCheck();
   }
   setMonthSelection() {
     this.selectedPeriodType = "month";
     this.calendar?.changeView('dayGridMonth');
-
+    this.cdr.markForCheck();
   }
   setWeekSelection() {
     this.selectedPeriodType = "week";
     this.calendar?.changeView('timeGridWeek');
-
+    this.cdr.markForCheck();
   }
   setYearSelection() {
     this.selectedPeriodType = "year";
     this.calendar?.changeView('multiMonthYear');
+    this.cdr.markForCheck();
   }
 
   nextDay() {
     this.calendar?.next();
+    this.cdr.markForCheck();
   }
   prevDay() {
     this.calendar?.prev();
+    this.cdr.markForCheck();
   }
 
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './roles-permisos.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class RolesPermisosComponent extends BaseModalComponent implements OnInit {
@@ -40,7 +41,8 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
   }
@@ -61,17 +63,20 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
           expanded: false 
         }));
         console.log('Módulos cargados:', this.modules);
+        this.cdr.markForCheck();
       },
       error => {
         console.error('Error al cargar módulos:', error);
         this.alertService.error(error);
         this.modules = [];
+        this.cdr.markForCheck();
       }
     );
   }
 
   toggleModule(module: any) {
     module.expanded = !module.expanded;
+    this.cdr.markForCheck();
   }
 
   filterPermissionsBySearch(permissions: any[], searchText: string) {
@@ -98,10 +103,12 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
 
   saveRole() {
     this.loading = true;
+    this.cdr.markForCheck();
     
     if (!this.role.name) {
       this.alertService.error('El nombre del rol es requerido');
       this.loading = false;
+      this.cdr.markForCheck();
       return;
     }
 
@@ -119,16 +126,19 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
         this.closeModal();
         this.cargarDatos();
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
 
   cargarDatos() {
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.getAll('roles-permissions', this.filtros)
       .pipe(this.untilDestroyed())
       .subscribe(
@@ -167,10 +177,12 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
         if (this.modalRef) {
           this.closeModal();
         }
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -188,6 +200,7 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
       this.filtros.orden = columna;
       this.filtros.direccion = 'asc';
     }
+    this.cdr.markForCheck();
     this.filtrarRoles();
   }
 
@@ -197,6 +210,7 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
 
   setPagination(event: { page: number }) {
     this.filtros.page = event.page;
+    this.cdr.markForCheck();
     this.cargarDatos();
   }
 
@@ -238,6 +252,7 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
       } else {
         this.selectedRole.permissions.push(permission);
       }
+      this.cdr.markForCheck();
     }
   }
 
@@ -258,6 +273,7 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
         this.role.permissions.splice(index, 1);
       }
     }
+    this.cdr.markForCheck();
   }
 
   // Métodos para seleccionar todos los permisos
@@ -301,9 +317,11 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
         this.alertService.success('Permisos actualizados correctamente', 'Los permisos del rol han sido actualizados.');
         this.closeModal();
         this.cargarDatos();
+        this.cdr.markForCheck();
       },
       error => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
   }
@@ -324,6 +342,7 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
       permissions: [],
       is_global: false
     };
+    this.cdr.markForCheck();
   }
 
   getRoleTypeLabel(role: any): string {
@@ -343,9 +362,11 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
         response => {
           this.alertService.success('Rol eliminado', 'El rol ha sido eliminado correctamente.');
           this.cargarDatos();
+          this.cdr.markForCheck();
         },
         error => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       );
     }

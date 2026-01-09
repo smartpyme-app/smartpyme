@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -27,7 +27,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     templateUrl: './gasto.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CrearAreaEmpresaComponent, CrearImpuestoComponent, CrearDepartamentoComponent, CrearAbonoGastoComponent, LazyImageDirective],
-
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GastoComponent implements OnInit {
   public gasto: any = {iva: 0, renta_retenida: 0, iva_percibido: 0, otros_impuestos: 0};
@@ -62,6 +62,8 @@ export class GastoComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
+  private cdr = inject(ChangeDetectorRef);
+
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
@@ -82,7 +84,8 @@ export class GastoComponent implements OnInit {
   public setEstado(abono: any){
     this.apiService.store('gasto/abono', abono).subscribe(abono => {
       this.loadAll();
-    }, error => {this.alertService.error(error); });
+      this.cdr.markForCheck();
+    }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
   }
 
 	ngOnInit(){
@@ -99,9 +102,11 @@ export class GastoComponent implements OnInit {
       .subscribe({
         next: (sucursales) => {
           this.sucursales = sucursales;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
 
@@ -110,9 +115,11 @@ export class GastoComponent implements OnInit {
       .subscribe({
         next: (usuarios) => {
           this.usuarios = usuarios;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
 
@@ -121,9 +128,11 @@ export class GastoComponent implements OnInit {
       .subscribe(
       (bancos) => {
         this.bancos = bancos;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
@@ -132,9 +141,11 @@ export class GastoComponent implements OnInit {
       .subscribe({
         next: (formaspago) => {
           this.formaspago = formaspago;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
 
@@ -143,7 +154,8 @@ export class GastoComponent implements OnInit {
       .subscribe(categorias => {
       this.categorias = categorias;
       this.loading = false;
-    }, error => {this.alertService.error(error); this.loading = false;});
+      this.cdr.markForCheck();
+    }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     this.sharedDataService.getProveedores()
       .pipe(this.untilDestroyed())
@@ -151,10 +163,12 @@ export class GastoComponent implements OnInit {
         next: (proveedores) => {
           this.proveedores = proveedores;
           this.loading = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.loading = false;
+          this.cdr.markForCheck();
         }
       });
 
@@ -164,10 +178,12 @@ export class GastoComponent implements OnInit {
         next: (proyectos) => {
           this.proyectos = proyectos;
           this.loading = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.loading = false;
+          this.cdr.markForCheck();
         }
       });
 
@@ -182,7 +198,8 @@ export class GastoComponent implements OnInit {
           this.cargarImpuestosSeleccionados();
           this.mostrar_otros_impuestos = true;
       }
-    }, error => {this.alertService.error(error); this.loading = false;});
+      this.cdr.markForCheck();
+    }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
   }
 
@@ -266,10 +283,12 @@ export class GastoComponent implements OnInit {
           }
 
           this.loading = false;
+          this.cdr.markForCheck();
         },
         (error) => {
           this.alertService.error(error);
           this.loading = false;
+          this.cdr.markForCheck();
         }
       );
     } else {
@@ -336,10 +355,12 @@ export class GastoComponent implements OnInit {
               this.mostrar_otros_impuestos = true;
               this.cargarImpuestosSeleccionados();
             }
+            this.cdr.markForCheck();
           },
           (error) => {
             this.alertService.error(error);
             this.loading = false;
+            this.cdr.markForCheck();
           }
         );
     }
@@ -425,6 +446,7 @@ export class GastoComponent implements OnInit {
             x.nombre != 'Nota de crédito'
         );
         if (!this.gasto.tipo_documento) this.gasto.tipo_documento = 'Factura';
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -649,6 +671,7 @@ export class GastoComponent implements OnInit {
         : 'El gasto fue guardado exitosamente.';
 
       this.alertService.success(titulo, mensaje);
+      this.cdr.markForCheck();
       this.router.navigate(['/gastos']);
     } catch (error: any) {
       // Cerrar cualquier modal abierto para que se muestre el error
@@ -661,8 +684,10 @@ export class GastoComponent implements OnInit {
 
       // El AlertService ya maneja los errores 422 con mensajes detallados
       this.alertService.error(error);
+      this.cdr.markForCheck();
     } finally {
       this.saving = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -1016,10 +1041,12 @@ export class GastoComponent implements OnInit {
           if (!this.proveedores.find((p: any) => p.id === response.id)) {
             this.proveedores.push(response);
           }
+          this.cdr.markForCheck();
           return;
         }
       } catch (error) {
         // Proveedor no encontrado, continuar para crearlo
+        this.cdr.markForCheck();
       }
 
       // Si llegamos aquí, necesitamos crear un nuevo proveedor
@@ -1050,11 +1077,13 @@ export class GastoComponent implements OnInit {
             'Proveedor creado',
             `Se creó automáticamente el proveedor ${emisorData.nombre}`
           );
+          this.cdr.markForCheck();
         }
       } catch (error) {
         this.alertService.error(
           'No se pudo crear el proveedor automáticamente'
         );
+        this.cdr.markForCheck();
       }
     }
   }
@@ -1156,9 +1185,11 @@ export class GastoComponent implements OnInit {
         .pipe(this.untilDestroyed())
         .subscribe(departamentos => {
         this.departamentos = departamentos;
+        this.cdr.markForCheck();
         resolve(departamentos);
       }, error => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
         reject(error);
       });
     });
@@ -1182,10 +1213,12 @@ export class GastoComponent implements OnInit {
       .subscribe(response => {
         this.areasDisponibles = response.data || response;
         this.loadingAreas = false;
+        this.cdr.markForCheck();
       }, error => {
         this.alertService.error(error);
         this.loadingAreas = false;
         this.areasDisponibles = [];
+        this.cdr.markForCheck();
       });
   }
 
@@ -1212,10 +1245,12 @@ export class GastoComponent implements OnInit {
       .subscribe({
         next: (acceso) => {
           this.contabilidadHabilitada = acceso;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           console.error('Error al verificar acceso a contabilidad:', error);
           this.contabilidadHabilitada = false;
+          this.cdr.markForCheck();
         }
       });
   }

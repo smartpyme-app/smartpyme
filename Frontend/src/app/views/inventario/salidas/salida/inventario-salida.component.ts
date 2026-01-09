@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     templateUrl: './inventario-salida.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, BuscadorProductosComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InventarioSalidaComponent extends BaseModalComponent implements OnInit {
 
@@ -32,7 +32,8 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
 	    protected override alertService: AlertService,
 	    protected override modalManager: ModalManagerService,
 	    private route: ActivatedRoute, 
-	    private router: Router
+	    private router: Router,
+	    private cdr: ChangeDetectorRef
     ) { 
         super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -44,7 +45,8 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
         this.apiService.getAll('bodegas/list').pipe(this.untilDestroyed()).subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
 	}
 
@@ -65,7 +67,8 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
             this.apiService.read('salida/', id).pipe(this.untilDestroyed()).subscribe(salida => {
 	            this.salida = salida;
             	this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
+            	this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
         }
 	}
 
@@ -81,11 +84,13 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
         this.salida.detalles.push(this.detalle);
         this.producto = {};
         this.detalle = {};
+        this.cdr.markForCheck();
         // document.getElementById('cantidad')!.focus();
     }
    
     updateDetalle(detalle:any){
         detalle.total = detalle.cantidad * detalle.costo;
+        this.cdr.markForCheck();
     }
 
 	public async onSubmit() {
@@ -96,10 +101,13 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
                 .toPromise();
             
             this.router.navigateByUrl('/salidas');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.saving = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -114,7 +122,8 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
     	    this.apiService.store('salida/detalle', this.detalle).pipe(this.untilDestroyed()).subscribe(data => {
     	    	this.detalle = {};
     			this.loading = false;
-    		}, error => {this.alertService.error(error); this.loading = false; });
+    			this.cdr.markForCheck();
+    		}, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
         }
         this.closeModal();
 	}
@@ -129,7 +138,8 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
 						}
 					}
 		        	this.alertService.success("Eliminado", "El registro fue eliminado exitosamente.");
-	        	}, error => {this.alertService.error(error); });
+		        	this.cdr.markForCheck();
+	        	}, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 			}else{
 				for (var i = 0; i < this.salida.detalles.length; ++i) {
 					if (this.salida.detalles[i].id_producto === detalle.id_producto ){
@@ -137,6 +147,7 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
 					}
 				}
 	        	this.alertService.success("Eliminado", "El registro fue eliminado exitosamente.");
+	        	this.cdr.markForCheck();
 			}
 		}
 	}

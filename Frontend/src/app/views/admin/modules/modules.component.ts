@@ -1,5 +1,5 @@
 // modules.component.ts
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,6 +15,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     templateUrl: './modules.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class ModulesComponent extends BaseModalComponent implements OnInit {
@@ -41,7 +42,8 @@ export class ModulesComponent extends BaseModalComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     protected override alertService: AlertService,
-    protected override modalManager: ModalManagerService
+    protected override modalManager: ModalManagerService,
+    private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
   }
@@ -58,10 +60,12 @@ export class ModulesComponent extends BaseModalComponent implements OnInit {
       modules => {
         this.modules = modules;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -94,10 +98,12 @@ export class ModulesComponent extends BaseModalComponent implements OnInit {
         () => {
           this.loadModules();
           this.alertService.success('Módulo eliminado', 'El módulo fue eliminado exitosamente.');
+          this.cdr.markForCheck();
         },
         error => {
           this.alertService.error(error);
           this.loading = false;
+          this.cdr.markForCheck();
         }
       );
     }
@@ -142,10 +148,12 @@ export class ModulesComponent extends BaseModalComponent implements OnInit {
         this.loadModules();
         this.alertService.success('Módulo guardado', 'El módulo fue guardado exitosamente.');
         this.closeModal();
+        this.cdr.markForCheck();
       },
       error => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
 }

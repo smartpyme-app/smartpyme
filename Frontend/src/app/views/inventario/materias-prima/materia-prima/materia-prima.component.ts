@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './materia-prima.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, MateriaPrimaInformacionComponent, ProductoInventariosComponent, ProductoComposicionComponent, ProductoAjustesComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MateriaPrimaComponent implements OnInit {
 
@@ -33,6 +33,7 @@ export class MateriaPrimaComponent implements OnInit {
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
+	    private cdr: ChangeDetectorRef
 	) {
 		this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
 	}
@@ -59,7 +60,8 @@ export class MateriaPrimaComponent implements OnInit {
 	          .subscribe(producto => {
 	           this.producto = producto;
 	           this.loading = false;
-	        },error => {this.alertService.error(error);this.loading = false;});
+	           this.cdr.markForCheck();
+	        },error => {this.alertService.error(error);this.loading = false; this.cdr.markForCheck();});
 	    }
 
 	}
@@ -78,10 +80,13 @@ export class MateriaPrimaComponent implements OnInit {
 	        }
 	        
 	        this.alertService.success('Materia prima guardada', 'La materia prima fue guardada exitosamente');
+	        this.cdr.markForCheck();
 	    } catch (error: any) {
 	        this.alertService.error(error);
+	        this.cdr.markForCheck();
 	    } finally {
 	        this.loading = false;
+	        this.cdr.markForCheck();
 	    }
 	}
 	

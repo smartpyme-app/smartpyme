@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, Input, ViewChild, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './clientes-dash.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgChartsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClientesDashComponent implements OnInit {
 
@@ -47,6 +47,7 @@ export class ClientesDashComponent implements OnInit {
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
+    private cdr = inject(ChangeDetectorRef);
 
     constructor( private alertService:AlertService, private apiService:ApiService
     ) { }
@@ -74,7 +75,8 @@ export class ClientesDashComponent implements OnInit {
             if (this.chart2)
                 this.chart2!.chart!.update();
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
 }

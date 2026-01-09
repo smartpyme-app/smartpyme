@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,7 +18,7 @@ import Swal from 'sweetalert2';
     templateUrl: './inventario-entradas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InventarioEntradasComponent extends BaseCrudComponent<any> implements OnInit {
 
@@ -31,7 +31,8 @@ export class InventarioEntradasComponent extends BaseCrudComponent<any> implemen
         alertService: AlertService,
         modalManager: ModalManagerService,
         private router: Router, 
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'entrada',
@@ -74,6 +75,7 @@ export class InventarioEntradasComponent extends BaseCrudComponent<any> implemen
                 };
 
                 this.filtrar();
+                this.cdr.markForCheck();
             }
           });
     }
@@ -117,10 +119,12 @@ export class InventarioEntradasComponent extends BaseCrudComponent<any> implemen
             next: (entradas) => {
                 this.entradas = entradas;
                 this.loading = false;
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error(error);
                 this.loading = false;
+                this.cdr.markForCheck();
             }
           });
     }
@@ -148,15 +152,20 @@ export class InventarioEntradasComponent extends BaseCrudComponent<any> implemen
                                 this.apiService.store('entrada/partida-contable/' + data.id, {})
                                   .pipe(this.untilDestroyed())
                                   .subscribe({
-                                    next: () => {},
+                                    next: () => {
+                                        this.cdr.markForCheck();
+                                    },
                                     error: (error) => {
                                         this.alertService.error(error);
+                                        this.cdr.markForCheck();
                                     }
                                   });
                             }
+                            this.cdr.markForCheck();
                         },
                         error: (error) => {
                             this.alertService.error(error);
+                            this.cdr.markForCheck();
                         }
                       });
                 }
@@ -178,9 +187,11 @@ export class InventarioEntradasComponent extends BaseCrudComponent<any> implemen
                         next: () => {
                             this.alertService.success('Entrada anulada correctamente', 'El registro fue anulado exitosamente.');
                             this.filtrar();
+                            this.cdr.markForCheck();
                         },
                         error: (error) => {
                             this.alertService.error(error);
+                            this.cdr.markForCheck();
                         }
                       });
                 }
@@ -204,9 +215,11 @@ export class InventarioEntradasComponent extends BaseCrudComponent<any> implemen
                     next: () => {
                         this.alertService.success('Entrada eliminada correctamente', 'El registro fue eliminado exitosamente.');
                         this.filtrar();
+                        this.cdr.markForCheck();
                     },
                     error: (error) => {
                         this.alertService.error(error);
+                        this.cdr.markForCheck();
                     }
                   });
             }
@@ -221,9 +234,11 @@ export class InventarioEntradasComponent extends BaseCrudComponent<any> implemen
               .subscribe({
                 next: (usuarios) => {
                     this.usuarios = usuarios.data;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
+                    this.cdr.markForCheck();
                 }
               });
         }
@@ -238,6 +253,7 @@ export class InventarioEntradasComponent extends BaseCrudComponent<any> implemen
         this.loading = true;
         window.open(this.apiService.baseUrl + '/api/entradas/exportar?token=' + this.apiService.auth_token());
         this.loading = false;
+        this.cdr.markForCheck();
     }
 
     public override async onSubmit() {
@@ -249,10 +265,13 @@ export class InventarioEntradasComponent extends BaseCrudComponent<any> implemen
             
                 this.alertService.success('Entrada actualizada correctamente', 'El registro fue actualizado exitosamente.');
                 this.filtrar();
+                this.cdr.markForCheck();
         } catch (error: any) {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
         } finally {
                 this.saving = false;
+                this.cdr.markForCheck();
             }
     }
 
@@ -274,10 +293,12 @@ export class InventarioEntradasComponent extends BaseCrudComponent<any> implemen
                         this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
                         this.loading = false;
                         this.filtrar();
+                        this.cdr.markForCheck();
                     },
                     error: (error) => {
                         this.alertService.error(error);
                         this.loading = false;
+                        this.cdr.markForCheck();
                     }
                   });
             }
