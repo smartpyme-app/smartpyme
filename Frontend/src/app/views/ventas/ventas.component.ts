@@ -998,6 +998,10 @@ export class VentasComponent implements OnInit, OnDestroy {
     });
   }
 
-
+  public getTotalConPropina(venta: any): number {
+    const total = parseFloat(venta?.total || 0);
+    const propina = parseFloat(venta?.propina || 0);
+    return total + propina;
+  }
 
 }

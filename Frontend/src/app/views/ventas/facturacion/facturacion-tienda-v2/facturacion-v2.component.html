@@ -179,23 +179,19 @@
                         <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
-                    <tr *ngIf="tieneAccesoPropina">
-                        <td class="text-right"> <b>Propina</b> </td>
-                        <td style="width: 150px;" class="text-end">
-                            <input type="text" style=" width: 80px; margin-left: auto;" 
-                                   class="form-control text-end" 
-                                   [(ngModel)]="venta.propina" 
-                                   (ngModelChange)="sumTotal()"
-                                   name="propina" 
-                                   placeholder="0.00" 
-                                   pattern="^\d*\.?\d{0,2}$"
-                                   inputmode="decimal">
-                        </td>
+                    <tr *ngIf="tieneAccesoPropina && venta.cobrar_propina">
+                        <td class="text-right"> <b>Propina ({{ apiService.auth_user().empresa.propina_porcentaje | number:'1.0-2' }}%)</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.propina | currency:'USD':'symbol':'1.2'}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="tieneAccesoPropina && venta.cobrar_propina">
+                        <td class="text-right"> <b>Total + Propina</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ getTotalConPropina() | currency:'USD':'symbol':'1.2'}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                 </tbody>
@@ -257,6 +253,12 @@
             <div class="form-switch bg-light-info rounded">
                 <label for="renta">Renta (10%)</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.renta" name="renta">
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-3 without-label" *ngIf="tieneAccesoPropina">
+            <div class="form-switch bg-light-info rounded">
+                <label for="cobrar_propina">Propina ({{ apiService.auth_user().empresa.propina_porcentaje | number:'1.0-2' }}%)</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_propina" name="cobrar_propina">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">

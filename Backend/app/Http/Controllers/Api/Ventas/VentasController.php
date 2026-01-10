@@ -401,6 +401,7 @@ class VentasController extends Controller
             }
         }
 
+        // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
         $venta->fill($request->all());
         $venta->save();
 
@@ -485,6 +486,8 @@ class VentasController extends Controller
                 $venta = Venta::findOrFail($request->id);
             else
                 $venta = new Venta;
+            
+            // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
             $venta->fill($request->all());
 
                 $documento = Documento::where('id', $request->id_documento)
