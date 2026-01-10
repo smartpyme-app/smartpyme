@@ -33,180 +33,20 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Admin\Empresa;
+use App\Services\Contabilidad\FacturacionElectronicaHelperService;
+use App\Services\Contabilidad\LibroIVAService;
 
 class LibrosIVAController extends Controller
 {
-    /**
-     * Obtiene la empresa del usuario autenticado
-     */
-    private function obtenerEmpresa(): ?Empresa
-    {
-        return Auth::user()->empresa()->first();
-    }
+    protected $facturacionElectronicaHelper;
+    protected $libroIVAService;
 
-    /**
-     * Verifica si la empresa tiene facturación electrónica habilitada
-     */
-    private function tieneFacturacionElectronica(): bool
-    {
-        $empresa = $this->obtenerEmpresa();
-        return $empresa && $empresa->facturacion_electronica === true;
-    }
-
-    /**
-     * Filtra ventas según si tienen facturación electrónica o no
-     */
-    private function filtrarVentasPorFacturacionElectronica($ventas)
-    {
-        if ($this->tieneFacturacionElectronica()) {
-            // Con facturación electrónica: solo ventas con sello_mh
-            $ventasSinSello = $ventas->filter(function ($venta) {
-                return empty($venta->sello_mh);
-            });
-
-            if ($ventasSinSello->isNotEmpty()) {
-                Log::warning('Se excluyeron ventas sin sello', [
-                    'ventas' => $ventasSinSello->pluck('id'),
-                ]);
-            }
-
-            return $ventas->reject(function ($venta) {
-                return empty($venta->sello_mh);
-            });
-        } else {
-            // Sin facturación electrónica: todas las ventas
-            return $ventas;
-        }
-    }
-
-    /**
-     * Obtiene el código de generación o correlativo según facturación electrónica
-     */
-    private function obtenerCodigoGeneracion($venta): string
-    {
-        if ($this->tieneFacturacionElectronica() && $venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
-            return $venta->dte['identificacion']['codigoGeneracion'];
-        }
-        return trim((string) $venta->correlativo);
-    }
-
-    /**
-     * Obtiene el número de control según facturación electrónica
-     */
-    private function obtenerNumeroControl($venta): string
-    {
-        if ($this->tieneFacturacionElectronica() && $venta->sello_mh && isset($venta->dte['identificacion']['numeroControl'])) {
-            return $venta->dte['identificacion']['numeroControl'];
-        }
-        return $venta->numero_control ?? trim((string) $venta->correlativo);
-    }
-
-    /**
-     * Obtiene el sello según facturación electrónica
-     */
-    private function obtenerSello($venta): string
-    {
-        if ($this->tieneFacturacionElectronica() && isset($venta->dte['sello'])) {
-            return $venta->dte['sello'];
-        }
-        return $venta->sello_mh ?? '';
-    }
-
-    /**
-     * Obtiene la clase de documento (DTE o Impreso)
-     */
-    private function obtenerClaseDocumento($venta): string
-    {
-        if ($this->tieneFacturacionElectronica() && $venta->sello_mh) {
-            return '4'; // DTE
-        }
-        return '1'; // Impreso
-    }
-
-    /**
-     * Obtiene el código de generación para devoluciones
-     */
-    private function obtenerCodigoGeneracionDevolucion($devolucion): string
-    {
-        if ($this->tieneFacturacionElectronica()) {
-            $dte = $devolucion->dte ?? [];
-            if ($devolucion->codigo_generacion) {
-                return $devolucion->codigo_generacion;
-            }
-            if (isset($dte['identificacion']['codigoGeneracion'])) {
-                return $dte['identificacion']['codigoGeneracion'];
-            }
-        }
-        return trim((string) $devolucion->correlativo);
-    }
-
-    /**
-     * Obtiene el número de control para devoluciones
-     */
-    private function obtenerNumeroControlDevolucion($devolucion): string
-    {
-        if ($this->tieneFacturacionElectronica()) {
-            $dte = $devolucion->dte ?? [];
-            if ($devolucion->numero_control) {
-                return $devolucion->numero_control;
-            }
-            if (isset($dte['identificacion']['numeroControl'])) {
-                return $dte['identificacion']['numeroControl'];
-            }
-        }
-        return trim((string) $devolucion->correlativo);
-    }
-
-    /**
-     * Obtiene el sello para devoluciones
-     */
-    private function obtenerSelloDevolucion($devolucion): string
-    {
-        if ($this->tieneFacturacionElectronica()) {
-            $dte = $devolucion->dte ?? [];
-            if (isset($dte['sello'])) {
-                return $dte['sello'];
-            }
-        }
-        return $devolucion->sello_mh ?? '';
-    }
-
-    private function validarVentasPendientes(Request $request, ?array $documentos = null): ?JsonResponse
-    {
-        if (!$request->filled('inicio') || !$request->filled('fin')) {
-            return null;
-        }
-
-        // Solo validar ventas pendientes si tiene facturación electrónica
-        if (!$this->tieneFacturacionElectronica()) {
-            return null;
-        }
-
-        $ventasPendientes = Venta::query()
-            ->where('estado', '!=', 'Anulada')
-            ->where('cotizacion', 0)
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->when($request->id_sucursal, function ($query) use ($request) {
-                return $query->where('id_sucursal', $request->id_sucursal);
-            })
-            ->when(!empty($documentos), function ($query) use ($documentos) {
-                $query->whereHas('documento', function ($subQuery) use ($documentos) {
-                    $subQuery->whereIn('nombre', $documentos);
-                });
-            })
-            ->where(function ($query) {
-                $query->whereNull('sello_mh')
-                    ->orWhere('sello_mh', '');
-            })
-            ->exists();
-
-        if ($ventasPendientes) {
-            return response()->json([
-                'message' => 'Existen ventas pendientes de emitirse para el período seleccionado, por favor complete las ventas pendientes emitiendo los documentos.',
-            ], 500);
-        }
-
-        return null;
+    public function __construct(
+        FacturacionElectronicaHelperService $facturacionElectronicaHelper,
+        LibroIVAService $libroIVAService
+    ) {
+        $this->facturacionElectronicaHelper = $facturacionElectronicaHelper;
+        $this->libroIVAService = $libroIVAService;
     }
 
     public function consumidores(BaseLibroIVARequest $request)
@@ -226,7 +66,7 @@ class LibrosIVAController extends Controller
             ->get();
 
         // Filtrar ventas según facturación electrónica
-        $ventasFiltradas = $this->filtrarVentasPorFacturacionElectronica($ventas);
+        $ventasFiltradas = $this->facturacionElectronicaHelper->filtrarVentasPorFacturacionElectronica($ventas);
 
         $libroconsumidores = $ventasFiltradas
             ->groupBy(function ($venta) {
@@ -238,7 +78,7 @@ class LibrosIVAController extends Controller
                 });
 
                 $ventasOrdenadasPorCodigo = $ventasDia->sortBy(function ($venta) {
-                    return $this->obtenerCodigoGeneracion($venta);
+                    return $this->facturacionElectronicaHelper->obtenerCodigoGeneracion($venta);
                 });
 
                 // Primero identificar exportaciones (sin importar el IVA)
@@ -282,8 +122,8 @@ class LibrosIVAController extends Controller
 
                 return [
                     'fecha' => $fecha,
-                    'correlativo_inicial' => $primeraVenta ? $this->obtenerCodigoGeneracion($primeraVenta) : null,
-                    'correlativo_final' => $ultimaVenta ? $this->obtenerCodigoGeneracion($ultimaVenta) : null,
+                    'correlativo_inicial' => $primeraVenta ? $this->facturacionElectronicaHelper->obtenerCodigoGeneracion($primeraVenta) : null,
+                    'correlativo_final' => $ultimaVenta ? $this->facturacionElectronicaHelper->obtenerCodigoGeneracion($ultimaVenta) : null,
                     'ventas_exentas' => round($ventasExentas, 2),
                     'ventas_internas_gravadas' => round($ventasGravadas, 2),
                     'exportaciones' => round($exportaciones, 2),
@@ -335,7 +175,7 @@ class LibrosIVAController extends Controller
 
     public function consumidoresLibroExport(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
             return $alerta;
         }
 
@@ -347,7 +187,7 @@ class LibrosIVAController extends Controller
 
     public function consumidoresAnexoExport(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
             return $alerta;
         }
 
@@ -373,14 +213,14 @@ class LibrosIVAController extends Controller
             ->get();
 
         // Filtrar ventas según facturación electrónica
-        $ventasFiltradas = $this->filtrarVentasPorFacturacionElectronica($ventas);
+        $ventasFiltradas = $this->facturacionElectronicaHelper->filtrarVentasPorFacturacionElectronica($ventas);
 
         $ventasData = $ventasFiltradas->map(function ($venta) {
             $cliente = optional($venta->cliente);
 
-            $codigoGeneracion = $this->obtenerCodigoGeneracion($venta);
-            $numeroControl = $this->obtenerNumeroControl($venta);
-            $sello = $this->obtenerSello($venta);
+            $codigoGeneracion = $this->facturacionElectronicaHelper->obtenerCodigoGeneracion($venta);
+            $numeroControl = $this->facturacionElectronicaHelper->obtenerNumeroControl($venta);
+            $sello = $this->facturacionElectronicaHelper->obtenerSello($venta);
 
             return [
                 'fecha' => $venta->fecha,
@@ -418,9 +258,9 @@ class LibrosIVAController extends Controller
         $devolucionesData = $devoluciones->map(function ($devolucion) {
             $cliente = optional($devolucion->cliente);
 
-            $codigoGeneracion = $this->obtenerCodigoGeneracionDevolucion($devolucion);
-            $numeroControl = $this->obtenerNumeroControlDevolucion($devolucion);
-            $sello = $this->obtenerSelloDevolucion($devolucion);
+            $codigoGeneracion = $this->facturacionElectronicaHelper->obtenerCodigoGeneracionDevolucion($devolucion);
+            $numeroControl = $this->facturacionElectronicaHelper->obtenerNumeroControlDevolucion($devolucion);
+            $sello = $this->facturacionElectronicaHelper->obtenerSelloDevolucion($devolucion);
 
             return [
                 'fecha' => $devolucion->fecha,
@@ -495,7 +335,7 @@ class LibrosIVAController extends Controller
 
     public function contribuyentesLibroExport(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request, ['Crédito fiscal'])) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request, ['Crédito fiscal'])) {
             return $alerta;
         }
 
@@ -507,7 +347,7 @@ class LibrosIVAController extends Controller
 
     public function contribuyentesAnexoExport(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request, ['Crédito fiscal'])) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request, ['Crédito fiscal'])) {
             return $alerta;
         }
 
@@ -562,7 +402,7 @@ class LibrosIVAController extends Controller
 
     public function anuladosLibroExport(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request)) {
             return $alerta;
         }
 
@@ -574,7 +414,7 @@ class LibrosIVAController extends Controller
 
     public function anuladosAnexoExport(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request)) {
             return $alerta;
         }
 
@@ -778,7 +618,7 @@ class LibrosIVAController extends Controller
 
     public function comprasLibroExport(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request)) {
             return $alerta;
         }
 
@@ -790,7 +630,7 @@ class LibrosIVAController extends Controller
 
     public function comprasAnexoExport(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request)) {
             return $alerta;
         }
 
@@ -892,7 +732,7 @@ class LibrosIVAController extends Controller
 
     public function comprasSujetosExcluidosLibroExport(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request)) {
             return $alerta;
         }
 
@@ -904,7 +744,7 @@ class LibrosIVAController extends Controller
 
     public function comprasSujetosExcluidosAnexoExport(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request)) {
             return $alerta;
         }
 
@@ -970,7 +810,7 @@ class LibrosIVAController extends Controller
 
     public function libroRetencion1Export(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request)) {
             return $alerta;
         }
 
@@ -983,7 +823,7 @@ class LibrosIVAController extends Controller
 
     public function libroPercepcion1Export(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request)) {
             return $alerta;
         }
 
@@ -995,7 +835,7 @@ class LibrosIVAController extends Controller
 
     public function anexoRetencion1Export(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request)) {
             return $alerta;
         }
 
@@ -1007,7 +847,7 @@ class LibrosIVAController extends Controller
 
     public function anexoPercepcion1Export(BaseLibroIVARequest $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->libroIVAService->validarVentasPendientes($request)) {
             return $alerta;
         }
 

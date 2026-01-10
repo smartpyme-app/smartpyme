@@ -35,7 +35,7 @@ class StoreUsuarioRequest extends FormRequest
             'tipo'          => 'required|string',
             'id_empresa'    => 'required|integer|exists:empresas,id',
             'id_sucursal'   => 'required|integer|exists:sucursales,id',
-            'id_bodega'     => 'required|integer|exists:bodegas,id',
+            'id_bodega'     => 'required|integer|exists:sucursal_bodegas,id',
             'telefono'      => [
                 'sometimes',
                 'nullable',

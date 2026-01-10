@@ -27,116 +27,41 @@ use PgSql\Lob;
 use App\Http\Requests\Ventas\Clientes\StoreClienteRequest;
 use App\Http\Requests\Ventas\Clientes\UpdateClienteRequest;
 use App\Http\Requests\Ventas\Clientes\ImportClientesRequest;
+use App\Services\Ventas\ClienteService;
 
 class ClientesController extends Controller
 {
+    protected $clienteService;
 
+    public function __construct(ClienteService $clienteService)
+    {
+        $this->clienteService = $clienteService;
+    }
 
     public function index(Request $request)
     {
-
-        $clientes = Cliente::with('contactos')->where('id', '!=', 1)->withSum('ventas', 'total')
-            ->when($request->buscador, function ($query) use ($request) {
-                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('apellido', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('nombre_empresa', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('nit', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('giro', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('telefono', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('red_social', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('ncr', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('correo', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('dui', 'like',  '%' . $request->buscador . '%');
-            })
-            ->when($request->nombre, function ($q) use ($request) {
-                $q->where('nombre', $request->nombre);
-            })
-            ->when($request->apellido, function ($q) use ($request) {
-                $q->where('apellido', $request->apellido);
-            })
-            ->when($request->tipo, function ($q) use ($request) {
-                $q->where('tipo', $request->tipo);
-            })
-            ->when($request->fecha_cumpleanos, function ($q) use ($request) {
-                $q->where('fecha_cumpleanos', $request->fecha_cumpleanos);
-            })
-            ->when($request->tipo_contribuyente, function ($q) use ($request) {
-                $q->where('tipo_contribuyente', $request->tipo_contribuyente);
-            })
-            ->when($request->estado !== null, function ($q) use ($request) {
-                $q->where('enable', !!$request->estado);
-            })
-            ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
-            ->paginate($request->paginate);
-
+        $clientes = $this->clienteService->listarClientes($request);
         return Response()->json($clientes, 200);
     }
 
     public function list()
     {
-
-        $clientes = Cliente::orderBy('nombre', 'asc')
-            ->where('enable', true)
-            ->get();
-
+        $clientes = $this->clienteService->listarClientesActivos();
         return Response()->json($clientes, 200);
     }
 
     public function searchClientes(Request $request)
     {
-        $term = $request->get('q', ''); // Término de búsqueda
-        $limit = $request->get('limit', 50); // Límite de resultados (default 50)
+        $term = $request->get('q', '');
+        $limit = $request->get('limit', 50);
         
-        if (strlen($term) < 2) {
-            return response()->json([], 200);
-        }
-        
-        $clientes = Cliente::where('enable', true)
-            ->where(function ($query) use ($term) {
-                $query->where('nombre', 'LIKE', "%{$term}%")
-                ->orWhere('nombre_empresa', 'LIKE', "%{$term}%")
-                ->orWhere('correo', 'LIKE', "%{$term}%")
-                ->orWhere('telefono', 'LIKE', "%{$term}%")
-                ->orWhereRaw("CONCAT(nombre, ' ', apellido) LIKE ?", ["%{$term}%"]);
-            })
-            ->orderByRaw("
-                CASE 
-                    WHEN nombre LIKE '{$term}%' THEN 1
-                    WHEN nombre_empresa LIKE '{$term}%' THEN 2
-                    WHEN CONCAT(nombre, ' ', apellido) LIKE '{$term}%' THEN 3
-                    ELSE 4
-                END
-            ")
-            ->orderBy('nombre', 'asc')
-            ->limit($limit)
-            ->get();
-        
+        $clientes = $this->clienteService->buscarClientes($term, $limit);
         return response()->json($clientes, 200);
     }
 
     public function search($txt)
     {
-        $txtClean = str_replace('-', '', $txt);
-
-        $clientes = Cliente::where(function ($query) use ($txt, $txtClean) {
-                $query->where('nombre', 'like', '%' . $txt . '%')
-                      ->orWhere('apellido', 'like', $txt . '%')
-                      ->orWhere('nombre_empresa', 'like', $txt . '%')
-                      ->orWhere('telefono', 'like', $txt . '%')
-                      ->orWhere('empresa_telefono', 'like', $txt . '%')
-                      ->orWhere('red_social', 'like', $txt . '%')
-                      ->orWhere('etiquetas', 'like', $txt . '%')
-                      ->orWhere('codigo_cliente', 'like', $txt . '%')
-                      ->orWhereRaw('REPLACE(ncr, "-", "") like ?', [$txtClean . '%'])
-                      ->orWhereRaw('REPLACE(nit, "-", "") like ?', [$txtClean . '%'])
-                      ->orWhereRaw('REPLACE(dui, "-", "") like ?', [$txtClean . '%'])
-                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ['%' . $txt . '%']);
-            })
-            ->where('enable', true)
-            ->orderBy('nombre', 'asc')
-            ->take(10)
-            ->get();
-
+        $clientes = $this->clienteService->buscarClientesPorTexto($txt);
         return response()->json($clientes, 200);
     }
 
@@ -150,183 +75,73 @@ class ClientesController extends Controller
 
     public function store(StoreClienteRequest $request)
     {
-
-        if ($request->id)
-            $cliente = Cliente::findOrFail($request->id);
-        else
-            $cliente = new Cliente;
-
-        $cliente->fill($request->except('contactos'));
-        $cliente->save();
-
-
-        if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
-            if ($request->id) {
-                ContactoCliente::where('id_cliente', $cliente->id)->delete();
-            }
-
-            foreach ($request->contactos as $contactoData) {
-                ContactoCliente::create([
-                    'id_cliente' => $cliente->id,
-                    'nombre' => $contactoData['nombre'] ?? $contactoData['name'] ?? null,
-                    'apellido' => $contactoData['apellido'] ?? $contactoData['lastname'] ?? null,
-                    'correo' => $contactoData['correo'] ?? $contactoData['email'] ?? null,
-                    'telefono' => $contactoData['telefono'] ?? null,
-                    'cargo' => $contactoData['cargo'] ?? null,
-                    'sexo' => $contactoData['sexo'] ?? null,
-                    'red_social' => $contactoData['red_social'] ?? null,
-                    'fecha_nacimiento' => $contactoData['fecha_nacimiento'] ?? null,
-                    'nota' => $contactoData['nota'] ?? null
-                ]);
-            }
-        }
-
-        ///return Response()->json($cliente, 200);
-        $cliente = Cliente::with('contactos')->findOrFail($cliente->id);
+        $cliente = $this->clienteService->crearOActualizarCliente($request->all());
         return Response()->json($cliente, 200);
     }
 
     public function update(UpdateClienteRequest $request)
     {
-        $cliente = Cliente::findOrFail($request->id);
-        
-        $cliente->fill($request->except('contactos'));
-        $cliente->save();
-        
-        if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
-            ContactoCliente::where('id_cliente', $cliente->id)->delete();
-            
-            // Crear nuevos contactos
-            foreach ($request->contactos as $contactoData) {
-                // Validar que al menos tenga nombre o correo
-                if (empty($contactoData['nombre']) && empty($contactoData['name']) && 
-                    empty($contactoData['correo']) && empty($contactoData['email'])) {
-                    continue; // Saltar contactos vacíos
-                }
-                
-                ContactoCliente::create([
-                    'id_cliente' => $cliente->id,
-                    'nombre' => $contactoData['nombre'] ?? $contactoData['name'] ?? null,
-                    'apellido' => $contactoData['apellido'] ?? $contactoData['lastname'] ?? null,
-                    'correo' => $contactoData['correo'] ?? $contactoData['email'] ?? null,
-                    'telefono' => $contactoData['telefono'] ?? null,
-                    'cargo' => $contactoData['cargo'] ?? null,
-                    'sexo' => $contactoData['sexo'] ?? null,
-                    'red_social' => $contactoData['red_social'] ?? null,
-                    'fecha_nacimiento' => $contactoData['fecha_nacimiento'] ?? null,
-                    'nota' => $contactoData['nota'] ?? null
-                ]);
-            }
-        }
-        
-        // Retornar el cliente actualizado con sus contactos
-        $cliente = Cliente::with('contactos')->findOrFail($cliente->id);
-        
+        $cliente = $this->clienteService->crearOActualizarCliente($request->all());
         return Response()->json($cliente, 200);
     }
 
-    //storeContacto
-
     public function storeContacto(Request $request)
     {
-        //$contacto = ContactoCliente::create($request->all()); actualizar o crear
-        $contacto = ContactoCliente::updateOrCreate(
-            ['id' => $request->id],
-            $request->all()
-        );
+        $contacto = $this->clienteService->crearOActualizarContacto($request->all());
         return Response()->json($contacto, 200);
     }
 
     public function deleteContacto($id)
     {
-        $contacto = ContactoCliente::findOrFail($id);
-        $contacto->delete();
-
+        $contacto = $this->clienteService->eliminarContacto($id);
         return Response()->json($contacto, 201);
     }
 
     public function delete($id)
     {
-        $cliente = Cliente::findOrFail($id);
-        $cliente->delete();
-
-        return Response()->json($cliente, 201);
+        try {
+            $cliente = $this->clienteService->eliminarCliente($id);
+            return Response()->json($cliente, 201);
+        } catch (\Exception $e) {
+            return Response()->json([
+                'error' => $e->getMessage()
+            ], 400);
+        }
     }
 
     public function ventas($id)
     {
-
-        $ventas = Venta::where('id_cliente', $id)
-            ->where('estado', '!=', 'Anulada')
-            ->withAccessorRelations()
-            ->orderBy('id', 'desc')
-            ->paginate(10);
+        $ventas = $this->clienteService->obtenerVentasCliente($id);
         return Response()->json($ventas, 200);
     }
 
     public function creditos($id)
     {
-
-        $creditos = Credito::where('id_cliente', $id)
-            ->orderBy('id', 'desc')
-            ->paginate(10);
+        $creditos = $this->clienteService->obtenerCreditosCliente($id);
         return Response()->json($creditos, 200);
     }
 
     public function ventasFilter(Request $request)
     {
-
-        if ($request->estado == 'Anulada') {
-            $ventas = Venta::where('id_cliente', $request->id)
-                ->when($request->estado, function ($query) use ($request) {
-                    return $query->where('estado', $request->estado);
-                })
-                ->when($request->metodo_pago, function ($query) use ($request) {
-                    return $query->where('metodo_pago', $request->metodo_pago);
-                })
-                ->withAccessorRelations()
-                ->orderBy('id', 'desc')->paginate(100000);
-        } else {
-
-            $ventas = Venta::where('id_cliente', $request->id)
-                ->where('estado', '!=', 'Anulada')
-                ->when($request->estado, function ($query) use ($request) {
-                    return $query->where('estado', $request->estado);
-                })
-                ->when($request->metodo_pago, function ($query) use ($request) {
-                    return $query->where('metodo_pago', $request->metodo_pago);
-                })
-                ->withAccessorRelations()
-                ->orderBy('id', 'desc')->paginate(100000);
-        }
-
+        $filtros = [
+            'estado' => $request->estado,
+            'metodo_pago' => $request->metodo_pago,
+            'paginate' => $request->paginate ?? 100000
+        ];
+        
+        $ventas = $this->clienteService->obtenerVentasCliente($request->id, $filtros);
         return Response()->json($ventas, 200);
     }
 
     public function cxc()
     {
-
-        $clientes = Cliente::where('id', '!=', 1)
-            ->whereRaw('clientes.id in (select id_cliente from ventas where estado = ?)', ['Pendiente'])
-            ->paginate(10);
-
-        foreach ($clientes as $cliente) {
-            $cliente->num_ventas_pendientes = $cliente->ventasPendientes->count();
-            $cliente->pago_pendiente = $cliente->ventasPendientes->sum('total');
-        }
-
+        $clientes = $this->clienteService->obtenerClientesConCxC();
         return Response()->json($clientes, 200);
     }
 
     public function cxcBuscar($txt)
     {
-
-        $clientes = Cliente::where('id', '!=', 1)->where('nombre', 'like', '%' . $txt . '%')
-            ->orWhere('registro', 'like', $txt . '%')
-            ->orWhereRaw('REPLACE(registro, "-", "") like "' . $txt . '"')
-            ->whereRaw('clientes.id in (select id_cliente from ventas where estado = ?)', ['Pendiente'])
-            ->paginate(10);
-
+        $clientes = $this->clienteService->buscarClientesConCxC($txt);
         return Response()->json($clientes, 200);
     }
 
@@ -342,34 +157,7 @@ class ClientesController extends Controller
 
     public function dash(Request $request)
     {
-
-        $datos = new \stdClass();
-
-        $datos->ventas   = \App\Models\Ventas\Venta::selectRaw('count(id) AS total, id_cliente, (select nombre from clientes where id_cliente = id) as nombre')
-            ->groupBy('id_cliente')
-            // ->when('sucursal', function($q) use($request){
-            //     $q->where('id_sucursal', $request->id_sucursal);
-            // })
-            // ->when('sucursal', function($q) use($request){
-            //     $q->where('id_sucursal', $request->id_sucursal);
-            // })
-            ->orderBy('total', 'desc')
-            ->take(5)
-            ->get();
-
-        $datos->municipios   = Cliente::selectRaw('count(id) AS total, municipio')
-            ->groupBy('municipio')
-            // ->when('sucursal', function($q) use($request){
-            //     $q->where('id_sucursal', $request->id_sucursal);
-            // })
-            // ->when('sucursal', function($q) use($request){
-            //     $q->where('id_sucursal', $request->id_sucursal);
-            // })
-            ->orderBy('total', 'desc')
-            ->take(5)
-            ->get();
-
-
+        $datos = $this->clienteService->obtenerDatosDashboard();
         return Response()->json($datos, 200);
     }
 
@@ -493,16 +281,16 @@ class ClientesController extends Controller
 
     public function datos(Request $request)
     {
+        $datos = $this->clienteService->obtenerDatosCliente(
+            $request->id,
+            $request->inicio,
+            $request->fin
+        );
 
-        $cliente = Cliente::where('id', $request->id)->firstOrFail();
-
-        $ventas = $cliente->ventas()->whereBetween('fecha', [$request->inicio, $request->fin])->get();
-
-        $cliente->total_ventas_pagadas = $ventas->where('estado', 'Pagada')->sum('total');
-        $cliente->total_ventas_pendientes = $ventas->where('estado', 'Pendiente')->sum('total');
-
-        $cliente->total_balance = $cliente->total_ventas_pagadas - $cliente->total_ventas_pendientes;
-
+        $cliente = $datos['cliente'];
+        $cliente->total_ventas_pagadas = $datos['total_ventas_pagadas'];
+        $cliente->total_ventas_pendientes = $datos['total_ventas_pendientes'];
+        $cliente->total_balance = $datos['total_balance'];
 
         return Response()->json($cliente, 200);
     }

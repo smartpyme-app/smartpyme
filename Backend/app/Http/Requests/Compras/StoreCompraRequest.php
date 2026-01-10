@@ -26,7 +26,7 @@ class StoreCompraRequest extends FormRequest
             'forma_pago' => 'required|string|max:255',
             'id_proveedor' => 'required|integer|exists:proveedores,id',
             'id_empresa' => 'required|integer|exists:empresas,id',
-            'id_bodega' => 'required|integer|exists:bodegas,id',
+            'id_bodega' => 'required|integer|exists:sucursal_bodegas,id',
             'id_sucursal' => 'required|integer|exists:sucursales,id',
             'id_usuario' => 'required|integer|exists:users,id',
         ];

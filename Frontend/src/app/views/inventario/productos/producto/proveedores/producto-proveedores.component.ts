@@ -9,6 +9,7 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { TruncatePipe } from '@pipes/truncate.pipe';
 
 @Component({
     selector: 'app-producto-proveedores',

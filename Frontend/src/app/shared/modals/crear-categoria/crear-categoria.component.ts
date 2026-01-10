@@ -8,12 +8,13 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 @Component({
     selector: 'app-crear-categoria',
     templateUrl: './crear-categoria.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
 export class CrearCategoriaComponent extends BaseModalComponent implements OnInit {

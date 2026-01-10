@@ -34,7 +34,7 @@ class FacturacionDevolucionRequest extends FormRequest
             'observaciones' => 'required|string|max:500',
             'id_venta' => 'required|integer|exists:ventas,id',
             'id_usuario' => 'required|integer|exists:users,id',
-            'id_bodega' => 'required|integer|exists:bodegas,id',
+            'id_bodega' => 'required|integer|exists:sucursal_bodegas,id',
             'id_sucursal' => 'required|integer|exists:sucursales,id',
             'id_empresa' => 'required|integer|exists:empresas,id',
         ];

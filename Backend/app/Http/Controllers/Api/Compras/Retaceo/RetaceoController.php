@@ -19,10 +19,17 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Requests\Compras\Retaceo\StoreRetaceoRequest;
 use App\Http\Requests\Compras\Retaceo\ActualizarEstadoRetaceoRequest;
 use App\Http\Requests\Compras\Retaceo\CalcularDistribucionRetaceoRequest;
+use App\Services\Compras\RetaceoService;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class RetaceoController extends Controller
 {
+    protected $retaceoService;
+
+    public function __construct(RetaceoService $retaceoService)
+    {
+        $this->retaceoService = $retaceoService;
+    }
     /**
      * Display a listing of the resource.
      *
@@ -325,63 +332,21 @@ class RetaceoController extends Controller
 
     public function calcularDistribucion(CalcularDistribucionRetaceoRequest $request)
     {
-
         try {
-            // Obtener los gastos
-            $gastoTransporte = $request->gastos['transporte'] ?? 0;
-            $gastoSeguro = $request->gastos['seguro'] ?? 0;
-            $gastoDAI = $request->gastos['dai'] ?? 0;
-            $gastoOtros = $request->gastos['otros'] ?? 0;
+            $resultado = $this->retaceoService->calcularDistribucion(
+                $request->gastos,
+                $request->detalles
+            );
 
-            $totalGastos = $gastoTransporte + $gastoSeguro + $gastoDAI + $gastoOtros;
-
-            // Calcular el valor FOB total
-            $valorFobTotal = 0;
-            foreach ($request->detalles as $detalle) {
-                $valorFobTotal += ($detalle['costo_original'] * $detalle['cantidad']);
-            }
-
-            if ($valorFobTotal <= 0) {
-                return response()->json(['error' => 'El valor FOB total debe ser mayor que cero'], 422);
-            }
-
-            // Calcular la distribución
-            $distribucion = [];
-            foreach ($request->detalles as $detalle) {
-                $valorFob = $detalle['costo_original'] * $detalle['cantidad'];
-                $porcentajeDistribucion = ($valorFob / $valorFobTotal) * 100;
-
-                $montoTransporte = ($porcentajeDistribucion / 100) * $gastoTransporte;
-                $montoSeguro = ($porcentajeDistribucion / 100) * $gastoSeguro;
-                $montoDAI = ($porcentajeDistribucion / 100) * $gastoDAI;
-                $montoOtros = ($porcentajeDistribucion / 100) * $gastoOtros;
-
-                $costoLanded = $valorFob + $montoTransporte + $montoSeguro + $montoDAI + $montoOtros;
-                $costoRetaceado = $detalle['cantidad'] > 0 ? $costoLanded / $detalle['cantidad'] : 0;
-
-                $distribucion[] = [
-                    'id_producto' => $detalle['id_producto'],
-                    'id_detalle_compra' => $detalle['id'],
-                    'cantidad' => $detalle['cantidad'],
-                    'costo_original' => $detalle['costo_original'],
-                    'valor_fob' => $valorFob,
-                    'porcentaje_distribucion' => $porcentajeDistribucion,
-                    'monto_transporte' => $montoTransporte,
-                    'monto_seguro' => $montoSeguro,
-                    'monto_dai' => $montoDAI,
-                    'monto_otros' => $montoOtros,
-                    'costo_landed' => $costoLanded,
-                    'costo_retaceado' => $costoRetaceado,
-                ];
-            }
-
-            return response()->json([
-                'distribucion' => $distribucion,
-                'total_gastos' => $totalGastos,
-                'total_retaceado' => array_sum(array_column($distribucion, 'costo_landed'))
-            ]);
+            return response()->json($resultado);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            Log::error('Error en calcularDistribucion (RetaceoController): ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'error_trace' => $e->getTraceAsString()
+            ]);
+            
+            $statusCode = $e->getMessage() === 'El valor FOB total debe ser mayor que cero' ? 422 : 500;
+            return response()->json(['error' => $e->getMessage()], $statusCode);
         }
     }
 

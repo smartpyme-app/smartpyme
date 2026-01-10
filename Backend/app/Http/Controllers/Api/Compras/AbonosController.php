@@ -3,164 +3,86 @@
 namespace App\Http\Controllers\Api\Compras;
 
 use App\Http\Controllers\Controller;
+use App\Services\Compras\AbonoCompraService;
 use Illuminate\Http\Request;
-use App\Models\Compras\Abono;
-use App\Models\Compras\Compra;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
-use App\Services\Bancos\TransaccionesService;
-use App\Services\Bancos\ChequesService;
 use App\Exports\AbonosComprasExport;
-use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
-use JWTAuth;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Http\Requests\Compras\Abonos\StoreAbonoCompraRequest;
 
 class AbonosController extends Controller
 {
+    protected $abonoService;
 
-    protected $transaccionesService;
-    protected $chequesService;
-
-    public function __construct(TransaccionesService $transaccionesService, ChequesService $chequesService)
+    public function __construct(AbonoCompraService $abonoService)
     {
-        $this->transaccionesService = $transaccionesService;
-        $this->chequesService = $chequesService;
+        $this->abonoService = $abonoService;
     }
-    
 
-    public function index(Request $request) {
-       
-        $abonos = Abono::with('compra')->when($request->buscador, function($query) use ($request){
-                        return $query->orwhere('id_compra', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('concepto', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('nombre_de', 'like', '%'.$request->buscador.'%');
-                        })
-                        ->when($request->inicio, function($query) use ($request){
-                            return $query->where('fecha', '>=', $request->inicio);
-                        })
-                        ->when($request->fin, function($query) use ($request){
-                            return $query->where('fecha', '<=', $request->fin);
-                        })
-                        ->when($request->id_sucursal, function($query) use ($request){
-                            return $query->where('id_sucursal', $request->id_sucursal);
-                        })
-                        ->when($request->id_usuario, function($query) use ($request){
-                            return $query->where('id_usuario', $request->id_usuario);
-                        })
-                        ->when($request->id_proveedor, function($query) use ($request){
-                            return $query->where('id_proveedor', $request->id_proveedor);
-                        })
-                        ->when($request->forma_pago, function($query) use ($request){
-                            return $query->where('forma_pago', $request->forma_pago);
-                        })
-                        ->when($request->estado, function($query) use ($request){
-                            return $query->where('estado', $request->estado);
-                        })
-                        ->when($request->metodo_pago, function($query) use ($request){
-                            return $query->where('metodo_pago', $request->metodo_pago);
-                        })
-                        ->orderBy($request->orden, $request->direccion)
-                        ->orderBy('id', 'desc')
-                        ->paginate($request->paginate);
-
+    public function index(Request $request)
+    {
+        $abonos = $this->abonoService->listarAbonos($request->all());
         return Response()->json($abonos, 200);
-           
     }
 
-
-    public function read($id) {
-
-        $abono = Abono::findOrFail($id);
+    public function read($id)
+    {
+        $abono = $this->abonoService->obtenerAbono($id);
         return Response()->json($abono, 200);
-
     }
 
     public function store(StoreAbonoCompraRequest $request)
     {
-        $compra = Compra::find($request->id_compra);
-
-        if($request->id)
-            $abono = Abono::findOrFail($request->id);
-        else
-            $abono = new Abono;
-
-        
-        $abono->fill($request->all());
-        $abono->save();
-
-        if ($compra && $compra->saldo <= 0) {
-            $compra->estado = 'Pagada';
-            $compra->save();
-        }
-
-        if ($compra && $compra->saldo > 0) {
-            $compra->estado = 'Pendiente';
-            $compra->save();
-        }
-
-        // Crear transaccion bancaria
-            if(!$request->id && $abono->forma_pago != 'Efectivo' && $abono->forma_pago != 'Cheque'){                
-                $this->transaccionesService->crear($abono, 'Abono', 'Abono de compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Abono de Compra');
-            }
-
-        // Crear cheque
-            if(!$request->id && $abono->forma_pago == 'Cheque'){                
-                $this->chequesService->crear($abono, $compra->nombre_proveedor, 'Abono de compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Abono de Compra');
-            }
-
-        return Response()->json($abono, 200);
-
-    }
-
-
-    public function changeEstado(Request $request)
-    {
         try {
-        DB::beginTransaction();
-
-        $abono = Abono::findOrFail($request->id);
-        $abono->estado = $request->estado;
-        $abono->save();
-
-        DB::commit();
-        return Response()->json($abono, 200);
-
-        } catch (\Throwable $e) {
-            DB::rollback();
+            $abono = $this->abonoService->crearOActualizarAbono($request->all());
+            return Response()->json($abono, 200);
+        } catch (\Exception $e) {
             return Response()->json(['error' => $e->getMessage()], 400);
         }
     }
 
-    public function delete($id){
-        $abono = Abono::findOrFail($id);
-        $abono->delete();
-        
-        return Response()->json($abono, 201);
-
+    public function changeEstado(Request $request)
+    {
+        try {
+            $abono = $this->abonoService->cambiarEstado($request->id, $request->estado);
+            return Response()->json($abono, 200);
+        } catch (\Exception $e) {
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
     }
 
-    public function print($id){
+    public function delete($id)
+    {
+        $abono = $this->abonoService->eliminarAbono($id);
+        return Response()->json($abono, 201);
+    }
 
-        $recibo = Abono::where('id', $id)->first();
-        $compra = Compra::where('id', $recibo->id_compra)->first();
+    public function print($id)
+    {
+        $datos = $this->abonoService->obtenerDatosRecibo($id);
+        $compra = $datos['compra'];
+        $recibo = $datos['recibo'];
 
-        if(JWTAuth::parseToken()->authenticate()->id_empresa == 38){
+        /** @var \App\Models\User|null $user */
+        $user = JWTAuth::parseToken()->authenticate();
+        $usarPlantillaEspecial = $user && $this->abonoService->usarPlantillaEspecial($user->id_empresa);
+
+        if ($usarPlantillaEspecial) {
             $pdf = PDF::loadView('reportes.recibos.velo-recibo', compact('compra', 'recibo'));
             $pdf->setPaper('US Letter', 'portrait');
-        }else{
+        } else {
             $pdf = PDF::loadView('reportes.recibos.recibo', compact('compra', 'recibo'));
-            $pdf->setPaper('US Letter', 'portrait');  
-        }     
+            $pdf->setPaper('US Letter', 'portrait');
+        }
 
         return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');
     }
 
-    public function export(Request $request){
+    public function export(Request $request)
+    {
         $abonos = new AbonosComprasExport();
         $abonos->filter($request);
-
         return Excel::download($abonos, 'abonos.xlsx');
     }
-
-
 }
