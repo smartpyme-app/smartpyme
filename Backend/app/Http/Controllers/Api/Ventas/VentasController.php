@@ -391,13 +391,8 @@ class VentasController extends Controller
             }
         }
 
-        // Ajustar el total: restar la propina si existe (la propina se guarda por separado)
-        $requestData = $request->all();
-        if (isset($requestData['propina']) && $requestData['propina'] > 0 && isset($requestData['total'])) {
-            $requestData['total'] = $requestData['total'] - $requestData['propina'];
-        }
-        
-        $venta->fill($requestData);
+        // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
+        $venta->fill($request->all());
         $venta->save();
 
         return Response()->json($venta, 200);
@@ -482,13 +477,8 @@ class VentasController extends Controller
             else
                 $venta = new Venta;
             
-            // Ajustar el total: restar la propina si existe (la propina se guarda por separado)
-            $requestData = $request->all();
-            if (isset($requestData['propina']) && $requestData['propina'] > 0 && isset($requestData['total'])) {
-                $requestData['total'] = $requestData['total'] - $requestData['propina'];
-            }
-            
-            $venta->fill($requestData);
+            // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
+            $venta->fill($request->all());
 
                 $documento = Documento::where('id', $request->id_documento)
                             ->lockForUpdate()
