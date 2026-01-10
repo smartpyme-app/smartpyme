@@ -86,7 +86,7 @@
                     }
                     @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
                         <ng-select [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
-                            @for (pais of paises; track pais.cod) {
+                            @for (pais of paises; track $index) {
                                 <ng-option [value]="pais.cod">
                                     {{ pais.nombre }}
                                 </ng-option>
@@ -249,7 +249,7 @@
                     }
                     @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
                         <ng-select [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
-                            @for (pais of paises; track pais.cod) {
+                            @for (pais of paises; track $index) {
                                 <ng-option [value]="pais.cod">
                                     {{ pais.nombre }}
                                 </ng-option>
@@ -463,7 +463,7 @@
                 }
                 @if (apiService.auth_user().empresa.facturacion_electronica) {
                     <ng-select [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
-                        @for (pais of paises; track pais.cod) {
+                        @for (pais of paises; track $index) {
                             <ng-option [value]="pais.cod">
                                 {{ pais.nombre }}
                             </ng-option>
