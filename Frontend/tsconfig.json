@@ -41,6 +41,9 @@
       ],
       "@pipes/*": [
         "src/app/pipes/*"
+      ],
+      "@workers/*": [
+        "src/app/workers/*"
       ]
     }
   },
