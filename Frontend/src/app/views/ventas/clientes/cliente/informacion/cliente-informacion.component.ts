@@ -13,6 +13,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { FilterPipe } from '@pipes/filter.pipe';
+import { DuplicateCheckService } from '@services/duplicate-check.service';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
@@ -50,7 +51,8 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     protected override modalManager: ModalManagerService,
     private route: ActivatedRoute,
     private router: Router,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private duplicateCheckService: DuplicateCheckService
   ) {
     super(modalManager, alertService);
   }

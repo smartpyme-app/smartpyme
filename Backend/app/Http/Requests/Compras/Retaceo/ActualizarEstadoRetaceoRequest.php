@@ -21,7 +21,7 @@ class ActualizarEstadoRetaceoRequest extends FormRequest
     {
         return [
             'id' => 'required|integer|exists:retaceos,id',
-            'estado' => 'required|string|in:Borrador,Aplicado,Anulado',
+            'estado' => 'required|string|in:Pendiente,Aplicado,Anulado',
         ];
     }
 
@@ -34,7 +34,7 @@ class ActualizarEstadoRetaceoRequest extends FormRequest
             'id.required' => 'El ID del retaceo es obligatorio.',
             'id.exists' => 'El retaceo no existe.',
             'estado.required' => 'El estado es obligatorio.',
-            'estado.in' => 'El estado debe ser: Borrador, Aplicado o Anulado.',
+            'estado.in' => 'El estado debe ser: Pendiente, Aplicado o Anulado.',
         ];
     }
 

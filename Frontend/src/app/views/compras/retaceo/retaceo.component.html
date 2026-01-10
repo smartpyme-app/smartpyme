@@ -231,38 +231,14 @@
     <!-- Otros campos -->
     <div class="form-group col-md-12 col-lg-4">
       <label>Estado</label>
-      <div>
-        <span
-          class="badge"
-          [ngClass]="{
-            'bg-success': retaceo.estado === 'Aplicado',
-            'bg-warning': retaceo.estado === 'Pendiente',
-            'bg-danger': retaceo.estado === 'Anulado'
-          }"
-        >
-          {{ retaceo.estado }}
-        </span>
-
-        <!-- Si ya tiene ID (está guardado) y está pendiente, mostrar opciones para cambiar estado -->
-        @if (retaceo.id && retaceo.estado === 'Pendiente') {
-          <div
-            class="btn-group ms-2"
-          >
-            <button
-              class="btn btn-sm btn-success"
-              (click)="cambiarEstado('Aplicado')"
-            >
-              Aplicar
-            </button>
-            <button
-              class="btn btn-sm btn-danger"
-              (click)="cambiarEstado('Anulado')"
-            >
-              Anular
-            </button>
-          </div>
-        }
-      </div>
+      <select
+        name="estado"
+        [(ngModel)]="retaceo.estado"
+        class="form-select"
+      >
+        <option value="Pendiente">Pendiente</option>
+        <option value="Aplicado">Aplicado</option>
+      </select>
     </div>
   </div>
 </section>
@@ -507,7 +483,7 @@
           }
 
           <!-- Lista de productos -->
-          @for (item of distribucion; track $index) {
+          @for (item of distribucion; track trackByDistribucion($index, item)) {
             <tr>
               <td>{{ item?.producto?.nombre || "Producto sin nombre" }}</td>
               <td class="text-center">{{ item.cantidad }}</td>
@@ -652,7 +628,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (item of distribucion; track $index) {
+            @for (item of distribucion; track trackByDistribucion($index, item)) {
               <tr>
                 <td>{{ item?.producto?.nombre || "Producto sin nombre" }}</td>
                 <td class="text-center">{{ item.cantidad }}</td>
