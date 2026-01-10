@@ -19,3 +19,6 @@ Route::get('retaceo_gastos', [RetaceoController::class, 'retaceoGastos']);
 Route::get('retaceo_distribucion', [RetaceoController::class, 'retaceoDistribucion']);
 
 Route::post('retaceo/calcular', [RetaceoController::class, 'calcularDistribucion']);
+
+// Imprimir retaceo
+Route::get('retaceo/imprimir/{id}', [RetaceoController::class, 'imprimir']);
