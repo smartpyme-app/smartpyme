@@ -210,7 +210,30 @@ export class VentaDetallesComponent implements OnInit {
 
             if(!this.detalle.id_vendedor){
                 this.detalle.id_vendedor = this.venta.id_vendedor;
-            }            
+            }
+
+            // Si el producto tiene inventario por lotes, verificar si necesita selección manual
+            if (producto.inventario_por_lotes) {
+                const metodologia = this.getLotesMetodologia();
+                if (metodologia === 'Manual') {
+                    // Si es manual, abrir modal para seleccionar lote
+                    this.detalle.inventario_por_lotes = true;
+                    this.detalle.lote_id = null;
+                    if (!detalle) {
+                        this.venta.detalles.push(this.detalle);
+                    }
+                    this.update.emit(this.venta);
+                    // El modal se abrirá desde el HTML cuando se detecte que necesita lote
+                    return;
+                } else {
+                    // Si es automático, el backend se encargará de seleccionar el lote
+                    this.detalle.inventario_por_lotes = true;
+                    this.detalle.lote_id = null; // Se asignará automáticamente en el backend
+                }
+            } else {
+                this.detalle.inventario_por_lotes = false;
+                this.detalle.lote_id = null;
+            }
             
             if(!detalle)
                 this.venta.detalles.push(this.detalle);
@@ -220,6 +243,49 @@ export class VentaDetallesComponent implements OnInit {
             if (this.modalRef) { this.modalRef.hide() }
             console.log(this.venta);
         }
+
+    // Métodos para gestión de lotes en ventas
+    public lotes: any[] = [];
+    public loteSeleccionado: any = null;
+    public detalleConLote: any = null;
+
+    getLotesMetodologia(): string {
+        const empresa = this.apiService.auth_user()?.empresa;
+        if (empresa?.custom_empresa?.configuraciones?.lotes_metodologia) {
+            return empresa.custom_empresa.configuraciones.lotes_metodologia;
+        }
+        return 'FIFO'; // Por defecto
+    }
+
+    abrirModalLoteVenta(template: TemplateRef<any>, detalle: any) {
+        this.detalleConLote = detalle;
+        this.cargarLotesDisponiblesVenta();
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg'});
+    }
+
+    cargarLotesDisponiblesVenta() {
+        if (!this.detalleConLote?.id_producto || !this.venta.id_bodega) return;
+        
+        this.loading = true;
+        this.apiService.getAll('lotes/disponibles', {
+            id_producto: this.detalleConLote.id_producto,
+            id_bodega: this.venta.id_bodega,
+            cantidad: this.detalleConLote.cantidad
+        }).subscribe(lotes => {
+            this.lotes = lotes;
+            this.loading = false;
+        }, error => {
+            this.alertService.error(error);
+            this.loading = false;
+        });
+    }
+
+    seleccionarLoteVenta(lote: any) {
+        this.detalleConLote.lote_id = lote.id;
+        this.loteSeleccionado = lote;
+        this.modalRef.hide();
+        this.update.emit(this.venta);
+    }
 
     // Eliminar detalle
         public delete(detalle:any){

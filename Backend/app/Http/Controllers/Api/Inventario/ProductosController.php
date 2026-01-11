@@ -54,7 +54,11 @@ class ProductosController extends Controller
             if ($request->id_bodega) {
                 $q->where('id_bodega', $request->id_bodega);
             }
-        }, 'precios'])
+        }, 'precios', 'lotes' => function ($q) use ($request) {
+            if ($request->id_bodega) {
+                $q->where('id_bodega', $request->id_bodega);
+            }
+        }])
             ->when($request->id_categoria, function ($query) use ($request) {
                 return $query->where('id_categoria', $request->id_categoria);
             })
@@ -665,6 +669,39 @@ class ProductosController extends Controller
             'success' => true,
             'message' => 'Ajuste masivo procesado correctamente',
             'actualizados' => $productosActualizados
+        ]);
+    }
+
+    /**
+     * Habilitar inventario por lotes masivamente por categorías
+     */
+    public function habilitarLotesMasivo(Request $request)
+    {
+        $request->validate([
+            'categorias' => 'required|array',
+            'categorias.*' => 'required|exists:categorias,id',
+            'habilitar' => 'required|boolean',
+        ]);
+
+        $productosActualizados = 0;
+
+        // Obtener todos los productos de las categorías seleccionadas
+        $productos = Producto::whereIn('id_categoria', $request->categorias)
+            ->where('tipo', '!=', 'Servicio')
+            ->get();
+
+        foreach ($productos as $producto) {
+            $producto->inventario_por_lotes = $request->habilitar;
+            $producto->save();
+            $productosActualizados++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $request->habilitar 
+                ? 'Inventario por lotes habilitado masivamente' 
+                : 'Inventario por lotes deshabilitado masivamente',
+            'productos_actualizados' => $productosActualizados
         ]);
     }
     public function exportarWooCommerceTemplate(Request $request)

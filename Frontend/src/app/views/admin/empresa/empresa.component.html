@@ -500,6 +500,7 @@
                         </select>
                     </div>
 
+                    
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Mostrar campos contables (Tipo de operación y Tipo de ingreso) en ventas.</p>
                         <div class="form-switch bg-light-info rounded">
@@ -558,6 +559,55 @@
                                 (change)="onSubmit()" [(ngModel)]="empresa.venta_consigna" name="venta_consigna">
                         </div>
                     </div>
+                    <hr>
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Configuraciones de Lotes</h4>
+                        <div class="form-group col-md-12 col-xl-6 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="lotes_activo">Activar módulo de lotes</label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="lotes_activo" 
+                                    [checked]="isLotesActivo()"
+                                    (change)="toggleLotesActivo()" 
+                                    name="lotes_activo">
+                            </div>
+                            <small class="text-muted">
+                                Habilita el uso de control de inventario por lotes en toda la empresa.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 col-xl-6" *ngIf="isLotesActivo()">
+                            <label for="lotes_metodologia">Metodología de selección de lotes</label>
+                            <select class="form-select" 
+                                id="lotes_metodologia"
+                                [value]="getLotesMetodologia()"
+                                (change)="updateLotesMetodologia($any($event.target).value)"
+                                name="lotes_metodologia">
+                                <option value="Manual">Manual (Selección manual del lote)</option>
+                                <option value="FIFO">FIFO - First In First Out (Primero en entrar, primero en salir)</option>
+                                <option value="LIFO">LIFO - Last In First Out (Último en entrar, primero en salir)</option>
+                                <option value="FEFO">FEFO - First Expired First Out (Primero en vencer, primero en salir)</option>
+                            </select>
+                            <small class="text-muted">
+                                Define cómo se seleccionarán automáticamente los lotes al realizar ventas.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 col-xl-6" *ngIf="isLotesActivo()">
+                            <label for="lotes_dias_anticipacion">Días de anticipación para alerta de vencimiento</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" 
+                                    id="lotes_dias_anticipacion"
+                                    [value]="getLotesDiasAnticipacion()"
+                                    (change)="updateLotesDiasAnticipacion($any($event.target).value)"
+                                    name="lotes_dias_anticipacion"
+                                    min="1" max="365">
+                                <span class="input-group-text">días</span>
+                            </div>
+                            <small class="text-muted">
+                                Número de días antes del vencimiento para mostrar alertas de productos próximos a vencer.
+                            </small>
+                        </div>
+                    </div>
+
                     <hr>
                     <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
                     <div class="form-group col-md-6">

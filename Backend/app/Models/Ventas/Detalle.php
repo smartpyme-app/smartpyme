@@ -9,6 +9,7 @@ class Detalle extends Model {
     protected $table = 'detalles_venta';
     protected $fillable = array(
         'id_producto',
+        'lote_id',
         'descripcion',
         'cantidad',
         'precio',
@@ -83,6 +84,10 @@ class Detalle extends Model {
 
     public function vendedor(){
         return $this->belongsTo('App\Models\User','id_vendedor');
+    }
+
+    public function lote(){
+        return $this->belongsTo('App\Models\Inventario\Lote','lote_id');
     }
 
 

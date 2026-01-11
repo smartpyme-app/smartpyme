@@ -1071,7 +1071,10 @@ export class EmpresaComponent implements OnInit {
             configuraciones: {
                 ticket_en_pdf: false,
                 version_facturacion: 'original', // 'original' o 'v2'
-                mostrar_campos_contables: true // Mostrar tipo de operación y tipo de ingreso
+                mostrar_campos_contables: true, // Mostrar tipo de operación y tipo de ingreso
+                lotes_activo: false, // Activar/desactivar módulo de lotes
+                lotes_metodologia: 'FIFO', // Manual, FIFO, LIFO, FEFO
+                lotes_dias_anticipacion: 30 // Días para alerta de vencimiento
             },
             campos_personalizados: {}
         };
@@ -1222,6 +1225,60 @@ export class EmpresaComponent implements OnInit {
     public toggleCamposContables() {
         const currentValue = this.isCamposContablesEnabled();
         this.updateCamposContables(!currentValue);
+    }
+
+    // Métodos para configuraciones de lotes
+    public isLotesActivo(): boolean {
+        return this.getCustomConfig('configuraciones', 'lotes_activo', false);
+    }
+
+    public toggleLotesActivo() {
+        const currentValue = this.isLotesActivo();
+        this.updateLotesActivo(!currentValue);
+    }
+
+    public updateLotesActivo(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'lotes_activo', activo);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Módulo de lotes ${activo ? 'activado' : 'desactivado'} correctamente`
+            );
+        });
+    }
+
+    public getLotesMetodologia(): string {
+        return this.getCustomConfig('configuraciones', 'lotes_metodologia', 'FIFO');
+    }
+
+    public updateLotesMetodologia(metodologia: string) {
+        this.addCustomConfig('configuraciones', 'lotes_metodologia', metodologia);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Metodología de lotes actualizada a ${metodologia}`
+            );
+        });
+    }
+
+    public getLotesDiasAnticipacion(): number {
+        return this.getCustomConfig('configuraciones', 'lotes_dias_anticipacion', 30);
+    }
+
+    public updateLotesDiasAnticipacion(dias: number) {
+        this.addCustomConfig('configuraciones', 'lotes_dias_anticipacion', dias);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Días de anticipación actualizados a ${dias} días`
+            );
+        });
     }
 
     setCamposRenta() {

@@ -13,6 +13,7 @@ class Ajuste extends Model {
         'concepto',
         'id_producto',
         'id_bodega',
+        'lote_id',
         'stock_actual',
         'stock_real',
         'ajuste',
@@ -64,6 +65,10 @@ class Ajuste extends Model {
 
     public function usuario(){
         return $this->belongsTo('App\Models\User','id_usuario');
+    }
+
+    public function lote(){
+        return $this->belongsTo('App\Models\Inventario\Lote','lote_id');
     }
 
 }

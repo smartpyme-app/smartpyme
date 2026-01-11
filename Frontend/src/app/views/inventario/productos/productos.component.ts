@@ -393,5 +393,63 @@ export class ProductosComponent implements OnInit {
             empresa.shopify_status === 'connected');
     }
 
+    /**
+     * Calcula los días hasta el vencimiento
+     */
+    public getDiasVencimiento(fechaVencimiento: string): string {
+        if (!fechaVencimiento) return '';
+        
+        const hoy = new Date();
+        const vencimiento = new Date(fechaVencimiento);
+        const diasRestantes = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (diasRestantes < 0) {
+            return `Vencido hace ${Math.abs(diasRestantes)} día(s)`;
+        } else if (diasRestantes === 0) {
+            return 'Vence hoy';
+        } else if (diasRestantes === 1) {
+            return 'Vence mañana';
+        } else {
+            return `${diasRestantes} días`;
+        }
+    }
+
+    /**
+     * Obtiene la clase CSS según el estado de vencimiento
+     */
+    public getClaseVencimiento(fechaVencimiento: string): string {
+        if (!fechaVencimiento) return '';
+        
+        const hoy = new Date();
+        const vencimiento = new Date(fechaVencimiento);
+        const diasRestantes = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (diasRestantes < 0) {
+            return 'text-danger';
+        } else if (diasRestantes === 0) {
+            return 'text-warning';
+        } else if (diasRestantes <= 7) {
+            return 'text-info';
+        } else {
+            return 'text-success';
+        }
+    }
+
+    /**
+     * Verifica si los lotes están activos en la empresa
+     */
+    public isLotesActivo(): boolean {
+        const empresa = this.apiService.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        
+        // Si custom_empresa es string, parsearlo
+        const customConfig = typeof empresa.custom_empresa === 'string' 
+            ? JSON.parse(empresa.custom_empresa) 
+            : empresa.custom_empresa;
+        
+        return customConfig?.configuraciones?.lotes_activo === true;
+    }
 
 }

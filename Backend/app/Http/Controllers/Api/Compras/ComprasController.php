@@ -291,20 +291,44 @@ class ComprasController extends Controller
                 }
 
                 if ($request->cotizacion == 0) {
-                    // Actualizar inventario solo si existe (si no existe, el producto no lleva inventario)
-                    $inventario = Inventario::where('id_producto', $det['id_producto'])
-                        ->where('id_bodega', $compra->id_bodega)
-                        ->lockForUpdate() // Bloquear fila para evitar condiciones de carrera
-                        ->first();
+                    // Verificar si el producto tiene inventario por lotes
+                    $producto = Producto::find($det['id_producto']);
+                    
+                    if ($producto && $producto->inventario_por_lotes && isset($det['lote_id']) && $det['lote_id']) {
+                        // Si tiene lotes y se especificó un lote, actualizar el stock del lote
+                        $lote = \App\Models\Inventario\Lote::find($det['lote_id']);
+                        if ($lote) {
+                            $lote->stock += $det['cantidad'];
+                            $lote->save();
+                            
+                            // También actualizar el inventario tradicional para mantener consistencia
+                            $inventario = Inventario::where('id_producto', $det['id_producto'])
+                                ->where('id_bodega', $compra->id_bodega)
+                                ->lockForUpdate()
+                                ->first();
 
-                    if ($inventario) {
-                        // Actualizar stock de forma atómica
-                        $inventario->stock += $det['cantidad'];
-                        $inventario->save();
-                        
-                        // Registrar kardex
-                        // Si falla el kardex, la transacción hará rollback automáticamente
-                        $inventario->kardex($compra, $det['cantidad']);
+                            if ($inventario) {
+                                $inventario->stock += $det['cantidad'];
+                                $inventario->save();
+                                $inventario->kardex($compra, $det['cantidad']);
+                            }
+                        }
+                    } else {
+                        // Actualizar inventario tradicional (sin lotes)
+                        $inventario = Inventario::where('id_producto', $det['id_producto'])
+                            ->where('id_bodega', $compra->id_bodega)
+                            ->lockForUpdate() // Bloquear fila para evitar condiciones de carrera
+                            ->first();
+
+                        if ($inventario) {
+                            // Actualizar stock de forma atómica
+                            $inventario->stock += $det['cantidad'];
+                            $inventario->save();
+                            
+                            // Registrar kardex
+                            // Si falla el kardex, la transacción hará rollback automáticamente
+                            $inventario->kardex($compra, $det['cantidad']);
+                        }
                     }
 
                 }

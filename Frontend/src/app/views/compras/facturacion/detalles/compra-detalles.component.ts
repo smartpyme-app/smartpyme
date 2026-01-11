@@ -87,6 +87,89 @@ export class CompraDetallesComponent implements OnInit {
 
         }
 
+    // Método para abrir modal de selección de lote
+    public abrirModalLote(template: TemplateRef<any>, detalle: any) {
+        this.detalle = detalle;
+        this.cargarLotesDisponibles();
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg'});
+    }
+
+    public lotes: any[] = [];
+    public loteSeleccionado: any = null;
+    public nuevoLote: any = {
+        numero_lote: '',
+        fecha_vencimiento: null,
+        fecha_fabricacion: null,
+        observaciones: ''
+    };
+    public crearNuevoLote: boolean = false;
+
+    cargarLotesDisponibles() {
+        if (!this.detalle.id_producto || !this.compra.id_bodega) return;
+        
+        this.loading = true;
+        this.apiService.getAll('lotes/disponibles', {
+            id_producto: this.detalle.id_producto,
+            id_bodega: this.compra.id_bodega
+        }).subscribe(lotes => {
+            this.lotes = lotes;
+            this.loading = false;
+        }, error => {
+            this.alertService.error(error);
+            this.loading = false;
+        });
+    }
+
+    seleccionarLote(lote: any) {
+        this.loteSeleccionado = lote;
+        this.crearNuevoLote = false;
+        this.detalle.lote_id = lote.id;
+        this.modalRef.hide();
+    }
+
+    toggleCrearLote() {
+        this.crearNuevoLote = !this.crearNuevoLote;
+        if (this.crearNuevoLote) {
+            this.loteSeleccionado = null;
+            this.detalle.lote_id = null;
+        }
+    }
+
+    crearLote() {
+        if (!this.detalle.id_producto || !this.compra.id_bodega) {
+            this.alertService.error('Faltan datos para crear el lote');
+            return;
+        }
+
+        this.loading = true;
+        const loteData = {
+            id_producto: this.detalle.id_producto,
+            id_bodega: this.compra.id_bodega,
+            numero_lote: this.nuevoLote.numero_lote,
+            fecha_vencimiento: this.nuevoLote.fecha_vencimiento,
+            fecha_fabricacion: this.nuevoLote.fecha_fabricacion,
+            stock: this.detalle.cantidad,
+            observaciones: this.nuevoLote.observaciones
+        };
+
+        this.apiService.store('lotes', loteData).subscribe(lote => {
+            this.detalle.lote_id = lote.id;
+            this.alertService.success('Lote creado', 'El lote fue creado exitosamente.');
+            this.nuevoLote = {
+                numero_lote: '',
+                fecha_vencimiento: null,
+                fecha_fabricacion: null,
+                observaciones: ''
+            };
+            this.crearNuevoLote = false;
+            this.loading = false;
+            this.modalRef.hide();
+        }, error => {
+            this.alertService.error(error);
+            this.loading = false;
+        });
+    }
+
     // Eliminar detalle
         public delete(detalle:any){
 

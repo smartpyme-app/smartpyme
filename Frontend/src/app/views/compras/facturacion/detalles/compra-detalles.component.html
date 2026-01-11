@@ -25,6 +25,13 @@
                     <td>
                         <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
                         {{ detalle.nombre_producto }}
+                        <br>
+                        <small class="text-muted" *ngIf="detalle.inventario_por_lotes">
+                            <button class="btn btn-sm btn-outline-primary mt-1" (click)="abrirModalLote(mlote, detalle)">
+                                <i class="fa fa-box"></i> 
+                                {{ detalle.lote_id ? 'Lote: ' + (detalle.lote?.numero_lote || 'N/A') : 'Seleccionar lote' }}
+                            </button>
+                        </small>
                     </td>
                     <td style="width: 150px;">
                         <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control">
@@ -70,4 +77,93 @@
         </form>
     </div>
   </div>
+</ng-template>
+
+<!-- Modal para seleccionar/crear lote -->
+<ng-template #mlote>
+    <div class="modal-header">
+        <h4 class="modal-title">Gestión de Lote - {{ detalle.nombre_producto }}</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" [(ngModel)]="crearNuevoLote" 
+                           (change)="toggleCrearLote()" id="crearLote">
+                    <label class="form-check-label" for="crearLote">
+                        Crear nuevo lote
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seleccionar lote existente -->
+        <div *ngIf="!crearNuevoLote">
+            <h6>Seleccionar lote existente</h6>
+            <div class="table-responsive" style="max-height: 300px;">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Stock</th>
+                            <th>Vencimiento</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngIf="loading">
+                            <td colspan="4" class="text-center">Cargando...</td>
+                        </tr>
+                        <tr *ngIf="!loading && lotes.length == 0">
+                            <td colspan="4" class="text-center text-muted">No hay lotes disponibles</td>
+                        </tr>
+                        <tr *ngFor="let lote of lotes">
+                            <td>{{ lote.numero_lote || 'N/A' }}</td>
+                            <td>{{ lote.stock }}</td>
+                            <td>{{ lote.fecha_vencimiento ? (lote.fecha_vencimiento | date:'dd/MM/yyyy') : 'Sin vencimiento' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" (click)="seleccionarLote(lote)">
+                                    Seleccionar
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Crear nuevo lote -->
+        <div *ngIf="crearNuevoLote">
+            <h6>Crear nuevo lote</h6>
+            <form (ngSubmit)="crearLote()">
+                <div class="form-group mb-3">
+                    <label>Número de lote</label>
+                    <input type="text" [(ngModel)]="nuevoLote.numero_lote" class="form-control" 
+                           name="numero_lote" placeholder="Ej: LOTE-001">
+                </div>
+                <div class="form-group mb-3">
+                    <label>Fecha de fabricación</label>
+                    <input type="date" [(ngModel)]="nuevoLote.fecha_fabricacion" class="form-control" 
+                           name="fecha_fabricacion">
+                </div>
+                <div class="form-group mb-3">
+                    <label>Fecha de vencimiento</label>
+                    <input type="date" [(ngModel)]="nuevoLote.fecha_vencimiento" class="form-control" 
+                           name="fecha_vencimiento">
+                </div>
+                <div class="form-group mb-3">
+                    <label>Observaciones</label>
+                    <textarea [(ngModel)]="nuevoLote.observaciones" class="form-control" 
+                              name="observaciones" rows="2"></textarea>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary" [disabled]="loading">
+                        <span *ngIf="!loading">Crear lote</span>
+                        <span *ngIf="loading">Creando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </ng-template>
