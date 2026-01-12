@@ -25,6 +25,9 @@ export class VentaDetallesComponent implements OnInit {
 
     @ViewChild('msupervisor')
     public supervisorTemplate!: TemplateRef<any>;
+    
+    @ViewChild('mloteVenta')
+    public mloteVenta!: TemplateRef<any>;
 
     public buscador:string = '';
     public loading:boolean = false;
@@ -223,7 +226,10 @@ export class VentaDetallesComponent implements OnInit {
                         this.venta.detalles.push(this.detalle);
                     }
                     this.update.emit(this.venta);
-                    // El modal se abrirá desde el HTML cuando se detecte que necesita lote
+                    // Abrir modal automáticamente para seleccionar lote
+                    setTimeout(() => {
+                        this.abrirModalLoteVenta(this.mloteVenta, this.detalle);
+                    }, 100);
                     return;
                 } else {
                     // Si es automático, el backend se encargará de seleccionar el lote

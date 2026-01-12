@@ -14,16 +14,18 @@ use Illuminate\Support\Facades\Validator;
 class LotesController extends Controller
 {
     /**
-     * Listar todos los lotes con filtros
+     * Listar todos los lotes con filtros (vista global de inventario)
+     * Siempre devuelve resultados paginados
      */
     public function index(Request $request)
     {
         $query = Lote::with(['producto', 'bodega'])
-            ->when($request->id_producto, function ($q) use ($request) {
-                return $q->where('id_producto', $request->id_producto);
-            })
+            ->where('id_empresa', Auth::user()->id_empresa)
             ->when($request->id_bodega, function ($q) use ($request) {
                 return $q->where('id_bodega', $request->id_bodega);
+            })
+            ->when($request->id_producto, function ($q) use ($request) {
+                return $q->where('id_producto', $request->id_producto);
             })
             ->when($request->numero_lote, function ($q) use ($request) {
                 return $q->where('numero_lote', 'like', '%' . $request->numero_lote . '%');
@@ -49,13 +51,9 @@ class LotesController extends Controller
         $sortOrder = $request->direccion ?? $request->sort_order ?? 'desc';
         $query->orderBy($sortBy, $sortOrder);
 
-        // Paginación
+        // Paginación (siempre paginado para la vista global)
         $perPage = $request->paginate ?? $request->per_page ?? 10;
-        if ($perPage) {
-            return $query->paginate($perPage);
-        }
-
-        return response()->json($query->get(), 200);
+        return $query->paginate($perPage);
     }
 
     /**
@@ -159,16 +157,43 @@ class LotesController extends Controller
     }
 
     /**
-     * Obtener lotes de un producto específico
+     * Obtener lotes de un producto específico (vista dentro de producto)
+     * Devuelve todos los lotes sin paginación, con filtros opcionales
      */
-    public function getByProducto($productoId)
+    public function getByProducto(Request $request, $productoId)
     {
-        $lotes = Lote::where('id_producto', $productoId)
+        $query = Lote::where('id_producto', $productoId)
+            ->where('id_empresa', Auth::user()->id_empresa)
             ->with(['bodega'])
-            ->orderBy('fecha_vencimiento', 'asc')
-            ->get();
+            ->when($request->id_bodega, function ($q) use ($request) {
+                return $q->where('id_bodega', $request->id_bodega);
+            })
+            ->when($request->numero_lote, function ($q) use ($request) {
+                return $q->where('numero_lote', 'like', '%' . $request->numero_lote . '%');
+            })
+            ->when($request->vencimiento_proximo, function ($q) use ($request) {
+                $dias = $request->dias_anticipacion ?? 30;
+                return $q->whereNotNull('fecha_vencimiento')
+                    ->whereBetween('fecha_vencimiento', [now(), now()->addDays($dias)]);
+            })
+            ->when($request->vencidos, function ($q) {
+                return $q->whereNotNull('fecha_vencimiento')
+                    ->where('fecha_vencimiento', '<', now());
+            })
+            ->when($request->con_stock, function ($q) {
+                return $q->where('stock', '>', 0);
+            })
+            ->when($request->sin_stock, function ($q) {
+                return $q->where('stock', '<=', 0);
+            });
 
-        return response()->json($lotes, 200);
+        // Ordenamiento por defecto: fecha de vencimiento ascendente
+        $sortBy = $request->orden ?? 'fecha_vencimiento';
+        $sortOrder = $request->direccion ?? 'asc';
+        $query->orderBy($sortBy, $sortOrder);
+
+        // Devolver todos los resultados sin paginación
+        return response()->json($query->get(), 200);
     }
 
     /**

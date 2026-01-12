@@ -82,12 +82,15 @@ export class ProductoLotesComponent implements OnInit, OnChanges {
             params.sin_stock = true;
         }
 
-        this.apiService.getAll('lotes', params).subscribe(lotes => {
-            this.lotes = lotes;
+        // Usar endpoint específico para lotes de un producto
+        this.apiService.getAll(`lotes/producto/${this.producto.id}`, params).subscribe(lotes => {
+            // Este endpoint siempre devuelve un array directo (sin paginación)
+            this.lotes = Array.isArray(lotes) ? lotes : [];
             this.loading = false;
         }, error => {
             this.alertService.error(error);
             this.loading = false;
+            this.lotes = [];
         });
     }
 
@@ -226,6 +229,9 @@ export class ProductoLotesComponent implements OnInit, OnChanges {
     }
 
     getTotalStock(): number {
+        if (!Array.isArray(this.lotes) || this.lotes.length === 0) {
+            return 0;
+        }
         return this.lotes.reduce((sum, lote) => sum + (parseFloat(lote.stock) || 0), 0);
     }
 }

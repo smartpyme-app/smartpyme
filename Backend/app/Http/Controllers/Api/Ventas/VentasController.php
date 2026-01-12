@@ -607,33 +607,38 @@ class VentasController extends Controller
                         if (isset($det['lote_id']) && $det['lote_id']) {
                             $loteSeleccionado = \App\Models\Inventario\Lote::find($det['lote_id']);
                         } else {
-                            // Seleccionar lote automáticamente según metodología
-                            $lotesQuery = \App\Models\Inventario\Lote::where('id_producto', $det['id_producto'])
-                                ->where('id_bodega', $venta->id_bodega)
-                                ->where('stock', '>', 0);
-                            
-                            switch ($metodologia) {
-                                case 'FIFO':
-                                    // Primero en entrar, primero en salir (por fecha de creación)
-                                    $loteSeleccionado = $lotesQuery->orderBy('created_at', 'asc')->first();
-                                    break;
-                                case 'LIFO':
-                                    // Último en entrar, primero en salir (por fecha de creación descendente)
-                                    $loteSeleccionado = $lotesQuery->orderBy('created_at', 'desc')->first();
-                                    break;
-                                case 'FEFO':
-                                    // Primero en vencer, primero en salir
-                                    $loteSeleccionado = $lotesQuery->whereNotNull('fecha_vencimiento')
-                                        ->orderBy('fecha_vencimiento', 'asc')
-                                        ->first();
-                                    // Si no hay lotes con fecha de vencimiento, usar FIFO
-                                    if (!$loteSeleccionado) {
+                            // Si la metodología es Manual, no seleccionar automáticamente
+                            if ($metodologia === 'Manual') {
+                                $loteSeleccionado = null;
+                            } else {
+                                // Seleccionar lote automáticamente según metodología
+                                $lotesQuery = \App\Models\Inventario\Lote::where('id_producto', $det['id_producto'])
+                                    ->where('id_bodega', $venta->id_bodega)
+                                    ->where('stock', '>', 0);
+                                
+                                switch ($metodologia) {
+                                    case 'FIFO':
+                                        // Primero en entrar, primero en salir (por fecha de creación)
                                         $loteSeleccionado = $lotesQuery->orderBy('created_at', 'asc')->first();
-                                    }
-                                    break;
-                                default:
-                                    // Por defecto FIFO
-                                    $loteSeleccionado = $lotesQuery->orderBy('created_at', 'asc')->first();
+                                        break;
+                                    case 'LIFO':
+                                        // Último en entrar, primero en salir (por fecha de creación descendente)
+                                        $loteSeleccionado = $lotesQuery->orderBy('created_at', 'desc')->first();
+                                        break;
+                                    case 'FEFO':
+                                        // Primero en vencer, primero en salir
+                                        $loteSeleccionado = $lotesQuery->whereNotNull('fecha_vencimiento')
+                                            ->orderBy('fecha_vencimiento', 'asc')
+                                            ->first();
+                                        // Si no hay lotes con fecha de vencimiento, usar FIFO
+                                        if (!$loteSeleccionado) {
+                                            $loteSeleccionado = $lotesQuery->orderBy('created_at', 'asc')->first();
+                                        }
+                                        break;
+                                    default:
+                                        // Por defecto FIFO
+                                        $loteSeleccionado = $lotesQuery->orderBy('created_at', 'asc')->first();
+                                }
                             }
                         }
                         
@@ -665,8 +670,13 @@ class VentasController extends Controller
                                 $inventario->kardex($venta, $det['cantidad'], $det['precio']);
                             }
                         } else {
-                            // No hay lotes disponibles
-                            if (!$puedeVenderSinStock) {
+                            // No hay lotes disponibles o no se seleccionó (metodología Manual sin lote_id)
+                            if ($metodologia === 'Manual' && !isset($det['lote_id'])) {
+                                DB::rollback();
+                                return response()->json([
+                                    'error' => "Debe seleccionar un lote para el producto: {$producto->nombre} (Metodología Manual)"
+                                ], 400);
+                            } elseif (!$puedeVenderSinStock) {
                                 DB::rollback();
                                 return response()->json([
                                     'error' => "No hay lotes disponibles con stock para el producto: {$producto->nombre}"
