@@ -152,14 +152,32 @@ class DevolucionVentasController extends Controller
 
                     // Inventario compuestos
                     foreach ($detalle->composiciones()->get() as $comp) {
-
+                        $productoCompuesto = Producto::find($comp->id_producto);
+                        $cantidadComp = $detalle->cantidad * $comp->cantidad;
+                        
+                        // Si el producto compuesto tiene lotes y lotes están activos, actualizar stock del lote
+                        if ($productoCompuesto && $productoCompuesto->inventario_por_lotes && $lotesActivo) {
+                            // Buscar lote del producto compuesto (si existe en el detalle compuesto)
+                            // Por ahora, buscamos el lote más antiguo con stock disponible
+                            $loteCompuesto = Lote::where('id_producto', $comp->id_producto)
+                                ->where('id_bodega', $venta->id_bodega)
+                                ->where('stock', '>', 0)
+                                ->orderBy('created_at', 'asc')
+                                ->first();
+                            
+                            if ($loteCompuesto) {
+                                $loteCompuesto->stock -= $cantidadComp;
+                                $loteCompuesto->save();
+                            }
+                        }
+                        
                         $inventario = Inventario::where('id_producto', $comp->id_producto)
                                     ->where('id_bodega', $venta->id_bodega)->first();
 
                         if ($inventario) {
-                            $inventario->stock -= $detalle->cantidad * $comp->cantidad;
+                            $inventario->stock -= $cantidadComp;
                             $inventario->save();
-                            $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
+                            $inventario->kardex($venta, $cantidadComp * -1);
                         }
                     }
 
@@ -184,14 +202,32 @@ class DevolucionVentasController extends Controller
 
                     // Inventario compuestos
                     foreach ($detalle->composiciones()->get() as $comp) {
-
+                        $productoCompuesto = Producto::find($comp->id_producto);
+                        $cantidadComp = $detalle->cantidad * $comp->cantidad;
+                        
+                        // Si el producto compuesto tiene lotes y lotes están activos, actualizar stock del lote
+                        if ($productoCompuesto && $productoCompuesto->inventario_por_lotes && $lotesActivo) {
+                            // Buscar lote del producto compuesto (si existe en el detalle compuesto)
+                            // Por ahora, buscamos el lote más antiguo con stock disponible
+                            $loteCompuesto = Lote::where('id_producto', $comp->id_producto)
+                                ->where('id_bodega', $venta->id_bodega)
+                                ->where('stock', '>', 0)
+                                ->orderBy('created_at', 'asc')
+                                ->first();
+                            
+                            if ($loteCompuesto) {
+                                $loteCompuesto->stock += $cantidadComp;
+                                $loteCompuesto->save();
+                            }
+                        }
+                        
                         $inventario = Inventario::where('id_producto', $comp->id_producto)
                                     ->where('id_bodega', $venta->id_bodega)->first();
 
                         if ($inventario) {
-                            $inventario->stock += $detalle->cantidad * $comp->cantidad;
+                            $inventario->stock += $cantidadComp;
                             $inventario->save();
-                            $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad));
+                            $inventario->kardex($venta, $cantidadComp);
                         }
                     }
 
@@ -415,14 +451,38 @@ class DevolucionVentasController extends Controller
                     // Inventario compuestos
                     if (isset($det['composiciones'])) {
                         foreach ($det['composiciones'] as $comp) {
-
+                            $productoCompuesto = Producto::find($comp['id_producto']);
+                            $cantidadComp = $det['cantidad'] * $comp['cantidad'];
+                            
+                            // Si el producto compuesto tiene lotes y lotes están activos, actualizar stock del lote
+                            if ($productoCompuesto && $productoCompuesto->inventario_por_lotes && $lotesActivo) {
+                                // Buscar lote del producto compuesto
+                                // Si viene especificado en la composición, usarlo; si no, buscar el más antiguo
+                                $loteCompuesto = null;
+                                if (isset($comp['lote_id']) && $comp['lote_id']) {
+                                    $loteCompuesto = Lote::find($comp['lote_id']);
+                                } else {
+                                    // Buscar el lote más antiguo con stock disponible
+                                    $loteCompuesto = Lote::where('id_producto', $comp['id_producto'])
+                                        ->where('id_bodega', $devolucion->id_bodega)
+                                        ->where('stock', '>', 0)
+                                        ->orderBy('created_at', 'asc')
+                                        ->first();
+                                }
+                                
+                                if ($loteCompuesto) {
+                                    $loteCompuesto->stock += $cantidadComp;
+                                    $loteCompuesto->save();
+                                }
+                            }
+                            
                             $inventario = Inventario::where('id_producto', $comp['id_producto'])
                                         ->where('id_bodega', $devolucion->id_bodega)->first();
 
                             if ($inventario) {
-                                $inventario->stock += $det['cantidad'] * $comp['cantidad'];
+                                $inventario->stock += $cantidadComp;
                                 $inventario->save();
-                                $inventario->kardex($devolucion, ($det['cantidad'] * $comp['cantidad']));
+                                $inventario->kardex($devolucion, $cantidadComp);
                             }
                         }
                     }
