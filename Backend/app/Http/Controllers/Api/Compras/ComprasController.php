@@ -294,24 +294,59 @@ class ComprasController extends Controller
                     // Verificar si el producto tiene inventario por lotes
                     $producto = Producto::find($det['id_producto']);
                     
-                    if ($producto && $producto->inventario_por_lotes && isset($det['lote_id']) && $det['lote_id']) {
+                    // Verificar si la empresa tiene lotes activos
+                    $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
+                    $lotesActivo = false;
+                    if ($empresa && $empresa->custom_empresa) {
+                        $customConfig = is_string($empresa->custom_empresa) 
+                            ? json_decode($empresa->custom_empresa, true) 
+                            : $empresa->custom_empresa;
+                        $lotesActivo = $customConfig['configuraciones']['lotes_activo'] ?? false;
+                    }
+                    
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo) {
+                        // Validar que se haya especificado un lote
+                        if (!isset($det['lote_id']) || !$det['lote_id']) {
+                            DB::rollBack();
+                            return Response()->json([
+                                'error' => "El producto '{$producto->nombre}' requiere seleccionar o crear un lote.",
+                                'code' => 400
+                            ], 400);
+                        }
+                        
                         // Si tiene lotes y se especificó un lote, actualizar el stock del lote
                         $lote = \App\Models\Inventario\Lote::find($det['lote_id']);
-                        if ($lote) {
-                            $lote->stock += $det['cantidad'];
-                            $lote->save();
-                            
-                            // También actualizar el inventario tradicional para mantener consistencia
-                            $inventario = Inventario::where('id_producto', $det['id_producto'])
-                                ->where('id_bodega', $compra->id_bodega)
-                                ->lockForUpdate()
-                                ->first();
+                        if (!$lote) {
+                            DB::rollBack();
+                            return Response()->json([
+                                'error' => "El lote especificado no existe.",
+                                'code' => 400
+                            ], 400);
+                        }
+                        
+                        // Verificar que el lote pertenezca al producto y bodega correctos
+                        if ($lote->id_producto != $det['id_producto'] || $lote->id_bodega != $compra->id_bodega) {
+                            DB::rollBack();
+                            return Response()->json([
+                                'error' => "El lote seleccionado no corresponde al producto o bodega especificados.",
+                                'code' => 400
+                            ], 400);
+                        }
+                        
+                        // Actualizar stock del lote
+                        $lote->stock += $det['cantidad'];
+                        $lote->save();
+                        
+                        // También actualizar el inventario tradicional para mantener consistencia
+                        $inventario = Inventario::where('id_producto', $det['id_producto'])
+                            ->where('id_bodega', $compra->id_bodega)
+                            ->lockForUpdate()
+                            ->first();
 
-                            if ($inventario) {
-                                $inventario->stock += $det['cantidad'];
-                                $inventario->save();
-                                $inventario->kardex($compra, $det['cantidad']);
-                            }
+                        if ($inventario) {
+                            $inventario->stock += $det['cantidad'];
+                            $inventario->save();
+                            $inventario->kardex($compra, $det['cantidad']);
                         }
                     } else {
                         // Actualizar inventario tradicional (sin lotes)
