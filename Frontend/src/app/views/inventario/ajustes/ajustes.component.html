@@ -136,12 +136,13 @@
         <div class="row">
             <div class="form-group col-md-12">
                 <label for="">Producto</label>
-                <ng-select name="id_producto" (change)="setProducto()" [(ngModel)]="ajuste.id_producto" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar producto</ng-option>
-                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
-                        {{getNombreCompleto(producto)}}
-                    </ng-option>
-                </ng-select>
+                <app-buscador-productos (selectProducto)="productoSelect($event)"></app-buscador-productos>
+                <div *ngIf="producto?.id" class="mt-2">
+                    <span class="badge bg-info">{{ getNombreCompleto(producto) }}</span>
+                    <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProducto()">
+                        <i class="fa fa-times"></i> Limpiar
+                    </button>
+                </div>
             </div>
             <div class="form-group col-md-12">
                 <label for="">Bodega</label>
@@ -153,9 +154,30 @@
                     </ng-option>
                 </ng-select>
             </div>
+            <div class="form-group col-md-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && ajuste.id_bodega">
+                <label for="">Lote <span class="text-danger">*</span></label>
+                <ng-select name="lote_id" [(ngModel)]="ajuste.lote_id" (change)="setLote()" class="form-select p-0" [disabled]="loadingLotes" required>
+                    <ng-option value="">Seleccionar lote</ng-option>
+                    <ng-option *ngFor="let lote of lotes" [value]="lote.id">
+                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                        <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                            (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                        </span>
+                    </ng-option>
+                </ng-select>
+                <small class="text-muted" *ngIf="loadingLotes">Cargando lotes...</small>
+            </div>
+            <div class="form-group col-md-6" *ngIf="!producto?.inventario_por_lotes || !isLotesActivo()">
+                <label for="stock_actual">Stock actual:</label>
+                <input type="text" [disabled]="true" class="form-control text-center" [value]="(ajuste.stock_actual || 0) | number:'1.2'" name="stock_actual_display">
+            </div>
+            <div class="form-group col-md-6" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && ajuste.lote_id">
+                <label for="stock_actual">Stock actual del lote:</label>
+                <input type="text" [disabled]="true" class="form-control text-center" [value]="(ajuste.stock_actual || 0) | number:'1.2'" name="stock_actual_display">
+            </div>
             <div class="form-group col-md-6">
                 <label for="stock_real">Cantidad en existencias:</label>
-                <input type="text" [disabled]="!ajuste.id_bodega" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" class="form-control text-center" [(ngModel)]="ajuste.stock_real" (change)="calAjuste()" (keyup)="calAjuste()" name="stock_real">
+                <input type="text" [disabled]="!ajuste.id_bodega || (producto?.inventario_por_lotes && isLotesActivo() && !ajuste.lote_id)" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" class="form-control text-center" [(ngModel)]="ajuste.stock_real" (change)="calAjuste()" (keyup)="calAjuste()" name="stock_real">
             </div>
 
             <div class="form-group col-md-6">
@@ -163,7 +185,7 @@
                 <input type="text" class="form-control" [(ngModel)]="ajuste.costo" name="costo">
             </div>
             
-            <div class="form-group col-md-12" *ngIf="ajuste.stock_real">
+            <div class="form-group col-md-6" *ngIf="ajuste.stock_real">
                 <label for="ajuste">Se realizá un ajuste de:</label>
                 <p *ngIf="ajuste.stock_real"> {{ ajuste.ajuste }}</p>
                 <p *ngIf="!ajuste.stock_real"> 0</p>
@@ -207,12 +229,13 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="">Producto</label>
-                <ng-select name="id_producto" [(ngModel)]="filtros.id_producto" class="form-select p-0">
-                    <ng-option value="" selected>Todos</ng-option>
-                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
-                        {{getNombreCompleto(producto)}}
-                    </ng-option>
-                </ng-select>
+                <app-buscador-productos (selectProducto)="productoFiltroSelect($event)"></app-buscador-productos>
+                <div *ngIf="productoFiltro?.id" class="mt-2">
+                    <span class="badge bg-info">{{ getNombreCompleto(productoFiltro) }}</span>
+                    <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProductoFiltro()">
+                        <i class="fa fa-times"></i> Limpiar
+                    </button>
+                </div>
             </div>
             <div class="form-group col-md-6">
                 <label for="">Estado:</label>

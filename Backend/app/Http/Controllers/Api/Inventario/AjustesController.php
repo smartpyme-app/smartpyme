@@ -75,6 +75,17 @@ class AjustesController extends Controller
             'lote_id'           => 'nullable|numeric|exists:lotes,id',
         ]);
 
+        // Verificar si el producto tiene inventario por lotes
+        $producto = Producto::findOrFail($request->id_producto);
+        if ($producto->inventario_por_lotes) {
+            // Si tiene lotes, el lote_id es requerido
+            if (!$request->lote_id) {
+                return response()->json([
+                    'error' => 'Debe seleccionar un lote para este producto.'
+                ], 400);
+            }
+        }
+
         if($request->id)
             $ajuste = Ajuste::findOrFail($request->id);
         else
@@ -89,6 +100,12 @@ class AjustesController extends Controller
         // Si el ajuste tiene lote_id, actualizar también el lote
         if ($ajuste->lote_id) {
             $lote = Lote::findOrFail($ajuste->lote_id);
+            
+            // Verificar que el lote pertenezca a la bodega correcta
+            if ($lote->id_bodega != $request->id_bodega) {
+                return Response()->json(['error' => 'El lote seleccionado no pertenece a la bodega especificada.'], 400);
+            }
+            
             $lote->stock = $request->stock_real;
             
             // Si es el primer ajuste y el stock_inicial es 0, actualizarlo
@@ -121,7 +138,11 @@ class AjustesController extends Controller
         if ($ajuste->lote_id) {
             $lote = Lote::find($ajuste->lote_id);
             if ($lote) {
-                $lote->stock -= $ajuste->ajuste;
+                // Revertir al stock anterior (stock_real - ajuste)
+                $lote->stock = $ajuste->stock_real - $ajuste->ajuste;
+                if ($lote->stock < 0) {
+                    $lote->stock = 0;
+                }
                 $lote->save();
             }
         }

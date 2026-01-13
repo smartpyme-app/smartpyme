@@ -81,7 +81,13 @@
                             
                             <td><span tooltip="{{ movimiento.created_at | date:'hh:mm a'}}">{{movimiento.fecha | date:'dd/MM/yyyy'}}</span></td>
                             <td>{{movimiento.nombre_usuario}}</td>
-                            <td>{{movimiento.detalle}}</td>
+                            <td>
+                                {{movimiento.detalle}}
+                                <br *ngIf="movimiento.numero_lote">
+                                <small class="text-muted" *ngIf="movimiento.numero_lote">
+                                    <i class="fa fa-tag"></i> Lote: {{movimiento.numero_lote}}
+                                </small>
+                            </td>
                             <td>
                                 {{movimiento.modelo_detalle}}
                                 <a class="float-end d-none"  tooltip="Ver detalle de la transacción" routerLink="/{{movimiento.modelo}}/{{movimiento.referencia}}"><i class="fa fa-edit"></i></a>
