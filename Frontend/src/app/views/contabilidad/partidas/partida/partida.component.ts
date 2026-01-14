@@ -207,22 +207,38 @@ export class PartidaComponent implements OnInit {
     }
 
     public sumTotal() {
-        // IMPORTANTE: Si la partida tiene totales del backend, NO recalcular
-        // Solo recalcular si es una partida nueva sin totales del backend
-        if (this.partida.total_debe !== undefined && this.partida.total_haber !== undefined && this.partida.id) {
-            // Mantener los totales del backend hasta que se guarde
+        // Si es una partida nueva (sin ID), siempre recalcular desde los detalles
+        if (!this.partida.id) {
+            this.partida.debe = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'debe')) || 0).toFixed(2);
+            this.partida.haber = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'haber')) || 0).toFixed(2);
+            this.partida.diferencia = (parseFloat(this.partida.debe) - parseFloat(this.partida.haber)).toFixed(2);
+            return;
+        }
+        
+        // Para partidas existentes: verificar si hay detalles nuevos (sin ID)
+        const tieneDetallesNuevos = (this.partida.detalles || []).some((d: any) => !d.id);
+        
+        if (tieneDetallesNuevos) {
+            // Si hay detalles nuevos, recalcular desde todos los detalles visibles
+            // porque los nuevos no están en el backend todavía
+            console.log('Recalculando totales porque hay detalles nuevos agregados');
+            this.partida.debe = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'debe')) || 0).toFixed(2);
+            this.partida.haber = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'haber')) || 0).toFixed(2);
+            this.partida.diferencia = (parseFloat(this.partida.debe) - parseFloat(this.partida.haber)).toFixed(2);
+        } else if (this.partida.total_debe !== undefined && this.partida.total_haber !== undefined) {
+            // Si no hay detalles nuevos y tenemos totales del backend, mantenerlos
+            // (solo se actualizarán cuando se guarden los cambios)
             console.log('Manteniendo totales del backend, no recalculando:', {
                 debe: this.partida.debe,
                 haber: this.partida.haber,
                 diferencia: this.partida.diferencia
             });
-            return;
+        } else {
+            // Fallback: recalcular desde los detalles visibles
+            this.partida.debe = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'debe')) || 0).toFixed(2);
+            this.partida.haber = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'haber')) || 0).toFixed(2);
+            this.partida.diferencia = (parseFloat(this.partida.debe) - parseFloat(this.partida.haber)).toFixed(2);
         }
-        
-        // Solo recalcular para partidas nuevas sin totales del backend
-        this.partida.debe = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'debe')) || 0).toFixed(2);
-        this.partida.haber = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'haber')) || 0).toFixed(2);
-        this.partida.diferencia = (parseFloat(this.partida.debe) - parseFloat(this.partida.haber)).toFixed(2);
     }
 
     public updatePartida(partida:any) {

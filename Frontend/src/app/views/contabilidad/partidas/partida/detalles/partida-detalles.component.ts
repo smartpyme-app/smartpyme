@@ -137,24 +137,27 @@ export class PartidaDetallesComponent implements OnInit {
             console.log('Detalle marcado como modificado:', detalle.id);
         }
         
+        // Inicializar valores de debe y haber si están vacíos o undefined
+        if (!detalle.debe || detalle.debe === '' || detalle.debe === null) {
+            detalle.debe = 0;
+        }
+        if (!detalle.haber || detalle.haber === '' || detalle.haber === null) {
+            detalle.haber = 0;
+        }
+        
+        // Convertir a número y asegurar que sean valores numéricos válidos
+        detalle.debe = parseFloat(detalle.debe) || 0;
+        detalle.haber = parseFloat(detalle.haber) || 0;
+        
         // Si es una partida existente, disparar recálculo debounced
         if (this.partida.id) {
             this.recalcularTotalesDebounced.next();
         }
         
-        // Mantener lógica original para partidas nuevas
-        if(!detalle.cantidad){
-            detalle.cantidad = 0;
-        }
-        if(detalle.descuento_porcentaje){
-            detalle.descuento = detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100));
-        }else{
-            detalle.descuento = 0;
-        }
-
-        detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
-        detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
+        // Emitir evento para actualizar la partida y recalcular totales
         this.update.emit(this.partida);
+        // Disparar recálculo de totales
+        this.sumTotalEmit();
     }
 
     public openModal(template: TemplateRef<any>, detalle:any){
@@ -165,9 +168,33 @@ export class PartidaDetallesComponent implements OnInit {
 
 
     public onsubmit(){
+        // Inicializar valores de debe y haber si están vacíos o undefined
+        if (!this.detalle.debe || this.detalle.debe === '' || this.detalle.debe === null) {
+            this.detalle.debe = 0;
+        }
+        if (!this.detalle.haber || this.detalle.haber === '' || this.detalle.haber === null) {
+            this.detalle.haber = 0;
+        }
+        
+        // Convertir a número y asegurar que sean valores numéricos válidos
+        this.detalle.debe = parseFloat(this.detalle.debe) || 0;
+        this.detalle.haber = parseFloat(this.detalle.haber) || 0;
+        
+        // Asegurar que el array de detalles existe
+        if (!this.partida.detalles) {
+            this.partida.detalles = [];
+        }
+        
+        // Agregar el detalle al array
         this.partida.detalles.push(this.detalle);
 
+        // Emitir evento para actualizar la partida
         this.update.emit(this.partida);
+        
+        // Recalcular totales después de agregar la fila
+        this.sumTotalEmit();
+        
+        // Limpiar el detalle para el próximo uso
         this.detalle = {};
 
         if (this.modalRef) { this.modalRef.hide() }
