@@ -230,34 +230,74 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
     }
 
     public sumTotal() {
-        // IMPORTANTE: Si la partida tiene totales del backend, NO recalcular
-        // Solo recalcular si es una partida nueva sin totales del backend
-        if (this.partida.total_debe !== undefined && this.partida.total_haber !== undefined && this.partida.id) {
-            // Mantener los totales del backend hasta que se guarde
+        // Si es una partida nueva (sin ID), siempre recalcular desde los detalles
+        if (!this.partida.id) {
+            const debe = parseFloat(this.sumPipe.transform(this.partida.detalles, 'debe')) || 0;
+            const haber = parseFloat(this.sumPipe.transform(this.partida.detalles, 'haber')) || 0;
+            const diferencia = debe - haber;
+            
+            this.partida.debe = debe.toFixed(2);
+            this.partida.haber = haber.toFixed(2);
+            this.partida.diferencia = diferencia.toFixed(2);
+            
+            console.log('Totales recalculados (partida nueva):', {
+                debe: this.partida.debe,
+                haber: this.partida.haber,
+                diferencia: this.partida.diferencia,
+                detalles_count: this.partida.detalles?.length || 0
+            });
+            this.cdr.markForCheck();
+            return;
+        }
+        
+        // Para partidas existentes: verificar si hay detalles nuevos (sin ID)
+        const tieneDetallesNuevos = (this.partida.detalles || []).some((d: any) => !d.id);
+        
+        if (tieneDetallesNuevos) {
+            // Si hay detalles nuevos, recalcular desde todos los detalles visibles
+            // porque los nuevos no están en el backend todavía
+            console.log('Recalculando totales porque hay detalles nuevos agregados');
+            const debe = parseFloat(this.sumPipe.transform(this.partida.detalles, 'debe')) || 0;
+            const haber = parseFloat(this.sumPipe.transform(this.partida.detalles, 'haber')) || 0;
+            const diferencia = debe - haber;
+            
+            this.partida.debe = debe.toFixed(2);
+            this.partida.haber = haber.toFixed(2);
+            this.partida.diferencia = diferencia.toFixed(2);
+            
+            console.log('Totales recalculados (con detalles nuevos):', {
+                debe: this.partida.debe,
+                haber: this.partida.haber,
+                diferencia: this.partida.diferencia,
+                detalles_count: this.partida.detalles?.length || 0
+            });
+            this.cdr.markForCheck();
+        } else if (this.partida.total_debe !== undefined && this.partida.total_haber !== undefined) {
+            // Si no hay detalles nuevos y tenemos totales del backend, mantenerlos
+            // (solo se actualizarán cuando se guarden los cambios o se recalculen desde el backend)
             console.log('Manteniendo totales del backend, no recalculando:', {
                 debe: this.partida.debe,
                 haber: this.partida.haber,
                 diferencia: this.partida.diferencia
             });
-            return;
+        } else {
+            // Fallback: recalcular desde los detalles visibles
+            const debe = parseFloat(this.sumPipe.transform(this.partida.detalles, 'debe')) || 0;
+            const haber = parseFloat(this.sumPipe.transform(this.partida.detalles, 'haber')) || 0;
+            const diferencia = debe - haber;
+            
+            this.partida.debe = debe.toFixed(2);
+            this.partida.haber = haber.toFixed(2);
+            this.partida.diferencia = diferencia.toFixed(2);
+            
+            console.log('Totales recalculados (fallback):', {
+                debe: this.partida.debe,
+                haber: this.partida.haber,
+                diferencia: this.partida.diferencia,
+                detalles_count: this.partida.detalles?.length || 0
+            });
+            this.cdr.markForCheck();
         }
-        
-        // Solo recalcular para partidas nuevas sin totales del backend
-        const debe = parseFloat(this.sumPipe.transform(this.partida.detalles, 'debe')) || 0;
-        const haber = parseFloat(this.sumPipe.transform(this.partida.detalles, 'haber')) || 0;
-        const diferencia = debe - haber;
-        
-        this.partida.debe = debe.toFixed(2);
-        this.partida.haber = haber.toFixed(2);
-        this.partida.diferencia = diferencia.toFixed(2);
-        
-        console.log('Totales recalculados:', {
-            debe: this.partida.debe,
-            haber: this.partida.haber,
-            diferencia: this.partida.diferencia,
-            detalles_count: this.partida.detalles?.length || 0
-        });
-        this.cdr.markForCheck();
     }
 
     public updatePartida(partida:any) {

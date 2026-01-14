@@ -85,28 +85,39 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
         }
     }
 
+    /**
+     * Método legacy - ya no se usa, se reemplazó por onDetalleChange()
+     * Se mantiene por compatibilidad pero no debería ser llamado
+     */
     public updateTotal(detalle:any){
-        if(!detalle.cantidad){
-            detalle.cantidad = 0;
-        }
-        if(detalle.descuento_porcentaje){
-            detalle.descuento = detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100));
-        }else{
-            detalle.descuento = 0;
-        }
-
-        detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
-        detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
-        this.cdr.markForCheck();
-        this.update.emit(this.partida);
+        // Este método tenía lógica de ventas/compras que no aplica a partidas contables
+        // Ahora se usa onDetalleChange() que maneja correctamente debe/haber
+        console.warn('updateTotal() está deprecado, usar onDetalleChange()');
+        this.onDetalleChange(detalle);
     }
     
     /**
      * Se llama cuando se modifica debe o haber de un detalle
      */
     public onDetalleChange(detalle: any) {
-        // Marcar el detalle como modificado
+        // Inicializar valores de debe y haber si están vacíos o undefined
+        if (!detalle.debe || detalle.debe === '' || detalle.debe === null) {
+            detalle.debe = 0;
+        }
+        if (!detalle.haber || detalle.haber === '' || detalle.haber === null) {
+            detalle.haber = 0;
+        }
+        
+        // Convertir a número y asegurar que sean valores numéricos válidos
+        detalle.debe = parseFloat(detalle.debe) || 0;
+        detalle.haber = parseFloat(detalle.haber) || 0;
+        
+        // Marcar el detalle como modificado si tiene ID
         this.marcarComoModificado(detalle);
+        
+        // Emitir actualización de la partida
+        this.cdr.markForCheck();
+        this.update.emit(this.partida);
         
         // Si es una partida nueva (sin ID), recalcular localmente inmediatamente
         if (!this.partida.id) {
@@ -114,7 +125,14 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
             return;
         }
         
-        // Para partidas existentes, usar debounce y recalcular desde el backend
+        // Para partidas existentes con detalles nuevos (sin ID), recalcular localmente
+        // porque los nuevos detalles no están en el backend todavía
+        if (!detalle.id) {
+            this.sumTotal.emit();
+            return;
+        }
+        
+        // Para partidas existentes con detalles que tienen ID, usar debounce y recalcular desde el backend
         // Debounce: esperar 500ms antes de recalcular para evitar demasiadas llamadas
         if (this.recalcularTotalesTimeout) {
             clearTimeout(this.recalcularTotalesTimeout);
@@ -211,16 +229,34 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
     }
 
     public onsubmit(){
+        // Inicializar valores de debe y haber si están vacíos o undefined
+        if (!this.detalle.debe || this.detalle.debe === '' || this.detalle.debe === null) {
+            this.detalle.debe = 0;
+        }
+        if (!this.detalle.haber || this.detalle.haber === '' || this.detalle.haber === null) {
+            this.detalle.haber = 0;
+        }
+        
+        // Convertir a número y asegurar que sean valores numéricos válidos
+        this.detalle.debe = parseFloat(this.detalle.debe) || 0;
+        this.detalle.haber = parseFloat(this.detalle.haber) || 0;
+        
+        // Asegurar que el array de detalles existe
+        if (!this.partida.detalles) {
+            this.partida.detalles = [];
+        }
+        
+        // Agregar el detalle al array
         this.partida.detalles.push(this.detalle);
 
         this.cdr.markForCheck();
         this.update.emit(this.partida);
         
-        // Si es una partida nueva, recalcular totales inmediatamente
-        if (!this.partida.id) {
-            this.sumTotal.emit();
-        }
+        // Recalcular totales después de agregar la fila
+        // Esto funciona tanto para partidas nuevas como existentes con detalles nuevos
+        this.sumTotal.emit();
         
+        // Limpiar el detalle para el próximo uso
         this.detalle = {};
 
         if (this.modalRef) { this.closeModal(); }
