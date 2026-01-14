@@ -1,0 +1,36 @@
+<div class="card h-100 metric-card">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="flex-grow-1">
+                <div class="value-text mb-2 text-dark">
+                    <span *ngIf="shouldShowCurrency()">$</span>{{ formatValue(data.value) }}
+                </div>
+                <div class="label-text text-muted mb-2">
+                    {{ data.title }}
+                </div>
+                <div class="trend-indicator" *ngIf="data.trend">
+                    <span [ngClass]="trendColor" class="d-inline-flex align-items-center gap-1">
+                        <i class="fas" [ngClass]="trendIcon"></i>
+                        <span class="fw-medium">{{ formatTrendValue(data.trend.value) }}</span>
+                        <span class="text-muted small">desde la semana pasada</span>
+                    </span>
+                </div>
+            </div>
+            <div class="mini-chart" [style.color]="getChartColor()">
+                <svg width="80" height="40" viewBox="0 0 80 40" class="chart-svg">
+                    <rect
+                        *ngFor="let bar of barChartData"
+                        [attr.x]="bar.x"
+                        [attr.y]="bar.y"
+                        [attr.width]="bar.width"
+                        [attr.height]="bar.height"
+                        fill="currentColor"
+                        opacity="0.8"
+                        rx="2"
+                    />
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+

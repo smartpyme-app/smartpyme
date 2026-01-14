@@ -1,0 +1,74 @@
+/* Estilos para las tarjetas según el diseño */
+.metric-card {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.value-text {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
+.label-text {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: #6c757d;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.trend-indicator {
+    margin-top: 0.25rem;
+}
+
+.trend-indicator i {
+    font-size: 0.75rem;
+}
+
+.trend-indicator .fw-medium {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.trend-indicator .text-muted {
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
+}
+
+.mini-chart {
+    flex-shrink: 0;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.chart-svg {
+    width: 80px;
+    height: 40px;
+}
+
+@media (max-width: 768px) {
+    .value-text {
+        font-size: 1.5rem;
+    }
+    
+    .label-text {
+        font-size: 0.8rem;
+    }
+    
+    .mini-chart {
+        display: none;
+    }
+}
+

@@ -1,0 +1,11 @@
+/* Altura del contenedor del gráfico - necesario para ECharts */
+.chart-container {
+    height: 300px;
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+}
+

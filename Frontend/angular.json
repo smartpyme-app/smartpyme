@@ -23,7 +23,8 @@
             "allowedCommonJsDependencies": [
               "chart.js",
               "sweetalert2",
-              "moment"
+              "moment",
+              "echarts"
            ],
             "assets": [
               "src/favicon.ico",
