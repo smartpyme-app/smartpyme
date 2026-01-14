@@ -816,3 +816,80 @@
         </form>
     </div>
 </ng-template>
+
+<ng-template #modalAnulacion>
+    <div class="modal-header">
+        <h4 class="modal-title">Anular Venta y DTE</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); venta.errores = null;" [disabled]="saving" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-alerts-hacienda [errores]="venta.errores"></app-alerts-hacienda>
+        <app-notificaciones-container></app-notificaciones-container>
+        
+        <form (ngSubmit)="confirmarAnulacion()" *ngIf="!saving || venta.errores">
+            <div class="mb-3">
+                <label for="fechaAnulacion" class="form-label">Fecha de Anulación <span class="text-danger">*</span></label>
+                <input type="date" 
+                       class="form-control" 
+                       id="fechaAnulacion" 
+                       [(ngModel)]="fechaAnulacion" 
+                       name="fechaAnulacion"
+                       [disabled]="saving"
+                       required>
+            </div>
+            <div class="mb-3">
+                <label for="tipoAnulacion" class="form-label">Tipo de Anulación <span class="text-danger">*</span></label>
+                <select class="form-select" 
+                        id="tipoAnulacion" 
+                        [(ngModel)]="tipoAnulacion" 
+                        name="tipoAnulacion"
+                        (change)="onTipoAnulacionChange()"
+                        [disabled]="saving"
+                        required>
+                    <option *ngFor="let motivo of motivosAnulacion" [value]="motivo.valor">
+                        {{ motivo.texto }}
+                    </option>
+                </select>
+            </div>
+            <div class="mb-3" *ngIf="tipoAnulacion == 3">
+                <label for="motivoAnulacion" class="form-label">Motivo de Anulación <span class="text-danger">*</span></label>
+                <textarea class="form-control" 
+                          id="motivoAnulacion" 
+                          [(ngModel)]="motivoAnulacion" 
+                          name="motivoAnulacion"
+                          rows="3"
+                          placeholder="Ingrese el motivo de anulación"
+                          [disabled]="saving"
+                          required></textarea>
+            </div>
+            <div class="mb-3" *ngIf="tipoAnulacion == 1 || tipoAnulacion == 3">
+                <label for="codigoGeneracionRemplazo" class="form-label">Código de Generación de la venta que sustituye a esta <span class="text-danger">*</span></label>
+                <input type="text" 
+                       class="form-control" 
+                       id="codigoGeneracionRemplazo" 
+                       [(ngModel)]="codigoGeneracionRemplazo" 
+                       name="codigoGeneracionRemplazo"
+                       placeholder="Ingrese el código de generación de la venta que reemplaza esta"
+                       [disabled]="saving"
+                       required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="modalRef.hide(); venta.errores = null;" [disabled]="saving">Cancelar</button>
+                <button type="submit" class="btn btn-danger" [disabled]="saving">
+                    <span *ngIf="!saving">Confirmar Anulación</span>
+                    <span *ngIf="saving">
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        Anulando...
+                    </span>
+                </button>
+            </div>
+        </form>
+        
+        <div *ngIf="saving && !venta.errores" class="text-center py-4">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Anulando...</span>
+            </div>
+            <p class="mb-0">Anulando DTE...</p>
+        </div>
+    </div>
+</ng-template>
