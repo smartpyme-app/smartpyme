@@ -79,4 +79,10 @@ export class VentaComponent implements OnInit {
         this.location.back();
     }
 
+    public getTotalConPropina(): number {
+        const total = parseFloat(this.venta?.total || 0);
+        const propina = parseFloat(this.venta?.propina || 0);
+        return total + propina;
+    }
+
 }

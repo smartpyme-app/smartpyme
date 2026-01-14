@@ -36,6 +36,7 @@ class Empresa extends Model
         'departamento',
         'logo',
         'propina',
+        'propina_porcentaje',
         'valor_inventario',
         'vender_sin_stock',
         'user_limit',

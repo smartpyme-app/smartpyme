@@ -261,6 +261,8 @@ export class FacturacionComponent implements OnInit {
     this.venta.iva = 0;
     this.venta.total_costo = 0;
     this.venta.total = 0;
+    this.venta.propina = 0;
+    this.venta.cobrar_propina = false;
     if(this.impuestos.length > 0){
       this.venta.impuestos = this.impuestos;
     }else{
@@ -638,6 +640,12 @@ export class FacturacionComponent implements OnInit {
       ? this.venta.sub_total * 0.10
       : 0;
 
+    // Calcular propina basada en el porcentaje de la empresa y el subtotal
+    const propinaPorcentaje = parseFloat(this.apiService.auth_user().empresa.propina_porcentaje) || 0;
+    this.venta.propina = this.venta.cobrar_propina
+      ? parseFloat((this.venta.sub_total * (propinaPorcentaje / 100)).toFixed(4))
+      : 0;
+
     this.venta.impuestos.forEach((impuesto: any) => {
       if (this.venta.cobrar_impuestos) {
         impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
@@ -655,11 +663,7 @@ export class FacturacionComponent implements OnInit {
     this.venta.total_costo = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'total_costo')
     ).toFixed(4);
-    // Inicializar propina si no existe
-    if (!this.venta.propina) {
-      this.venta.propina = 0;
-    }
-    
+    // El total NO incluye la propina (la propina se muestra por separado en "Total + Propina")
     this.venta.total = (
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
@@ -668,8 +672,7 @@ export class FacturacionComponent implements OnInit {
       parseFloat(this.venta.no_sujeta) +
       parseFloat(this.venta.iva_percibido) -
       parseFloat(this.venta.iva_retenido) -
-      parseFloat(this.venta.renta_retenida) +
-      parseFloat(this.venta.propina || 0)
+      parseFloat(this.venta.renta_retenida)
     ).toFixed(4);
 
 
@@ -1168,6 +1171,12 @@ export class FacturacionComponent implements OnInit {
             this.tieneAccesoPropina = false;
         }
     );
+}
+
+public getTotalConPropina(): number {
+    const total = parseFloat(this.venta?.total || 0);
+    const propina = parseFloat(this.venta?.propina || 0);
+    return total + propina;
 }
 
 }

@@ -5,6 +5,7 @@ import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -43,6 +44,7 @@ export class EmpresaComponent implements OnInit {
     public showpassword: boolean = false;
     public showpassword2: boolean = false;
     public canales: any = [];
+    public tieneAccesoPropina: boolean = false;
 
     public customConfig: any = {
         columnas: {
@@ -52,7 +54,8 @@ export class EmpresaComponent implements OnInit {
 
     constructor(
         public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+        private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
+        private funcionalidadesService: FuncionalidadesService
     ) { }
 
     ngOnInit() {
@@ -62,6 +65,7 @@ export class EmpresaComponent implements OnInit {
         }, error => { this.alertService.error(error); });
 
         this.loadAll();
+        this.verificarAccesoPropina();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
@@ -1238,6 +1242,18 @@ export class EmpresaComponent implements OnInit {
 
             }, error => { this.alertService.error(error); this.cheking = false; });
         });
+    }
+
+    public verificarAccesoPropina() {
+        this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
+            (acceso) => {
+                this.tieneAccesoPropina = acceso;
+            },
+            (error) => {
+                console.error('Error al verificar acceso a propina:', error);
+                this.tieneAccesoPropina = false;
+            }
+        );
     }
 
 }

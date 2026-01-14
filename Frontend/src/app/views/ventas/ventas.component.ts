@@ -668,6 +668,24 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   public async onSubmit(item?: any, isStatusChange?: boolean): Promise<void> {
     const ventaToSave = item || this.venta;
+    
+    // Validar que el ID esté presente para editar
+    if (!ventaToSave.id) {
+      this.alertService.error('Error: No se puede guardar la venta sin un ID válido.');
+      return;
+    }
+    
+    // Asegurar que el ID sea un número
+    ventaToSave.id = +ventaToSave.id;
+    
+    // Normalizar campos que pueden venir como cadena vacía a null
+    if (ventaToSave.id_vendedor === '' || ventaToSave.id_vendedor === 'Todos' || ventaToSave.id_vendedor === null || ventaToSave.id_vendedor === undefined) {
+      ventaToSave.id_vendedor = null;
+    } else {
+      // Convertir a número si tiene valor
+      ventaToSave.id_vendedor = +ventaToSave.id_vendedor;
+    }
+    
     this.saving = true;
     try {
       const venta = await this.apiService.store('venta', ventaToSave)
@@ -1100,6 +1118,10 @@ export class VentasComponent implements OnInit, OnDestroy {
     });
   }
 
-
+  public getTotalConPropina(venta: any): number {
+    const total = parseFloat(venta?.total || 0);
+    const propina = parseFloat(venta?.propina || 0);
+    return total + propina;
+  }
 
 }
