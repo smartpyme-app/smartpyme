@@ -31,6 +31,7 @@ class FacturacionRequest extends FormRequest
             'id_cliente'        => 'required_if:estado,"Pendiente"',
             'detalles'          => 'required',
             'fecha_expiracion'  => 'required_if:cotizacion,1',
+            'fecha_pago'        => 'nullable|date',
             'descripcion_impresion'  => 'required_if:descripcion_personalizada,1',
             'credito'           => 'required_if:condicion,"Crédito"',
             'iva'               => 'required|numeric',
@@ -42,6 +43,11 @@ class FacturacionRequest extends FormRequest
             'id_usuario'        => 'required|numeric',
             'id_bodega'         => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
+            'id_vendedor'       => 'nullable|numeric|exists:users,id',
+            'monto_pago'        => 'nullable|numeric',
+            'cambio'            => 'nullable|numeric',
+            'observaciones'     => 'nullable|string',
+            'tipo_operacion'    => 'nullable|string|max:255',
         ];
 
         // id_canal solo es requerido cuando NO es cotización

@@ -23,6 +23,12 @@ import { CotizacionFormComponent } from './facturacion-tienda/cotizacion-form/co
 import { ProductoSpecsComponent } from './facturacion-tienda/detalles/producto-specs.component';
 import { CotizacionComponent } from '../cotizaciones/cotizacion/cotizacion.component';
 
+// V2 Components
+import { FacturacionV2Component } from './facturacion-tienda-v2/facturacion-v2.component';
+import { VentaDetallesV2Component } from './facturacion-tienda-v2/detalles/venta-detalles-v2.component';
+import { TiendaVentaBuscadorV2Component } from './facturacion-tienda-v2/buscador/tienda-venta-buscador-v2.component';
+import { TiendaVentaPaquetesV2Component } from './facturacion-tienda-v2/paquetes/tienda-venta-paquetes-v2.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -46,7 +52,12 @@ import { CotizacionComponent } from '../cotizaciones/cotizacion/cotizacion.compo
     MetodosDePagoComponent,
     CotizacionFormComponent,
     ProductoSpecsComponent,
-    CotizacionComponent
+    CotizacionComponent,
+    // V2 Components
+    FacturacionV2Component,
+    VentaDetallesV2Component,
+    TiendaVentaBuscadorV2Component,
+    TiendaVentaPaquetesV2Component,
   ],
   exports: [
     FacturacionComponent,
@@ -58,7 +69,12 @@ import { CotizacionComponent } from '../cotizaciones/cotizacion/cotizacion.compo
     VentaDetallesComponent,
     MetodosDePagoComponent,
     ProductoSpecsComponent,
-    CotizacionComponent
+    CotizacionComponent,
+    // V2 Components
+    FacturacionV2Component,
+    VentaDetallesV2Component,
+    TiendaVentaBuscadorV2Component,
+    TiendaVentaPaquetesV2Component,
   ]
 })
 export class FacturacionModule { }

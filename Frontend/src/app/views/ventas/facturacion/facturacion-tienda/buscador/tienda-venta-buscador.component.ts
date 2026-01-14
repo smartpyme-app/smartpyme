@@ -38,7 +38,7 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
     public descripcionesExpandidas: { [key: number]: boolean } = {};
 
     constructor(
-        apiService: ApiService,
+        public override apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private sumPipe:SumPipe,
@@ -257,6 +257,24 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
         event.stopPropagation(); // Previene que se seleccione el producto
         const estadoActual = this.descripcionesExpandidas[producto.id] || false;
         this.descripcionesExpandidas[producto.id] = !estadoActual;
+    }
+
+    /**
+     * Obtiene el stock del producto filtrado por bodega
+     */
+    getStock(producto: any): number {
+        if (!producto.inventarios || !Array.isArray(producto.inventarios) || producto.inventarios.length === 0) {
+            return 0;
+        }
+
+        if (!this.venta || !this.venta.id_bodega) {
+            // Si no hay bodega seleccionada, sumar todo el stock
+            return parseFloat(this.sumPipe.transform(producto.inventarios, 'stock')) || 0;
+        }
+
+        // Filtrar inventarios por bodega y sumar el stock
+        const inventariosFiltrados = producto.inventarios.filter((inv: any) => inv.id_bodega == this.venta.id_bodega);
+        return parseFloat(this.sumPipe.transform(inventariosFiltrados, 'stock')) || 0;
     }
 
 }

@@ -88,6 +88,12 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     detalle.total = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
     detalle.gravada = detalle.total;
     this.cdr.markForCheck();
+
+    // Recalcular IVA cuando cambia la cantidad, precio o descuento
+    if(detalle.iva !== undefined && detalle.iva !== null){
+      detalle.iva = parseFloat(detalle.total) * (this.apiService.auth_user().empresa.iva / 100);
+    }
+
     this.update.emit(this.venta);
   }
 
@@ -233,9 +239,10 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
       this.detalle.gravada = this.detalle.total;
     }
 
-    if (!this.detalle.iva) {
-      this.detalle.iva = this.detalle.total * (this.apiService.auth_user().empresa.iva / 100);
-    }
+            // Recalcular IVA siempre que se actualice el total (especialmente cuando se agrega más cantidad)
+            if(!this.detalle.iva || detalle){
+                this.detalle.iva = this.detalle.total * (this.apiService.auth_user().empresa.iva / 100);
+            }
 
     if (!this.detalle.id_vendedor) {
       this.detalle.id_vendedor = this.venta.id_vendedor;

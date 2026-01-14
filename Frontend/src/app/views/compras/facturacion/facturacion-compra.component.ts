@@ -1198,60 +1198,63 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     return producto1.id === producto2.id;
   }
 
-  // Método trackBy para optimizar el renderizado de listas grandes
-  trackByItem(index: number, item: any): any {
-    return item.numItem || index;
-  }
-
-  // Método para manejar la selección de productos
-  onProductoSeleccionado(item: any, producto: any) {
-    item.productoSeleccionado = producto;
-    // Forzar detección de cambios
-    setTimeout(() => {
-    }, 0);
-  }
-
-  // Método para actualizar mapJsonToCompra con la nueva lógica
-  async mapJsonToCompra(jsonData: any) {
-    if (jsonData.identificacion.fecEmi) {
-      this.compra.fecha = jsonData.identificacion.fecEmi;
+    // Método para manejar la selección de productos
+    onProductoSeleccionado(item: any, producto: any) {
+        // console.log('Producto seleccionado:', producto);
+        item.productoSeleccionado = producto;
+        // Forzar detección de cambios
+        setTimeout(() => {
+            //console.log('Estado actualizado:', item.productoSeleccionado);
+        }, 0);
     }
 
-    this.compra.id_usuario = this.apiService.auth_user().id;
-    this.compra.id_bodega = this.apiService.auth_user().id_bodega;
-
-    if (jsonData.identificacion.tipoDte) {
-      this.compra.tipo_documento = this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
-    }
-
-    // Búsqueda asíncrona usando Web Worker
-    const proveedor = await this.getProveedor(jsonData.emisor);
-    if(proveedor && proveedor.id){
-      this.compra.id_proveedor = proveedor.id;  
-    } else {
-      console.log('No se pudo asignar proveedor. Proveedor encontrado:', proveedor);
-    }
-
-    // Procesar totales del resumen
-    if (jsonData.resumen) {
-      this.compra.sub_total = jsonData.resumen.subTotal || jsonData.resumen.subTotalVentas || 0;
-      this.compra.total = jsonData.resumen.totalPagar || jsonData.resumen.montoTotalOperacion || 0;
-
-      // Procesar IVA
-      if (jsonData.resumen.tributos) {
-        const iva = jsonData.resumen.tributos.find((t: any) => t.codigo === '20');
-        if (iva) {
-          this.compra.iva = iva.valor;
-          this.compra.cobrar_impuestos = true;
+    // Método para actualizar mapJsonToCompra con la nueva lógica
+    mapJsonToCompra(jsonData: any) {
+        if (jsonData.identificacion.fecEmi) {
+            this.compra.fecha = jsonData.identificacion.fecEmi;
         }
-      }
-    }
 
-    // Procesar productos del cuerpoDocumento de forma optimizada
-    if (jsonData.cuerpoDocumento && jsonData.cuerpoDocumento.length > 0) {
-      this.procesarProductosDTE(jsonData.cuerpoDocumento);
+        this.compra.id_usuario = this.apiService.auth_user().id;
+        this.compra.id_bodega = this.apiService.auth_user().id_bodega;
+
+        if (jsonData.identificacion.tipoDte) {
+            this.compra.tipo_documento = this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
+        }
+
+        // Ahora se asigna el  código de generación como numero de referencia
+        if (jsonData.identificacion.codigoGeneracion) {
+            this.compra.referencia = jsonData.identificacion.codigoGeneracion;
+        }
+
+        this.getProveedor(jsonData.emisor).then((proveedor: any) => {
+            if(proveedor && proveedor.id){
+                this.compra.id_proveedor = proveedor.id;
+                //console.log('Proveedor asignado:', proveedor.nombre_empresa || proveedor.nombre, 'ID:', proveedor.id);
+            } else {
+                console.log('No se pudo asignar proveedor. Proveedor encontrado:', proveedor);
+            }
+        });
+
+        // Procesar totales del resumen
+        if (jsonData.resumen) {
+            this.compra.sub_total = jsonData.resumen.subTotal || jsonData.resumen.subTotalVentas || 0;
+            this.compra.total = jsonData.resumen.totalPagar || jsonData.resumen.montoTotalOperacion || 0;
+
+            // Procesar IVA
+            if (jsonData.resumen.tributos) {
+                const iva = jsonData.resumen.tributos.find((t: any) => t.codigo === '20');
+                if (iva) {
+                    this.compra.iva = iva.valor;
+                    this.compra.cobrar_impuestos = true;
+                }
+            }
+        }
+
+        // Procesar productos del cuerpoDocumento de forma optimizada
+        if (jsonData.cuerpoDocumento && jsonData.cuerpoDocumento.length > 0) {
+            this.procesarProductosDTE(jsonData.cuerpoDocumento);
+        }
     }
-  }
 
   // Método para activar la búsqueda desde el template
   onSearchProducts(term: string) {

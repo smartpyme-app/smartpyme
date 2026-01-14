@@ -64,6 +64,16 @@ class SuscripcionesController extends Controller
                         $query->whereDate('fecha_ultimo_pago', '<=', $request->pago_fin);
                     });
                 })
+                ->when($request->fecha_pago_inicio, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('fecha_proximo_pago', '>=', $request->fecha_pago_inicio);
+                    });
+                })
+                ->when($request->fecha_pago_fin, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('fecha_proximo_pago', '<=', $request->fecha_pago_fin);
+                    });
+                })
                 ->when($request->plan, function ($q) use ($request) {
                     return $q->whereHas('suscripcion.plan', function ($query) use ($request) {
                         $query->where('nombre', $request->plan);
@@ -386,6 +396,13 @@ class SuscripcionesController extends Controller
 
                     $suscripcion->estado = config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO');
                     $suscripcion->save();
+
+                    // Desactivar la empresa
+                    $empresa = Empresa::find($request->input('empresa.id'));
+                    if ($empresa) {
+                        $empresa->activo = false;
+                        $empresa->save();
+                    }
                 }
             } else {
                 $suscripcion->estado = config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO');
@@ -395,6 +412,13 @@ class SuscripcionesController extends Controller
                 if ($user) {
                     $user->enable = false;
                     $user->save();
+                }
+
+                // Desactivar la empresa
+                $empresa = Empresa::find($suscripcion->empresa_id);
+                if ($empresa) {
+                    $empresa->activo = false;
+                    $empresa->save();
                 }
             }
 

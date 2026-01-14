@@ -48,6 +48,9 @@ class UpdateEmpleadoRequest extends FormRequest
             'contacto_emergencia.relacion' => ['nullable', 'string'],
             'contacto_emergencia.telefono' => ['nullable', 'string'],
             'contacto_emergencia.direccion' => ['nullable', 'string'],
+            'configuracion_descuentos' => ['nullable', 'array'],
+            'configuracion_descuentos.aplicar_afp' => ['nullable', 'boolean'],
+            'configuracion_descuentos.aplicar_isss' => ['nullable', 'boolean']
         ];
     }
 
@@ -61,17 +64,17 @@ class UpdateEmpleadoRequest extends FormRequest
             if ($this->has('dui') && $this->dui !== null && trim($this->dui) !== '') {
                 $empleadoId = $this->route('id');
                 $empleado = \App\Models\Planilla\Empleado::find($empleadoId);
-                
+
                 if ($empleado) {
                     $duiActual = trim($empleado->dui ?? '');
                     $duiNuevo = trim($this->dui);
-                    
+
                     if ($duiNuevo !== $duiActual) {
                         // Si el DUI cambió, validar unicidad
                         $existe = \App\Models\Planilla\Empleado::where('dui', $duiNuevo)
                             ->where('id', '!=', $empleadoId)
                             ->exists();
-                        
+
                         if ($existe) {
                             $validator->errors()->add('dui', 'El DUI ya está registrado.');
                         }

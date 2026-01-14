@@ -1,7 +1,7 @@
-import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -19,6 +19,8 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
     selector: 'app-ventas',
@@ -28,13 +30,27 @@ import { LazyImageDirective } from '../../directives/lazy-image.directive';
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
-export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
+export class VentasComponent extends BaseCrudComponent<any> implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   public ventas: any = {};
   public venta: any = {};
   public sending: boolean = false;
   public downloadingDetalles: boolean = false;
   public downloadingVentas: boolean = false;
   public reporteSeleccionado: string = '';
+  
+  // Permisos para evitar problemas con ICU messages en el template
+  public readonly permisoVentasCrear = 'ventas.crear';
+  public readonly permisoVentasEditar = 'ventas.editar';
+  
+  // Métodos helper para permisos
+  public canEditVentas(): boolean {
+    return this.apiService.canEditTest(this.permisoVentasEditar);
+  }
+  
+  public canCreateVentas(): boolean {
+    return this.apiService.canCreateTest(this.permisoVentasCrear);
+  }
 
   public clientes: any = [];
   public usuario: any = {};
@@ -70,6 +86,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
   public modalRefPorMarca!: any; // BsModalRef
   downloadingPorMarca: boolean = false;
 
+  public override modalRef!: BsModalRef;
+
   constructor(
     protected override apiService: ApiService,
     private mhService: MHService,
@@ -102,6 +120,26 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
         this.filtrarVentas();
       }
     });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // No sobrescribir untilDestroyed, usar la propiedad de la clase base
+
+  public override openModal(template: TemplateRef<any>, item?: any) {
+    if (item) {
+      this.venta = item;
+    }
+    this.modalRef = this.modalService.show(template);
+  }
+
+  public override closeModal() {
+    if (this.modalRef) {
+      this.modalRef.hide();
+    }
   }
 
   protected aplicarFiltros(): void {
@@ -161,8 +199,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     this.sharedDataService.getCategorias()
       .pipe(this.untilDestroyed())
       .subscribe({
-        next: (categorias) => {
-          this.categorias = categorias;
+        next: (categorias: any) => {
+          this.categorias = categorias as any[];
           this.cdr.markForCheck();
         },
         error: (error) => {
@@ -174,8 +212,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     this.sharedDataService.getMarcas()
       .pipe(this.untilDestroyed())
       .subscribe({
-        next: (marcas) => {
-          this.marcas = marcas;
+        next: (marcas: any) => {
+          this.marcas = marcas as any[];
           this.cdr.markForCheck();
         },
         error: (error) => {
@@ -259,7 +297,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
       }
 
       this.filtrarVentas();
-      
+
     }
 
 
@@ -381,7 +419,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
                 next: (documentos) => {
                   this.documentos = documentos;
                   this.documentos = this.documentos.filter(
-                    (x: any) => x.id_sucursal == ventaCompleta.id_sucursal
+                    (x: any) => x.id_sucursal == (ventaCompleta as any).id_sucursal
                   );
                   this.cdr.markForCheck();
                 },
@@ -906,8 +944,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     this.funcionalidadesService.verificarAcceso('contabilidad')
       .pipe(this.untilDestroyed())
       .subscribe({
-        next: (acceso) => {
-          this.contabilidadHabilitada = acceso;
+        next: (acceso: any) => {
+          this.contabilidadHabilitada = acceso as boolean;
           this.cdr.markForCheck();
         },
         error: (error) => {
@@ -1003,6 +1041,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     });
   }
 
-
+  public getTotalConPropina(venta: any): number {
+    const total = parseFloat(venta?.total || 0);
+    const propina = parseFloat(venta?.propina || 0);
+    return total + propina;
+  }
 
 }

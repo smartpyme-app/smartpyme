@@ -37,17 +37,19 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, Skips
         try {
             $empresa = Empresa::find(Auth::user()->id_empresa);
             if ($empresa) {
+                $codPais = $empresa->cod_pais;
+                $pais = trim($empresa->pais ?? '');
+                
                 // Si tiene código de país 'SV', es El Salvador
-                if ($empresa->cod_pais === 'SV') {
+                if ($codPais === 'SV') {
                     $this->esElSalvador = true;
                 }
                 // Si tiene código de país diferente a 'SV' y no es NULL, no es El Salvador
-                elseif ($empresa->cod_pais !== null && $empresa->cod_pais !== 'SV') {
+                elseif ($codPais !== null && $codPais !== 'SV') {
                     $this->esElSalvador = false;
                 }
                 // Si cod_pais es NULL, verificar campo pais
                 else {
-                    $pais = trim($empresa->pais ?? '');
                     // Si pais es 'El Salvador', es El Salvador
                     if (strtolower($pais) === 'el salvador') {
                         $this->esElSalvador = true;
@@ -66,7 +68,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, Skips
                 $this->esElSalvador = true;
             }
         } catch (\Exception $e) {
-            Log::warning("Error al detectar país de empresa en ClientesPersonas: " . $e->getMessage());
+            Log::error("Error al detectar país de empresa en ClientesPersonas: " . $e->getMessage());
             // Por defecto, asumir que es El Salvador para mantener compatibilidad
             $this->esElSalvador = true;
         }

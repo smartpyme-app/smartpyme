@@ -12,6 +12,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
@@ -54,6 +55,7 @@ export class EmpresaComponent implements OnInit {
     public showpassword: boolean = false;
     public showpassword2: boolean = false;
     public canales: any = [];
+    public tieneAccesoPropina: boolean = false;
 
     public customConfig: any = {
         columnas: {
@@ -67,7 +69,8 @@ export class EmpresaComponent implements OnInit {
     constructor(
         public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
-        private cdr: ChangeDetectorRef
+        private cdr: ChangeDetectorRef,
+        private funcionalidadesService: FuncionalidadesService
     ) { }
 
     ngOnInit() {
@@ -80,6 +83,7 @@ export class EmpresaComponent implements OnInit {
         }, error => { this.alertService.error(error); });
 
         this.loadAll();
+        this.verificarAccesoPropina();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
@@ -116,7 +120,7 @@ export class EmpresaComponent implements OnInit {
             const empresaGuardada = await this.apiService.store('empresa', this.empresa)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             this.empresa = empresaGuardada;
 
             this.initializeCustomConfig();
@@ -190,6 +194,22 @@ export class EmpresaComponent implements OnInit {
     }
 
     setPais() {
+        // Mapeo de países a códigos ISO
+        const mapeoCodigosPais: { [key: string]: string } = {
+            'El Salvador': 'SV',
+            'Belice': 'BZ',
+            'Guatemala': 'GT',
+            'Honduras': 'HN',
+            'Nicaragua': 'NI',
+            'Costa Rica': 'CR',
+            'Panamá': 'PA',
+            'México': 'MX'
+        };
+
+        // Establecer el código de país
+        this.empresa.cod_pais = mapeoCodigosPais[this.empresa.pais] || null;
+
+        // Configurar moneda e IVA según el país
         if (this.empresa.pais == 'El Salvador') {
             this.empresa.moneda = 'USD';
             this.empresa.iva = 13;
@@ -223,10 +243,9 @@ export class EmpresaComponent implements OnInit {
             this.empresa.iva = 16;
         }
 
+        // Limpiar códigos de ubicación cuando se cambia de país
         this.empresa.cod_departamento = " ";
         this.empresa.cod_municipio = " ";
-
-        console.log(this.empresa);
         this.cdr.markForCheck();
     }
 
@@ -1146,7 +1165,9 @@ export class EmpresaComponent implements OnInit {
             },
             modulos: {},
             configuraciones: {
-                ticket_en_pdf: false
+                ticket_en_pdf: false,
+                version_facturacion: 'original', // 'original' o 'v2'
+                mostrar_campos_contables: true // Mostrar tipo de operación y tipo de ingreso
             },
             campos_personalizados: {}
         };
@@ -1254,6 +1275,53 @@ export class EmpresaComponent implements OnInit {
         this.updateTicketEnPdf(!currentValue);
     }
 
+    // Método para obtener la versión de facturación configurada
+    public getVersionFacturacion(): string {
+        return this.getCustomConfig('configuraciones', 'version_facturacion', 'original');
+    }
+
+    // Método para actualizar la versión de facturación
+    public updateVersionFacturacion(version: string) {
+        this.addCustomConfig('configuraciones', 'version_facturacion', version);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Versión de facturación cambiada a ${version === 'v2' ? 'V2 (precios con IVA)' : 'Original'}`
+            );
+        });
+    }
+
+    // Método para verificar si está usando la versión v2
+    public isVersionFacturacionV2(): boolean {
+        return this.getVersionFacturacion() === 'v2';
+    }
+
+    // Método para verificar si los campos contables están habilitados
+    public isCamposContablesEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'mostrar_campos_contables', true);
+    }
+
+    // Método para actualizar la configuración de campos contables
+    public updateCamposContables(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'mostrar_campos_contables', enabled);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Campos contables ${enabled ? 'habilitados' : 'deshabilitados'} correctamente`
+            );
+        });
+    }
+
+    // Método para alternar campos contables
+    public toggleCamposContables() {
+        const currentValue = this.isCamposContablesEnabled();
+        this.updateCamposContables(!currentValue);
+    }
+
     setCamposRenta() {
         this.onSubmit().then(() => {
             this.mhService.auth()
@@ -1272,6 +1340,18 @@ export class EmpresaComponent implements OnInit {
 
             }, error => { this.alertService.error(error); this.cheking = false; });
         });
+    }
+
+    public verificarAccesoPropina() {
+        this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
+            (acceso) => {
+                this.tieneAccesoPropina = acceso;
+            },
+            (error) => {
+                console.error('Error al verificar acceso a propina:', error);
+                this.tieneAccesoPropina = false;
+            }
+        );
     }
 
 }

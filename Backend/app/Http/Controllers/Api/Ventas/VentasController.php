@@ -25,7 +25,10 @@ use App\Services\Ventas\HistorialService;
 use App\Services\Ventas\ReporteEmailService;
 use App\Services\Ventas\CotizacionService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use App\Models\Admin\Empresa;
+use App\Models\Admin\Documento;
 
 class VentasController extends Controller
 {
@@ -88,7 +91,7 @@ class VentasController extends Controller
     public function read($id)
     {
         $venta = Venta::where('id', $id)
-            ->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto', 'abonos.usuario', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')
+            ->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto', 'abonos.usuario', 'cliente', 'impuestos.impuesto', 'metodos_de_pago', 'vendedor', 'usuario', 'sucursal', 'documento', 'proyecto')
             ->firstOrFail();
 
         $venta->saldo = $venta->saldo;
@@ -98,32 +101,69 @@ class VentasController extends Controller
 
     public function store(StoreVentaRequest $request)
     {
-        $venta = Venta::where('id', $request->id)
-            ->with('detalles')
-            ->firstOrFail();
+        $request->validate([
+            'id' => 'required|numeric',
+            'fecha' => 'required',
+            'estado' => 'required',
+            'id_usuario' => 'required',
+        ]);
 
-        DB::beginTransaction();
-        try {
-            // Anular venta y regresar stock
-            if (($venta->estado != 'Anulada') && ($request->estado == 'Anulada')) {
-                $this->inventarioService->revertirInventarioAnulacion($venta);
-                $this->abonoService->cancelarAbonos($venta);
+        // Buscar la venta respetando el scope global de empresa
+        $venta = Venta::where('id', $request->id)->with('detalles')->first();
+
+        if (!$venta) {
+            return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
+        }
+
+        // Ajustar stocks
+        foreach ($venta->detalles as $detalle) {
+
+            $producto = Producto::where('id', $detalle->id_producto)
+                ->with('composiciones')->firstOrFail();
+
+            DB::beginTransaction();
+            try {
+                // Anular venta y regresar stock
+                if (($venta->estado != 'Anulada') && ($request->estado == 'Anulada')) {
+                    $this->inventarioService->revertirInventarioAnulacion($venta);
+                    $this->abonoService->cancelarAbonos($venta);
+                }
+
+                // Cancelar anulación de venta y descargar stock
+                if (($venta->estado == 'Anulada') && ($request->estado != 'Anulada')) {
+                    $this->inventarioService->aplicarInventarioCancelacionAnulacion($venta);
+                    $this->abonoService->confirmarAbonos($venta);
+
+                    // Inventario compuestos
+                    foreach ($detalle->composiciones()->get() as $comp) {
+
+                        $inventario = Inventario::where('id_producto', $comp->id_producto)
+                            ->where('id_bodega', $venta->id_bodega)->first();
+
+                        if ($inventario) {
+                            $inventario->stock -= $detalle->cantidad * $comp->cantidad;
+                            $inventario->save();
+                            $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad));
+                        }
+                    }
+
+                    // Abonos
+                    foreach ($venta->abonos as $abono) {
+                        $abono->estado = 'Confirmado';
+                        $abono->save();
+                    }
+                }
+
+                // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
+                $venta->fill($request->all());
+                $venta->save();
+
+                DB::commit();
+                return response()->json($venta, 200);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return response()->json(['error' => $e->getMessage()], 400);
             }
-
-            // Cancelar anulación de venta y descargar stock
-            if (($venta->estado == 'Anulada') && ($request->estado != 'Anulada')) {
-                $this->inventarioService->aplicarInventarioCancelacionAnulacion($venta);
-                $this->abonoService->confirmarAbonos($venta);
-            }
-
-            $venta->fill($request->validated());
-            $venta->save();
-
-            DB::commit();
-            return response()->json($venta, 200);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['error' => $e->getMessage()], 400);
         }
     }
 
@@ -151,10 +191,16 @@ class VentasController extends Controller
 
         DB::beginTransaction();
         try {
-            // Si es cotización, guardar en cotizacion_ventas
-            if ($request->cotizacion == 1) {
-                $data = $request->validated();
 
+            // Obtener la empresa para verificar configuración de vender sin stock
+            $empresa = Empresa::findOrFail(Auth::user()->id_empresa);
+            $puedeVenderSinStock = $empresa->vender_sin_stock == 1;
+
+            // Validar y obtener datos
+            $data = $request->validated();
+
+            // Si es cotización, usar el servicio de cotizaciones
+            if ($request->cotizacion == 1) {
                 // Crear o actualizar cotización
                 $cotizacion = $this->cotizacionService->crearOActualizarCotizacion($data);
 
@@ -169,8 +215,6 @@ class VentasController extends Controller
             }
 
             // Si NO es cotización, guardar en ventas (flujo original)
-            $data = $request->validated();
-
             // Crear o actualizar venta
             $venta = $this->ventaService->crearOActualizarVenta($data);
 

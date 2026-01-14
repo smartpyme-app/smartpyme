@@ -48,6 +48,9 @@ class StoreEmpleadoRequest extends FormRequest
             'contacto_emergencia.relacion' => ['nullable', 'string'],
             'contacto_emergencia.telefono' => ['nullable', 'string'],
             'contacto_emergencia.direccion' => ['nullable', 'string'],
+            'configuracion_descuentos' => ['nullable', 'array'],
+            'configuracion_descuentos.aplicar_afp' => ['nullable', 'boolean'],
+            'configuracion_descuentos.aplicar_isss' => ['nullable', 'boolean']
         ];
     }
 

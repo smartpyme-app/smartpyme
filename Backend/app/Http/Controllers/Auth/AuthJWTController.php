@@ -62,23 +62,52 @@ class AuthJWTController extends Controller
 
     public function login(Request $request)
     {
-        try {
-            $credentials = $request->only('email', 'password');
-            $resultado = $this->authService->login($credentials);
-            return response()->json($resultado, 200);
-        } catch (\Exception $e) {
-            $code = (int)($e->getCode() ?: 500);
-            // Asegurar que el código sea válido (entre 100 y 599)
-            if ($code < 100 || $code > 599) {
-                $code = 500;
-            }
-            $message = $code === 401 ? $e->getMessage() : 'Error en el servidor';
-            return response()->json([
-                'message' => $message,
-                'code' => $code,
-                'error' => $code === 500 ? $e->getMessage() : null
-            ], $code);
-        }
+
+        $credentials = $request->only('email', 'password');
+        $token = null;
+
+        $token = JWTAuth::attempt($credentials);
+        $user = auth()->user();
+
+
+        if (!$token)
+            return  Response()->json(['message' => 'Datos incorrectos, asegúrate de que tu usuario y contraseña estén escritos correctamente.', 'code' => 401], 401);
+
+        if (!$user->enable)
+            return  Response()->json(['message' => 'Lo sentimos, este usuario esta inactivo', 'code' => 401], 401);
+
+        if (!$user->empresa()->pluck('activo')->first())
+            return  Response()->json(['message' => 'Lo sentimos, la cuenta no esta activa', 'code' => 401], 401);
+
+        $user->ultimo_login = Carbon::now();
+        $user->save();
+
+        $acceso = new Acceso;
+        $acceso->id_usuario = $user->id;
+        $acceso->fecha = $user->ultimo_login;
+        $acceso->save();
+
+        $user->empresa = $user->empresa()->with('licencia')->first();
+        $suscripcion = $user->empresa->suscripcion()
+            //Esto nos rompio las pelotas >:(
+            // ->whereNotIn('estado', [
+            //     config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+            //     config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+            // ])
+            ->latest()
+            ->first();
+        $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
+        $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
+        $user->tiene_suscripcion = !is_null($suscripcion);
+        $user->ordenes_pagos = $suscripcion && $suscripcion->ordenesPago()->exists() ? true : false;
+        $user->tiene_metodo_pago_activo = $user->metodoPago()->where('esta_activo', true)->exists();
+
+        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->nombre;
+        $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
+        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
+        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
+
+        return response()->json(['token' => $token, 'user' => $user], 200);
     }
 
     public function logout(Request $request)
@@ -274,6 +303,18 @@ class AuthJWTController extends Controller
         $user = $this->authService->cargarDatosUsuario($user);
 
         return response()->json(['user' => $user], 200);
+    }
+
+    private function getPlan($plan_id, $withName = false, $name = null)
+    {
+        $plan = null;
+        if ($withName) {
+            $plan = Plan::where('nombre', $name)->first();
+        } else {
+            $plan = Plan::find($plan_id);
+        }
+
+        return $plan;
     }
 
 }

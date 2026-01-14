@@ -8,15 +8,15 @@ const routes: Routes = [
     component: LayoutComponent,
     children: [
       {
-        path: '', 
+        path: '',
         loadComponent: () => import('./planillas.component').then(m => m.PlanillasComponent)
       },
       {
-        path: 'empleados', 
+        path: 'empleados',
         loadComponent: () => import('./empleados/empleados.component').then(m => m.EmpleadosComponent)
       },
       {
-        path: 'empleado/crear', 
+        path: 'empleado/crear',
         loadComponent: () => import('./empleados/administrar-empleado.component').then(m => m.AdministrarEmpleadoComponent)
       },
       {
@@ -24,11 +24,11 @@ const routes: Routes = [
         loadComponent: () => import('./empleados/administrar-empleado.component').then(m => m.AdministrarEmpleadoComponent),
       },
       {
-        path: 'detalle/:id', 
+        path: 'detalle/:id',
         loadComponent: () => import('./planillas/planilla-detalle.component').then(m => m.PlanillaDetalleComponent)
       },
       {
-        path: 'planilla/:id/boletas', 
+        path: 'planilla/:id/boletas',
         loadComponent: () => import('./planillas/boleta-pago.component').then(m => m.BoletaPagoComponent)
       },
       {
@@ -36,15 +36,21 @@ const routes: Routes = [
         loadComponent: () => import('./planillas/boleta-pago.component').then(m => m.BoletaPagoComponent),
       },
       {
-        path: 'boletas/:id', 
+        path: 'boletas/:id',
         loadComponent: () => import('./planillas/ver-boletas.component').then(m => m.VerBoletasComponent)
       },
       {
-        path: 'configuracion-planilla', 
+        path: 'configuracion-planilla',
         loadComponent: () => import('./configuracion-planilla/configuracion-planilla.component').then(m => m.ConfiguracionPlanillaComponent)
       },
+      {path: 'aguinaldos',
+        loadComponent: () => import('./aguinaldos/aguinaldos.component').then(m => m.AguinaldosComponent)
+      },
+      {path: 'aguinaldo/detalle/:id',
+        loadComponent: () => import('./aguinaldos/aguinaldo-detalle.component').then(m => m.AguinaldoDetalleComponent)
+      },
       {
-        path: 'test-constants', 
+        path: 'test-constants',
         loadComponent: () => import('./test-constants.component').then(m => m.TestConstantsComponent)
       }
     ],

@@ -37,6 +37,16 @@ const routes: Routes = [
         title: 'Facturación',
       },
       {
+        path: 'ventas-v2/crear',
+        canActivate: [RoleGuard, PermissionGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+          permission: 'ventas.crear',
+        },
+        loadComponent: () => import('@views/ventas/facturacion/facturacion-tienda-v2/facturacion-v2.component').then(m => m.FacturacionV2Component),
+        title: 'Facturación V2',
+      },
+      {
         path: 'venta/consigna/revisar/:id',
         loadComponent: () => import('@views/ventas/facturacion/facturacion-consigna/facturacion-consigna.component').then(m => m.FacturacionConsignaComponent),
         title: 'Facturación consigna',
@@ -99,10 +109,10 @@ const routes: Routes = [
         data: { type: 'cotizacion' },
         title: 'Cotización',
       },
-      { 
-        path: 'solicitudes-compra', 
-        loadComponent: () => import('@views/ventas/solicitudes-compra/solicitudes-compra.component').then(m => m.SolicitudesCompraComponent), 
-        title: 'Solicitudes de compra' 
+      {
+        path: 'solicitudes-compra',
+        loadComponent: () => import('@views/ventas/solicitudes-compra/solicitudes-compra.component').then(m => m.SolicitudesCompraComponent),
+        title: 'Solicitudes de compra'
       },
       {
         path: 'canales',
@@ -196,13 +206,13 @@ const routes: Routes = [
         loadComponent: () => import('@views/ventas/clientes/cliente/cliente.component').then(m => m.ClienteComponent),
         title: 'Cliente',
       },
-      { 
-        path: 'clientes/cuentas-cobrar', 
-        loadComponent: () => import('@views/ventas/clientes/cuentas-cobrar/cuentas-cobrar.component').then(m => m.CuentasCobrarComponent) 
+      {
+        path: 'clientes/cuentas-cobrar',
+        loadComponent: () => import('@views/ventas/clientes/cuentas-cobrar/cuentas-cobrar.component').then(m => m.CuentasCobrarComponent)
       },
-      { 
-        path: 'clientes/crm', 
-        loadComponent: () => import('@views/ventas/clientes/dash/clientes-dash.component').then(m => m.ClientesDashComponent) 
+      {
+        path: 'clientes/crm',
+        loadComponent: () => import('@views/ventas/clientes/dash/clientes-dash.component').then(m => m.ClientesDashComponent)
       },
 
       // Reportes
@@ -240,15 +250,15 @@ const routes: Routes = [
         loadComponent: () => import('@views/ventas/orden_produccion/crear_orden/crear-orden-produccion.component').then(m => m.CrearOrdenProduccionComponent),
         title: 'Crear Orden de Producción',
       },
-      { 
-        path: 'orden-produccion/detalles/:id', 
-        loadComponent: () => import('@views/ventas/orden_produccion/crear_orden/crear-orden-produccion.component').then(m => m.CrearOrdenProduccionComponent), 
-        title: 'Ver Orden de Producción' 
+      {
+        path: 'orden-produccion/detalles/:id',
+        loadComponent: () => import('@views/ventas/orden_produccion/crear_orden/crear-orden-produccion.component').then(m => m.CrearOrdenProduccionComponent),
+        title: 'Ver Orden de Producción'
       },
-      { 
-        path: 'orden-produccion/editar/:id', 
-        loadComponent: () => import('@views/ventas/orden_produccion/crear_orden/crear-orden-produccion.component').then(m => m.CrearOrdenProduccionComponent), 
-        title: 'Editar Orden de Producción' 
+      {
+        path: 'orden-produccion/editar/:id',
+        loadComponent: () => import('@views/ventas/orden_produccion/crear_orden/crear-orden-produccion.component').then(m => m.CrearOrdenProduccionComponent),
+        title: 'Editar Orden de Producción'
       },
     ]
   }

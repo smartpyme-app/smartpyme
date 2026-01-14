@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Registros</h2>
-    @if (apiService.canCreateTest('ventas.crear')) {
+    @if (canCreateVentas()) {
         <button routerLink="/venta/crear" tooltip="Crear venta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir venta</button>
     }
 </section>
@@ -82,7 +82,7 @@
                         <th>Cliente</th>
                         <th class="d-none d-md-table-cell">Documento</th>
                         <th class="d-none d-md-table-cell">Método de pago</th>
-                        <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha vencimiento</th>
+                        <th (click)="setOrden('fecha_expiracion')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_expiracion' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_expiracion' && filtros.direccion == 'desc'}" class="click">Fecha vencimiento</th>
                         <th>Estado</th>
                         <th (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
                         <th class="text-center">Más</th>
@@ -121,20 +121,20 @@
                                 }
                             </td>
                         }
-                        <td>{{venta.nombre_cliente | truncate:30 }}@if (venta.id_cliente && venta.id_cliente != 1) {<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a>}</td>
+                        <td>{{venta.nombre_cliente | truncate:30 }}@if (venta.id_cliente && venta.id_cliente != 1) {<a class="float-end d-none"  tooltip="Ver información del cliente" [routerLink]="['/cliente/editar', venta.id_cliente]"><i class="fa fa-edit"></i></a>}</td>
                         <td>
-                            <a class="text-decoration-none text-dark"  tooltip="Ver información de la venta" routerLink="/venta/{{venta.id}}">
+                            <a class="text-decoration-none text-dark"  tooltip="Ver información de la venta" [routerLink]="['/venta', venta.id]">
                                 {{venta.nombre_documento}} #{{venta.correlativo}}
                             </a>
                         </td>
                         <td><span title="{{ venta.detalle_banco }}">{{venta.forma_pago}}</span></td>
-                        <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td>
+                        <td>{{venta.fecha_expiracion | date:'dd/MM/yyyy'}}</td>
                         <td>
                             <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">
                                 @if (venta.estado != 'Pendiente') {
                                     <span>{{ venta.estado }}</span>
                                 }
-                                @if (venta.estado == 'Pendiente' && apiService.canEditTest('ventas.editar')) {
+                                @if (venta.estado == 'Pendiente' && canEditVentas()) {
                                     <a tooltip="Pagar venta" (click)="openAbono(mabono, venta)" class="text-decoration-none text-dark click">
                                         {{ venta.estado }}
                                     </a>
@@ -148,14 +148,26 @@
                         </td>
                         <td class="text-end">
                             @if (venta.estado != 'Pendiente' && !venta.abonos_sum_total) {
+                              @if(venta.propina > 0){
                                 <span>
-                                    {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
                                 </span>
+                              } @else {
+                                <span>
+                                {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                </span>
+                              }
                             }
                             @if (venta.estado == 'Pendiente' || venta.abonos_sum_total > 0) {
-                                <span class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                                    {{venta.total | currency:'USD':'symbol':'1.2'}}
+                              @if(venta.propina > 0){
+                                <span>
+                                {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
                                 </span>
+                              } @else {
+                                <span class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                </span>
+                              }
                             }
                             <ng-template #popTemplate>
                                 <table class="w-100">
@@ -163,6 +175,14 @@
                                         <tr>
                                             <td>Total</td>
                                             <td class="text-end">{{ venta.total | currency}}</td>
+                                        </tr>
+                                        <tr *ngIf="venta.propina > 0">
+                                            <td>Propina</td>
+                                            <td class="text-end">{{ venta.propina | currency}}</td>
+                                        </tr>
+                                        <tr *ngIf="venta.propina > 0">
+                                            <td><strong>Total + Propina</strong></td>
+                                            <td class="text-end"><strong>{{ getTotalConPropina(venta) | currency}}</strong></td>
                                         </tr>
                                         <tr>
                                             <td>Abonos</td>
@@ -205,65 +225,65 @@
                                         </a>
                                     }
 
-                                    <a routerLink="/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
+                                    <a [routerLink]="['/venta', venta.id]" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    @if (venta.estado == 'Pendiente' && apiService.canEditTest('ventas.editar')) {
+                                    @if (venta.estado == 'Pendiente' && canEditVentas()) {
                                         <a (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar venta
                                         </a>
                                     }
-                                    @if (venta.estado != 'Anulada' && apiService.canEditTest('ventas.editar')) {
+                                    @if (venta.estado != 'Anulada' && canEditVentas()) {
                                         <a (click)="anularDTE(venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-ban"></i> Anular venta
                                         </a>
                                     }
-                                    @if (venta.estado == 'Anulada' && apiService.canEditTest('ventas.editar')) {
+                                    @if (venta.estado == 'Anulada' && canEditVentas()) {
                                         <a (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-check"></i> Revertir anulación
                                         </a>
                                     }
-                                    @if (apiService.canEditTest('ventas.editar')) {
+                                    @if (canEditVentas()) {
                                         <a (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-edit"></i> Editar
                                         </a>
                                     }
-                                    @if (venta.estado == 'Consigna' && apiService.canEditTest('ventas.editar')) {
-                                        <a routerLink="/venta/consigna/revisar/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
+                                    @if (venta.estado == 'Consigna' && canEditVentas()) {
+                                        <a [routerLink]="['/venta/consigna/revisar', venta.id]" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
                                         </a>
                                     }
-                                    @if (venta.recurrente == 0 && apiService.canEditTest('ventas.editar')) {
+                                    @if (venta.recurrente == 0 && canEditVentas()) {
                                         <a (click)="setRecurrencia(venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
                                         </a>
                                     }
-                                    @if (apiService.canEditTest('ventas.editar')) {
+                                    @if (canEditVentas()) {
                                         <a (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-print"></i> Imprimir
                                         </a>
                                     }
-                                    @if (venta.forma_pago == 'Wompi' && venta.estado == 'Pendiente' && apiService.canEditTest('ventas.editar')) {
+                                    @if (venta.forma_pago == 'Wompi' && venta.estado == 'Pendiente' && canEditVentas()) {
                                         <a (click)="linkWompi(venta)" class="list-group-item list-group-item-action border-0 click">
                                             <img src="https://wompi.sv/img/icon.png" width="15px" class="img-fluid" alt=""> Generar enlace de pago
                                         </a>
                                     }
-                                    @if (apiService.canEditTest('ventas.editar')) {
+                                    @if (canEditVentas()) {
                                         <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-right-left"></i> Hacer devolucion
                                         </a>
                                     }
-                                    @if (apiService.canEditTest('ventas.editar') && contabilidadHabilitada) {
+                                    @if (canEditVentas() && contabilidadHabilitada) {
                                         <a (click)="generarPartidaContable(venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-edit"></i> Generar partida contable
                                         </a>
                                     }
-                                    @if (apiService.canEditTest('ventas.editar') && venta.nombre_documento == 'Crédito fiscal') {
+                                    @if (canEditVentas() && venta.nombre_documento == 'Crédito fiscal') {
                                         <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_credito'}" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-folder-minus"></i> Hacer nota de crédito
                                         </a>
                                     }
-                                    @if (apiService.canEditTest('ventas.editar') && venta.nombre_documento == 'Crédito fiscal') {
+                                    @if (canEditVentas() && venta.nombre_documento == 'Crédito fiscal') {
                                         <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_debito'}" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-folder-plus"></i> Hacer nota de débito
                                         </a>
@@ -394,6 +414,16 @@
                     <label for="correlativo">Correlativo:</label>
                     <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo">
                 </div>
+                <div class="form-group col-md-6">
+                    <label for="estado">Estado:</label>
+                    <select name="estado" [(ngModel)]="venta.estado" class="form-select">
+                        <option value="">Estado</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Anulada">Anulada</option>
+                        <option value="Consigna">Consigna</option>
+                        <option value="Pagada">Pagada</option>
+                    </select>
+                </div>
                 <div class="form-group col-sm-6">
                     <label for="venta.id_canal">Canal:</label>
                     <select [(ngModel)]="venta.id_canal" class="form-control form-select" name="venta.id_canal">
@@ -416,16 +446,23 @@
                         }
                     </ng-select>
                 </div>
+              <div class="form-group col-md-6">
+                <label for="id_vendedor">Vendedor:</label>
+                <ng-select [(ngModel)]="venta.id_vendedor" class="form-select p-0" name="id_vendedor" [clearable]="true">
+                  <ng-option [value]="null">Todos</ng-option>
+                  @for (usuario of usuarios; track usuario.id) {
+                  <ng-option [value]="usuario.id">
+                  {{ usuario.codigo ? usuario.codigo + ' - ' : '' }}{{ usuario.name }}
+                  </ng-option>
+                  }
+                </ng-select>
+              </div>
                 <!-- <div class="form-group col-md-6">
                     @if (venta.estado == 'Pendiente') {
                         <label for="fecha_pago">Fecha de pago:</label>
                         <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
                     }
                 </div> -->
-                <div class="form-group col-md-6">
-                    <label for="num_cotizacion">Núm Cotización:</label>
-                    <input type="number" class="form-control" [(ngModel)]="venta.num_cotizacion" name="num_cotizacion">
-                </div>
                 @if (apiService.auth_user().empresa.pais == 'Honduras') {
                     <div class="form-group col-md-6">
                         <label for="num_orden">Número de orden:</label><br>

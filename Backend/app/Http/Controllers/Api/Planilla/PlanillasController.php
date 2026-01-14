@@ -790,33 +790,201 @@ class PlanillasController extends Controller
         }
     }
 
-    public function updateDetailsPayroll(UpdateDetailsPayrollRequest $request, $id)
+    public function updateDetailsPayroll(Request $request, $id)
     {
+        $request->validate([
+            'horas_extra' => 'nullable|numeric|min:0',
+            'monto_horas_extra' => 'nullable|numeric|min:0',
+            'comisiones' => 'nullable|numeric|min:0',
+            'bonificaciones' => 'nullable|numeric|min:0',
+            'otros_ingresos' => 'nullable|numeric|min:0',
+            'dias_laborados' => 'nullable|numeric|min:0|max:31',
+            'prestamos' => 'nullable|numeric|min:0',
+            'anticipos' => 'nullable|numeric|min:0',
+            'otros_descuentos' => 'nullable|numeric|min:0',
+            'descuentos_judiciales' => 'nullable|numeric|min:0',
+            'detalle_otras_deducciones' => 'nullable|string',
+            'salario_base' => 'nullable|numeric|min:0' // ✅ Permitir editar salario_base para contratos por obra
+        ]);
 
         try {
-            // Usar PlanillaDetalleService para actualizar el detalle
-            $detalle = $this->planillaDetalleService->actualizar($id, $request->all());
+            DB::beginTransaction();
 
-            // Actualizar totales de la planilla
-            $this->planillaService->actualizarTotales($detalle->planilla->id);
+            $detalle = PlanillaDetalle::findOrFail($id);
+            $planilla = $detalle->planilla;
 
-            return response()->json([
-                'message' => 'Detalle actualizado exitosamente',
-                'detalle' => $detalle,
-                'empleado' => $detalle->empleado,
-                'planilla' => $detalle->planilla
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error actualizando detalle de planilla: ' . $e->getMessage());
-
-            $statusCode = 500;
-            if (str_contains($e->getMessage(), 'No se puede modificar')) {
-                $statusCode = 422;
+            // Verificar que la planilla esté en estado editable
+            if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
+                return response()->json([
+                    'error' => 'No se puede modificar una planilla aprobada o pagada'
+                ], 422);
             }
 
+            // Determinar días de referencia y factor de ajuste según tipo de planilla
+            $diasReferencia = 30;
+            $factorAjuste = 1;
+
+            if ($planilla->tipo_planilla === 'quincenal') {
+                $diasReferencia = 15;
+                $factorAjuste = 2;
+            } elseif ($planilla->tipo_planilla === 'semanal') {
+                $diasReferencia = 7;
+                $factorAjuste = 4.33;
+            }
+
+            // Verificar tipo de contrato primero
+            $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+            $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
+
+            // Actualizar campos básicos
+            $detalle->dias_laborados = $request->dias_laborados ?? $diasReferencia;
+            $detalle->horas_extra = $request->horas_extra ?? 0;
+            $detalle->comisiones = $request->comisiones ?? 0;
+            $detalle->bonificaciones = $request->bonificaciones ?? 0;
+            $detalle->otros_ingresos = $request->otros_ingresos ?? 0;
+            $detalle->prestamos = $request->prestamos ?? 0;
+            $detalle->anticipos = $request->anticipos ?? 0;
+            $detalle->otros_descuentos = $request->otros_descuentos ?? 0;
+            $detalle->descuentos_judiciales = $request->descuentos_judiciales ?? 0;
+            $detalle->detalle_otras_deducciones = $request->detalle_otras_deducciones;
+
+            // ✅ PERMITIR EDITAR SALARIO_BASE SOLO PARA CONTRATOS POR OBRA (tipo 3)
+            if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA && $request->has('salario_base') && $request->salario_base !== null) {
+                // Para contratos Por obra, permitir editar el monto total del período
+                $detalle->salario_base = $request->salario_base;
+            }
+
+            // Calcular salario devengado
+            $salarioBaseMensual = $detalle->salario_base;
+
+            if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA) {
+                // Para contratos Por Obra, el salario base ES el monto total del período
+                // NO se divide proporcionalmente
+                $salarioDevengado = $salarioBaseMensual;
+                $salarioBaseAjustado = $salarioBaseMensual;
+            } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
+                // Para Servicios Profesionales, el salario base es MENSUAL
+                // Se divide según tipo de planilla pero NO usa días laborados
+                if ($planilla->tipo_planilla === 'quincenal') {
+                    $salarioDevengado = $salarioBaseMensual / 2;
+                    $salarioBaseAjustado = $salarioBaseMensual / 2;
+                } elseif ($planilla->tipo_planilla === 'semanal') {
+                    $salarioDevengado = $salarioBaseMensual / 4.33;
+                    $salarioBaseAjustado = $salarioBaseMensual / 4.33;
+                } else {
+                    $salarioDevengado = $salarioBaseMensual; // mensual
+                    $salarioBaseAjustado = $salarioBaseMensual;
+                }
+            } else {
+                // Para empleados asalariados regulares, calcular proporcionalmente según días laborados
+                $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
+                    $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
+                $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
+            }
+            $detalle->salario_devengado = round($salarioDevengado, 2);
+
+            // Calcular monto de horas extra si aplica
+            if ($detalle->horas_extra > 0) {
+                $valorHoraNormal = $salarioBaseAjustado / $diasReferencia / 8;
+                $detalle->monto_horas_extra = round($detalle->horas_extra * ($valorHoraNormal * 1.25), 2);
+            } else {
+                $detalle->monto_horas_extra = 0;
+            }
+
+            // Calcular total de ingresos
+            $detalle->total_ingresos = round($detalle->salario_devengado +
+                $detalle->monto_horas_extra +
+                $detalle->comisiones +
+                $detalle->bonificaciones +
+                $detalle->otros_ingresos, 2);
+
+            // ✅ OBTENER TIPO DE CONTRATO DEL EMPLEADO
+            $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+            $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
+
+            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO Y CONFIGURACIÓN DEL EMPLEADO
+            if ($esContratoSinPrestaciones) {
+                // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Sin ISSS ni AFP
+                $detalle->isss_empleado = 0;
+                $detalle->isss_patronal = 0;
+                $detalle->afp_empleado = 0;
+                $detalle->afp_patronal = 0;
+            } else {
+                // Obtener configuración de descuentos del empleado
+                $empleado = $detalle->empleado;
+                $configDescuentos = $empleado->configuracion_descuentos ?? [];
+                $aplicarAfp = $configDescuentos['aplicar_afp'] ?? true; // Por defecto true
+                $aplicarIsss = $configDescuentos['aplicar_isss'] ?? true; // Por defecto true
+
+                // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
+                // Verificar configuración antes de calcular
+                if ($aplicarIsss) {
+                    $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
+                    $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
+                    $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
+                } else {
+                    // No aplicar ISSS si está desactivado en la configuración
+                    $detalle->isss_empleado = 0;
+                    $detalle->isss_patronal = 0;
+                }
+
+                if ($aplicarAfp) {
+                    $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
+                    $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+                } else {
+                    // No aplicar AFP si está desactivado en la configuración
+                    $detalle->afp_empleado = 0;
+                    $detalle->afp_patronal = 0;
+                }
+            }
+
+            // ✅ CALCULAR RENTA CON TIPO DE CONTRATO
+            $salarioGravado = RentaHelper::calcularSalarioGravado(
+                $detalle->total_ingresos,
+                $detalle->isss_empleado,
+                $detalle->afp_empleado,
+                $planilla->tipo_planilla,
+                $tipoContrato
+            );
+
+            $detalle->renta = RentaHelper::calcularRetencionRenta(
+                $salarioGravado,
+                $planilla->tipo_planilla,
+                $tipoContrato
+            );
+
+            // Calcular total de deducciones
+            $detalle->total_descuentos = round($detalle->isss_empleado +
+                $detalle->afp_empleado +
+                $detalle->renta +
+                $detalle->prestamos +
+                $detalle->anticipos +
+                $detalle->otros_descuentos +
+                $detalle->descuentos_judiciales, 2);
+
+            // Calcular sueldo neto
+            $detalle->sueldo_neto = round($detalle->total_ingresos - $detalle->total_descuentos, 2);
+
+            // Guardar cambios
+            $detalle->save();
+
+            // Actualizar totales de la planilla
+            $this->updatePayrollTotals($planilla->id);
+
+            DB::commit();
+
             return response()->json([
-                'error' => $e->getMessage()
-            ], $statusCode);
+                'message' => 'Detalle actualizado exitosamente con nuevas tablas 2025',
+                'detalle' => $detalle,
+                'empleado' => $detalle->empleado,
+                'planilla' => $planilla->fresh(['empresa'])
+            ]);
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error actualizando detalle de planilla: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al actualizar el detalle: ' . $e->getMessage()
+            ], 500);
         }
     }
 

@@ -8,6 +8,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { BsModalRef } from 'ngx-bootstrap/modal';
 
 interface ImportResponse {
     success: boolean;
@@ -39,11 +40,14 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
     @Output() loadAll = new EventEmitter();
 
     public override loading: boolean = false;
-    public file: any = {};
+    public file:any = {};
     public importResult: any = null;
     public showResults: boolean = false;
     public validationErrors: ValidationError[] = [];
     public businessErrors: string[] = [];
+    private _plantillaUrl: string = '';
+
+    override modalRef!: BsModalRef;
 
     constructor(
         private apiService: ApiService,
@@ -54,7 +58,80 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
     }
 
     ngOnInit() {
+        this.calcularPlantillaUrl();
         this.resetState();
+    }
+
+    /**
+     * Calcula la URL de la plantilla según el tipo y el país de la empresa
+     * Para clientes-personas y clientes-empresas, usa plantillas generales si no es El Salvador
+     * Retrocompatibilidad: Si no se puede determinar el país, usa plantilla de El Salvador
+     */
+    calcularPlantillaUrl(): void {
+        // Este método ahora calcula y guarda en la propiedad privada
+        // El getter la devuelve cuando se necesite
+        this._plantillaUrl = this.getPlantillaUrlCalculada();
+    }
+
+    private getPlantillaUrlCalculada(): string {
+        const nombreArchivo = this.nombre.toLowerCase();
+
+        // Manejo especial para ventas
+        if (nombreArchivo === 'ventas') {
+            return '';
+        }
+
+        // Para clientes-personas y clientes-empresas, verificar país
+        if (nombreArchivo === 'clientes-personas' || nombreArchivo === 'clientes-empresas') {
+            try {
+                const user = this.apiService.auth_user();
+                const empresa = user?.empresa;
+
+                // Si no hay empresa, usar plantilla de El Salvador (retrocompatibilidad)
+                if (!empresa) {
+                    return `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
+                }
+
+                // Verificar si es El Salvador
+                const codPais = empresa?.cod_pais;
+                const pais = empresa?.pais?.trim() || '';
+
+                let esElSalvador = false;
+
+                // Si tiene código 'SV', es El Salvador
+                if (codPais === 'SV') {
+                    esElSalvador = true;
+                }
+                // Si cod_pais es diferente a 'SV' y no es null/undefined, no es El Salvador
+                else if (codPais && codPais !== 'SV') {
+                    esElSalvador = false;
+                }
+                // Si cod_pais es null/undefined, verificar campo pais
+                else {
+                    if (pais.toLowerCase() === 'el salvador') {
+                        esElSalvador = true;
+                    }
+                    // Si pais está vacío, asumir El Salvador (retrocompatibilidad)
+                    else if (!pais) {
+                        esElSalvador = true;
+                    }
+                    // Si tiene otro valor, no es El Salvador
+                    else {
+                        esElSalvador = false;
+                    }
+                }
+
+                // Si es El Salvador, usar plantilla específica, sino usar general
+                const sufijo = esElSalvador ? '-format.xlsx' : '-format-general.xlsx';
+                return `${this.apiService.baseUrl}/docs/${nombreArchivo}${sufijo}`;
+            } catch (error) {
+                // En caso de error, usar plantilla de El Salvador (retrocompatibilidad)
+                return `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
+            }
+        }
+        
+        // Para otros tipos, usar formato estándar
+        return `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
     }
 
   /**
@@ -63,71 +140,19 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
    * Retrocompatibilidad: Si no se puede determinar el país, usa plantilla de El Salvador
    */
   get plantillaUrl(): string {
-    const nombreArchivo = this.nombre.toLowerCase();
-
-    // Manejo especial para ventas
-    if (nombreArchivo === 'ventas') {
-      // Las ventas tienen múltiples plantillas, se manejan en el HTML
-      return '';
+    // Si ya se calculó, retornar el valor
+    if (!this._plantillaUrl) {
+      this._plantillaUrl = this.getPlantillaUrlCalculada();
     }
-
-    // Para clientes-personas y clientes-empresas, verificar país
-    if (nombreArchivo === 'clientes-personas' || nombreArchivo === 'clientes-empresas') {
-      try {
-        const user = this.apiService.auth_user();
-        const empresa = user?.empresa;
-
-        // Si no hay empresa, usar plantilla de El Salvador (retrocompatibilidad)
-        if (!empresa) {
-          return `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
-        }
-
-        // Verificar si es El Salvador
-        const codPais = empresa?.cod_pais;
-        const pais = empresa?.pais?.trim() || '';
-
-        let esElSalvador = false;
-
-        // Si tiene código 'SV', es El Salvador
-        if (codPais === 'SV') {
-          esElSalvador = true;
-        }
-        // Si cod_pais es diferente a 'SV' y no es null/undefined, no es El Salvador
-        else if (codPais && codPais !== 'SV') {
-          esElSalvador = false;
-        }
-        // Si cod_pais es null/undefined, verificar campo pais
-        else {
-          if (pais.toLowerCase() === 'el salvador') {
-            esElSalvador = true;
-          }
-          // Si pais está vacío, asumir El Salvador (retrocompatibilidad)
-          else if (!pais) {
-            esElSalvador = true;
-          }
-          // Si tiene otro valor, no es El Salvador
-          else {
-            esElSalvador = false;
-          }
-        }
-
-        // Si es El Salvador, usar plantilla específica, sino usar general
-        const sufijo = esElSalvador ? '-format.xlsx' : '-format-general.xlsx';
-        return `${this.apiService.baseUrl}/docs/${nombreArchivo}${sufijo}`;
-      } catch (error) {
-        // En caso de error, usar plantilla de El Salvador (retrocompatibilidad)
-        console.warn('Error al determinar país de empresa, usando plantilla de El Salvador:', error);
-        return `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
-      }
-    }
-
-    // Para otros tipos, usar formato estándar
-    return `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
+    return this._plantillaUrl;
   }
 
     override openModal(template: TemplateRef<any>) {
-        this.resetState();
-        super.openModal(template, { class: 'modal-md' });
+        // Recalcular la URL de la plantilla cuando se abre el modal
+        // para asegurarnos de que tenemos los datos más recientes de la empresa
+        this.calcularPlantillaUrl();
+        this.alertService.modal = true;
+        this.modalRef = this.modalManager.openModal(template);
     }
 
     setFile(event: any) {

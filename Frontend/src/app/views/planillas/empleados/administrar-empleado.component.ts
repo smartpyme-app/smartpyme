@@ -20,6 +20,12 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
       .cursor-pointer {
         cursor: pointer;
       }
+      .margin-for-checkbox {
+        margin-left: 2rem;
+      }
+      .margin-label-for-checkbox {
+        margin-left: 1rem;
+      }
     `,
     ],
     templateUrl: './administrar-empleado.component.html',
@@ -50,6 +56,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
   public activeTab: string = 'informacion';
   public historialContratos: any[] = [];
   public historialBajas: any[] = [];
+  public mostrarOpcionesAvanzadas: boolean = false;
   public nuevoDocumento: any = {
     tipo_documento: '',
     fecha_documento: '',
@@ -113,6 +120,10 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
         relacion: '',
         telefono: '',
         direccion: '',
+      },
+      configuracion_descuentos: {
+        aplicar_afp: true,
+        aplicar_isss: true,
       },
     };
     this.id_empresa = JSON.parse(
@@ -414,6 +425,10 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
         telefono: '',
         direccion: '',
       },
+      configuracion_descuentos: {
+        aplicar_afp: true,
+        aplicar_isss: true,
+      },
     };
   }
 
@@ -566,6 +581,10 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
                   telefono: '',
                   direccion: '',
                 },
+                configuracion_descuentos: empleado.configuracion_descuentos || {
+                  aplicar_afp: true,
+                  aplicar_isss: true,
+                },
               };
 
               if (this.empleado.id_departamento) {
@@ -600,6 +619,10 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
               relacion: '',
               telefono: '',
               direccion: '',
+            },
+            configuracion_descuentos: {
+              aplicar_afp: true,
+              aplicar_isss: true,
             },
           };
         }
@@ -728,6 +751,14 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     // Asegurar que tenemos los IDs de empresa y sucursal
     this.empleado.id_empresa = this.id_empresa;
     this.empleado.id_sucursal = this.id_sucursal;
+
+    // Asegurar que configuracion_descuentos tenga valores por defecto si no existe
+    if (!this.empleado.configuracion_descuentos) {
+      this.empleado.configuracion_descuentos = {
+        aplicar_afp: true,
+        aplicar_isss: true,
+      };
+    }
 
     // Determinar si es actualización o creación
     const esActualizacion = !!this.empleado.id;

@@ -36,6 +36,14 @@ class VentaService
             $data['id_empresa'] = Auth::user()->id_empresa;
         }
 
+        // Normalizar valores vacíos a null para campos opcionales
+        $optionalFields = ['id_vendedor', 'fecha_pago', 'monto_pago', 'cambio', 'observaciones', 'tipo_operacion'];
+        foreach ($optionalFields as $field) {
+            if (isset($data[$field]) && $data[$field] === '') {
+                $data[$field] = null;
+            }
+        }
+
         $venta->fill($data);
         $venta->save();
 

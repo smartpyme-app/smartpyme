@@ -327,11 +327,29 @@
                     <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Retención de Renta: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'], 2) }}</td>
                 </tr>
-                <tr>
-                    <td colspan="4"></td>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Monto Total de la Operación: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['montoTotalOperacion'], 2) }}</td>
-                </tr>
+                @if(isset($registro->propina) && floatval($registro->propina) > 0)
+                    <tr>
+                        <td colspan="4"></td>
+                        <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Propina: </td>
+                        <td class="text-right">${{ number_format(floatval($registro->propina), 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4"></td>
+                        <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Total: </td>
+                        <td class="text-right">${{ number_format(floatval($DTE['resumen']['montoTotalOperacion'] ?? 0), 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4"></td>
+                        <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}"><b>Total + Propina: </b></td>
+                        <td class="text-right"><b>${{ number_format(floatval($DTE['resumen']['montoTotalOperacion'] ?? 0) + floatval($registro->propina), 2) }}</b></td>
+                    </tr>
+                @else
+                    <tr>
+                        <td colspan="4"></td>
+                        <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Monto Total de la Operación: </td>
+                        <td class="text-right">${{ number_format(floatval($DTE['resumen']['montoTotalOperacion'] ?? 0), 2) }}</td>
+                    </tr>
+                @endif
                 @if ($DTE['resumen']['totalNoGravado'] > 0)
                     <tr>
                         <td colspan="4"></td>
@@ -342,7 +360,7 @@
                 <tr>
                     <td colspan="4"></td>
                     <td class="bg-light" colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}"><b>Total a pagar:</b></td>
-                    <td class="bg-light text-right"><b>${{ number_format($DTE['resumen']['totalPagar'], 2) }}</b></td>
+                    <td class="bg-light text-right"><b>${{ number_format(floatval($DTE['resumen']['totalPagar'] ?? 0) + (isset($registro->propina) && floatval($registro->propina) > 0 ? floatval($registro->propina) : 0), 2) }}</b></td>
                 </tr>
             </tfoot>
         </table>

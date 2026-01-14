@@ -35,7 +35,11 @@
             </div>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Fecha pago</label>
-                <p>{{ venta.fecha_pago | date:'dd/MM/yyyy' }}</p>
+                <p>{{ venta.fecha_pago ? (venta.fecha_pago | date:'dd/MM/yyyy') : '-' }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Fecha vencimiento</label>
+                <p>{{ venta.fecha_expiracion ? (venta.fecha_expiracion | date:'dd/MM/yyyy') : '-' }}</p>
             </div>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Forma de pago</label>
@@ -59,7 +63,7 @@
             </div>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Vendedor</label>
-                <p>{{ venta.nombre_vendedor }}</p>
+                <p>{{ venta.nombre_vendedor || '-' }}</p>
             </div>
             @if (venta.id_proyecto) {
                 <div class="form-group col-lg-4">
@@ -253,6 +257,12 @@
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Total:</b></td>
                         <td class="text-end"><b>{{ venta?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
+                    @if (venta.propina > 0) {
+                      <tr>
+                        <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Total + Propina:</b></td>
+                        <td class="text-end"><b>{{ getTotalConPropina() | currency:'USD':'symbol':'1.2' }}</b></td>
+                      </tr>
+                    }
                     @if (venta?.abonos?.length > 0) {
                         <tr>
                             <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Abonos:</b></td>

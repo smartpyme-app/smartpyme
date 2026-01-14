@@ -275,14 +275,14 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       await this.apiService.store('partida', partida)
         .pipe(this.untilDestroyed())
         .toPromise();
-      
+
       // Invalidar cache del item específico y listas relacionadas
       if (partida?.id) {
         this.cacheService.delete(`/partida/${partida.id}`);
       }
       this.cacheService.invalidatePattern('/partidas');
       this.cacheService.invalidatePattern('/partida');
-      
+
       this.alertService.success(
         'Partida actualizada',
         'El estado de la partida fue actualizado.'
@@ -303,20 +303,20 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       confirmButtonText: 'Sí, eliminarlo',
       cancelButtonText: 'Cancelar',
     });
-    
+
     if (result.isConfirmed) {
       try {
         const data = await this.apiService.delete('partida/', partida.id)
           .pipe(this.untilDestroyed())
           .toPromise();
-        
+
         // Invalidar cache del item eliminado y listas relacionadas
         if (partida?.id) {
           this.cacheService.delete(`/partida/${partida.id}`);
         }
         this.cacheService.invalidatePattern('/partidas');
         this.cacheService.invalidatePattern('/partida');
-        
+
         for (let i = 0; i < this.partidas.data.length; i++) {
           if (this.partidas.data[i].id == data.id)
             this.partidas.data.splice(i, 1);
@@ -334,7 +334,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       const partidaGuardada = await this.apiService.store('partida', partidaToSave)
         .pipe(this.untilDestroyed())
         .toPromise();
-      
+
       // Invalidar cache del item específico si se está editando
       const isNew = !partidaToSave.id;
       if (!isNew && partidaGuardada?.id) {
@@ -343,7 +343,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       // Invalidar cache de listas relacionadas
       this.cacheService.invalidatePattern('/partidas');
       this.cacheService.invalidatePattern('/partida');
-      
+
       if (isNew) {
         this.loadAll();
         this.alertService.success(
@@ -356,7 +356,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
           'El partida fue guardada exitosamente.'
         );
       }
-      
+
       if (this.modalRef) {
         this.closeModal();
       }

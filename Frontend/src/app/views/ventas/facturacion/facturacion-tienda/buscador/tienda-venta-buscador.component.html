@@ -29,7 +29,7 @@
         </span>
         <span class="col-2 text-center" id="stock">
             <!-- <small>Stock:</small> <br> -->
-            <span *ngIf="producto.tipo != 'Servicio'">{{ producto.inventarios | filter:'id_bodega':venta.id_bodega | sum:'stock' }} <small>en stock</small></span>
+            <span *ngIf="producto.tipo != 'Servicio'">{{ getStock(producto) }} <small>en stock</small></span>
         </span>
         <span class="col-2 text-end">
             <!-- <small>Precio:</small> <br> -->

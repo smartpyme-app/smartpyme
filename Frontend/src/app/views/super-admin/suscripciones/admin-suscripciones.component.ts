@@ -159,6 +159,8 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
       direccion: 'desc',
       paginate: 10,
       campania: '',
+      fecha_pago_inicio: '',
+      fecha_pago_fin: '',
     };
 
     this.filtrarSuscripciones();

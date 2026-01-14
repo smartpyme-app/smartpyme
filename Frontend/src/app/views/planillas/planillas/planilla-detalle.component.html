@@ -735,7 +735,14 @@
                                          detalleSeleccionado?.empleado?.tipo_contrato === 3) ?
                                          'N/A - Contrato sin prestaciones' : ''" />
                       </div>
-                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3) {
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.configuracion_descuentos?.aplicar_isss === false) {
+                        <!-- Mensaje cuando ISSS está desactivado por configuración -->
+                        <div class="alert alert-warning py-2 px-3 mt-2 mb-0 text-alert-descuentos">
+                          <i class="fa fa-exclamation-triangle me-2"></i>
+                          <strong>ISSS desactivado:</strong> Este descuento no se calcula porque está desactivado en la configuración del empleado.
+                        </div>
+                      }
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.configuracion_descuentos?.aplicar_isss === false) {
                         <small class="text-muted">
                           Patronal (7.5%): ${{ detalleSeleccionado.isss_patronal | number : "1.2-2" }}
                         </small>
@@ -757,6 +764,13 @@
                                          detalleSeleccionado?.empleado?.tipo_contrato === 3) ?
                                          'N/A - Contrato sin prestaciones' : ''" />
                       </div>
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.configuracion_descuentos?.aplicar_afp === false) {
+                        <!-- Mensaje cuando AFP está desactivado por configuración -->
+                        <div class="alert alert-warning py-2 px-3 mt-2 mb-0 text-alert-descuentos">
+                          <i class="fa fa-exclamation-triangle me-2"></i>
+                          <strong>AFP desactivado:</strong> Este descuento no se calcula porque está desactivado en la configuración del empleado.
+                        </div>
+                      }
                       @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3) {
                         <small class="text-muted">
                           Patronal (8.75%): ${{ detalleSeleccionado.afp_patronal | number : "1.2-2" }}
