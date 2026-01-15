@@ -591,7 +591,11 @@
                           <label for="terms" class="my-3">Términos y condiciones Generales para documentos</label>
                           <textarea name="terms" class="form-control" rows="6" [(ngModel)]="empresa.cotizacion_compras_terminos"></textarea>
                     </div> -->
-                    <p class="my-3 pt-5">
+                    <p class="pt-5">
+                        ¿Quieres limpiar el cache del sistema? Esto hará que se reinicie la aplicación y se cierre la sesión.
+                        <a (click)="limpiarCacheYLogout()" class="btn btn-link">Limpiar cache y cerrar sesión</a>
+                    </p>
+                    <p class="my-3">
                         ¿Quieres eliminar los datos de tu cuenta?
                         <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
                     </p>
