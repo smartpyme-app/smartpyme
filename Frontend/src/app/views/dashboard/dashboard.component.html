@@ -12,61 +12,19 @@
     </div>
 </div>
 
-<!-- Sección de filtros -->
-<div class="bg-white p-4 rounded mb-3">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-        <!-- Botón de sección activa -->
-        <button 
-            type="button"
-            class="btn btn-section-active px-4 py-3 fw-bold shadow-sm"
-            style="border-radius: 8px;">
-            {{ seccionActiva }}
-        </button>
-
-        <!-- Contenedor de filtros (año y sucursal) alineados a la derecha -->
-        <div class="d-flex align-items-end gap-3 flex-wrap">
-            <!-- Selector de año -->
-            <div class="btn-group" role="group">
-                <button 
-                    *ngFor="let anio of anios" 
-                    type="button"
-                    class="btn"
-                    [ngClass]="anioSeleccionado === anio ? 'btn-default' : 'btn-light border'"
-                    (click)="cambiarAnio(anio)">
-                    {{ anio }}
-                </button>
-            </div>
-
-            <!-- Selector de sucursal -->
-            <div class="d-flex flex-column">
-                <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
-                <select 
-                    id="sucursal"
-                    class="form-select"
-                    [(ngModel)]="sucursalSeleccionada"
-                    (change)="cambiarSucursal()">
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
-                </select>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="dashboard-container" *ngIf="!loading">
     <!-- Selector dinámico de componentes según la sección activa -->
     <ng-container [ngSwitch]="seccionActiva">
         <app-resultados 
             *ngSwitchCase="'Resultados'"
             [datos]="datos"
-            [presupuestoSeleccionado]="presupuestoSeleccionado"
-            [presupuestos]="presupuestos">
+            (filtrosCambiados)="onFiltrosResultadosCambiados($event)">
         </app-resultados>
 
         <app-ventas 
             *ngSwitchCase="'Ventas'"
-            [datos]="datos">
+            [datos]="datos"
+            (filtrosCambiados)="onFiltrosVentasCambiados($event)">
         </app-ventas>
 
         <app-finanzas 

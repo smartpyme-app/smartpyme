@@ -147,7 +147,7 @@ export class BarChartComponent implements OnInit, OnChanges {
         type: 'category',
         data: this.config.labels || [],
         axisLabel: {
-          rotate: 0,
+          rotate: this.config.rotateLabels !== undefined ? this.config.rotateLabels : 0,
           interval: 0
         }
       },

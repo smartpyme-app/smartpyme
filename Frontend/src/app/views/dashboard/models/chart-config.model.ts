@@ -5,6 +5,7 @@ export interface ChartConfig {
     options?: any;
     colors?: string[];
     type?: 'line' | 'bar' | 'pie' | 'doughnut';
+    rotateLabels?: number; // Ángulo de rotación para labels del eje X (0 = horizontal, 45 = diagonal)
 }
 
 export interface MetricCard {
@@ -70,5 +71,31 @@ export interface DashboardData {
     cuentasPorCobrar30Dias?: Cuenta30Dias[];
     cuentasPorPagar30Dias?: Cuenta30Dias[];
     budgetMetrics?: BudgetMetric[];
+    // Datos para la sección de Ventas
+    metricasVentas?: {
+        ventasConIVA: number;
+        ventasSinIVA: number;
+        transacciones: number;
+        ticketPromedio: number;
+    };
+    ventasPorMesConfig?: ChartConfig;
+    ventasVsPresupuestoConfig?: ChartConfig;
+    ventasVsAnioAnteriorConfig?: ChartConfig;
+    ventasPorCanal?: AccountItem[];
+    ventasPorVendedorChartConfig?: ChartConfig;
+    ventasPorFormaPagoConfig?: ChartConfig;
+    ventasPorCategoria?: AccountItem[];
+    topProductosVendidos?: AccountItem[];
+    ventasPorProducto?: Array<{
+      categoria: string;
+      producto: string;
+      formaPago: string;
+      cantidad: number;
+      precioUnitario: number;
+      descuento: number;
+      ventasSinIVA: number;
+      costoTotal: number;
+      utilidad: number;
+    }>;
 }
 

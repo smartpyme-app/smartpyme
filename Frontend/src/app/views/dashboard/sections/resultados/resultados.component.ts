@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
 import { CashFlowItem } from '../../models/chart-config.model';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
@@ -10,8 +10,9 @@ import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogri
 })
 export class ResultadosComponent implements OnInit {
   @Input() datos: any = {};
-  @Input() presupuestoSeleccionado: string = 'todas';
-  @Input() presupuestos: any[] = [];
+  @Output() filtrosCambiados = new EventEmitter<any>();
+
+  private inicializado: boolean = false;
 
   @ViewChild('ventasGrid') ventasGrid!: RevoGrid;
   @ViewChild('gastosGrid') gastosGrid!: RevoGrid;
@@ -30,9 +31,48 @@ export class ResultadosComponent implements OnInit {
   busquedaCobrar30: string = '';
   busquedaPagar30: string = '';
 
+  // Filtros
+  anios = [2024, 2025, 2026];
+  anioSeleccionado: number = 2024;
+  
+  sucursales = [
+    { id: 'todas', nombre: 'Todas' },
+    { id: '1', nombre: 'Sucursal 1' },
+    { id: '2', nombre: 'Sucursal 2' }
+  ];
+  sucursalSeleccionada: string = 'todas';
+
   constructor() { }
 
   ngOnInit(): void {
+    // Marcar como inicializado después de un pequeño delay
+    setTimeout(() => {
+      this.inicializado = true;
+    }, 100);
+  }
+
+  cambiarAnio(anio: number): void {
+    this.anioSeleccionado = anio;
+    this.aplicarFiltros();
+  }
+
+  cambiarSucursal(): void {
+    this.aplicarFiltros();
+  }
+
+  aplicarFiltros(): void {
+    // No emitir durante la inicialización
+    if (!this.inicializado) {
+      return;
+    }
+    
+    const filtros = {
+      anio: this.anioSeleccionado,
+      sucursal: this.sucursalSeleccionada
+    };
+    
+    // Emitir evento al componente padre para recargar datos
+    this.filtrosCambiados.emit(filtros);
   }
 
   formatCurrency(value: number): string {

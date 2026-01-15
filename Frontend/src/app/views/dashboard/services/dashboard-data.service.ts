@@ -198,7 +198,176 @@ export class DashboardDataService {
           color: 'green',
           chartData: [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90]
         }
-      ] as BudgetMetric[]
+      ] as BudgetMetric[],
+      // Datos para la sección de Ventas
+      metricasVentas: {
+        ventasConIVA: 3501682.66,
+        ventasSinIVA: 3098279.56,
+        transacciones: 983,
+        ticketPromedio: 3562.24
+      },
+      ventasPorMesConfig: {
+        title: '',
+        type: 'line',
+        labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        data: [22563.68, 3163.89, 23179.61, 10098.80, 20163.53, 5660.51, 7239.71, -592.58, 6447.00, 1714.22, 3391416.33, 10627.96],
+        colors: ['#5470c6']
+      },
+      ventasVsPresupuestoConfig: {
+        title: '',
+        type: 'bar',
+        labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        data: [
+          {
+            name: 'Ventas totales',
+            data: [22563.68, 3163.89, 23179.61, 10098.80, 20163.53, 5660.51, 7239.71, 6447.00, -592.58, 1714.22, 3391416.33, 10627.96]
+          },
+          {
+            name: 'Presupuestado',
+            data: [23000.00, 26000.00, 17321.00, 37000.00, 20300.00, 34800.00, 32800.00, 18300.00, 18300.00, 27000.00, 17000.00, 133000.00]
+          }
+        ],
+        colors: ['#5470c6', '#d3d3d3']
+      },
+      ventasVsAnioAnteriorConfig: {
+        title: '',
+        type: 'bar',
+        labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        data: [
+          {
+            name: 'Año actual',
+            data: [22563.68, 3163.89, 23179.61, 10098.80, 20163.53, 5660.51, 7239.71, 6447.00, -592.58, 1714.22, 3391416.33, 10627.96]
+          },
+          {
+            name: 'Año anterior',
+            data: [18000.00, 2500.00, 20000.00, 8000.00, 15000.00, 4500.00, 6000.00, 5000.00, 4000.00, 1200.00, 50000.00, 8000.00]
+          }
+        ],
+        colors: ['#5470c6', '#d3d3d3']
+      },
+      ventasPorCanal: [
+        { name: 'Facebook', amount: 3438857.38 },
+        { name: 'Tienda', amount: 35207.01 },
+        { name: 'El Salvador', amount: 7859.15 },
+        { name: 'Canal 1', amount: 6457.29 },
+        { name: 'Fabiola', amount: 5043.19 },
+        { name: 'Instagram', amount: 2482.93 },
+        { name: 'Marketplace', amount: 1470.00 },
+        { name: 'Twitter', amount: 1356.00 },
+        { name: 'Partner 2', amount: 1226.84 },
+        { name: 'Whatsapp', amount: 561.64 },
+        { name: 'Bibanking', amount: 440.09 },
+        { name: 'Azucena Perez', amount: 282.50 },
+        { name: 'Pedidos Ya', amount: 174.36 }
+      ],
+      ventasPorVendedorChartConfig: {
+        title: '',
+        type: 'bar',
+        labels: ['Gaby', 'Paula', 'Soporte', 'Jennifer', 'Gabriela', 'DANIELA', 'Ventas SmartPyme', 'CONTADOR', 'Paola Vasquez', 'Facturacion', 'Cliente Demo'],
+        data: [3469166.35, 16319.29, 5429.65, 423.75, 104.80, 56.50, 51.90, 23.73, 15.26, 3.39, 0.01],
+        colors: ['#5470c6'],
+        rotateLabels: 45
+      },
+      ventasPorFormaPagoConfig: {
+        title: '',
+        type: 'bar',
+        labels: ['Efectivo', 'Tarjeta', 'Transferencia', 'Cheque', 'Otros'],
+        data: [3481952.17, 15234.50, 8456.23, 1234.56, 1205.20],
+        colors: ['#5470c6']
+      },
+      ventasPorCategoria: [
+        { name: 'Categoría 3', amount: 3002714.08 },
+        { name: 'Adidas - Masculino', amount: 31860.00 },
+        { name: 'Promoción', amount: 24820.03 },
+        { name: 'Planes', amount: 15734.65 },
+        { name: 'Implementaciones', amount: 8000.00 },
+        { name: 'Categoría 1', amount: 5700.77 },
+        { name: 'Promociones', amount: 3982.28 },
+        { name: 'Organización', amount: 2969.03 },
+        { name: 'Accesorios', amount: 2450.75 },
+        { name: 'Patrocinio', amount: 1950.00 },
+        { name: 'Construcción-Torre Alta', amount: 1415.92 },
+        { name: 'Tenis Clase B', amount: 1265.00 },
+        { name: 'Roadtrip', amount: 1225.00 },
+        { name: 'Liquidacion', amount: 975.00 },
+        { name: 'Adidas - Femenino', amount: 912.00 },
+        { name: 'Juguetes Perros', amount: 863.54 },
+        { name: 'Servicio', amount: 812.00 }
+      ],
+      topProductosVendidos: [
+        { name: 'Producto C', amount: 3000677.08 },
+        { name: 'AA2', amount: 24520.00 },
+        { name: 'Prueba12', amount: 18660.00 },
+        { name: 'Adidas Forum morados', amount: 12600.00 },
+        { name: 'SERVICIO DE IMPLEM...', amount: 8000.00 },
+        { name: 'Plan Avanzado - Smar...', amount: 5450.00 },
+        { name: 'Plan Estándar', amount: 4371.00 },
+        { name: 'Producto B', amount: 3981.50 },
+        { name: 'Libro inglés', amount: 2969.03 },
+        { name: 'IMPLEMENTACION S...', amount: 2812.85 },
+        { name: 'Plan Avanzado: Inven...', amount: 2388.65 },
+        { name: 'Servicio de importació...', amount: 2086.74 },
+        { name: 'Producto A', amount: 2037.00 },
+        { name: 'Patrocinio Evento Des...', amount: 1950.00 },
+        { name: 'Producto X', amount: 1720.00 }
+      ],
+      ventasPorProducto: [
+        {
+          categoria: 'Planes',
+          producto: 'Plan Avanzado: Inventario, Servicios, Ventas, Compras, Gastos, Finanzas, Citas, Cierre de Caja e Inteligencia de Negocios. Hasta 2 sucursales 5 usuarios incluidos',
+          formaPago: 'Efectivo',
+          cantidad: 140,
+          precioUnitario: 50.00,
+          descuento: 0.00,
+          ventasSinIVA: 7000.00,
+          costoTotal: 3500.00,
+          utilidad: 3500.00
+        },
+        {
+          categoria: 'Planes',
+          producto: 'Plan Avanzado - SmartPyme',
+          formaPago: 'Transferencia',
+          cantidad: 146,
+          precioUnitario: 100.00,
+          descuento: 0.00,
+          ventasSinIVA: 14600.00,
+          costoTotal: 7300.00,
+          utilidad: 7300.00
+        },
+        {
+          categoria: 'Planes',
+          producto: 'Plan Pro: Inventario, Servicios, Ventas, Compras, Gastos, Finanzas, Citas, Cierre de Caja e Inteligencia de Negocios. Facturación electrónica gratis. 10 usuarios y hasta 3 sucursales',
+          formaPago: 'Efectivo',
+          cantidad: 7,
+          precioUnitario: 150.00,
+          descuento: 0.00,
+          ventasSinIVA: 1050.00,
+          costoTotal: 525.00,
+          utilidad: 525.00
+        },
+        {
+          categoria: 'Planes',
+          producto: 'Plan Estándar',
+          formaPago: 'Transferencia',
+          cantidad: 8,
+          precioUnitario: 25.00,
+          descuento: 0.00,
+          ventasSinIVA: 200.00,
+          costoTotal: 100.00,
+          utilidad: 100.00
+        },
+        {
+          categoria: 'Planes',
+          producto: 'Plan Avanzado: Inventario, Servicios, Ventas, Compras, Gastos, Finanzas, Citas, Cierre de Caja e Inteligencia de Negocios. Hasta 2 sucursales 5 usuarios incluidos',
+          formaPago: 'Efectivo',
+          cantidad: 332,
+          precioUnitario: 50.00,
+          descuento: 0.00,
+          ventasSinIVA: 16600.00,
+          costoTotal: 8300.00,
+          utilidad: 8300.00
+        }
+      ]
     };
 
     return of(datos).pipe(delay(500));

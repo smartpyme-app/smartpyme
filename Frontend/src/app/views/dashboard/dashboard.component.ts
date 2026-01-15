@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { DashboardDataService } from './services/dashboard-data.service';
 
 @Component({
@@ -21,25 +21,10 @@ export class DashboardComponent implements OnInit {
     { nombre: 'Inventario', activo: false, componente: 'Inventario' }
   ];
 
-  anios = [2024, 2025, 2026];
-  anioSeleccionado = 2024;
-
-  sucursales = [
-    { id: 'todas', nombre: 'Todas' },
-    { id: '1', nombre: 'Sucursal 1' },
-    { id: '2', nombre: 'Sucursal 2' }
-  ];
-  sucursalSeleccionada = 'todas';
-
-  presupuestos = [
-    { id: 'todas', nombre: 'Todas' },
-    { id: '2024', nombre: '2024' },
-    { id: '2025', nombre: '2025' }
-  ];
-  presupuestoSeleccionado = 'todas';
 
   constructor(
-    private dashboardDataService: DashboardDataService
+    private dashboardDataService: DashboardDataService,
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
@@ -49,18 +34,8 @@ export class DashboardComponent implements OnInit {
   cambiarSeccion(seccion: any): void {
     this.secciones.forEach(s => s.activo = false);
     seccion.activo = true;
-    // Recargar datos según la sección seleccionada
-    this.cargarDatos();
-  }
-
-  cambiarAnio(anio: number): void {
-    this.anioSeleccionado = anio;
-    // Recargar datos según el año seleccionado
-    this.cargarDatos();
-  }
-
-  cambiarSucursal(): void {
-    // Recargar datos según la sucursal seleccionada
+    // Cargar datos iniciales para la nueva sección
+    // Cada sección manejará sus propios filtros después
     this.cargarDatos();
   }
 
@@ -69,28 +44,92 @@ export class DashboardComponent implements OnInit {
     return seccion ? seccion.nombre : 'Resultados';
   }
 
-  cargarDatos(): void {
+  cargarDatos(filtrosAdicionales: any = {}): void {
     this.loading = true;
+    
     const filtros = {
       seccion: this.seccionActiva,
-      anio: this.anioSeleccionado,
-      sucursal: this.sucursalSeleccionada
+      ...filtrosAdicionales
     };
     
     this.dashboardDataService.obtenerDatosPorFiltro(filtros).subscribe({
       next: (data) => {
-        this.datos = data;
+        this.datos = data || {};
         this.loading = false;
+        // Usar setTimeout para evitar ExpressionChangedAfterItHasBeenCheckedError
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
       },
       error: (error) => {
         console.error('Error al cargar datos del dashboard:', error);
+        this.datos = {};
         this.loading = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
       }
     });
   }
 
   actualizarDatos(): void {
     this.cargarDatos();
+  }
+
+  onFiltrosResultadosCambiados(filtros: any): void {
+    // Recargar datos con los filtros específicos de resultados
+    this.loading = true;
+    
+    const filtrosCompletos = {
+      seccion: 'Resultados',
+      ...filtros // Filtros específicos de resultados (anio, sucursal, presupuesto)
+    };
+    
+    this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
+      next: (data) => {
+        this.datos = data || {};
+        this.loading = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
+      },
+      error: (error) => {
+        console.error('Error al cargar datos de resultados:', error);
+        this.datos = {};
+        this.loading = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
+      }
+    });
+  }
+
+  onFiltrosVentasCambiados(filtros: any): void {
+    // Recargar datos con los filtros específicos de ventas
+    this.loading = true;
+    
+    const filtrosCompletos = {
+      seccion: 'Ventas',
+      ...filtros // Filtros específicos de ventas (fechaInicio, fechaFin, vendedor, etc.)
+    };
+    
+    this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
+      next: (data) => {
+        this.datos = data || {};
+        this.loading = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
+      },
+      error: (error) => {
+        console.error('Error al cargar datos de ventas:', error);
+        this.datos = {};
+        this.loading = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
+      }
+    });
   }
 }
 
