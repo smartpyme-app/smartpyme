@@ -31,7 +31,10 @@
 
         <div class="col">
             <div class="d-flex gap-2">
-                <button [disabled]="downloading" tooltip="Descargar traslados" (click)="descargar()" class="btn btn-default tcla-F6">
+                <button [disabled]="downloading" tooltip="Descargar traslados PDF" (click)="descargarPdfFiltrados()" class="btn btn-default">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
+                <button [disabled]="downloading" tooltip="Descargar traslados Excel" (click)="descargar()" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarTraslados()" autocomplete="off">
@@ -88,10 +91,10 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="traslados?.total < 1 && !loading">
+                        <td colspan="9" class="text-center" *ngIf="traslados?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene traslados registrados</span>
                         </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
+                        <td colspan="9" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -244,6 +247,15 @@
                     <option value="">Todos</option>
                     <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="">Concepto:</label>
+                <select [(ngModel)]="filtros.concepto" class="form-select" name="filtros.concepto">
+                    <option value="">Todos</option>
+                    <option *ngFor="let concepto of conceptos" [value]="concepto">
+                        {{ concepto }}
                     </option>
                 </select>
             </div>
