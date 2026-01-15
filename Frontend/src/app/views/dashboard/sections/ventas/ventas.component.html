@@ -1,0 +1,236 @@
+<div class="ventas-dashboard">
+    <!-- KPI Cards en fila horizontal -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="mb-1 small opacity-75">Ventas Totales</p>
+                            <h3 class="mb-0 fw-bold" *ngIf="datos.ventasKPI">{{ formatCurrency(datos.ventasKPI.total) }}</h3>
+                        </div>
+                        <div class="fs-1 opacity-50">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-top border-white border-opacity-25">
+                        <small class="opacity-75" *ngIf="datos.ventasKPI">
+                            <i class="fas fa-arrow-up me-1"></i>{{ datos.ventasKPI.crecimiento }}% vs mes anterior
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="mb-1 small opacity-75">Transacciones</p>
+                            <h3 class="mb-0 fw-bold" *ngIf="datos.ventasKPI">{{ datos.ventasKPI.transacciones }}</h3>
+                        </div>
+                        <div class="fs-1 opacity-50">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-top border-white border-opacity-25">
+                        <small class="opacity-75" *ngIf="datos.ventasKPI">
+                            Ticket promedio: {{ formatCurrency(datos.ventasKPI.ticketPromedio) }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="mb-1 small opacity-75">Clientes Activos</p>
+                            <h3 class="mb-0 fw-bold" *ngIf="datos.ventasKPI">{{ datos.ventasKPI.clientesActivos }}</h3>
+                        </div>
+                        <div class="fs-1 opacity-50">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-top border-white border-opacity-25">
+                        <small class="opacity-75" *ngIf="datos.ventasKPI">
+                            <i class="fas fa-user-plus me-1"></i>{{ datos.ventasKPI.nuevosClientes }} nuevos
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="mb-1 small opacity-75">Productos Vendidos</p>
+                            <h3 class="mb-0 fw-bold" *ngIf="datos.ventasKPI">{{ datos.ventasKPI.productosVendidos }}</h3>
+                        </div>
+                        <div class="fs-1 opacity-50">
+                            <i class="fas fa-box"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-top border-white border-opacity-25">
+                        <small class="opacity-75" *ngIf="datos.ventasKPI">
+                            Unidades: {{ datos.ventasKPI.unidades }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico principal de línea de tiempo -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Tendencia de Ventas</h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary active">Día</button>
+                            <button type="button" class="btn btn-outline-secondary">Semana</button>
+                            <button type="button" class="btn btn-outline-secondary">Mes</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <app-line-chart [config]="datos.ventasTendenciaConfig" *ngIf="datos.ventasTendenciaConfig"></app-line-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Análisis comparativo en 3 columnas -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">Ventas por Vendedor</h6>
+                    <app-accounts-list 
+                        title=""
+                        [accounts]="datos.ventasPorVendedor || []"
+                        type="receivable">
+                    </app-accounts-list>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">Ventas por Categoría</h6>
+                    <app-pie-chart [config]="datos.ventasCategoriaConfig" *ngIf="datos.ventasCategoriaConfig"></app-pie-chart>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">Ventas por Sucursal</h6>
+                    <app-bar-chart [config]="datos.ventasSucursalConfig" *ngIf="datos.ventasSucursalConfig"></app-bar-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ranking de clientes y productos en 2 columnas -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">🏆 Top Clientes</h5>
+                </div>
+                <div class="card-body">
+                    <app-accounts-list 
+                        title=""
+                        [accounts]="datos.topClientes || []"
+                        type="receivable">
+                    </app-accounts-list>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">📦 Top Productos</h5>
+                </div>
+                <div class="card-body">
+                    <app-accounts-list 
+                        title=""
+                        [accounts]="datos.topProductos || []"
+                        type="receivable">
+                    </app-accounts-list>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de ventas detalladas con diseño diferente -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <h5 class="mb-0 fw-bold">📊 Detalle de Ventas</h5>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <select class="form-select form-select-sm" style="width: auto;">
+                                <option>Últimos 7 días</option>
+                                <option>Últimos 30 días</option>
+                                <option>Este mes</option>
+                                <option>Este año</option>
+                            </select>
+                            <div class="input-group input-group-sm" style="width: 250px;">
+                                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    placeholder="Buscar venta..."
+                                    [(ngModel)]="busquedaVentasDetalladas"
+                                    (input)="onBusquedaVentasDetalladasChange()">
+                            </div>
+                            <button 
+                                class="btn btn-sm btn-primary" 
+                                type="button"
+                                (click)="exportarVentasDetalladas()">
+                                <i class="fas fa-file-export me-1"></i> Exportar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <revo-grid
+                        #ventasDetalladasGrid
+                        class="cash-flow-grid ventas-grid"
+                        [source]="ventasDetalladasRows"
+                        [columns]="ventasDetalladasColumns"
+                        [plugins]="ventasDetalladasPlugins"
+                        [rowDefinitions]="[]"
+                        [theme]="'default'"
+                        [range]="true"
+                        [editable]="false"
+                        [resize]="true"
+                        [canFocus]="true"
+                        [sorting]="true"
+                        [filter]="true"
+                        [exporting]="true"
+                        style="height: 450px;">
+                    </revo-grid>
+                </div>
+                <div class="card-footer bg-light border-0" *ngIf="totalVentasDetalladas > 0">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <span class="text-muted small">Mostrando {{ ventasDetalladasRows.length }} de {{ ventasDetalladasRows.length }} registros</span>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <span class="fw-bold text-primary fs-5">{{ formatCurrency(totalVentasDetalladas) }}</span>
+                            <span class="text-muted small ms-2">Total</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

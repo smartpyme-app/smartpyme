@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,10 +13,18 @@ import { BarChartComponent } from './components/bar-chart/bar-chart.component';
 import { PieChartComponent } from './components/pie-chart/pie-chart.component';
 import { AccountsListComponent } from './components/accounts-list/accounts-list.component';
 import { CashFlowGaugeComponent } from './components/cash-flow-gauge/cash-flow-gauge.component';
+import { BudgetCardComponent } from './components/budget-card/budget-card.component';
+
+// Componentes de secciones
+import { ResultadosComponent } from './sections/resultados/resultados.component';
+import { VentasComponent } from './sections/ventas/ventas.component';
+import { FinanzasComponent } from './sections/finanzas/finanzas.component';
+import { GastosComponent } from './sections/gastos/gastos.component';
+import { ControlCuentasComponent } from './sections/control-cuentas/control-cuentas.component';
+import { InventarioComponent } from './sections/inventario/inventario.component';
 
 import { SharedModule } from '@shared/shared.module';
 import { PipesModule } from '@pipes/pipes.module';
-import { BudgetCardComponent } from './components/budget-card/budget-card.component';
 
 @NgModule({
   imports: [
@@ -36,7 +44,13 @@ import { BudgetCardComponent } from './components/budget-card/budget-card.compon
     PieChartComponent,
     AccountsListComponent,
     CashFlowGaugeComponent,
-    BudgetCardComponent
+    BudgetCardComponent,
+    ResultadosComponent,
+    VentasComponent,
+    FinanzasComponent,
+    GastosComponent,
+    ControlCuentasComponent,
+    InventarioComponent
   ],
   exports: [
     DashboardComponent,
@@ -46,8 +60,10 @@ import { BudgetCardComponent } from './components/budget-card/budget-card.compon
     PieChartComponent,
     AccountsListComponent,
     CashFlowGaugeComponent,
-    BudgetCardComponent
-  ]
+    BudgetCardComponent,
+    RevoGrid
+  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class DashboardModule { }
 
