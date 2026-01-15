@@ -139,82 +139,25 @@ export class BarChartComponent implements OnInit, OnChanges {
       grid: {
         left: '3%',
         right: '4%',
-        bottom: '15%',
+        bottom: '3%',
         top: isMultiSeries ? (this.config.title ? '20%' : '15%') : '10%',
         containLabel: true
       },
-      dataZoom: [
-        {
-          type: 'slider',
-          show: true,
-          xAxisIndex: [0],
-          start: 0,
-          end: 100,
-          bottom: '5%',
-          height: 20,
-          handleIcon: 'path://M30.9,53.2C16.8,53.2,5.3,41.7,5.3,27.6S16.8,2,30.9,2C45,2,56.4,13.5,56.4,27.6S45,53.2,30.9,53.2z M30.9,3.5C17.6,3.5,6.8,14.4,6.8,27.6c0,13.3,10.8,24.1,24.1,24.1C44.2,51.7,55,40.9,55,27.6C54.9,14.4,44.1,3.5,30.9,3.5z M36.9,35.8c0,0.9-0.7,1.6-1.6,1.6s-1.6-0.7-1.6-1.6V19.4c0-0.9,0.7-1.6,1.6-1.6s1.6,0.7,1.6,1.6V35.8z M27.6,35.8c0,0.9-0.7,1.6-1.6,1.6s-1.6-0.7-1.6-1.6V19.4c0-0.9,0.7-1.6,1.6-1.6s1.6,0.7,1.6,1.6V35.8z',
-          handleSize: '80%',
-          handleStyle: {
-            color: '#5470c6',
-            shadowBlur: 3,
-            shadowColor: 'rgba(0, 0, 0, 0.6)',
-            shadowOffsetX: 2,
-            shadowOffsetY: 2
-          },
-          textStyle: {
-            color: '#666',
-            fontSize: 11
-          },
-          borderColor: '#ccc',
-          fillerColor: 'rgba(84, 112, 198, 0.2)',
-          dataBackground: {
-            lineStyle: {
-              color: '#5470c6',
-              width: 1
-            },
-            areaStyle: {
-              color: 'rgba(84, 112, 198, 0.1)'
-            }
-          },
-          selectedDataBackground: {
-            lineStyle: {
-              color: '#5470c6',
-              width: 2
-            },
-            areaStyle: {
-              color: 'rgba(84, 112, 198, 0.3)'
-            }
-          }
-        },
-        {
-          type: 'inside',
-          xAxisIndex: [0],
-          start: 0,
-          end: 100,
-          zoomOnMouseWheel: true,
-          moveOnMouseMove: true,
-          moveOnMouseWheel: true
-        }
-      ],
       xAxis: {
         type: 'category',
         data: this.config.labels || [],
         axisLabel: {
-          rotate: isMultiSeries ? 45 : 0,
+          rotate: 0,
           interval: 0
         }
       },
       yAxis: {
         type: 'value',
         axisLabel: {
-          formatter: (value: number) => {
-            if (Math.abs(value) >= 1000000) {
-              return `$${(value / 1000000).toFixed(1)}M`;
-            } else if (Math.abs(value) >= 1000) {
-              return `$${(value / 1000).toFixed(0)}K`;
-            }
-            return `$${value.toLocaleString('es-GT')}`;
-          }
+          show: false
+        },
+        splitLine: {
+          show: false
         }
       },
       series: series
@@ -225,4 +168,3 @@ export class BarChartComponent implements OnInit, OnChanges {
     this.echartsInstance = ec;
   }
 }
-

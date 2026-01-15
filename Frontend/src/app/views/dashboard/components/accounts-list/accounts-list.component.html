@@ -1,20 +1,9 @@
 <div class="accounts-list-container">
     <h6 class="list-title mb-3">{{ title }}</h6>
-    <div class="accounts-list" style="max-height: 400px; overflow-y: hidden;">
-        <div class="account-item mb-3" *ngFor="let account of sortedAccounts; let i = index">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <span class="account-name text-truncate" [title]="account.name" style="max-width: 200px;">
-                    {{ account.name }}
-                </span>
-                <span class="amount-text fw-medium ms-2">{{ formatAmount(account.amount) }}</span>
-            </div>
-            <div class="bar-race-container" [style.background-color]="type === 'payable' ? '#f0f0f0' : '#e8f4f8'">
-                <div class="bar-race" 
-                     [style.width.%]="getBarWidth(account.amount)"
-                     [style.background-color]="type === 'payable' ? '#ff9800' : '#4a90e2'"
-                     [style.animation-delay]="i * 0.1 + 's'">
-                </div>
-            </div>
-        </div>
+    <div *ngIf="accounts && accounts.length > 0" class="chart-container" style="height: 400px;">
+        <div echarts [options]="chartOption" (chartInit)="onChartInit($event)" class="w-100 h-100"></div>
+    </div>
+    <div *ngIf="!accounts || accounts.length === 0" class="text-center p-4 text-muted">
+        <p class="mb-0">No hay datos disponibles para mostrar</p>
     </div>
 </div>

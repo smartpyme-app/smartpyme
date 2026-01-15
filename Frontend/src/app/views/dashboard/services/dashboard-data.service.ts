@@ -87,7 +87,7 @@ export class DashboardDataService {
         colors: ['#5470c6', '#91cc75', '#fac858', '#ee6666']
       },
       ventasGastosConfig: {
-        title: 'Ventas y gastos totales por mes',
+        title: '',
         labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
         data: [
           {
