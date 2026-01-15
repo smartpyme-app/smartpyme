@@ -255,6 +255,10 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 700 ){ //700
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Vilorio-Ohle', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
             elseif(Auth::user()->id_empresa == 315 ){ //315
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Sistemas-de-Impresion', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
