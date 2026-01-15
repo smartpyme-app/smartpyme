@@ -41,6 +41,7 @@ class Cliente extends Model {
        'etiquetas',
        'id_usuario',
        'id_empresa',
+       'id_vendedor',
 
        'cod_giro',
        'cod_municipio',
@@ -124,5 +125,10 @@ class Cliente extends Model {
     public function actividadEconomica()
     {
         return $this->belongsTo(ActividadEconomica::class, 'cod_giro', 'cod');
+    }
+
+    public function vendedor()
+    {
+        return $this->belongsTo('App\Models\User', 'id_vendedor');
     }
 }

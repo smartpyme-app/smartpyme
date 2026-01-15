@@ -704,6 +704,11 @@ export class FacturacionComponent implements OnInit {
                 this.sumTotal();
             }
             
+            // Asignar vendedor si el cliente tiene uno asignado
+            if(cliente.id_vendedor) {
+                this.venta.id_vendedor = cliente.id_vendedor;
+            }
+            
             // Limpiar mensaje de validación al cambiar cliente
             this.mensajeValidacionFecha = '';
         }
