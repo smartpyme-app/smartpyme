@@ -9,6 +9,7 @@ class Detalle extends Model {
     protected $table = 'inventario_salida_detalles';
     protected $fillable = array(
         'id_producto',
+        'lote_id',
         'cantidad',
         'costo',
         'total',
@@ -27,6 +28,10 @@ class Detalle extends Model {
 
     public function producto(){
         return $this->belongsTo('App\Models\Inventario\Producto', 'id_producto')->withoutGlobalScope('tipo');
+    }
+
+    public function lote(){
+        return $this->belongsTo('App\Models\Inventario\Lote', 'lote_id');
     }
 
 }
