@@ -9,6 +9,8 @@
         <span id="producto_nombre" class="col-7 ps-1">
             <!-- <small>Nombre:</small> <br> -->
             {{ getNombreCompleto(producto) }} <br>
+            <small *ngIf="producto.codigo" class="text-muted">SKU: {{ producto.codigo }}</small>
+            <br *ngIf="producto.codigo">
             <small *ngIf="tieneShopify && producto.descripcion" class="text-muted">
                 {{ getDescripcion(producto) }}
                 <a href="javascript:void(0);" 
