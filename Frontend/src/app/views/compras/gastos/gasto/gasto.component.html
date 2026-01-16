@@ -35,6 +35,10 @@
                 <label for="referencia">Referencia:</label>
                 <input type="text" class="form-control" name="referencia" [(ngModel)]="gasto.referencia" placeholder="Escriba aquí" />
             </div>
+            <div class="form-group col-md-4 col-lg-3" *ngIf="gasto.percepcion">
+                <label for="sello_mh">Sello de Recepción</label>
+                <input type="text" class="form-control" name="sello_mh" [(ngModel)]="gasto.sello_mh" placeholder="Sello de recepción" />
+            </div>
         </div>
      </div>
      <div class="bg-white rounded p-3 mb-3">

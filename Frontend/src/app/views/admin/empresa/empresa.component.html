@@ -203,6 +203,14 @@
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
+                    <div class="form-group col-md-6 col-lg-4" *ngIf="tieneAccesoPropina">
+                        <label for="propina_porcentaje">Propina Porcentaje</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" [(ngModel)]="empresa.propina_porcentaje" name="propina_porcentaje"
+                                placeholder="Escriba aquí">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
                     <!-- <div class="form-group col-md-12">
                         <label for="descripcion">Descripción</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.descripcion" name="descripcion" placeholder="Escriba aquí">
@@ -583,7 +591,11 @@
                           <label for="terms" class="my-3">Términos y condiciones Generales para documentos</label>
                           <textarea name="terms" class="form-control" rows="6" [(ngModel)]="empresa.cotizacion_compras_terminos"></textarea>
                     </div> -->
-                    <p class="my-3 pt-5">
+                    <p class="pt-5">
+                        ¿Quieres limpiar el cache del sistema? Esto hará que se reinicie la aplicación y se cierre la sesión.
+                        <a (click)="limpiarCacheYLogout()" class="btn btn-link">Limpiar cache y cerrar sesión</a>
+                    </p>
+                    <p class="my-3">
                         ¿Quieres eliminar los datos de tu cuenta?
                         <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
                     </p>

@@ -261,6 +261,8 @@ export class FacturacionV2Component implements OnInit {
     this.venta.iva = 0;
     this.venta.total_costo = 0;
     this.venta.total = 0;
+    this.venta.propina = 0;
+    this.venta.cobrar_propina = false;
     if(this.impuestos.length > 0){
       this.venta.impuestos = this.impuestos;
     }else{
@@ -383,9 +385,52 @@ export class FacturacionV2Component implements OnInit {
             this.venta.cotizacion = 0;
             this.venta.num_cotizacion = this.venta.id;
             this.venta.id = null;
+            
+            // Obtener porcentaje de IVA para conversión de precios
+            const porcentajeIvaTotal = this.venta.cobrar_impuestos 
+              ? (this.apiService.auth_user()?.empresa?.iva || 0)
+              : 0;
+            
+            // Ajustar precios de los detalles para v2 (precios incluyen IVA)
             this.venta.detalles.forEach((detalle: any) => {
               detalle.id = null;
+              
+              // Si el detalle no tiene precio_iva, asumir que precio es sin IVA (versión anterior)
+              // y calcular precio_iva
+              if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
+                if (porcentajeIvaTotal > 0) {
+                  // El precio actual es sin IVA, calcular precio con IVA
+                  detalle.precio_iva = (parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+                } else {
+                  // Sin IVA, precio_iva es igual a precio
+                  detalle.precio_iva = parseFloat(detalle.precio || 0).toFixed(4);
+                }
+              } else {
+                // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
+                if (porcentajeIvaTotal > 0) {
+                  const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal);
+                  detalle.precio = precioSinIvaCalculado.toFixed(4);
+                } else {
+                  detalle.precio = parseFloat(detalle.precio_iva).toFixed(4);
+                }
+              }
+              
+              // Asegurar que precio_iva esté como número
+              detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
+              
+              // Recalcular total del detalle usando precio sin IVA
+              const precioSinIva = parseFloat(detalle.precio || 0);
+              detalle.total = (parseFloat(detalle.cantidad || 0) * precioSinIva - parseFloat(detalle.descuento || 0)).toFixed(4);
+              detalle.gravada = detalle.total;
+              
+              // Calcular total_iva para visualización
+              if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
+                detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+              } else {
+                detalle.total_iva = detalle.total;
+              }
             });
+            
             this.sumTotal();
 
             // Para proyectos
@@ -679,6 +724,12 @@ export class FacturacionV2Component implements OnInit {
       ? this.venta.sub_total * 0.10
       : 0;
 
+    // Calcular propina basada en el porcentaje de la empresa y el subtotal
+    const propinaPorcentaje = parseFloat(this.apiService.auth_user().empresa.propina_porcentaje) || 0;
+    this.venta.propina = this.venta.cobrar_propina
+      ? parseFloat((this.venta.sub_total * (propinaPorcentaje / 100)).toFixed(4))
+      : 0;
+
     // Calcular IVA sobre el sub_total (agregar IVA como en la versión original)
     if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
       this.venta.impuestos.forEach((impuesto: any) => {
@@ -700,12 +751,8 @@ export class FacturacionV2Component implements OnInit {
     this.venta.total_costo = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'total_costo')
     ).toFixed(4);
-    // Inicializar propina si no existe
-    if (!this.venta.propina) {
-      this.venta.propina = 0;
-    }
     
-    // El total es sub_total + iva + otros impuestos (como en la versión original)
+    // El total NO incluye la propina (la propina se muestra por separado en "Total + Propina")
     this.venta.total = (
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
@@ -714,8 +761,7 @@ export class FacturacionV2Component implements OnInit {
       parseFloat(this.venta.no_sujeta) +
       parseFloat(this.venta.iva_percibido) -
       parseFloat(this.venta.iva_retenido) -
-      parseFloat(this.venta.renta_retenida) +
-      parseFloat(this.venta.propina || 0)
+      parseFloat(this.venta.renta_retenida)
     ).toFixed(4);
 
 
@@ -745,6 +791,11 @@ export class FacturacionV2Component implements OnInit {
             if(cliente.tipo_contribuyente == "Grande") {
                 this.venta.retencion = 1;
                 this.sumTotal();
+            }
+            
+            // Asignar vendedor si el cliente tiene uno asignado
+            if(cliente.id_vendedor) {
+                this.venta.id_vendedor = cliente.id_vendedor;
             }
             
             // Limpiar mensaje de validación al cambiar cliente
@@ -1214,6 +1265,12 @@ export class FacturacionV2Component implements OnInit {
             this.tieneAccesoPropina = false;
         }
     );
+}
+
+public getTotalConPropina(): number {
+    const total = parseFloat(this.venta?.total || 0);
+    const propina = parseFloat(this.venta?.propina || 0);
+    return total + propina;
 }
 
 }

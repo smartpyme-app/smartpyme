@@ -24,9 +24,11 @@ export class FacturacionVersionGuard implements CanActivate {
                 versionFacturacion = empresa.custom_empresa.configuraciones.version_facturacion;
             }
             
-            // Si está configurada la versión v2, redirigir
+            // Si está configurada la versión v2, redirigir preservando los queryParams
             if (versionFacturacion === 'v2') {
-                this.router.navigate(['/ventas-v2/crear']);
+                // Extraer los queryParams de la ruta actual
+                const queryParams = next.queryParams;
+                this.router.navigate(['/ventas-v2/crear'], { queryParams: queryParams });
                 return false;
             }
         }

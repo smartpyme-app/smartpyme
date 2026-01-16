@@ -199,6 +199,10 @@
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Total:</b></td>
                         <td class="text-end"><b>{{ venta?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
+                    <tr *ngIf="venta.propina > 0">
+                        <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Total + Propina:</b></td>
+                        <td class="text-end"><b>{{ getTotalConPropina() | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
                     <tr *ngIf="venta?.abonos?.length > 0">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Abonos:</b></td>
                         <td class="text-end"><b>{{ venta?.abonos | filter:'estado':'Confirmado' | sum:'total' | currency }}</b></td>

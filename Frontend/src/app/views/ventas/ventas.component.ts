@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, TemplateRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, TemplateRef, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
@@ -39,6 +39,17 @@ export class VentasComponent implements OnInit, OnDestroy {
   public marcas: any[] = [];
   public numeros_ids: any = [];
   public contabilidadHabilitada: boolean = false;
+  
+  // Campos para anulación
+  public fechaAnulacion: string = '';
+  public tipoAnulacion: number = 2;
+  public motivoAnulacion: string = '';
+  public codigoGeneracionRemplazo: string = '';
+  public motivosAnulacion: any[] = [
+    { valor: 1, texto: 'Error en la Información del Documento Tributario Electrónico a invalidar' },
+    { valor: 2, texto: 'Rescindir de la operación realizada' },
+    { valor: 3, texto: 'Otro' }
+  ];
   public filtrosAcumulado: any = {
     inicio: '',
     fin: '',
@@ -59,6 +70,9 @@ export class VentasComponent implements OnInit, OnDestroy {
   downloadingPorMarca: boolean = false;
 
   public modalRef!: BsModalRef;
+
+  @ViewChild('modalAnulacion')
+  public modalAnulacionTemplate!: TemplateRef<any>;
 
   constructor(
     public apiService: ApiService,
@@ -654,6 +668,24 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   public async onSubmit(item?: any, isStatusChange?: boolean): Promise<void> {
     const ventaToSave = item || this.venta;
+    
+    // Validar que el ID esté presente para editar
+    if (!ventaToSave.id) {
+      this.alertService.error('Error: No se puede guardar la venta sin un ID válido.');
+      return;
+    }
+    
+    // Asegurar que el ID sea un número
+    ventaToSave.id = +ventaToSave.id;
+    
+    // Normalizar campos que pueden venir como cadena vacía a null
+    if (ventaToSave.id_vendedor === '' || ventaToSave.id_vendedor === 'Todos' || ventaToSave.id_vendedor === null || ventaToSave.id_vendedor === undefined) {
+      ventaToSave.id_vendedor = null;
+    } else {
+      // Convertir a número si tiene valor
+      ventaToSave.id_vendedor = +ventaToSave.id_vendedor;
+    }
+    
     this.saving = true;
     try {
       const venta = await this.apiService.store('venta', ventaToSave)
@@ -758,50 +790,37 @@ export class VentasComponent implements OnInit, OnDestroy {
     });
   }
 
+  openModalAnulacion(template: TemplateRef<any>, venta: any) {
+    this.venta = { ...venta }; // Crear copia para no modificar el original
+    // Inicializar valores por defecto
+    this.fechaAnulacion = this.apiService.date();
+    this.tipoAnulacion = 2;
+    this.motivoAnulacion = '';
+    this.codigoGeneracionRemplazo = '';
+    this.venta.errores = null; // Limpiar errores previos
+    this.saving = false; // Asegurar que saving esté en false
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-md',
+      backdrop: 'static'
+    });
+  }
+
+  onTipoAnulacionChange() {
+    // Limpiar el motivo cuando se cambia el tipo, excepto si es tipo 3
+    if (this.tipoAnulacion != 3) {
+      this.motivoAnulacion = '';
+    }
+    // Limpiar código de reemplazo si no es tipo 1 o 3
+    if (this.tipoAnulacion != 1 && this.tipoAnulacion != 3) {
+      this.codigoGeneracionRemplazo = '';
+    }
+  }
+
   anularDTE(venta: any) {
     this.venta = venta;
     if (venta.sello_mh && !venta.dte_invalidacion) {
-      if (confirm('¿Confirma anular la venta y el DTE?')) {
-        this.venta = venta;
-        this.saving = true;
-        this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
-          // this.alertService.success('DTE generado.');
-          this.venta.dte_invalidacion = dte;
-          this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
-            this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
-
-            if (dteFirmado.status == 'ERROR') {
-              this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
-            }
-
-            this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
-              if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                this.venta.dte_invalidacion.sello = dte.selloRecibido;
-                this.venta.sello_mh = dte.selloRecibido;
-                this.venta.estado = 'Anulada';
-                this.onSubmit();
-                if (this.venta.id_cliente) {
-                  setTimeout(() => {
-                    this.enviarDTE(this.venta);
-                  }, 3000);
-                }
-              }
-
-              this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
-            }, error => {
-              if (error.error.descripcionMsg) {
-                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
-              }
-              if (error.error.observaciones.length > 0) {
-                this.alertService.warning('Hubo un problema', error.error.observaciones);
-              }
-              this.saving = false;
-            });
-
-          }, error => { this.alertService.error(error); this.saving = false; });
-
-        }, error => { this.alertService.error(error); this.saving = false; });
-      }
+      // Abrir modal para ingresar fecha y motivo
+      this.openModalAnulacion(this.modalAnulacionTemplate, venta);
     }
     else {
       if (confirm('¿Confirma anular la venta?')) {
@@ -809,6 +828,125 @@ export class VentasComponent implements OnInit, OnDestroy {
         this.onSubmit();
       }
     }
+  }
+
+  confirmarAnulacion() {
+    // Validar campos
+    if (!this.fechaAnulacion) {
+      this.alertService.error('Debe seleccionar una fecha de anulación.');
+      return;
+    }
+    if (!this.tipoAnulacion) {
+      this.alertService.error('Debe seleccionar un tipo de anulación.');
+      return;
+    }
+    if (this.tipoAnulacion == 3 && !this.motivoAnulacion) {
+      this.alertService.error('Debe ingresar el motivo de anulación.');
+      return;
+    }
+    if ((this.tipoAnulacion == 1 || this.tipoAnulacion == 3) && !this.codigoGeneracionRemplazo) {
+      this.alertService.error('Debe ingresar el código de generación de la venta que reemplaza a esta.');
+      return;
+    }
+
+    // Si el tipo no es 3, usar el texto predeterminado según el tipo
+    let motivoTexto = '';
+    if (this.tipoAnulacion == 1) {
+      motivoTexto = 'Error en la Información del Documento Tributario Electrónico a invalidar.';
+    } else if (this.tipoAnulacion == 2) {
+      motivoTexto = 'Se rescinde la operación.';
+    } else {
+      motivoTexto = this.motivoAnulacion;
+    }
+
+    // Asignar valores a la venta
+    this.venta.fecha_anulacion = this.fechaAnulacion;
+    this.venta.tipo_anulacion = this.tipoAnulacion;
+    this.venta.motivo_anulacion = motivoTexto;
+    this.venta.codigo_generacion_remplazo = (this.tipoAnulacion == 1 || this.tipoAnulacion == 3) ? this.codigoGeneracionRemplazo : null;
+    this.venta.errores = null; // Limpiar errores previos
+
+    this.saving = true;
+    
+    this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
+      // this.alertService.success('DTE generado.');
+      this.venta.dte_invalidacion = dte;
+      this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+        this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
+
+        if (dteFirmado.status == 'ERROR') {
+          this.venta.errores = dteFirmado.body;
+          this.saving = false;
+          return;
+        }
+
+        this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
+          if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+            this.venta.dte_invalidacion.sello = dte.selloRecibido;
+            this.venta.sello_mh = dte.selloRecibido;
+            this.venta.estado = 'Anulada';
+            
+            // Cerrar el modal primero
+            if (this.modalRef) {
+              this.modalRef.hide();
+            }
+            
+            // Limpiar el estado del modal
+            this.saving = false;
+            this.venta.errores = null;
+            
+            // Guardar la venta
+            this.onSubmit();
+            
+            // Actualizar la venta en el listado
+            const index = this.ventas.data.findIndex((v: any) => v.id === this.venta.id);
+            if (index !== -1) {
+              this.ventas.data[index] = { ...this.venta };
+            }
+            
+            if (this.venta.id_cliente) {
+              setTimeout(() => {
+                this.enviarDTE(this.venta);
+              }, 3000);
+            }
+            
+            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+          } else {
+            this.venta.errores = dte;
+            this.saving = false;
+          }
+        }, error => {
+          this.saving = false;
+          if (error.error) {
+            if (error.error.descripcionMsg) {
+              this.venta.errores = { descripcionMsg: error.error.descripcionMsg };
+            } else if (error.error.observaciones && error.error.observaciones.length > 0) {
+              this.venta.errores = { observaciones: error.error.observaciones };
+            } else {
+              this.venta.errores = error.error;
+            }
+          } else {
+            this.venta.errores = error;
+          }
+        });
+
+      }, error => { 
+        this.saving = false;
+        if (error.error) {
+          this.venta.errores = error.error;
+        } else {
+          this.venta.errores = error;
+        }
+      });
+
+    }, error => { 
+      this.saving = false;
+      if (error.error) {
+        this.venta.errores = error.error;
+      } else {
+        this.venta.errores = error;
+      }
+    });
   }
 
   consultarDTE() {
@@ -980,6 +1118,10 @@ export class VentasComponent implements OnInit, OnDestroy {
     });
   }
 
-
+  public getTotalConPropina(venta: any): number {
+    const total = parseFloat(venta?.total || 0);
+    const propina = parseFloat(venta?.propina || 0);
+    return total + propina;
+  }
 
 }
