@@ -2,8 +2,8 @@
     <h2 class="page-heading" (click)="loadAll()">Cuenta</h2>
 </section>
 
-<tabset>
-    <tab heading="Datos de mi empresa">
+<tabset #tabset>
+    <tab heading="Datos de mi empresa" (selectTab)="onTabSelect($event)">
         <form name="form" (ngSubmit)="onSubmit()">
             <section class="bg-white p-4 rounded mb-3">
                 <div class="row justify-content-center">
@@ -304,7 +304,7 @@
             </section>
         </form>
     </tab>
-    <tab heading="Preferencias del sistema">
+    <tab heading="Preferencias del sistema" (selectTab)="onTabSelect($event)">
         <form name="form" (ngSubmit)="onSubmit()">
             <section class="bg-white p-4 rounded mb-3">
                 <div class="row mt-3">
@@ -606,12 +606,12 @@
                                 Número de días antes del vencimiento para mostrar alertas de productos próximos a vencer.
                             </small>
                         </div>
-                        <div class="form-group col-md-12" *ngIf="isLotesActivo()">
-                            <div class="d-flex justify-content-end mt-3">
+                        <div class="form-group col-md-6 mt-3" *ngIf="isLotesActivo()">
+                            <div class="d-flex justify-content-between mt-3">
                                 <app-activar-lotes-masivo></app-activar-lotes-masivo>
                             </div>
                             <small class="text-muted d-block mt-2">
-                                Activa o desactiva el inventario por lotes para todos los productos de categorías seleccionadas.
+                                Activa o desactiva el inventario por lotes por categorías.
                             </small>
                         </div>
                     </div>
@@ -799,7 +799,7 @@
         </section>
 
     </tab>
-    <tab heading="Integraciones">
+    <tab heading="Integraciones" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
 
             <div class="alert alert-info mb-4">
@@ -847,7 +847,7 @@
             </div>
         </section>
     </tab>
-    <tab heading="WooCommerce">
+    <tab heading="WooCommerce" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
             <div class="row">
                 <div class="col-12">
@@ -965,7 +965,7 @@
             </div>
         </section>
     </tab>
-    <tab heading="Shopify">
+    <tab heading="Shopify" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
             <div class="row">
                 <div class="col-12">

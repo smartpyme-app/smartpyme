@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef, } from 'ngx-bootstrap/modal';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
@@ -11,7 +11,7 @@ import Swal from 'sweetalert2';
     selector: 'app-empresa',
     templateUrl: './empresa.component.html'
 })
-export class EmpresaComponent implements OnInit {
+export class EmpresaComponent implements OnInit, AfterViewInit {
 
     public empresa: any = {};
     public loading = false;
@@ -36,6 +36,9 @@ export class EmpresaComponent implements OnInit {
 
     @ViewChild('modalTemplate')
     modalTemplate!: TemplateRef<any>;
+
+    @ViewChild('tabset', { static: false })
+    tabset!: TabsetComponent;
 
     public estadoPruebasCompletado: boolean = false;
     public fechaCompletadoPruebas: string = '';
@@ -70,6 +73,20 @@ export class EmpresaComponent implements OnInit {
 
     }
 
+    ngAfterViewInit() {
+        // Suscribirse a cambios en los query params para manejar navegación directa
+        this.route.queryParams.subscribe(params => {
+            if (params['tab']) {
+                // Esperar a que el tabset y la empresa estén disponibles
+                setTimeout(() => {
+                    if (this.empresa && Object.keys(this.empresa).length > 0) {
+                        this.seleccionarTabPorNombre(params['tab']);
+                    }
+                }, 300);
+            }
+        });
+    }
+
 
     public loadAll() {
         this.loading = true;
@@ -83,6 +100,16 @@ export class EmpresaComponent implements OnInit {
             if (this.empresa && this.empresa.fe_ambiente === '00') {
                 this.cargarEstadisticasPruebas();
                 // this.cargarDocumentosBase();
+            }
+
+            // Después de cargar la empresa, verificar si hay un tab en la URL
+            const tabParam = this.route.snapshot.queryParams['tab'];
+            if (tabParam) {
+                setTimeout(() => {
+                    if (this.tabset && this.tabset.tabs) {
+                        this.seleccionarTabPorNombre(tabParam);
+                    }
+                }, 600);
             }
         }, error => { this.alertService.error(error); this.loading = false; });
     }
@@ -1295,6 +1322,162 @@ export class EmpresaComponent implements OnInit {
 
             }, error => { this.alertService.error(error); this.cheking = false; });
         });
+    }
+
+    /**
+     * Maneja el cambio de tab y actualiza la URL
+     * Este método se llama desde el evento selectTab del tabset
+     */
+    public onTabChange(event: any) {
+        console.log('onTabChange llamado con evento:', event); // Debug
+        
+        // Usar setTimeout para asegurar que el tab ya esté activo
+        setTimeout(() => {
+            if (!this.tabset || !this.tabset.tabs) {
+                console.log('Tabset no disponible'); // Debug
+                return;
+            }
+
+            // Buscar el tab activo
+            const activeTab = this.tabset.tabs.find(tab => tab.active);
+            console.log('Tab activo encontrado:', activeTab); // Debug
+            
+            if (activeTab && activeTab.heading) {
+                this.actualizarUrlDesdeTab(activeTab);
+            }
+        }, 100);
+    }
+
+    /**
+     * Método para actualizar la URL cuando se selecciona un tab
+     * Se llama desde el evento (selectTab) de cada tab individual
+     */
+    public onTabSelect(tab: any) {
+        console.log('onTabSelect llamado con tab:', tab); // Debug
+        
+        if (tab && tab.heading) {
+            const tabName = this.getTabNameByHeading(tab.heading);
+            console.log('Tab name mapeado:', tabName); // Debug
+            
+            if (tabName) {
+                const currentTab = this.route.snapshot.queryParams['tab'];
+                console.log('Tab actual en URL:', currentTab, 'Nuevo tab:', tabName); // Debug
+                
+                if (currentTab !== tabName) {
+                    console.log('Actualizando URL...'); // Debug
+                    this.router.navigate([], {
+                        relativeTo: this.route,
+                        queryParams: { tab: tabName },
+                        queryParamsHandling: 'merge',
+                        replaceUrl: true
+                    }).then(() => {
+                        console.log('URL actualizada exitosamente'); // Debug
+                    }).catch((error) => {
+                        console.error('Error al actualizar URL:', error); // Debug
+                    });
+                } else {
+                    console.log('La URL ya tiene el tab correcto, no se actualiza'); // Debug
+                }
+            } else {
+                console.warn('No se encontró mapeo para el heading:', tab.heading); // Debug
+            }
+        }
+    }
+
+    /**
+     * Actualiza la URL basándose en el tab activo
+     */
+    private actualizarUrlDesdeTab(activeTab: any) {
+        if (!activeTab || !activeTab.heading) {
+            return;
+        }
+
+        const tabName = this.getTabNameByHeading(activeTab.heading);
+        if (tabName) {
+            // Verificar si el parámetro ya está en la URL para evitar navegación innecesaria
+            const currentTab = this.route.snapshot.queryParams['tab'];
+            if (currentTab !== tabName) {
+                // Actualizar la URL sin recargar la página
+                this.router.navigate([], {
+                    relativeTo: this.route,
+                    queryParams: { tab: tabName },
+                    queryParamsHandling: 'merge',
+                    replaceUrl: true
+                });
+            }
+        }
+    }
+
+    /**
+     * Obtiene el nombre del tab por su heading
+     */
+    private getTabNameByHeading(heading: string): string | null {
+        const headingMap: { [key: string]: string } = {
+            'Datos de mi empresa': 'datos',
+            'Preferencias del sistema': 'preferencias',
+            'Facturación electrónica': 'facturacion-electronica',
+            'Integraciones': 'integraciones',
+            'WooCommerce': 'woocommerce',
+            'Shopify': 'shopify'
+        };
+        return headingMap[heading] ?? null;
+    }
+
+    /**
+     * Selecciona un tab por su nombre
+     */
+    private seleccionarTabPorNombre(tabName: string) {
+        if (!this.tabset || !this.tabset.tabs) {
+            return;
+        }
+
+        // Buscar el tab por su heading en lugar de índice, ya que algunos tabs pueden estar ocultos
+        const tabHeadingMap: { [key: string]: string } = {
+            'datos': 'Datos de mi empresa',
+            'preferencias': 'Preferencias del sistema',
+            'facturacion-electronica': 'Facturación electrónica',
+            'integraciones': 'Integraciones',
+            'woocommerce': 'WooCommerce',
+            'shopify': 'Shopify'
+        };
+
+        const heading = tabHeadingMap[tabName.toLowerCase()];
+        if (heading) {
+            const tab = this.tabset.tabs.find(t => t.heading === heading);
+            if (tab && !tab.active) {
+                // Desactivar todos los tabs primero
+                this.tabset.tabs.forEach(t => t.active = false);
+                // Activar el tab seleccionado
+                tab.active = true;
+            }
+        }
+    }
+
+    /**
+     * Obtiene el índice del tab por su nombre
+     * Considera que algunos tabs pueden estar ocultos condicionalmente
+     */
+    private getTabIndexByName(tabName: string): number | null {
+        const tabMap: { [key: string]: number } = {
+            'datos': 0,
+            'preferencias': 1,
+            'facturacion-electronica': 2,
+            'integraciones': 3,
+            'woocommerce': 4,
+            'shopify': 5
+        };
+        return tabMap[tabName.toLowerCase()] ?? null;
+    }
+
+    /**
+     * Obtiene el nombre del tab por su índice
+     */
+    private getTabNameByIndex(index: number): string | null {
+        const tabNames = ['datos', 'preferencias', 'facturacion-electronica', 'integraciones', 'woocommerce', 'shopify'];
+        if (index >= 0 && index < tabNames.length) {
+            return tabNames[index];
+        }
+        return null;
     }
 
 }
