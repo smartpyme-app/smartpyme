@@ -6,6 +6,7 @@ import { RouterModule } from '@angular/router';
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { TypeaheadModule } from 'ngx-bootstrap/typeahead';
+import { ModalModule } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { MultimediaComponent } from './multimedia/multimedia.component';
 import { PipesModule } from '@pipes/pipes.module';
@@ -53,6 +54,7 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
 import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda.component';
 
 import { SelectSearchComponent } from './parts/select-search/select-search.component';
+import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activar-lotes-masivo.component';
 
 @NgModule({
   imports: [
@@ -66,7 +68,8 @@ import { SelectSearchComponent } from './parts/select-search/select-search.compo
     NgxMaskDirective, NgxMaskPipe,
     TooltipModule.forRoot(),
     FocusModule.forRoot(),
-    TypeaheadModule.forRoot()
+    TypeaheadModule.forRoot(),
+    ModalModule.forRoot()
   ],
   declarations: [
     BusquedaClienteComponent,
@@ -103,7 +106,8 @@ import { SelectSearchComponent } from './parts/select-search/select-search.compo
     SafeHtmlPipe,
     ThreedsModalComponent,
     AlertsHaciendaComponent,
-    SelectSearchComponent
+    SelectSearchComponent,
+    ActivarLotesMasivoComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -140,7 +144,8 @@ import { SelectSearchComponent } from './parts/select-search/select-search.compo
     VerHistorialButtonComponent,
     SafeHtmlPipe,
     AlertsHaciendaComponent,
-    SelectSearchComponent
+    SelectSearchComponent,
+    ActivarLotesMasivoComponent
   ],
   providers: [AlertService],
 })

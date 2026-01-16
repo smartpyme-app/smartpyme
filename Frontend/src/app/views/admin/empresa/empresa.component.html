@@ -606,6 +606,14 @@
                                 Número de días antes del vencimiento para mostrar alertas de productos próximos a vencer.
                             </small>
                         </div>
+                        <div class="form-group col-md-12" *ngIf="isLotesActivo()">
+                            <div class="d-flex justify-content-end mt-3">
+                                <app-activar-lotes-masivo></app-activar-lotes-masivo>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Activa o desactiva el inventario por lotes para todos los productos de categorías seleccionadas.
+                            </small>
+                        </div>
                     </div>
 
                     <hr>

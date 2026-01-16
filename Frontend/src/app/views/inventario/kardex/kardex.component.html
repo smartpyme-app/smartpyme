@@ -13,15 +13,24 @@
     <div class="row">
         <div class="col-12">
             <form name="form" (ngSubmit)="loadAll()" class="row">
-                <div class="form-group col-md-6 col-lg-3">
+                <div class="form-group col-md-6 col-lg-2">
                     <label for="">Bodega: </label>
-                    <select class="form-control form-select" [(ngModel)]="filtros.id_inventario" name="id_inventario" (change)="loadAll()">
+                    <select class="form-control form-select" [(ngModel)]="filtros.id_inventario" name="id_inventario" (change)="onBodegaChange()">
                         <option [value]="bodega.id" *ngFor="let bodega of bodegas">
                             {{ bodega.nombre }}
                         </option>
                     </select>
                 </div>
-                <div class="form-group col-md-6 col-lg-3">
+                <div class="form-group col-md-6 col-lg-2" *ngIf="producto?.inventario_por_lotes && isLotesActivo()">
+                    <label for="">Lote: <span class="text-danger">*</span></label>
+                    <select class="form-control form-select" [(ngModel)]="filtros.lote_id" name="lote_id" (change)="loadAll()" [disabled]="!filtros.id_inventario || lotes.length === 0">
+                        <option value="">Seleccione un lote</option>
+                        <option [value]="lote.id" *ngFor="let lote of lotes">
+                            {{ lote.numero_lote }} (Stock: {{ lote.stock | number:'1.0' }})
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group col-md-6 col-lg-2">
                     <label for="">Tipo: </label>
                     <select name="detalle" [(ngModel)]="filtros.detalle" class="form-control form-select" (change)="loadAll()">
                         <option value="">Todos los tipos</option>
@@ -34,11 +43,11 @@
                         <option value="Actualización de producto">Actualización de producto</option>
                     </select>
                 </div>
-                <div class="form-group col-md-5 col-lg-3">
+                <div class="form-group col-md-5 col-lg-2">
                     <label for="">Del: </label>
                     <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
                 </div>
-                <div class="form-group col-md-5 col-lg-3">
+                <div class="form-group col-md-5 col-lg-2">
                     <label for="">Al: </label>
                     <div class="input-group">
                         <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
@@ -81,13 +90,7 @@
                             
                             <td><span tooltip="{{ movimiento.created_at | date:'hh:mm a'}}">{{movimiento.fecha | date:'dd/MM/yyyy'}}</span></td>
                             <td>{{movimiento.nombre_usuario}}</td>
-                            <td>
-                                {{movimiento.detalle}}
-                                <br *ngIf="movimiento.numero_lote">
-                                <small class="text-muted" *ngIf="movimiento.numero_lote">
-                                    <i class="fa fa-tag"></i> Lote: {{movimiento.numero_lote}}
-                                </small>
-                            </td>
+                            <td> {{movimiento.detalle}} </td>
                             <td>
                                 {{movimiento.modelo_detalle}}
                                 <a class="float-end d-none"  tooltip="Ver detalle de la transacción" routerLink="/{{movimiento.modelo}}/{{movimiento.referencia}}"><i class="fa fa-edit"></i></a>
