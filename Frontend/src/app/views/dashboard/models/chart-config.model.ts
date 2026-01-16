@@ -97,5 +97,13 @@ export interface DashboardData {
       costoTotal: number;
       utilidad: number;
     }>;
+    topClientes?: AccountItem[];
+    ventasPorCliente?: Array<{
+      cliente: string;
+      ultimaVenta: string;
+      dias: number;
+      transacciones: number;
+      ventas: number;
+    }>;
 }
 

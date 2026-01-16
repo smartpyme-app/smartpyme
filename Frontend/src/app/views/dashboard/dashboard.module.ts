@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { NgxEchartsModule } from 'ngx-echarts';
 import * as echarts from 'echarts';
 import { RevoGrid } from '@revolist/angular-datagrid';
+import { AgGridModule } from 'ag-grid-angular';
 
 import { DashboardComponent } from './dashboard.component';
 import { ChartCardComponent } from './components/chart-card/chart-card.component';
@@ -33,6 +34,7 @@ import { PipesModule } from '@pipes/pipes.module';
     RouterModule,
     NgxEchartsModule.forRoot({ echarts }),
     RevoGrid,
+    AgGridModule,
     SharedModule,
     PipesModule
   ],

@@ -385,26 +385,102 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0 fw-bold text-center">Detalle de ventas por producto</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Detalle de ventas por producto</h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Buscador global -->
+                            <div class="input-group" style="width: 250px;">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control border-start-0" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="quickFilterText"
+                                    (input)="onQuickFilterChange()">
+                            </div>
+                            <!-- Botones de exportación -->
+                            <button 
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="exportarCSV()"
+                                title="Exportar a CSV">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-success"
+                                (click)="exportarExcel()"
+                                title="Exportar a Excel">
+                                <i class="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="limpiarFiltrosGrid()"
+                                title="Limpiar filtros">
+                                <i class="fas fa-filter me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body p-0">
-                    <revo-grid
+                <div class="card-body px-3 py-0">
+                    <ag-grid-angular
                         #ventasPorProductoGrid
-                        class="cash-flow-grid ventas-producto-grid"
-                        [source]="ventasPorProductoRows"
-                        [columns]="ventasPorProductoColumns"
-                        [plugins]="ventasPorProductoPlugins"
-                        [rowDefinitions]="[]"
-                        [theme]="'default'"
-                        [range]="true"
-                        [editable]="false"
-                        [resize]="true"
-                        [canFocus]="true"
-                        [sorting]="true"
-                        [filter]="true"
-                        [exporting]="true"
-                        style="height: 450px;">
-                    </revo-grid>
+                        class="ag-theme-alpine ventas-producto-grid"
+                        [rowData]="ventasPorProductoRows"
+                        [columnDefs]="ventasPorProductoColumnDefs"
+                        [gridOptions]="ventasPorProductoGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; height: 450px;"
+                        [domLayout]="'normal'">
+                    </ag-grid-angular>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top 25 clientes y Detalle de ventas por cliente -->
+    <div class="row mb-4">
+        <!-- Top 25 clientes -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-primary text-white border-0 py-2">
+                    <h5 class="mb-0 fw-bold text-center">Top 25 clientes</h5>
+                </div>
+                <div class="card-body">
+                    <app-accounts-list 
+                        title=""
+                        [accounts]="datos.topClientes || []"
+                        type="receivable">
+                    </app-accounts-list>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detalle de ventas por cliente -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-primary text-white border-0 py-2">
+                    <h5 class="mb-0 fw-bold text-center">Detalle de ventas por cliente</h5>
+                </div>
+                <div class="card-body p-0" style="height: 450px; overflow: hidden;">
+                    <ag-grid-angular
+                        #ventasPorClienteGrid
+                        class="ag-theme-alpine ventas-cliente-grid"
+                        [rowData]="ventasPorClienteRows"
+                        [columnDefs]="ventasPorClienteColumnDefs"
+                        [gridOptions]="ventasPorClienteGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; height: 100%;"
+                        [domLayout]="'normal'">
+                    </ag-grid-angular>
                 </div>
             </div>
         </div>

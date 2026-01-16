@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
+import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 
 @Component({
   selector: 'app-ventas',
@@ -12,10 +13,22 @@ export class VentasComponent implements OnInit {
   @Output() filtrosCambiados = new EventEmitter<any>();
 
   @ViewChild('ventasDetalladasGrid') ventasDetalladasGrid!: RevoGrid;
-  @ViewChild('ventasPorProductoGrid') ventasPorProductoGrid!: RevoGrid;
+  @ViewChild('ventasPorProductoGrid') ventasPorProductoGrid: any;
+  @ViewChild('ventasPorClienteGrid') ventasPorClienteGrid: any;
 
   ventasDetalladasPlugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
   ventasPorProductoPlugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
+
+  // AG Grid configuration
+  ventasPorProductoColumnDefs: ColDef[] = [];
+  ventasPorProductoGridOptions: GridOptions = {};
+  ventasPorClienteColumnDefs: ColDef[] = [];
+  ventasPorClienteGridOptions: GridOptions = {};
+  private gridApi!: GridApi;
+  private gridColumnApi!: ColumnApi;
+  private clienteGridApi!: GridApi;
+  private clienteGridColumnApi!: ColumnApi;
+  quickFilterText: string = '';
   busquedaVentasDetalladas: string = '';
 
   // Filtros de fechas
@@ -163,10 +176,343 @@ export class VentasComponent implements OnInit {
   ngOnInit(): void {
     this.inicializarFechas();
     this.cargarOpcionesFiltros();
+    this.configurarAGGrid();
+    this.configurarAGGridClientes();
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
     }, 100);
+  }
+
+  configurarAGGrid(): void {
+    this.ventasPorProductoColumnDefs = [
+      { 
+        field: 'categoria', 
+        headerName: 'Categoría',
+        width: 150,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'left' };
+          }
+          return { textAlign: 'left' } as any;
+        }
+      },
+      { 
+        field: 'producto', 
+        headerName: 'Producto',
+        width: 400,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'left' };
+          }
+          return { textAlign: 'left' } as any;
+        }
+      },
+      { 
+        field: 'formaPago', 
+        headerName: 'Forma de pago',
+        width: 150,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'left' };
+          }
+          return { textAlign: 'left' } as any;
+        }
+      },
+      { 
+        field: 'cantidad', 
+        headerName: 'Cantidad',
+        width: 100,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
+          }
+          return { textAlign: 'right' } as any;
+        },
+        valueFormatter: (params: any) => {
+          if (params.data?.isTotal) {
+            return params.value ? params.value.toLocaleString('es-GT') : '';
+          }
+          return params.value ? params.value.toLocaleString('es-GT') : '';
+        }
+      },
+      { 
+        field: 'precioUnitario', 
+        headerName: 'Precio unitario',
+        width: 130,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
+          }
+          return { textAlign: 'right' } as any;
+        }
+      },
+      { 
+        field: 'descuento', 
+        headerName: 'Descuento',
+        width: 120,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
+          }
+          return { textAlign: 'right' } as any;
+        }
+      },
+      { 
+        field: 'ventasSinIVA', 
+        headerName: 'Ventas totales sin IVA',
+        width: 180,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
+          }
+          return { textAlign: 'right' } as any;
+        }
+      },
+      { 
+        field: 'costoTotal', 
+        headerName: 'Costo total',
+        width: 130,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
+          }
+          return { textAlign: 'right' } as any;
+        }
+      },
+      { 
+        field: 'utilidad', 
+        headerName: 'Utilidad',
+        width: 120,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
+          }
+          return { textAlign: 'right' } as any;
+        }
+      }
+    ];
+
+    this.ventasPorProductoGridOptions = {
+      defaultColDef: {
+        resizable: true,
+        sortable: true,
+        filter: true
+      },
+      getRowClass: (params: any) => {
+        if (params.data?.isTotal) {
+          return 'ag-row-total';
+        }
+        return '';
+      },
+      // Habilitar selección de texto en celdas
+      enableCellTextSelection: true,
+      ensureDomOrder: true,
+      // Habilitar rangos de celdas (selección múltiple)
+      enableRangeSelection: true,
+      // Eventos de celda
+      onCellClicked: (params: any) => {
+        this.onCellClicked(params);
+      },
+      onCellDoubleClicked: (params: any) => {
+        this.onCellDoubleClicked(params);
+      },
+      onCellKeyDown: (params: any) => {
+        this.onCellKeyDown(params);
+      },
+      onGridReady: (params: any) => {
+        this.gridApi = params.api;
+        this.gridColumnApi = params.columnApi;
+      },
+      suppressExcelExport: false,
+      suppressCsvExport: false
+    };
+  }
+
+  configurarAGGridClientes(): void {
+    this.ventasPorClienteColumnDefs = [
+      { 
+        field: 'cliente', 
+        headerName: 'Cliente',
+        width: 250,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'left' };
+          }
+          return { textAlign: 'left' } as any;
+        }
+      },
+      { 
+        field: 'ultimaVenta', 
+        headerName: 'Última venta',
+        width: 120,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'center' };
+          }
+          return { textAlign: 'center' } as any;
+        }
+      },
+      { 
+        field: 'dias', 
+        headerName: 'Días',
+        width: 100,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
+          }
+          return { textAlign: 'right' } as any;
+        },
+        valueFormatter: (params: any) => {
+          if (params.data?.isTotal) {
+            return params.value ? params.value.toLocaleString('es-GT') : '';
+          }
+          return params.value ? params.value.toLocaleString('es-GT') : '';
+        }
+      },
+      { 
+        field: 'transacciones', 
+        headerName: 'Transacciones',
+        width: 120,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
+          }
+          return { textAlign: 'right' } as any;
+        },
+        valueFormatter: (params: any) => {
+          if (params.data?.isTotal) {
+            return params.value ? params.value.toLocaleString('es-GT') : '';
+          }
+          return params.value ? params.value.toLocaleString('es-GT') : '';
+        }
+      },
+      { 
+        field: 'ventas', 
+        headerName: 'Ventas',
+        width: 150,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
+          }
+          return { textAlign: 'right' } as any;
+        }
+      }
+    ];
+
+    this.ventasPorClienteGridOptions = {
+      defaultColDef: {
+        resizable: true,
+        sortable: true,
+        filter: true
+      },
+      getRowClass: (params: any) => {
+        if (params.data?.isTotal) {
+          return 'ag-row-total';
+        }
+        return '';
+      },
+      enableCellTextSelection: true,
+      ensureDomOrder: true,
+      enableRangeSelection: true,
+      suppressScrollOnNewData: false,
+      onCellDoubleClicked: (params: any) => {
+        if (params.value !== null && params.value !== undefined) {
+          const cellValue = params.value.toString();
+          this.copiarAlPortapapeles(cellValue);
+        }
+      },
+      onCellKeyDown: (params: any) => {
+        const event = params.event;
+        if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
+          event.preventDefault();
+          this.copiarSeleccionAlPortapapelesClientes();
+        }
+      },
+      onGridReady: (params: any) => {
+        this.clienteGridApi = params.api;
+        this.clienteGridColumnApi = params.columnApi;
+        // Asegurar que el scroll funcione correctamente
+        setTimeout(() => {
+          params.api.sizeColumnsToFit();
+        }, 100);
+      },
+      suppressExcelExport: false,
+      suppressCsvExport: false
+    };
+  }
+
+  copiarSeleccionAlPortapapelesClientes(): void {
+    if (!this.clienteGridApi) return;
+
+    const selectedRows = this.clienteGridApi.getSelectedRows();
+    if (selectedRows.length > 0) {
+      const headers = this.ventasPorClienteColumnDefs
+        .map(col => col.headerName || col.field)
+        .join('\t');
+      
+      const rows = selectedRows
+        .filter((row: any) => !row.isTotal)
+        .map((row: any) => {
+          return this.ventasPorClienteColumnDefs
+            .map(col => {
+              const value = row[col.field || ''] || '';
+              return value.toString();
+            })
+            .join('\t');
+        });
+      
+      const texto = [headers, ...rows].join('\n');
+      this.copiarAlPortapapeles(texto);
+    } else {
+      const allRows: string[] = [];
+      const headers = this.ventasPorClienteColumnDefs
+        .map(col => col.headerName || col.field)
+        .join('\t');
+      
+      this.clienteGridApi.forEachNodeAfterFilterAndSort((node: any) => {
+        if (!node.data?.isTotal) {
+          const row = this.ventasPorClienteColumnDefs
+            .map(col => {
+              const value = node.data[col.field || ''] || '';
+              return value.toString();
+            })
+            .join('\t');
+          allRows.push(row);
+        }
+      });
+      
+      const texto = [headers, ...allRows].join('\n');
+      this.copiarAlPortapapeles(texto);
+    }
   }
 
   inicializarFechas(): void {
@@ -364,6 +710,64 @@ export class VentasComponent implements OnInit {
     }), { cantidad: 0, ventasSinIVA: 0, costoTotal: 0, utilidad: 0 });
   }
 
+  get ventasPorClienteRows(): any[] {
+    if (!this.datos.ventasPorCliente) return [];
+    const rows = this.datos.ventasPorCliente.map((item: any) => ({
+      cliente: item.cliente || '-',
+      ultimaVenta: item.ultimaVenta || '-',
+      dias: item.dias || 0,
+      transacciones: item.transacciones || 0,
+      ventas: this.formatCurrency(item.ventas || 0),
+      ventasOriginal: item.ventas || 0,
+      isTotal: false
+    }));
+    
+    // Agregar fila de totales al final
+    const totales = this.totalVentasPorCliente;
+    if (totales.transacciones > 0) {
+      rows.push({
+        cliente: 'Total',
+        ultimaVenta: totales.ultimaVenta || '-',
+        dias: totales.dias || 0,
+        transacciones: totales.transacciones,
+        ventas: this.formatCurrency(totales.ventas),
+        ventasOriginal: totales.ventas,
+        isTotal: true
+      });
+    }
+    
+    return rows;
+  }
+
+  get totalVentasPorCliente(): any {
+    if (!this.datos.ventasPorCliente || this.datos.ventasPorCliente.length === 0) {
+      return { transacciones: 0, ventas: 0, dias: 0, ultimaVenta: '' };
+    }
+    const totales = this.datos.ventasPorCliente.reduce((totals: any, item: any) => ({
+      transacciones: totals.transacciones + (item.transacciones || 0),
+      ventas: totals.ventas + (item.ventas || 0),
+      dias: Math.max(totals.dias || 0, item.dias || 0),
+      ultimaVenta: item.ultimaVenta || totals.ultimaVenta || ''
+    }), { transacciones: 0, ventas: 0, dias: 0, ultimaVenta: '' });
+    
+    // Obtener la fecha más reciente
+    const fechas = this.datos.ventasPorCliente
+      .map((item: any) => item.ultimaVenta)
+      .filter((fecha: string) => fecha && fecha !== '-');
+    
+    if (fechas.length > 0) {
+      // Ordenar fechas y tomar la más reciente
+      fechas.sort((a: string, b: string) => {
+        const dateA = new Date(a.split('/').reverse().join('-'));
+        const dateB = new Date(b.split('/').reverse().join('-'));
+        return dateB.getTime() - dateA.getTime();
+      });
+      totales.ultimaVenta = fechas[0];
+    }
+    
+    return totales;
+  }
+
   exportarACSV(data: any[], columns: any[], filename: string): void {
     if (data.length === 0) {
       alert('No hay datos para exportar');
@@ -396,4 +800,236 @@ export class VentasComponent implements OnInit {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }
+
+  // Métodos para AG Grid
+  onQuickFilterChange(): void {
+    if (this.gridApi) {
+      this.gridApi.setQuickFilter(this.quickFilterText);
+    }
+  }
+
+  exportarCSV(): void {
+    if (this.gridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.gridApi.exportDataAsCsv({
+        fileName: `ventas-por-producto-${fecha}.csv`,
+        processCellCallback: (params: any) => {
+          // Excluir la fila de totales del export si es necesario, o incluirla
+          return params.value || '';
+        }
+      });
+    }
+  }
+
+  exportarExcel(): void {
+    // AG Grid Community solo soporta CSV
+    // Para Excel necesitarías ag-grid-enterprise
+    // Por ahora exportamos como CSV con extensión .xlsx (puede abrirse en Excel)
+    if (this.gridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.gridApi.exportDataAsCsv({
+        fileName: `ventas-por-producto-${fecha}.csv`,
+        processCellCallback: (params: any) => {
+          return params.value || '';
+        }
+      });
+    }
+  }
+
+  limpiarFiltrosGrid(): void {
+    if (this.gridApi) {
+      this.gridApi.setFilterModel(null);
+      this.quickFilterText = '';
+      this.gridApi.setQuickFilter('');
+    }
+  }
+
+  // Operaciones básicas de celda
+  onCellClicked(params: any): void {
+    // Al hacer clic en una celda, se puede seleccionar
+    // La selección de rangos se maneja automáticamente por AG Grid
+  }
+
+  onCellDoubleClicked(params: any): void {
+    // Doble clic: copiar valor de celda al portapapeles
+    if (params.value !== null && params.value !== undefined) {
+      const cellValue = params.value.toString();
+      this.copiarAlPortapapeles(cellValue);
+    }
+  }
+
+  onCellKeyDown(params: any): void {
+    const event = params.event;
+    
+    // Ctrl+C o Cmd+C: Copiar selección al portapapeles
+    if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
+      event.preventDefault();
+      this.copiarSeleccionAlPortapapeles();
+    }
+    
+    // Ctrl+A o Cmd+A: Seleccionar todas las filas visibles
+    if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+      event.preventDefault();
+      if (this.gridApi) {
+        this.gridApi.selectAll();
+      }
+    }
+    
+    // Delete o Backspace: Limpiar filtro de columna si está en el header
+    if ((event.key === 'Delete' || event.key === 'Backspace') && params.node.rowPinned === 'top') {
+      if (params.column) {
+        const filterInstance = this.gridApi.getFilterInstance(params.column.colId);
+        if (filterInstance) {
+          filterInstance.setModel(null);
+          this.gridApi.onFilterChanged();
+        }
+      }
+    }
+    
+    // F2: Editar celda (si fuera editable)
+    if (event.key === 'F2') {
+      // AG Grid Community no tiene edición inline por defecto
+      // Pero podemos seleccionar el texto de la celda
+      if (params.event.target) {
+        params.event.target.select();
+      }
+    }
+  }
+
+  copiarAlPortapapeles(texto: string): void {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texto).then(() => {
+        console.log('Valor copiado al portapapeles');
+      }).catch(err => {
+        console.error('Error al copiar:', err);
+        // Fallback para navegadores antiguos
+        this.copiarAlPortapapelesFallback(texto);
+      });
+    } else {
+      this.copiarAlPortapapelesFallback(texto);
+    }
+  }
+
+  copiarAlPortapapelesFallback(texto: string): void {
+    const textArea = document.createElement('textarea');
+    textArea.value = texto;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      console.log('Valor copiado al portapapeles (fallback)');
+    } catch (err) {
+      console.error('Error al copiar:', err);
+    }
+    document.body.removeChild(textArea);
+  }
+
+  copiarSeleccionAlPortapapeles(): void {
+    if (!this.gridApi) return;
+
+    const selectedRanges = this.gridApi.getCellRanges();
+    
+    if (selectedRanges && selectedRanges.length > 0) {
+      // Copiar rangos seleccionados
+      const range = selectedRanges[0];
+      const rows: string[] = [];
+      
+      // Obtener todas las columnas usando columnApi
+      const allColumns = this.gridColumnApi?.getAllColumns() || [];
+      if (allColumns.length === 0) {
+        return;
+      }
+
+      // Obtener índices de inicio y fin
+      const startRowIndex = range.startRow?.rowIndex || 0;
+      const endRowIndex = range.endRow?.rowIndex || 0;
+      const startColId = range.startColumn?.getColId() || '';
+      const columns = range.columns || [];
+      const endColId = columns.length > 0 ? columns[columns.length - 1]?.getColId() : startColId;
+      
+      let startColIndex = -1;
+      let endColIndex = -1;
+      
+      allColumns.forEach((col: any, index: number) => {
+        const colId = col.getColId();
+        if (colId === startColId && startColIndex === -1) {
+          startColIndex = index;
+        }
+        if (colId === endColId) {
+          endColIndex = index;
+        }
+      });
+
+      for (let rowIndex = startRowIndex; rowIndex <= endRowIndex; rowIndex++) {
+        const row: string[] = [];
+        const node = this.gridApi.getDisplayedRowAtIndex(rowIndex);
+        
+        if (node && startColIndex >= 0 && endColIndex >= 0) {
+          allColumns.forEach((column: any, colIndex: number) => {
+            if (colIndex >= startColIndex && colIndex <= endColIndex) {
+              const colId = column.getColId();
+              const value = node.data[colId] || '';
+              row.push(value.toString());
+            }
+          });
+        }
+        
+        if (row.length > 0) {
+          rows.push(row.join('\t'));
+        }
+      }
+      
+      if (rows.length > 0) {
+        this.copiarAlPortapapeles(rows.join('\n'));
+      }
+    } else {
+      // Si no hay rango seleccionado, copiar filas seleccionadas
+      const selectedRows = this.gridApi.getSelectedRows();
+      if (selectedRows.length > 0) {
+        const headers = this.ventasPorProductoColumnDefs
+          .map(col => col.headerName || col.field)
+          .join('\t');
+        
+        const rows = selectedRows
+          .filter((row: any) => !row.isTotal)
+          .map((row: any) => {
+            return this.ventasPorProductoColumnDefs
+              .map(col => {
+                const value = row[col.field || ''] || '';
+                return value.toString();
+              })
+              .join('\t');
+          });
+        
+        const texto = [headers, ...rows].join('\n');
+        this.copiarAlPortapapeles(texto);
+      } else {
+        // Si no hay selección, copiar toda la tabla visible
+        const allRows: string[] = [];
+        const headers = this.ventasPorProductoColumnDefs
+          .map(col => col.headerName || col.field)
+          .join('\t');
+        
+        this.gridApi.forEachNodeAfterFilterAndSort((node: any) => {
+          if (!node.data?.isTotal) {
+            const row = this.ventasPorProductoColumnDefs
+              .map(col => {
+                const value = node.data[col.field || ''] || '';
+                return value.toString();
+              })
+              .join('\t');
+            allRows.push(row);
+          }
+        });
+        
+        const texto = [headers, ...allRows].join('\n');
+        this.copiarAlPortapapeles(texto);
+      }
+    }
+  }
+
 }

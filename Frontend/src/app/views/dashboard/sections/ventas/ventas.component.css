@@ -1,125 +1,290 @@
 /* Estilos específicos para la sección de Ventas */
 
-/* Estilos modernos para RevoGrid - Tabla de ventas por producto */
-::ng-deep .ventas-producto-grid {
+/* Estilos modernos para AG Grid - Tabla de ventas por producto */
+::ng-deep .ventas-producto-grid.ag-theme-alpine {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-}
-
-::ng-deep .ventas-producto-grid revo-grid {
     border: none !important;
     box-shadow: none !important;
 }
 
-/* Header moderno - fondo blanco, bordes sutiles */
-::ng-deep .ventas-producto-grid .rg-header {
-    background-color: #ffffff !important;
-    border-bottom: 1px solid #e9ecef !important;
+/* Header - fondo azul, texto blanco */
+::ng-deep .ventas-producto-grid .ag-header {
+    background-color: #66A3FF !important;
+    border-bottom: none !important;
+    border-top: none !important;
 }
 
-::ng-deep .ventas-producto-grid .rg-header-cell {
-    background-color: #ffffff !important;
-    border-right: 1px solid #e9ecef !important;
-    border-bottom: 1px solid #e9ecef !important;
+::ng-deep .ventas-producto-grid .ag-header-cell {
+    background-color: #66A3FF !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-bottom: none !important;
     padding: 12px 16px !important;
     font-weight: 600 !important;
     font-size: 0.875rem !important;
-    color: #495057 !important;
-    text-transform: none !important;
+    text-align: center !important;
 }
 
-::ng-deep .ventas-producto-grid .rg-header-cell:last-child {
+::ng-deep .ventas-producto-grid .ag-header-cell-label {
+    justify-content: center !important;
+}
+
+::ng-deep .ventas-producto-grid .ag-header-cell:last-child {
     border-right: none !important;
 }
 
-/* Filas de datos - fondo blanco, bordes sutiles */
-::ng-deep .ventas-producto-grid .rg-row {
-    background-color: #ffffff !important;
-    border-bottom: 1px solid #f1f3f5 !important;
+::ng-deep .ventas-producto-grid .ag-header-cell-text {
+    font-weight: 600 !important;
+    color: #ffffff !important;
+}
+
+::ng-deep .ventas-producto-grid .ag-header-cell-label {
+    color: #ffffff !important;
+}
+
+/* Iconos de ordenamiento en header */
+::ng-deep .ventas-producto-grid .ag-header-cell .ag-sort-indicator-container {
+    color: #ffffff !important;
+}
+
+::ng-deep .ventas-producto-grid .ag-header-cell .ag-icon {
+    color: #ffffff !important;
+}
+
+/* Filas de datos - alternadas blanco y gris claro */
+::ng-deep .ventas-producto-grid .ag-row {
+    border-bottom: 1px solid #e0e0e0 !important;
     transition: background-color 0.15s ease !important;
 }
 
-::ng-deep .ventas-producto-grid .rg-row:hover {
+::ng-deep .ventas-producto-grid .ag-row:nth-child(even) {
+    background-color: #F7F7F7 !important;
+}
+
+::ng-deep .ventas-producto-grid .ag-row:nth-child(odd) {
     background-color: #ffffff !important;
 }
 
-::ng-deep .ventas-producto-grid .rg-row.selected {
+::ng-deep .ventas-producto-grid .ag-row:hover {
+    background-color: #e8f0fe !important;
+}
+
+::ng-deep .ventas-producto-grid .ag-row.ag-row-selected {
     background-color: #e7f3ff !important;
 }
 
 /* Celdas - padding generoso, sin bordes verticales */
-::ng-deep .ventas-producto-grid .rg-cell {
+::ng-deep .ventas-producto-grid .ag-cell {
     padding: 14px 16px !important;
     border-right: none !important;
-    border-bottom: 1px solid #f1f3f5 !important;
+    border-bottom: none !important;
     font-size: 0.875rem !important;
     color: #212529 !important;
-    vertical-align: middle !important;
+    line-height: 1.5 !important;
 }
 
-::ng-deep .ventas-producto-grid .rg-cell:focus {
+::ng-deep .ventas-producto-grid .ag-cell:focus {
     outline: 2px solid #0d6efd !important;
     outline-offset: -2px !important;
     z-index: 1 !important;
 }
 
 /* Scrollbar moderno */
-::ng-deep .ventas-producto-grid .rg-viewport {
+::ng-deep .ventas-producto-grid .ag-body-viewport {
     scrollbar-width: thin;
     scrollbar-color: #dee2e6 #ffffff;
 }
 
-::ng-deep .ventas-producto-grid .rg-viewport::-webkit-scrollbar {
+::ng-deep .ventas-producto-grid .ag-body-viewport::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
-::ng-deep .ventas-producto-grid .rg-viewport::-webkit-scrollbar-track {
+::ng-deep .ventas-producto-grid .ag-body-viewport::-webkit-scrollbar-track {
     background: #ffffff;
     border-radius: 4px;
 }
 
-::ng-deep .ventas-producto-grid .rg-viewport::-webkit-scrollbar-thumb {
+::ng-deep .ventas-producto-grid .ag-body-viewport::-webkit-scrollbar-thumb {
     background: #dee2e6;
     border-radius: 4px;
     border: 2px solid #ffffff;
 }
 
-::ng-deep .ventas-producto-grid .rg-viewport::-webkit-scrollbar-thumb:hover {
+::ng-deep .ventas-producto-grid .ag-body-viewport::-webkit-scrollbar-thumb:hover {
     background: #adb5bd;
 }
 
-/* Iconos de ordenamiento más sutiles */
-::ng-deep .ventas-producto-grid .rg-header-cell .sort-icon {
-    opacity: 0.5;
-    transition: opacity 0.2s ease;
-}
-
-::ng-deep .ventas-producto-grid .rg-header-cell:hover .sort-icon {
-    opacity: 1;
-}
-
 /* Eliminar bordes gruesos y sombras */
-::ng-deep .ventas-producto-grid revo-grid,
-::ng-deep .ventas-producto-grid .rg-container {
+::ng-deep .ventas-producto-grid.ag-theme-alpine,
+::ng-deep .ventas-producto-grid .ag-root-wrapper {
     border: none !important;
     box-shadow: none !important;
     background-color: #ffffff !important;
 }
 
-/* Fila de totales - última fila con estilo especial */
-::ng-deep .ventas-producto-grid .rg-row:last-child {
-    background-color: #ffffff !important;
-    border-top: 2px solid #e9ecef !important;
-    border-bottom: 1px solid #e9ecef !important;
+/* Fila de totales - fondo azul igual al header, texto blanco */
+::ng-deep .ventas-producto-grid .ag-row.ag-row-total {
+    background-color: #66A3FF !important;
+    border-top: none !important;
+    border-bottom: none !important;
     font-weight: 600 !important;
 }
 
-::ng-deep .ventas-producto-grid .rg-row:last-child .rg-cell {
+::ng-deep .ventas-producto-grid .ag-row.ag-row-total .ag-cell {
     font-weight: 600 !important;
-    color: #212529 !important;
+    color: #ffffff !important;
+    background-color: #66A3FF !important;
+}
+
+::ng-deep .ventas-producto-grid .ag-row.ag-row-total:hover {
+    background-color: #66A3FF !important;
+}
+
+/* Iconos de ordenamiento más sutiles */
+::ng-deep .ventas-producto-grid .ag-sort-indicator-container {
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+
+::ng-deep .ventas-producto-grid .ag-header-cell:hover .ag-sort-indicator-container {
+    opacity: 1;
+}
+
+/* Estilos para la barra de herramientas */
+.ventas-producto-grid-toolbar {
+    padding: 12px 16px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.ventas-producto-grid-toolbar .input-group-text {
+    border-color: #dee2e6;
+}
+
+.ventas-producto-grid-toolbar .form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Estilos para la tabla de ventas por cliente */
+::ng-deep .ventas-cliente-grid.ag-theme-alpine {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Header - fondo azul, texto blanco */
+::ng-deep .ventas-cliente-grid .ag-header {
+    background-color: #66A3FF !important;
+    border-bottom: none !important;
+    border-top: none !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-header-cell {
+    background-color: #66A3FF !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-bottom: none !important;
+    padding: 12px 16px !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    text-align: center !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-header-cell:last-child {
+    border-right: none !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-header-cell-text {
+    font-weight: 600 !important;
+    color: #ffffff !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-header-cell-label {
+    color: #ffffff !important;
+    justify-content: center !important;
+}
+
+/* Iconos de ordenamiento en header */
+::ng-deep .ventas-cliente-grid .ag-header-cell .ag-sort-indicator-container {
+    color: #ffffff !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-header-cell .ag-icon {
+    color: #ffffff !important;
+}
+
+/* Filas de datos - alternadas blanco y gris claro */
+::ng-deep .ventas-cliente-grid .ag-row {
+    border-bottom: 1px solid #e0e0e0 !important;
+    transition: background-color 0.15s ease !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-row:nth-child(even) {
+    background-color: #F7F7F7 !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-row:nth-child(odd) {
+    background-color: #ffffff !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-row:hover {
+    background-color: #e8f0fe !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-row.ag-row-selected {
+    background-color: #e7f3ff !important;
+}
+
+/* Celdas - padding generoso, sin bordes verticales */
+::ng-deep .ventas-cliente-grid .ag-cell {
     padding: 14px 16px !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    font-size: 0.875rem !important;
+    color: #212529 !important;
+    line-height: 1.5 !important;
 }
 
-::ng-deep .ventas-producto-grid .rg-row:last-child:hover {
+::ng-deep .ventas-cliente-grid .ag-cell:focus {
+    outline: 2px solid #0d6efd !important;
+    outline-offset: -2px !important;
+    z-index: 1 !important;
+}
+
+/* Eliminar bordes gruesos y sombras */
+::ng-deep .ventas-cliente-grid.ag-theme-alpine,
+::ng-deep .ventas-cliente-grid .ag-root-wrapper {
+    border: none !important;
+    box-shadow: none !important;
     background-color: #ffffff !important;
+    height: 100% !important;
+}
+
+/* Asegurar que el viewport tenga altura y scroll */
+::ng-deep .ventas-cliente-grid .ag-body-viewport {
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-body-horizontal-scroll {
+    overflow-x: auto !important;
+}
+
+/* Fila de totales - fondo azul igual al header, texto blanco */
+::ng-deep .ventas-cliente-grid .ag-row.ag-row-total {
+    background-color: #66A3FF !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    font-weight: 600 !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-row.ag-row-total .ag-cell {
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    background-color: #66A3FF !important;
+}
+
+::ng-deep .ventas-cliente-grid .ag-row.ag-row-total:hover {
+    background-color: #66A3FF !important;
 }
