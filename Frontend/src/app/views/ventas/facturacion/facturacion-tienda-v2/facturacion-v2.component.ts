@@ -1036,7 +1036,9 @@ export class FacturacionV2Component implements OnInit {
           this.apiService.auth_user().empresa.impresion_en_facturacion
         ) {
           if (this.apiService.auth_user().empresa.facturacion_electronica) {
+            // Actualizar this.venta con los datos del backend, especialmente el correlativo correcto
             this.venta.id = venta.id;
+            this.venta.correlativo = venta.correlativo;
             this.emitirDTE();
           } else {
             window.open(
