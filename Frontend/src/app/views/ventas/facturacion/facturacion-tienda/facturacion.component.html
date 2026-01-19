@@ -340,14 +340,14 @@
             <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento" id="num_orden_exento">
         </div>
     </div>
-    <div class="row" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta && venta.cotizacion != 1">
+    <div class="row" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta">
         <div class="form-group col-md-12 col-lg-6 without-label">
             <div class="form-switch bg-light-info rounded">
               <label for="descripcion_personalizada">Agrupar detalles de venta y personalizar descripción</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="compra.descripcion_personalizada">
             </div>
         </div>
-        <div class="form-group col-md-12 col-lg-6" *ngIf="venta.cotizacion != 1 && venta.descripcion_personalizada">
+        <div class="form-group col-md-12 col-lg-6" *ngIf="venta.descripcion_personalizada">
             <label for="descripcion_impresion">Descripción a mostrar el la impresión del documento:</label>
             <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
         </div>
