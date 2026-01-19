@@ -38,6 +38,15 @@
                         <option value="C">C</option>
                     </select>
                 </div>
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label for="id_vendedor" class="form-label">Vendedor asignado</label>
+                    <select class="form-select" name="id_vendedor" [(ngModel)]="cliente.id_vendedor">
+                        <option [ngValue]="null">Sin vendedor asignado</option>
+                        <option *ngFor="let vendedor of vendedores" [value]="vendedor.id">
+                            {{ vendedor.name }}
+                        </option>
+                    </select>
+                </div>
             </div>
             <div class="row" *ngIf="cliente.tipo != 'Extranjero'">
                 <div class="col-12" [ngClass]="{ 'order-1' :  cliente.tipo == 'Persona', 'order-2' :  cliente.tipo == 'Empresa' }">

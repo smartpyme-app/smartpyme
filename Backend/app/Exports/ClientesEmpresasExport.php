@@ -69,7 +69,7 @@ class ClientesEmpresasExport implements FromCollection, WithHeadings, WithMappin
                 $row->tipo_contribuyente,
                 $row->dui,
                 $row->nit,
-                $row->direccion,
+                $row->empresa_direccion ?? $row->direccion,
                 $row->municipio,
                 $row->departamento,
                 $row->telefono,
