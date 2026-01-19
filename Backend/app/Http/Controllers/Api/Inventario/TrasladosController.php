@@ -234,10 +234,20 @@ class TrasladosController extends Controller
         
         $empresa = Empresa::findOrFail($traslado->id_empresa);
 
-        $pdf = PDF::loadView('reportes.inventario.traslado-pdf', compact('traslado', 'empresa'));
-        $pdf->setPaper('letter', 'portrait');
-        
-        return $pdf->download('traslado-' . $traslado->id . '.pdf');
+        if(Auth::check() && Auth::user()->id_empresa == 420){ //420
+            $pdf = PDF::loadView('reportes.inventario.formatos_empresas.traslado-inversiones-andre', compact('traslado', 'empresa'));
+            $pdf->setPaper('US Letter', 'portrait');
+        }elseif(Auth::check() && Auth::user()->id_empresa == 498){ //13
+            $pdf = PDF::loadView('reportes.inventario.formatos_empresas.traslado-grupo-split', compact('traslado', 'empresa'));
+            $pdf->setPaper('US Letter', 'portrait');
+        }elseif(Auth::check() && Auth::user()->id_empresa == 2){ //2 Super Admin
+            $pdf = PDF::loadView('reportes.inventario.formatos_empresas.traslado-smartpyme', compact('traslado', 'empresa'));
+            $pdf->setPaper('US Letter', 'portrait');
+        }else{
+            $pdf = PDF::loadView('reportes.inventario.traslado-pdf', compact('traslado', 'empresa'));
+            $pdf->setPaper('US Letter', 'portrait');
+        }
+        return $pdf->stream('traslado-' . $traslado->id . '.pdf');
     }
 
     public function exportarPdf(Request $request) {
