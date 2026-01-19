@@ -711,19 +711,8 @@ class ComprasController extends Controller
     public function generarDoc($id){
         $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
 
-        if(Auth::user()->id_empresa == 420){ //420
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.compra-inversiones-andre', compact('compra'));
-            $pdf->setPaper('US Letter', 'portrait');
-        }elseif(Auth::user()->id_empresa == 498){ //13
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.compra-grupo-split', compact('compra'));
-            $pdf->setPaper('US Letter', 'portrait');
-        }elseif(Auth::user()->id_empresa == 2){ //2 Super Admin
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.compra-smartpyme', compact('compra'));
-            $pdf->setPaper('US Letter', 'portrait');
-        }else{
-            $pdf = PDF::loadView('reportes.facturacion.compra', compact('compra'));
-            $pdf->setPaper('US Letter', 'portrait');
-        }
+        $pdf = PDF::loadView('reportes.facturacion.compra', compact('compra'));
+        $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('compra-' . $compra->id . '.pdf');
 
     }
