@@ -54,4 +54,8 @@ export class CompraComponent implements OnInit {
         this.location.back();
     }
 
+    public imprimir(){
+        window.open(this.apiService.baseUrl + '/api/compra/impresion/' + this.compra.id + '?token=' + this.apiService.auth_token());
+    }
+
 }

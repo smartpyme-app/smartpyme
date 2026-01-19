@@ -475,5 +475,8 @@ export class ComprasComponent implements OnInit {
     }, error => {this.alertService.error(error); });
   } 
 
+  public imprimir(compra:any){
+    window.open(this.apiService.baseUrl + '/api/compra/impresion/' + compra.id + '?token=' + this.apiService.auth_token());
+  }
 
 }

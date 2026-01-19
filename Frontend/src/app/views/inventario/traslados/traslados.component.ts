@@ -261,4 +261,8 @@ export class TrasladosComponent implements OnInit {
         return producto.nombre;
     }
 
+    public imprimir(traslado:any){
+        window.open(this.apiService.baseUrl + '/api/traslado/' + traslado.id + '/pdf?token=' + this.apiService.auth_token());
+    }
+
 }
