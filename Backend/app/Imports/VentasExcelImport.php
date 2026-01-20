@@ -262,7 +262,9 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
             return $cliente->id;
         } catch (\Exception $e) {
-            $clienteDefault = Cliente::where('nombre_completo', 'Consumidor Final')->first();
+            $clienteDefault = Cliente::where('nombre', 'Consumidor Final')
+                ->where('id_empresa', Auth::user()->id_empresa)
+                ->first();
             return $clienteDefault ? $clienteDefault->id : null;
         }
     }
