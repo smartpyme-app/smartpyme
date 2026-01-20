@@ -27,7 +27,7 @@ class MHAnulacion extends Model
             "version" => 2,
             "ambiente" => $DTE['identificacion']['ambiente'],
             "codigoGeneracion" => $codigoGeneracion,
-            "fecAnula" => \Carbon\Carbon::parse($this->venta->fecha_anulacion)->format('Y-m-d'),
+            "fecAnula" => $this->venta->fecha_anulacion ? \Carbon\Carbon::parse($this->venta->fecha_anulacion)->format('Y-m-d') : \Carbon\Carbon::now()->format('Y-m-d'),
             "horAnula" => \Carbon\Carbon::now()->format('H:i:s'),
         ];
 
@@ -68,7 +68,7 @@ class MHAnulacion extends Model
         // 3. Otro.
 
         // Usar valores directamente de la venta (ya están guardados)
-        $tipoAnulacion = +$this->venta->tipo_anulacion ?? 2;
+        $tipoAnulacion = $this->venta->tipo_anulacion ? +$this->venta->tipo_anulacion : 2;
 
         $documento = [
             "tipoDte" => $DTE['identificacion']['tipoDte'],

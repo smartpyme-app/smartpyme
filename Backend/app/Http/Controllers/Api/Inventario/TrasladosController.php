@@ -235,9 +235,8 @@ class TrasladosController extends Controller
         $empresa = Empresa::findOrFail($traslado->id_empresa);
 
         $pdf = PDF::loadView('reportes.inventario.traslado-pdf', compact('traslado', 'empresa'));
-        $pdf->setPaper('letter', 'portrait');
-        
-        return $pdf->download('traslado-' . $traslado->id . '.pdf');
+        $pdf->setPaper('US Letter', 'portrait');
+        return $pdf->stream('traslado-' . $traslado->id . '.pdf');
     }
 
     public function exportarPdf(Request $request) {

@@ -3,7 +3,12 @@
         <span *ngIf="!loading && compra.estado != 'Pre-compra'">Compra</span>
         <span *ngIf="!loading && compra.estado == 'Pre-compra'">Orden de compra</span>
     </h2>
-    <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>
+    <div class="d-flex gap-2">
+        <button *ngIf="compra.id" (click)="imprimir()" class="btn btn-default" tooltip="Imprimir compra">
+            <i class="fa fa-print"></i> Imprimir
+        </button>
+        <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>
+    </div>
 </section>
 
 <div class="card border-0">

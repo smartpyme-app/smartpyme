@@ -87,14 +87,15 @@
                         <th>De</th>
                         <th>Para</th>
                         <th (click)="setOrden('cantidad')" [ngClass]="{'sorted-asc': filtros.orden == 'cantidad' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'cantidad' && filtros.direccion == 'desc'}" class="click text-center">Cantidad</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="9" class="text-center" *ngIf="traslados?.total < 1 && !loading">
+                        <td colspan="10" class="text-center" *ngIf="traslados?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene traslados registrados</span>
                         </td>
-                        <td colspan="9" class="text-center" *ngIf="loading">
+                        <td colspan="10" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -111,6 +112,18 @@
                         <td>{{ traslado.nombre_origen }}</td>
                         <td>{{ traslado.nombre_destino }}</td>
                         <td class="text-center"> {{ traslado.cantidad | number:'1.0' }} </td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a (click)="imprimir(traslado)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-print"></i> Imprimir
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
                     </tr>
                 </tbody>
             </table>
