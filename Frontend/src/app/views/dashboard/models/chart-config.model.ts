@@ -105,5 +105,65 @@ export interface DashboardData {
       transacciones: number;
       ventas: number;
     }>;
+    ventasDetalladas?: Array<{
+      fecha: string;
+      cliente: string;
+      factura: string;
+      productos: number;
+      monto: number;
+      estado: string;
+      canal?: string;
+      vendedor?: string;
+      formaPago?: string;
+      categoria?: string;
+      producto?: string;
+      cantidad?: number;
+      precioUnitario?: number;
+      descuento?: number;
+      ventasSinIVA?: number;
+      costoTotal?: number;
+      utilidad?: number;
+    }>;
+    // Datos para la sección de Control de Cuentas
+    metricasCuentas?: {
+      // Cuentas por cobrar
+      cuentasPorCobrarTotal: number;
+      cuentasPorCobrar30Dias: number;
+      cuentasPorCobrar60Dias: number;
+      cuentasPorCobrar90Dias: number;
+      tooltipCuentasPorCobrar?: string;
+      // Cuentas por pagar
+      cuentasPorPagarTotal: number;
+      cuentasPorPagar30Dias: number;
+      cuentasPorPagar60Dias: number;
+      cuentasPorPagar90Dias: number;
+      tooltipCuentasPorPagar?: string;
+    };
+    cuentasPorVigenciaConfig?: ChartConfig;
+    cuentasPorCobrarClientes?: AccountItem[];
+    detalleCuentasPorCobrar?: Array<{
+      cliente: string;
+      factura: string | number;
+      fechaVenta: string;
+      fechaPago: string;
+      diasVencimiento: number;
+      estado: string;
+      ventasConIVA: number;
+      montoAbonado: number;
+      diasAbono?: number;
+      saldoPendiente: number;
+    }>;
+    cuentasPorPagarVigenciaConfig?: ChartConfig;
+    cuentasPorPagarProveedores?: AccountItem[];
+    resumenCuentasPorPagar?: Array<{
+      fechaCompra: string;
+      vencimiento: string;
+      diasVencimiento: number;
+      estado: string;
+      gastosTotalesConIVA: number;
+      totalAbonado: number;
+      ultimoAbono: string;
+      saldoPendiente: number;
+    }>;
 }
 

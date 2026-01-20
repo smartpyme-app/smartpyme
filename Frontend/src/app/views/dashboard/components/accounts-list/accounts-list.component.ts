@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 
 export interface AccountItem {
   name: string;
@@ -14,6 +14,7 @@ export class AccountsListComponent implements OnInit, OnChanges {
   @Input() title: string = '';
   @Input() accounts: AccountItem[] = [];
   @Input() type: 'receivable' | 'payable' = 'receivable';
+  @Output() itemClick = new EventEmitter<{ name: string; amount: number }>();
 
   chartOption: any = {};
   echartsInstance: any;
@@ -116,10 +117,41 @@ export class AccountsListComponent implements OnInit, OnChanges {
         }
       }]
     };
+
+    // Agregar evento de clic
+    if (this.echartsInstance) {
+      this.echartsInstance.off('click');
+      this.echartsInstance.on('click', (params: any) => {
+        if (params && params.name !== undefined) {
+          const account = sorted.find(a => a.name === params.name);
+          if (account) {
+            this.itemClick.emit({
+              name: account.name,
+              amount: account.amount
+            });
+          }
+        }
+      });
+    }
   }
 
   onChartInit(ec: any): void {
     this.echartsInstance = ec;
+    // Configurar evento de clic después de inicializar
+    if (this.echartsInstance && this.chartOption) {
+      this.echartsInstance.on('click', (params: any) => {
+        if (params && params.name !== undefined) {
+          const sorted = this.sortedAccounts;
+          const account = sorted.find(a => a.name === params.name);
+          if (account) {
+            this.itemClick.emit({
+              name: account.name,
+              amount: account.amount
+            });
+          }
+        }
+      });
+    }
   }
 
   formatAmount(amount: number): string {

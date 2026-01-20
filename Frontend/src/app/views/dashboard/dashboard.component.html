@@ -39,7 +39,8 @@
 
         <app-control-cuentas 
             *ngSwitchCase="'Control de cuentas'"
-            [datos]="datos">
+            [datos]="datos"
+            (filtrosCambiados)="onFiltrosControlCuentasCambiados($event)">
         </app-control-cuentas>
 
         <app-inventario 

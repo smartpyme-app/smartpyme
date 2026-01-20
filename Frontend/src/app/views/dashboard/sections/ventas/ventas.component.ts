@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter } from '@angular/core';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
@@ -8,7 +8,7 @@ import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
   templateUrl: './ventas.component.html',
   styleUrls: ['./ventas.component.css']
 })
-export class VentasComponent implements OnInit {
+export class VentasComponent implements OnInit, OnChanges {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
 
@@ -57,6 +57,23 @@ export class VentasComponent implements OnInit {
   filtroProducto: string = '';
   categoriasProductos: any[] = [];
   productos: any[] = [];
+
+  // Filtros interactivos (se aplican localmente sin recargar)
+  filtrosInteractivos: {
+    canal?: string;
+    vendedor?: string;
+    formaPago?: string;
+    categoria?: string;
+    producto?: string;
+    cliente?: string;
+    mes?: string;
+  } = {};
+  
+  // Datos originales (sin filtrar)
+  datosOriginales: any = {};
+  
+  // Datos filtrados (se muestran en la vista)
+  datosFiltrados: any = {};
 
   ventasDetalladasColumns = [
     { 
@@ -178,10 +195,31 @@ export class VentasComponent implements OnInit {
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridClientes();
+    // Guardar datos originales si existen
+    if (this.datos && Object.keys(this.datos).length > 0) {
+      this.datosOriginales = JSON.parse(JSON.stringify(this.datos));
+      this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+    }
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
     }, 100);
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['datos']) {
+      // Actualizar datos originales cuando cambian
+      if (this.datos && Object.keys(this.datos).length > 0) {
+        this.datosOriginales = JSON.parse(JSON.stringify(this.datos));
+        // Aplicar filtros interactivos si existen
+        if (Object.keys(this.filtrosInteractivos).length > 0) {
+          this.aplicarFiltrosInteractivos();
+        } else {
+          this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+          this.datos = this.datosFiltrados;
+        }
+      }
+    }
   }
 
   configurarAGGrid(): void {
@@ -621,10 +659,10 @@ export class VentasComponent implements OnInit {
       montoOriginal: v.monto || 0,
       estado: v.estado || '-'
     }));
-    return this.filtrarVentasDetalladas(rows);
+    return this.filtrarVentasDetalladasPorBusqueda(rows);
   }
 
-  filtrarVentasDetalladas(rows: any[]): any[] {
+  filtrarVentasDetalladasPorBusqueda(rows: any[]): any[] {
     if (!this.busquedaVentasDetalladas) return rows;
     const busqueda = this.busquedaVentasDetalladas.toLowerCase();
     return rows.filter(row => 
@@ -1030,6 +1068,408 @@ export class VentasComponent implements OnInit {
         this.copiarAlPortapapeles(texto);
       }
     }
+  }
+
+  // Métodos para filtros interactivos
+  onCanalClick(event: { name: string; amount: number }): void {
+    if (this.filtrosInteractivos.canal === event.name) {
+      // Si ya está filtrado por este canal, quitar el filtro
+      delete this.filtrosInteractivos.canal;
+    } else {
+      // Aplicar filtro de canal
+      this.filtrosInteractivos.canal = event.name;
+    }
+    this.aplicarFiltrosInteractivos();
+  }
+
+  onVendedorClick(event: { name: string; value: any; index: number }): void {
+    if (this.filtrosInteractivos.vendedor === event.name) {
+      delete this.filtrosInteractivos.vendedor;
+    } else {
+      this.filtrosInteractivos.vendedor = event.name;
+    }
+    this.aplicarFiltrosInteractivos();
+  }
+
+  onFormaPagoClick(event: { name: string; value: any; index: number }): void {
+    if (this.filtrosInteractivos.formaPago === event.name) {
+      delete this.filtrosInteractivos.formaPago;
+    } else {
+      this.filtrosInteractivos.formaPago = event.name;
+    }
+    this.aplicarFiltrosInteractivos();
+  }
+
+  onCategoriaClick(event: { name: string; amount: number }): void {
+    if (this.filtrosInteractivos.categoria === event.name) {
+      delete this.filtrosInteractivos.categoria;
+    } else {
+      this.filtrosInteractivos.categoria = event.name;
+    }
+    this.aplicarFiltrosInteractivos();
+  }
+
+  onProductoClick(event: { name: string; amount: number }): void {
+    if (this.filtrosInteractivos.producto === event.name) {
+      delete this.filtrosInteractivos.producto;
+    } else {
+      this.filtrosInteractivos.producto = event.name;
+    }
+    this.aplicarFiltrosInteractivos();
+  }
+
+  onClienteClick(event: { name: string; amount: number }): void {
+    if (this.filtrosInteractivos.cliente === event.name) {
+      delete this.filtrosInteractivos.cliente;
+    } else {
+      this.filtrosInteractivos.cliente = event.name;
+    }
+    this.aplicarFiltrosInteractivos();
+  }
+
+  onMesClick(event: { name: string; value: any; index: number }): void {
+    if (this.filtrosInteractivos.mes === event.name) {
+      delete this.filtrosInteractivos.mes;
+    } else {
+      this.filtrosInteractivos.mes = event.name;
+    }
+    this.aplicarFiltrosInteractivos();
+  }
+
+  aplicarFiltrosInteractivos(): void {
+    // Si no hay datos originales, usar los datos actuales
+    const datosBase = Object.keys(this.datosOriginales).length > 0 
+      ? this.datosOriginales 
+      : (this.datos || {});
+
+    // Crear una copia profunda de los datos para filtrar
+    this.datosFiltrados = JSON.parse(JSON.stringify(datosBase));
+
+    // Primero filtrar las ventas detalladas según todos los filtros activos
+    this.filtrarVentasDetalladas();
+
+    // Luego recalcular todos los gráficos basándose en las ventas filtradas
+    this.recalcularTodosLosGraficos();
+
+    // Recalcular métricas
+    this.recalcularMetricas();
+
+    // Actualizar los datos que se muestran (crear nueva referencia para que Angular detecte cambios)
+    this.datos = JSON.parse(JSON.stringify(this.datosFiltrados));
+  }
+
+  filtrarVentasDetalladas(): void {
+    if (!this.datosFiltrados.ventasDetalladas) {
+      return;
+    }
+
+    let ventasFiltradas = [...this.datosFiltrados.ventasDetalladas];
+
+    // Aplicar todos los filtros activos
+    if (this.filtrosInteractivos.canal) {
+      ventasFiltradas = ventasFiltradas.filter((v: any) => v.canal === this.filtrosInteractivos.canal);
+    }
+    if (this.filtrosInteractivos.vendedor) {
+      ventasFiltradas = ventasFiltradas.filter((v: any) => v.vendedor === this.filtrosInteractivos.vendedor);
+    }
+    if (this.filtrosInteractivos.formaPago) {
+      ventasFiltradas = ventasFiltradas.filter((v: any) => v.formaPago === this.filtrosInteractivos.formaPago);
+    }
+    if (this.filtrosInteractivos.cliente) {
+      ventasFiltradas = ventasFiltradas.filter((v: any) => v.cliente === this.filtrosInteractivos.cliente);
+    }
+    if (this.filtrosInteractivos.mes) {
+      ventasFiltradas = ventasFiltradas.filter((v: any) => {
+        if (!v.fecha) return false;
+        const fecha = new Date(v.fecha);
+        const mesIndex = fecha.getMonth();
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const mesNombre = meses[mesIndex];
+        return mesNombre.toLowerCase() === this.filtrosInteractivos.mes?.toLowerCase() ||
+               mesNombre === this.filtrosInteractivos.mes;
+      });
+    }
+    if (this.filtrosInteractivos.categoria) {
+      ventasFiltradas = ventasFiltradas.filter((v: any) => v.categoria === this.filtrosInteractivos.categoria);
+    }
+    if (this.filtrosInteractivos.producto) {
+      ventasFiltradas = ventasFiltradas.filter((v: any) => v.producto === this.filtrosInteractivos.producto);
+    }
+
+    this.datosFiltrados.ventasDetalladas = ventasFiltradas;
+  }
+
+  recalcularTodosLosGraficos(): void {
+    const ventasFiltradas = this.datosFiltrados.ventasDetalladas || [];
+
+    // Recalcular ventas por canal
+    this.recalcularVentasPorCanal(ventasFiltradas);
+
+    // Recalcular ventas por vendedor
+    this.recalcularVentasPorVendedor(ventasFiltradas);
+
+    // Recalcular ventas por forma de pago
+    this.recalcularVentasPorFormaPago(ventasFiltradas);
+
+    // Recalcular ventas por categoría
+    this.recalcularVentasPorCategoria(ventasFiltradas);
+
+    // Recalcular top productos
+    this.recalcularTopProductos(ventasFiltradas);
+
+    // Recalcular top clientes
+    this.recalcularTopClientes(ventasFiltradas);
+
+    // Recalcular ventas por mes
+    this.recalcularVentasPorMes(ventasFiltradas);
+
+    // Recalcular ventas por producto (tabla detallada)
+    this.recalcularVentasPorProducto(ventasFiltradas);
+
+    // Recalcular ventas por cliente (tabla detallada)
+    this.recalcularVentasPorCliente(ventasFiltradas);
+  }
+
+  recalcularVentasPorCanal(ventas: any[]): void {
+    const ventasPorCanal: { [key: string]: number } = {};
+    
+    ventas.forEach((v: any) => {
+      const canal = v.canal || 'Sin canal';
+      ventasPorCanal[canal] = (ventasPorCanal[canal] || 0) + (v.monto || 0);
+    });
+
+    this.datosFiltrados.ventasPorCanal = Object.entries(ventasPorCanal)
+      .map(([name, amount]) => ({ name, amount: amount as number }))
+      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+  }
+
+  recalcularVentasPorVendedor(ventas: any[]): void {
+    const ventasPorVendedor: { [key: string]: number } = {};
+    
+    ventas.forEach((v: any) => {
+      const vendedor = v.vendedor || 'Sin vendedor';
+      ventasPorVendedor[vendedor] = (ventasPorVendedor[vendedor] || 0) + (v.monto || 0);
+    });
+
+    const labels = Object.keys(ventasPorVendedor);
+    const data = labels.map(v => ventasPorVendedor[v]);
+
+    if (this.datosFiltrados.ventasPorVendedorChartConfig) {
+      this.datosFiltrados.ventasPorVendedorChartConfig = {
+        ...this.datosFiltrados.ventasPorVendedorChartConfig,
+        labels,
+        data
+      };
+    }
+  }
+
+  recalcularVentasPorFormaPago(ventas: any[]): void {
+    const ventasPorFormaPago: { [key: string]: number } = {};
+    
+    ventas.forEach((v: any) => {
+      const formaPago = v.formaPago || 'Sin forma de pago';
+      ventasPorFormaPago[formaPago] = (ventasPorFormaPago[formaPago] || 0) + (v.monto || 0);
+    });
+
+    const labels = Object.keys(ventasPorFormaPago);
+    const data = labels.map(fp => ventasPorFormaPago[fp]);
+
+    if (this.datosFiltrados.ventasPorFormaPagoConfig) {
+      this.datosFiltrados.ventasPorFormaPagoConfig = {
+        ...this.datosFiltrados.ventasPorFormaPagoConfig,
+        labels,
+        data
+      };
+    }
+  }
+
+  recalcularVentasPorCategoria(ventas: any[]): void {
+    const ventasPorCategoria: { [key: string]: number } = {};
+    
+    ventas.forEach((v: any) => {
+      const categoria = v.categoria || 'Sin categoría';
+      ventasPorCategoria[categoria] = (ventasPorCategoria[categoria] || 0) + (v.monto || 0);
+    });
+
+    this.datosFiltrados.ventasPorCategoria = Object.entries(ventasPorCategoria)
+      .map(([name, amount]) => ({ name, amount: amount as number }))
+      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+  }
+
+  recalcularTopProductos(ventas: any[]): void {
+    const ventasPorProducto: { [key: string]: number } = {};
+    
+    ventas.forEach((v: any) => {
+      const producto = v.producto || 'Sin producto';
+      ventasPorProducto[producto] = (ventasPorProducto[producto] || 0) + (v.monto || 0);
+    });
+
+    this.datosFiltrados.topProductosVendidos = Object.entries(ventasPorProducto)
+      .map(([name, amount]) => ({ name, amount: amount as number }))
+      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
+      .slice(0, 15); // Top 15
+  }
+
+  recalcularTopClientes(ventas: any[]): void {
+    const ventasPorCliente: { [key: string]: { ventas: number; transacciones: number; ultimaVenta: string } } = {};
+    
+    ventas.forEach((v: any) => {
+      const cliente = v.cliente || 'Sin cliente';
+      if (!ventasPorCliente[cliente]) {
+        ventasPorCliente[cliente] = { ventas: 0, transacciones: 0, ultimaVenta: v.fecha || '' };
+      }
+      ventasPorCliente[cliente].ventas += (v.monto || 0);
+      ventasPorCliente[cliente].transacciones += 1;
+      if (v.fecha && v.fecha > ventasPorCliente[cliente].ultimaVenta) {
+        ventasPorCliente[cliente].ultimaVenta = v.fecha;
+      }
+    });
+
+    this.datosFiltrados.topClientes = Object.entries(ventasPorCliente)
+      .map(([name, datos]) => ({ name, amount: datos.ventas }))
+      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
+      .slice(0, 25); // Top 25
+  }
+
+  recalcularVentasPorMes(ventas: any[]): void {
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const ventasPorMes: { [key: string]: number } = {};
+    
+    ventas.forEach((v: any) => {
+      if (v.fecha) {
+        const fecha = new Date(v.fecha);
+        const mesIndex = fecha.getMonth();
+        const mesNombre = meses[mesIndex];
+        ventasPorMes[mesNombre] = (ventasPorMes[mesNombre] || 0) + (v.monto || 0);
+      }
+    });
+
+    // Mantener el orden de los meses y solo incluir los que tienen datos
+    const labels = meses.filter(m => ventasPorMes[m] !== undefined && ventasPorMes[m] !== 0);
+    const data = labels.map(m => ventasPorMes[m] || 0);
+
+    if (this.datosFiltrados.ventasPorMesConfig) {
+      this.datosFiltrados.ventasPorMesConfig = {
+        ...this.datosFiltrados.ventasPorMesConfig,
+        labels: labels.length > 0 ? labels : meses, // Si no hay datos, mostrar todos los meses
+        data: data.length > 0 ? data : meses.map(() => 0)
+      };
+    }
+  }
+
+  recalcularVentasPorProducto(ventas: any[]): void {
+    const ventasPorProductoMap: { [key: string]: any } = {};
+    
+    ventas.forEach((v: any) => {
+      const key = `${v.producto || 'Sin producto'}_${v.formaPago || 'Sin forma de pago'}`;
+      if (!ventasPorProductoMap[key]) {
+        ventasPorProductoMap[key] = {
+          categoria: v.categoria || 'Sin categoría',
+          producto: v.producto || 'Sin producto',
+          formaPago: v.formaPago || 'Sin forma de pago',
+          cantidad: 0,
+          precioUnitario: v.precioUnitario || 0,
+          descuento: 0,
+          ventasSinIVA: 0,
+          costoTotal: 0,
+          utilidad: 0
+        };
+      }
+      ventasPorProductoMap[key].cantidad += (v.cantidad || 0);
+      ventasPorProductoMap[key].ventasSinIVA += (v.monto || 0) / 1.12;
+      ventasPorProductoMap[key].descuento += (v.descuento || 0);
+      ventasPorProductoMap[key].costoTotal += (v.costoTotal || 0);
+      ventasPorProductoMap[key].utilidad += (v.utilidad || 0);
+    });
+
+    this.datosFiltrados.ventasPorProducto = Object.values(ventasPorProductoMap);
+  }
+
+  recalcularVentasPorCliente(ventas: any[]): void {
+    const ventasPorClienteMap: { [key: string]: any } = {};
+    
+    ventas.forEach((v: any) => {
+      const cliente = v.cliente || 'Sin cliente';
+      if (!ventasPorClienteMap[cliente]) {
+        ventasPorClienteMap[cliente] = {
+          cliente,
+          ultimaVenta: v.fecha || '',
+          dias: 0,
+          transacciones: 0,
+          ventas: 0
+        };
+      }
+      ventasPorClienteMap[cliente].transacciones += 1;
+      ventasPorClienteMap[cliente].ventas += (v.monto || 0);
+      if (v.fecha && v.fecha > ventasPorClienteMap[cliente].ultimaVenta) {
+        ventasPorClienteMap[cliente].ultimaVenta = v.fecha;
+      }
+    });
+
+    // Calcular días desde última venta
+    const hoy = new Date();
+    Object.values(ventasPorClienteMap).forEach((cliente: any) => {
+      if (cliente.ultimaVenta) {
+        const fechaUltimaVenta = new Date(cliente.ultimaVenta);
+        const diffTime = Math.abs(hoy.getTime() - fechaUltimaVenta.getTime());
+        cliente.dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+    });
+
+    this.datosFiltrados.ventasPorCliente = Object.values(ventasPorClienteMap)
+      .sort((a: any, b: any) => b.ventas - a.ventas);
+  }
+
+  // Los métodos filtrarPor* ya no se usan directamente, todo se maneja en aplicarFiltrosInteractivos
+
+  recalcularMetricas(): void {
+    // Recalcular métricas de ventas basadas en los datos filtrados
+    if (this.datosFiltrados.ventasDetalladas) {
+      const ventas = this.datosFiltrados.ventasDetalladas;
+      const ventasConIVA = ventas.reduce((sum: number, v: any) => sum + (v.monto || 0), 0);
+      const ventasSinIVA = ventasConIVA / 1.12; // Asumiendo IVA del 12%
+      const transacciones = ventas.length;
+      const ticketPromedio = transacciones > 0 ? ventasConIVA / transacciones : 0;
+
+      if (!this.datosFiltrados.metricasVentas) {
+        this.datosFiltrados.metricasVentas = {};
+      }
+      this.datosFiltrados.metricasVentas.ventasConIVA = ventasConIVA;
+      this.datosFiltrados.metricasVentas.ventasSinIVA = ventasSinIVA;
+      this.datosFiltrados.metricasVentas.transacciones = transacciones;
+      this.datosFiltrados.metricasVentas.ticketPromedio = ticketPromedio;
+    }
+  }
+
+  limpiarFiltrosInteractivos(): void {
+    this.filtrosInteractivos = {};
+    // Restaurar datos originales
+    if (Object.keys(this.datosOriginales).length > 0) {
+      this.datosFiltrados = JSON.parse(JSON.stringify(this.datosOriginales));
+      this.datos = this.datosFiltrados;
+    } else if (this.datos) {
+      // Si no hay datos originales guardados, recargar desde el input
+      this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+      this.datos = this.datosFiltrados;
+    }
+  }
+
+  tieneFiltrosInteractivos(): boolean {
+    return Object.keys(this.filtrosInteractivos).length > 0;
+  }
+
+  getFiltrosInteractivosTexto(): string {
+    const filtros: string[] = [];
+    if (this.filtrosInteractivos.canal) filtros.push(`Canal: ${this.filtrosInteractivos.canal}`);
+    if (this.filtrosInteractivos.vendedor) filtros.push(`Vendedor: ${this.filtrosInteractivos.vendedor}`);
+    if (this.filtrosInteractivos.formaPago) filtros.push(`Forma de pago: ${this.filtrosInteractivos.formaPago}`);
+    if (this.filtrosInteractivos.categoria) filtros.push(`Categoría: ${this.filtrosInteractivos.categoria}`);
+    if (this.filtrosInteractivos.producto) filtros.push(`Producto: ${this.filtrosInteractivos.producto}`);
+    if (this.filtrosInteractivos.cliente) filtros.push(`Cliente: ${this.filtrosInteractivos.cliente}`);
+    if (this.filtrosInteractivos.mes) filtros.push(`Mes: ${this.filtrosInteractivos.mes}`);
+    return filtros.join(', ');
   }
 
 }

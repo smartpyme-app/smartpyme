@@ -131,5 +131,33 @@ export class DashboardComponent implements OnInit {
       }
     });
   }
+
+  onFiltrosControlCuentasCambiados(filtros: any): void {
+    // Recargar datos con los filtros específicos de control de cuentas
+    this.loading = true;
+    
+    const filtrosCompletos = {
+      seccion: 'Control de cuentas',
+      ...filtros // Filtros específicos de control de cuentas (fechaInicio, fechaFin, tipoCuenta, etc.)
+    };
+    
+    this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
+      next: (data) => {
+        this.datos = data || {};
+        this.loading = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
+      },
+      error: (error) => {
+        console.error('Error al cargar datos de control de cuentas:', error);
+        this.datos = {};
+        this.loading = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
+      }
+    });
+  }
 }
 

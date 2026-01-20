@@ -288,3 +288,26 @@
 ::ng-deep .ventas-cliente-grid .ag-row.ag-row-total:hover {
     background-color: #66A3FF !important;
 }
+
+/* Estilos para gráficos interactivos */
+::ng-deep .chart-container {
+    cursor: pointer;
+}
+
+::ng-deep .chart-container:hover {
+    opacity: 0.9;
+}
+
+/* Indicador visual de filtros activos */
+.filtros-activos-indicador {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}

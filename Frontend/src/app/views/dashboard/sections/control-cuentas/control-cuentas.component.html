@@ -1,9 +1,620 @@
 <div class="control-cuentas-section">
-    <div class="row">
+    <!-- Filtros específicos de Control de Cuentas -->
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="alert alert-secondary">
-                <h5 class="alert-heading">Control de Cuentas</h5>
-                <p class="mb-0">Esta sección mostrará el control de cuentas por cobrar y pagar.</p>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="mb-3" style="color: #3366cc;">Cuentas por cobrar</h2>
+                    <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
+                        <!-- Rango de fechas a la izquierda -->
+                        <div class="d-flex align-items-end gap-3">
+                            <div class="d-flex flex-column">
+                                <label for="fechaInicio" class="text-primary fw-medium small mb-1">Fecha Inicio</label>
+                                <input 
+                                    type="date" 
+                                    id="fechaInicio"
+                                    class="form-control"
+                                    [(ngModel)]="fechaInicio"
+                                    (change)="aplicarFiltros()">
+                            </div>
+                            <div class="d-flex flex-column">
+                                <label for="fechaFin" class="text-primary fw-medium small mb-1">Fecha Fin</label>
+                                <input 
+                                    type="date" 
+                                    id="fechaFin"
+                                    class="form-control"
+                                    [(ngModel)]="fechaFin"
+                                    (change)="aplicarFiltros()">
+                            </div>
+                        </div>
+                        
+                        <!-- Botones y controles a la derecha -->
+                        <div class="d-flex align-items-end gap-2">
+                            <button 
+                                type="button"
+                                class="btn btn-outline-primary"
+                                (click)="toggleFiltrosAdicionales()">
+                                <i class="fas fa-filter me-1"></i> Ver otros filtros
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-primary"
+                                tooltip="Aplicar filtros"
+                                (click)="aplicarFiltros()">
+                                <i class="fa fa-check"></i> Aplicar
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-outline-primary"
+                                tooltip="Limpiar filtros"
+                                (click)="limpiarFiltros()"
+                                *ngIf="fechaInicio || fechaFin || filtroSucursal || filtroEstado || filtroCliente">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtros adicionales (colapsables) -->
+                    <div class="mt-3" *ngIf="mostrarFiltrosAdicionales">
+                        <div class="row g-3">
+                            <div class="col">
+                                <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
+                                <select 
+                                    id="sucursal"
+                                    class="form-select"
+                                    [(ngModel)]="filtroSucursal"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                                        {{ sucursal.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="cliente" class="text-primary fw-medium small mb-1">Cliente</label>
+                                <select 
+                                    id="cliente"
+                                    class="form-select"
+                                    [(ngModel)]="filtroCliente"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let cliente of clientes" [value]="cliente.id">
+                                        {{ cliente.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="estado" class="text-primary fw-medium small mb-1">Estado</label>
+                                <select 
+                                    id="estado"
+                                    class="form-select"
+                                    [(ngModel)]="filtroEstado"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option value="pagada">Pagada</option>
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="vencida">Vencida</option>
+                                    <option value="cancelada">Cancelada</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de cards de métricas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="row g-3">
+                <!-- Card: Cuentas por cobrar (Total) -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center position-relative">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorCobrarTotal || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Cuentas por cobrar
+                            </p>
+                            <span 
+                                *ngIf="datos.metricasCuentas?.tooltipCuentasPorCobrar"
+                                class="position-absolute top-0 start-0 m-2"
+                                [title]="datos.metricasCuentas?.tooltipCuentasPorCobrar"
+                                style="cursor: help;">
+                                <i class="fas fa-info-circle" style="color: #3366cc; opacity: 0.6;"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por cobrar a 30 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorCobrar30Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Cuentas por cobrar a 30 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por cobrar a 60 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorCobrar60Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Cuentas por cobrar a 60 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por cobrar a 90 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorCobrar90Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Cuentas por cobrar a 90 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos de análisis -->
+    <div class="row mb-4">
+        <!-- Gráfico de anillos: Cuentas por cobrar según vigencia -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">Cuentas por cobrar según vigencia</h5>
+                    <div class="d-flex gap-2">
+                        <button 
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            tooltip="Filtrar">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <button 
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            tooltip="Maximizar">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <app-pie-chart 
+                        [config]="datos.cuentasPorVigenciaConfig"
+                        (itemClick)="onVigenciaClick($event)"
+                        *ngIf="datos.cuentasPorVigenciaConfig">
+                    </app-pie-chart>
+                    <div *ngIf="!datos.cuentasPorVigenciaConfig" class="text-center p-4 text-muted">
+                        <p class="mb-0">No hay datos disponibles para mostrar</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de cuentas por cobrar clientes -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">Cuentas por cobrar clientes</h5>
+                    <div class="d-flex gap-2">
+                        <button 
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            tooltip="Filtrar">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <button 
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            tooltip="Maximizar">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <app-accounts-list 
+                        title=""
+                        [accounts]="datos.cuentasPorCobrarClientes || []"
+                        type="receivable"
+                        (itemClick)="onClienteCuentaClick($event)">
+                    </app-accounts-list>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de detalle de cuentas por cobrar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Detalle de cuentas por cobrar</h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Buscador global -->
+                            <div class="input-group" style="width: 250px;">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control border-start-0" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="quickFilterText"
+                                    (input)="onQuickFilterChange()">
+                            </div>
+                            <!-- Botones de exportación -->
+                            <button 
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="exportarCSV()"
+                                title="Exportar a CSV">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-success"
+                                (click)="exportarExcel()"
+                                title="Exportar a Excel">
+                                <i class="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="limpiarFiltrosGrid()"
+                                title="Limpiar filtros">
+                                <i class="fas fa-filter me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-3 py-0">
+                    <ag-grid-angular
+                        #detalleCuentasGrid
+                        class="ag-theme-alpine detalle-cuentas-grid"
+                        [rowData]="detalleCuentasRows"
+                        [columnDefs]="detalleCuentasColumnDefs"
+                        [gridOptions]="detalleCuentasGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; height: 450px;"
+                        [domLayout]="'normal'">
+                    </ag-grid-angular>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros adicionales de Control de Cuentas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="mb-3" style="color: #F19447;">Cuentas por pagar</h2>
+                    <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
+                        <!-- Rango de fechas a la izquierda -->
+                        <div class="d-flex align-items-end gap-3">
+                            <div class="d-flex flex-column">
+                                <label for="fechaInicio2" class="fw-medium small mb-1" style="color: #F19447;">Fecha Inicio</label>
+                                <input 
+                                    type="date" 
+                                    id="fechaInicio2"
+                                    class="form-control"
+                                    [(ngModel)]="fechaInicio"
+                                    (change)="aplicarFiltros()">
+                            </div>
+                            <div class="d-flex flex-column">
+                                <label for="fechaFin2" class="fw-medium small mb-1" style="color: #F19447;">Fecha Fin</label>
+                                <input 
+                                    type="date" 
+                                    id="fechaFin2"
+                                    class="form-control"
+                                    [(ngModel)]="fechaFin"
+                                    (change)="aplicarFiltros()">
+                            </div>
+                        </div>
+                        
+                        <!-- Botones y controles a la derecha -->
+                        <div class="d-flex align-items-end gap-2">
+                            <button 
+                                type="button"
+                                class="btn btn-custom-filtros"
+                                (click)="toggleFiltrosAdicionalesPagar()">
+                                <i class="fas fa-filter me-1"></i> Ver otros filtros
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn"
+                                style="background-color: #F19447; border-color: #F19447; color: white;"
+                                tooltip="Aplicar filtros"
+                                (click)="aplicarFiltros()">
+                                <i class="fa fa-check"></i> Aplicar
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn"
+                                style="border-color: #F19447; color: #F19447;"
+                                tooltip="Limpiar filtros"
+                                (click)="limpiarFiltros()"
+                                *ngIf="fechaInicio || fechaFin || filtroProveedor || filtroEstadoPagar || filtroCategoriaGasto">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtros adicionales (colapsables) -->
+                    <div class="mt-3" *ngIf="mostrarFiltrosAdicionalesPagar">
+                        <div class="row g-3">
+                            <div class="col">
+                                <label for="proveedor" class="fw-medium small mb-1" style="color: #F19447;">Proveedor</label>
+                                <div class="position-relative">
+                                    <select 
+                                        id="proveedor"
+                                        class="form-select pe-5"
+                                        [(ngModel)]="filtroProveedor"
+                                        (change)="aplicarFiltros()">
+                                        <option value="">Todas</option>
+                                        <option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                                            {{ proveedor.nombre }}
+                                        </option>
+                                    </select>
+                                    <button 
+                                        type="button"
+                                        class="btn btn-sm position-absolute"
+                                        style="border: none; background: transparent; padding: 0.375rem 0.5rem; top: 50%; transform: translateY(-50%); right: 0; z-index: 10;"
+                                        tooltip="Gestionar proveedores"
+                                        (click)="$event.stopPropagation()">
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <label for="estadoPagar" class="fw-medium small mb-1" style="color: #F19447;">Estado</label>
+                                <select 
+                                    id="estadoPagar"
+                                    class="form-select"
+                                    [(ngModel)]="filtroEstadoPagar"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option value="pagada">Pagada</option>
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="vencida">Vencida</option>
+                                    <option value="cancelada">Cancelada</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="categoriaGasto" class="fw-medium small mb-1" style="color: #F19447;">Categoría de gasto</label>
+                                <select 
+                                    id="categoriaGasto"
+                                    class="form-select"
+                                    [(ngModel)]="filtroCategoriaGasto"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let categoria of categoriasGasto" [value]="categoria.id">
+                                        {{ categoria.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de cards de métricas - Cuentas por pagar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="row g-3">
+                <!-- Card: Cuentas por pagar (Total) -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #fef0e6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center position-relative">
+                            <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorPagarTotal || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                Cuentas por pagar
+                            </p>
+                            <span 
+                                *ngIf="datos.metricasCuentas?.tooltipCuentasPorPagar"
+                                class="position-absolute top-0 start-0 m-2"
+                                [title]="datos.metricasCuentas?.tooltipCuentasPorPagar"
+                                style="cursor: help;">
+                                <i class="fas fa-info-circle" style="color: #F19447; opacity: 0.6;"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por pagar a 30 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #fef0e6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorPagar30Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                Cuentas por pagar a 30 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por pagar a 60 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #fef0e6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorPagar60Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                Cuentas por pagar a 60 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por pagar a 90 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #fef0e6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorPagar90Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                Cuentas por pagar a 90 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos de análisis - Cuentas por pagar -->
+    <div class="row mb-4">
+        <!-- Gráfico de anillos: Cuentas por pagar según vigencia -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold" style="color: #F19447;">Cuentas por pagar según vigencia</h5>
+                    <div class="d-flex gap-2">
+                        <button 
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            tooltip="Filtrar">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <button 
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            tooltip="Maximizar">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <app-pie-chart 
+                        [config]="datos.cuentasPorPagarVigenciaConfig"
+                        (itemClick)="onVigenciaPagarClick($event)"
+                        *ngIf="datos.cuentasPorPagarVigenciaConfig">
+                    </app-pie-chart>
+                    <div *ngIf="!datos.cuentasPorPagarVigenciaConfig" class="text-center p-4 text-muted">
+                        <p class="mb-0">No hay datos disponibles para mostrar</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de cuentas por pagar proveedores -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold" style="color: #F19447;">Cuentas por pagar proveedores</h5>
+                    <div class="d-flex gap-2">
+                        <button 
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            tooltip="Filtrar">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <button 
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            tooltip="Maximizar">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <app-accounts-list 
+                        title=""
+                        [accounts]="datos.cuentasPorPagarProveedores || []"
+                        type="payable"
+                        (itemClick)="onProveedorCuentaClick($event)">
+                    </app-accounts-list>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de resumen de cuentas por pagar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold" style="color: #F19447;">Resumen de cuentas por pagar</h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Buscador global -->
+                            <div class="input-group" style="width: 250px;">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control border-start-0" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="quickFilterTextResumen"
+                                    (input)="onQuickFilterChangeResumen()">
+                            </div>
+                            <!-- Botones de exportación -->
+                            <button 
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="exportarCSVResumen()"
+                                title="Exportar a CSV">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-success"
+                                (click)="exportarExcelResumen()"
+                                title="Exportar a Excel">
+                                <i class="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="limpiarFiltrosGridResumen()"
+                                title="Limpiar filtros">
+                                <i class="fas fa-filter me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-3 py-0">
+                    <ag-grid-angular
+                        #resumenCuentasPagarGrid
+                        class="ag-theme-alpine resumen-cuentas-pagar-grid"
+                        [rowData]="resumenCuentasPagarRows"
+                        [columnDefs]="resumenCuentasPagarColumnDefs"
+                        [gridOptions]="resumenCuentasPagarGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; height: 450px;"
+                        [domLayout]="'normal'">
+                    </ag-grid-angular>
+                </div>
             </div>
         </div>
     </div>

@@ -48,7 +48,7 @@
                                 tooltip="Limpiar filtros"
                                 (click)="limpiarFiltros()"
                                 *ngIf="fechaInicio || fechaFin || filtroSucursal || filtroEstado || filtroCanal || filtroCliente || filtroVendedor">
-                                <i class="fas fa-times me-1"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
                             </button>
                         </div>
                     </div>
@@ -163,6 +163,13 @@
                                 (click)="cambiarVistaMetricas('anio')">
                                 vs Año anterior
                             </button>
+                            <!-- Indicador de filtros activos -->
+                            <div *ngIf="tieneFiltrosInteractivos()" class="mt-2 p-2" style="background-color: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
+                                <small class="text-dark fw-medium">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Filtros activos: {{ getFiltrosInteractivosTexto() }}
+                                </small>
+                            </div>
                         </div>
 
                         <!-- Cards de métricas a la derecha -->
@@ -234,18 +241,21 @@
                     <!-- Gráfico de línea para "Ventas por mes" -->
                     <app-line-chart 
                         [config]="datos.ventasPorMesConfig" 
+                        (itemClick)="onMesClick($event)"
                         *ngIf="vistaMetricas === 'mes' && datos.ventasPorMesConfig">
                     </app-line-chart>
                     
                     <!-- Gráfico de barras para "vs Presupuesto" -->
                     <app-bar-chart 
                         [config]="datos.ventasVsPresupuestoConfig" 
+                        (itemClick)="onMesClick($event)"
                         *ngIf="vistaMetricas === 'presupuesto' && datos.ventasVsPresupuestoConfig">
                     </app-bar-chart>
                     
                     <!-- Gráfico de barras para "vs Año anterior" -->
                     <app-bar-chart 
                         [config]="datos.ventasVsAnioAnteriorConfig" 
+                        (itemClick)="onMesClick($event)"
                         *ngIf="vistaMetricas === 'anio' && datos.ventasVsAnioAnteriorConfig">
                     </app-bar-chart>
                 </div>
@@ -262,7 +272,8 @@
                     <app-accounts-list 
                         title=""
                         [accounts]="datos.ventasPorCanal || []"
-                        type="receivable">
+                        type="receivable"
+                        (itemClick)="onCanalClick($event)">
                     </app-accounts-list>
                 </div>
             </div>
@@ -275,7 +286,10 @@
                     <h5 class="mb-0 fw-bold">Ventas por vendedor</h5>
                 </div>
                 <div class="card-body">
-                    <app-bar-chart [config]="datos.ventasPorVendedorChartConfig" *ngIf="datos.ventasPorVendedorChartConfig"></app-bar-chart>
+                    <app-bar-chart 
+                        [config]="datos.ventasPorVendedorChartConfig" 
+                        (itemClick)="onVendedorClick($event)"
+                        *ngIf="datos.ventasPorVendedorChartConfig"></app-bar-chart>
                 </div>
             </div>
         </div>
@@ -287,7 +301,10 @@
                     <h5 class="mb-0 fw-bold">Ventas totales por forma de pago</h5>
                 </div>
                 <div class="card-body">
-                    <app-bar-chart [config]="datos.ventasPorFormaPagoConfig" *ngIf="datos.ventasPorFormaPagoConfig"></app-bar-chart>
+                    <app-bar-chart 
+                        [config]="datos.ventasPorFormaPagoConfig" 
+                        (itemClick)="onFormaPagoClick($event)"
+                        *ngIf="datos.ventasPorFormaPagoConfig"></app-bar-chart>
                 </div>
             </div>
         </div>
@@ -357,7 +374,8 @@
                     <app-accounts-list 
                         title=""
                         [accounts]="datos.ventasPorCategoria || []"
-                        type="receivable">
+                        type="receivable"
+                        (itemClick)="onCategoriaClick($event)">
                     </app-accounts-list>
                 </div>
             </div>
@@ -373,7 +391,8 @@
                     <app-accounts-list 
                         title=""
                         [accounts]="datos.topProductosVendidos || []"
-                        type="receivable">
+                        type="receivable"
+                        (itemClick)="onProductoClick($event)">
                     </app-accounts-list>
                 </div>
             </div>
@@ -454,7 +473,8 @@
                     <app-accounts-list 
                         title=""
                         [accounts]="datos.topClientes || []"
-                        type="receivable">
+                        type="receivable"
+                        (itemClick)="onClienteClick($event)">
                     </app-accounts-list>
                 </div>
             </div>
@@ -481,6 +501,134 @@
                         style="width: 100%; height: 100%;"
                         [domLayout]="'normal'">
                     </ag-grid-angular>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
+                        <!-- Rango de fechas a la izquierda -->
+                        <div class="d-flex align-items-end gap-3">
+                            <div class="d-flex flex-column">
+                                <label for="fechaInicio" class="text-primary fw-medium small mb-1">Fecha Inicio</label>
+                                <input 
+                                    type="date" 
+                                    id="fechaInicio"
+                                    class="form-control"
+                                    [(ngModel)]="fechaInicio"
+                                    (change)="aplicarFiltros()">
+                            </div>
+                            <div class="d-flex flex-column">
+                                <label for="fechaFin" class="text-primary fw-medium small mb-1">Fecha Fin</label>
+                                <input 
+                                    type="date" 
+                                    id="fechaFin"
+                                    class="form-control"
+                                    [(ngModel)]="fechaFin"
+                                    (change)="aplicarFiltros()">
+                            </div>
+                        </div>
+                        
+                        <!-- Botones y controles a la derecha -->
+                        <div class="d-flex align-items-end gap-2">
+                            <button 
+                                type="button"
+                                class="btn btn-outline-primary"
+                                (click)="toggleFiltrosAdicionales()">
+                                <i class="fas fa-filter me-1"></i> Ver otros filtros
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-primary"
+                                tooltip="Aplicar filtros"
+                                (click)="aplicarFiltros()">
+                                <i class="fa fa-check"></i> Aplicar
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-outline-primary"
+                                tooltip="Limpiar filtros"
+                                (click)="limpiarFiltros()"
+                                *ngIf="fechaInicio || fechaFin || filtroSucursal || filtroEstado || filtroCanal || filtroCliente || filtroVendedor">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtros adicionales (colapsables) -->
+                    <div class="mt-3" *ngIf="mostrarFiltrosAdicionales">
+                        <div class="row g-3">
+                            <div class="col">
+                                <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
+                                <select 
+                                    id="sucursal"
+                                    class="form-select"
+                                    [(ngModel)]="filtroSucursal"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                                        {{ sucursal.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="estado" class="text-primary fw-medium small mb-1">Estado</label>
+                                <select 
+                                    id="estado"
+                                    class="form-select"
+                                    [(ngModel)]="filtroEstado"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option value="completada">Completada</option>
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="cancelada">Cancelada</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="canal" class="text-primary fw-medium small mb-1">Canal</label>
+                                <select 
+                                    id="canal"
+                                    class="form-select"
+                                    [(ngModel)]="filtroCanal"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let canal of canales" [value]="canal.id">
+                                        {{ canal.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="cliente" class="text-primary fw-medium small mb-1">Cliente</label>
+                                <select 
+                                    id="cliente"
+                                    class="form-select"
+                                    [(ngModel)]="filtroCliente"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let cliente of clientes" [value]="cliente.id">
+                                        {{ cliente.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="vendedor" class="text-primary fw-medium small mb-1">Vendedor</label>
+                                <select 
+                                    id="vendedor"
+                                    class="form-select"
+                                    [(ngModel)]="filtroVendedor"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let vendedor of vendedores" [value]="vendedor.id">
+                                        {{ vendedor.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

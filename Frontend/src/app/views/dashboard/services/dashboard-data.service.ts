@@ -395,6 +395,8 @@ export class DashboardDataService {
         { name: 'Cliente Ejemplo 21', amount: 1200.00 },
         { name: 'Facturacion@Airboxsv.Com', amount: -10758.73 }
       ],
+      // Datos detallados de ventas con relaciones para filtros interactivos
+      ventasDetalladas: this.generarVentasDetalladasDummy(),
       ventasPorCliente: [
         { cliente: '(En blanco)', ultimaVenta: '13/06/24', dias: 581, transacciones: 1, ventas: 3469374.25 },
         { cliente: 'Consumidor Final', ultimaVenta: '01/03/24', dias: 685, transacciones: 2, ventas: 18037.17 },
@@ -421,6 +423,182 @@ export class DashboardDataService {
         { cliente: 'Cliente Ejemplo 20', ultimaVenta: '30/12/24', dias: 381, transacciones: 1, ventas: 1400.00 },
         { cliente: 'Cliente Ejemplo 21', ultimaVenta: '30/12/24', dias: 381, transacciones: 1, ventas: 1200.00 },
         { cliente: 'Facturacion@Airboxsv.Com', ultimaVenta: '30/12/24', dias: 381, transacciones: 1, ventas: -10758.73 }
+      ],
+      // Datos para la sección de Control de Cuentas
+      metricasCuentas: {
+        // Cuentas por cobrar
+        cuentasPorCobrarTotal: 64789.74,
+        cuentasPorCobrar30Dias: 2587.57,
+        cuentasPorCobrar60Dias: 118.65,
+        cuentasPorCobrar90Dias: 0,
+        tooltipCuentasPorCobrar: 'Monico Rusconi, Maria Alicia',
+        // Cuentas por pagar
+        cuentasPorPagarTotal: 39761.81,
+        cuentasPorPagar30Dias: 4465.61,
+        cuentasPorPagar60Dias: 0,
+        cuentasPorPagar90Dias: 0
+      },
+      cuentasPorVigenciaConfig: {
+        title: '',
+        type: 'pie',
+        data: [
+          { name: 'Vencido', value: 81892.51 },
+          { name: 'Vigente', value: 3035.81 },
+          { name: 'Pendiente', value: 0 }
+        ],
+        colors: ['#3366cc', '#e0e0e0', '#e0e9f6']
+      },
+      cuentasPorCobrarClientes: [
+        { name: 'José Benitez', amount: 2919.13 },
+        { name: 'José Benitez', amount: 2021.55 },
+        { name: 'Dra Aguila', amount: 908.52 },
+        { name: 'Monico Rusconi, Maria Alicia', amount: 612.11 },
+        { name: 'Eugenia Galvez', amount: 565.00 },
+        { name: 'Facturacion@Airboxsv.Com', amount: 565.00 },
+        { name: 'Alas Argueta, Rene Guillermo', amount: 542.40 },
+        { name: 'Velo Group, S.A. De C.V.', amount: 395.50 },
+        { name: 'Victor Mejia', amount: 379.68 },
+        { name: 'Sonia', amount: 355.95 },
+        { name: 'Nathalia Torres', amount: 339.00 },
+        { name: 'Cond Palo Alto', amount: 282.50 },
+        { name: 'Desarrollos Veterinarios', amount: 282.50 },
+        { name: 'Edwin Evora', amount: 282.50 }
+      ],
+      detalleCuentasPorCobrar: [
+        {
+          cliente: 'Monico Rusconi, Maria Alicia',
+          factura: 55,
+          fechaVenta: '14/01/26',
+          fechaPago: '16/6/26',
+          diasVencimiento: 149,
+          estado: 'Vigente',
+          ventasConIVA: 395.50,
+          montoAbonado: 65.91,
+          diasAbono: 4,
+          saldoPendiente: 329.59
+        },
+        {
+          cliente: 'Claudia Del Carmen Mojica Rivera',
+          factura: 30,
+          fechaVenta: '09/01/26',
+          fechaPago: '9/3/26',
+          diasVencimiento: 50,
+          estado: 'Vigente',
+          ventasConIVA: 118.65,
+          montoAbonado: 0.00,
+          saldoPendiente: 118.65
+        },
+        {
+          cliente: 'Julio Funes',
+          factura: 81,
+          fechaVenta: '19/12/25',
+          fechaPago: '15/2/26',
+          diasVencimiento: 28,
+          estado: 'Vigente',
+          ventasConIVA: 271.20,
+          montoAbonado: 0.00,
+          saldoPendiente: 271.20
+        },
+        {
+          cliente: 'Karla Garcia',
+          factura: 127,
+          fechaVenta: '15/01/26',
+          fechaPago: '29/1/26',
+          diasVencimiento: 11,
+          estado: 'Vigente',
+          ventasConIVA: 39.55,
+          montoAbonado: 25.00,
+          diasAbono: 11,
+          saldoPendiente: 14.55
+        },
+        {
+          cliente: 'José Benitez',
+          factura: 10,
+          fechaVenta: '06/01/26',
+          fechaPago: '',
+          diasVencimiento: 0,
+          estado: 'Vigente',
+          ventasConIVA: 113.00,
+          montoAbonado: 0.00,
+          saldoPendiente: 113.00
+        }
+      ],
+      cuentasPorPagarVigenciaConfig: {
+        title: '',
+        type: 'pie',
+        data: [
+          { name: 'Vencido', value: 35296.20 },
+          { name: 'Pendiente', value: 4465.61 }
+        ],
+        colors: ['#F19447', '#fef0e6']
+      },
+      cuentasPorPagarProveedores: [
+        { name: 'DALIA', amount: 12333.25 },
+        { name: '(En blanco)', amount: 10905.25 },
+        { name: 'ANDA', amount: 4849.22 },
+        { name: 'Bodega', amount: 4809.90 },
+        { name: 'FREUND', amount: 1667.00 },
+        { name: 'JESÚS ALVARADO', amount: 800.00 },
+        { name: 'APRIL', amount: 565.00 },
+        { name: 'CAESS', amount: 541.00 },
+        { name: 'Edgardo', amount: 463.00 },
+        { name: 'Gabriela', amount: 416.95 },
+        { name: 'CARLOS ARNULFO', amount: 406.24 },
+        { name: 'Jennifer', amount: 401.70 },
+        { name: 'VERSATIVE', amount: 395.50 },
+        { name: 'Melissa Benitez', amount: 200.00 }
+      ],
+      resumenCuentasPorPagar: [
+        {
+          fechaCompra: '2/4/2025',
+          vencimiento: '',
+          diasVencimiento: 0,
+          estado: 'Pendiente',
+          gastosTotalesConIVA: 37.00,
+          totalAbonado: 0.00,
+          ultimoAbono: '',
+          saldoPendiente: 37.00
+        },
+        {
+          fechaCompra: '6/10/2025',
+          vencimiento: '',
+          diasVencimiento: 0,
+          estado: 'Pendiente',
+          gastosTotalesConIVA: 252.14,
+          totalAbonado: 0.00,
+          ultimoAbono: '',
+          saldoPendiente: 252.14
+        },
+        {
+          fechaCompra: '1/22/2025',
+          vencimiento: '',
+          diasVencimiento: 0,
+          estado: 'Pendiente',
+          gastosTotalesConIVA: 1214.75,
+          totalAbonado: 0.00,
+          ultimoAbono: '',
+          saldoPendiente: 1214.75
+        },
+        {
+          fechaCompra: '2/4/2025',
+          vencimiento: '',
+          diasVencimiento: 0,
+          estado: 'Pendiente',
+          gastosTotalesConIVA: 37.00,
+          totalAbonado: 0.00,
+          ultimoAbono: '',
+          saldoPendiente: 37.00
+        },
+        {
+          fechaCompra: '6/10/2025',
+          vencimiento: '',
+          diasVencimiento: 0,
+          estado: 'Pendiente',
+          gastosTotalesConIVA: 252.14,
+          totalAbonado: 0.00,
+          ultimoAbono: '',
+          saldoPendiente: 252.14
+        }
       ]
     };
 
@@ -434,6 +612,138 @@ export class DashboardDataService {
     // Por ahora retorna los mismos datos de ejemplo
     // En producción, aquí se filtrarían los datos según filtros.seccion, filtros.anio, filtros.sucursal
     return this.obtenerDatos();
+  }
+
+  // Generar datos dummy de ventas detalladas con relaciones
+  private generarVentasDetalladasDummy(): any[] {
+    const canales = ['Facebook', 'Tienda', 'Instagram', 'Marketplace', 'Whatsapp', 'El Salvador'];
+    const vendedores = ['Gaby', 'Paula', 'Soporte', 'Jennifer', 'Gabriela', 'DANIELA'];
+    const formasPago = ['Efectivo', 'Tarjeta', 'Transferencia', 'Cheque', 'Otros'];
+    const categorias = ['Categoría 3', 'Adidas - Masculino', 'Promoción', 'Planes', 'Implementaciones', 'Categoría 1'];
+    const productos = ['Producto C', 'AA2', 'Prueba12', 'Adidas Forum morados', 'SERVICIO DE IMPLEM...', 'Plan Avanzado - Smar...'];
+    const clientes = ['Consumidor Final', 'Manufacturas Cavalier Sa D...', 'Cliente Ejemplo 1', 'Cliente Ejemplo 2', 'Cliente Ejemplo 3', '(En blanco)'];
+    
+    const meses = [
+      { nombre: 'enero', dias: 31 },
+      { nombre: 'febrero', dias: 28 },
+      { nombre: 'marzo', dias: 31 },
+      { nombre: 'abril', dias: 30 },
+      { nombre: 'mayo', dias: 31 },
+      { nombre: 'junio', dias: 30 },
+      { nombre: 'julio', dias: 31 },
+      { nombre: 'agosto', dias: 31 },
+      { nombre: 'septiembre', dias: 30 },
+      { nombre: 'octubre', dias: 31 },
+      { nombre: 'noviembre', dias: 30 },
+      { nombre: 'diciembre', dias: 31 }
+    ];
+
+    const ventas: any[] = [];
+    let facturaId = 1;
+
+    // Generar ventas distribuidas a lo largo del año con relaciones consistentes
+    meses.forEach((mes, mesIndex) => {
+      const año = 2024;
+      const diasEnMes = mes.dias;
+      
+      // Generar entre 15-30 ventas por mes
+      const numVentas = Math.floor(Math.random() * 16) + 15;
+      
+      for (let i = 0; i < numVentas; i++) {
+        const dia = Math.floor(Math.random() * diasEnMes) + 1;
+        const fecha = new Date(año, mesIndex, dia);
+        
+        // Seleccionar valores relacionados (algunos canales tienen más probabilidad con ciertos vendedores)
+        const canalIndex = Math.floor(Math.random() * canales.length);
+        const canal = canales[canalIndex];
+        
+        // Relacionar vendedores con canales (ej: Gaby vende más por Facebook)
+        let vendedorIndex;
+        if (canal === 'Facebook' && Math.random() > 0.3) {
+          vendedorIndex = 0; // Gaby
+        } else if (canal === 'Tienda' && Math.random() > 0.4) {
+          vendedorIndex = 1; // Paula
+        } else {
+          vendedorIndex = Math.floor(Math.random() * vendedores.length);
+        }
+        const vendedor = vendedores[vendedorIndex];
+        
+        // Relacionar forma de pago con canal (ej: Tienda usa más Efectivo)
+        let formaPagoIndex;
+        if (canal === 'Tienda' && Math.random() > 0.3) {
+          formaPagoIndex = 0; // Efectivo
+        } else if (canal === 'Facebook' && Math.random() > 0.4) {
+          formaPagoIndex = 2; // Transferencia
+        } else {
+          formaPagoIndex = Math.floor(Math.random() * formasPago.length);
+        }
+        const formaPago = formasPago[formaPagoIndex];
+        
+        // Relacionar categoría con producto
+        const categoriaIndex = Math.floor(Math.random() * categorias.length);
+        const categoria = categorias[categoriaIndex];
+        const productoIndex = Math.min(categoriaIndex, productos.length - 1);
+        const producto = productos[productoIndex];
+        
+        // Seleccionar cliente
+        const clienteIndex = Math.floor(Math.random() * clientes.length);
+        const cliente = clientes[clienteIndex];
+        
+        // Generar montos realistas
+        const montoBase = Math.random() * 5000 + 100; // Entre 100 y 5100
+        const monto = Math.round(montoBase * 100) / 100;
+        const cantidad = Math.floor(Math.random() * 5) + 1;
+        const precioUnitario = monto / cantidad;
+        const descuento = Math.random() > 0.7 ? Math.round(monto * 0.1 * 100) / 100 : 0;
+        const ventasSinIVA = monto / 1.12;
+        const costoTotal = ventasSinIVA * 0.5; // 50% de costo
+        const utilidad = ventasSinIVA - costoTotal;
+        
+        ventas.push({
+          fecha: fecha.toISOString().split('T')[0],
+          cliente: cliente,
+          factura: `FAC-${facturaId++}`,
+          productos: cantidad,
+          monto: monto,
+          estado: Math.random() > 0.1 ? 'completada' : 'pendiente',
+          // Campos para filtros interactivos
+          canal: canal,
+          vendedor: vendedor,
+          formaPago: formaPago,
+          categoria: categoria,
+          producto: producto,
+          cantidad: cantidad,
+          precioUnitario: precioUnitario,
+          descuento: descuento,
+          ventasSinIVA: ventasSinIVA,
+          costoTotal: costoTotal,
+          utilidad: utilidad
+        });
+      }
+    });
+
+    // Agregar algunas ventas grandes para que coincidan con los totales
+    ventas.push({
+      fecha: '2024-06-13',
+      cliente: '(En blanco)',
+      factura: 'FAC-ESPECIAL-1',
+      productos: 1,
+      monto: 3469374.25,
+      estado: 'completada',
+      canal: 'Facebook',
+      vendedor: 'Gaby',
+      formaPago: 'Efectivo',
+      categoria: 'Categoría 3',
+      producto: 'Producto C',
+      cantidad: 1,
+      precioUnitario: 3469374.25,
+      descuento: 0,
+      ventasSinIVA: 3098279.56,
+      costoTotal: 1549139.78,
+      utilidad: 1549139.78
+    });
+
+    return ventas.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
   }
 }
 

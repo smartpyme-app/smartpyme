@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { ChartConfig } from '../../models/chart-config.model';
 
 @Component({
@@ -8,6 +8,7 @@ import { ChartConfig } from '../../models/chart-config.model';
 })
 export class BarChartComponent implements OnInit, OnChanges {
   @Input() config!: ChartConfig;
+  @Output() itemClick = new EventEmitter<{ name: string; value: any; index: number }>();
   
   chartOption: any = {};
   echartsInstance: any;
@@ -162,9 +163,35 @@ export class BarChartComponent implements OnInit, OnChanges {
       },
       series: series
     };
+
+    // Agregar evento de clic
+    if (this.echartsInstance) {
+      this.echartsInstance.off('click');
+      this.echartsInstance.on('click', (params: any) => {
+        if (params && params.name !== undefined) {
+          this.itemClick.emit({
+            name: params.name,
+            value: params.value,
+            index: params.dataIndex
+          });
+        }
+      });
+    }
   }
 
   onChartInit(ec: any): void {
     this.echartsInstance = ec;
+    // Configurar evento de clic después de inicializar
+    if (this.echartsInstance && this.chartOption) {
+      this.echartsInstance.on('click', (params: any) => {
+        if (params && params.name !== undefined) {
+          this.itemClick.emit({
+            name: params.name,
+            value: params.value,
+            index: params.dataIndex
+          });
+        }
+      });
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { ChartConfig } from '../../models/chart-config.model';
 
 @Component({
@@ -8,6 +8,7 @@ import { ChartConfig } from '../../models/chart-config.model';
 })
 export class LineChartComponent implements OnInit, OnChanges {
   @Input() config!: ChartConfig;
+  @Output() itemClick = new EventEmitter<{ name: string; value: any; index: number }>();
   
   chartOption: any = {};
   echartsInstance: any;
@@ -20,6 +21,15 @@ export class LineChartComponent implements OnInit, OnChanges {
     if (changes['config'] && !changes['config'].firstChange) {
       this.initChart();
     }
+  }
+
+  formatValue(value: number): string {
+    if (value >= 1000000) {
+      return (value / 1000000).toFixed(1) + 'M';
+    } else if (value >= 1000) {
+      return (value / 1000).toFixed(1) + 'K';
+    }
+    return value.toString();
   }
 
   initChart(): void {
@@ -54,7 +64,13 @@ export class LineChartComponent implements OnInit, OnChanges {
         data: this.config.labels || []
       },
       yAxis: {
-        type: 'value'
+        type: 'value',
+        splitLine: {
+          show: false
+        },
+        axisLabel: {
+          formatter: (value: number) => this.formatValue(value)
+        }
       },
       series: [
         {
@@ -87,10 +103,36 @@ export class LineChartComponent implements OnInit, OnChanges {
         }
       ]
     };
+
+    // Agregar evento de clic
+    if (this.echartsInstance) {
+      this.echartsInstance.off('click');
+      this.echartsInstance.on('click', (params: any) => {
+        if (params && params.name !== undefined) {
+          this.itemClick.emit({
+            name: params.name,
+            value: params.value,
+            index: params.dataIndex
+          });
+        }
+      });
+    }
   }
 
   onChartInit(ec: any): void {
     this.echartsInstance = ec;
+    // Configurar evento de clic después de inicializar
+    if (this.echartsInstance && this.chartOption) {
+      this.echartsInstance.on('click', (params: any) => {
+        if (params && params.name !== undefined) {
+          this.itemClick.emit({
+            name: params.name,
+            value: params.value,
+            index: params.dataIndex
+          });
+        }
+      });
+    }
   }
 }
 
