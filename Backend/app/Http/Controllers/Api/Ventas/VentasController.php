@@ -539,6 +539,10 @@ class VentasController extends Controller
                 // Si es compuesto
                 if (isset($det['composiciones'])) {
                     foreach ($det['composiciones'] as $item) {
+                        // Validar que id_compuesto exista antes de procesar
+                        if (!isset($item['id_compuesto']) || empty($item['id_compuesto'])) {
+                            continue; // Saltar esta composición si no tiene id_compuesto
+                        }
                         $cd = new DetalleCompuesto;
                         $cd->id_producto = $item['id_compuesto'];
                         $cd->cantidad   = $item['cantidad'];
@@ -594,6 +598,11 @@ class VentasController extends Controller
                     // Inventario compuestos
                     if (isset($det['composiciones'])) {
                         foreach ($det['composiciones'] as $comp) {
+                            // Validar que id_compuesto exista antes de procesar
+                            if (!isset($comp['id_compuesto']) || empty($comp['id_compuesto'])) {
+                                continue; // Saltar esta composición si no tiene id_compuesto
+                            }
+                            
                             $productoCompuesto = Producto::where('id', $comp['id_compuesto'])->first();
                             
                             // Validar stock de productos compuestos solo si no es servicio
