@@ -22,7 +22,13 @@ export class VentasComponent implements OnInit, OnDestroy {
   public sending: boolean = false;
   public downloadingDetalles: boolean = false;
   public downloadingVentas: boolean = false;
+  public downloadingCobrosVendedor: boolean = false;
   public reporteSeleccionado: string = '';
+  
+  // Propiedades booleanas para tipos de reporte
+  public esReporteMarca: boolean = false;
+  public esReporteUtilidades: boolean = false;
+  public esReporteCobrosVendedor: boolean = false;
 
   public clientes: any = [];
   public usuario: any = {};
@@ -63,10 +69,17 @@ export class VentasComponent implements OnInit, OnDestroy {
     fin: '',
     id_empresa: this.apiService.auth_user().empresa.id,
   };
+  public filtrosCobrosVendedor: any = {
+    inicio: '',
+    fin: '',
+    id_sucursal: '',
+    id_vendedor: '',
+  };
 
   public modalRefDescargar!: any; // BsModalRef
   public modalRefAcumulado!: any; // BsModalRef
   public modalRefPorMarca!: any; // BsModalRef
+  public modalRefCobrosVendedor!: any; // BsModalRef
   downloadingPorMarca: boolean = false;
 
   public modalRef!: BsModalRef;
@@ -211,6 +224,46 @@ export class VentasComponent implements OnInit, OnDestroy {
       });
     }, 100);
 
+  }
+
+  public abrirModalFiltrosCobrosVendedor(template: TemplateRef<any>) {
+    if (this.modalRefDescargar) {
+      this.modalRefDescargar.hide();
+      this.modalRefDescargar = undefined;
+    }
+
+    // Cargar usuarios si no están cargados
+    if (!this.usuarios.length) {
+      this.apiService.getAll('usuarios/list')
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (usuarios) => {
+            this.usuarios = usuarios;
+            this.abrirModalCobrosVendedor(template);
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
+    } else {
+      this.abrirModalCobrosVendedor(template);
+    }
+  }
+
+  private abrirModalCobrosVendedor(template: TemplateRef<any>) {
+    // Inicializar filtros con valores por defecto si están vacíos
+    if (!this.filtrosCobrosVendedor.inicio && !this.filtrosCobrosVendedor.fin) {
+      this.filtrosCobrosVendedor.inicio = this.filtros.inicio || '';
+      this.filtrosCobrosVendedor.fin = this.filtros.fin || '';
+      this.filtrosCobrosVendedor.id_sucursal = this.filtros.id_sucursal || '';
+      this.filtrosCobrosVendedor.id_vendedor = this.filtros.id_vendedor || '';
+    }
+
+    setTimeout(() => {
+      this.modalRefCobrosVendedor = this.modalService.show(template, {
+        class: 'modal-md',
+      });
+    }, 100);
   }
 
   public setOrden(columna: string) {
@@ -533,6 +586,10 @@ export class VentasComponent implements OnInit, OnDestroy {
   // }
   public openDescargar(template: TemplateRef<any>) {
     this.reporteSeleccionado = '';
+    // Resetear todas las propiedades booleanas
+    this.esReporteMarca = false;
+    this.esReporteUtilidades = false;
+    this.esReporteCobrosVendedor = false;
     this.modalRefDescargar = this.modalService.show(template);
   }
 
@@ -1091,6 +1148,46 @@ export class VentasComponent implements OnInit, OnDestroy {
     );
   }
 
+  public descargarCobrosPorVendedor() {
+    this.downloadingCobrosVendedor = true;
+    this.saving = true;
+    this.apiService.export('cobros-por-vendedor/exportar', this.filtrosCobrosVendedor).subscribe(
+      (data: Blob) => {
+        const blob = new Blob([data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const fechaInicio = this.filtrosCobrosVendedor.inicio || 'sin-fecha';
+        const fechaFin = this.filtrosCobrosVendedor.fin || 'sin-fecha';
+        a.download = 'cobros-por-vendedor_' + fechaInicio + '_' + fechaFin + '.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        // Cerrar ambos modales
+        if (this.modalRefCobrosVendedor) {
+          this.modalRefCobrosVendedor.hide();
+          this.modalRefCobrosVendedor = undefined;
+        }
+        if (this.modalRefDescargar) {
+          this.modalRefDescargar.hide();
+          this.modalRefDescargar = undefined;
+        }
+
+        this.downloadingCobrosVendedor = false;
+        this.saving = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.downloadingCobrosVendedor = false;
+        this.saving = false;
+      }
+    );
+  }
+
   public descargarReportePorMarcaOUtilidades() {
     if (this.reporteSeleccionado === 'marca') {
       this.descargarPorMarcasPorMes();
@@ -1122,6 +1219,30 @@ export class VentasComponent implements OnInit, OnDestroy {
     const total = parseFloat(venta?.total || 0);
     const propina = parseFloat(venta?.propina || 0);
     return total + propina;
+  }
+
+  public seleccionarReporte(reporte: string) {
+    this.reporteSeleccionado = reporte;
+    
+    // Resetear todas las propiedades booleanas
+    this.esReporteMarca = false;
+    this.esReporteUtilidades = false;
+    this.esReporteCobrosVendedor = false;
+    
+    // Establecer la propiedad booleana correspondiente
+    if (reporte) {
+      switch (reporte) {
+        case 'marca':
+          this.esReporteMarca = true;
+          break;
+        case 'utilidades':
+          this.esReporteUtilidades = true;
+          break;
+        case 'cobros-vendedor':
+          this.esReporteCobrosVendedor = true;
+          break;
+      }
+    }
   }
 
 }

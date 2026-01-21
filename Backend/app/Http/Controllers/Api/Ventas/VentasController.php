@@ -36,6 +36,7 @@ use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCateg
 use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
 use App\Exports\VentasPorUtilidadesExport;
 use App\Exports\VentasPorMarcasExport;
+use App\Exports\CobrosPorVendedorExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
 // use Auth;
@@ -1212,6 +1213,13 @@ class VentasController extends Controller
         $ventas = new VentasPorUtilidadesExport();
         $ventas->filter($request);
         return Excel::download($ventas, 'ventas-por-utilidades.xlsx');
+    }
+
+    public function cobrosPorVendedorExport(Request $request)
+    {
+        $cobros = new CobrosPorVendedorExport();
+        $cobros->filter($request);
+        return Excel::download($cobros, 'cobros-por-vendedor.xlsx');
     }
 
     public function enviarReporteDiario()

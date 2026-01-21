@@ -314,13 +314,14 @@
         <p class="alert bg-info">Al seleccionar el reporte, se mostrará un boton para descargar los datos.</p>
         <div class="mb-3">
             <label class="form-label">Seleccione el reporte a descargar:</label>
-            <select class="form-select" [(ngModel)]="reporteSeleccionado">
+            <select class="form-select" [(ngModel)]="reporteSeleccionado" (ngModelChange)="seleccionarReporte($event)">
                 <option value="">Seleccione una opción</option>
                 <option value="detalles">Detalles de ventas por producto</option>
                 <option value="ventas">Detalles de ventas totales</option>
                 <option value="acumulado">Acumulado por producto</option>
                 <option value="marca">Detalles de ventas por marca</option>
                 <option value="utilidades">Detalles de ventas utilidades</option>
+                <option value="cobros-vendedor">Cobros por vendedor</option>
             </select>
         </div>
 
@@ -359,6 +360,13 @@
             <p>Descarga detalles de ventas utilidades.</p>
             <button class="btn btn-primary" (click)="abrirModalFiltrosPorUtilidades(mfiltrosPorMarca)">
                 Descargar por Utilidades
+            </button>
+        </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'cobros-vendedor'">
+            <p>Descarga reporte de cobros por vendedor (facturas pagadas y pendientes con días de vencimiento y crédito).</p>
+            <button class="btn btn-primary" (click)="abrirModalFiltrosCobrosVendedor(mfiltrosCobrosVendedor)">
+                Descargar Cobros por Vendedor
             </button>
         </div>
     </div>
@@ -782,8 +790,7 @@
 
 <ng-template #mfiltrosPorMarca>
     <div class="modal-header">
-        <h4 class="modal-title text-center">Filtros para Reporte {{ reporteSeleccionado == 'marca' ? 'de Marcas' : 'de
-            Utilidades' }}</h4>
+        <h4 class="modal-title text-center">Filtros para Reporte {{ esReporteMarca ? 'de Marcas' : 'de Utilidades' }}</h4>
         <button type="button" class="btn-close" (click)="modalRefPorMarca.hide()" aria-label="Close"></button>
         <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
     </div>
@@ -811,6 +818,62 @@
                     [disabled]="downloadingPorMarca || !filtrosPorMarca.inicio || !filtrosPorMarca.fin">
                     <span *ngIf="!downloadingPorMarca">Descargar Reporte</span>
                     <span *ngIf="downloadingPorMarca">Descargando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+
+<ng-template #mfiltrosCobrosVendedor>
+    <div class="modal-header">
+        <h4 class="modal-title text-center">Filtros para Reporte de Cobros por Vendedor</h4>
+        <button type="button" class="btn-close" (click)="modalRefCobrosVendedor.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+
+        <form (ngSubmit)="descargarCobrosPorVendedor()">
+            <div class="row">
+                <!-- Fechas -->
+                <div class="form-group col-12">
+                    <label>Desde:</label>
+                    <input type="date" class="form-control" [(ngModel)]="filtrosCobrosVendedor.inicio" name="inicio" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-12">
+                    <label>Hasta:</label>
+                    <input type="date" class="form-control" [(ngModel)]="filtrosCobrosVendedor.fin" name="fin" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-12">
+                    <label>Sucursal:</label>
+                    <select class="form-select" [(ngModel)]="filtrosCobrosVendedor.id_sucursal" name="id_sucursal">
+                        <option value="">Todas las sucursales</option>
+                        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-12">
+                    <label>Vendedor:</label>
+                    <ng-select [(ngModel)]="filtrosCobrosVendedor.id_vendedor" class="form-select p-0" name="id_vendedor" [clearable]="true">
+                        <ng-option [value]="''">Todos los vendedores</ng-option>
+                        <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                            {{ usuario.name }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+            </div>
+
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary"
+                    [disabled]="downloadingCobrosVendedor || !filtrosCobrosVendedor.inicio || !filtrosCobrosVendedor.fin">
+                    <span *ngIf="!downloadingCobrosVendedor">Descargar Reporte</span>
+                    <span *ngIf="downloadingCobrosVendedor">Descargando...</span>
                 </button>
             </div>
         </form>
