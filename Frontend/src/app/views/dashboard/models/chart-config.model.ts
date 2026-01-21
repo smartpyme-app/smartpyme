@@ -6,6 +6,7 @@ export interface ChartConfig {
     colors?: string[];
     type?: 'line' | 'bar' | 'pie' | 'doughnut';
     rotateLabels?: number; // Ángulo de rotación para labels del eje X (0 = horizontal, 45 = diagonal)
+    horizontal?: boolean; // Si es true, las barras serán horizontales
 }
 
 export interface MetricCard {
@@ -165,5 +166,30 @@ export interface DashboardData {
       ultimoAbono: string;
       saldoPendiente: number;
     }>;
+    // Datos para la sección de Gastos
+    metricasGastos?: {
+      gastosConIVA: number;
+      gastosSinIVA: number;
+      gastosMesAnterior: number;
+      variacionGastos: number;
+      aumentoCostosPorcentaje: number;
+    };
+    gastosPorMesConfig?: ChartConfig;
+    gastosVsPresupuestoConfig?: ChartConfig;
+    gastosVsAnioAnteriorConfig?: ChartConfig;
+    gastosPorCategoriaConfig?: ChartConfig;
+    gastosPorConceptoConfig?: ChartConfig;
+    gastosPorFormaPagoConfig?: ChartConfig;
+    gastosPresupuesto?: number[];
+    gastosAnioAnterior?: number[];
+    detalleGastos?: Array<{
+      fecha: string;
+      proveedor: string;
+      concepto: string;
+      documento: string;
+      correlativo: string;
+      gastosConIVA: number;
+    }>;
+    gastosPorProveedor?: AccountItem[];
 }
 

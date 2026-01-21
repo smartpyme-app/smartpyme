@@ -1,1 +1,32 @@
-/* Estilos específicos para la sección de Gastos */
+.gastos-section h2,label {
+    color: #F19447 !important;
+}
+
+.gastos-section .btn-custom-filtros {
+    border-color: #F19447;
+    color: #F19447;
+}
+
+.gastos-section .btn-custom-filtros:hover {
+    color: white !important;
+    background-color: #F19447 !important;
+}
+
+/* Estilos para la tabla de detalle de gastos */
+.gastos-detalle-grid {
+    width: 100%;
+}
+
+.gastos-detalle-grid revo-grid {
+    font-size: 13px;
+}
+
+/* Estilos para las filas de total */
+.gastos-detalle-grid revo-grid tr[data-row*="Total"] {
+    background-color: #ffe6d4 !important;
+    font-weight: bold;
+}
+
+.gastos-detalle-grid revo-grid tr[data-row*="Total"] td {
+    color: #F19447 !important;
+}

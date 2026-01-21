@@ -599,6 +599,175 @@ export class DashboardDataService {
           ultimoAbono: '',
           saldoPendiente: 252.14
         }
+      ],
+      // Datos para la sección de Gastos
+      metricasGastos: {
+        gastosConIVA: 73393.49,
+        gastosSinIVA: 12773.03,
+        gastosMesAnterior: 7954.89,
+        variacionGastos: 4818.14,
+        aumentoCostosPorcentaje: 61
+      },
+      gastosPorMesConfig: {
+        title: '',
+        type: 'line',
+        labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        data: [3533.86, 4724.34, 350.24, 1852.60, 15319.36, 200.00, 602.99, 6974.26, 5548.15, 13559.77, 7954.89, 12773.03],
+        colors: ['#F19447']
+      },
+      gastosVsPresupuestoConfig: {
+        title: '',
+        type: 'bar',
+        labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        data: [
+          {
+            name: 'Gastos totales',
+            data: [3533.86, 4724.34, 350.24, 1852.60, 15319.36, 200.00, 602.99, 6974.26, 5548.15, 13559.77, 7954.89, 12773.03]
+          },
+          {
+            name: 'Presupuestado',
+            data: [5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00]
+          }
+        ],
+        colors: ['#F19447', '#d3d3d3']
+      },
+      gastosVsAnioAnteriorConfig: {
+        title: '',
+        type: 'bar',
+        labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        data: [
+          {
+            name: 'Año actual',
+            data: [3533.86, 4724.34, 350.24, 1852.60, 15319.36, 200.00, 602.99, 6974.26, 5548.15, 13559.77, 7954.89, 12773.03]
+          },
+          {
+            name: 'Año anterior',
+            data: [2800.00, 3200.00, 250.00, 1500.00, 12000.00, 150.00, 500.00, 5500.00, 4500.00, 11000.00, 6500.00, 10000.00]
+          }
+        ],
+        colors: ['#F19447', '#d3d3d3']
+      },
+      gastosPresupuesto: [5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00],
+      gastosAnioAnterior: [2800.00, 3200.00, 250.00, 1500.00, 12000.00, 150.00, 500.00, 5500.00, 4500.00, 11000.00, 6500.00, 10000.00],
+      gastosPorCategoriaConfig: {
+        title: '',
+        type: 'bar',
+        labels: ['Compras', 'G. operativos', 'G. administrativos', 'G. financieros', 'G. comerciales', 'Costo de ventas'],
+        data: [47175.21, 17588.96, 5048.37, 3355.95, 200.00, 25.00],
+        colors: ['#F19447'],
+        horizontal: true
+      },
+      gastosPorConceptoConfig: {
+        title: '',
+        type: 'bar',
+        labels: ['Costo artículo', 'Materia Prima', 'Gastos varios', 'Planilla', 'Alquiler', 'Impuestos', 'Servicios', 'Insumos', 'Combustible', 'Mantenimiento', 'Publicidad', 'Compras', 'Costo de venta'],
+        data: [47124.36, 8013.90, 4184.25, 3488.00, 1345.37, 763.00, 733.42, 215.00, 200.00, 50.85, 25.00, 15.00, 25.00],
+        colors: ['#F19447'],
+        rotateLabels: 45
+      },
+      gastosPorFormaPagoConfig: {
+        title: '',
+        type: 'bar',
+        data: [
+          {
+            name: 'Efectivo',
+            value: 57532.12,
+            children: []
+          },
+          {
+            name: 'Transferencia',
+            value: 14231.37,
+            children: [
+              { name: 'Transferencia', value: 8000.00 },
+              { name: 'Tarjeta de crédito', value: 6231.37 }
+            ]
+          }
+        ],
+        colors: ['#F19447', '#C9732F', '#A0521F']
+      },
+      detalleGastos: [
+        { fecha: '2024-12-05', proveedor: 'Edgardo', concepto: 'Diciembre- Planilla', documento: 'Factura', correlativo: '283', gastosConIVA: 350.00 },
+        { fecha: '2024-12-03', proveedor: 'DALIA', concepto: 'Proyecto-Materia prima', documento: 'Factura', correlativo: '3748', gastosConIVA: 39.00 },
+        { fecha: '2024-11-29', proveedor: 'FREUND', concepto: 'pasante', documento: 'Factura', correlativo: '2849', gastosConIVA: 800.00 },
+        { fecha: '2024-11-28', proveedor: 'Bodega', concepto: 'Diciembre alquiler', documento: 'Factura', correlativo: '', gastosConIVA: 180.00 },
+        { fecha: '2024-11-27', proveedor: 'CAESS', concepto: 'FREUND MATERIALES', documento: 'Factura', correlativo: '', gastosConIVA: 200.00 },
+        { fecha: '2024-11-26', proveedor: 'Gabriela Avilés', concepto: 'Hoja en blanco 500', documento: 'Factura', correlativo: '', gastosConIVA: 500.00 },
+        { fecha: '2024-11-25', proveedor: 'ANDA', concepto: 'Luz- Nov', documento: 'Factura', correlativo: '', gastosConIVA: -114.00 },
+        { fecha: '2024-11-24', proveedor: 'JAVIER', concepto: 'Agua-Noviembre', documento: 'Factura', correlativo: '', gastosConIVA: 500.00 },
+        { fecha: '2024-11-23', proveedor: 'Jennifer', concepto: 'Noviembre-Luz', documento: 'Factura', correlativo: '', gastosConIVA: 150.00 },
+        { fecha: '2024-11-22', proveedor: 'Ministerio de', concepto: 'Noviembre-Electricidad', documento: 'Factura', correlativo: '', gastosConIVA: 30.00 },
+        { fecha: '2024-11-21', proveedor: 'CAESS', concepto: 'Diciembre-Electricidad', documento: 'Factura', correlativo: '', gastosConIVA: 100.00 },
+        { fecha: '2024-11-20', proveedor: 'ANDA', concepto: 'IVA noviembre 2024', documento: 'Factura', correlativo: '', gastosConIVA: 100.00 },
+        { fecha: '2024-11-19', proveedor: 'FREUND', concepto: 'Maquinaria limpieza', documento: 'Factura', correlativo: '', gastosConIVA: 100.00 },
+        { fecha: '2024-11-18', proveedor: 'DALIA', concepto: 'PAC novimebre 2024', documento: 'Crédito', correlativo: '', gastosConIVA: 13.00 },
+        { fecha: '2024-11-17', proveedor: 'Bodega', concepto: 'Materia prima diciembre', documento: 'Factura', correlativo: '', gastosConIVA: 395.00 },
+        { fecha: '2024-11-16', proveedor: 'Edgardo', concepto: 'Servicios diciembre', documento: 'Factura', correlativo: '', gastosConIVA: 3955.00 },
+        { fecha: '2024-11-15', proveedor: 'FREUND', concepto: 'Insumos varios', documento: 'Factura', correlativo: '', gastosConIVA: 383.00 },
+        { fecha: '2024-11-14', proveedor: 'ANDA', concepto: 'Mantenimiento equipo', documento: 'Factura', correlativo: '', gastosConIVA: 250.00 },
+        { fecha: '2024-11-13', proveedor: 'CAESS', concepto: 'Publicidad diciembre', documento: 'Factura', correlativo: '', gastosConIVA: 368.00 },
+        { fecha: '2024-11-12', proveedor: 'Bodega', concepto: 'Compras varias', documento: 'Factura', correlativo: '', gastosConIVA: 1200.00 },
+        { fecha: '2024-11-11', proveedor: 'DALIA', concepto: 'Materiales construcción', documento: 'Factura', correlativo: '', gastosConIVA: 2500.00 },
+        { fecha: '2024-11-10', proveedor: 'FREUND', concepto: 'Equipos oficina', documento: 'Factura', correlativo: '', gastosConIVA: 1500.00 },
+        { fecha: '2024-11-09', proveedor: 'ANDA', concepto: 'Servicios públicos', documento: 'Factura', correlativo: '', gastosConIVA: 800.00 },
+        { fecha: '2024-11-08', proveedor: 'Bodega', concepto: 'Inventario diciembre', documento: 'Factura', correlativo: '', gastosConIVA: 5000.00 },
+        { fecha: '2024-11-07', proveedor: 'Edgardo', concepto: 'Planilla noviembre', documento: 'Factura', correlativo: '', gastosConIVA: 3200.00 },
+        { fecha: '2024-11-06', proveedor: 'CAESS', concepto: 'Energía eléctrica', documento: 'Factura', correlativo: '', gastosConIVA: 450.00 },
+        { fecha: '2024-11-05', proveedor: 'DALIA', concepto: 'Materiales varios', documento: 'Factura', correlativo: '', gastosConIVA: 1800.00 },
+        { fecha: '2024-11-04', proveedor: 'FREUND', concepto: 'Herramientas', documento: 'Factura', correlativo: '', gastosConIVA: 950.00 },
+        { fecha: '2024-11-03', proveedor: 'Bodega', concepto: 'Almacén diciembre', documento: 'Factura', correlativo: '', gastosConIVA: 3200.00 },
+        { fecha: '2024-11-02', proveedor: 'ANDA', concepto: 'Agua potable', documento: 'Factura', correlativo: '', gastosConIVA: 280.00 },
+        { fecha: '2024-11-01', proveedor: 'Edgardo', concepto: 'Servicios generales', documento: 'Factura', correlativo: '', gastosConIVA: 1200.00 },
+        { fecha: '2024-10-30', proveedor: 'CAESS', concepto: 'Luz octubre', documento: 'Factura', correlativo: '', gastosConIVA: 380.00 },
+        { fecha: '2024-10-29', proveedor: 'DALIA', concepto: 'Materiales octubre', documento: 'Factura', correlativo: '', gastosConIVA: 1500.00 },
+        { fecha: '2024-10-28', proveedor: 'FREUND', concepto: 'Equipos varios', documento: 'Factura', correlativo: '', gastosConIVA: 2200.00 },
+        { fecha: '2024-10-27', proveedor: 'Bodega', concepto: 'Inventario octubre', documento: 'Factura', correlativo: '', gastosConIVA: 4500.00 },
+        { fecha: '2024-10-26', proveedor: 'ANDA', concepto: 'Servicios octubre', documento: 'Factura', correlativo: '', gastosConIVA: 600.00 },
+        { fecha: '2024-10-25', proveedor: 'Edgardo', concepto: 'Planilla octubre', documento: 'Factura', correlativo: '', gastosConIVA: 3100.00 },
+        { fecha: '2024-10-24', proveedor: 'CAESS', concepto: 'Energía octubre', documento: 'Factura', correlativo: '', gastosConIVA: 420.00 },
+        { fecha: '2024-10-23', proveedor: 'DALIA', concepto: 'Compras octubre', documento: 'Factura', correlativo: '', gastosConIVA: 2000.00 },
+        { fecha: '2024-10-22', proveedor: 'FREUND', concepto: 'Materiales construcción', documento: 'Factura', correlativo: '', gastosConIVA: 1800.00 },
+        { fecha: '2024-10-21', proveedor: 'Bodega', concepto: 'Almacén octubre', documento: 'Factura', correlativo: '', gastosConIVA: 2800.00 },
+        { fecha: '2024-10-20', proveedor: 'ANDA', concepto: 'Agua octubre', documento: 'Factura', correlativo: '', gastosConIVA: 250.00 },
+        { fecha: '2024-10-19', proveedor: 'Edgardo', concepto: 'Servicios varios', documento: 'Factura', correlativo: '', gastosConIVA: 1100.00 },
+        { fecha: '2024-10-18', proveedor: 'CAESS', concepto: 'Luz septiembre', documento: 'Factura', correlativo: '', gastosConIVA: 400.00 },
+        { fecha: '2024-10-17', proveedor: 'DALIA', concepto: 'Materiales septiembre', documento: 'Factura', correlativo: '', gastosConIVA: 1400.00 },
+        { fecha: '2024-10-16', proveedor: 'FREUND', concepto: 'Equipos septiembre', documento: 'Factura', correlativo: '', gastosConIVA: 1900.00 },
+        { fecha: '2024-10-15', proveedor: 'Bodega', concepto: 'Inventario septiembre', documento: 'Factura', correlativo: '', gastosConIVA: 4100.00 },
+        { fecha: '2024-10-14', proveedor: 'ANDA', concepto: 'Servicios septiembre', documento: 'Factura', correlativo: '', gastosConIVA: 550.00 },
+        { fecha: '2024-10-13', proveedor: 'Edgardo', concepto: 'Planilla septiembre', documento: 'Factura', correlativo: '', gastosConIVA: 3000.00 },
+        { fecha: '2024-10-12', proveedor: 'CAESS', concepto: 'Energía septiembre', documento: 'Factura', correlativo: '', gastosConIVA: 410.00 },
+        { fecha: '2024-10-11', proveedor: 'DALIA', concepto: 'Compras septiembre', documento: 'Factura', correlativo: '', gastosConIVA: 1900.00 },
+        { fecha: '2024-10-10', proveedor: 'FREUND', concepto: 'Materiales varios', documento: 'Factura', correlativo: '', gastosConIVA: 1600.00 },
+        { fecha: '2024-10-09', proveedor: 'Bodega', concepto: 'Almacén septiembre', documento: 'Factura', correlativo: '', gastosConIVA: 2600.00 },
+        { fecha: '2024-10-08', proveedor: 'ANDA', concepto: 'Agua septiembre', documento: 'Factura', correlativo: '', gastosConIVA: 240.00 },
+        { fecha: '2024-10-07', proveedor: 'Edgardo', concepto: 'Servicios generales', documento: 'Factura', correlativo: '', gastosConIVA: 1000.00 }
+      ],
+      gastosPorProveedor: [
+        { name: 'Bodega', amount: 25324.62 },
+        { name: 'DALIA', amount: 16049.27 },
+        { name: 'ANDA', amount: 8875.50 },
+        { name: 'FREUND', amount: 3894.50 },
+        { name: 'Ministerio de', amount: 3305.95 },
+        { name: 'Edgardo', amount: 2466.30 },
+        { name: 'Lightfire', amount: 2000.00 },
+        { name: 'APRIL', amount: 1655.68 },
+        { name: 'Gabriela', amount: 1416.95 },
+        { name: 'CAESS', amount: 950.00 },
+        { name: 'JESÚS ALVARA...', amount: 800.00 },
+        { name: 'Organika, SA d...', amount: 718.03 },
+        { name: 'Jennifer', amount: 695.50 },
+        { name: 'Don local', amount: 681.28 },
+        { name: 'DELIVERY', amount: 617.00 },
+        { name: 'VERSATIVE', amount: 395.50 },
+        { name: '01Hawb3110', amount: 367.24 },
+        { name: 'Gustavo', amount: 300.00 },
+        { name: 'Secretaria', amount: 300.00 },
+        { name: 'MOTOMAS', amount: 272.95 },
+        { name: 'asdadasd', amount: 242.50 },
+        { name: 'Jesus Alfonso', amount: 208.00 },
+        { name: 'Alele', amount: 200.85 },
+        { name: 'Melissa Benitez', amount: 200.00 },
+        { name: 'JAVIER', amount: 193.84 }
       ]
     };
 

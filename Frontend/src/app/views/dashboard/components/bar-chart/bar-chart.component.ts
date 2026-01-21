@@ -138,13 +138,29 @@ export class BarChartComponent implements OnInit, OnChanges {
         left: 'left'
       } : undefined,
       grid: {
-        left: '3%',
+        left: this.config.horizontal ? '15%' : '3%',
         right: '4%',
         bottom: '3%',
         top: isMultiSeries ? (this.config.title ? '20%' : '15%') : '10%',
         containLabel: true
       },
-      xAxis: {
+      xAxis: this.config.horizontal ? {
+        type: 'value',
+        axisLabel: {
+          show: true,
+          formatter: (value: number) => {
+            if (value >= 1000000) {
+              return `$${(value / 1000000).toFixed(1)}M`;
+            } else if (value >= 1000) {
+              return `$${(value / 1000).toFixed(1)}K`;
+            }
+            return `$${value.toFixed(0)}`;
+          }
+        },
+        splitLine: {
+          show: false
+        }
+      } : {
         type: 'category',
         data: this.config.labels || [],
         axisLabel: {
@@ -152,7 +168,15 @@ export class BarChartComponent implements OnInit, OnChanges {
           interval: 0
         }
       },
-      yAxis: {
+      yAxis: this.config.horizontal ? {
+        type: 'category',
+        data: this.config.labels || [],
+        axisLabel: {
+          show: true,
+          interval: 0
+        },
+        inverse: false
+      } : {
         type: 'value',
         axisLabel: {
           show: false
@@ -161,7 +185,19 @@ export class BarChartComponent implements OnInit, OnChanges {
           show: false
         }
       },
-      series: series
+      series: series.map(s => {
+        if (this.config.horizontal) {
+          // Para barras horizontales, ajustar el label position
+          return {
+            ...s,
+            label: {
+              ...s.label,
+              position: 'right'
+            }
+          };
+        }
+        return s;
+      })
     };
 
     // Agregar evento de clic

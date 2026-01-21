@@ -1,9 +1,358 @@
 <div class="gastos-section">
-    <div class="row">
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="alert alert-warning">
-                <h5 class="alert-heading">Sección de Gastos</h5>
-                <p class="mb-0">Esta sección mostrará información detallada de gastos.</p>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="mb-3" style="color: #F19447;">Gastos</h2>
+                    <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
+                        <!-- Rango de fechas a la izquierda -->
+                        <div class="d-flex align-items-end gap-3">
+                            <div class="d-flex flex-column">
+                                <label for="fechaInicio" class="fw-medium small mb-1">Fecha Inicio</label>
+                                <input 
+                                    type="date" 
+                                    id="fechaInicio"
+                                    class="form-control"
+                                    [(ngModel)]="fechaInicio"
+                                    (change)="aplicarFiltros()">
+                            </div>
+                            <div class="d-flex flex-column">
+                                <label for="fechaFin" class="fw-medium small mb-1">Fecha Fin</label>
+                                <input 
+                                    type="date" 
+                                    id="fechaFin"
+                                    class="form-control"
+                                    [(ngModel)]="fechaFin"
+                                    (change)="aplicarFiltros()">
+                            </div>
+                        </div>
+                        
+                        <!-- Botones y controles a la derecha -->
+                        <div class="d-flex align-items-end gap-2">
+                            <button 
+                                type="button"
+                                class="btn btn-custom-filtros"
+                                (click)="toggleFiltrosAdicionales()">
+                                <i class="fas fa-filter me-1"></i> Ver otros filtros
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-custom-filtros"
+                                tooltip="Aplicar filtros"
+                                (click)="aplicarFiltros()">
+                                <i class="fa fa-check"></i> Aplicar
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-custom-filtros"
+                                tooltip="Limpiar filtros"
+                                (click)="limpiarFiltros()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtros adicionales (colapsables) -->
+                    <div class="mt-3" *ngIf="mostrarFiltrosAdicionales">
+                        <div class="row g-3">
+                            <div class="col">
+                                <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
+                                <select 
+                                    id="sucursal"
+                                    class="form-select"
+                                    [(ngModel)]="filtroSucursal"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                                        {{ sucursal.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="cliente" class="text-primary fw-medium small mb-1">Cliente</label>
+                                <select 
+                                    id="cliente"
+                                    class="form-select"
+                                    [(ngModel)]="filtroCliente"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let cliente of clientes" [value]="cliente.id">
+                                        {{ cliente.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="estado" class="text-primary fw-medium small mb-1">Estado</label>
+                                <select 
+                                    id="estado"
+                                    class="form-select"
+                                    [(ngModel)]="filtroEstado"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option value="pagada">Pagada</option>
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="vencida">Vencida</option>
+                                    <option value="cancelada">Cancelada</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de métricas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex gap-4">
+                        <!-- Botones verticales a la izquierda -->
+                        <div class="d-flex flex-column gap-2" style="min-width: 200px;">
+                            <button 
+                                type="button"
+                                class="btn px-4 py-2 fw-bold"
+                                [style.background-color]="vistaMetricas === 'mes' ? '#F19447' : '#ffe6d4'"
+                                [style.color]="vistaMetricas === 'mes' ? 'white' : '#F19447'"
+                                style="border-radius: 8px; border: none;"
+                                (click)="cambiarVistaMetricas('mes')">
+                                Gastos por mes
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn px-4 py-2 fw-bold"
+                                [style.background-color]="vistaMetricas === 'presupuesto' ? '#F19447' : '#ffe6d4'"
+                                [style.color]="vistaMetricas === 'presupuesto' ? 'white' : '#F19447'"
+                                style="border-radius: 8px; border: none;"
+                                (click)="cambiarVistaMetricas('presupuesto')">
+                                vs Presupuesto
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn px-4 py-2 fw-bold"
+                                [style.background-color]="vistaMetricas === 'anio' ? '#F19447' : '#ffe6d4'"
+                                [style.color]="vistaMetricas === 'anio' ? 'white' : '#F19447'"
+                                style="border-radius: 8px; border: none;"
+                                (click)="cambiarVistaMetricas('anio')">
+                                vs Año anterior
+                            </button>
+                            <!-- Indicador de filtros activos -->
+                            <div *ngIf="tieneFiltrosInteractivos()" class="mt-2 p-2" style="background-color: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
+                                <small class="text-dark fw-medium">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Filtros activos: {{ getFiltrosInteractivosTexto() }}
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Cards de métricas a la derecha -->
+                        <div class="row g-3 flex-grow-1">
+                            <div class="col">
+                                <div class="card border-0 h-100 d-flex" style="background-color: #ffe6d4; border-radius: 12px;">
+                                    <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                                        <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                            {{ formatCurrency(datos.metricasGastos?.gastosConIVA || 0) }}
+                                        </h3>
+                                        <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                            Gastos totales
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="card border-0 h-100 d-flex" style="background-color: #ffe6d4; border-radius: 12px;">
+                                    <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                                        <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                            {{ formatCurrency(datos.metricasGastos?.gastosSinIVA || 0) }}
+                                        </h3>
+                                        <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                            Gastos del mes
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="card border-0 h-100 d-flex" style="background-color: #ffe6d4; border-radius: 12px;">
+                                    <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                                        <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                            {{ formatCurrency(datos.metricasGastos?.gastosMesAnterior || 0) }}
+                                        </h3>
+                                        <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                            Gastos mes anterior
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="card border-0 h-100 d-flex" style="background-color: #ffe6d4; border-radius: 12px;">
+                                    <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                                        <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                            {{ formatCurrency(datos.metricasGastos?.variacionGastos || 0) }}
+                                        </h3>
+                                        <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                            Variación en gastos
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="card border-0 h-100 d-flex" style="background-color: #ffe6d4; border-radius: 12px;">
+                                    <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                                        <p class="mb-1 small fw-medium" style="color: #F19447;">
+                                            Aumento de costos en
+                                        </p>
+                                        <h3 class="mb-0 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                            {{ datos.metricasGastos?.aumentoCostosPorcentaje || 0 }} %
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos de análisis -->
+    <div class="row mb-4">
+        <!-- Gráfico 1: Gastos por mes (cambia según el botón seleccionado) -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">{{ getTituloGraficoGastos() }}</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Gráfico de línea para "Gastos por mes" -->
+                    <app-line-chart 
+                        [config]="datos.gastosPorMesConfig" 
+                        (itemClick)="onMesClick($event)"
+                        *ngIf="vistaMetricas === 'mes' && datos.gastosPorMesConfig">
+                    </app-line-chart>
+                    
+                    <!-- Gráfico de barras para "vs Presupuesto" -->
+                    <app-bar-chart 
+                        [config]="datos.gastosVsPresupuestoConfig" 
+                        (itemClick)="onMesClick($event)"
+                        *ngIf="vistaMetricas === 'presupuesto' && datos.gastosVsPresupuestoConfig">
+                    </app-bar-chart>
+                    
+                    <!-- Gráfico de barras para "vs Año anterior" -->
+                    <app-bar-chart 
+                        [config]="datos.gastosVsAnioAnteriorConfig" 
+                        (itemClick)="onMesClick($event)"
+                        *ngIf="vistaMetricas === 'anio' && datos.gastosVsAnioAnteriorConfig">
+                    </app-bar-chart>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico 2: Gastos totales por categoría de costos -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">Gastos totales por categoría de costos</h5>
+                </div>
+                <div class="card-body">
+                    <app-bar-chart 
+                        [config]="datos.gastosPorCategoriaConfig" 
+                        (itemClick)="onCategoriaClick($event)"
+                        *ngIf="datos.gastosPorCategoriaConfig">
+                    </app-bar-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos adicionales -->
+    <div class="row mb-4">
+        <!-- Gráfico 3: Gastos por concepto -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">Gastos por concepto</h5>
+                </div>
+                <div class="card-body">
+                    <app-bar-chart 
+                        [config]="datos.gastosPorConceptoConfig" 
+                        (itemClick)="onConceptoClick($event)"
+                        *ngIf="datos.gastosPorConceptoConfig">
+                    </app-bar-chart>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico 4: Gastos totales por forma de pago -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">Gastos totales por forma de pago</h5>
+                </div>
+                <div class="card-body">
+                    <app-treemap-chart 
+                        [config]="datos.gastosPorFormaPagoConfig" 
+                        (itemClick)="onFormaPagoClick($event)"
+                        *ngIf="datos.gastosPorFormaPagoConfig">
+                    </app-treemap-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de detalle de gastos y gráfico por proveedor -->
+    <div class="row mb-4">
+        <!-- Tabla: Detalle de gastos -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">Detalle de gastos</h5>
+                </div>
+                <div class="card-body p-0">
+                    <revo-grid
+                        #detalleGastosGrid
+                        class="gastos-detalle-grid"
+                        [source]="detalleGastosRows"
+                        [columns]="detalleGastosColumns"
+                        [plugins]="detalleGastosPlugins"
+                        [rowDefinitions]="[]"
+                        [theme]="'default'"
+                        [range]="true"
+                        [editable]="false"
+                        [resize]="true"
+                        [canFocus]="true"
+                        [sorting]="true"
+                        [filter]="true"
+                        [exporting]="true"
+                        style="height: 500px;">
+                    </revo-grid>
+                    <div class="p-3" style="background-color: #ffe6d4; border-top: 1px solid #F19447;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold" style="color: #F19447;">Total</span>
+                            <span class="fw-bold" style="color: #F19447;">
+                                {{ totalDetalleGastos }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico: Gastos por proveedor -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">Gastos por proveedor</h5>
+                </div>
+                <div class="card-body">
+                    <app-accounts-list 
+                        title=""
+                        [accounts]="datos.gastosPorProveedor || []"
+                        type="payable"
+                        (itemClick)="onProveedorClick($event)">
+                    </app-accounts-list>
+                </div>
             </div>
         </div>
     </div>
