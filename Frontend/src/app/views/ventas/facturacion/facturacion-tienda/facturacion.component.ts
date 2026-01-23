@@ -152,7 +152,8 @@ export class FacturacionComponent implements OnInit {
 
     this.apiService.getAll('impuestos').subscribe(
       (impuestos) => {
-        this.impuestos = impuestos;
+        // Filtrar solo los impuestos que aplican a ventas
+        this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
         if (!this.venta.impuestos || this.venta.iva == 0) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
