@@ -23,7 +23,7 @@
     "Droid Sans", "Helvetica Neue", sans-serif;
         margin: 0pt;
         padding: 0pt;
-        font-size: 10pt;
+        font-size: 9pt;
     }
 
     p{ margin: 0px; }
@@ -107,19 +107,19 @@
     
     <hr>
 
-    <table style="width: 100%; margin: auto;">
+    <table style="width: 80mm; max-width: 80mm; margin: auto;">
         <thead>
             <tr>
-                <th class="text-left">DETALLE</th>
-                <th width="50px" class="text-center">
+                <th style="max-width: 50%" class="text-left">DETALLE</th>
+                <th width="10%" class="text-center">
                     @if ($venta->empresa->modulo_paquetes)
                         LB/FT
                     @else
                         CANT
                     @endif
                 </th>
-                <th width="50px" class="text-center">P.U.</th>
-                <th width="50px" class="text-right">TOTAL</th>
+                <th width="10%" class="text-center">P.U.</th>
+                <th width="10%" class="text-right">TOTAL</th>
             </tr>
         </thead>
         <tbody>
