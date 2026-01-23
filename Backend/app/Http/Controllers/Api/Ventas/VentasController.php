@@ -36,6 +36,7 @@ use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCateg
 use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
 use App\Exports\VentasPorUtilidadesExport;
 use App\Exports\VentasPorMarcasExport;
+use App\Exports\CobrosPorVendedorExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
 // use Auth;
@@ -1214,6 +1215,13 @@ class VentasController extends Controller
         return Excel::download($ventas, 'ventas-por-utilidades.xlsx');
     }
 
+    public function cobrosPorVendedorExport(Request $request)
+    {
+        $cobros = new CobrosPorVendedorExport();
+        $cobros->filter($request);
+        return Excel::download($cobros, 'cobros-por-vendedor.xlsx');
+    }
+
     public function enviarReporteDiario()
     {
         try {
@@ -1313,6 +1321,15 @@ class VentasController extends Controller
                 ]);
                 $export = new VentasPorUtilidadesExport();
                 $export->filter($request);
+            } elseif ($configuracion->tipo_reporte === 'cobros-por-vendedor') {
+                $request = new Request([
+                    'id_empresa' => $empresa->id,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                ]);
+                $export = new CobrosPorVendedorExport();
+                $export->filter($request);
             }
             $filename = "{$configuracion->tipo_reporte}-{$fechaInicio}.xlsx";
 
@@ -1375,6 +1392,8 @@ class VentasController extends Controller
                 'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin,
                 'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
+                'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
+                'cobros-por-vendedor' => 'Reporte de Cobros por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -1449,6 +1468,16 @@ class VentasController extends Controller
                 $export = new VentasPorUtilidadesExport();
                 $export->filter($request);
                 $filename = "ventas-por-utilidades-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'cobros-por-vendedor') {
+                $request = new Request([
+                    'id_empresa' => $configuracion->id_empresa,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                ]);
+                $export = new CobrosPorVendedorExport();
+                $export->filter($request);
+                $filename = "cobros-por-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             }
 
             $relativePath = "reportes/{$filename}";
@@ -1596,6 +1625,16 @@ class VentasController extends Controller
                     'sucursales' => $configuracion->sucursales ?? [],
                 ]);
                 $export = new VentasPorUtilidadesExport();
+                $export->filter($request);
+                break;
+            case 'cobros-por-vendedor':
+                $request = new Request([
+                    'id_empresa' => $configuracion->id_empresa,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                ]);
+                $export = new CobrosPorVendedorExport();
                 $export->filter($request);
                 break;
             default:
