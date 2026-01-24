@@ -65,6 +65,20 @@ return [
             'endpoint' => env('AWS_ENDPOINT'),
         ],
 
+        's3-public' => [
+            'driver' => 's3',
+            'bucket' => env('AWS_BUCKET'),
+            'root' => 'public',
+            'visibility' => 'public',
+        ],
+
+        's3-storage' => [
+            'driver' => 's3',
+            'bucket' => env('AWS_BUCKET'),
+            'root' => 'storage',
+            'visibility' => 'private',
+        ],
+
         'documents' => [
             'driver' => 'local',
             'root' => storage_path('app/documents'),
