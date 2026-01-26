@@ -71,8 +71,18 @@ class AwsConfigHelper
             $result = self::getSecretsClient()->getSecretValue([
                 'SecretId' => $secretId
             ]);
-            $secretValue = json_decode($result['SecretString'], true);
-            $value = $key ? ($secretValue[$key] ?? $default) : $secretValue;
+            
+            $secretString = $result['SecretString'];
+            
+            // Try to decode as JSON first
+            $secretValue = json_decode($secretString, true);
+            
+            // If it's not JSON, treat as plain string
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $value = $key ? $default : $secretString;
+            } else {
+                $value = $key ? ($secretValue[$key] ?? $default) : $secretValue;
+            }
             
             // Cache the value for this request
             self::$cache[$cacheKey] = $value;

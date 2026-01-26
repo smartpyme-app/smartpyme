@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'SmartPyme Infrastructure - SQS Queues for Laravel Application'
+Description: 'SmartPyme Infrastructure - SQS Queues, Secrets Manager, and Parameter Store for Laravel Application'
 
 Parameters:
   DatabaseHost:
@@ -60,7 +60,127 @@ Resources:
       Tags:
         Project: NOVA
 
-  # Cron API Key Secret
+  # Third Party Services Secrets (empty - to be populated manually)
+  StripeServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/stripe
+      Description: Stripe payment credentials
+      SecretString: '{"key": "", "secret": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  NicoServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/nico
+      Description: N1co payment service credentials
+      SecretString: '{"api_key": "", "client_secret": "", "sandbox_api_key": "", "webhook_secret": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  WhatsAppServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/whatsapp
+      Description: WhatsApp Business API credentials
+      SecretString: '{"access_token": "", "verify_token": "smartpyme_verify_token"}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  ShopifyServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/shopify
+      Description: Shopify webhook credentials
+      SecretString: '{"webhook_secret": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  MailgunServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/mailgun
+      Description: Mailgun email service credentials
+      SecretString: '{"secret": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  GoogleOAuthServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/google
+      Description: Google OAuth credentials
+      SecretString: '{"client_secret": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  FacebookOAuthServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/facebook
+      Description: Facebook OAuth credentials
+      SecretString: '{"client_secret": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  PostmarkServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/postmark
+      Description: Postmark email service credentials
+      SecretString: '{"token": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  BedrockServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/bedrock
+      Description: AWS Bedrock AI service credentials
+      SecretString: '{"key": "", "secret": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  MailServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/mail
+      Description: Mail service credentials
+      SecretString: '{"username": "", "password": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  RedisServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/redis
+      Description: Redis service credentials
+      SecretString: '{"password": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  PusherServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/pusher
+      Description: Pusher service secret
+      SecretString: '{"secret": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
   CronApiKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -71,6 +191,16 @@ Resources:
         GenerateStringKey: 'api_key'
         PasswordLength: 32
         ExcludeCharacters: '"@/\'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  JWTSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/jwt-secret
+      Description: JWT secret for SmartPyme authentication
+      SecretString: '{"secret": ""}'
       Tags:
         - Key: Project
           Value: NOVA
@@ -306,3 +436,114 @@ Outputs:
     Value: !Ref CronApiKeySecret
     Export:
       Name: smartpyme-cron-api-key-secret-arn
+
+  # JWT Secret Export
+  JWTSecretArn:
+    Description: JWT Secret ARN
+    Value: !Ref JWTSecret
+    Export:
+      Name: smartpyme-jwt-secret-arn
+
+  # Third Party Services Secrets Exports
+  StripeSecretArn:
+    Description: Stripe Service Secret ARN
+    Value: !Ref StripeServiceSecret
+    Export:
+      Name: smartpyme-stripe-secret-arn
+
+  NicoSecretArn:
+    Description: N1co Service Secret ARN
+    Value: !Ref NicoServiceSecret
+    Export:
+      Name: smartpyme-nico-secret-arn
+
+  WhatsAppSecretArn:
+    Description: WhatsApp Service Secret ARN
+    Value: !Ref WhatsAppServiceSecret
+    Export:
+      Name: smartpyme-whatsapp-secret-arn
+
+  ShopifySecretArn:
+    Description: Shopify Service Secret ARN
+    Value: !Ref ShopifyServiceSecret
+    Export:
+      Name: smartpyme-shopify-secret-arn
+
+  MailgunSecretArn:
+    Description: Mailgun Service Secret ARN
+    Value: !Ref MailgunServiceSecret
+    Export:
+      Name: smartpyme-mailgun-secret-arn
+
+  GoogleSecretArn:
+    Description: Google OAuth Service Secret ARN
+    Value: !Ref GoogleOAuthServiceSecret
+    Export:
+      Name: smartpyme-google-secret-arn
+
+  FacebookSecretArn:
+    Description: Facebook OAuth Service Secret ARN
+    Value: !Ref FacebookOAuthServiceSecret
+    Export:
+      Name: smartpyme-facebook-secret-arn
+
+  PostmarkSecretArn:
+    Description: Postmark Service Secret ARN
+    Value: !Ref PostmarkServiceSecret
+    Export:
+      Name: smartpyme-postmark-secret-arn
+
+  BedrockSecretArn:
+    Description: Bedrock Service Secret ARN
+    Value: !Ref BedrockServiceSecret
+    Export:
+      Name: smartpyme-bedrock-secret-arn
+
+  MailSecretArn:
+    Description: Mail Service Secret ARN
+    Value: !Ref MailServiceSecret
+    Export:
+      Name: smartpyme-mail-secret-arn
+
+  RedisSecretArn:
+    Description: Redis Service Secret ARN
+    Value: !Ref RedisServiceSecret
+    Export:
+      Name: smartpyme-redis-secret-arn
+
+  PusherSecretArn:
+    Description: Pusher Service Secret ARN
+    Value: !Ref PusherServiceSecret
+    Export:
+      Name: smartpyme-pusher-secret-arn
+
+  # DLQ Exports
+  SmartPymeDLQName:
+    Description: Main SmartPyme DLQ Name
+    Value: !Ref SmartPymeDeadLetterQueue
+    Export:
+      Name: smartpyme-main-dlq-name
+
+  DailyReportsDLQName:
+    Description: Daily Reports DLQ Name
+    Value: !Ref DailyReportsDeadLetterQueue
+    Export:
+      Name: smartpyme-daily-reports-dlq-name
+
+  InvoiceProcessingDLQName:
+    Description: Invoice Processing DLQ Name
+    Value: !Ref InvoiceProcessingDeadLetterQueue
+    Export:
+      Name: smartpyme-invoice-processing-dlq-name
+
+  ShopifySyncDLQName:
+    Description: Shopify Sync DLQ Name
+    Value: !Ref ShopifySyncDeadLetterQueue
+    Export:
+      Name: smartpyme-shopify-sync-dlq-name
+
+  EmailNotificationsDLQName:
+    Description: Email Notifications DLQ Name
+    Value: !Ref EmailNotificationsDeadLetterQueue
+    Export:
+      Name: smartpyme-email-notifications-dlq-name

@@ -6,10 +6,9 @@ Parameters:
     Type: String
     Description: ECR Repository URI (e.g., 123456789.dkr.ecr.us-east-1.amazonaws.com/smartpyme-backend)
   
-  AppKey:
+  FrontendUrl:
     Type: String
-    NoEcho: true
-    Description: Laravel APP_KEY (base64 encoded)
+    Description: Frontend URL for APP_URL configuration (e.g., https://smartpyme.com)
 
 Resources:
   # IAM Role for App Runner Worker
@@ -50,6 +49,20 @@ Resources:
                 Resource:
                   - !ImportValue smartpyme-cron-api-key-secret-arn
                   - !ImportValue smartpyme-database-secret-arn
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:smartpyme/app-key-*'
+                  - !ImportValue smartpyme-jwt-secret-arn
+                  - !ImportValue smartpyme-mail-secret-arn
+                  - !ImportValue smartpyme-redis-secret-arn
+                  - !ImportValue smartpyme-pusher-secret-arn
+                  - !ImportValue smartpyme-bedrock-secret-arn
+                  - !ImportValue smartpyme-stripe-secret-arn
+                  - !ImportValue smartpyme-nico-secret-arn
+                  - !ImportValue smartpyme-whatsapp-secret-arn
+                  - !ImportValue smartpyme-shopify-secret-arn
+                  - !ImportValue smartpyme-mailgun-secret-arn
+                  - !ImportValue smartpyme-google-secret-arn
+                  - !ImportValue smartpyme-facebook-secret-arn
+                  - !ImportValue smartpyme-postmark-secret-arn
         - PolicyName: ParameterStoreAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -58,7 +71,17 @@ Resources:
                 Action:
                   - ssm:GetParameter
                 Resource:
-                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/host'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/name'
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource: '*'
       Tags:
         - Key: Project
           Value: NOVA
@@ -95,8 +118,6 @@ Resources:
                 Value: SmartPyme Worker
               - Name: APP_ENV
                 Value: production
-              - Name: APP_KEY
-                Value: !Ref AppKey
               - Name: APP_DEBUG
                 Value: 'false'
               - Name: LOG_CHANNEL
@@ -107,6 +128,118 @@ Resources:
                 Value: sqs
               - Name: AWS_DEFAULT_REGION
                 Value: !Ref AWS::Region
+              - Name: APP_URL
+                Value: !Ref FrontendUrl
+              - Name: FRONTEND_URL
+                Value: !Ref FrontendUrl
+              - Name: APP_KEY_SECRET_NAME
+                Value: smartpyme/app-key
+              - Name: MAIL_SECRET_NAME
+                Value: smartpyme/config/services/mail
+              - Name: REDIS_SECRET_NAME
+                Value: smartpyme/config/services/redis
+              - Name: PUSHER_SECRET_NAME
+                Value: smartpyme/config/services/pusher
+              - Name: BEDROCK_SECRET_NAME
+                Value: smartpyme/config/services/bedrock
+              - Name: JWT_SECRET_NAME
+                Value: smartpyme/jwt-secret
+              
+              # Public configuration variables
+              - Name: DB_CONNECTION
+                Value: mysql
+              - Name: DB_PORT
+                Value: '3306'
+              - Name: BROADCAST_DRIVER
+                Value: log
+              - Name: CACHE_DRIVER
+                Value: file
+              - Name: SESSION_DRIVER
+                Value: file
+              - Name: SESSION_LIFETIME
+                Value: '120'
+              
+              # Mail
+              - Name: MAIL_DRIVER
+                Value: smtp
+              - Name: MAIL_MAILER
+                Value: smtp
+              - Name: MAIL_HOST
+                Value: smtp.gmail.com
+              - Name: MAIL_PORT
+                Value: '587'
+              - Name: MAIL_ENCRYPTION
+                Value: tls
+              - Name: MAIL_FROM_ADDRESS
+                Value: noreply@smartpyme.com
+              - Name: MAIL_FROM_NAME
+                Value: SmartPyme
+              - Name: MAIL_TO_ADDRESS
+                Value: admin@smartpyme.com
+              
+              # Redis
+              - Name: REDIS_HOST
+                Value: 127.0.0.1
+              - Name: REDIS_PORT
+                Value: '6379'
+              
+              # Pusher
+              - Name: PUSHER_APP_ID
+                Value: '123456'
+              - Name: PUSHER_APP_KEY
+                Value: 'abcdef123456'
+              - Name: PUSHER_APP_CLUSTER
+                Value: 'us2'
+              - Name: MIX_PUSHER_APP_KEY
+                Value: 'abcdef123456'
+              - Name: MIX_PUSHER_APP_CLUSTER
+                Value: 'us2'
+              
+              # N1co
+              - Name: NICO_CLIENT_ID
+                Value: 'default-client-id'
+              - Name: NICO_BASE_URL
+                Value: https://api.n1co.com/api/v2
+              - Name: NICO_SANDBOX_URL
+                Value: https://api-sandbox.n1co.shop/api/v2
+              - Name: PAYMENT_GATEWAY
+                Value: 'n1co'
+              - Name: PAYMENT_SANDBOX_MODE
+                Value: 'true'
+              
+              # WhatsApp Configuration
+              - Name: WHATSAPP_API_URL
+                Value: https://graph.facebook.com/v21.0/131106576743413/messages
+              - Name: WHATSAPP_WEBHOOK_URL
+                Value: /api/whatsapp/webhook
+              - Name: WHATSAPP_VERIFY_TOKEN
+                Value: smartpyme_verify_token
+              - Name: WHATSAPP_DEV_MODE
+                Value: 'true'
+              - Name: WHATSAPP_USE_AI
+                Value: 'false'
+              - Name: WHATSAPP_USE_BUSINESS
+                Value: 'true'
+              
+              # Bedrock AI Configuration
+              - Name: AWS_BEDROCK_REGION
+                Value: us-east-2
+              - Name: BEDROCK_MODEL_ID
+                Value: anthropic.claude-3-5-haiku-20241022-v1:0
+              - Name: BEDROCK_INFERENCE_PROFILE
+                Value: 'default'
+              - Name: BEDROCK_MAX_TOKENS
+                Value: '1000'
+              - Name: BEDROCK_TEMPERATURE
+                Value: '0.7'
+              - Name: BEDROCK_TOP_P
+                Value: '0.9'
+              - Name: BEDROCK_TOP_K
+                Value: '250'
+              
+              # Shopify Configuration
+              - Name: SHOPIFY_ENABLED
+                Value: 'false'
 
               - Name: SQS_QUEUE
                 Value: !ImportValue smartpyme-queue-name
@@ -132,7 +265,7 @@ Resources:
         InstanceRoleArn: !GetAtt WorkerAppRunnerRole.Arn
       HealthCheckConfiguration:
         Protocol: HTTP
-        Path: /api/prueba
+        Path: /health
         Interval: 20
         Timeout: 5
         HealthyThreshold: 1
@@ -153,3 +286,9 @@ Outputs:
     Value: !Ref WorkerAppRunnerService
     Export:
       Name: !Sub '${AWS::StackName}-WorkerServiceArn'
+
+  WorkerServiceName:
+    Description: SmartPyme Worker App Runner Service Name
+    Value: !Sub 'smartpyme-worker-${AWS::StackName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-WorkerServiceName'
