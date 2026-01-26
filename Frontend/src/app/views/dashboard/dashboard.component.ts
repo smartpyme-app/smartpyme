@@ -54,6 +54,13 @@ export class DashboardComponent implements OnInit {
     
     this.dashboardDataService.obtenerDatosPorFiltro(filtros).subscribe({
       next: (data) => {
+        console.log('Dashboard - Datos recibidos:', {
+          seccion: filtros.seccion,
+          tieneDatos: !!data,
+          keys: data ? Object.keys(data) : [],
+          tieneDetalleGastos: !!(data && (data as any).detalleGastos),
+          cantidadGastos: data && (data as any).detalleGastos ? (data as any).detalleGastos.length : 0
+        });
         this.datos = data || {};
         this.loading = false;
         // Usar setTimeout para evitar ExpressionChangedAfterItHasBeenCheckedError
@@ -151,6 +158,34 @@ export class DashboardComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar datos de control de cuentas:', error);
+        this.datos = {};
+        this.loading = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
+      }
+    });
+  }
+
+  onFiltrosInventarioCambiados(filtros: any): void {
+    // Recargar datos con los filtros específicos de inventario
+    this.loading = true;
+    
+    const filtrosCompletos = {
+      seccion: 'Inventario',
+      ...filtros // Filtros específicos de inventario (fechaInicio, fechaFin, sucursal, etc.)
+    };
+    
+    this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
+      next: (data) => {
+        this.datos = data || {};
+        this.loading = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
+      },
+      error: (error) => {
+        console.error('Error al cargar datos de inventario:', error);
         this.datos = {};
         this.loading = false;
         setTimeout(() => {

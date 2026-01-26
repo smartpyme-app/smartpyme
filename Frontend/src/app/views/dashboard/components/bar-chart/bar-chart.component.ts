@@ -50,7 +50,7 @@ export class BarChartComponent implements OnInit, OnChanges {
         label: {
           show: true,
           position: 'top',
-          rotate: 90,
+          rotate: 0,
           formatter: (params: any) => {
             const value = params.value;
             const absValue = Math.abs(value);
@@ -69,10 +69,11 @@ export class BarChartComponent implements OnInit, OnChanges {
           },
           color: '#333',
           fontSize: 12,
-          fontWeight: 'bold',
-          offset: [0, -5],
-          align: 'left',
-          verticalAlign: 'middle'
+          fontWeight: 'medium',
+          offset: [0, -10],
+          align: 'center',
+          verticalAlign: 'middle',
+          padding: [4, 6, 4, 6]
         },
         emphasis: {
           itemStyle: {
@@ -84,17 +85,59 @@ export class BarChartComponent implements OnInit, OnChanges {
       }));
     } else {
       // Gráfico de una sola serie
+      const data = this.config.data as number[];
+      const hasConditionalColors = (this.config as any).conditionalColors === true;
+      const originalValues = (this.config as any).originalValues as number[] | undefined;
+      
       series = [{
         name: this.config.title || 'Datos',
         type: 'bar',
-        data: this.config.data,
-        itemStyle: {
+        data: data,
+        itemStyle: hasConditionalColors ? {
+          color: (params: any) => {
+            // Si hay valores originales, usarlos para determinar el color
+            // Si no, usar el valor mostrado (que ya es absoluto)
+            const originalValue = originalValues && originalValues[params.dataIndex] !== undefined 
+              ? originalValues[params.dataIndex] 
+              : params.value;
+            // Verde para valores positivos, rojo para negativos
+            return originalValue >= 0 ? '#4caf50' : '#f44336';
+          },
+          borderRadius: [4, 4, 0, 0]
+        } : {
           color: this.config.colors?.[0] || '#5470c6',
           borderRadius: [4, 4, 0, 0]
         },
+        label: {
+          show: true,
+          position: 'top',
+          rotate: 0,
+          formatter: (params: any) => {
+            const value = params.value;
+            const absValue = Math.abs(value);
+            
+            // Formatear con abreviaciones para valores grandes
+            let formatted: string;
+            if (absValue >= 1000000) {
+              formatted = `${(absValue / 1000000).toFixed(1)}M`;
+            } else if (absValue >= 1000) {
+              formatted = `${(absValue / 1000).toFixed(1)}K`;
+            } else {
+              formatted = absValue.toFixed(0);
+            }
+            
+            return value < 0 ? `(${formatted})` : formatted;
+          },
+          color: '#333',
+          fontSize: 12,
+          fontWeight: 'medium',
+          offset: [0, -10],
+          align: 'center',
+          verticalAlign: 'middle',
+          padding: [4, 6, 4, 6]
+        },
         emphasis: {
           itemStyle: {
-            color: this.config.colors?.[0] || '#5470c6',
             shadowBlur: 10,
             shadowOffsetX: 0,
             shadowColor: 'rgba(0, 0, 0, 0.5)'
@@ -138,13 +181,13 @@ export class BarChartComponent implements OnInit, OnChanges {
         left: 'left'
       } : undefined,
       grid: {
-        left: this.config.horizontal ? '15%' : '3%',
+        left: (this.config as any).horizontal ? '15%' : '3%',
         right: '4%',
         bottom: '3%',
         top: isMultiSeries ? (this.config.title ? '20%' : '15%') : '10%',
         containLabel: true
       },
-      xAxis: this.config.horizontal ? {
+      xAxis: (this.config as any).horizontal ? {
         type: 'value',
         axisLabel: {
           show: true,
@@ -168,14 +211,14 @@ export class BarChartComponent implements OnInit, OnChanges {
           interval: 0
         }
       },
-      yAxis: this.config.horizontal ? {
+      yAxis: (this.config as any).horizontal ? {
         type: 'category',
         data: this.config.labels || [],
         axisLabel: {
           show: true,
           interval: 0
         },
-        inverse: false
+        inverse: true
       } : {
         type: 'value',
         axisLabel: {
@@ -186,7 +229,7 @@ export class BarChartComponent implements OnInit, OnChanges {
         }
       },
       series: series.map(s => {
-        if (this.config.horizontal) {
+        if ((this.config as any).horizontal) {
           // Para barras horizontales, ajustar el label position
           return {
             ...s,

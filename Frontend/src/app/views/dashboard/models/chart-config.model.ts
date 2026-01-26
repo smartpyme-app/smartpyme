@@ -7,6 +7,7 @@ export interface ChartConfig {
     type?: 'line' | 'bar' | 'pie' | 'doughnut';
     rotateLabels?: number; // Ángulo de rotación para labels del eje X (0 = horizontal, 45 = diagonal)
     horizontal?: boolean; // Si es true, las barras serán horizontales
+    conditionalColors?: boolean; // Si es true, los colores serán condicionales (verde para positivos, rojo para negativos)
 }
 
 export interface MetricCard {
@@ -191,5 +192,44 @@ export interface DashboardData {
       gastosConIVA: number;
     }>;
     gastosPorProveedor?: AccountItem[];
+    // Datos para la sección de Finanzas
+    ventasTotalesConIVA?: number;
+    gastosTotalesConIVA?: number;
+    resultados?: number;
+    margen?: number;
+    detalleVentas?: Array<{
+      fecha: string;
+      cliente: string;
+      factura: string;
+      totalConIVA: number;
+      totalSinIVA: number;
+      sucursalId?: string;
+    }>;
+    estadoResultados?: Array<{
+      nombre: string;
+      nivel: number;
+      expandido: boolean;
+      tieneHijos: boolean;
+      hijos: any[];
+      valores: { [key: string]: number };
+      esUtilidadNeta?: boolean;
+    }>;
+    analisisVertical?: Array<{
+      concepto: string;
+      valor: number;
+      porcentaje: number;
+    }>;
+    analisisHorizontal?: Array<{
+      concepto: string;
+      mesAnterior: number;
+      mesActual: number;
+      variacion: number;
+      variacionPorcentaje: number;
+    }>;
+    flujoEfectivo?: Array<{
+      concepto: string;
+      esEfectivoDisponible: boolean;
+      valores: { [key: string]: number };
+    }>;
 }
 

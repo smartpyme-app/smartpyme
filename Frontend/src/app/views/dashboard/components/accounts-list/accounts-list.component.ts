@@ -80,6 +80,7 @@ export class AccountsListComponent implements OnInit, OnChanges {
       yAxis: {
         type: 'category',
         data: labels,
+        inverse: true,
         axisLabel: {
           interval: 0,
           fontSize: 11,

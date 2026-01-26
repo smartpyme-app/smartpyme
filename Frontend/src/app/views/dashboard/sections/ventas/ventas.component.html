@@ -271,7 +271,7 @@
                 <div class="card-body">
                     <app-accounts-list 
                         title=""
-                        [accounts]="datos.ventasPorCanal || []"
+                        [accounts]="(datosFiltrados.ventasPorCanal || datos.ventasPorCanal || [])"
                         type="receivable"
                         (itemClick)="onCanalClick($event)">
                     </app-accounts-list>

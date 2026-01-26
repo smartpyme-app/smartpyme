@@ -199,6 +199,8 @@ export class VentasComponent implements OnInit, OnChanges {
     if (this.datos && Object.keys(this.datos).length > 0) {
       this.datosOriginales = JSON.parse(JSON.stringify(this.datos));
       this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+      // Asegurar que los arrays estén ordenados de mayor a menor
+      this.ordenarArraysIniciales();
     }
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
@@ -216,6 +218,7 @@ export class VentasComponent implements OnInit, OnChanges {
           this.aplicarFiltrosInteractivos();
         } else {
           this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+          this.ordenarArraysIniciales();
           this.datos = this.datosFiltrados;
         }
       }
@@ -1229,6 +1232,29 @@ export class VentasComponent implements OnInit, OnChanges {
 
     // Recalcular ventas por cliente (tabla detallada)
     this.recalcularVentasPorCliente(ventasFiltradas);
+  }
+
+  /**
+   * Ordena los arrays iniciales de mayor a menor
+   */
+  private ordenarArraysIniciales(): void {
+    const arraysParaOrdenar = [
+      'ventasPorCanal',
+      'ventasPorCategoria',
+      'topProductosVendidos',
+      'topClientes'
+    ];
+
+    arraysParaOrdenar.forEach(key => {
+      const array = this.datosFiltrados[key];
+      if (Array.isArray(array)) {
+        this.datosFiltrados[key] = [...array].sort((a: any, b: any) => {
+          const amountA = Math.abs(a.amount || 0);
+          const amountB = Math.abs(b.amount || 0);
+          return amountB - amountA;
+        });
+      }
+    });
   }
 
   recalcularVentasPorCanal(ventas: any[]): void {

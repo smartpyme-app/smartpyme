@@ -45,7 +45,8 @@
 
         <app-inventario 
             *ngSwitchCase="'Inventario'"
-            [datos]="datos">
+            [datos]="datos"
+            (filtrosCambiados)="onFiltrosInventarioCambiados($event)">
         </app-inventario>
     </ng-container>
 </div>

@@ -1,4 +1,5 @@
 <div class="gastos-section">
+    <ng-container *ngIf="tieneDatos()">
     <div class="row mb-4">
         <div class="col-12">
             
@@ -139,11 +140,19 @@
                                 vs Año anterior
                             </button>
                             <!-- Indicador de filtros activos -->
-                            <div *ngIf="tieneFiltrosInteractivos()" class="mt-2 p-2" style="background-color: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
+                            <div *ngIf="tieneFiltrosInteractivos()" class="mt-2 p-2 d-flex justify-content-between align-items-center" style="background-color: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
                                 <small class="text-dark fw-medium">
                                     <i class="fas fa-info-circle me-1"></i>
                                     Filtros activos: {{ getFiltrosInteractivosTexto() }}
                                 </small>
+                                <button 
+                                    type="button"
+                                    class="btn btn-sm btn-outline-warning"
+                                    (click)="limpiarFiltrosInteractivos()"
+                                    title="Limpiar filtros interactivos">
+                                    <i class="fas fa-times me-1"></i>
+                                    Limpiar
+                                </button>
                             </div>
                         </div>
 
@@ -307,26 +316,59 @@
         <div class="col-md-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0 fw-bold">Detalle de gastos</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Detalle de gastos</h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Buscador global -->
+                            <div class="input-group" style="width: 200px;">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control border-start-0" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="quickFilterTextGastos"
+                                    (input)="onQuickFilterChangeGastos()">
+                            </div>
+                            <!-- Botones de exportación -->
+                            <button 
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="exportarCSVGastos()"
+                                title="Exportar a CSV">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-success"
+                                (click)="exportarExcelGastos()"
+                                title="Exportar a Excel">
+                                <i class="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="limpiarFiltrosGastos()"
+                                title="Limpiar filtros">
+                                <i class="fas fa-filter me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body p-0">
-                    <revo-grid
+                <div class="card-body px-3 py-0" style="height: 500px; display: flex; flex-direction: column;">
+                    <ag-grid-angular
                         #detalleGastosGrid
-                        class="gastos-detalle-grid"
-                        [source]="detalleGastosRows"
-                        [columns]="detalleGastosColumns"
-                        [plugins]="detalleGastosPlugins"
-                        [rowDefinitions]="[]"
-                        [theme]="'default'"
-                        [range]="true"
-                        [editable]="false"
-                        [resize]="true"
-                        [canFocus]="true"
-                        [sorting]="true"
-                        [filter]="true"
-                        [exporting]="true"
-                        style="height: 500px;">
-                    </revo-grid>
+                        class="ag-theme-alpine detalle-gastos-grid"
+                        [rowData]="detalleGastosRows"
+                        [columnDefs]="detalleGastosColumnDefs"
+                        [gridOptions]="detalleGastosGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; flex: 1; min-height: 0;"
+                        [domLayout]="'normal'"
+                        (gridReady)="onGridReadyGastos($event)">
+                    </ag-grid-angular>
                     <div class="p-3" style="background-color: #ffe6d4; border-top: 1px solid #F19447;">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="fw-bold" style="color: #F19447;">Total</span>
@@ -356,4 +398,5 @@
             </div>
         </div>
     </div>
+    </ng-container>
 </div>

@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, ChangeDetectorRef } from '@angular/core';
-import { RevoGrid } from '@revolist/angular-datagrid';
-import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
+import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
+import { AgGridAngular } from 'ag-grid-angular';
 
 @Component({
   selector: 'app-gastos',
@@ -16,10 +16,18 @@ export class GastosComponent implements OnInit, OnChanges {
   // Datos filtrados (se muestran en la vista)
   datosFiltrados: any = {};
 
-  private inicializado: boolean = false;
+  public inicializado: boolean = false;
 
-  @ViewChild('detalleGastosGrid') detalleGastosGrid!: RevoGrid;
-  detalleGastosPlugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
+  @ViewChild('detalleGastosGrid') detalleGastosGrid!: AgGridAngular;
+  
+  // AG Grid API
+  private detalleGastosGridApi!: GridApi;
+  
+  // Quick filter text
+  quickFilterTextGastos: string = '';
+  
+  // AG Grid options
+  detalleGastosGridOptions: GridOptions = {};
 
   fechaInicio: string = '';
   fechaFin: string = '';
@@ -42,66 +50,164 @@ export class GastosComponent implements OnInit, OnChanges {
   sucursales: any[] = [];
   clientes: any[] = [];
 
-  // Columnas para la tabla de detalle de gastos
-  detalleGastosColumns = [
+  // Columnas para la tabla de detalle de gastos (AG Grid)
+  detalleGastosColumnDefs: ColDef[] = [
     { 
-      prop: 'fecha', 
-      name: 'Fecha', 
-      size: 100,
+      field: 'fecha', 
+      headerName: 'Fecha', 
+      width: 120,
       sortable: true,
-      filterable: true
+      filter: true
     },
     { 
-      prop: 'proveedor', 
-      name: 'Proveedor', 
-      size: 150,
+      field: 'proveedor', 
+      headerName: 'Proveedor', 
+      width: 180,
       sortable: true,
-      filterable: true
+      filter: true
     },
     { 
-      prop: 'concepto', 
-      name: 'Concepto', 
-      size: 200,
+      field: 'concepto', 
+      headerName: 'Concepto', 
+      width: 220,
       sortable: true,
-      filterable: true
+      filter: true
     },
     { 
-      prop: 'documento', 
-      name: 'Doc.', 
-      size: 80,
+      field: 'documento', 
+      headerName: 'Doc.', 
+      width: 100,
       sortable: true,
-      filterable: true
+      filter: true
     },
     { 
-      prop: 'correlativo', 
-      name: 'Corr.', 
-      size: 80,
+      field: 'correlativo', 
+      headerName: 'Corr.', 
+      width: 100,
       sortable: true,
-      filterable: true
+      filter: true
     },
     { 
-      prop: 'gastosConIVA', 
-      name: 'Gastos con I', 
-      size: 120,
+      field: 'gastosConIVA', 
+      headerName: 'Gastos con IVA', 
+      width: 150,
       sortable: true,
-      filterable: true
+      filter: true,
+      valueFormatter: (params: any) => {
+        return params.value ? this.formatCurrency(params.value) : '';
+      },
+      cellStyle: { textAlign: 'right' },
+      type: 'numericColumn'
     }
   ];
 
   constructor(private cdr: ChangeDetectorRef) { }
 
   ngOnInit(): void {
-    this.inicializarDatos();
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['datos'] && !changes['datos'].firstChange) {
+    // Inicializar fechas por defecto (mes actual)
+    const hoy = new Date();
+    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    
+    this.fechaFin = hoy.toISOString().split('T')[0];
+    this.fechaInicio = primerDiaMes.toISOString().split('T')[0];
+    
+    // Configurar AG Grid
+    this.configurarAGGrid();
+    
+    // Intentar inicializar si ya hay datos
+    if (this.datos && Object.keys(this.datos).length > 0) {
       this.inicializarDatos();
     }
   }
 
+  configurarAGGrid(): void {
+    this.detalleGastosGridOptions = {
+      defaultColDef: {
+        resizable: true,
+        sortable: true,
+        filter: true
+      },
+      enableCellTextSelection: true,
+      ensureDomOrder: true,
+      suppressExcelExport: false,
+      suppressCsvExport: false,
+      suppressHorizontalScroll: false,
+      onGridReady: (params: any) => {
+        this.detalleGastosGridApi = params.api;
+      }
+    };
+  }
+
+  onGridReadyGastos(params: any): void {
+    this.detalleGastosGridApi = params.api;
+    this.detalleGastosGridApi.sizeColumnsToFit();
+  }
+
+  onQuickFilterChangeGastos(): void {
+    if (this.detalleGastosGridApi) {
+      this.detalleGastosGridApi.setQuickFilter(this.quickFilterTextGastos);
+    }
+  }
+
+  exportarCSVGastos(): void {
+    if (this.detalleGastosGridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.detalleGastosGridApi.exportDataAsCsv({
+        fileName: `detalle-gastos-${fecha}.csv`
+      });
+    }
+  }
+
+  exportarExcelGastos(): void {
+    if (this.detalleGastosGridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.detalleGastosGridApi.exportDataAsCsv({
+        fileName: `detalle-gastos-${fecha}.csv`
+      });
+    }
+  }
+
+  limpiarFiltrosGastos(): void {
+    if (this.detalleGastosGridApi) {
+      this.detalleGastosGridApi.setFilterModel(null);
+      this.quickFilterTextGastos = '';
+      this.detalleGastosGridApi.setQuickFilter('');
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    console.log('GastosComponent - ngOnChanges llamado', {
+      hasChanges: !!changes['datos'],
+      firstChange: changes['datos']?.firstChange,
+      currentValue: changes['datos']?.currentValue ? Object.keys(changes['datos'].currentValue) : [],
+      tieneDetalleGastos: !!(changes['datos']?.currentValue && changes['datos'].currentValue.detalleGastos)
+    });
+    
+    if (changes['datos']) {
+      const datosActuales = changes['datos'].currentValue;
+      if (datosActuales && Object.keys(datosActuales).length > 0) {
+        // Datos llegaron (ya sea en el primer cambio o después)
+        this.inicializarDatos();
+      }
+    }
+  }
+
   inicializarDatos(): void {
+    console.log('GastosComponent - inicializarDatos llamado', {
+      tieneDatos: !!this.datos,
+      keysDatos: this.datos ? Object.keys(this.datos) : [],
+      tieneDetalleGastos: !!(this.datos && this.datos.detalleGastos),
+      detalleGastos: this.datos?.detalleGastos,
+      datosCompletos: this.datos
+    });
+    
     if (this.datos && Object.keys(this.datos).length > 0) {
+      // Verificar si detalleGastos existe, si no, intentar usar datos originales del servicio
+      if (!this.datos.detalleGastos) {
+        console.warn('GastosComponent - detalleGastos no existe en datos, verificando estructura completa');
+        console.log('Estructura completa de datos:', JSON.stringify(this.datos, null, 2));
+      }
+      
       // Guardar datos originales
       this.datosOriginales = JSON.parse(JSON.stringify(this.datos));
       // Inicializar datos filtrados
@@ -110,14 +216,22 @@ export class GastosComponent implements OnInit, OnChanges {
       this.inicializado = true;
       
       // Recalcular todos los gráficos con los datos iniciales
-      this.recalcularMetricas();
-      this.recalcularGastosPorMes();
-      this.recalcularGastosVsPresupuesto();
-      this.recalcularGastosVsAnioAnterior();
-      this.recalcularGastosPorCategoria();
-      this.recalcularGastosPorConcepto();
-      this.recalcularGastosPorProveedor();
-      this.recalcularGastosPorFormaPago();
+      if (this.datosFiltrados.detalleGastos) {
+        this.recalcularMetricas();
+        this.recalcularGastosPorMes();
+        this.recalcularGastosVsPresupuesto();
+        this.recalcularGastosVsAnioAnterior();
+        this.recalcularGastosPorCategoria();
+        this.recalcularGastosPorConcepto();
+        this.recalcularGastosPorProveedor();
+        this.recalcularGastosPorFormaPago();
+      } else {
+        console.error('GastosComponent - No se puede inicializar: falta detalleGastos');
+      }
+      
+      this.cdr.detectChanges();
+    } else {
+      console.warn('GastosComponent - No hay datos para inicializar');
     }
   }
 
@@ -631,25 +745,9 @@ export class GastosComponent implements OnInit, OnChanges {
       concepto: gasto.concepto || '-',
       documento: gasto.documento || '-',
       correlativo: gasto.correlativo || '-',
-      gastosConIVA: this.formatCurrency(gasto.gastosConIVA || 0),
-      gastosConIVAOriginal: gasto.gastosConIVA || 0,
+      gastosConIVA: gasto.gastosConIVA || 0, // Mantener como número para AG Grid
       isTotal: false
     }));
-    
-    // Agregar fila de totales al final
-    const total = rows.reduce((sum: number, row: any) => sum + (row.gastosConIVAOriginal || 0), 0);
-    if (total > 0) {
-      rows.push({
-        fecha: 'Total',
-        proveedor: '',
-        concepto: '',
-        documento: '',
-        correlativo: '',
-        gastosConIVA: this.formatCurrency(total),
-        gastosConIVAOriginal: total,
-        isTotal: true
-      });
-    }
     
     return rows;
   }
@@ -667,4 +765,13 @@ export class GastosComponent implements OnInit, OnChanges {
   get datosParaVista(): any {
     return this.datosFiltrados && Object.keys(this.datosFiltrados).length > 0 ? this.datosFiltrados : this.datos;
   }
+
+  // Helper para verificar si hay datos disponibles
+  tieneDatos(): boolean {
+    return !!(this.datos && 
+              this.datos.detalleGastos && 
+              Array.isArray(this.datos.detalleGastos) && 
+              this.datos.detalleGastos.length > 0);
+  }
+
 }

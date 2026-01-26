@@ -1,9 +1,557 @@
 <div class="inventario-section">
-    <div class="row">
+    <!-- Filtros específicos de Inventario -->
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="alert alert-success">
-                <h5 class="alert-heading">Sección de Inventario</h5>
-                <p class="mb-0">Esta sección mostrará información del inventario.</p>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
+                        <!-- Rango de fechas a la izquierda -->
+                        <div class="d-flex align-items-end gap-3">
+                            <div class="d-flex flex-column">
+                                <label for="fechaInicio" class="text-primary fw-medium small mb-1">Fecha Inicio</label>
+                                <input 
+                                    type="date" 
+                                    id="fechaInicio"
+                                    class="form-control"
+                                    [(ngModel)]="fechaInicio"
+                                    (change)="aplicarFiltros()">
+                            </div>
+                            <div class="d-flex flex-column">
+                                <label for="fechaFin" class="text-primary fw-medium small mb-1">Fecha Fin</label>
+                                <input 
+                                    type="date" 
+                                    id="fechaFin"
+                                    class="form-control"
+                                    [(ngModel)]="fechaFin"
+                                    (change)="aplicarFiltros()">
+                            </div>
+                        </div>
+                        
+                        <!-- Botones y controles a la derecha -->
+                        <div class="d-flex align-items-end gap-2">
+                            <button 
+                                type="button"
+                                class="btn btn-outline-primary"
+                                (click)="toggleFiltrosAdicionales()">
+                                <i class="fas fa-filter me-1"></i> Ver otros filtros
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-primary"
+                                tooltip="Aplicar filtros"
+                                (click)="aplicarFiltros()">
+                                <i class="fa fa-check"></i> Aplicar
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-outline-primary"
+                                tooltip="Limpiar filtros"
+                                (click)="limpiarFiltros()"
+                                *ngIf="fechaInicio || fechaFin || filtroCategoria || filtroProducto || filtroSucursal || filtroProveedor">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtros adicionales (colapsables) -->
+                    <div class="mt-3" *ngIf="mostrarFiltrosAdicionales">
+                        <div class="row g-3">
+                            <div class="col">
+                                <label for="categoria" class="text-primary fw-medium small mb-1">Categoría</label>
+                                <select 
+                                    id="categoria"
+                                    class="form-select"
+                                    [(ngModel)]="filtroCategoria"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let categoria of categorias" [value]="categoria.id">
+                                        {{ categoria.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="producto" class="text-primary fw-medium small mb-1">Producto</label>
+                                <select 
+                                    id="producto"
+                                    class="form-select"
+                                    [(ngModel)]="filtroProducto"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let producto of productos" [value]="producto.id">
+                                        {{ producto.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
+                                <select 
+                                    id="sucursal"
+                                    class="form-select"
+                                    [(ngModel)]="filtroSucursal"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                                        {{ sucursal.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="proveedor" class="text-primary fw-medium small mb-1">Proveedor</label>
+                                <select 
+                                    id="proveedor"
+                                    class="form-select"
+                                    [(ngModel)]="filtroProveedor"
+                                    (change)="aplicarFiltros()">
+                                    <option value="">Todas</option>
+                                    <option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                                        {{ proveedor.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de métricas de Inventario -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex gap-4">
+                        <!-- Indicador de filtros interactivos activos -->
+                        <div class="d-flex flex-column gap-2" style="min-width: 200px;" *ngIf="tieneFiltrosInteractivos()">
+                            <div class="p-2" style="background-color: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
+                                <small class="text-dark fw-medium">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Filtros activos: {{ getFiltrosInteractivosTexto() }}
+                                </small>
+                            </div>
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-warning"
+                                (click)="limpiarFiltrosInteractivos()"
+                                title="Limpiar filtros interactivos">
+                                <i class="fas fa-times me-1"></i> Limpiar filtros
+                            </button>
+                        </div>
+
+                        <!-- Cards de métricas -->
+                        <div class="row g-3 flex-grow-1">
+                            <!-- Productos en stock -->
+                            <div class="col-md-3">
+                                <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
+                                    <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                                        <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                            {{ formatNumber((datosFiltrados && datosFiltrados.metricasInventario) ? datosFiltrados.metricasInventario.productosEnStock : (datos.metricasInventario?.productosEnStock || 0)) }}
+                                        </h3>
+                                        <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                            Productos en stock
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Promedio invertido -->
+                            <div class="col-md-3">
+                                <div class="card border-0 h-100 d-flex" style="background-color: #ffe5d4; border-radius: 12px;">
+                                    <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                                        <h3 class="mb-2 fw-bold" style="color: #cc6600; font-size: 1.5rem;">
+                                            {{ formatCurrency((datosFiltrados && datosFiltrados.metricasInventario) ? datosFiltrados.metricasInventario.promedioInvertido : (datos.metricasInventario?.promedioInvertido || 0)) }}
+                                        </h3>
+                                        <p class="mb-0 small fw-medium" style="color: #cc6600;">
+                                            Promedio invertido
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Ventas esperadas -->
+                            <div class="col-md-3">
+                                <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
+                                    <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                                        <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                            {{ formatCurrency((datosFiltrados && datosFiltrados.metricasInventario) ? datosFiltrados.metricasInventario.ventasEsperadas : (datos.metricasInventario?.ventasEsperadas || 0)) }}
+                                        </h3>
+                                        <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                            Ventas esperadas
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Utilidad esperada -->
+                            <div class="col-md-3">
+                                <div class="card border-0 h-100 d-flex" style="background-color: #d4f4dd; border-radius: 12px;">
+                                    <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                                        <h3 class="mb-2 fw-bold" style="color: #006633; font-size: 1.5rem;">
+                                            {{ formatCurrency((datosFiltrados && datosFiltrados.metricasInventario) ? datosFiltrados.metricasInventario.utilidadEsperada : (datos.metricasInventario?.utilidadEsperada || 0)) }}
+                                        </h3>
+                                        <p class="mb-0 small fw-medium" style="color: #006633;">
+                                            Utilidad esperada
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de barras y tabla de detalle -->
+    <div class="row mb-4">
+        <!-- Gráfico de barras: Stock por Categoría (izquierda) -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">Stock por Categoría</h5>
+                </div>
+                <div class="card-body">
+                    <app-bar-chart 
+                        [config]="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) ? datosFiltrados.stockPorCategoriaConfig : datos.stockPorCategoriaConfig" 
+                        (itemClick)="onCategoriaStockClick($event)"
+                        *ngIf="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) || datos.stockPorCategoriaConfig">
+                    </app-bar-chart>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de detalle de inventario (derecha) -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Detalle de inventario de productos</h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Buscador global -->
+                            <div class="input-group" style="width: 200px;">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control border-start-0" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="quickFilterText"
+                                    (input)="onQuickFilterChange()">
+                            </div>
+                            <!-- Botones de exportación -->
+                            <button 
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="exportarCSV()"
+                                title="Exportar a CSV">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-success"
+                                (click)="exportarExcel()"
+                                title="Exportar a Excel">
+                                <i class="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="limpiarFiltrosGrid()"
+                                title="Limpiar filtros">
+                                <i class="fas fa-filter me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-3 py-0" style="height: 450px; overflow: hidden;">
+                    <ag-grid-angular
+                        #inventarioProductosGrid
+                        class="ag-theme-alpine inventario-productos-grid"
+                        [rowData]="inventarioProductosRows"
+                        [columnDefs]="inventarioProductosColumnDefs"
+                        [gridOptions]="inventarioProductosGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; height: 100%;"
+                        [domLayout]="'normal'">
+                    </ag-grid-angular>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección Entradas y salidas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <!-- Título de la sección -->
+            <div class="mb-3">
+                <h4 class="text-white fw-bold px-4 py-2 rounded" style="background-color: #38528f; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: inline-block;">
+                    Entradas y salidas
+                </h4>
+            </div>
+            
+            <!-- Cards de métricas -->
+            <div class="row g-3">
+                <!-- Productos en stock -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex shadow-sm" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatNumber((datosFiltrados && datosFiltrados.entradasSalidas) ? datosFiltrados.entradasSalidas.productosEnStock : (datos.entradasSalidas?.productosEnStock || 0)) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Productos en stock
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Entradas -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex shadow-sm" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatNumber((datosFiltrados && datosFiltrados.entradasSalidas) ? datosFiltrados.entradasSalidas.entradas : (datos.entradasSalidas?.entradas || 0)) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Entradas
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Salidas -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex shadow-sm" style="background-color: #ffe5d4; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #cc6600; font-size: 1.5rem;">
+                                {{ formatNumber((datosFiltrados && datosFiltrados.entradasSalidas) ? datosFiltrados.entradasSalidas.salidas : (datos.entradasSalidas?.salidas || 0)) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #cc6600;">
+                                Salidas
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Utilidad esperada -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex shadow-sm" style="background-color: #d4f4dd; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #006633; font-size: 1.5rem;">
+                                {{ formatCurrency((datosFiltrados && datosFiltrados.entradasSalidas) ? datosFiltrados.entradasSalidas.utilidadEsperada : (datos.entradasSalidas?.utilidadEsperada || 0)) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #006633;">
+                                Utilidad esperada
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de barras agrupadas: Entradas y Salidas por Mes -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">Entradas y Salidas por Mes</h5>
+                </div>
+                <div class="card-body">
+                    <app-bar-chart 
+                        [config]="(datosFiltrados && datosFiltrados.entradasSalidasPorMesConfig) ? datosFiltrados.entradasSalidasPorMesConfig : datos.entradasSalidasPorMesConfig" 
+                        (itemClick)="onMesEntradasSalidasClick($event)"
+                        *ngIf="(datosFiltrados && datosFiltrados.entradasSalidasPorMesConfig) || datos.entradasSalidasPorMesConfig">
+                    </app-bar-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de detalle de entradas y salidas por producto -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Detalle entradas y salidas por producto</h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Buscador global -->
+                            <div class="input-group" style="width: 200px;">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control border-start-0" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="quickFilterTextEntradasSalidas"
+                                    (input)="onQuickFilterChangeEntradasSalidas()">
+                            </div>
+                            <!-- Botones de exportación -->
+                            <button 
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="exportarCSVEntradasSalidas()"
+                                title="Exportar a CSV">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-success"
+                                (click)="exportarExcelEntradasSalidas()"
+                                title="Exportar a Excel">
+                                <i class="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="limpiarFiltrosGridEntradasSalidas()"
+                                title="Limpiar filtros">
+                                <i class="fas fa-filter me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-3 py-0" style="height: 450px; overflow: hidden;">
+                    <ag-grid-angular
+                        #entradasSalidasGrid
+                        class="ag-theme-alpine entradas-salidas-grid"
+                        [rowData]="entradasSalidasRows"
+                        [columnDefs]="entradasSalidasColumnDefs"
+                        [gridOptions]="entradasSalidasGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; height: 100%;"
+                        [domLayout]="'normal'">
+                    </ag-grid-angular>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección Ajustes -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <!-- Título de la sección -->
+            <div class="mb-3">
+                <h4 class="text-white fw-bold px-4 py-2 rounded shadow-sm" style="background-color: #38528f; display: inline-block;">
+                    Ajustes
+                </h4>
+            </div>
+            
+            <!-- Cards de métricas -->
+            <div class="row g-3">
+                <!-- Productos en stock -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex shadow-sm" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatNumber((datosFiltrados && datosFiltrados.ajustes) ? datosFiltrados.ajustes.productosEnStock : (datos.ajustes?.productosEnStock || 0)) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Productos en stock
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Unidades perdidas -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex shadow-sm" style="background-color: #ffe5d4; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #cc6600; font-size: 1.5rem;">
+                                {{ formatNumber((datosFiltrados && datosFiltrados.ajustes) ? datosFiltrados.ajustes.unidadesPerdidas : (datos.ajustes?.unidadesPerdidas || 0)) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #cc6600;">
+                                Unidades perdidas
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Unidades recuperadas -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex shadow-sm" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatNumber((datosFiltrados && datosFiltrados.ajustes) ? datosFiltrados.ajustes.unidadesRecuperadas : (datos.ajustes?.unidadesRecuperadas || 0)) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Unidades recuperadas
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Monto total recuperado -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex shadow-sm" style="background-color: #d4f4dd; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #006633; font-size: 1.5rem;">
+                                {{ formatCurrency((datosFiltrados && datosFiltrados.ajustes) ? datosFiltrados.ajustes.montoTotalRecuperado : (datos.ajustes?.montoTotalRecuperado || 0)) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #006633;">
+                                Monto total recuperado
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de detalle de ajustes de inventario por producto -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Detalle de ajustes de inventario por producto</h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Buscador global -->
+                            <div class="input-group" style="width: 200px;">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control border-start-0" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="quickFilterTextAjustes"
+                                    (input)="onQuickFilterChangeAjustes()">
+                            </div>
+                            <!-- Botones de exportación -->
+                            <button 
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="exportarCSVAjustes()"
+                                title="Exportar a CSV">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-success"
+                                (click)="exportarExcelAjustes()"
+                                title="Exportar a Excel">
+                                <i class="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="limpiarFiltrosGridAjustes()"
+                                title="Limpiar filtros">
+                                <i class="fas fa-filter me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-3 py-0" style="height: 450px; overflow: hidden;">
+                    <ag-grid-angular
+                        #ajustesGrid
+                        class="ag-theme-alpine ajustes-grid"
+                        [rowData]="ajustesRows"
+                        [columnDefs]="ajustesColumnDefs"
+                        [gridOptions]="ajustesGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; height: 100%;"
+                        [domLayout]="'normal'">
+                    </ag-grid-angular>
+                </div>
             </div>
         </div>
     </div>

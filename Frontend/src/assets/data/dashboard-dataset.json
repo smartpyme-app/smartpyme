@@ -1,0 +1,1387 @@
+{
+  "metrics": [
+    {
+      "title": "Total Revenue",
+      "value": 34152,
+      "icon": "fa-chart-line",
+      "color": "#5470c6",
+      "trend": {
+        "value": 2.65,
+        "direction": "up"
+      }
+    },
+    {
+      "title": "Orders",
+      "value": 5643,
+      "icon": "fa-shopping-cart",
+      "color": "#91cc75",
+      "trend": {
+        "value": -0.82,
+        "direction": "down"
+      }
+    },
+    {
+      "title": "Customers",
+      "value": 45254,
+      "icon": "fa-users",
+      "color": "#4a90e2",
+      "trend": {
+        "value": -6.24,
+        "direction": "down"
+      }
+    },
+    {
+      "title": "Growth",
+      "value": "+ 12.58%",
+      "icon": "fa-chart-line",
+      "color": "#ff9800",
+      "trend": {
+        "value": 10.51,
+        "direction": "up"
+      }
+    }
+  ],
+  "lineChartConfig": {
+    "title": "Tendencias de Ventas",
+    "data": [120, 132, 101, 134, 90, 230, 210],
+    "labels": ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul"],
+    "type": "line",
+    "colors": ["#5470c6", "#91cc75"]
+  },
+  "barChartConfig": {
+    "title": "Comparación Mensual",
+    "data": [120, 132, 101, 134, 90, 230, 210],
+    "labels": ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul"],
+    "type": "bar",
+    "colors": ["#5470c6"]
+  },
+  "pieChartConfig": {
+    "title": "Distribución por Categoría",
+    "data": [
+      { "name": "Categoría A", "value": 335 },
+      { "name": "Categoría B", "value": 310 },
+      { "name": "Categoría C", "value": 234 },
+      { "name": "Categoría D", "value": 135 }
+    ],
+    "type": "pie",
+    "colors": ["#5470c6", "#91cc75", "#fac858", "#ee6666"]
+  },
+  "ventasGastosConfig": {
+    "title": "",
+    "labels": ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+    "data": [
+      {
+        "name": "Ventas con IVA",
+        "data": [22563.68, 31663.89, 23179.61, 28098.80, 30163.53, 25660.51, 27239.71, 26447.00, 25992.58, 28174.22, 29116.33, 30627.96]
+      },
+      {
+        "name": "Gastos con IVA",
+        "data": [13533.86, 14724.34, 12350.24, 11852.60, 15319.36, 12200.00, 12602.99, 13957.26, 14727.35, 15593.52, 17954.89, 17251.53]
+      }
+    ],
+    "type": "bar",
+    "colors": ["#5470c6", "#ff9800"]
+  },
+  "cuentasPorCobrar": [
+    { "name": "Desarrollos Veterina...", "amount": 169.50 },
+    { "name": "Emerson Mauricio R...", "amount": 169.50 },
+    { "name": "María Teresa De Alas", "amount": 169.50 },
+    { "name": "Poc, S.A. De C.V.", "amount": 169.50 },
+    { "name": "Natura La", "amount": 141.25 },
+    { "name": "Rosembel Alexande...", "amount": 141.25 },
+    { "name": "Zelaya Romero, An...", "amount": 141.25 },
+    { "name": "Guerrero Contreras,...", "amount": 135.60 },
+    { "name": "Aquino Barriere, Est...", "amount": 129.91 },
+    { "name": "Edwin Evora", "amount": 113.00 },
+    { "name": "Esencial Express", "amount": 113.00 },
+    { "name": "Francisco Javier Per...", "amount": 113.00 },
+    { "name": "Jimenez Rivera, Jos...", "amount": 113.00 },
+    { "name": "Picaza, S.A De C.V", "amount": 113.00 }
+  ],
+  "cuentasPorPagar": [
+    { "name": "VERSATIVE", "amount": 395.50 },
+    { "name": "Jennifer", "amount": 300.00 },
+    { "name": "CAESS", "amount": 265.00 },
+    { "name": "Melissa Benitez", "amount": 200.00 },
+    { "name": "ANDA", "amount": 185.00 },
+    { "name": "JAVIER", "amount": 180.00 },
+    { "name": "ELC", "amount": 169.50 },
+    { "name": "Ministerio de Hacie...", "amount": 118.89 },
+    { "name": "Gabriela De la Cuad...", "amount": 100.00 },
+    { "name": "Roberto Cuéllar", "amount": 88.89 },
+    { "name": "Google", "amount": 66.00 },
+    { "name": "HOSTINGER", "amount": 24.99 },
+    { "name": "AWS", "amount": 18.89 },
+    { "name": "ZOOM", "amount": 14.99 }
+  ],
+  "cashFlow": {
+    "ingresosPercibidos": 318147.00,
+    "egresosRealizados": 165893.00,
+    "resultados": 152254.00,
+    "minimoEfectivoRequerido": 69968,
+    "ventasDelMes": [
+      { "cliente": "", "factura": "1", "monto": 612.92 },
+      { "cliente": "", "factura": "1", "monto": 28.25 },
+      { "cliente": "", "factura": "1", "monto": 28.00 },
+      { "cliente": "Natura La", "factura": "2", "monto": 20.85 },
+      { "cliente": "Natura La", "factura": "3", "monto": 280.56 },
+      { "cliente": "Natura La", "factura": "4", "monto": 666.78 },
+      { "cliente": "", "factura": "5", "monto": 35000.00 }
+    ],
+    "gastosDelMes": [
+      { "proveedor": "AWS", "factura": "", "monto": 18.89 },
+      { "proveedor": "Bodega", "factura": "", "monto": 16541.14 },
+      { "proveedor": "CAESS", "factura": "", "monto": 250.00 },
+      { "proveedor": "CALENDLY", "factura": "", "monto": 10.00 },
+      { "proveedor": "CLARO", "factura": "", "monto": 50.00 },
+      { "proveedor": "DALIA", "factura": "", "monto": 4157.62 },
+      { "proveedor": "Google", "factura": "", "monto": 66.00 },
+      { "proveedor": "HOSTINGER", "factura": "", "monto": 24.99 },
+      { "proveedor": "ZOOM", "factura": "", "monto": 14.99 },
+      { "proveedor": "Otros", "factura": "", "monto": 48830.31 }
+    ]
+  },
+  "cuentasPorCobrar30Dias": [
+    { "factura": "001", "cliente": "Cliente A", "vence": "2024-12-15", "diasVencimiento": 5 },
+    { "factura": "002", "cliente": "Cliente B", "vence": "2024-12-20", "diasVencimiento": 10 },
+    { "factura": "003", "cliente": "Cliente C", "vence": "2024-12-25", "diasVencimiento": 15 }
+  ],
+  "cuentasPorPagar30Dias": [
+    { "factura": "001", "proveedor": "DALIA", "vence": "2024-12-10", "diasVencimiento": 0 },
+    { "factura": "002", "proveedor": "FREUND", "vence": "2024-12-10", "diasVencimiento": 0 }
+  ],
+  "budgetMetrics": [
+    {
+      "title": "Ingresos obtenidos vs presupuesto",
+      "currentValue": 318147.00,
+      "percentageChange": 765.00,
+      "target": 404821.00,
+      "targetMonth": "Enero",
+      "color": "green",
+      "chartData": [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
+    },
+    {
+      "title": "Gastos incurridos vs presupuesto",
+      "currentValue": 165893.00,
+      "percentageChange": 64,
+      "target": 44825.00,
+      "targetMonth": "Enero",
+      "color": "orange",
+      "chartData": [50, 48, 52, 49, 51, 50, 53, 52, 51, 50, 49, 51, 50, 52, 51, 50, 51]
+    },
+    {
+      "title": "Utilidad obtenida vs presupuesto",
+      "currentValue": 152254.00,
+      "percentageChange": 852,
+      "target": 359996.00,
+      "targetMonth": "Enero",
+      "color": "green",
+      "chartData": [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90]
+    }
+  ],
+  "metricasVentas": {
+    "ventasConIVA": 318147.00,
+    "ventasSinIVA": 283988.39,
+    "transacciones": 983,
+    "ticketPromedio": 323.65
+  },
+  "ventasPorMesConfig": {
+    "title": "",
+    "type": "line",
+    "labels": ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+    "data": [22563.68, 31663.89, 23179.61, 28098.80, 30163.53, 25660.51, 27239.71, 26447.00, 25992.58, 28174.22, 29116.33, 30627.96],
+    "colors": ["#5470c6"]
+  },
+  "ventasVsPresupuestoConfig": {
+    "title": "",
+    "type": "bar",
+    "labels": ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+    "data": [
+      {
+        "name": "Ventas totales",
+        "data": [22563.68, 31663.89, 23179.61, 28098.80, 30163.53, 25660.51, 27239.71, 26447.00, 25992.58, 28174.22, 29116.33, 30627.96]
+      },
+      {
+        "name": "Presupuestado",
+        "data": [23000.00, 26000.00, 27321.00, 28000.00, 30000.00, 25000.00, 27000.00, 26000.00, 26000.00, 28000.00, 29000.00, 30000.00]
+      }
+    ],
+    "colors": ["#5470c6", "#d3d3d3"]
+  },
+  "ventasVsAnioAnteriorConfig": {
+    "title": "",
+    "type": "bar",
+    "labels": ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+    "data": [
+      {
+        "name": "Año actual",
+        "data": [22563.68, 31663.89, 23179.61, 28098.80, 30163.53, 25660.51, 27239.71, 26447.00, 25992.58, 28174.22, 29116.33, 30627.96]
+      },
+      {
+        "name": "Año anterior",
+        "data": [20000.00, 25000.00, 22000.00, 24000.00, 26000.00, 23000.00, 25000.00, 24000.00, 23000.00, 25000.00, 26000.00, 28000.00]
+      }
+    ],
+    "colors": ["#5470c6", "#d3d3d3"]
+  },
+  "ventasPorCanal": [
+    { "name": "Tienda", "amount": 35207.01 },
+    { "name": "El Salvador", "amount": 7859.15 },
+    { "name": "Canal 1", "amount": 6457.29 },
+    { "name": "Fabiola", "amount": 5043.19 },
+    { "name": "Facebook", "amount": 3857.38 },
+    { "name": "Instagram", "amount": 2482.93 },
+    { "name": "Marketplace", "amount": 1470.00 },
+    { "name": "Twitter", "amount": 1356.00 },
+    { "name": "Partner 2", "amount": 1226.84 },
+    { "name": "Whatsapp", "amount": 561.64 },
+    { "name": "Bibanking", "amount": 440.09 },
+    { "name": "Azucena Perez", "amount": 282.50 },
+    { "name": "Pedidos Ya", "amount": 174.36 }
+  ],
+  "ventasPorVendedorChartConfig": {
+    "title": "",
+    "type": "bar",
+    "labels": ["Gaby", "Paula", "Soporte", "Jennifer", "Gabriela", "DANIELA", "Ventas SmartPyme", "CONTADOR", "Paola Vasquez", "Facturacion", "Cliente Demo"],
+    "data": [39166.35, 16319.29, 5429.65, 423.75, 104.80, 56.50, 51.90, 23.73, 15.26, 3.39, 0.01],
+    "colors": ["#5470c6"],
+    "rotateLabels": 45
+  },
+  "ventasPorFormaPagoConfig": {
+    "title": "",
+    "type": "bar",
+    "labels": ["Efectivo", "Tarjeta", "Transferencia", "Cheque", "Otros"],
+    "data": [31952.17, 15234.50, 8456.23, 1234.56, 1205.20],
+    "colors": ["#5470c6"]
+  },
+  "ventasPorCategoria": [
+    { "name": "Categoría 3", "amount": 32714.08 },
+    { "name": "Adidas - Masculino", "amount": 31860.00 },
+    { "name": "Promoción", "amount": 24820.03 },
+    { "name": "Planes", "amount": 15734.65 },
+    { "name": "Implementaciones", "amount": 8000.00 },
+    { "name": "Categoría 1", "amount": 5700.77 },
+    { "name": "Promociones", "amount": 3982.28 },
+    { "name": "Organización", "amount": 2969.03 },
+    { "name": "Accesorios", "amount": 2450.75 },
+    { "name": "Patrocinio", "amount": 1950.00 },
+    { "name": "Construcción-Torre Alta", "amount": 1415.92 },
+    { "name": "Tenis Clase B", "amount": 1265.00 },
+    { "name": "Roadtrip", "amount": 1225.00 },
+    { "name": "Liquidacion", "amount": 975.00 },
+    { "name": "Adidas - Femenino", "amount": 912.00 },
+    { "name": "Juguetes Perros", "amount": 863.54 },
+    { "name": "Servicio", "amount": 812.00 }
+  ],
+  "topProductosVendidos": [
+    { "name": "Producto C", "amount": 30677.08 },
+    { "name": "AA2", "amount": 24520.00 },
+    { "name": "Prueba12", "amount": 18660.00 },
+    { "name": "Adidas Forum morados", "amount": 12600.00 },
+    { "name": "SERVICIO DE IMPLEM...", "amount": 8000.00 },
+    { "name": "Plan Avanzado - Smar...", "amount": 5450.00 },
+    { "name": "Plan Estándar", "amount": 4371.00 },
+    { "name": "Producto B", "amount": 3981.50 },
+    { "name": "Libro inglés", "amount": 2969.03 },
+    { "name": "IMPLEMENTACION S...", "amount": 2812.85 },
+    { "name": "Plan Avanzado: Inven...", "amount": 2388.65 },
+    { "name": "Servicio de importació...", "amount": 2086.74 },
+    { "name": "Producto A", "amount": 2037.00 },
+    { "name": "Patrocinio Evento Des...", "amount": 1950.00 },
+    { "name": "Producto X", "amount": 1720.00 }
+  ],
+  "ventasPorProducto": [
+    {
+      "categoria": "Planes",
+      "producto": "Plan Avanzado: Inventario, Servicios, Ventas, Compras, Gastos, Finanzas, Citas, Cierre de Caja e Inteligencia de Negocios. Hasta 2 sucursales 5 usuarios incluidos",
+      "formaPago": "Efectivo",
+      "cantidad": 140,
+      "precioUnitario": 50.00,
+      "descuento": 0.00,
+      "ventasSinIVA": 7000.00,
+      "costoTotal": 3500.00,
+      "utilidad": 3500.00
+    },
+    {
+      "categoria": "Planes",
+      "producto": "Plan Avanzado - SmartPyme",
+      "formaPago": "Transferencia",
+      "cantidad": 146,
+      "precioUnitario": 100.00,
+      "descuento": 0.00,
+      "ventasSinIVA": 14600.00,
+      "costoTotal": 7300.00,
+      "utilidad": 7300.00
+    },
+    {
+      "categoria": "Planes",
+      "producto": "Plan Pro: Inventario, Servicios, Ventas, Compras, Gastos, Finanzas, Citas, Cierre de Caja e Inteligencia de Negocios. Facturación electrónica gratis. 10 usuarios y hasta 3 sucursales",
+      "formaPago": "Efectivo",
+      "cantidad": 7,
+      "precioUnitario": 150.00,
+      "descuento": 0.00,
+      "ventasSinIVA": 1050.00,
+      "costoTotal": 525.00,
+      "utilidad": 525.00
+    },
+    {
+      "categoria": "Planes",
+      "producto": "Plan Estándar",
+      "formaPago": "Transferencia",
+      "cantidad": 8,
+      "precioUnitario": 25.00,
+      "descuento": 0.00,
+      "ventasSinIVA": 200.00,
+      "costoTotal": 100.00,
+      "utilidad": 100.00
+    },
+    {
+      "categoria": "Planes",
+      "producto": "Plan Avanzado: Inventario, Servicios, Ventas, Compras, Gastos, Finanzas, Citas, Cierre de Caja e Inteligencia de Negocios. Hasta 2 sucursales 5 usuarios incluidos",
+      "formaPago": "Efectivo",
+      "cantidad": 332,
+      "precioUnitario": 50.00,
+      "descuento": 0.00,
+      "ventasSinIVA": 16600.00,
+      "costoTotal": 8300.00,
+      "utilidad": 8300.00
+    }
+  ],
+  "topClientes": [
+    { "name": "(En blanco)", "amount": 34693.25 },
+    { "name": "Consumidor Final", "amount": 18037.17 },
+    { "name": "Manufacturas Cavalier Sa D...", "amount": 9096.50 },
+    { "name": "Cliente Ejemplo 1", "amount": 8500.00 },
+    { "name": "Cliente Ejemplo 2", "amount": 7200.00 },
+    { "name": "Cliente Ejemplo 3", "amount": 6500.00 },
+    { "name": "Cliente Ejemplo 4", "amount": 5800.00 },
+    { "name": "Cliente Ejemplo 5", "amount": 5200.00 },
+    { "name": "Cliente Ejemplo 6", "amount": 4800.00 },
+    { "name": "Cliente Ejemplo 7", "amount": 4500.00 },
+    { "name": "Cliente Ejemplo 8", "amount": 4200.00 },
+    { "name": "Cliente Ejemplo 9", "amount": 3900.00 },
+    { "name": "Cliente Ejemplo 10", "amount": 3600.00 },
+    { "name": "Cliente Ejemplo 11", "amount": 3300.00 },
+    { "name": "Cliente Ejemplo 12", "amount": 3000.00 },
+    { "name": "Cliente Ejemplo 13", "amount": 2800.00 },
+    { "name": "Cliente Ejemplo 14", "amount": 2600.00 },
+    { "name": "Cliente Ejemplo 15", "amount": 2400.00 },
+    { "name": "Cliente Ejemplo 16", "amount": 2200.00 },
+    { "name": "Cliente Ejemplo 17", "amount": 2000.00 },
+    { "name": "Cliente Ejemplo 18", "amount": 1800.00 },
+    { "name": "Cliente Ejemplo 19", "amount": 1600.00 },
+    { "name": "Cliente Ejemplo 20", "amount": 1400.00 },
+    { "name": "Cliente Ejemplo 21", "amount": 1200.00 },
+    { "name": "Facturacion@Airboxsv.Com", "amount": -10758.73 }
+  ],
+  "ventasPorCliente": [
+    { "cliente": "(En blanco)", "ultimaVenta": "13/06/24", "dias": 581, "transacciones": 1, "ventas": 34693.25 },
+    { "cliente": "Consumidor Final", "ultimaVenta": "01/03/24", "dias": 685, "transacciones": 2, "ventas": 18037.17 },
+    { "cliente": "Manufacturas Cavalier Sa D...", "ultimaVenta": "15/05/24", "dias": 610, "transacciones": 3, "ventas": 9096.50 },
+    { "cliente": "Cliente Ejemplo 1", "ultimaVenta": "20/04/24", "dias": 635, "transacciones": 1, "ventas": 8500.00 },
+    { "cliente": "Cliente Ejemplo 2", "ultimaVenta": "10/06/24", "dias": 584, "transacciones": 2, "ventas": 7200.00 },
+    { "cliente": "Cliente Ejemplo 3", "ultimaVenta": "05/07/24", "dias": 559, "transacciones": 1, "ventas": 6500.00 },
+    { "cliente": "Cliente Ejemplo 4", "ultimaVenta": "18/08/24", "dias": 515, "transacciones": 2, "ventas": 5800.00 },
+    { "cliente": "Cliente Ejemplo 5", "ultimaVenta": "22/09/24", "dias": 480, "transacciones": 1, "ventas": 5200.00 },
+    { "cliente": "Cliente Ejemplo 6", "ultimaVenta": "30/10/24", "dias": 432, "transacciones": 3, "ventas": 4800.00 },
+    { "cliente": "Cliente Ejemplo 7", "ultimaVenta": "12/11/24", "dias": 419, "transacciones": 1, "ventas": 4500.00 },
+    { "cliente": "Cliente Ejemplo 8", "ultimaVenta": "25/12/24", "dias": 381, "transacciones": 2, "ventas": 4200.00 },
+    { "cliente": "Cliente Ejemplo 9", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 3900.00 },
+    { "cliente": "Cliente Ejemplo 10", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 3600.00 },
+    { "cliente": "Cliente Ejemplo 11", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 3300.00 },
+    { "cliente": "Cliente Ejemplo 12", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 3000.00 },
+    { "cliente": "Cliente Ejemplo 13", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 2800.00 },
+    { "cliente": "Cliente Ejemplo 14", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 2600.00 },
+    { "cliente": "Cliente Ejemplo 15", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 2400.00 },
+    { "cliente": "Cliente Ejemplo 16", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 2200.00 },
+    { "cliente": "Cliente Ejemplo 17", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 2000.00 },
+    { "cliente": "Cliente Ejemplo 18", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 1800.00 },
+    { "cliente": "Cliente Ejemplo 19", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 1600.00 },
+    { "cliente": "Cliente Ejemplo 20", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 1400.00 },
+    { "cliente": "Cliente Ejemplo 21", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": 1200.00 },
+    { "cliente": "Facturacion@Airboxsv.Com", "ultimaVenta": "30/12/24", "dias": 381, "transacciones": 1, "ventas": -10758.73 }
+  ],
+  "metricasCuentas": {
+    "cuentasPorCobrarTotal": 64789.74,
+    "cuentasPorCobrar30Dias": 2587.57,
+    "cuentasPorCobrar60Dias": 118.65,
+    "cuentasPorCobrar90Dias": 0,
+    "tooltipCuentasPorCobrar": "Monico Rusconi, Maria Alicia",
+    "cuentasPorPagarTotal": 39761.81,
+    "cuentasPorPagar30Dias": 4465.61,
+    "cuentasPorPagar60Dias": 0,
+    "cuentasPorPagar90Dias": 0
+  },
+  "cuentasPorVigenciaConfig": {
+    "title": "",
+    "type": "pie",
+    "data": [
+      { "name": "Vencido", "value": 81892.51 },
+      { "name": "Vigente", "value": 3035.81 },
+      { "name": "Pendiente", "value": 0 }
+    ],
+    "colors": ["#3366cc", "#e0e0e0", "#e0e9f6"]
+  },
+  "cuentasPorCobrarClientes": [
+    { "name": "José Benitez", "amount": 2919.13 },
+    { "name": "José Benitez", "amount": 2021.55 },
+    { "name": "Dra Aguila", "amount": 908.52 },
+    { "name": "Monico Rusconi, Maria Alicia", "amount": 612.11 },
+    { "name": "Eugenia Galvez", "amount": 565.00 },
+    { "name": "Facturacion@Airboxsv.Com", "amount": 565.00 },
+    { "name": "Alas Argueta, Rene Guillermo", "amount": 542.40 },
+    { "name": "Velo Group, S.A. De C.V.", "amount": 395.50 },
+    { "name": "Victor Mejia", "amount": 379.68 },
+    { "name": "Sonia", "amount": 355.95 },
+    { "name": "Nathalia Torres", "amount": 339.00 },
+    { "name": "Cond Palo Alto", "amount": 282.50 },
+    { "name": "Desarrollos Veterinarios", "amount": 282.50 },
+    { "name": "Edwin Evora", "amount": 282.50 }
+  ],
+  "detalleCuentasPorCobrar": [
+    {
+      "cliente": "Monico Rusconi, Maria Alicia",
+      "factura": 55,
+      "fechaVenta": "14/01/26",
+      "fechaPago": "16/6/26",
+      "diasVencimiento": 149,
+      "estado": "Vigente",
+      "ventasConIVA": 395.50,
+      "montoAbonado": 65.91,
+      "diasAbono": 4,
+      "saldoPendiente": 329.59
+    },
+    {
+      "cliente": "Claudia Del Carmen Mojica Rivera",
+      "factura": 30,
+      "fechaVenta": "09/01/26",
+      "fechaPago": "9/3/26",
+      "diasVencimiento": 50,
+      "estado": "Vigente",
+      "ventasConIVA": 118.65,
+      "montoAbonado": 0.00,
+      "saldoPendiente": 118.65
+    },
+    {
+      "cliente": "Julio Funes",
+      "factura": 81,
+      "fechaVenta": "19/12/25",
+      "fechaPago": "15/2/26",
+      "diasVencimiento": 28,
+      "estado": "Vigente",
+      "ventasConIVA": 271.20,
+      "montoAbonado": 0.00,
+      "saldoPendiente": 271.20
+    },
+    {
+      "cliente": "Karla Garcia",
+      "factura": 127,
+      "fechaVenta": "15/01/26",
+      "fechaPago": "29/1/26",
+      "diasVencimiento": 11,
+      "estado": "Vigente",
+      "ventasConIVA": 39.55,
+      "montoAbonado": 25.00,
+      "diasAbono": 11,
+      "saldoPendiente": 14.55
+    },
+    {
+      "cliente": "José Benitez",
+      "factura": 10,
+      "fechaVenta": "06/01/26",
+      "fechaPago": "",
+      "diasVencimiento": 0,
+      "estado": "Vigente",
+      "ventasConIVA": 113.00,
+      "montoAbonado": 0.00,
+      "saldoPendiente": 113.00
+    }
+  ],
+  "cuentasPorPagarVigenciaConfig": {
+    "title": "",
+    "type": "pie",
+    "data": [
+      { "name": "Vencido", "value": 35296.20 },
+      { "name": "Pendiente", "value": 4465.61 }
+    ],
+    "colors": ["#F19447", "#fef0e6"]
+  },
+  "cuentasPorPagarProveedores": [
+    { "name": "DALIA", "amount": 12333.25 },
+    { "name": "(En blanco)", "amount": 10905.25 },
+    { "name": "ANDA", "amount": 4849.22 },
+    { "name": "Bodega", "amount": 4809.90 },
+    { "name": "FREUND", "amount": 1667.00 },
+    { "name": "JESÚS ALVARADO", "amount": 800.00 },
+    { "name": "APRIL", "amount": 565.00 },
+    { "name": "CAESS", "amount": 541.00 },
+    { "name": "Edgardo", "amount": 463.00 },
+    { "name": "Gabriela", "amount": 416.95 },
+    { "name": "CARLOS ARNULFO", "amount": 406.24 },
+    { "name": "Jennifer", "amount": 401.70 },
+    { "name": "VERSATIVE", "amount": 395.50 },
+    { "name": "Melissa Benitez", "amount": 200.00 }
+  ],
+  "resumenCuentasPorPagar": [
+    {
+      "fechaCompra": "2/4/2025",
+      "vencimiento": "",
+      "diasVencimiento": 0,
+      "estado": "Pendiente",
+      "gastosTotalesConIVA": 37.00,
+      "totalAbonado": 0.00,
+      "ultimoAbono": "",
+      "saldoPendiente": 37.00
+    },
+    {
+      "fechaCompra": "6/10/2025",
+      "vencimiento": "",
+      "diasVencimiento": 0,
+      "estado": "Pendiente",
+      "gastosTotalesConIVA": 252.14,
+      "totalAbonado": 0.00,
+      "ultimoAbono": "",
+      "saldoPendiente": 252.14
+    },
+    {
+      "fechaCompra": "1/22/2025",
+      "vencimiento": "",
+      "diasVencimiento": 0,
+      "estado": "Pendiente",
+      "gastosTotalesConIVA": 1214.75,
+      "totalAbonado": 0.00,
+      "ultimoAbono": "",
+      "saldoPendiente": 1214.75
+    },
+    {
+      "fechaCompra": "2/4/2025",
+      "vencimiento": "",
+      "diasVencimiento": 0,
+      "estado": "Pendiente",
+      "gastosTotalesConIVA": 37.00,
+      "totalAbonado": 0.00,
+      "ultimoAbono": "",
+      "saldoPendiente": 37.00
+    },
+    {
+      "fechaCompra": "6/10/2025",
+      "vencimiento": "",
+      "diasVencimiento": 0,
+      "estado": "Pendiente",
+      "gastosTotalesConIVA": 252.14,
+      "totalAbonado": 0.00,
+      "ultimoAbono": "",
+      "saldoPendiente": 252.14
+    }
+  ],
+  "metricasGastos": {
+    "gastosConIVA": 165893.00,
+    "gastosSinIVA": 148029.46,
+    "gastosMesAnterior": 17954.89,
+    "variacionGastos": 4818.14,
+    "aumentoCostosPorcentaje": 36.70
+  },
+  "gastosPorMesConfig": {
+    "title": "",
+    "type": "line",
+    "labels": ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+    "data": [13533.86, 14724.34, 12350.24, 11852.60, 15319.36, 12200.00, 12602.99, 13957.26, 14727.35, 15593.52, 17954.89, 17251.53],
+    "colors": ["#F19447"]
+  },
+  "gastosVsPresupuestoConfig": {
+    "title": "",
+    "type": "bar",
+    "labels": ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+    "data": [
+      {
+        "name": "Gastos totales",
+        "data": [13533.86, 14724.34, 12350.24, 11852.60, 15319.36, 12200.00, 12602.99, 13957.26, 14727.35, 15593.52, 17954.89, 17251.53]
+      },
+      {
+        "name": "Presupuestado",
+        "data": [5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00]
+      }
+    ],
+    "colors": ["#F19447", "#d3d3d3"]
+  },
+  "gastosVsAnioAnteriorConfig": {
+    "title": "",
+    "type": "bar",
+    "labels": ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+    "data": [
+      {
+        "name": "Año actual",
+        "data": [13533.86, 14724.34, 12350.24, 11852.60, 15319.36, 12200.00, 12602.99, 13957.26, 14727.35, 15593.52, 17954.89, 17251.53]
+      },
+      {
+        "name": "Año anterior",
+        "data": [2800.00, 3200.00, 250.00, 1500.00, 12000.00, 150.00, 500.00, 5500.00, 4500.00, 11000.00, 6500.00, 10000.00]
+      }
+    ],
+    "colors": ["#F19447", "#d3d3d3"]
+  },
+  "gastosPresupuesto": [5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00],
+  "gastosAnioAnterior": [2800.00, 3200.00, 250.00, 1500.00, 12000.00, 150.00, 500.00, 5500.00, 4500.00, 11000.00, 6500.00, 10000.00],
+  "gastosPorCategoriaConfig": {
+    "title": "",
+    "type": "bar",
+    "labels": ["Compras", "G. operativos", "G. administrativos", "G. financieros", "G. comerciales", "Costo de ventas"],
+    "data": [47175.21, 17588.96, 5048.37, 3355.95, 2020.00, 235.00],
+    "colors": ["#F19447"],
+    "horizontal": true
+  },
+  "gastosPorConceptoConfig": {
+    "title": "",
+    "type": "bar",
+    "labels": ["Costo artículo", "Materia Prima", "Gastos varios", "Planilla", "Alquiler", "Impuestos", "Servicios", "Insumos", "Combustible", "Mantenimiento", "Publicidad", "Compras", "Costo de venta"],
+    "data": [47124.36, 8013.90, 4184.25, 3488.00, 1345.37, 763.00, 733.42, 215.00, 200.00, 50.85, 25.00, 15.00, 25.00],
+    "colors": ["#F19447"],
+    "rotateLabels": 45
+  },
+  "gastosPorFormaPagoConfig": {
+    "title": "",
+    "type": "bar",
+    "data": [
+      {
+        "name": "Efectivo",
+        "value": 57532.12,
+        "children": []
+      },
+      {
+        "name": "Transferencia",
+        "value": 14231.37,
+        "children": [
+          { "name": "Transferencia", "value": 8000.00 },
+          { "name": "Tarjeta de crédito", "value": 6231.37 }
+        ]
+      }
+    ],
+    "colors": ["#F19447", "#C9732F", "#A0521F"]
+  },
+  "detalleGastos": [
+    { "fecha": "2024-12-05", "proveedor": "Edgardo", "concepto": "Diciembre- Planilla", "documento": "Factura", "correlativo": "283", "gastosConIVA": 350.00 },
+    { "fecha": "2024-12-03", "proveedor": "DALIA", "concepto": "Proyecto-Materia prima", "documento": "Factura", "correlativo": "3748", "gastosConIVA": 39.00 },
+    { "fecha": "2024-11-29", "proveedor": "FREUND", "concepto": "pasante", "documento": "Factura", "correlativo": "2849", "gastosConIVA": 800.00 },
+    { "fecha": "2024-11-28", "proveedor": "Bodega", "concepto": "Diciembre alquiler", "documento": "Factura", "correlativo": "", "gastosConIVA": 180.00 },
+    { "fecha": "2024-11-27", "proveedor": "CAESS", "concepto": "FREUND MATERIALES", "documento": "Factura", "correlativo": "", "gastosConIVA": 200.00 },
+    { "fecha": "2024-11-26", "proveedor": "Gabriela Avilés", "concepto": "Hoja en blanco 500", "documento": "Factura", "correlativo": "", "gastosConIVA": 500.00 },
+    { "fecha": "2024-11-25", "proveedor": "ANDA", "concepto": "Luz- Nov", "documento": "Factura", "correlativo": "", "gastosConIVA": -114.00 },
+    { "fecha": "2024-11-24", "proveedor": "JAVIER", "concepto": "Agua-Noviembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 500.00 },
+    { "fecha": "2024-11-23", "proveedor": "Jennifer", "concepto": "Noviembre-Luz", "documento": "Factura", "correlativo": "", "gastosConIVA": 150.00 },
+    { "fecha": "2024-11-22", "proveedor": "Ministerio de", "concepto": "Noviembre-Electricidad", "documento": "Factura", "correlativo": "", "gastosConIVA": 30.00 },
+    { "fecha": "2024-11-21", "proveedor": "CAESS", "concepto": "Diciembre-Electricidad", "documento": "Factura", "correlativo": "", "gastosConIVA": 100.00 },
+    { "fecha": "2024-11-20", "proveedor": "ANDA", "concepto": "IVA noviembre 2024", "documento": "Factura", "correlativo": "", "gastosConIVA": 100.00 },
+    { "fecha": "2024-11-19", "proveedor": "FREUND", "concepto": "Maquinaria limpieza", "documento": "Factura", "correlativo": "", "gastosConIVA": 100.00 },
+    { "fecha": "2024-11-18", "proveedor": "DALIA", "concepto": "PAC novimebre 2024", "documento": "Crédito", "correlativo": "", "gastosConIVA": 13.00 },
+    { "fecha": "2024-11-17", "proveedor": "Bodega", "concepto": "Materia prima diciembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 395.00 },
+    { "fecha": "2024-11-16", "proveedor": "Edgardo", "concepto": "Servicios diciembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 3955.00 },
+    { "fecha": "2024-11-15", "proveedor": "FREUND", "concepto": "Insumos varios", "documento": "Factura", "correlativo": "", "gastosConIVA": 383.00 },
+    { "fecha": "2024-11-14", "proveedor": "ANDA", "concepto": "Mantenimiento equipo", "documento": "Factura", "correlativo": "", "gastosConIVA": 250.00 },
+    { "fecha": "2024-11-13", "proveedor": "CAESS", "concepto": "Publicidad diciembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 368.00 },
+    { "fecha": "2024-11-12", "proveedor": "Bodega", "concepto": "Compras varias", "documento": "Factura", "correlativo": "", "gastosConIVA": 1200.00 },
+    { "fecha": "2024-11-11", "proveedor": "DALIA", "concepto": "Materiales construcción", "documento": "Factura", "correlativo": "", "gastosConIVA": 2500.00 },
+    { "fecha": "2024-11-10", "proveedor": "FREUND", "concepto": "Equipos oficina", "documento": "Factura", "correlativo": "", "gastosConIVA": 1500.00 },
+    { "fecha": "2024-11-09", "proveedor": "ANDA", "concepto": "Servicios públicos", "documento": "Factura", "correlativo": "", "gastosConIVA": 800.00 },
+    { "fecha": "2024-11-08", "proveedor": "Bodega", "concepto": "Inventario diciembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 5000.00 },
+    { "fecha": "2024-11-07", "proveedor": "Edgardo", "concepto": "Planilla noviembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 3200.00 },
+    { "fecha": "2024-11-06", "proveedor": "CAESS", "concepto": "Energía eléctrica", "documento": "Factura", "correlativo": "", "gastosConIVA": 450.00 },
+    { "fecha": "2024-11-05", "proveedor": "DALIA", "concepto": "Materiales varios", "documento": "Factura", "correlativo": "", "gastosConIVA": 1800.00 },
+    { "fecha": "2024-11-04", "proveedor": "FREUND", "concepto": "Herramientas", "documento": "Factura", "correlativo": "", "gastosConIVA": 950.00 },
+    { "fecha": "2024-11-03", "proveedor": "Bodega", "concepto": "Almacén diciembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 3200.00 },
+    { "fecha": "2024-11-02", "proveedor": "ANDA", "concepto": "Agua potable", "documento": "Factura", "correlativo": "", "gastosConIVA": 280.00 },
+    { "fecha": "2024-11-01", "proveedor": "Edgardo", "concepto": "Servicios generales", "documento": "Factura", "correlativo": "", "gastosConIVA": 1200.00 },
+    { "fecha": "2024-10-30", "proveedor": "CAESS", "concepto": "Luz octubre", "documento": "Factura", "correlativo": "", "gastosConIVA": 380.00 },
+    { "fecha": "2024-10-29", "proveedor": "DALIA", "concepto": "Materiales octubre", "documento": "Factura", "correlativo": "", "gastosConIVA": 1500.00 },
+    { "fecha": "2024-10-28", "proveedor": "FREUND", "concepto": "Equipos varios", "documento": "Factura", "correlativo": "", "gastosConIVA": 2200.00 },
+    { "fecha": "2024-10-27", "proveedor": "Bodega", "concepto": "Inventario octubre", "documento": "Factura", "correlativo": "", "gastosConIVA": 4500.00 },
+    { "fecha": "2024-10-26", "proveedor": "ANDA", "concepto": "Servicios octubre", "documento": "Factura", "correlativo": "", "gastosConIVA": 600.00 },
+    { "fecha": "2024-10-25", "proveedor": "Edgardo", "concepto": "Planilla octubre", "documento": "Factura", "correlativo": "", "gastosConIVA": 3100.00 },
+    { "fecha": "2024-10-24", "proveedor": "CAESS", "concepto": "Energía octubre", "documento": "Factura", "correlativo": "", "gastosConIVA": 420.00 },
+    { "fecha": "2024-10-23", "proveedor": "DALIA", "concepto": "Compras octubre", "documento": "Factura", "correlativo": "", "gastosConIVA": 2000.00 },
+    { "fecha": "2024-10-22", "proveedor": "FREUND", "concepto": "Materiales construcción", "documento": "Factura", "correlativo": "", "gastosConIVA": 1800.00 },
+    { "fecha": "2024-10-21", "proveedor": "Bodega", "concepto": "Almacén octubre", "documento": "Factura", "correlativo": "", "gastosConIVA": 2800.00 },
+    { "fecha": "2024-10-20", "proveedor": "ANDA", "concepto": "Agua octubre", "documento": "Factura", "correlativo": "", "gastosConIVA": 250.00 },
+    { "fecha": "2024-10-19", "proveedor": "Edgardo", "concepto": "Servicios varios", "documento": "Factura", "correlativo": "", "gastosConIVA": 1100.00 },
+    { "fecha": "2024-10-18", "proveedor": "CAESS", "concepto": "Luz septiembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 400.00 },
+    { "fecha": "2024-10-17", "proveedor": "DALIA", "concepto": "Materiales septiembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 1400.00 },
+    { "fecha": "2024-10-16", "proveedor": "FREUND", "concepto": "Equipos septiembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 1900.00 },
+    { "fecha": "2024-10-15", "proveedor": "Bodega", "concepto": "Inventario septiembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 4100.00 },
+    { "fecha": "2024-10-14", "proveedor": "ANDA", "concepto": "Servicios septiembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 550.00 },
+    { "fecha": "2024-10-13", "proveedor": "Edgardo", "concepto": "Planilla septiembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 3000.00 },
+    { "fecha": "2024-10-12", "proveedor": "CAESS", "concepto": "Energía septiembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 410.00 },
+    { "fecha": "2024-10-11", "proveedor": "DALIA", "concepto": "Compras septiembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 1900.00 },
+    { "fecha": "2024-10-10", "proveedor": "FREUND", "concepto": "Materiales varios", "documento": "Factura", "correlativo": "", "gastosConIVA": 1600.00 },
+    { "fecha": "2024-10-09", "proveedor": "Bodega", "concepto": "Almacén septiembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 2600.00 },
+    { "fecha": "2024-10-08", "proveedor": "ANDA", "concepto": "Agua septiembre", "documento": "Factura", "correlativo": "", "gastosConIVA": 240.00 },
+    { "fecha": "2024-10-07", "proveedor": "Edgardo", "concepto": "Servicios generales", "documento": "Factura", "correlativo": "", "gastosConIVA": 1000.00 }
+  ],
+  "gastosPorProveedor": [
+    { "name": "Bodega", "amount": 25324.62 },
+    { "name": "DALIA", "amount": 16049.27 },
+    { "name": "ANDA", "amount": 8875.50 },
+    { "name": "FREUND", "amount": 3894.50 },
+    { "name": "Ministerio de", "amount": 3305.95 },
+    { "name": "Edgardo", "amount": 2466.30 },
+    { "name": "Lightfire", "amount": 2000.00 },
+    { "name": "APRIL", "amount": 1655.68 },
+    { "name": "Gabriela", "amount": 1416.95 },
+    { "name": "CAESS", "amount": 950.00 },
+    { "name": "JESÚS ALVARA...", "amount": 800.00 },
+    { "name": "Organika, SA d...", "amount": 718.03 },
+    { "name": "Jennifer", "amount": 695.50 },
+    { "name": "Don local", "amount": 681.28 },
+    { "name": "DELIVERY", "amount": 617.00 },
+    { "name": "VERSATIVE", "amount": 395.50 },
+    { "name": "01Hawb3110", "amount": 367.24 },
+    { "name": "Gustavo", "amount": 300.00 },
+    { "name": "Secretaria", "amount": 300.00 },
+    { "name": "MOTOMAS", "amount": 272.95 },
+    { "name": "asdadasd", "amount": 242.50 },
+    { "name": "Jesus Alfonso", "amount": 208.00 },
+    { "name": "Alele", "amount": 200.85 },
+    { "name": "Melissa Benitez", "amount": 200.00 },
+    { "name": "JAVIER", "amount": 193.84 }
+  ],
+  "ventasTotalesConIVA": 318147.00,
+  "gastosTotalesConIVA": 165893.00,
+  "resultados": 152254.00,
+  "margen": 47.87,
+  "analisisVertical": [
+    {
+      "concepto": "Ventas",
+      "valor": 318147.00,
+      "porcentaje": 100.00
+    },
+    {
+      "concepto": "Costo de ventas",
+      "valor": 152180.00,
+      "porcentaje": 47.84
+    },
+    {
+      "concepto": "Utilidad bruta",
+      "valor": 165967.00,
+      "porcentaje": 52.16
+    },
+    {
+      "concepto": "Gastos administrativos",
+      "valor": 5048.37,
+      "porcentaje": 1.59
+    },
+    {
+      "concepto": "Gastos operativos",
+      "valor": 17588.96,
+      "porcentaje": 5.53
+    },
+    {
+      "concepto": "Gastos comerciales",
+      "valor": 200.00,
+      "porcentaje": 0.06
+    },
+    {
+      "concepto": "Gastos financieros",
+      "valor": 3355.95,
+      "porcentaje": 1.05
+    },
+    {
+      "concepto": "Utilidad neta",
+      "valor": 140774.00,
+      "porcentaje": 44.26
+    }
+  ],
+  "analisisHorizontal": [
+    {
+      "concepto": "Ventas",
+      "mesAnterior": 29116.33,
+      "mesActual": 30627.96,
+      "variacion": 1511.63,
+      "variacionPorcentaje": 5.19
+    },
+    {
+      "concepto": "Costo de ventas",
+      "mesAnterior": 13954.89,
+      "mesActual": 14651.53,
+      "variacion": 696.64,
+      "variacionPorcentaje": 4.99
+    },
+    {
+      "concepto": "Utilidad bruta",
+      "mesAnterior": 15161.44,
+      "mesActual": 15976.43,
+      "variacion": 814.99,
+      "variacionPorcentaje": 5.38
+    },
+    {
+      "concepto": "Gastos administrativos",
+      "mesAnterior": 420.70,
+      "mesActual": 420.70,
+      "variacion": 0.00,
+      "variacionPorcentaje": 0.00
+    },
+    {
+      "concepto": "Gastos operativos",
+      "mesAnterior": 1465.75,
+      "mesActual": 1465.75,
+      "variacion": 0.00,
+      "variacionPorcentaje": 0.00
+    },
+    {
+      "concepto": "Gastos financieros",
+      "mesAnterior": 279.66,
+      "mesActual": 279.66,
+      "variacion": 0.00,
+      "variacionPorcentaje": 0.00
+    }
+  ],
+  "estadoResultados": [
+    {
+      "nombre": "Ventas",
+      "nivel": 0,
+      "expandido": false,
+      "tieneHijos": true,
+      "hijos": [],
+      "valores": {
+        "Enero": 22563.68,
+        "Febrero": 31663.89,
+        "Marzo": 23179.61,
+        "Abril": 28098.80,
+        "Mayo": 30163.53,
+        "Junio": 25660.51,
+        "Julio": 27239.71,
+        "Agosto": 26447.00,
+        "Septiembre": 25992.58,
+        "Octubre": 28174.22,
+        "Noviembre": 29116.33,
+        "Diciembre": 30627.96
+      }
+    },
+    {
+      "nombre": "Costo de ventas",
+      "nivel": 0,
+      "expandido": true,
+      "tieneHijos": true,
+      "hijos": [
+        {
+          "nombre": "Costo productos vendidos",
+          "nivel": 1,
+          "expandido": false,
+          "tieneHijos": false,
+          "hijos": [],
+          "valores": {
+            "Enero": 10803.86,
+            "Febrero": 12124.34,
+            "Marzo": 11050.24,
+            "Abril": 13452.60,
+            "Mayo": 14419.36,
+            "Junio": 12200.00,
+            "Julio": 13002.99,
+            "Agosto": 12657.26,
+            "Septiembre": 12427.35,
+            "Octubre": 13593.52,
+            "Noviembre": 13954.89,
+            "Diciembre": 14651.53
+          }
+        }
+      ],
+      "valores": {
+        "Enero": 10803.86,
+        "Febrero": 12124.34,
+        "Marzo": 11050.24,
+        "Abril": 13452.60,
+        "Mayo": 14419.36,
+        "Junio": 12200.00,
+        "Julio": 13002.99,
+        "Agosto": 12657.26,
+        "Septiembre": 12427.35,
+        "Octubre": 13593.52,
+        "Noviembre": 13954.89,
+        "Diciembre": 14651.53
+      }
+    },
+    {
+      "nombre": "Utilidad bruta",
+      "nivel": 0,
+      "expandido": false,
+      "tieneHijos": true,
+      "hijos": [],
+      "valores": {
+        "Enero": 11759.82,
+        "Febrero": 19539.55,
+        "Marzo": 12129.37,
+        "Abril": 14646.20,
+        "Mayo": 15744.17,
+        "Junio": 13460.51,
+        "Julio": 14236.72,
+        "Agosto": 13789.74,
+        "Septiembre": 13565.23,
+        "Octubre": 14580.70,
+        "Noviembre": 15161.44,
+        "Diciembre": 15976.43
+      }
+    },
+    {
+      "nombre": "Gastos administrativos",
+      "nivel": 0,
+      "expandido": false,
+      "tieneHijos": true,
+      "hijos": [],
+      "valores": {
+        "Enero": 420.70,
+        "Febrero": 420.70,
+        "Marzo": 420.70,
+        "Abril": 420.70,
+        "Mayo": 420.70,
+        "Junio": 420.70,
+        "Julio": 420.70,
+        "Agosto": 420.70,
+        "Septiembre": 420.70,
+        "Octubre": 420.70,
+        "Noviembre": 420.70,
+        "Diciembre": 420.70
+      }
+    },
+    {
+      "nombre": "Gastos operativos",
+      "nivel": 0,
+      "expandido": false,
+      "tieneHijos": true,
+      "hijos": [],
+      "valores": {
+        "Enero": 1465.75,
+        "Febrero": 1465.75,
+        "Marzo": 1465.75,
+        "Abril": 1465.75,
+        "Mayo": 1465.75,
+        "Junio": 1465.75,
+        "Julio": 1465.75,
+        "Agosto": 1465.75,
+        "Septiembre": 1465.75,
+        "Octubre": 1465.75,
+        "Noviembre": 1465.75,
+        "Diciembre": 1465.75
+      }
+    },
+    {
+      "nombre": "Gastos comerciales",
+      "nivel": 0,
+      "expandido": false,
+      "tieneHijos": true,
+      "hijos": [],
+      "valores": {
+        "Enero": 16.67,
+        "Febrero": 16.67,
+        "Marzo": 16.67,
+        "Abril": 16.67,
+        "Mayo": 16.67,
+        "Junio": 16.67,
+        "Julio": 16.67,
+        "Agosto": 16.67,
+        "Septiembre": 16.67,
+        "Octubre": 16.67,
+        "Noviembre": 16.67,
+        "Diciembre": 16.67
+      }
+    },
+    {
+      "nombre": "Gastos financieros",
+      "nivel": 0,
+      "expandido": false,
+      "tieneHijos": true,
+      "hijos": [],
+      "valores": {
+        "Enero": 279.66,
+        "Febrero": 279.66,
+        "Marzo": 279.66,
+        "Abril": 279.66,
+        "Mayo": 279.66,
+        "Junio": 279.66,
+        "Julio": 279.66,
+        "Agosto": 279.66,
+        "Septiembre": 279.66,
+        "Octubre": 279.66,
+        "Noviembre": 279.66,
+        "Diciembre": 279.66
+      }
+    },
+    {
+      "nombre": "Utilidad neta",
+      "nivel": 0,
+      "expandido": false,
+      "tieneHijos": true,
+      "hijos": [],
+      "esUtilidadNeta": true,
+      "valores": {
+        "Enero": 9597.04,
+        "Febrero": 17357.68,
+        "Marzo": 9947.17,
+        "Abril": 12479.92,
+        "Mayo": 13780.89,
+        "Junio": 11497.39,
+        "Julio": 12074.61,
+        "Agosto": 11627.63,
+        "Septiembre": 11403.12,
+        "Octubre": 12418.59,
+        "Noviembre": 12999.33,
+        "Diciembre": 13794.32
+      }
+    }
+  ],
+  "flujoEfectivo": [
+    {
+      "concepto": "Ventas",
+      "esEfectivoDisponible": false,
+      "valores": {
+        "Enero": 22563.68,
+        "Febrero": 31663.89,
+        "Marzo": 23179.61,
+        "Abril": 28098.80,
+        "Mayo": 30163.53,
+        "Junio": 25660.51,
+        "Julio": 27239.71,
+        "Agosto": 26447.00,
+        "Septiembre": 25992.58,
+        "Octubre": 28174.22,
+        "Noviembre": 29116.33,
+        "Diciembre": 30627.96
+      }
+    },
+    {
+      "concepto": "Compras",
+      "esEfectivoDisponible": false,
+      "valores": {
+        "Enero": 5336.21,
+        "Febrero": 5811.34,
+        "Marzo": 5350.24,
+        "Abril": 5852.60,
+        "Mayo": 6419.36,
+        "Junio": 5200.00,
+        "Julio": 5602.99,
+        "Agosto": 5457.26,
+        "Septiembre": 5427.35,
+        "Octubre": 5593.52,
+        "Noviembre": 5954.89,
+        "Diciembre": 6251.53
+      }
+    },
+    {
+      "concepto": "Gastos",
+      "esEfectivoDisponible": false,
+      "valores": {
+        "Enero": 13533.86,
+        "Febrero": 14724.34,
+        "Marzo": 12350.24,
+        "Abril": 11852.60,
+        "Mayo": 15319.36,
+        "Junio": 12200.00,
+        "Julio": 12602.99,
+        "Agosto": 13957.26,
+        "Septiembre": 14727.35,
+        "Octubre": 15593.52,
+        "Noviembre": 17954.89,
+        "Diciembre": 17251.53
+      }
+    },
+    {
+      "concepto": "Efectivo disponible",
+      "esEfectivoDisponible": true,
+      "valores": {
+        "Enero": 3693.61,
+        "Febrero": 11128.21,
+        "Marzo": 5479.13,
+        "Abril": 10393.60,
+        "Mayo": 8424.81,
+        "Junio": 8260.51,
+        "Julio": 9024.73,
+        "Agosto": 7032.48,
+        "Septiembre": 5837.88,
+        "Octubre": 6987.18,
+        "Noviembre": 5206.55,
+        "Diciembre": 7124.90
+      }
+    }
+  ],
+  "detalleVentas": [],
+  "metricasInventario": {
+    "productosEnStock": 1044946,
+    "promedioInvertido": 31399415.12,
+    "ventasEsperadas": 62469777.60,
+    "utilidadEsperada": 31070362.48
+  },
+  "stockPorCategoriaConfig": {
+    "title": "",
+    "type": "bar",
+    "labels": ["Ejemplo", "Bienes Raíces", "Tratamientos De...", "Accesorios", "Antifrizz", "Servicio", "Categoria 1", "Comida", "Ferreteria", "Muebles", "Tenis Clase A", "Bebidas", "Bisagras", "Tratamientos Co...", "Tenis Clase B", "Materia Prima", "Construcción-To...", "Tratamientos", "Categoría 2", "Color Completo", "10W30", "Complementos", "Calzado"],
+    "data": [10037, 6070, 5869, 5509, 5234, 4890, 4567, 4234, 3901, 3568, 3235, 2902, 2569, 2236, 1903, 1570, 1237, 904, 571, 238, 205, 270, 335],
+    "colors": ["#5470c6"],
+    "horizontal": true
+  },
+  "detalleInventario": [
+    {
+      "producto": "CHAPA DE CAPO ACCENT 2006-2011",
+      "stock": 13,
+      "costo": 20.00,
+      "inversionPromedio": 260.00,
+      "precio": 45.00,
+      "ventasEsperadas": 585.00
+    },
+    {
+      "producto": "2 A x 1",
+      "stock": 1,
+      "costo": 45.68,
+      "inversionPromedio": 45.68,
+      "precio": 3.00,
+      "ventasEsperadas": 3.00
+    },
+    {
+      "producto": "Aceite Motul 10w30",
+      "stock": 60,
+      "costo": 2.50,
+      "inversionPromedio": 150.00,
+      "precio": 48.00,
+      "ventasEsperadas": 2880.00
+    },
+    {
+      "producto": "ADIDAS 5923 BLANCO T-36",
+      "stock": -74,
+      "costo": 0.10,
+      "inversionPromedio": 0.00,
+      "precio": 0.50,
+      "ventasEsperadas": 0.00
+    },
+    {
+      "producto": "Maracuya puro",
+      "stock": -2,
+      "costo": 0.10,
+      "inversionPromedio": 0.00,
+      "precio": 0.50,
+      "ventasEsperadas": 0.00
+    },
+    {
+      "producto": "Producto Ejemplo 1",
+      "stock": 150,
+      "costo": 25.00,
+      "inversionPromedio": 3750.00,
+      "precio": 50.00,
+      "ventasEsperadas": 7500.00
+    },
+    {
+      "producto": "Producto Ejemplo 2",
+      "stock": 200,
+      "costo": 15.00,
+      "inversionPromedio": 3000.00,
+      "precio": 35.00,
+      "ventasEsperadas": 7000.00
+    },
+    {
+      "producto": "Producto Ejemplo 3",
+      "stock": 75,
+      "costo": 30.00,
+      "inversionPromedio": 2250.00,
+      "precio": 60.00,
+      "ventasEsperadas": 4500.00
+    }
+  ],
+  "entradasSalidas": {
+    "productosEnStock": 1044946,
+    "entradas": 19396,
+    "salidas": 10436,
+    "utilidadEsperada": 476181.64
+  },
+  "entradasSalidasPorMesConfig": {
+    "title": "",
+    "type": "bar",
+    "labels": ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+    "data": [
+      {
+        "name": "Entradas",
+        "data": [4553, 752, 970, 2606, 1295, 708, 404, 663, 1240, 2232, 2809, 1193]
+      },
+      {
+        "name": "Salidas",
+        "data": [1431, 815, 685, 388, 1833, 345, 762, 436, 872, 996, 1338, 559]
+      }
+    ],
+    "colors": ["#5470c6", "#999999"]
+  },
+  "detalleEntradasSalidas": [
+    {
+      "fecha": "23/1/26",
+      "producto": "Maracuya puro",
+      "concepto": "Ajuste",
+      "referencia": "458506",
+      "entradas": 5,
+      "valorEntradas": 0.50,
+      "salidas": null,
+      "valorSalidas": null
+    },
+    {
+      "fecha": "23/1/26",
+      "producto": "Maracuya puro",
+      "concepto": "Compra",
+      "referencia": "27089",
+      "entradas": 2,
+      "valorEntradas": 0.20,
+      "salidas": null,
+      "valorSalidas": null
+    },
+    {
+      "fecha": "23/1/26",
+      "producto": "Maracuya puro",
+      "concepto": "Compra a consigna",
+      "referencia": "27086",
+      "entradas": 5,
+      "valorEntradas": 0.50,
+      "salidas": null,
+      "valorSalidas": null
+    },
+    {
+      "fecha": "23/1/26",
+      "producto": "Maracuya puro",
+      "concepto": "Otra Entrada",
+      "referencia": "740",
+      "entradas": 4,
+      "valorEntradas": 0.40,
+      "salidas": null,
+      "valorSalidas": null
+    },
+    {
+      "fecha": "23/1/26",
+      "producto": "Maracuya puro",
+      "concepto": "Otra Salida",
+      "referencia": "726",
+      "entradas": null,
+      "valorEntradas": null,
+      "salidas": 1,
+      "valorSalidas": 0.35
+    },
+    {
+      "fecha": "23/1/26",
+      "producto": "Maracuya puro",
+      "concepto": "Venta",
+      "referencia": "1027181",
+      "entradas": null,
+      "valorEntradas": null,
+      "salidas": 6,
+      "valorSalidas": 2.12
+    },
+    {
+      "fecha": "23/1/26",
+      "producto": "Maracuya puro",
+      "concepto": "Venta",
+      "referencia": "1027198",
+      "entradas": null,
+      "valorEntradas": null,
+      "salidas": 5,
+      "valorSalidas": 1.77
+    },
+    {
+      "fecha": "23/1/26",
+      "producto": "Maracuya puro",
+      "concepto": "Venta",
+      "referencia": "1027481",
+      "entradas": null,
+      "valorEntradas": null,
+      "salidas": 1,
+      "valorSalidas": 0.25
+    },
+    {
+      "fecha": "22/1/26",
+      "producto": "Producto Ejemplo 1",
+      "concepto": "Compra",
+      "referencia": "1027482",
+      "entradas": 10,
+      "valorEntradas": 250.00,
+      "salidas": null,
+      "valorSalidas": null
+    },
+    {
+      "fecha": "22/1/26",
+      "producto": "Producto Ejemplo 1",
+      "concepto": "Venta",
+      "referencia": "1027483",
+      "entradas": null,
+      "valorEntradas": null,
+      "salidas": 5,
+      "valorSalidas": 250.00
+    }
+  ],
+  "ajustes": {
+    "productosEnStock": 12272,
+    "unidadesPerdidas": 1366,
+    "unidadesRecuperadas": 64324,
+    "montoTotalRecuperado": 21857398.00
+  },
+  "detalleAjustes": [
+    {
+      "fecha": "4/28/2025",
+      "producto": "Aire Acondicionado ES",
+      "concepto": "Existencia",
+      "stockInicial": 90,
+      "stockReal": 30,
+      "ajuste": -60,
+      "costoTotal": -6000.00
+    },
+    {
+      "fecha": "9/24/2025",
+      "producto": "Mango",
+      "concepto": "Pereció",
+      "stockInicial": 100,
+      "stockReal": 50,
+      "ajuste": -50,
+      "costoTotal": -7500.00
+    },
+    {
+      "fecha": "3/18/2025",
+      "producto": "Hemograma",
+      "concepto": "Error al momento de realizar traslado",
+      "stockInicial": 10,
+      "stockReal": 0,
+      "ajuste": -10,
+      "costoTotal": -50.00
+    },
+    {
+      "fecha": "4/25/2025",
+      "producto": "ESPEJO",
+      "concepto": "Proceso de entrega-pedido",
+      "stockInicial": 5,
+      "stockReal": 0,
+      "ajuste": -5,
+      "costoTotal": -25.00
+    },
+    {
+      "fecha": "4/25/2025",
+      "producto": "Guantes",
+      "concepto": "AJUSTE INICIAL",
+      "stockInicial": 0,
+      "stockReal": -3,
+      "ajuste": -3,
+      "costoTotal": -15.00
+    },
+    {
+      "fecha": "5/15/2025",
+      "producto": "Producto Ejemplo 1",
+      "concepto": "Erro o modificación",
+      "stockInicial": 20,
+      "stockReal": 15,
+      "ajuste": -5,
+      "costoTotal": -125.00
+    },
+    {
+      "fecha": "6/10/2025",
+      "producto": "Producto Ejemplo 2",
+      "concepto": "Jesus",
+      "stockInicial": 50,
+      "stockReal": 46,
+      "ajuste": -4,
+      "costoTotal": -60.00
+    },
+    {
+      "fecha": "7/22/2025",
+      "producto": "Producto Ejemplo 3",
+      "concepto": "Venta",
+      "stockInicial": 30,
+      "stockReal": 28,
+      "ajuste": -2,
+      "costoTotal": -60.00
+    }
+  ]
+}

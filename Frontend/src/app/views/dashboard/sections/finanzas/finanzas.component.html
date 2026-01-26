@@ -1,9 +1,395 @@
 <div class="finanzas-section">
-    <div class="row">
+    <!-- Filtros específicos de Finanzas -->
+    <div class="bg-white p-4 rounded mb-3">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <!-- Botón de sección activa -->
+            <button 
+                type="button"
+                class="btn btn-section-active px-4 py-3 fw-bold shadow-sm"
+                style="border-radius: 8px; background-color: #1e3a5f !important; color: white !important; border: none !important;">
+                Finanzas
+            </button>
+
+            <!-- Contenedor de filtros (año y sucursal) alineados a la derecha -->
+            <div class="d-flex align-items-end gap-3 flex-wrap">
+                <!-- Selector de año -->
+                <div class="btn-group" role="group">
+                    <button 
+                        *ngFor="let anio of anios" 
+                        type="button"
+                        class="btn"
+                        [ngClass]="anioSeleccionado === anio ? 'btn-default' : 'btn-light border'"
+                        (click)="cambiarAnio(anio)">
+                        {{ anio }}
+                    </button>
+                </div>
+
+                <!-- Selector de sucursal -->
+                <div class="d-flex flex-column">
+                    <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
+                    <select 
+                        id="sucursal"
+                        class="form-select"
+                        [(ngModel)]="sucursalSeleccionada"
+                        (change)="cambiarSucursal()">
+                        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjetas de métricas financieras -->
+    <div class="row g-3 mb-4">
+        <!-- Tarjeta: Ventas totales con IVA -->
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card h-100" style="background-color: #e3f2fd; border: none; border-radius: 12px;">
+                <div class="card-body text-center py-4">
+                    <div class="fw-bold mb-2" style="font-size: 1.5rem; color: #1976d2;">
+                        {{ formatCurrency(datosParaVista.ventasTotalesConIVA || 0) }}
+                    </div>
+                    <div class="small fw-medium" style="color: #1976d2;">
+                        Ventas totales con IVA
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta: Gastos totales con IVA -->
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card h-100" style="background-color: #fff3e0; border: none; border-radius: 12px;">
+                <div class="card-body text-center py-4">
+                    <div class="fw-bold mb-2" style="font-size: 1.5rem; color: #e65100;">
+                        {{ formatCurrency(datosParaVista.gastosTotalesConIVA || 0) }}
+                    </div>
+                    <div class="small fw-medium" style="color: #e65100;">
+                        Gastos totales con IVA
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta: Resultados -->
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card h-100" style="background-color: #e8f5e9; border: none; border-radius: 12px;">
+                <div class="card-body text-center py-4">
+                    <div class="fw-bold mb-2" style="font-size: 1.5rem; color: #2e7d32;">
+                        {{ formatCurrency(datosParaVista.resultados || 0) }}
+                    </div>
+                    <div class="small fw-medium" style="color: #2e7d32;">
+                        Resultados
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta: Margen -->
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card h-100" style="background-color: #e8f5e9; border: none; border-radius: 12px;">
+                <div class="card-body text-center py-4">
+                    <div class="fw-bold mb-2" style="font-size: 1.5rem; color: #2e7d32;">
+                        {{ (datosParaVista.margen || 0) }} %
+                    </div>
+                    <div class="small fw-medium" style="color: #2e7d32;">
+                        Margen
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos de análisis financiero -->
+    <div class="row mb-4">
+        <!-- Gráfico 1: Ventas y gastos totales por mes -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">Ventas y gastos totales por mes</h5>
+                </div>
+                <div class="card-body">
+                    <app-bar-chart 
+                        [config]="datosParaVista.ventasGastosConfig" 
+                        *ngIf="datosParaVista.ventasGastosConfig">
+                    </app-bar-chart>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico 2: Utilidad por mes -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">Utilidad por mes</h5>
+                </div>
+                <div class="card-body">
+                    <app-bar-chart 
+                        [config]="datosParaVista.utilidadPorMesConfig" 
+                        *ngIf="datosParaVista.utilidadPorMesConfig">
+                    </app-bar-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla: Estado de resultados mensual -->
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="alert alert-info">
-                <h5 class="alert-heading">Sección de Finanzas</h5>
-                <p class="mb-0">Esta sección mostrará información financiera detallada.</p>
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="mb-0 fw-bold">Estado de resultados mensual</h5>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="expandirTodo()" title="Expandir todo">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="colapsarTodo()" title="Colapsar todo">
+                                <i class="fas fa-chevron-up"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Barra de búsqueda y exportación -->
+                    <div class="d-flex gap-2 align-items-center">
+                        <input 
+                            type="text" 
+                            class="form-control form-control-sm" 
+                            placeholder="Buscar..." 
+                            [(ngModel)]="quickFilterTextEstadoResultados"
+                            (input)="onQuickFilterChangeEstadoResultados()"
+                            style="max-width: 250px;">
+                        <button 
+                            type="button" 
+                            class="btn btn-sm btn-outline-primary"
+                            (click)="exportarCSVEstadoResultados()"
+                            title="Exportar CSV">
+                            <i class="fas fa-file-csv me-1"></i> CSV
+                        </button>
+                        <button 
+                            type="button" 
+                            class="btn btn-sm btn-outline-success"
+                            (click)="exportarExcelEstadoResultados()"
+                            title="Exportar Excel">
+                            <i class="fas fa-file-excel me-1"></i> Excel
+                        </button>
+                        <button 
+                            type="button" 
+                            class="btn btn-sm btn-outline-secondary"
+                            (click)="limpiarFiltrosEstadoResultados()"
+                            title="Limpiar filtros">
+                            <i class="fas fa-filter me-1"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <ag-grid-angular
+                        #estadoResultadosGrid
+                        class="ag-theme-alpine estado-resultados-grid"
+                        [rowData]="estadoResultadosTreeData"
+                        [columnDefs]="estadoResultadosColumnDefs"
+                        [gridOptions]="estadoResultadosGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; height: 600px;"
+                        [domLayout]="'normal'"
+                        (gridReady)="onGridReadyEstadoResultados($event)">
+                    </ag-grid-angular>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tablas de Análisis Vertical y Horizontal -->
+    <div class="row mb-4">
+        <!-- Tabla: Análisis Vertical -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Análisis vertical</h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Buscador global -->
+                            <div class="input-group" style="width: 200px;">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control border-start-0" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="quickFilterTextVertical"
+                                    (input)="onQuickFilterChangeVertical()">
+                            </div>
+                            <!-- Botones de exportación -->
+                            <button 
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="exportarCSVVertical()"
+                                title="Exportar a CSV">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-success"
+                                (click)="exportarExcelVertical()"
+                                title="Exportar a Excel">
+                                <i class="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="limpiarFiltrosVertical()"
+                                title="Limpiar filtros">
+                                <i class="fas fa-filter me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-3 py-0">
+                    <ag-grid-angular
+                        #analisisVerticalGrid
+                        class="ag-theme-alpine analisis-vertical-grid"
+                        [rowData]="analisisVerticalData"
+                        [columnDefs]="analisisVerticalColumnDefs"
+                        [gridOptions]="analisisVerticalGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; height: 450px;"
+                        [domLayout]="'normal'"
+                        (gridReady)="onGridReadyVertical($event)">
+                    </ag-grid-angular>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla: Análisis Horizontal -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Análisis horizontal</h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Buscador global -->
+                            <div class="input-group" style="width: 200px;">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control border-start-0" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="quickFilterTextHorizontal"
+                                    (input)="onQuickFilterChangeHorizontal()">
+                            </div>
+                            <!-- Botones de exportación -->
+                            <button 
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="exportarCSVHorizontal()"
+                                title="Exportar a CSV">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-success"
+                                (click)="exportarExcelHorizontal()"
+                                title="Exportar a Excel">
+                                <i class="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <button 
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="limpiarFiltrosHorizontal()"
+                                title="Limpiar filtros">
+                                <i class="fas fa-filter me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-3 py-0">
+                    <ag-grid-angular
+                        #analisisHorizontalGrid
+                        class="ag-theme-alpine analisis-horizontal-grid"
+                        [rowData]="analisisHorizontalData"
+                        [columnDefs]="analisisHorizontalColumnDefs"
+                        [gridOptions]="analisisHorizontalGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; height: 450px;"
+                        [domLayout]="'normal'"
+                        (gridReady)="onGridReadyHorizontal($event)">
+                    </ag-grid-angular>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla: Flujo de Efectivo -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3 d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0 fw-bold">Flujo de Efectivo</h5>
+                    <div class="d-flex gap-2 align-items-center">
+                        <!-- Buscador global -->
+                        <div class="input-group" style="width: 200px;">
+                            <span class="input-group-text bg-white border-end-0">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input 
+                                type="text" 
+                                class="form-control border-start-0" 
+                                placeholder="Buscar..."
+                                [(ngModel)]="quickFilterTextFlujo"
+                                (input)="onQuickFilterChangeFlujo()">
+                        </div>
+                        <!-- Botones de exportación -->
+                        <button 
+                            class="btn btn-sm btn-outline-primary"
+                            (click)="exportarCSVFlujo()"
+                            title="Exportar a CSV">
+                            <i class="fas fa-file-csv me-1"></i> CSV
+                        </button>
+                        <button 
+                            class="btn btn-sm btn-outline-success"
+                            (click)="exportarExcelFlujo()"
+                            title="Exportar a Excel">
+                            <i class="fas fa-file-excel me-1"></i> Excel
+                        </button>
+                        <button 
+                            class="btn btn-sm btn-outline-secondary"
+                            (click)="limpiarFiltrosFlujo()"
+                            title="Limpiar filtros">
+                            <i class="fas fa-filter me-1"></i> Limpiar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" title="Menú">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" title="Calendario">
+                            <i class="fas fa-calendar"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body px-3 py-0">
+                    <ag-grid-angular
+                        #flujoEfectivoGrid
+                        class="ag-theme-alpine flujo-efectivo-grid"
+                        [rowData]="flujoEfectivoData"
+                        [columnDefs]="flujoEfectivoColumnDefs"
+                        [gridOptions]="flujoEfectivoGridOptions"
+                        [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }"
+                        style="width: 100%; height: 400px;"
+                        [domLayout]="'normal'"
+                        (gridReady)="onGridReadyFlujo($event)">
+                    </ag-grid-angular>
+                </div>
             </div>
         </div>
     </div>
