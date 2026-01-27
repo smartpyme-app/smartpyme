@@ -627,32 +627,47 @@
         <section class="bg-white rounded p-3 mb-3">
             <div class="row">
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="mh_usuario">Usuario:</label>
-                    <input type="text" class="form-control" [(ngModel)]="empresa.mh_usuario" name="mh_usuario"
-                        placeholder="Escribe aquí">
+                    <label for="fe_pais">País para Facturación Electrónica:</label>
+                    <select name="fe_pais" class="form-select" [(ngModel)]="empresa.fe_pais">
+                        <option [value]="null">Seleccione un país</option>
+                        <option value="SV">El Salvador</option>
+                        <option value="CR">Costa Rica</option>
+                    </select>
+                    <small class="form-text text-muted">Seleccione el país para configurar la facturación electrónica</small>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="mh_contrasena">Contraseña de la API:</label>
+                    <label for="fe_usuario">Usuario:</label>
+                    <input type="text" class="form-control" [(ngModel)]="empresa.fe_usuario" name="fe_usuario"
+                        placeholder="Escribe aquí" (blur)="sincronizarCamposAntiguos()">
+                    <small class="form-text text-muted">Usuario genérico para FE (se sincroniza con mh_usuario para compatibilidad)</small>
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="fe_contrasena">Contraseña de la API:</label>
                     <div class="input-group">
-                        <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="mh_contrasena"
-                            [(ngModel)]="empresa.mh_contrasena" placeholder="Escribe aquí" #mh_contrasena="ngModel"
-                            id="mh_contrasena" required />
+                        <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="fe_contrasena"
+                            [(ngModel)]="empresa.fe_contrasena" placeholder="Escribe aquí" #fe_contrasena="ngModel"
+                            id="fe_contrasena" required (blur)="sincronizarCamposAntiguos()" />
                         <button class="btn btn-light" type="button" (click)="mostrarPassword()">
                             <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword, 'fa-eye': showpassword }"></i>
                         </button>
                     </div>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="mh_pwd_certificado">Clave Privada del Certificado:</label>
+                    <label for="fe_certificado_password">Clave Privada del Certificado:</label>
                     <div class="input-group">
                         <input [type]="showpassword2 ? 'text' : 'password'" class="form-control"
-                            name="mh_pwd_certificado" [(ngModel)]="empresa.mh_pwd_certificado"
-                            placeholder="Escribe aquí" #mh_pwd_certificado="ngModel" id="mh_pwd_certificado" required />
+                            name="fe_certificado_password" [(ngModel)]="empresa.fe_certificado_password"
+                            placeholder="Escribe aquí" #fe_certificado_password="ngModel" id="fe_certificado_password" 
+                            required (blur)="sincronizarCamposAntiguos()" />
                         <button class="btn btn-light" type="button" (click)="mostrarPassword2()">
                             <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword2, 'fa-eye': showpassword2 }"></i>
                         </button>
                     </div>
                 </div>
+                <!-- Campos antiguos ocultos para compatibilidad (se sincronizan automáticamente) -->
+                <input type="hidden" [(ngModel)]="empresa.mh_usuario" name="mh_usuario">
+                <input type="hidden" [(ngModel)]="empresa.mh_contrasena" name="mh_contrasena">
+                <input type="hidden" [(ngModel)]="empresa.mh_pwd_certificado" name="mh_pwd_certificado">
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="fe_ambiente">Ambiente:</label>
                     <select name="fe_ambiente" class="form-select" (change)="cargarEstadisticasPruebas()"
@@ -676,7 +691,7 @@
         </section>
         <div class="bg-white rounded p-3 mb-3">
             <div class="form-group col-sm-12 pt-2 pb-4">
-                <button [disabled]="cheking || !empresa.mh_usuario || !empresa.mh_contrasena || !empresa.mh_pwd_certificado" (click)="onCheckMH()" class="btn btn-primary float-end">
+                <button [disabled]="cheking || !getFeUsuario() || !getFeContrasena() || !getFeCertificadoPassword()" (click)="onCheckMH()" class="btn btn-primary float-end">
                     @if (!cheking) {
                       <span>Comprobar datos</span>
                     }

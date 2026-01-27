@@ -238,7 +238,7 @@ export class VentaDetallesV2Component implements OnInit {
                               if (result.isConfirmed) {
                                 this.addDetalle(producto);
                               }
-                            }).catch((error) => {
+                            }).catch((error: any) => {
                               Swal.fire('Error', error, 'error');
                             });
 

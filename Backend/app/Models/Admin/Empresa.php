@@ -93,6 +93,16 @@ class Empresa extends Model
         'cod_estable_mh',
         'cod_estable',
 
+        //Facturación Electrónica Multi-País
+        'fe_pais',
+        'fe_usuario',
+        'fe_contrasena',
+        'fe_certificado_password',
+        'fe_certificado_path',
+        'fe_token',
+        'fe_token_expires_at',
+        'fe_configuracion',
+
         //Permiso para vendedores
         'vendedor_inventario',
 
@@ -147,6 +157,8 @@ class Empresa extends Model
         'custom_empresa' => 'json',
         'importacion_productos_shopify' => 'boolean',
         'shopify_sync_bidirectional' => 'boolean',
+        'fe_token_expires_at' => 'datetime',
+        'fe_configuracion' => 'json',
     ];
 
     protected $appends = [
@@ -728,5 +740,128 @@ class Empresa extends Model
     {
         $current_user = Auth::user();
         return $current_user && $current_user->shopify_status === 'connected';
+    }
+
+    /**
+     * Obtiene el código de país para facturación electrónica
+     * 
+     * @return string|null
+     */
+    public function getFePais(): ?string
+    {
+        return $this->fe_pais ?? ($this->cod_pais ?? null);
+    }
+
+    /**
+     * Obtiene el usuario de facturación electrónica (genérico o específico de MH)
+     * 
+     * @return string|null
+     */
+    public function getFeUsuario(): ?string
+    {
+        return $this->fe_usuario ?? $this->mh_usuario;
+    }
+
+    /**
+     * Obtiene la contraseña de facturación electrónica (genérica o específica de MH)
+     * 
+     * @return string|null
+     */
+    public function getFeContrasena(): ?string
+    {
+        return $this->fe_contrasena ?? $this->mh_contrasena;
+    }
+
+    /**
+     * Obtiene la contraseña del certificado (genérica o específica de MH)
+     * 
+     * @return string|null
+     */
+    public function getFeCertificadoPassword(): ?string
+    {
+        return $this->fe_certificado_password ?? $this->mh_pwd_certificado;
+    }
+
+    /**
+     * Verifica si la empresa tiene facturación electrónica configurada
+     * 
+     * @return bool
+     */
+    public function tieneFacturacionElectronica(): bool
+    {
+        return $this->facturacion_electronica == 1 && 
+               $this->getFePais() !== null && 
+               $this->getFeUsuario() !== null && 
+               $this->getFeContrasena() !== null;
+    }
+
+    /**
+     * Verifica si el token de FE está vigente
+     * 
+     * @return bool
+     */
+    public function tieneTokenValido(): bool
+    {
+        return $this->fe_token !== null && 
+               $this->fe_token_expires_at !== null && 
+               $this->fe_token_expires_at->isFuture();
+    }
+
+    /**
+     * Obtiene configuración específica de FE por país
+     * 
+     * @param string|null $key Clave específica de la configuración
+     * @param mixed $default Valor por defecto si no existe
+     * @return mixed
+     */
+    public function getFeConfiguracion(?string $key = null, $default = null)
+    {
+        $config = $this->fe_configuracion ?? [];
+        
+        if ($key === null) {
+            return $config;
+        }
+        
+        return $config[$key] ?? $default;
+    }
+
+    /**
+     * Establece una configuración específica de FE
+     * 
+     * @param string $key Clave de la configuración
+     * @param mixed $value Valor a establecer
+     * @return $this
+     */
+    public function setFeConfiguracion(string $key, $value): self
+    {
+        $config = $this->fe_configuracion ?? [];
+        $config[$key] = $value;
+        $this->fe_configuracion = $config;
+        
+        return $this;
+    }
+
+    /**
+     * Obtiene la configuración completa de FE para el país actual
+     * Combina configuración base del país con configuración personalizada
+     * 
+     * @return array
+     */
+    public function getFeConfiguracionCompleta(): array
+    {
+        $pais = $this->getFePais();
+        
+        if (!$pais) {
+            return [];
+        }
+        
+        // Obtener configuración base del país desde config
+        $configBase = config("facturacion_electronica.paises.{$pais}", []);
+        
+        // Combinar con configuración personalizada de la empresa
+        $configPersonalizada = $this->fe_configuracion ?? [];
+        
+        // La configuración personalizada tiene prioridad sobre la base
+        return array_merge($configBase, $configPersonalizada);
     }
 }

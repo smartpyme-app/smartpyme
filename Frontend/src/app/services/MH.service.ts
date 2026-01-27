@@ -4,7 +4,17 @@ import { map, catchError, retry } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica.service';
 
+/**
+ * @deprecated Este servicio está deprecated. Usar FacturacionElectronicaService en su lugar.
+ * Este servicio se mantiene solo para compatibilidad hacia atrás.
+ * 
+ * Plan de eliminación:
+ * - Fase 1 (Actual): Servicio redirige a FacturacionElectronicaService con logging
+ * - Fase 2 (Próxima versión): Advertencias en consola
+ * - Fase 3 (Versión futura): Eliminación completa
+ */
 @Injectable()
 
 export class MHService {
@@ -21,28 +31,38 @@ export class MHService {
     public url_pruebas_limpiar: string = 'mh/pruebas-masivas/limpiar';
 
 
-    constructor(private http: HttpClient, private alertService: AlertService, private apiService: ApiService) { }
+    private feService: FacturacionElectronicaService;
+
+    constructor(
+        private http: HttpClient, 
+        private alertService: AlertService, 
+        private apiService: ApiService,
+        feService: FacturacionElectronicaService
+    ) {
+        this.feService = feService;
+        console.warn('MHService está deprecated. Por favor, migre a FacturacionElectronicaService.');
+    }
     
+    /**
+     * @deprecated Usar FacturacionElectronicaService.auth() en su lugar
+     */
     auth(): Observable<any> {
-        let user = JSON.parse(localStorage.getItem('SP_auth_user')!);
-        let formData:FormData = new FormData();
-
-        if (!user.empresa?.mh_usuario || !user.empresa?.mh_contrasena) {
-            return throwError(() => new Error("Configure el usuario y contraseña para conectarse a la API de hacienda"));
-        }
-
-        formData.append('user', user.empresa.mh_usuario.replace(/-/g, ''));
-        formData.append('pwd', user.empresa.mh_contrasena);
-
-        return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base')}/seguridad/auth`, formData);
+        console.warn('MHService.auth() está deprecated. Usar FacturacionElectronicaService.auth()');
+        return this.feService.auth();
     }
 
+    /**
+     * @deprecated Usar FacturacionElectronicaService.login() en su lugar
+     */
     login(){
-        // Nota: Este método se llama desde login() del componente y la suscripción se completa rápidamente
-        // No necesita unsubscribe porque el servicio es singleton y la suscripción se completa antes de que el componente se destruya
-        this.auth().subscribe({
+        console.warn('MHService.login() está deprecated. Usar FacturacionElectronicaService.login()');
+        // Mantener compatibilidad: guardar también en SP_token_mh
+        this.feService.auth().subscribe({
             next: (data) => {
-                localStorage.setItem('SP_token_mh', JSON.stringify(data.body));
+                if (data.body) {
+                    localStorage.setItem('SP_token_mh', JSON.stringify(data.body));
+                    localStorage.setItem('SP_token_fe', JSON.stringify(data.body));
+                }
             },
             error: (error) => {
                 this.alertService.error(error);
@@ -50,70 +70,33 @@ export class MHService {
         });
     }
 
+    /**
+     * @deprecated Usar FacturacionElectronicaService.firmarDTE() en su lugar
+     */
     firmarDTE(DTE: any): Observable<any> {
-        let user = JSON.parse(localStorage.getItem('SP_auth_user')!);
-
-        if (!user) {
-            return throwError(() => new Error('Usuario no autenticado, vuelva a iniciar sesión'));
-        }
-
-        if (!user.empresa?.nit) {
-            return throwError(() => new Error('NIT no configurado en la información de la cuenta'));
-        }
-
-        if (!user.empresa.mh_pwd_certificado) {
-            return throwError(() => new Error('Contraseña del certificado no configurada en los datos de facturación electrónica'));
-        }
-
-        let formData:any = {};
-        formData.nit = user.empresa.nit.replace(/-/g, '');
-        formData.activo = true;
-        formData.passwordPri = user.empresa.mh_pwd_certificado;
-        formData.dteJson = DTE;
-
-        return this.http.post<any>(`${this.url_firmado}`, formData, { params: { saltarJWT: true } });
+        console.warn('MHService.firmarDTE() está deprecated. Usar FacturacionElectronicaService.firmarDTE()');
+        return this.feService.firmarDTE(DTE);
     }
 
+    /**
+     * @deprecated Usar FacturacionElectronicaService.enviarDTE() en su lugar
+     */
     enviarDTE(venta: any, dteFirmado: any): Observable<any> {
-        let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
-        if (!token) {
-            return throwError(() => new Error('Token de MH no creado'));
+        console.warn('MHService.enviarDTE() está deprecated. Usar FacturacionElectronicaService.enviarDTE()');
+        // Mantener compatibilidad: intentar obtener token de SP_token_mh si no existe en SP_token_fe
+        const tokenMH = JSON.parse(localStorage.getItem('SP_token_mh') || 'null');
+        if (tokenMH && !localStorage.getItem('SP_token_fe')) {
+            localStorage.setItem('SP_token_fe', JSON.stringify(tokenMH));
         }
-
-        const headers = new HttpHeaders({
-          'Content-Type': 'application/json',
-          'User-Agent': 'Angular',
-          'Authorization': token.token,
-        });
-
-        let formData:any = {};
-        formData.ambiente = venta.dte.identificacion.ambiente;
-        formData.idEnvio = venta.id;
-        formData.version = venta.dte.identificacion.version;
-        formData.tipoDte = venta.dte.identificacion.tipoDte;
-        formData.documento = dteFirmado;
-        formData.codigoGeneracion = venta.dte.codigoGeneracion;
-
-        return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base') + this.url_recepciondte}`, formData, { headers, params: { saltarJWT: true } });
+        return this.feService.enviarDTE(venta, dteFirmado);
     }
 
+    /**
+     * @deprecated Usar FacturacionElectronicaService.consultarDTE() en su lugar
+     */
     consultarDTE(venta: any): Observable<any> {
-        let user = JSON.parse(localStorage.getItem('SP_auth_user')!);
-        let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
-
-        const headers = new HttpHeaders({
-          'Content-Type': 'application/json',
-          'User-Agent': 'Angular',
-          'Authorization': token.token,
-        });
-
-
-        let formData:any = {};
-        formData.nitEmisor = user.empresa.nit.replace(/-/g, '');
-        formData.tdte = venta.dte.identificacion.tipoDte;
-        formData.codigoGeneracion = venta.dte.codigo_generacion;
-
-        return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base') + this.url_consultadte}`, formData, { headers, params: { saltarJWT: true } });
+        console.warn('MHService.consultarDTE() está deprecated. Usar FacturacionElectronicaService.consultarDTE()');
+        return this.feService.consultarDTE(venta);
     }
 
     enviarContingenciaDTEs(venta: any, dteFirmado: any): Observable<any> {
@@ -133,22 +116,12 @@ export class MHService {
         return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base') + this.url_contingencia}`, formData, { headers, params: { saltarJWT: true } });
     }
 
+    /**
+     * @deprecated Usar FacturacionElectronicaService.anularDTE() en su lugar
+     */
     anularDTE(venta: any, dteFirmado: any): Observable<any> {
-        let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
-
-        const headers = new HttpHeaders({
-          'Content-Type': 'application/json',
-          'User-Agent': 'Angular',
-          'Authorization': token.token,
-        });
-
-        let formData:any = {};
-        formData.ambiente = venta.dte_invalidacion.identificacion.ambiente;
-        formData.idEnvio = venta.id;
-        formData.version = venta.dte_invalidacion.identificacion.version;
-        formData.documento = dteFirmado;
-
-        return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base') + this.url_anular_dte}`, formData, { headers, params: { saltarJWT: true } });
+        console.warn('MHService.anularDTE() está deprecated. Usar FacturacionElectronicaService.anularDTE()');
+        return this.feService.anularDTE(venta, dteFirmado);
     }
 
 
@@ -156,93 +129,20 @@ export class MHService {
         return this.http.get<any>(`${this.url_firmado}status`, { observe: 'response' });
     }
 
+    /**
+     * @deprecated Usar FacturacionElectronicaService.emitirDTE() en su lugar
+     */
     emitirDTE(venta:any): Promise<any> {
-
-        return new Promise((resolve, reject) => {
-            this.apiService.store('generarDTE', venta).subscribe(dte => {
-                venta.dte = dte;
-                
-                this.firmarDTE(dte).subscribe(dteFirmado => {
-
-                    if(dteFirmado.status == 'ERROR'){
-                        reject(dteFirmado.body.mensaje);
-                        // reject('No se pudo firmar el DTE, no se encontró el certificado.');
-                    }
-
-                    venta.dte.firmaElectronica = dteFirmado.body;
-                    
-                    this.enviarDTE(venta, dteFirmado.body).subscribe(dte => {
-                        if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                            venta.dte.sello = dte.selloRecibido;
-                            venta.dte.selloRecibido = dte.selloRecibido;
-                            venta.sello_mh = dte.selloRecibido;
-                            venta.tipo_dte = dte.tipoDte;
-                            venta.numero_control = dte.numeroControl;
-                            venta.codigo_generacion = dte.codigoGeneracion;
-                            // venta.estado = 'Emitido';
-                            this.apiService.store('venta', venta).subscribe(data => {
-                                resolve(data);
-                            },error => {this.alertService.error(error);});
-                        }
-                    },error => {
-                        if(error.error && error.error.observaciones && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
-                    });
-
-                },error => {reject(error);});
-
-            },error => {reject(error);});
-        });
+        console.warn('MHService.emitirDTE() está deprecated. Usar FacturacionElectronicaService.emitirDTE()');
+        return this.feService.emitirDTE(venta, 'generarDTE', 'venta');
     }
 
+    /**
+     * @deprecated Usar FacturacionElectronicaService.emitirDTENotaCredito() en su lugar
+     */
     emitirDTENotaCredito(venta:any): Promise<any> {
-
-        return new Promise((resolve, reject) => {
-            this.apiService.store('generarDTENotaCredito', venta).subscribe(dte => {
-                venta.dte = dte;
-                
-                this.firmarDTE(dte).subscribe(dteFirmado => {
-
-                    if(dteFirmado.status == 'ERROR'){
-                        reject(dteFirmado.body.mensaje);
-                        // reject('No se pudo firmar el DTE, no se encontró el certificado.');
-                    }
-
-                    venta.dte.firmaElectronica = dteFirmado.body;
-                    
-                    this.enviarDTE(venta, dteFirmado.body).subscribe(dte => {
-                        if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                            venta.dte.sello = dte.selloRecibido;
-                            venta.dte.selloRecibido = dte.selloRecibido;
-                            venta.sello_mh = dte.selloRecibido;
-                            venta.tipo_dte = dte.tipo_dte;
-                            venta.numero_control = dte.numero_control;
-                            // venta.estado = 'Emitido';
-                            this.apiService.store('devolucion/venta', venta).subscribe(data => {
-                                resolve(data);
-                            },error => {this.alertService.error(error);});
-                        }
-                    },error => {
-                        if(error.error && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
-                    });
-
-                },error => {reject(error);});
-
-            },error => {reject(error);});
-        });
+        console.warn('MHService.emitirDTENotaCredito() está deprecated. Usar FacturacionElectronicaService.emitirDTENotaCredito()');
+        return this.feService.emitirDTENotaCredito(venta);
     }
 
     emitirDTESujetoExcluidoGasto(gasto:any): Promise<any> {

@@ -9,6 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica.service';
 import { BuscadorClientesComponent } from '@shared/parts/buscador-clientes/buscador-clientes.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
@@ -73,7 +74,8 @@ export class FacturacionV2Component implements OnInit {
 
   constructor(
     public apiService: ApiService,
-    public mhService: MHService,
+    public mhService: MHService, // Mantener para compatibilidad
+    public feService: FacturacionElectronicaService,
     private alertService: AlertService,
     private modalService: BsModalService,
     private sumPipe: SumPipe,
@@ -1129,9 +1131,9 @@ export class FacturacionV2Component implements OnInit {
 
   emitirDTE() {
     this.emiting = true;
-    this.mhService
+    this.feService
       .emitirDTE(this.venta)
-      .then((venta) => {
+      .then((venta: any) => {
         this.venta = venta;
         this.alertService.success(
           'DTE emitido.',
@@ -1154,7 +1156,7 @@ export class FacturacionV2Component implements OnInit {
         this.cargarDatosIniciales();
         this.router.navigate(['/ventas-v2/crear']);
       })
-      .catch((error) => {
+      .catch((error: any) => {
         this.cargarDatosIniciales();
         this.router.navigate(['/ventas-v2/crear']);
 

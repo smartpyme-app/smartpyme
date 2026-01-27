@@ -101,6 +101,9 @@ export class EmpresaComponent implements OnInit {
             .subscribe(empresa => {
             this.empresa = empresa;
 
+            // Sincronizar campos genéricos con campos antiguos si no existen
+            this.sincronizarCamposGenericos();
+
             this.initializeCustomConfig();
             this.loading = false;
 
@@ -116,12 +119,19 @@ export class EmpresaComponent implements OnInit {
     public async onSubmit(): Promise<any> {
         this.saving = true;
         this.cdr.markForCheck();
+        
+        // Sincronizar campos antes de guardar
+        this.sincronizarCamposAntiguos();
+        
         try {
             const empresaGuardada = await this.apiService.store('empresa', this.empresa)
                 .pipe(this.untilDestroyed())
                 .toPromise();
 
             this.empresa = empresaGuardada;
+
+            // Sincronizar campos genéricos después de cargar
+            this.sincronizarCamposGenericos();
 
             this.initializeCustomConfig();
 
@@ -130,11 +140,16 @@ export class EmpresaComponent implements OnInit {
             user.empresa = empresaGuardada;
             localStorage.setItem('SP_auth_user', JSON.stringify(user));
 
-            if (this.empresa.fe_ambiente == '01') {
-                localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
-            } else {
-                localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
+            // Configurar URL base según país y ambiente
+            const pais = this.empresa.fe_pais || this.empresa.cod_pais || 'SV';
+            if (pais === 'SV') {
+                if (this.empresa.fe_ambiente == '01') {
+                    localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
+                } else {
+                    localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
+                }
             }
+            // Para otros países, las URLs se obtienen desde la configuración del backend
 
             this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
             this.cdr.markForCheck();
@@ -340,6 +355,68 @@ export class EmpresaComponent implements OnInit {
     public mostrarPassword() {
         this.showpassword = !this.showpassword;
         this.cdr.markForCheck();
+    }
+
+    /**
+     * Sincroniza campos genéricos con campos antiguos (para compatibilidad)
+     */
+    public sincronizarCamposGenericos(): void {
+        if (!this.empresa) return;
+
+        // Si no tiene fe_pais pero tiene facturacion_electronica, establecer SV por defecto
+        if (!this.empresa.fe_pais && this.empresa.facturacion_electronica && this.empresa.cod_pais === 'SV') {
+            this.empresa.fe_pais = 'SV';
+        }
+
+        // Sincronizar campos genéricos desde campos antiguos si no existen
+        if (!this.empresa.fe_usuario && this.empresa.mh_usuario) {
+            this.empresa.fe_usuario = this.empresa.mh_usuario;
+        }
+        if (!this.empresa.fe_contrasena && this.empresa.mh_contrasena) {
+            this.empresa.fe_contrasena = this.empresa.mh_contrasena;
+        }
+        if (!this.empresa.fe_certificado_password && this.empresa.mh_pwd_certificado) {
+            this.empresa.fe_certificado_password = this.empresa.mh_pwd_certificado;
+        }
+    }
+
+    /**
+     * Sincroniza campos antiguos con campos genéricos (para compatibilidad hacia atrás)
+     */
+    public sincronizarCamposAntiguos(): void {
+        if (!this.empresa) return;
+
+        // Sincronizar campos antiguos desde campos genéricos
+        if (this.empresa.fe_usuario) {
+            this.empresa.mh_usuario = this.empresa.fe_usuario;
+        }
+        if (this.empresa.fe_contrasena) {
+            this.empresa.mh_contrasena = this.empresa.fe_contrasena;
+        }
+        if (this.empresa.fe_certificado_password) {
+            this.empresa.mh_pwd_certificado = this.empresa.fe_certificado_password;
+        }
+    }
+
+    /**
+     * Obtiene el usuario de FE (genérico o antiguo)
+     */
+    public getFeUsuario(): string | null {
+        return this.empresa?.fe_usuario || this.empresa?.mh_usuario || null;
+    }
+
+    /**
+     * Obtiene la contraseña de FE (genérica o antigua)
+     */
+    public getFeContrasena(): string | null {
+        return this.empresa?.fe_contrasena || this.empresa?.mh_contrasena || null;
+    }
+
+    /**
+     * Obtiene la contraseña del certificado (genérica o antigua)
+     */
+    public getFeCertificadoPassword(): string | null {
+        return this.empresa?.fe_certificado_password || this.empresa?.mh_pwd_certificado || null;
     }
 
     public mostrarPassword2() {
