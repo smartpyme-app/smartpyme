@@ -198,22 +198,7 @@ Resources:
         - Name: QueueName
           Value: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-queue-name]]
 
-  # Invoice Processing Queue High Messages
-  InvoiceProcessingQueueHighMessagesAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: SmartPyme-InvoiceProcessing-Queue-High-Messages
-      AlarmDescription: Alert when invoice processing queue has too many messages
-      MetricName: ApproximateNumberOfVisibleMessages
-      Namespace: AWS/SQS
-      Statistic: Average
-      Period: 300
-      EvaluationPeriods: 2
-      Threshold: 10
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: QueueName
-          Value: !Select [4, !Split ["/", !ImportValue smartpyme-invoice-processing-queue-name]]
+
 
   # Shopify Sync Queue High Messages
   ShopifySyncQueueHighMessagesAlarm:
@@ -266,21 +251,7 @@ Resources:
         - Name: QueueName
           Value: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-dlq-name]]
 
-  InvoiceProcessingDLQMessagesAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: SmartPyme-InvoiceProcessing-DLQ-Messages
-      AlarmDescription: Alert when messages appear in invoice processing DLQ
-      MetricName: ApproximateNumberOfVisibleMessages
-      Namespace: AWS/SQS
-      Statistic: Sum
-      Period: 300
-      EvaluationPeriods: 1
-      Threshold: 0
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: QueueName
-          Value: !Select [4, !Split ["/", !ImportValue smartpyme-invoice-processing-dlq-name]]
+
 
   EmailQueueDLQMessagesAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -395,7 +366,6 @@ Resources:
                 "properties": {
                   "metrics": [
                     [ "AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "${DailyReportsQueueName}" ],
-                    [ ".", ".", ".", "${InvoiceProcessingQueueName}" ],
                     [ ".", ".", ".", "${ShopifySyncQueueName}" ],
                     [ ".", ".", ".", "${EmailNotificationsQueueName}" ]
                   ],
@@ -415,7 +385,6 @@ Resources:
                 "properties": {
                   "metrics": [
                     [ "AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "${DailyReportsDLQName}" ],
-                    [ ".", ".", ".", "${InvoiceProcessingDLQName}" ],
                     [ ".", ".", ".", "${ShopifySyncDLQName}" ],
                     [ ".", ".", ".", "${EmailNotificationsDLQName}" ]
                   ],
@@ -436,11 +405,9 @@ Resources:
         - WebServiceName: !ImportValue smartpyme-web-app-WebServiceName
           WorkerServiceName: !ImportValue smartpyme-worker-app-WorkerServiceName
           DailyReportsQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-queue-name]]
-          InvoiceProcessingQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-invoice-processing-queue-name]]
           ShopifySyncQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-queue-name]]
           EmailNotificationsQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-queue-name]]
           DailyReportsDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-dlq-name]]
-          InvoiceProcessingDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-invoice-processing-dlq-name]]
           ShopifySyncDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-dlq-name]]
           EmailNotificationsDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-dlq-name]]
 
