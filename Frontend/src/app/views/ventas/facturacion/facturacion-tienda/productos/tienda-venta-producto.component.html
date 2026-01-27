@@ -68,7 +68,7 @@
                                     <input type="radio" name="producto" id="producto{{producto.id}}" class="form-check" (click)="onCheckProducto(producto)">
                                 </td> -->
                                 <td>
-                                    <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
+                                    <img src="{{ apiService.appUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
                                     {{ producto.nombre }}
                                 </td>
                                 <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>

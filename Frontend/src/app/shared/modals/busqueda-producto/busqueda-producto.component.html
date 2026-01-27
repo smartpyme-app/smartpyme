@@ -32,7 +32,7 @@
                     </td>
                 </tr>
                 <tr *ngFor="let producto of productos | filter:'nombre':buscador">
-                    <td><img src="{{ apiService.baseUrl + '/img/' + producto.img }}" width="50px"></td>
+                    <td><img src="{{ apiService.appUrl + '/img/' + producto.img }}" width="50px"></td>
                     <td>{{ producto.nombre }}</td>
                     <td class="text-center">
                         <span *ngIf="producto.precio_oferta">

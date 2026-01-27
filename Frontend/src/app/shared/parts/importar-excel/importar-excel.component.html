@@ -17,7 +17,7 @@
               <div class="alert bg-info  text-center">
                 <p>Seleccionar un archivo de Excel con el listado de sus {{ this.nombre.replace('-', ' ') }}, debe tener la misma estructura de la plantilla que se comparte a continuación. <br>
                 Puede descargar la plantilla de Excel acá: 
-                  <a href="{{ apiService.baseUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Descargar plantilla</a>
+                  <a href="{{ apiService.appUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Descargar plantilla</a>
                 </p>
               </div>
             </div> -->
@@ -28,15 +28,15 @@
                   <!-- Plantilla normal para otros componentes -->
                   <span *ngIf="this.nombre !== 'ventas'">
                     Puede descargar la plantilla de Excel acá: 
-                    <a href="{{ apiService.baseUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Descargar plantilla</a>
+                    <a href="{{ apiService.appUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Descargar plantilla</a>
                   </span>
                   
                   <!-- Plantillas específicas para ventas -->
                   <span *ngIf="this.nombre === 'ventas'">
                     Puede descargar las plantillas de Excel según el tipo de documento:<br>
-                    <a href="{{ apiService.baseUrl + '/docs/ventas-credito-fiscal-format.xlsx'}}" target="_blank" class="me-3">Descargar plantilla Crédito Fiscal</a>
+                    <a href="{{ apiService.appUrl + '/docs/ventas-credito-fiscal-format.xlsx'}}" target="_blank" class="me-3">Descargar plantilla Crédito Fiscal</a>
                     <br>
-                    <a href="{{ apiService.baseUrl + '/docs/ventas-consumidor-final-format.xlsx'}}" target="_blank">Descargar plantilla Consumidor Final</a>
+                    <a href="{{ apiService.appUrl + '/docs/ventas-consumidor-final-format.xlsx'}}" target="_blank">Descargar plantilla Consumidor Final</a>
                   </span>
                 </p>
               </div>

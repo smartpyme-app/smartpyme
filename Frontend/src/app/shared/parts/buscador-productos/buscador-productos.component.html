@@ -5,7 +5,7 @@
   </div>
   <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; max-height: 300px; overflow-y: auto;">
     <a href="javascript:void(0);" class="list-group-item d-flex" (click)="onProductoClick(producto)" *ngFor=" let producto of productos">
-      <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1"> 
+      <img style="width: 45px; height: 45px;" src="{{ apiService.appUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1"> 
       <span id="producto_nombre" class="col-7 ps-1">
           <!-- <small>Nombre:</small> <br> -->
           <span *ngIf="isShopifyActive() && producto.nombre_variante; else nombreNormal">

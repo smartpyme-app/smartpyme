@@ -60,7 +60,7 @@
                 </li>
                 <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" 
                    *ngFor="let producto of productos">
-                    <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" 
+                    <img style="width: 45px; height: 45px;" src="{{ apiService.appUrl }}/img/{{ producto.img }}" 
                          class="rounded-circle img-fluid col-1">
                     <span id="producto_nombre" class="col-7 ps-2">
                         {{ getNombreCompleto(producto) }} <br>
@@ -108,7 +108,7 @@
                     <tr *ngFor="let producto of seleccionados">
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px"> 
+                                <img src="{{ apiService.appUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px"> 
                                 <span>{{ producto.nombre }}</span>
                             </div>
                         </td>
