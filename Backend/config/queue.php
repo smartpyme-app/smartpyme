@@ -49,12 +49,6 @@ return [
             'block_for' => 0,
         ],
 
-        'sqs' => [
-            'driver' => 'sqs',
-            'queue' => env('SQS_QUEUE'),
-            'region' => env('AWS_DEFAULT_REGION'),
-        ],
-
         'sqs-email' => [
             'driver' => 'sqs',
             'queue' => env('SQS_EMAIL_QUEUE'),
@@ -70,12 +64,6 @@ return [
         'sqs-reports' => [
             'driver' => 'sqs',
             'queue' => env('SQS_REPORTS_QUEUE'),
-            'region' => env('AWS_DEFAULT_REGION'),
-        ],
-
-        'sqs-invoice' => [
-            'driver' => 'sqs',
-            'queue' => env('SQS_INVOICE_QUEUE'),
             'region' => env('AWS_DEFAULT_REGION'),
         ],
 
