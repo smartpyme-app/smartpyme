@@ -3,6 +3,15 @@
 use App\Http\Controllers\Api\Admin\MHController;
 use App\Http\Controllers\Api\Admin\MHDTEController;
 use App\Http\Controllers\Api\Admin\FacturacionElectronicaController;
+use App\Http\Requests\MH\GenerarDTERequest;
+use App\Http\Requests\MH\GenerarDTENotaCreditoRequest;
+use App\Http\Requests\MH\GenerarDTESujetoExcluidoGastoRequest;
+use App\Http\Requests\MH\GenerarDTESujetoExcluidoCompraRequest;
+use App\Http\Requests\MH\AnularDTERequest;
+use App\Http\Requests\MH\ConsultarDTERequest;
+use App\Http\Requests\MH\EnviarDTERequest;
+use App\Http\Requests\MH\GenerarDTEPDFRequest;
+use App\Http\Requests\MH\GenerarDTEJSONRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -47,48 +56,75 @@ use Illuminate\Support\Facades\Log;
     // Estas rutas redirigen al nuevo controlador pero logean deprecación
     Route::post('/generarDTE', function (Request $request) {
         Log::warning('Ruta deprecated usada: /generarDTE. Usar /fe/generarDTE');
-        return app(FacturacionElectronicaController::class)->generarDTE($request);
-    })->middleware('deprecated');
+        $formRequest = GenerarDTERequest::createFrom($request);
+        $formRequest->setContainer(app());
+        $formRequest->validateResolved();
+        return app(FacturacionElectronicaController::class)->generarDTE($formRequest);
+    });
     
     Route::post('/generarDTENotaCredito', function (Request $request) {
         Log::warning('Ruta deprecated usada: /generarDTENotaCredito. Usar /fe/generarDTENotaCredito');
-        return app(FacturacionElectronicaController::class)->generarDTENotaCredito($request);
-    })->middleware('deprecated');
+        $formRequest = GenerarDTENotaCreditoRequest::createFrom($request);
+        $formRequest->setContainer(app());
+        $formRequest->validateResolved();
+        return app(FacturacionElectronicaController::class)->generarDTENotaCredito($formRequest);
+    });
     
     Route::post('/generarDTESujetoExcluidoGasto', function (Request $request) {
         Log::warning('Ruta deprecated usada: /generarDTESujetoExcluidoGasto. Usar /fe/generarDTESujetoExcluidoGasto');
-        return app(FacturacionElectronicaController::class)->generarDTESujetoExcluidoGasto($request);
-    })->middleware('deprecated');
+        $formRequest = GenerarDTESujetoExcluidoGastoRequest::createFrom($request);
+        $formRequest->setContainer(app());
+        $formRequest->validateResolved();
+        return app(FacturacionElectronicaController::class)->generarDTESujetoExcluidoGasto($formRequest);
+    });
     
     Route::post('/generarDTESujetoExcluidoCompra', function (Request $request) {
         Log::warning('Ruta deprecated usada: /generarDTESujetoExcluidoCompra. Usar /fe/generarDTESujetoExcluidoCompra');
-        return app(FacturacionElectronicaController::class)->generarDTESujetoExcluidoCompra($request);
-    })->middleware('deprecated');
+        $formRequest = GenerarDTESujetoExcluidoCompraRequest::createFrom($request);
+        $formRequest->setContainer(app());
+        $formRequest->validateResolved();
+        return app(FacturacionElectronicaController::class)->generarDTESujetoExcluidoCompra($formRequest);
+    });
     
     Route::post('/anularDTE', function (Request $request) {
         Log::warning('Ruta deprecated usada: /anularDTE. Usar /fe/anularDTE');
-        return app(FacturacionElectronicaController::class)->anularDTE($request);
-    })->middleware('deprecated');
+        $formRequest = AnularDTERequest::createFrom($request);
+        $formRequest->setContainer(app());
+        $formRequest->validateResolved();
+        return app(FacturacionElectronicaController::class)->anularDTE($formRequest);
+    });
     
     Route::post('/consultarDTE', function (Request $request) {
         Log::warning('Ruta deprecated usada: /consultarDTE. Usar /fe/consultarDTE');
-        return app(FacturacionElectronicaController::class)->consultarDTE($request);
-    })->middleware('deprecated');
+        $formRequest = ConsultarDTERequest::createFrom($request);
+        $formRequest->setContainer(app());
+        $formRequest->validateResolved();
+        return app(FacturacionElectronicaController::class)->consultarDTE($formRequest);
+    });
     
     Route::post('/enviarDTE', function (Request $request) {
         Log::warning('Ruta deprecated usada: /enviarDTE. Usar /fe/enviarDTE');
-        return app(FacturacionElectronicaController::class)->enviarDTE($request);
-    })->middleware('deprecated');
+        $formRequest = EnviarDTERequest::createFrom($request);
+        $formRequest->setContainer(app());
+        $formRequest->validateResolved();
+        return app(FacturacionElectronicaController::class)->enviarDTE($formRequest);
+    });
     
     Route::get('/reporte/dte/{id}/{tipo}', function ($id, $tipo, Request $request) {
         Log::warning('Ruta deprecated usada: /reporte/dte/{id}/{tipo}. Usar /fe/reporte/dte/{id}/{tipo}');
-        return app(FacturacionElectronicaController::class)->generarDTEPDF($id, $tipo, $request);
-    })->middleware('deprecated');
+        $formRequest = GenerarDTEPDFRequest::createFrom($request);
+        $formRequest->setContainer(app());
+        $formRequest->validateResolved();
+        return app(FacturacionElectronicaController::class)->generarDTEPDF($id, $tipo, $formRequest);
+    });
     
     Route::get('/reporte/dte-json/{id}/{tipo}', function ($id, $tipo, Request $request) {
         Log::warning('Ruta deprecated usada: /reporte/dte-json/{id}/{tipo}. Usar /fe/reporte/dte-json/{id}/{tipo}');
-        return app(FacturacionElectronicaController::class)->generarDTEJSON($id, $tipo, $request);
-    })->middleware('deprecated');
+        $formRequest = GenerarDTEJSONRequest::createFrom($request);
+        $formRequest->setContainer(app());
+        $formRequest->validateResolved();
+        return app(FacturacionElectronicaController::class)->generarDTEJSON($id, $tipo, $formRequest);
+    });
 
     // Rutas que aún no tienen equivalente en el nuevo controlador (mantener temporalmente)
     Route::post('/generarDTEAnuladoSujetoExcluidoGasto', [MHDTEController::class, 'generarDTEAnuladoSujetoExcluidoGasto']);

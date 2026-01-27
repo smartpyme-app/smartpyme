@@ -29,6 +29,8 @@ use Illuminate\Support\Facades\Auth;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Documento;
+use App\Models\Inventario\Producto;
+use App\Models\Inventario\Inventario;
 
 class VentasController extends Controller
 {
