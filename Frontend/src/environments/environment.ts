@@ -4,11 +4,7 @@
 
 export const environment = {
   production: false,
-      // API_URL: 'http://localhost:8000',
       API_URL: 'https://2arwsygm3n.us-east-2.awsapprunner.com',
- //API_URL: 'https://api.smartpyme.test',
-  // API_URL: 'https://apiconta.smartpyme.site',
-  // API_URL: 'https://apitest.smartpyme.site',
   APP_URL: 'http://localhost:4200',
 };
 
