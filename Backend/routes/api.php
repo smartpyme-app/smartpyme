@@ -97,7 +97,6 @@ Route::prefix('cron')->middleware(\App\Http\Middleware\CronApiKeyMiddleware::cla
 	});
 });
 
-
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
 require base_path('routes/modulos/n1co/suscripciones-n1co.php');

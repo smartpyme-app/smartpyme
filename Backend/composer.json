@@ -24,7 +24,8 @@
         "magarrent/laravel-currency-formatter": "^1.0",
         "milon/barcode": "^9.0",
         "mpdf/mpdf": "^8.2",
-        "tymon/jwt-auth": "^1.0"
+        "tymon/jwt-auth": "^1.0",
+        "league/flysystem-aws-s3-v3": "^1.0"
     },
     "require-dev": {
         "facade/ignition": "^2.3.6",

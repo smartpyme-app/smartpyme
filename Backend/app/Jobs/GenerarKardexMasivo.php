@@ -81,7 +81,7 @@ class GenerarKardexMasivo implements ShouldQueue
 
             // Generar archivo CSV directamente
             $fileName = 'kardex_completo_' . $this->idEmpresa . '_' . date('Ymd_His') . '.csv';
-            $filePath = storage_path('app/temp/' . $fileName);
+            $filePath = '/tmp/app/temp/' . $fileName;
             
             // Crear directorio si no existe
             if (!file_exists(dirname($filePath))) {

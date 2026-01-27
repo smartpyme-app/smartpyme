@@ -73,6 +73,21 @@ Resources:
                 Resource:
                   - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/host'
                   - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/name'
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !ImportValue smartpyme-assets-bucket-arn
+                  - !Sub 
+                    - '${BucketArn}/*'
+                    - BucketArn: !ImportValue smartpyme-assets-bucket-arn
         - PolicyName: BedrockAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -115,7 +130,7 @@ Resources:
             Port: '80'
             RuntimeEnvironmentVariables:
               - Name: APP_NAME
-                Value: SmartPyme Worker
+                Value: SmartPyme
               - Name: APP_ENV
                 Value: production
               - Name: APP_DEBUG
@@ -150,6 +165,8 @@ Resources:
                 Value: mysql
               - Name: DB_PORT
                 Value: '3306'
+
+              # Laravel framework configuration
               - Name: BROADCAST_DRIVER
                 Value: log
               - Name: CACHE_DRIVER
@@ -171,11 +188,11 @@ Resources:
               - Name: MAIL_ENCRYPTION
                 Value: tls
               - Name: MAIL_FROM_ADDRESS
-                Value: noreply@smartpyme.com
+                Value: noreply@smartpyme.sv
               - Name: MAIL_FROM_NAME
                 Value: SmartPyme
               - Name: MAIL_TO_ADDRESS
-                Value: admin@smartpyme.com
+                Value: contact@smartpyme.sv
               
               # Redis
               - Name: REDIS_HOST
@@ -251,6 +268,11 @@ Resources:
                 Value: !ImportValue smartpyme-reports-queue-name
               - Name: SQS_INVOICE_QUEUE
                 Value: !ImportValue smartpyme-invoice-processing-queue-name
+              
+              # S3 Bucket Configuration
+              - Name: AWS_BUCKET
+                Value: !ImportValue smartpyme-assets-bucket-name
+              
               - Name: WORKER_ONLY
                 Value: 'true'
               - Name: CRON_API_KEY_SECRET_ARN
