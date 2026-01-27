@@ -34,9 +34,7 @@ Resources:
                   - sqs:GetQueueAttributes
                   - sqs:ChangeMessageVisibility
                 Resource:
-                  - !ImportValue smartpyme-queue-arn
                   - !ImportValue smartpyme-daily-reports-queue-arn
-                  - !ImportValue smartpyme-invoice-processing-queue-arn
                   - !ImportValue smartpyme-shopify-sync-queue-arn
                   - !ImportValue smartpyme-email-notifications-queue-arn
         - PolicyName: SecretsManagerAccess
@@ -258,16 +256,12 @@ Resources:
               - Name: SHOPIFY_ENABLED
                 Value: 'false'
 
-              - Name: SQS_QUEUE
-                Value: !ImportValue smartpyme-queue-name
               - Name: SQS_EMAIL_QUEUE
                 Value: !ImportValue smartpyme-email-queue-name
               - Name: SQS_SYNC_QUEUE
                 Value: !ImportValue smartpyme-sync-queue-name
               - Name: SQS_REPORTS_QUEUE
                 Value: !ImportValue smartpyme-reports-queue-name
-              - Name: SQS_INVOICE_QUEUE
-                Value: !ImportValue smartpyme-invoice-processing-queue-name
               
               # S3 Bucket Configuration
               - Name: AWS_BUCKET
