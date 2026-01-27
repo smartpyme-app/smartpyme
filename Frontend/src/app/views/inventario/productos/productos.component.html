@@ -118,7 +118,7 @@
                             <input type="checkbox" class="form-check">
                         </td> -->
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle"
+                            <img src="{{ apiService.appUrl }}/img/{{ producto.img }}" class="rounded-circle"
                                 width="50px">
                             <span *ngIf="isShopifyActive() && producto.nombre_variante; else nombreNormal">
                                 {{ producto.nombre }} ({{ producto.nombre_variante }})

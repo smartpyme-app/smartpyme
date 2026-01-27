@@ -18,7 +18,7 @@
             <div class="col-md-2">
                 <figure style="min-height: 100px;" class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar">
                     <i *ngIf="!usuario.avatar && !preview" class="fa fa-image fa-2x text-muted"></i>
-                    <img *ngIf="usuario.avatar && !preview" src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" height="100">
+                    <img *ngIf="usuario.avatar && !preview" src="{{ apiService.appUrl + '/img/' + usuario.avatar }}" height="100">
                     <img *ngIf="url_img_preview && preview" src="{{ url_img_preview }}" height="100">
                     <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                 </figure>

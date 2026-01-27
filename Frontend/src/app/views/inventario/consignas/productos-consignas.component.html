@@ -71,7 +71,7 @@
                     </tr>
                     <tr *ngFor=" let producto of productos | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria">
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px"> 
+                            <img src="{{ apiService.appUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px"> 
                             <span *ngIf="isShopifyActive() && producto.nombre_variante; else nombreNormal">
                                 {{ producto.nombre }} ({{ producto.nombre_variante }})
                             </span>
