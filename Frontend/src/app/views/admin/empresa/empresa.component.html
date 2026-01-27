@@ -11,7 +11,7 @@
                         <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center"
                             tooltip="Agregar" style="min-height: 100px;">
                             <!-- <img class="img-fluid" src="" alt="logo"> -->
-                            <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo}}" alt="logo"
+                            <img class="img-fluid" src="{{ apiService.appUrl + '/img/' + empresa.logo}}" alt="logo"
                                 *ngIf="empresa.logo != null">
                             <img class="img-fluid"
                                 src="https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg"
@@ -406,7 +406,7 @@
                                 <figure
                                     class="img-thumbnail file-upload d-flex justify-content-center align-items-center"
                                     style="min-height: 100px; border: 1px dashed #ccc; padding: 10px;">
-                                    <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.sello }}"
+                                    <img class="img-fluid" src="{{ apiService.appUrl + '/img/' + empresa.sello }}"
                                         alt="sello" *ngIf="empresa.sello != null">
                                     <span class="text-muted" *ngIf="empresa.sello == null">Arrastra y suelta o haz clic
                                         para subir</span>
@@ -425,7 +425,7 @@
                                 <figure
                                     class="img-thumbnail file-upload d-flex justify-content-center align-items-center"
                                     style="min-height: 100px; border: 1px dashed #ccc; padding: 10px;">
-                                    <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.firma }}"
+                                    <img class="img-fluid" src="{{ apiService.appUrl + '/img/' + empresa.firma }}"
                                         alt="firma" *ngIf="empresa.firma != null">
                                     <span class="text-muted" *ngIf="empresa.firma == null">Arrastra y suelta o haz clic
                                         para subir</span>
