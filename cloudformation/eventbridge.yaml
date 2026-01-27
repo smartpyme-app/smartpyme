@@ -1,11 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'SmartPyme EventBridge API Destinations - Cron Jobs Migration'
 
-Parameters:
-  WebAppUrl:
-    Type: String
-    Description: SmartPyme Web App URL (e.g., https://abc123.us-east-2.awsapprunner.com)
-
 Resources:
   # EventBridge Connection (for authentication)
   SmartPymeConnection:
@@ -29,7 +24,9 @@ Resources:
       Name: smartpyme-generate-notificaciones-destination
       Description: Generate notificaciones endpoint
       ConnectionArn: !GetAtt SmartPymeConnection.Arn
-      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/generate-notificaciones'
+      InvocationEndpoint: !Sub 
+        - '${WebAppUrl}/api/cron/generate-notificaciones'
+        - WebAppUrl: !ImportValue smartpyme-web-app-ServiceUrl
       HttpMethod: POST
       
   # API Destination for suscripciones:verificar
@@ -39,7 +36,9 @@ Resources:
       Name: smartpyme-suscripciones-verificar-destination
       Description: Suscripciones verificar endpoint
       ConnectionArn: !GetAtt SmartPymeConnection.Arn
-      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/suscripciones-verificar'
+      InvocationEndpoint: !Sub 
+        - '${WebAppUrl}/api/cron/suscripciones-verificar'
+        - WebAppUrl: !ImportValue smartpyme-web-app-ServiceUrl
       HttpMethod: POST
       
   # API Destination for suscripciones:procesar-cargos
@@ -49,7 +48,9 @@ Resources:
       Name: smartpyme-suscripciones-procesar-cargos-destination
       Description: Suscripciones procesar cargos endpoint
       ConnectionArn: !GetAtt SmartPymeConnection.Arn
-      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/suscripciones-procesar-cargos'
+      InvocationEndpoint: !Sub 
+        - '${WebAppUrl}/api/cron/suscripciones-procesar-cargos'
+        - WebAppUrl: !ImportValue smartpyme-web-app-ServiceUrl
       HttpMethod: POST
       
   # API Destination for kardex:procesar-cola
@@ -59,7 +60,9 @@ Resources:
       Name: smartpyme-kardex-procesar-cola-destination
       Description: Kardex procesar cola endpoint
       ConnectionArn: !GetAtt SmartPymeConnection.Arn
-      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/kardex-procesar-cola'
+      InvocationEndpoint: !Sub 
+        - '${WebAppUrl}/api/cron/kardex-procesar-cola'
+        - WebAppUrl: !ImportValue smartpyme-web-app-ServiceUrl
       HttpMethod: POST
       
   # API Destination for trabajos:procesar Shopify
@@ -69,7 +72,9 @@ Resources:
       Name: smartpyme-trabajos-procesar-shopify-destination
       Description: Trabajos procesar Shopify images endpoint
       ConnectionArn: !GetAtt SmartPymeConnection.Arn
-      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/trabajos-procesar-shopify'
+      InvocationEndpoint: !Sub 
+        - '${WebAppUrl}/api/cron/trabajos-procesar-shopify'
+        - WebAppUrl: !ImportValue smartpyme-web-app-ServiceUrl
       HttpMethod: POST
 
   # IAM Role for EventBridge to invoke API Destination

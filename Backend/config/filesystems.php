@@ -69,7 +69,10 @@ return [
             'driver' => 's3',
             'bucket' => env('AWS_BUCKET'),
             'root' => 'public',
-            'visibility' => 'public',
+            'visibility' => 'private',
+            'options' => [
+                'ACL' => null,
+            ],
         ],
 
         's3-storage' => [
