@@ -80,6 +80,9 @@ return [
             'bucket' => env('AWS_BUCKET'),
             'root' => 'storage',
             'visibility' => 'private',
+            'options' => [
+                'ACL' => null,
+            ],
         ],
 
         'documents' => [
