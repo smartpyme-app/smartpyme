@@ -626,7 +626,7 @@ export class EmpresaComponent implements OnInit {
         this.apiService.store('mh/pruebas-masivas/ejecutar', {
             tipo: this.tipoSeleccionado,
             cantidad: this.cantidadFaltante,
-            documento_base_id: this.documentoBaseSeleccionado?.id,
+            id_documento_base: this.documentoBaseSeleccionado?.id ?? null,
             correlativo_inicial: this.correlativoInicial || undefined
         })
             .pipe(this.untilDestroyed())

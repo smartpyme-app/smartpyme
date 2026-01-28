@@ -7,25 +7,18 @@ use App\Models\Admin\Documento;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle;
-// Los modelos MH* fueron eliminados y migrados a la nueva arquitectura
-// TODO: Actualizar este servicio para usar FacturacionElectronicaService
+use App\Services\FacturacionElectronica\FacturacionElectronicaService;
 use App\Models\TrabajosPendientes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Ramsey\Uuid\Uuid;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Este servicio necesita actualización para usar la nueva arquitectura de FE.
- * 
- * Los modelos MH* fueron eliminados y migrados a FacturacionElectronicaService.
- * Este servicio debe ser refactorizado para usar la nueva arquitectura.
- * 
- * ⚠️ ADVERTENCIA: Este servicio no funcionará correctamente hasta que sea actualizado.
+ * Servicio de pruebas masivas de facturación electrónica.
+ * Utiliza FacturacionElectronicaService para generar, firmar y enviar DTEs.
  */
 class MHPruebasMasivasService
 {
@@ -44,7 +37,13 @@ class MHPruebasMasivasService
     protected $notasDebitoRequeridas = 50;
     protected $detallesOriginales;
 
-    public function __construct() {}
+    /** @var FacturacionElectronicaService */
+    protected $feService;
+
+    public function __construct(FacturacionElectronicaService $feService = null)
+    {
+        $this->feService = $feService ?? app(FacturacionElectronicaService::class);
+    }
 
     /**
      * Inicializar datos del usuario y empresa
@@ -1034,27 +1033,27 @@ class MHPruebasMasivasService
     }
 
     /**
-     * TODO: Actualizar para usar FacturacionElectronicaService
+     * Genera DTE de Nota de Crédito usando FacturacionElectronicaService.
      */
     protected function generarDTENotaCredito($devolucion)
     {
-        throw new \Exception('Este método necesita actualización para usar la nueva arquitectura de FE');
+        return $this->feService->generarDTE($devolucion);
     }
 
     /**
-     * TODO: Actualizar para usar FacturacionElectronicaService
+     * Genera DTE de Nota de Débito usando FacturacionElectronicaService.
      */
     protected function generarDTENotaDebito($devolucion)
     {
-        throw new \Exception('Este método necesita actualización para usar la nueva arquitectura de FE');
+        return $this->feService->generarDTE($devolucion);
     }
 
     /**
-     * TODO: Actualizar para usar FacturacionElectronicaService
+     * Genera DTE de Sujeto Excluido (Gasto) usando FacturacionElectronicaService.
      */
     protected function generarDTEGasto($gasto)
     {
-        throw new \Exception('Este método necesita actualización para usar la nueva arquitectura de FE');
+        return $this->feService->generarDTE($gasto);
     }
 
     /**
@@ -1526,11 +1525,7 @@ class MHPruebasMasivasService
         }
 
         try {
-            $resultado = null;
-            // TODO: Actualizar para usar FacturacionElectronicaService
-            throw new \Exception('Este servicio necesita actualización para usar la nueva arquitectura de FE. Los modelos MH* fueron eliminados.');
-
-            return $resultado;
+            return $this->feService->generarDTE($venta);
         } catch (\Exception $e) {
             throw $e;
         } finally {
@@ -1547,93 +1542,21 @@ class MHPruebasMasivasService
     {
         set_time_limit(60);
 
-        $datosParaFirma = [
-            'nit' => str_replace('-', '', $this->empresa->nit),
-            'activo' => true,
-            'passwordPri' => $this->empresa->mh_pwd_certificado,
-            'dteJson' => $dte
-        ];
-
         try {
-            $client = new Client([
-                'timeout' => 30,
-                'connect_timeout' => 10,
-                'verify' => false,
-                'http_errors' => false
-            ]);
+            $firmaResponse = $this->feService->firmarDTE($dte, $venta);
 
-            $responseFirma = $client->post(config('app.mh_url_firmado', 'https://facturadtesv.com:8443/firmardocumento/'), [
-                'json' => $datosParaFirma,
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
-                ]
-            ]);
-
-            $bodyFirma = $responseFirma->getBody()->getContents();
-            $dteFirmado = json_decode($bodyFirma, true);
-
-            $responseFirma = null;
-            $bodyFirma = null;
-
-            if (isset($dteFirmado['status']) && $dteFirmado['status'] === 'ERROR') {
+            if (isset($firmaResponse['status']) && $firmaResponse['status'] === 'ERROR') {
                 return [
                     'success' => false,
-                    'message' => 'Error al firmar DTE: ' . ($dteFirmado['body']['mensaje'] ?? 'Error desconocido')
+                    'message' => 'Error al firmar DTE: ' . ($firmaResponse['body']['mensaje'] ?? 'Error desconocido')
                 ];
             }
 
-            if ($token === null) {
-                $responseAuth = $client->post(config('app.mh_url_auth', 'https://apitest.dtes.mh.gob.sv/seguridad/auth'), [
-                    'form_params' => [
-                        'user' => str_replace('-', '', $this->empresa->mh_usuario),
-                        'pwd' => $this->empresa->mh_contrasena
-                    ]
-                ]);
-
-                $bodyAuth = $responseAuth->getBody()->getContents();
-                $authData = json_decode($bodyAuth, true);
-
-                $responseAuth = null;
-                $bodyAuth = null;
-
-                if (!isset($authData['body']['token'])) {
-                    return [
-                        'success' => false,
-                        'message' => 'Error de autenticación con MH: ' . json_encode($authData)
-                    ];
-                }
-
-                $token = $authData['body']['token'];
-            }
-
-            $datosMH = [
-                'ambiente' => $this->empresa->fe_ambiente,
-                'idEnvio' => $venta->id ?? uniqid(),
-                'version' => $dte['identificacion']['version'],
-                'tipoDte' => $venta->tipo_dte,
-                'documento' => isset($dteFirmado['body']) ? $dteFirmado['body'] : $dteFirmado,
-                'codigoGeneracion' => $venta->codigo_generacion
-            ];
-
-            $responseEnvio = $client->post(config('app.mh_url_recepcion', 'https://apitest.dtes.mh.gob.sv/fesv/recepciondte'), [
-                'json' => $datosMH,
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Authorization' => $token
-                ]
-            ]);
-
-            $bodyEnvio = $responseEnvio->getBody()->getContents();
-            $respuestaMH = json_decode($bodyEnvio, true);
-
-            $responseEnvio = null;
-            $bodyEnvio = null;
-            $datosMH = null;
+            $respuestaMH = $this->feService->enviarDTE($firmaResponse, $venta);
 
             if (isset($respuestaMH['estado']) && $respuestaMH['estado'] === 'PROCESADO') {
                 if (!$this->simulationMode) {
-                    $this->registrarDocumentoExitoso($venta, $dte, $dteFirmado, $respuestaMH);
+                    $this->registrarDocumentoExitoso($venta, $dte, $firmaResponse, $respuestaMH);
                 }
 
                 return [
@@ -1642,18 +1565,12 @@ class MHPruebasMasivasService
                     'selloRecibido' => $respuestaMH['selloRecibido'] ?? null,
                     'token' => $token
                 ];
-            } else {
-                return [
-                    'success' => false,
-                    'message' => 'Error al procesar DTE: ' . json_encode($respuestaMH),
-                    'token' => $token
-                ];
             }
-        } catch (RequestException $e) {
-            $errorMessage = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+
             return [
                 'success' => false,
-                'message' => 'Error de conexión: ' . $errorMessage
+                'message' => 'Error al procesar DTE: ' . json_encode($respuestaMH),
+                'token' => $token
             ];
         } catch (\Exception $e) {
             return [

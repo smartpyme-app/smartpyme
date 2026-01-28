@@ -8,6 +8,7 @@ Esta carpeta contiene toda la documentación para la API Externa de SmartPYME, q
 docs/
 ├── API_EXTERNAL.md           # Documentación principal completa
 ├── DATA_DICTIONARY.md        # 📊 NUEVO: Diccionario completo de datos
+├── FACTURACION_ELECTRONICA_ARCHITECTURE.md  # Arquitectura FE multi-país (El Salvador, rutas fe/)
 ├── RATE_LIMITS.md           # Información sobre límites de requests
 ├── README.md                # Este archivo
 ├── examples/
@@ -32,6 +33,10 @@ docs/
 ### 📊 CSV (`schemas/data_dictionary.csv`)
 - ✅ **Mejor para**: Excel, Google Sheets, análisis de datos
 - ✅ **Compatible con**: Hojas de cálculo, herramientas de BI
+
+## 🧾 Facturación Electrónica
+
+- **Arquitectura FE multi-país**: [FACTURACION_ELECTRONICA_ARCHITECTURE.md](FACTURACION_ELECTRONICA_ARCHITECTURE.md) — rutas `fe/`, implementación El Salvador, pruebas masivas y cómo agregar nuevos países.
 
 ## 🚀 Inicio Rápido
 

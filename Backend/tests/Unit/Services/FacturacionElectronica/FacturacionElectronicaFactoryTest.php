@@ -6,11 +6,9 @@ use Tests\TestCase;
 use App\Services\FacturacionElectronica\Factories\FacturacionElectronicaFactory;
 use App\Services\FacturacionElectronica\Contracts\FacturacionElectronicaInterface;
 use App\Models\Admin\Empresa;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class FacturacionElectronicaFactoryTest extends TestCase
 {
-    use RefreshDatabase;
 
     /**
      * Test que la factory puede crear instancia para El Salvador
@@ -24,7 +22,7 @@ class FacturacionElectronicaFactoryTest extends TestCase
         $factura = FacturacionElectronicaFactory::crear($empresa, '01');
         
         $this->assertInstanceOf(FacturacionElectronicaInterface::class, $factura);
-        $this->assertEquals('SV', $factura->obtenerConfiguracion()['nombre'] ?? null);
+        $this->assertEquals('El Salvador', $factura->obtenerConfiguracion()['nombre'] ?? null);
     }
 
     /**
