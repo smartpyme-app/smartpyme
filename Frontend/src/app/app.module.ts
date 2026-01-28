@@ -18,7 +18,6 @@ import { SubscriptionGuard } from '@guards/SuscriptionGuard.guard';
 import { UsuariosGuard } from '@guards/usuarios.guard';
 
 import { AlertService } from '@services/alert.service';
-import { MHService } from './services/MH.service';
 import { ApiService } from '@services/api.service';
 import { ConstantsService } from '@services/constants.service';
 import { HttpService } from '@services/http.service';
@@ -63,6 +62,6 @@ import { ServiceWorkerModule } from '@angular/service-worker';
         { provide: HTTP_INTERCEPTORS, useClass: AuthorizationInterceptor, multi: true },
         AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, RoleGuard, PermissionGuard, UsuariosGuard, 
         AlertService, ApiService, HttpService, AuthService, PermissionService, UtilityService,
-        ConstantsService, MHService, SumPipe, CurrencyPipe, DatePipe, provideEnvironmentNgxMask(), provideHttpClient(withInterceptorsFromDi())] })
+        ConstantsService, SumPipe, CurrencyPipe, DatePipe, provideEnvironmentNgxMask(), provideHttpClient(withInterceptorsFromDi())] })
 
 export class AppModule { }

@@ -6,7 +6,6 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { MHService } from '@services/MH.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -96,7 +95,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
   constructor(
     public apiService: ApiService,
-    public mhService: MHService, // Mantener para compatibilidad
     public feService: FacturacionElectronicaService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,

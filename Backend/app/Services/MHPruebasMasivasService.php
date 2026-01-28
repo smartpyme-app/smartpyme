@@ -7,12 +7,8 @@ use App\Models\Admin\Documento;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle;
-use App\Models\MH\MHFactura;
-use App\Models\MH\MHCCF;
-use App\Models\MH\MHFacturaExportacion;
-use App\Models\MH\MHNotaCredito;
-use App\Models\MH\MHNotaDebito;
-use App\Models\MH\MHSujetoExcluidoGasto;
+// Los modelos MH* fueron eliminados y migrados a la nueva arquitectura
+// TODO: Actualizar este servicio para usar FacturacionElectronicaService
 use App\Models\TrabajosPendientes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +19,14 @@ use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
+/**
+ * Este servicio necesita actualización para usar la nueva arquitectura de FE.
+ * 
+ * Los modelos MH* fueron eliminados y migrados a FacturacionElectronicaService.
+ * Este servicio debe ser refactorizado para usar la nueva arquitectura.
+ * 
+ * ⚠️ ADVERTENCIA: Este servicio no funcionará correctamente hasta que sea actualizado.
+ */
 class MHPruebasMasivasService
 {
     protected $baseVenta;
@@ -1030,30 +1034,27 @@ class MHPruebasMasivasService
     }
 
     /**
-     * NUEVA FUNCIÓN: Generar DTE para nota de crédito
+     * TODO: Actualizar para usar FacturacionElectronicaService
      */
     protected function generarDTENotaCredito($devolucion)
     {
-        $mh = new MHNotaCredito();
-        return $mh->generarDTE($devolucion);
+        throw new \Exception('Este método necesita actualización para usar la nueva arquitectura de FE');
     }
 
     /**
-     * NUEVA FUNCIÓN: Generar DTE para nota de débito
+     * TODO: Actualizar para usar FacturacionElectronicaService
      */
     protected function generarDTENotaDebito($devolucion)
     {
-        $mh = new MHNotaDebito();
-        return $mh->generarDTE($devolucion);
+        throw new \Exception('Este método necesita actualización para usar la nueva arquitectura de FE');
     }
 
     /**
-     * NUEVA FUNCIÓN: Generar DTE para gasto de sujeto excluido
+     * TODO: Actualizar para usar FacturacionElectronicaService
      */
     protected function generarDTEGasto($gasto)
     {
-        $mh = new MHSujetoExcluidoGasto();
-        return $mh->generarDTE($gasto);
+        throw new \Exception('Este método necesita actualización para usar la nueva arquitectura de FE');
     }
 
     /**
@@ -1526,60 +1527,8 @@ class MHPruebasMasivasService
 
         try {
             $resultado = null;
-            switch ($venta->tipo_dte) {
-                case '01':
-                    $mh = new MHFactura();
-                    $resultado = $mh->generarDTE($venta);
-                    break;
-                case '03':
-                    $mh = new MHCCF();
-                    $resultado = $mh->generarDTE($venta);
-                    break;
-                case '11':
-                    $mh = new MHFacturaExportacion();
-                    $resultado = $mh->generarDTE($venta);
-
-                    Log::info('DTE Exportación generado:', [
-                        'tipoItemExpor' => $resultado['emisor']['tipoItemExpor'] ?? 'NO_DEFINIDO',
-                        'correlativo' => $venta->correlativo,
-                        'dte_completo' => $resultado
-                    ]);
-
-                    break;
-
-                case '14':
-                    $mh = new MHSujetoExcluidoGasto();
-                    $resultado = $mh->generarDTE($venta);
-
-                    Log::info('DTE Sujeto Excluido generado:', [
-                        'correlativo' => $venta->correlativo,
-                        'dte_completo' => $resultado
-                    ]);
-
-                    break;
-                case '05':
-                    $mh = new MHNotaCredito();
-                    $resultado = $mh->generarDTE($venta);
-
-                    Log::info('DTE Nota Crédito generado:', [
-                        'correlativo' => $venta->correlativo,
-                        'dte_completo' => $resultado
-                    ]);
-
-                    break;
-                case '06':
-                    $mh = new MHNotaDebito();
-                    $resultado = $mh->generarDTE($venta);
-
-                    Log::info('DTE Nota Débito generado:', [
-                        'correlativo' => $venta->correlativo,
-                        'dte_completo' => $resultado
-                    ]);
-
-                    break;
-                default:
-                    throw new \Exception("Tipo de documento no soportado para pruebas masivas: {$venta->tipo_dte}");
-            }
+            // TODO: Actualizar para usar FacturacionElectronicaService
+            throw new \Exception('Este servicio necesita actualización para usar la nueva arquitectura de FE. Los modelos MH* fueron eliminados.');
 
             return $resultado;
         } catch (\Exception $e) {

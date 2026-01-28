@@ -13,7 +13,7 @@ import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proy
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica.service';
 import { SharedDataService } from '@services/shared-data.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -89,7 +89,7 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
 
   constructor(
     public apiService: ApiService,
-    public mhService: MHService,
+    public feService: FacturacionElectronicaService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
     private sumPipe: SumPipe,
@@ -1065,7 +1065,7 @@ if (
 
   emitirDTE() {
     this.emiting = true;
-    this.mhService
+    this.feService
       .emitirDTE(this.venta)
       .then((venta) => {
         this.venta = venta;

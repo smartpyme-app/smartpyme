@@ -23,10 +23,9 @@ use App\Http\Requests\MH\GenerarContingenciaRequest;
 use App\Http\Requests\MH\GenerarDTEAnuladoRequest;
 use App\Http\Requests\MH\AnularDTERequest;
 use App\Http\Requests\MH\AnularDTESujetoExcluidoRequest;
-use App\Http\Requests\MH\GenerarDTEPDFRequest;
-use App\Http\Requests\MH\GenerarDTEJSONRequest;
 use App\Http\Requests\MH\EnviarDTERequest;
 use App\Http\Requests\MH\ConsultarDTERequest;
+use Carbon\Carbon;
 
 /**
  * Controlador para Facturación Electrónica Multi-País
@@ -310,10 +309,10 @@ class FacturacionElectronicaController extends Controller
      * 
      * @param int $id
      * @param string $tipo
-     * @param GenerarDTEPDFRequest $request
+     * @param Request $request
      * @return \Illuminate\Http\Response
      */
-    public function generarDTEPDF($id, $tipo, GenerarDTEPDFRequest $request)
+    public function generarDTEPDF($id, $tipo, Request $request)
     {
         try {
             $registro = $this->obtenerRegistroPorTipo($id, $tipo, $request);
@@ -382,10 +381,10 @@ class FacturacionElectronicaController extends Controller
      * 
      * @param int $id
      * @param string $tipo
-     * @param GenerarDTEJSONRequest $request
+     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function generarDTEJSON($id, $tipo, GenerarDTEJSONRequest $request)
+    public function generarDTEJSON($id, $tipo, Request $request)
     {
         try {
             $registro = $this->obtenerRegistroPorTipo($id, $tipo, $request);
@@ -648,5 +647,211 @@ class FacturacionElectronicaController extends Controller
         }
 
         return 'Cliente';
+    }
+
+    /**
+     * Genera documento de anulación (sin anular)
+     * 
+     * @param GenerarDTEAnuladoRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function generarDTEAnulado(GenerarDTEAnuladoRequest $request)
+    {
+        try {
+            if ($request->tipo_dte == '05' || $request->tipo_dte == '06') {
+                $documento = DevolucionVenta::where('id', $request->id)->firstOrFail();
+            } else {
+                $documento = Venta::where('id', $request->id)->firstOrFail();
+            }
+            
+            $dte = is_string($documento->dte) ? json_decode($documento->dte, true) : $documento->dte;
+            
+            if (!$dte) {
+                return response()->json([
+                    'error' => 'El documento no tiene DTE para anular.'
+                ], 400);
+            }
+
+            $dteAnular = $this->feService->generarDTEAnulado($dte, $documento);
+
+            return response()->json($dteAnular, 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error al generar DTE anulado', [
+                'id' => $request->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'error' => 'Error al generar DTE anulado: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Genera documento de anulación para sujeto excluido (compra)
+     * 
+     * @param GenerarDTESujetoExcluidoCompraRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function generarDTEAnuladoSujetoExcluidoCompra(GenerarDTESujetoExcluidoCompraRequest $request)
+    {
+        try {
+            $compra = Compra::where('id', $request->id)->firstOrFail();
+            
+            $dte = is_string($compra->dte) ? json_decode($compra->dte, true) : $compra->dte;
+            
+            if (!$dte) {
+                return response()->json([
+                    'error' => 'La compra no tiene DTE para anular.'
+                ], 400);
+            }
+
+            $dteAnular = $this->feService->generarDTEAnulado($dte, $compra);
+
+            return response()->json($dteAnular, 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error al generar DTE anulado sujeto excluido compra', [
+                'id' => $request->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'error' => 'Error al generar DTE anulado: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Genera documento de anulación para sujeto excluido (gasto)
+     * 
+     * @param GenerarDTESujetoExcluidoGastoRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function generarDTEAnuladoSujetoExcluidoGasto(GenerarDTESujetoExcluidoGastoRequest $request)
+    {
+        try {
+            $gasto = Gasto::where('id', $request->id)->firstOrFail();
+            
+            $dte = is_string($gasto->dte) ? json_decode($gasto->dte, true) : $gasto->dte;
+            
+            if (!$dte) {
+                return response()->json([
+                    'error' => 'El gasto no tiene DTE para anular.'
+                ], 400);
+            }
+
+            $dteAnular = $this->feService->generarDTEAnulado($dte, $gasto);
+
+            return response()->json($dteAnular, 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error al generar DTE anulado sujeto excluido gasto', [
+                'id' => $request->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'error' => 'Error al generar DTE anulado: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Genera documento de contingencia
+     * 
+     * @param GenerarContingenciaRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function generarContingencia(GenerarContingenciaRequest $request)
+    {
+        try {
+            $ventas = Venta::whereIn('id', [$request->id])
+                ->with('detalles', 'empresa')
+                ->get();
+
+            if ($ventas->isEmpty()) {
+                return response()->json([
+                    'error' => 'No se encontraron ventas.'
+                ], 404);
+            }
+
+            $empresa = $ventas[0]->empresa;
+            $dtes = collect();
+
+            foreach ($ventas as $venta) {
+                if (!$venta->dte) {
+                    continue;
+                }
+                
+                $dte = is_string($venta->dte) ? json_decode($venta->dte, true) : $venta->dte;
+                if ($dte) {
+                    $dtes->push($dte);
+                }
+            }
+
+            if ($dtes->isEmpty()) {
+                return response()->json([
+                    'error' => 'No se generó ningún DTE para la contingencia.'
+                ], 400);
+            }
+
+            $contingencia = $this->feService->generarContingencia($dtes->toArray(), $empresa, 3);
+
+            return response()->json($contingencia, 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error al generar contingencia', [
+                'id' => $request->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'error' => 'Error al generar contingencia: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Genera ticket de DTE
+     * 
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
+    public function generarTicket($id)
+    {
+        try {
+            $venta = Venta::where('id', $id)
+                ->with('detalles', 'cliente', 'empresa')
+                ->firstOrFail();
+
+            $dte = is_string($venta->dte) ? json_decode($venta->dte, true) : $venta->dte;
+
+            if (!$dte) {
+                abort(404, 'El documento no tiene DTE.');
+            }
+
+            // Obtener URL de consulta pública desde configuración
+            $empresa = $venta->empresa;
+            $pais = $empresa->getFePais() ?? 'SV';
+            $config = config("facturacion_electronica.paises.{$pais}", []);
+            $urlConsultaPublica = $config['consulta_publica'] ?? 'https://admin.factura.gob.sv/consultaPublica';
+
+            $venta->qr = $urlConsultaPublica . '?ambiente=' . $dte['identificacion']['ambiente'] . 
+                       '&codGen=' . $dte['identificacion']['codigoGeneracion'] . 
+                       '&fechaEmi=' . $dte['identificacion']['fecEmi'];
+
+            $DTE = $dte;
+            return view('reportes.DTE-Ticket', compact('venta', 'DTE'));
+
+        } catch (\Exception $e) {
+            Log::error('Error al generar ticket', [
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            abort(500, 'Error al generar ticket: ' . $e->getMessage());
+        }
     }
 }

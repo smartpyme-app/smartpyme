@@ -12,7 +12,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
@@ -45,7 +45,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
 
     constructor(
         apiService: ApiService,
-        public mhService: MHService,
+        public feService: FacturacionElectronicaService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private router: Router,
@@ -324,16 +324,16 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
     }
 
     imprimirDTEPDF(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/03/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/fe/reporte/dte/' + gasto.id + '/14/?tipo=gasto&token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/03/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/fe/reporte/dte-json/' + gasto.id + '/14/?tipo=gasto&token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTESujetoExcluidoGasto(this.gasto).then((gasto: any) => {
+        this.feService.emitirDTESujetoExcluidoGasto(this.gasto).then((gasto: any) => {
             this.gasto = gasto;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
@@ -371,17 +371,17 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
             if (confirm('¿Confirma anular la gasto y el DTE?')) {
                 this.gasto = gasto;
                 this.saving = true;
-                this.apiService.store('generarDTEAnuladoSujetoExcluidoGasto', this.gasto)
+                this.apiService.store('fe/generarDTEAnuladoSujetoExcluidoGasto', this.gasto)
                     .pipe(this.untilDestroyed())
                     .subscribe({
                         next: (dte) => {
                             this.gasto.dte_invalidacion = dte;
-                            this.mhService.firmarDTE(dte)
+                            this.feService.firmarDTE(dte)
                                 .pipe(this.untilDestroyed())
                                 .subscribe({
                                     next: (dteFirmado) => {
                                         this.gasto.dte_invalidacion.firmaElectronica = dteFirmado.body;
-                                        this.mhService.anularDTE(this.gasto, dteFirmado.body)
+                                        this.feService.anularDTE(this.gasto, dteFirmado.body)
                                             .pipe(this.untilDestroyed())
                                             .subscribe({
                                                 next: (dte) => {

@@ -11,7 +11,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica.service';
 import { SharedDataService } from '@services/shared-data.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
@@ -57,7 +57,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
 
     constructor(
         apiService: ApiService, 
-        public mhService: MHService, 
+        public feService: FacturacionElectronicaService, 
         alertService: AlertService,
         modalManager: ModalManagerService,
         private router: Router, 
@@ -471,16 +471,16 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
     }
 
     imprimirDTEPDF(compra:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + compra.id + '/14/' + '?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/fe/reporte/dte/' + compra.id + '/14/?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(compra:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + compra.id + '/14/' + '?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/fe/reporte/dte-json/' + compra.id + '/14/?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTESujetoExcluidoCompra(this.compra).then((compra) => {
+        this.feService.emitirDTESujetoExcluidoCompra(this.compra).then((compra) => {
             this.compra = compra;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
@@ -495,7 +495,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
     enviarDTE(){
         this.sending = true;
         this.compra.tipo = 'compra';
-        this.apiService.store('enviarDTE', this.compra)
+        this.apiService.store('fe/enviarDTE', this.compra)
             .pipe(this.untilDestroyed())
             .subscribe(dte => {
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
@@ -513,18 +513,18 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
             if (confirm('¿Confirma anular la compra y el DTE?')) {
                 this.compra = compra;
                 this.saving = true;
-                this.apiService.store('generarDTEAnuladoSujetoExcluidoCompra', this.compra)
+                this.apiService.store('fe/generarDTEAnuladoSujetoExcluidoCompra', this.compra)
                     .pipe(this.untilDestroyed())
                     .subscribe(dte => {
                         // this.alertService.success('DTE generado.');
                         this.compra.dte_invalidacion = dte;
-                        this.mhService.firmarDTE(dte)
+                        this.feService.firmarDTE(dte)
                             .pipe(this.untilDestroyed())
                             .subscribe(dteFirmado => {
                                 this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
                                 // this.alertService.success('DTE firmado.');
 
-                                this.mhService.anularDTE(this.compra, dteFirmado.body)
+                                this.feService.anularDTE(this.compra, dteFirmado.body)
                                     .pipe(this.untilDestroyed())
                                     .subscribe(dte => {
                                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {

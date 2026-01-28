@@ -223,6 +223,121 @@ class FacturacionElectronicaService
     }
 
     /**
+     * Genera solo el documento de anulación (sin anular)
+     * 
+     * @param array $dte Documento original
+     * @param mixed $documento Documento original
+     * @return array Documento de anulación
+     * @throws \Exception Si hay errores
+     */
+    public function generarDTEAnulado(array $dte, $documento): array
+    {
+        try {
+            $empresa = $this->obtenerEmpresa($documento);
+            $tipoDocumento = $dte['identificacion']['tipoDte'] ?? $this->obtenerTipoDocumento($documento);
+            
+            if (!$tipoDocumento) {
+                throw new \Exception("No se pudo determinar el tipo de documento");
+            }
+            
+            $fe = FacturacionElectronicaFactory::crear($empresa, $tipoDocumento);
+            
+            // Usar reflexión para acceder al método protegido
+            $reflection = new \ReflectionClass($fe);
+            $method = $reflection->getMethod('generarDTEAnulado');
+            $method->setAccessible(true);
+            
+            return $method->invoke($fe, $dte, $documento);
+            
+        } catch (\Exception $e) {
+            Log::error("Error al generar DTE anulado", [
+                'error' => $e->getMessage(),
+                'documento_id' => $documento->id ?? null
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Genera documento de contingencia
+     * 
+     * @param array $dtes Array de DTEs a incluir en la contingencia
+     * @param Empresa $empresa Empresa emisora
+     * @param int $tipoContingencia Tipo de contingencia (1-4)
+     * @return array Documento de contingencia
+     * @throws \Exception Si hay errores
+     */
+    public function generarContingencia(array $dtes, Empresa $empresa, int $tipoContingencia = 3): array
+    {
+        try {
+            $this->validarFacturacionElectronica($empresa);
+            
+            $pais = $empresa->fe_pais ?? $empresa->cod_pais ?? 'SV';
+            
+            // Por ahora solo soportamos El Salvador
+            if ($pais !== 'SV') {
+                throw new \Exception("Contingencia solo disponible para El Salvador");
+            }
+            
+            $codigoGeneracion = strtoupper(\Ramsey\Uuid\Uuid::uuid4()->toString());
+            $sucursal = $empresa->sucursales()->first();
+            
+            $identificacion = [
+                "version" => 3,
+                "ambiente" => $dtes[0]['identificacion']['ambiente'] ?? ($empresa->fe_ambiente == '01' ? '01' : '00'),
+                "codigoGeneracion" => $codigoGeneracion,
+                "fTransmision" => \Carbon\Carbon::now()->format('Y-m-d'),
+                "hTransmision" => \Carbon\Carbon::now()->format('H:i:s'),
+            ];
+
+            $detalles = collect();
+            foreach ($dtes as $index => $dte) {
+                $detalles->push([
+                    "noItem" => $index + 1,
+                    "codigoGeneracion" => $dte['identificacion']['codigoGeneracion'],
+                    "tipoDoc" => $dte['identificacion']['tipoDte'],
+                ]);
+            }
+
+            $motivo = [
+                "fInicio" => \Carbon\Carbon::parse($dtes[0]['identificacion']['fecEmi'])->format('Y-m-d'),
+                "fFin" => \Carbon\Carbon::parse($dtes[0]['identificacion']['fecEmi'])->format('Y-m-d'),
+                "hInicio" => \Carbon\Carbon::parse($dtes[0]['identificacion']['horEmi'] ?? '00:00:00')->format('H:i:s'),
+                "hFin" => \Carbon\Carbon::parse($dtes[0]['identificacion']['horEmi'] ?? '00:00:00')->format('H:i:s'),
+                "tipoContingencia" => $tipoContingencia,
+                "motivoContingencia" => 'No se pudieron emitir los DTEs.',
+            ];
+
+            $emisor = [
+                "nit" => str_replace('-', '', $empresa->nit),
+                "nombre" => $empresa->nombre,
+                "nombreResponsable" => $empresa->nombre,
+                "tipoDocResponsable" => '13',
+                "numeroDocResponsable" => $empresa->nit,
+                "tipoEstablecimiento" => '02',
+                "telefono" => $empresa->telefono,
+                "correo" => $empresa->correo,
+                "codEstableMH" => $sucursal->cod_estable_mh ?? null,
+                "codPuntoVenta" => null,
+            ];
+
+            return [
+                "identificacion" => $identificacion,
+                "emisor" => $emisor,
+                "detalleDTE" => $detalles->toArray(),
+                "motivo" => $motivo,
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error("Error al generar contingencia", [
+                'error' => $e->getMessage(),
+                'empresa_id' => $empresa->id ?? null
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Obtiene el tipo de documento desde el documento
      * 
      * @param mixed $documento

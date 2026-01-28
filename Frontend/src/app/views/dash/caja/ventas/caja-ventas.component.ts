@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
@@ -34,7 +34,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
 
     constructor(
         protected override apiService: ApiService,
-        public mhService: MHService,
+        public feService: FacturacionElectronicaService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService
     ){
@@ -252,16 +252,16 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
     }
 
     imprimirDTEPDF(venta:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id  + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/fe/reporte/dte/' + venta.id  + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(venta:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/fe/reporte/dte-json/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTE(this.venta).then((venta) => {
+        this.feService.emitirDTE(this.venta).then((venta) => {
             this.venta = venta;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
@@ -273,7 +273,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
 
     enviarDTE(){
         this.sending = true;
-        this.apiService.store('enviarDTE', this.venta)
+        this.apiService.store('fe/enviarDTE', this.venta)
           .pipe(this.untilDestroyed())
           .subscribe(dte => {
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
@@ -289,7 +289,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
     emitirEnContingencia(venta:any){
         this.venta = venta;
         this.saving = true;
-        this.mhService.emitirDTEContingencia(this.venta).then((venta) => {
+        this.feService.emitirDTEContingencia(this.venta).then((venta) => {
             this.venta = venta;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
@@ -305,12 +305,12 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
             if (confirm('¿Confirma anular la venta y el DTE?')) {
                 this.venta = venta;
                 this.saving = true;
-                this.apiService.store('generarDTEAnulado', this.venta)
+                this.apiService.store('fe/generarDTEAnulado', this.venta)
                   .pipe(this.untilDestroyed())
                   .subscribe(dte => {
                     // this.alertService.success('DTE generado.');
                     this.venta.dte_invalidacion = dte;
-                    this.mhService.firmarDTE(dte)
+                    this.feService.firmarDTE(dte)
                       .pipe(this.untilDestroyed())
                       .subscribe(dteFirmado => {
                         this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
@@ -319,7 +319,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
                             this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
                         }
                         
-                        this.mhService.anularDTE(this.venta, dteFirmado.body)
+                        this.feService.anularDTE(this.venta, dteFirmado.body)
                           .pipe(this.untilDestroyed())
                           .subscribe(dte => {
                             if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {

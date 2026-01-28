@@ -26,7 +26,6 @@ import { PermissionGuard } from './app/guards/permission.guard';
 import { AlertService } from './app/services/alert.service';
 import { ApiService } from './app/services/api.service';
 import { ConstantsService } from './app/services/constants.service';
-import { MHService } from './app/services/MH.service';
 import { SumPipe } from './app/pipes/sum.pipe';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { SharedModule } from './app/shared/shared.module';
@@ -62,7 +61,6 @@ bootstrapApplication(AppComponent, {
     AlertService,
     ApiService,
     ConstantsService,
-    MHService,
     SumPipe,
     CurrencyPipe,
     DatePipe

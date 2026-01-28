@@ -7,7 +7,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
@@ -30,7 +30,7 @@ export class LoginComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor( private apiService: ApiService, private mhService: MHService,
+    constructor( private apiService: ApiService, private feService: FacturacionElectronicaService,
         private router: Router, private alertService: AlertService) { }
 
     ngOnInit() {
@@ -62,8 +62,8 @@ export class LoginComponent implements OnInit {
                         localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
                     }
         
-                    if(this.user.empresa.mh_usuario && this.user.empresa.mh_contrasena){
-                        this.mhService.login();
+                    if((this.user.empresa.fe_usuario || this.user.empresa.mh_usuario) && (this.user.empresa.fe_contrasena || this.user.empresa.mh_contrasena)){
+                        this.feService.login();
                     }
         
                     this.apiService.loadData();

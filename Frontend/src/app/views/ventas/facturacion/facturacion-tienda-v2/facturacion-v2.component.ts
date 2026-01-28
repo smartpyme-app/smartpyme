@@ -8,7 +8,6 @@ import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
-import { MHService } from '@services/MH.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica.service';
 import { BuscadorClientesComponent } from '@shared/parts/buscador-clientes/buscador-clientes.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
@@ -74,7 +73,6 @@ export class FacturacionV2Component implements OnInit {
 
   constructor(
     public apiService: ApiService,
-    public mhService: MHService, // Mantener para compatibilidad
     public feService: FacturacionElectronicaService,
     private alertService: AlertService,
     private modalService: BsModalService,

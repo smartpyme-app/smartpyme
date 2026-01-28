@@ -392,6 +392,60 @@ export class FacturacionElectronicaService {
   }
 
   /**
+   * Emite un DTE de Sujeto Excluido (Gasto)
+   * 
+   * @param gasto Gasto a emitir
+   * @returns Promise con el gasto actualizado
+   */
+  emitirDTESujetoExcluidoGasto(gasto: any): Promise<any> {
+    return this.emitirDTE(
+      gasto,
+      'generarDTESujetoExcluidoGasto',
+      'gasto'
+    );
+  }
+
+  /**
+   * Emite un DTE de Sujeto Excluido (Compra)
+   * 
+   * @param compra Compra a emitir
+   * @returns Promise con la compra actualizada
+   */
+  emitirDTESujetoExcluidoCompra(compra: any): Promise<any> {
+    return this.emitirDTE(
+      compra,
+      'generarDTESujetoExcluidoCompra',
+      'compra'
+    );
+  }
+
+  /**
+   * Emite un DTE en modo contingencia
+   * 
+   * @param venta Venta a emitir
+   * @returns Promise con la venta actualizada
+   */
+  emitirDTEContingencia(venta: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.apiService.store('fe/generarContingencia', venta).subscribe({
+        next: (contingencia) => {
+          venta.dte_contingencia = contingencia;
+          this.apiService.store('venta', venta).subscribe({
+            next: (data) => resolve(data),
+            error: (error) => {
+              this.alertService.error(error);
+              reject(error);
+            }
+          });
+        },
+        error: (error) => {
+          reject(error);
+        }
+      });
+    });
+  }
+
+  /**
    * Verifica el estado del firmador
    * 
    * @returns Observable con el estado

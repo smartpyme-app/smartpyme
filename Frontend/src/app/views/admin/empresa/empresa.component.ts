@@ -10,7 +10,7 @@ import { NgxMaskDirective } from 'ngx-mask';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import Swal from 'sweetalert2';
@@ -67,7 +67,7 @@ export class EmpresaComponent implements OnInit {
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
-        public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
+        public apiService: ApiService, public feService: FacturacionElectronicaService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
         private cdr: ChangeDetectorRef,
         private funcionalidadesService: FuncionalidadesService
@@ -335,7 +335,7 @@ export class EmpresaComponent implements OnInit {
         this.cdr.markForCheck();
 
         this.onSubmit().then(() => {
-            this.mhService.auth()
+            this.feService.auth()
                 .pipe(this.untilDestroyed())
                 .subscribe(response => {
 
@@ -428,7 +428,7 @@ export class EmpresaComponent implements OnInit {
         this.cheking = true;
         this.cdr.markForCheck();
 
-        this.mhService.verificarFirmador()
+        this.feService.verificarFirmador()
             .pipe(this.untilDestroyed())
             .subscribe(response => {
             this.cheking = false;
@@ -454,7 +454,7 @@ export class EmpresaComponent implements OnInit {
 
     cargarEstadisticasPruebas() {
         if (this.empresa.fe_ambiente == '00') {
-            this.mhService.obtenerEstadisticasPruebasMasivas()
+            this.apiService.getAll('mh/pruebas-masivas/estadisticas')
                 .pipe(this.untilDestroyed())
                 .subscribe(
                 (data) => {
@@ -623,12 +623,12 @@ export class EmpresaComponent implements OnInit {
         this.cdr.markForCheck();
 
         // Llamada al servicio para ejecutar las pruebas
-        this.mhService.ejecutarPruebasMasivas(
-            this.tipoSeleccionado,
-            this.cantidadFaltante,
-            this.documentoBaseSeleccionado?.id,
-            this.correlativoInicial || undefined
-        )
+        this.apiService.store('mh/pruebas-masivas/ejecutar', {
+            tipo: this.tipoSeleccionado,
+            cantidad: this.cantidadFaltante,
+            documento_base_id: this.documentoBaseSeleccionado?.id,
+            correlativo_inicial: this.correlativoInicial || undefined
+        })
             .pipe(this.untilDestroyed())
             .subscribe(
             (response) => {
@@ -1401,7 +1401,7 @@ export class EmpresaComponent implements OnInit {
 
     setCamposRenta() {
         this.onSubmit().then(() => {
-            this.mhService.auth()
+            this.feService.auth()
                 .pipe(this.untilDestroyed())
                 .subscribe(response => {
 
