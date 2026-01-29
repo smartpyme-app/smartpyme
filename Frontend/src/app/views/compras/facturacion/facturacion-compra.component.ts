@@ -943,6 +943,18 @@ export class FacturacionCompraComponent implements OnInit {
                     this.compra.cobrar_impuestos = true;
                 }
             }
+
+            // Percepción (DTE.resumen.ivaPerci1): si trae percepción, asignar monto y sello a la compra
+            const percepcion = parseFloat(jsonData.resumen.ivaPerci1) || 0;
+            if (percepcion > 0) {
+                this.compra.percepcion = percepcion;
+                this.compra.cobrar_percepcion = true;
+                // Agregar el sello a la compra cuando el DTE tiene percepción
+                const sello = jsonData.selloRecibido || jsonData.sello || (jsonData.documento && jsonData.documento.selloRecibido);
+                if (sello) {
+                    this.compra.sello_mh = sello;
+                }
+            }
         }
     
         // Procesar productos del cuerpoDocumento de forma optimizada

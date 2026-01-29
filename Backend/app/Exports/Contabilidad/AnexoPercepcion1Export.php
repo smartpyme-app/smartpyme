@@ -56,11 +56,14 @@ class AnexoPercepcion1Export implements FromCollection, WithMapping, WithCustomC
             $tipo = '12';
         }
 
+        // Si tiene sello_mh (DTE) usar ese en serie; si no, como estaba
+        $serie = $compra->sello_mh ? $compra->sello_mh : ($compra->serie ?? $compra->num_serie ?? '');
+
         return [
             $compra->proveedor->nit ?? '', //A nit agente
             \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'), // B fecha
             $tipo, // C Tipo
-            $compra->serie, // D serie o sello
+            $serie, // D serie o sello
             str_replace('-', '', $compra->referencia), // E numero de documento o codigo de generacion
             number_format($compra->sub_total, 2, '.', ''), // F monto sujeto
             number_format($compra->percepcion, 2, '.', ''), // G monto percepcion
