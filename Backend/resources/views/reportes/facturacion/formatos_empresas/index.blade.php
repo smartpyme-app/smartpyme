@@ -46,6 +46,27 @@
         </div>
       </div>
       <div class="col-md-12">
+        <h6 class="font-weight-bold mb-3">Aplicación del impuesto</h6>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="aplica_ventas" id="aplica_ventas_create" value="1" checked>
+          <label class="form-check-label" for="aplica_ventas_create">
+            Ventas
+          </label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="aplica_compras" id="aplica_compras_create" value="1" checked>
+          <label class="form-check-label" for="aplica_compras_create">
+            Compras
+          </label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="aplica_gastos" id="aplica_gastos_create" value="1" checked>
+          <label class="form-check-label" for="aplica_gastos_create">
+            Gastos
+          </label>
+        </div>
+      </div>
+      <div class="col-md-12">
         <h4 class="text-center mt-2 mb-3">Impuestos</h4>
           @foreach($impuestos as $impuesto)
             <div class="bg-light m-2 p-2 pt-3 d-flex justify-content-between">
@@ -88,6 +109,27 @@
           <input type="number" class="form-control" id="per_impuesto" name="porcentaje" step="any" required>
         </div>
       </div>
+      <div class="col-md-12">
+        <h6 class="font-weight-bold mb-3">Aplicación del impuesto</h6>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="aplica_ventas" id="aplica_ventas_edit" value="1">
+          <label class="form-check-label" for="aplica_ventas_edit">
+            Ventas
+          </label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="aplica_compras" id="aplica_compras_edit" value="1">
+          <label class="form-check-label" for="aplica_compras_edit">
+            Compras
+          </label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="aplica_gastos" id="aplica_gastos_edit" value="1">
+          <label class="form-check-label" for="aplica_gastos_edit">
+            Gastos
+          </label>
+        </div>
+      </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -107,6 +149,11 @@
         document.getElementById('impuesto').value = imp.id;
         document.getElementById('nombre_impuesto').value = imp.nombre;
         document.getElementById('per_impuesto').value = imp.porcentaje;
+        
+        // Actualizar checkboxes de aplicación
+        document.getElementById('aplica_ventas_edit').checked = imp.aplica_ventas !== false && imp.aplica_ventas !== 0;
+        document.getElementById('aplica_gastos_edit').checked = imp.aplica_gastos !== false && imp.aplica_gastos !== 0;
+        document.getElementById('aplica_compras_edit').checked = imp.aplica_compras !== false && imp.aplica_compras !== 0;
     }
 </script>
 @endsection

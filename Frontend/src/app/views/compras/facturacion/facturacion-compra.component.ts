@@ -130,7 +130,8 @@ export class FacturacionCompraComponent implements OnInit {
         }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('impuestos').subscribe(impuestos => {
-            this.impuestos = impuestos;
+            // Filtrar solo los impuestos que aplican a compras
+            this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_compras !== false && impuesto.aplica_compras !== 0);
             this.compra.impuestos = this.impuestos;
             this.sumTotal();
 
@@ -204,6 +205,7 @@ export class FacturacionCompraComponent implements OnInit {
         this.compra.iva = 0;
         this.compra.total_costo = 0;
         this.compra.total = 0;
+        this.compra.impuestos = [];
         this.detalle = {};
         this.compra.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
         this.compra.cobrar_percepcion = false;
@@ -229,6 +231,10 @@ export class FacturacionCompraComponent implements OnInit {
                 this.loading = true;
                 this.apiService.read('compra/', params.id).subscribe(compra => {
                     this.compra = compra;
+                    // Asegurar que impuestos existe y es un array
+                    if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos)) {
+                        this.compra.impuestos = this.impuestos || [];
+                    }
                     this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
                     this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
                     this.loading = false;
@@ -242,6 +248,15 @@ export class FacturacionCompraComponent implements OnInit {
             this.duplicarcompra = true;
             this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
                 this.compra = compra;
+                // Asegurar que impuestos existe y es un array, y usar los impuestos filtrados
+                if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos)) {
+                    this.compra.impuestos = this.impuestos || [];
+                } else {
+                    // Filtrar los impuestos para mantener solo los que aplican a compras
+                    this.compra.impuestos = this.compra.impuestos.filter((impuesto: any) => 
+                        impuesto.aplica_compras !== false && impuesto.aplica_compras !== 0
+                    );
+                }
                 this.compra.fecha = this.apiService.date();
                 this.compra.fecha_pago = this.apiService.date();
                 this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
@@ -284,16 +299,28 @@ export class FacturacionCompraComponent implements OnInit {
     }
 
     public sumTotal() {
+        // Asegurar que impuestos existe y es un array
+        if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos)) {
+            this.compra.impuestos = [];
+        }
+
         this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
         this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0; 
         this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
         this.compra.renta_retenida = this.compra.renta ? this.compra.sub_total * 0.10 : 0; 
 
-        if(this.compra.cobrar_impuestos){
-            this.compra.iva = ( this.compra.sub_total * (this.apiService.auth_user().empresa.iva / 100) ).toFixed(2);
-        }else{
-            this.compra.iva = 0;
-        }
+        // Calcular impuestos usando la lista de impuestos (igual que en ventas)
+        this.compra.impuestos.forEach((impuesto: any) => {
+            if (this.compra.cobrar_impuestos) {
+                impuesto.monto = this.compra.sub_total * (impuesto.porcentaje / 100);
+            } else {
+                impuesto.monto = 0;
+            }
+        });
+
+        this.compra.iva = parseFloat(
+            this.sumPipe.transform(this.compra.impuestos, 'monto')
+        ).toFixed(2);
 
         this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
         this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);

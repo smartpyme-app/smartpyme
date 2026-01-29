@@ -121,6 +121,14 @@
                         <td style="width: 150px;" class="text-right"> {{ compra.iva | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
+                    <tr *ngFor="let impuesto of compra?.impuestos">
+                        <td class="text-right"> {{ impuesto.nombre }} </td>
+                        <td style="width: 150px;" class="text-right">
+                            <span *ngIf="!impuesto?.monto">%{{ impuesto.porcentaje }}</span>
+                            <span *ngIf="impuesto?.monto > 0" tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje }}</span>
+                        </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
                     <tr>
                         <td class="text-right"> <b>Percepción (1%)</b></td>
                         <td style="width: 150px;" class="text-right"> {{ compra.percepcion | currency:'USD':'symbol':'1.2'}} </td>

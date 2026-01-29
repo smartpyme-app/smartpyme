@@ -23,6 +23,8 @@ export class RegisterComponent implements OnInit {
     public codigoPromocionalValido: boolean = false;
     public codigoPromocionalValidado: CodigoPromocional | null = null;
     public mensajeErrorCodigo: string = '';
+    public planes: any[] = [];
+    public planesMap: Map<number, any> = new Map(); // Mapa de planes por ID
 
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
@@ -75,8 +77,8 @@ export class RegisterComponent implements OnInit {
                 this.user.empresa.codigo_promocional = this.route.snapshot.queryParamMap.get('promo')!;
             }
 
-            this.setPlan();
-            this.aplicarDescuento();
+            // Cargar planes desde el backend y luego inicializar precios
+            this.cargarPlanes();
             
             // Inicializar tieneDescuento y codigoPromocionalValido si ya hay un código promocional
             if (this.user.empresa.codigo_promocional) {
@@ -92,8 +94,37 @@ export class RegisterComponent implements OnInit {
                 });
             }
 
+        } else {
+            // Si ya hay un usuario, también cargar planes por si acaso
+            this.cargarPlanes();
         }
 
+    }
+
+    /**
+     * Carga los planes desde el backend
+     */
+    public cargarPlanes() {
+        this.apiService.getToUrl(this.apiService.apiUrl + 'planes/publicos').subscribe(
+            (response: any) => {
+                this.planes = response.planes || response;
+                // Crear mapa de planes por ID para acceso rápido
+                this.planesMap.clear();
+                this.planes.forEach((plan: any) => {
+                    this.planesMap.set(plan.id, plan);
+                });
+                
+                // Si ya hay un plan seleccionado, recalcular precios y aplicar descuentos
+                if (this.user?.empresa?.plan) {
+                    this.setPlan();
+                    this.aplicarDescuento();
+                }
+            },
+            error => {
+                console.error('Error al cargar planes:', error);
+                this.alertService.error('Error al cargar los planes disponibles');
+            }
+        );
     }
 
     public setPlan(){
@@ -106,82 +137,131 @@ export class RegisterComponent implements OnInit {
             }
         }
 
+        // Si no hay planes cargados o no hay plan seleccionado, salir
+        if (!this.user.empresa.plan || this.planes.length === 0) {
+            this.totalOriginal = 0;
+            this.user.empresa.total = 0;
+            return;
+        }
+
+        // Obtener el plan seleccionado desde el backend
+        const planId = parseInt(this.user.empresa.plan);
+        const plan = this.planesMap.get(planId);
+        
+        if (!plan) {
+            console.warn('Plan no encontrado:', planId);
+            this.totalOriginal = 0;
+            this.user.empresa.total = 0;
+            return;
+        }
+
+        // Determinar el tipo de plan según frecuencia_pago o tipo_plan
+        const tipoPlan = this.user.empresa.frecuencia_pago || this.user.empresa.tipo_plan || 'Mensual';
+        
+        // Buscar el plan correspondiente según el tipo (Mensual, Trimestral, Anual)
+        let planSeleccionado = this.planes.find((p: any) => {
+            // Buscar por nombre del plan y duración
+            const nombreCoincide = p.nombre === plan.nombre || 
+                                   p.nombre.toLowerCase().includes(plan.nombre.toLowerCase()) ||
+                                   plan.nombre.toLowerCase().includes(p.nombre.toLowerCase());
+            
+            if (tipoPlan === 'Mensual' && p.duracion_dias === 30 && nombreCoincide) {
+                return true;
+            }
+            if (tipoPlan === 'Trimestral' && p.duracion_dias === 90 && nombreCoincide) {
+                return true;
+            }
+            if (tipoPlan === 'Anual' && (p.duracion_dias === 365 || p.duracion_dias === 360) && nombreCoincide) {
+                return true;
+            }
+            return false;
+        });
+
+        // Si no se encuentra el plan específico, usar el plan actual como base
+        if (!planSeleccionado) {
+            planSeleccionado = plan;
+        }
+
+        // Establecer límites según el plan (usar lógica existente basada en nombre o ID)
+        // Mantener la lógica de límites existente si es necesario
+        const planNombre = planSeleccionado.nombre.toLowerCase();
+        if (planNombre.includes('emprendedor') || planId === 1) {
+            this.user.empresa.user_limit = 1;
+            this.user.empresa.sucursal_limit = 1;
+        } else if (planNombre.includes('estándar') || planNombre.includes('estandar') || planId === 2) {
+            this.user.empresa.user_limit = 2;
+            this.user.empresa.sucursal_limit = 1;
+        } else if (planNombre.includes('avanzado') || planId === 3) {
+            this.user.empresa.user_limit = 5;
+            this.user.empresa.sucursal_limit = 2;
+        } else if (planNombre.includes('pro') || planId === 4) {
+            this.user.empresa.user_limit = 5;
+            this.user.empresa.sucursal_limit = 2;
+        }
+
+        // Obtener precio base del plan desde el backend
+        const precioBase = parseFloat(planSeleccionado.precio) || 0;
+
         // Verificar si hay un código promocional válido para el plan anual
         const tieneCodigoPromocionalValidoAnual = 
             this.codigoPromocionalValidado && 
-            this.user.empresa.frecuencia_pago === 'Anual' &&
+            tipoPlan === 'Anual' &&
             this.esPlanPermitido(this.codigoPromocionalValidado, 'Anual');
 
-        if(this.user.empresa.plan == 1){//emprendedor
-            this.user.empresa.user_limit = 1;
-            this.user.empresa.sucursal_limit = 1;
-
-            if(this.user.empresa.tipo_plan == 'Mensual' || this.user.empresa.frecuencia_pago == 'Mensual'){
-                this.totalOriginal = 16.95;
-            }else if(this.user.empresa.frecuencia_pago == 'Trimestral'){
-                this.totalOriginal = 16.95 * 3;
-            }else if(tieneCodigoPromocionalValidoAnual){
+        // Calcular total original según la frecuencia de pago
+        if (tipoPlan === 'Mensual' || this.user.empresa.frecuencia_pago === 'Mensual') {
+            this.totalOriginal = precioBase;
+        } else if (this.user.empresa.frecuencia_pago === 'Trimestral') {
+            // Para trimestral, buscar el precio trimestral o multiplicar el mensual por 3
+            const planTrimestral = this.planes.find((p: any) => 
+                p.duracion_dias === 90 && 
+                (p.nombre === planSeleccionado.nombre || 
+                 p.nombre.toLowerCase().includes(planSeleccionado.nombre.toLowerCase()))
+            );
+            if (planTrimestral) {
+                this.totalOriginal = parseFloat(planTrimestral.precio) || 0;
+            } else {
+                // Si no hay plan trimestral específico, usar precio mensual * 3
+                const planMensual = this.planes.find((p: any) => 
+                    p.duracion_dias === 30 && 
+                    (p.nombre === planSeleccionado.nombre || 
+                     p.nombre.toLowerCase().includes(planSeleccionado.nombre.toLowerCase()))
+                );
+                const precioMensual = planMensual ? parseFloat(planMensual.precio) : precioBase;
+                this.totalOriginal = precioMensual * 3;
+            }
+        } else if (tipoPlan === 'Anual' || this.user.empresa.frecuencia_pago === 'Anual') {
+            if (tieneCodigoPromocionalValidoAnual) {
                 // Si hay código promocional válido para anual, usar precio mensual (sin 20% descuento)
                 // El descuento del código promocional se aplicará después
-                this.totalOriginal = 16.95;
-            }else{
-                // Sin código promocional, aplicar 20% de descuento anual directamente
-                this.totalOriginal = 203.4; // 16.95 * 12 * 0.8
+                const planMensual = this.planes.find((p: any) => 
+                    p.duracion_dias === 30 && 
+                    (p.nombre === planSeleccionado.nombre || 
+                     p.nombre.toLowerCase().includes(planSeleccionado.nombre.toLowerCase()))
+                );
+                this.totalOriginal = planMensual ? parseFloat(planMensual.precio) : precioBase;
+            } else {
+                // Sin código promocional, buscar plan anual o calcular con 20% de descuento
+                const planAnual = this.planes.find((p: any) => 
+                    (p.duracion_dias === 365 || p.duracion_dias === 360) && 
+                    (p.nombre === planSeleccionado.nombre || 
+                     p.nombre.toLowerCase().includes(planSeleccionado.nombre.toLowerCase()))
+                );
+                if (planAnual) {
+                    this.totalOriginal = parseFloat(planAnual.precio) || 0;
+                } else {
+                    // Si no hay plan anual específico, calcular con 20% de descuento
+                    const planMensual = this.planes.find((p: any) => 
+                        p.duracion_dias === 30 && 
+                        (p.nombre === planSeleccionado.nombre || 
+                         p.nombre.toLowerCase().includes(planSeleccionado.nombre.toLowerCase()))
+                    );
+                    const precioMensual = planMensual ? parseFloat(planMensual.precio) : precioBase;
+                    this.totalOriginal = precioMensual * 12 * 0.8; // 20% de descuento anual
+                }
             }
-        }
-
-        if(this.user.empresa.plan == 2){//estándar
-            this.user.empresa.user_limit = 2;
-            this.user.empresa.sucursal_limit = 1;
-
-            if(this.user.empresa.tipo_plan == 'Mensual' || this.user.empresa.frecuencia_pago == 'Mensual'){
-                this.totalOriginal = 28.25;
-            }else if(this.user.empresa.frecuencia_pago == 'Trimestral'){
-                this.totalOriginal = 28.25 * 3;
-            }else if(tieneCodigoPromocionalValidoAnual){
-                // Si hay código promocional válido para anual, usar precio mensual (sin 20% descuento)
-                // El descuento del código promocional se aplicará después
-                this.totalOriginal = 28.25;
-            }else{
-                // Sin código promocional, aplicar 20% de descuento anual directamente
-                this.totalOriginal = 339; // 28.25 * 12 * 0.8
-            }
-        }
-
-        if(this.user.empresa.plan == 3){//avanzado
-            this.user.empresa.user_limit = 5;
-            this.user.empresa.sucursal_limit = 2;
-
-            if(this.user.empresa.tipo_plan == 'Mensual' || this.user.empresa.frecuencia_pago == 'Mensual'){
-                this.totalOriginal = 56.5;
-            }else if(this.user.empresa.frecuencia_pago == 'Trimestral'){
-                this.totalOriginal = 56.5 * 3;
-            }else if(tieneCodigoPromocionalValidoAnual){
-                // Si hay código promocional válido para anual, usar precio mensual (sin 20% descuento)
-                // El descuento del código promocional se aplicará después
-                this.totalOriginal = 56.5;
-            }else{
-                // Sin código promocional, aplicar 20% de descuento anual directamente
-                this.totalOriginal = 678; // 56.5 * 12 * 0.8
-            }
-        }
-
-        if(this.user.empresa.plan == 4){//pro
-            this.user.empresa.user_limit = 5;
-            this.user.empresa.sucursal_limit = 2;
-
-            if(this.user.empresa.tipo_plan == 'Mensual' || this.user.empresa.frecuencia_pago == 'Mensual'){
-                this.totalOriginal = 113;
-            }else if(this.user.empresa.frecuencia_pago == 'Trimestral'){
-                this.totalOriginal = 113 * 3;
-            }else if(tieneCodigoPromocionalValidoAnual){
-                // Si hay código promocional válido para anual, usar precio mensual (sin 20% descuento)
-                // El descuento del código promocional se aplicará después
-                this.totalOriginal = 113;
-            }else{
-                // Sin código promocional, aplicar 20% de descuento anual directamente
-                this.totalOriginal = 1220; // 113 * 12 * 0.8 (aproximado)
-            }
+        } else {
+            this.totalOriginal = precioBase;
         }
 
         this.aplicarDescuento();
@@ -377,10 +457,13 @@ export class RegisterComponent implements OnInit {
 
     public getTotalAPagar(){
         if(this.user.empresa.frecuencia_pago == 'Mensual'){
+            // Para mensual, el total ya es el precio mensual (con descuentos aplicados si hay)
             return this.user.empresa.total;
         }
         if(this.user.empresa.frecuencia_pago == 'Trimestral'){
-            return this.user.empresa.total * 3;
+            // Para trimestral, el total ya es el precio trimestral (con descuentos aplicados si hay)
+            // No multiplicar por 3 porque ya está calculado en setPlan()
+            return this.user.empresa.total;
         }
         if(this.user.empresa.frecuencia_pago == 'Anual'){
             // Verificar si hay un código promocional válido para el plan anual
@@ -390,12 +473,14 @@ export class RegisterComponent implements OnInit {
             
             if(tieneCodigoPromocionalValido){
                 // Si hay código promocional válido para anual, usar ese descuento
-                // El total ya tiene el descuento del código promocional aplicado
+                // El total tiene el descuento del código promocional aplicado (precio mensual)
+                // Multiplicar por 12 para obtener el total anual
                 return this.user.empresa.total * 12;
             } else {
-                // Si no hay código promocional válido, aplicar el 20% de descuento anual
-                const totalAnual = this.user.empresa.total * 12;
-                return totalAnual * 0.8; // 20% de descuento
+                // Si no hay código promocional válido, el totalOriginal ya tiene el 20% de descuento anual aplicado
+                // y user.empresa.total es igual a totalOriginal (sin descuento de código promocional)
+                // Por lo tanto, devolver directamente el totalOriginal que ya incluye el descuento anual
+                return this.totalOriginal;
             }
         }
         return this.user.empresa.total;
