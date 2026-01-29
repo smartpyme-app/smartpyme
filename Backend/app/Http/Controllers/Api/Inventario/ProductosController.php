@@ -1988,7 +1988,7 @@ class ProductosController extends Controller
             // Guardar en base de datos con URL de S3
             $imagen = new \App\Models\Inventario\Imagen();
             $imagen->id_producto = $producto->id;
-            $imagen->img = '/productos/' . $nombreArchivo;
+            $imagen->img = 'productos/' . $nombreArchivo;
             $imagen->shopify_image_id = $imagenShopify['id'] ?? null;
             $imagen->save();
 

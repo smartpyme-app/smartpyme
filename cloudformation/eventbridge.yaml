@@ -110,7 +110,7 @@ Resources:
       Name: smartpyme-generate-notificaciones
       Description: 'Generate notificaciones - Daily at midnight (0 0 * * *)'
       ScheduleExpression: 'cron(0 0 * * ? *)'
-      State: DISABLED
+      State: ENABLED
       Targets:
         - Id: GenerateNotificacionesTarget
           Arn: !GetAtt GenerateNotificacionesDestination.Arn
@@ -126,7 +126,7 @@ Resources:
       Name: smartpyme-suscripciones-verificar
       Description: 'Suscripciones verificar - Daily at midnight (0 0 * * *)'
       ScheduleExpression: 'cron(0 0 * * ? *)'
-      State: DISABLED
+      State: ENABLED
       Targets:
         - Id: SuscripcionesVerificarTarget
           Arn: !GetAtt SuscripcionesVerificarDestination.Arn
@@ -158,7 +158,7 @@ Resources:
       Name: smartpyme-kardex-procesar-cola
       Description: 'Kardex procesar cola - Every 30 minutes (0,30 * * * *)'
       ScheduleExpression: 'cron(0,30 * * * ? *)'
-      State: DISABLED
+      State: ENABLED
       Targets:
         - Id: KardexProcesarColaTarget
           Arn: !GetAtt KardexProcesarColaDestination.Arn
@@ -174,7 +174,7 @@ Resources:
       Name: smartpyme-trabajos-procesar-shopify
       Description: 'Trabajos procesar Shopify images - Daily at 2 AM (0 2 * * *)'
       ScheduleExpression: 'cron(0 2 * * ? *)'
-      State: DISABLED
+      State: ENABLED
       Targets:
         - Id: TrabajosProcesarShopifyTarget
           Arn: !GetAtt TrabajosProcesarShopifyDestination.Arn
