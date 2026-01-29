@@ -104,20 +104,17 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
                 $inventarioOrigen->save();
                 $inventarioOrigen->kardex($traslado, $cantidadTraslado * -1);
 
-                // Actualizar o crear inventario de destino
-                if ($inventarioDestino) {
-                    $inventarioDestino->stock += $cantidadTraslado;
-                    $inventarioDestino->save();
-                    $inventarioDestino->kardex($traslado, $cantidadTraslado);
-                } else {
-                    // Crear nuevo inventario en destino si no existe
-                    $inventarioDestino = new Inventario();
-                    $inventarioDestino->id_producto = $idProducto;
-                    $inventarioDestino->id_bodega = $idBodegaDestino;
-                    $inventarioDestino->stock = $cantidadTraslado;
-                    $inventarioDestino->save();
-                    $inventarioDestino->kardex($traslado, $cantidadTraslado);
-                }
+                // Actualizar o crear inventario de destino (firstOrCreate evita duplicados en concurrencia)
+                $inventarioDestino = Inventario::firstOrCreate(
+                    [
+                        'id_producto' => $idProducto,
+                        'id_bodega' => $idBodegaDestino,
+                    ],
+                    ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                );
+                $inventarioDestino->stock += $cantidadTraslado;
+                $inventarioDestino->save();
+                $inventarioDestino->kardex($traslado, $cantidadTraslado);
 
                 // Verificar composiciones del producto
                 foreach ($producto->composiciones as $composicion) {
@@ -153,18 +150,16 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
                     $inventarioCompuestoOrigen->kardex($traslado, $cantidadCompuesto * -1);
 
                     
-                    if ($inventarioCompuestoDestino) {
-                        $inventarioCompuestoDestino->stock += $cantidadCompuesto;
-                        $inventarioCompuestoDestino->save();
-                        $inventarioCompuestoDestino->kardex($traslado, $cantidadCompuesto);
-                    } else {
-                        $inventarioCompuestoDestino = new Inventario();
-                        $inventarioCompuestoDestino->id_producto = $composicion->id_compuesto;
-                        $inventarioCompuestoDestino->id_bodega = $idBodegaDestino;
-                        $inventarioCompuestoDestino->stock = $cantidadCompuesto;
-                        $inventarioCompuestoDestino->save();
-                        $inventarioCompuestoDestino->kardex($traslado, $cantidadCompuesto);
-                    }
+                    $inventarioCompuestoDestino = Inventario::firstOrCreate(
+                        [
+                            'id_producto' => $composicion->id_compuesto,
+                            'id_bodega' => $idBodegaDestino,
+                        ],
+                        ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                    );
+                    $inventarioCompuestoDestino->stock += $cantidadCompuesto;
+                    $inventarioCompuestoDestino->save();
+                    $inventarioCompuestoDestino->kardex($traslado, $cantidadCompuesto);
                 }
 
                 DB::commit();
