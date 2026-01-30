@@ -53,7 +53,7 @@ class ImagenesController extends Controller
     {
         $imagen = Imagen::findOrFail($id);
         if ($imagen->img) {
-            $s3Path = 'img' . $imagen->img;
+            $s3Path = 'img/' . $imagen->img;
             Storage::disk('s3-public')->delete($s3Path);
         }
         $imagen->delete();

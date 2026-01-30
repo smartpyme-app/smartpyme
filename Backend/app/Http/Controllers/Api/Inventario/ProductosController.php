@@ -1925,8 +1925,8 @@ class ProductosController extends Controller
 
             foreach ($imagenesExistentes as $imagen) {
                 // Eliminar archivo de S3 si existe
-                if ($imagen->img && strpos($imagen->img, '/productos/') !== false) {
-                    $s3Path = str_replace('/productos/', 'productos/', $imagen->img);
+                if ($imagen->img && strpos($imagen->img, 'productos/') !== false) {
+                    $s3Path = 'img/' . $imagen->img;
                     \Storage::disk('s3-public')->delete($s3Path);
                 }
 
