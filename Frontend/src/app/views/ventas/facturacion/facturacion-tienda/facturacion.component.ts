@@ -32,7 +32,7 @@ export class FacturacionComponent implements OnInit {
   public incoterms: any = [];
   public editar = false;
 
-  // public bancos:any = [];
+  public bancos:any = [];
   public canales: any = [];
   public supervisor: any = {};
   public loading = false;
@@ -171,13 +171,28 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    // this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
-    //     this.bancos = bancos;
-    // }, error => {this.alertService.error(error);});
+    this.apiService.getAll('banco/cuentas/list').subscribe(
+      (bancos) => {
+        this.bancos = bancos;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
 
     this.apiService.getAll('formas-de-pago/list').subscribe(
       (formaPagos) => {
         this.formaPagos = formaPagos;
+        // Si ya hay un método de pago seleccionado y no es Efectivo, asignar el banco por defecto
+        if (this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Multiple') {
+          const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+          if (formaPagoSeleccionada && formaPagoSeleccionada.banco && formaPagoSeleccionada.banco.nombre_banco) {
+            // Solo asignar si no hay banco ya seleccionado
+            if (!this.venta.detalle_banco) {
+              this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+            }
+          }
+        }
       },
       (error) => {
         this.alertService.error(error);
@@ -795,6 +810,21 @@ if (
         item.total = null;
       });
     }
+    
+    // Si el método de pago no es "Efectivo", asignar el banco por defecto del método de pago
+    if (this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Multiple') {
+      const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+      if (formaPagoSeleccionada && formaPagoSeleccionada.banco && formaPagoSeleccionada.banco.nombre_banco) {
+        this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+      } else {
+        // Si no tiene banco asignado, limpiar el campo
+        this.venta.detalle_banco = '';
+      }
+    } else if (this.venta.forma_pago === 'Efectivo') {
+      // Si es efectivo, limpiar el campo de banco
+      this.venta.detalle_banco = '';
+    }
+    
     console.log(this.venta);
   }
 
