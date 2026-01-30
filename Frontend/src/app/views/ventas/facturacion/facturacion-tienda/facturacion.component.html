@@ -309,17 +309,17 @@
         <select name="forma_pago" (change)="cambioMetodoDePago()" [(ngModel)]="venta.forma_pago" class="form-select">
           <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
         </select>
-        <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos"
-                             (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
+        <!-- <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos"
+                             (update)="totalPorMetodoDePago()"></app-metodos-de-pago> -->
       </div>
     </div>
-    <!-- <div class="form-group col-md-6 col-lg-3">
+    <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && venta.forma_pago && venta.forma_pago !== 'Efectivo'">
         <label for="detalle_banco">Bancos</label>
         <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" class="form-select">
             <option value="">Seleccione aquí</option>
             <option [value]="banco.nombre_banco" *ngFor="let banco of bancos">{{ banco.nombre_banco }}</option>
         </select>
-    </div> -->
+    </div>
     <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
       <label for="monto_pago">Efectivo recibido:</label><br>
       <div class="input-group">
