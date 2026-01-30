@@ -276,8 +276,8 @@ Resources:
         AuthenticationConfiguration:
           AccessRoleArn: !GetAtt ECRAccessRole.Arn
       InstanceConfiguration:
-        Cpu: 4 vCPU
-        Memory: 8 GB
+        Cpu: 2 vCPU
+        Memory: 6 GB
         InstanceRoleArn: !GetAtt WorkerAppRunnerRole.Arn
       HealthCheckConfiguration:
         Protocol: HTTP
