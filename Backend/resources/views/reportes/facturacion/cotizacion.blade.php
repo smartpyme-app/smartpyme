@@ -104,37 +104,35 @@
             <thead>
                 <tr>
                     <th class="border-bottom">Descripción</th>
-                    <th class="border-bottom text-right">Cantidad</th>
-                    <th class="border-bottom text-right">Precio</th>
-                    <th class="border-bottom text-right">Total</th>
+                    <th style="width: 90px;" class="border-bottom text-right">Cantidad</th>
+                    <th style="width: 90px;" class="border-bottom text-right">Precio</th>
+                    <th style="width: 90px;" class="border-bottom text-right">Descuento</th>
+                    <th style="width: 90px;" class="border-bottom text-right">Total</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($venta->detalles as $detalle)
+                @php
+                    $subtotal_linea = $detalle->cantidad * $detalle->precio;
+                    $porcentaje_descuento = $subtotal_linea > 0 ? round(($detalle->descuento / $subtotal_linea) * 100, 2) : 0;
+                @endphp
                 <tr>
-                    <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
-                    <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
-                    <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }}{{number_format($detalle->precio , 2) }}</td>
-                    <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->total, 2) }}</th>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif">   {{ $detalle->nombre_producto  }}</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{number_format($detalle->precio , 2) }}</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">  @if ($detalle->descuento > 0) {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->descuento, 2) }} <small>({{ $porcentaje_descuento }}%)</small> @endif</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->total, 2) }}</th>
                 </tr>
-                @if ($detalle->descuento > 0)
-                    <tr>
-                        <td>DESCUENTOS</td>
-                        <td></td>
-                        <td></td>
-                        <td class="text-right">- {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->descuento, 2) }} </th>
-                    </tr>
-                @endif
                 @endforeach
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td class="text-right">Sumas</td>
                     <td class="text-right">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->sub_total, 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td class="text-right">
                         @if ($venta->empresa->pais == 'Honduras')
                             ISV
@@ -145,12 +143,12 @@
                     <td class="text-right">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->iva, 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td class="text-right">Subtotal</td>
                     <td class="text-right">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td class="text-right"><b>Total</b></td>
                     <td class="text-right"><b>{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->total, 2) }}</b></td>
                 </tr>
