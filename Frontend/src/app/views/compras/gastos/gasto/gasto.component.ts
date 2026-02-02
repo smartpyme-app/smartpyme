@@ -120,7 +120,8 @@ export class GastoComponent implements OnInit {
 
 
     this.apiService.getAll('impuestos').subscribe(impuestos => {
-      this.impuestos = impuestos;
+      // Filtrar solo los impuestos que aplican a gastos
+      this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_gastos !== false && impuesto.aplica_gastos !== 0);
       this.loading = false;
     
       if (this.gasto && this.gasto.otros_impuestos && this.gasto.otros_impuestos.length > 0) {
