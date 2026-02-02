@@ -106,7 +106,7 @@
                     <th class="border-bottom">Descripción</th>
                     <th style="width: 90px;" class="border-bottom text-right">Cantidad</th>
                     <th style="width: 90px;" class="border-bottom text-right">Precio</th>
-                    <th style="width: 90px;" class="border-bottom text-right">Descuento</th>
+                    <th style="width: 110px;" class="border-bottom text-right">Descuento</th>
                     <th style="width: 90px;" class="border-bottom text-right">Total</th>
                 </tr>
             </thead>
@@ -120,7 +120,7 @@
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif">   {{ $detalle->nombre_producto  }}</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{number_format($detalle->precio , 2) }}</td>
-                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">  @if ($detalle->descuento > 0) {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->descuento, 2) }} <small>({{ $porcentaje_descuento }}%)</small> @endif</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">  @if ($detalle->descuento > 0) {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->descuento, 2) }} <small style="font-size: 12px;">({{ $porcentaje_descuento }}%)</small> @endif</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->total, 2) }}</th>
                 </tr>
                 @endforeach
