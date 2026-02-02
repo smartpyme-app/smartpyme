@@ -36,6 +36,7 @@ use App\Http\Requests\Compras\FacturacionCompraRequest;
 use App\Http\Requests\Compras\FacturacionConsignaRequest;
 use App\Http\Requests\Compras\GenerarCompraDesdeOrdenCompraRequest;
 
+use Barryvdh\DomPDF\Facade as PDF;
 
 class ComprasController extends Controller
 {
@@ -812,16 +813,24 @@ class ComprasController extends Controller
         }
     }
 
+    public function generarDoc($id){
+        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
+
+        $pdf = PDF::loadView('reportes.facturacion.compra', compact('compra'));
+        $pdf->setPaper('US Letter', 'portrait');
+        return $pdf->stream('compra-' . $compra->id . '.pdf');
+
+    }
 
     public function marcarRecurrente(Request $request)
-{
-    $compra = Compra::findOrFail($request->id);
-    $compra->recurrente = false;
-    $compra->save();
+    {
+        $compra = Compra::findOrFail($request->id);
+        $compra->recurrente = false;
+        $compra->save();
 
-    return response()->json([
-        'message' => 'Compra marcada como no recurrente',
-        'compra'  => $compra
-    ], 200);
-}
+        return response()->json([
+            'message' => 'Compra marcada como no recurrente',
+            'compra'  => $compra
+        ], 200);
+    }
 }

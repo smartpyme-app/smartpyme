@@ -19,27 +19,53 @@
           <button class="btn btn-light text-danger" routerLink="/compras"><i class="fa fa-arrow-left"></i> Regresar</button>
         }
     </div>
-    
+
 </div>
 
 <section class="card border-0 p-3 mb-3">
-  <div class="row">
-    <h6 class="mt-3">Detalles de la compra</h6>
-
-    <div class="form-group col-md-4 col-lg-2">
-      <label for="fecha">Fecha</label><br>
-      <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha">
-    </div>
-    <div class="form-group col-md-4 col-lg-3">
-      <label for="id_usuario">Usuario</label>
-      <select name="id_usuario" [(ngModel)]="compra.id_usuario" class="form-select">
-        @for (usuario of usuarios; track usuario.id) {
-          <option [value]="usuario.id">
+    <div class="row">
+        <div class="form-group col-md-4 col-lg-2">
+            <label for="fecha">Fecha</label><br>
+            <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha">
+        </div>
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="id_usuario">Usuario</label>
+          <select name="id_usuario" [(ngModel)]="compra.id_usuario" class="form-select">
+            @for (usuario of usuarios; track usuario.id) {
+            <option [value]="usuario.id">
             {{ usuario.name }}
-          </option>
-        }
-      </select>
+            </option>
+            }
+          </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="id_bodega">Bodega</label>
+            <select name="id_bodega" (change)="setBodega()" [(ngModel)]="compra.id_bodega" class="form-select">
+                <option [value]="bodega.id" *ngFor="let bodega of bodegas">
+                    {{ bodega.nombre }}
+                </option>
+            </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-2">
+            <label for="tipo_documento">Documento</label>
+            <select name="tipo_documento" (change)="selectTipoDocumento()" [(ngModel)]="compra.tipo_documento" class="form-select">
+                <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+            </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-2" *ngIf="compra.cotizacion == 0">
+            <label for="referencia">Num. Referencia</label>
+            <input type="text" class="form-control" [(ngModel)]="compra.referencia" name="referencia" placeholder="Escribe aquí">
+        </div>
+        <div class="form-group col-md-4 col-lg-2" *ngIf="compra.cotizacion == 1">
+            <label for="referencia">Correlativo</label>
+            <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia" placeholder="Escribe aquí">
+        </div>
+        <div class="form-group col-md-4 col-lg-3" *ngIf="compra.cotizacion == 0 && compra.cobrar_percepcion">
+            <label for="sello_mh">Sello de Recepción</label>
+            <input type="text" class="form-control" [(ngModel)]="compra.sello_mh" name="sello_mh" placeholder="Sello de recepción">
+        </div>
     </div>
+  <div class="row">
     <div class="form-group col-md-6 col-lg-4">
       <label for="">Proveedor</label>
       <div class="input-group flex-nowrap">
@@ -159,6 +185,14 @@
                     <tr>
                         <td class="text-right"> <b>Impuestos</b></td>
                         <td style="width: 150px;" class="text-right"> {{ compra.iva | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngFor="let impuesto of compra?.impuestos">
+                        <td class="text-right"> {{ impuesto.nombre }} </td>
+                        <td style="width: 150px;" class="text-right">
+                            <span *ngIf="!impuesto?.monto">%{{ impuesto.porcentaje }}</span>
+                            <span *ngIf="impuesto?.monto > 0" tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje }}</span>
+                        </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
@@ -345,7 +379,7 @@
     <form name="facturacion" autocomplete="off" (ngSubmit)="onFacturar()">
         <div class="row text-center">
             <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ compra.total | currency:'USD':'symbol':'1.2' }}</span></h4>
-            <h4 class="col-md-6">Vuelto: 
+            <h4 class="col-md-6">Vuelto:
               @if (compra.recibido) {
                 <span class="badge badge-info">{{ compra.recibido - compra.total | currency:'USD':'symbol':'1.2' }}</span>
               }
@@ -445,10 +479,10 @@
     <div class="modal-body">
       <div class="alert alert-warning">
         <i class="fa fa-exclamation-triangle"></i>
-        Los siguientes productos del DTE no fueron reconocidos automáticamente. 
+        Los siguientes productos del DTE no fueron reconocidos automáticamente.
         Por favor, seleccione el producto correspondiente para cada item.
       </div>
-      
+
       <!-- Botón para crear nuevos productos/servicios -->
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h6 class="mb-0">Productos del DTE</h6>
@@ -456,7 +490,7 @@
           <i class="fa fa-plus"></i> Crear Nuevo Producto/Servicio
         </button>
       </div>
-  
+
       <div class="table-responsive">
         <table class="table table-striped">
           <thead>
@@ -494,7 +528,7 @@
                       <small class="text-muted">Sugerencias:</small>
                       <div class="d-flex flex-wrap gap-1">
                         @for (sugerencia of item.sugerencias.slice(0, 3); track sugerencia.id || $index) {
-                          <button 
+                          <button
                             class="btn btn-outline-primary btn-sm"
                             (click)="item.productoSeleccionado = sugerencia"
                             type="button">
@@ -504,9 +538,9 @@
                       </div>
                     </div>
                   }
-  
+
                 <!-- Selector con búsqueda dinámica -->
-                <ng-select 
+                <ng-select
                   [(ngModel)]="item.productoSeleccionado"
                   [typeahead]="searchProductos$"
                   [typeaheadLoading]="searchLoading"
@@ -516,9 +550,9 @@
                   bindLabel="nombre"
                   [compareWith]="compareProductos"
                   (change)="onProductoSeleccionado(item, $event)">
-                  
+
                   <ng-option-highlight [term]="searchTerm"></ng-option-highlight>
-                  
+
                   @for (producto of searchResults; track producto.id || $index) {
                     <ng-option [value]="producto">
                       <div class="d-flex justify-content-between">
@@ -527,10 +561,10 @@
                           <div class="mb-1">
                             <strong class="d-block">{{ producto.nombre }}</strong>
                           </div>
-                          
+
                           <!-- Badge del tipo en su propia línea -->
                           <div class="mb-1">
-                            <span class="badge" 
+                            <span class="badge"
                                   [ngClass]="{
                                     'bg-primary': producto.tipo === 'Producto',
                                     'bg-success': producto.tipo === 'Servicio',
@@ -539,7 +573,7 @@
                               {{ producto.tipo }}
                             </span>
                           </div>
-                          
+
                           <!-- Detalles adicionales -->
                           <small class="text-muted">
                             @if (producto.marca) {
@@ -553,7 +587,7 @@
                             }
                           </small>
                         </div>
-                        
+
                         <!-- Información de precio y stock alineada a la derecha -->
                         <div class="text-end ms-3">
                           <small class="text-success d-block">
@@ -573,10 +607,10 @@
                       </div>
                     </ng-option>
                   }
-  
+
                   <ng-option-highlight [term]="searchTerm"></ng-option-highlight>
                 </ng-select>
-  
+
                   <!-- Mostrar información del producto seleccionado -->
                   @if (item.productoSeleccionado) {
                     <div class="mt-2 p-2 bg-light rounded small">
@@ -584,7 +618,7 @@
                         <div class="col-8">
                           <div class="d-flex align-items-center gap-2">
                             <strong>{{ item.productoSeleccionado.nombre }}</strong>
-                            <span class="badge" 
+                            <span class="badge"
                                   [ngClass]="{
                                     'bg-primary': item.productoSeleccionado.tipo === 'Producto',
                                     'bg-success': item.productoSeleccionado.tipo === 'Servicio',
@@ -618,16 +652,16 @@
           </tbody>
         </table>
       </div>
-  
+
       <!-- Panel de resumen -->
       <div class="mt-4 p-3 bg-light rounded">
         <div class="row">
           <div class="col-md-8">
             <h6 class="mb-0">Progreso de Asignaciones</h6>
             <div class="progress mt-2" style="height: 8px;">
-              <div 
-                class="progress-bar bg-success" 
-                role="progressbar" 
+              <div
+                class="progress-bar bg-success"
+                role="progressbar"
                 [style.width.%]="(getProductosAsignados() / productosNoEncontrados.length) * 100">
               </div>
             </div>
@@ -651,7 +685,7 @@
           </div>
         </div>
       </div>
-  
+
       <!-- Información adicional -->
       <div class="mt-3">
         <small class="text-muted">
@@ -660,7 +694,7 @@
         </small>
       </div>
     </div>
-    
+
     <div class="modal-footer">
       <button type="button" class="btn" (click)="cancelarAjusteProductos()">
         <i class="fa fa-times"></i> Cancelar Importación
@@ -668,11 +702,11 @@
       <button type="button" class="btn btn-default" (click)="abrirAjusteManual()">
         Ajuste Manual
       </button>
-      <button type="button" 
-              class="btn btn-primary" 
+      <button type="button"
+              class="btn btn-primary"
               (click)="confirmarAjusteProductos()"
               [disabled]="getProductosPendientes() > 0">
-        <i class="fa fa-check"></i> 
+        <i class="fa fa-check"></i>
         @if (getProductosPendientes() === 0) {
           <span>Confirmar Todos los Productos</span>
         }
@@ -697,9 +731,9 @@
           <div class="col-md-6">
             <div class="form-group mb-3">
               <label for="nombre">Nombre del Producto/Servicio *</label>
-              <input 
-                type="text" 
-                class="form-control" 
+              <input
+                type="text"
+                class="form-control"
                 id="nombre"
                 name="nombre"
                 [(ngModel)]="nuevoProducto.nombre"
@@ -710,8 +744,8 @@
           <div class="col-md-6">
             <div class="form-group mb-3">
               <label for="tipo">Tipo *</label>
-              <select 
-                class="form-select" 
+              <select
+                class="form-select"
                 id="tipo"
                 name="tipo"
                 [(ngModel)]="nuevoProducto.tipo"
@@ -729,9 +763,9 @@
           <div class="col-md-6">
             <div class="form-group mb-3">
               <label for="codigo">Código</label>
-              <input 
-                type="text" 
-                class="form-control" 
+              <input
+                type="text"
+                class="form-control"
                 id="codigo"
                 name="codigo"
                 [(ngModel)]="nuevoProducto.codigo"
@@ -741,9 +775,9 @@
           <div class="col-md-6">
             <div class="form-group mb-3">
               <label for="cod_proveed_prod">Código Proveedor</label>
-              <input 
-                type="text" 
-                class="form-control" 
+              <input
+                type="text"
+                class="form-control"
                 id="cod_proveed_prod"
                 name="cod_proveed_prod"
                 [(ngModel)]="nuevoProducto.cod_proveed_prod"
@@ -756,9 +790,9 @@
           <div class="col-md-6">
             <div class="form-group mb-3">
               <label for="costo">Costo *</label>
-              <input 
-                type="number" 
-                class="form-control" 
+              <input
+                type="number"
+                class="form-control"
                 id="costo"
                 name="costo"
                 [(ngModel)]="nuevoProducto.costo"
@@ -770,9 +804,9 @@
           <div class="col-md-6">
             <div class="form-group mb-3">
               <label for="precio">Precio de Venta</label>
-              <input 
-                type="number" 
-                class="form-control" 
+              <input
+                type="number"
+                class="form-control"
                 id="precio"
                 name="precio"
                 [(ngModel)]="nuevoProducto.precio"
@@ -786,8 +820,8 @@
           <div class="col-md-6">
             <div class="form-group mb-3">
               <label for="id_categoria">Categoría *</label>
-              <select 
-                class="form-select" 
+              <select
+                class="form-select"
                 id="id_categoria"
                 name="id_categoria"
                 [(ngModel)]="nuevoProducto.id_categoria"
@@ -804,9 +838,9 @@
           <div class="col-md-6">
             <div class="form-group mb-3">
               <label for="marca">Marca</label>
-              <input 
-                type="text" 
-                class="form-control" 
+              <input
+                type="text"
+                class="form-control"
                 id="marca"
                 name="marca"
                 [(ngModel)]="nuevoProducto.marca"
@@ -820,9 +854,9 @@
             @if (nuevoProducto.tipo !== 'Servicio') {
               <div class="form-group mb-3">
                 <label for="stock">Stock Inicial</label>
-                <input 
-                  type="number" 
-                  class="form-control" 
+                <input
+                  type="number"
+                  class="form-control"
                   id="stock"
                   name="stock"
                   [(ngModel)]="nuevoProducto.stock"
@@ -837,8 +871,8 @@
 
         <div class="form-group mb-3">
           <label for="descripcion">Descripción</label>
-          <textarea 
-            class="form-control" 
+          <textarea
+            class="form-control"
             id="descripcion"
             name="descripcion"
             [(ngModel)]="nuevoProducto.descripcion"

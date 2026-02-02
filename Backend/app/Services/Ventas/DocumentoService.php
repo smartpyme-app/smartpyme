@@ -37,16 +37,16 @@ class DocumentoService
             case 'Ticket':
             case 'Recibo':
                 return $this->generarTicket($venta, $empresa, $documento);
-            
+
             case 'Factura':
                 return $this->generarFactura($venta, $empresa);
-            
+
             case 'Sujeto excluido':
                 return $this->generarSujetoExcluido($venta, $empresa);
-            
+
             case 'Crédito fiscal':
                 return $this->generarCreditoFiscal($venta, $empresa);
-            
+
             default:
                 throw new \Exception('No hay un formato para este tipo de documento de venta.');
         }
@@ -68,9 +68,9 @@ class DocumentoService
             throw new \Exception('El documento no ha sido Emitido');
         }
 
-        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=' . 
-            $DTE['identificacion']['ambiente'] . 
-            '&codGen=' . $DTE['identificacion']['codigoGeneracion'] . 
+        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=' .
+            $DTE['identificacion']['ambiente'] .
+            '&codGen=' . $DTE['identificacion']['codigoGeneracion'] .
             '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
         $ticketEnPdf = isset($empresa->custom_empresa['configuraciones']['ticket_en_pdf']) &&
@@ -79,7 +79,7 @@ class DocumentoService
         if ($ticketEnPdf) {
             $venta->pdf = true;
             $pdf = PDF::loadView('reportes.facturacion.DTE-Ticket', compact('venta', 'DTE'));
-            
+
             // Calcular dimensiones para DTE (diferente a ticket normal)
             $alto_base = 220; // mm
             $alto_por_producto = 30; // mm por línea estimado
@@ -87,7 +87,7 @@ class DocumentoService
             $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto);
             $alto_total_pt = $alto_total_mm * 2.83465;
             $ancho_pt = 80 * 2.83465; // 80mm de ancho
-            
+
             $pdf->setPaper([0, 0, $ancho_pt, $alto_total_pt]);
             return $pdf->stream($DTE['identificacion']['codigoGeneracion'] . '.pdf');
         } else {
@@ -133,7 +133,7 @@ class DocumentoService
         $numeroALetras = $this->convertirNumeroALetras($venta->total);
         $dolares = $numeroALetras['dolares'];
         $centavos = $numeroALetras['centavos'];
-        
+
         $idEmpresa = Auth::user()->id_empresa;
         $vista = $this->obtenerVistaFactura($idEmpresa);
         $configuracionPapel = $this->obtenerConfiguracionPapelFactura($idEmpresa);
@@ -157,7 +157,7 @@ class DocumentoService
         $numeroALetras = $this->convertirNumeroALetras($venta->total);
         $dolares = $numeroALetras['dolares'];
         $centavos = $numeroALetras['centavos'];
-        
+
         $idEmpresa = Auth::user()->id_empresa;
         $vista = $this->obtenerVistaSujetoExcluido($idEmpresa);
         $configuracionPapel = $this->obtenerConfiguracionPapelSujetoExcluido($idEmpresa);
@@ -181,7 +181,7 @@ class DocumentoService
         $numeroALetras = $this->convertirNumeroALetras($venta->total);
         $dolares = $numeroALetras['dolares'];
         $centavos = $numeroALetras['centavos'];
-        
+
         $idEmpresa = Auth::user()->id_empresa;
         $vista = $this->obtenerVistaCreditoFiscal($idEmpresa);
         $configuracionPapel = $this->obtenerConfiguracionPapelCreditoFiscal($idEmpresa);
@@ -221,7 +221,7 @@ class DocumentoService
         $alto_por_producto = 7; // mm por línea
         $total_lineas = $venta->detalles()->count();
         $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto);
-        
+
         // Convertir mm a puntos (1mm ≈ 2.83465 pt)
         $alto_total_pt = $alto_total_mm * 2.83465;
         $ancho_pt = 80 * 2.83465; // 80mm de ancho
@@ -252,6 +252,7 @@ class DocumentoService
             149 => 'reportes.facturacion.formatos_empresas.Factura-Natura',
             187 => 'reportes.facturacion.formatos_empresas.Express-Shopping',
             130 => 'reportes.facturacion.formatos_empresas.Factura-TecnoGadget',
+            177 => 'reportes.facturacion.formatos_empresas.Factura-Credicash',
             24 => 'reportes.facturacion.formatos_empresas.Factura-Via-del-Mar',
             174 => 'reportes.facturacion.formatos_empresas.Factura-Consultora-Raices',
             59 => 'reportes.facturacion.formatos_empresas.Factura-Smartpyme',
@@ -271,6 +272,7 @@ class DocumentoService
             400 => 'reportes.facturacion.formatos_empresas.Factura-Zoe-Cosmetics',
             420 => 'reportes.facturacion.formatos_empresas.Factura-Inversiones-Andre',
             315 => 'reportes.facturacion.formatos_empresas.Factura-Sistemas-de-Impresion',
+            700 => 'reportes.facturacion.formatos_empresas.Factura-Vilorio-Ohle',
         ];
 
         return $vistas[$idEmpresa] ?? 'reportes.facturacion.formatos_empresas.factura';

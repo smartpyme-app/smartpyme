@@ -88,6 +88,10 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
       tipo: 'ventas-por-utilidades',
       nombre: 'Ventas por Utilidades',
     },
+    {
+      tipo: 'cobros-por-vendedor',
+      nombre: 'Cobros por Vendedor',
+    },
   ];
   public modalRefFechas!: BsModalRef;
   public fechaInicio: string = '';

@@ -1354,4 +1354,32 @@ export class EmpresaComponent implements OnInit {
         );
     }
 
+    public limpiarCacheYLogout() {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: 'Se limpiará el cache y se cerrará la sesión. Deberás iniciar sesión nuevamente.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, limpiar cache y cerrar sesión',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Limpiar cache del servicio de funcionalidades
+                this.funcionalidadesService.limpiarCache();
+                
+                // Limpiar localStorage y sessionStorage
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Cerrar sesión en el backend
+                this.apiService.logout();
+                
+                // Redirigir al login
+                this.router.navigate(['/login']);
+                
+                Swal.fire('Cache limpiado', 'El cache ha sido limpiado y la sesión cerrada. Por favor, inicia sesión nuevamente.', 'success');
+            }
+        });
+    }
+
 }

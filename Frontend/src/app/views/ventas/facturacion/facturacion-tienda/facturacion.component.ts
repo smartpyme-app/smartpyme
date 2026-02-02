@@ -209,7 +209,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
       (impuestos) => {
-        this.impuestos = impuestos;
+        // Filtrar solo los impuestos que aplican a ventas
+        this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
         if (!this.venta.impuestos || this.venta.iva == 0) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
@@ -876,6 +877,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                 const fechaBase = this.venta.fecha ? moment(this.venta.fecha) : moment();
                 this.venta.fecha_pago = fechaBase.add(cliente.tiempo_pago, 'days').format('YYYY-MM-DD');
             }
+
+          // Asignar vendedor si el cliente tiene uno asignado
+          if(cliente.id_vendedor) {
+            this.venta.id_vendedor = cliente.id_vendedor;
+          }
 
             // Limpiar mensaje de validación al cambiar cliente
             this.mensajeValidacionFecha = '';

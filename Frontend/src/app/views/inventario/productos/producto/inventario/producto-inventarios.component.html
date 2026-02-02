@@ -71,6 +71,7 @@
                         <option [ngValue]="bodega.id">{{ bodega.nombre }}</option>
                     }
                 </select>
+                <small class="text-muted" *ngIf="bodegasDisponibles.length === 0 && bodegas.length > 0">El producto ya tiene inventario en todas las bodegas.</small>
             </div>
             <div class="form-group col-md-6">
                 <label for="stock_minimo">Stock minimo:</label>
@@ -81,7 +82,7 @@
                 <input type="number" [(ngModel)]="inventario.stock_maximo" class="form-control" name="stock_maximo">
             </div>
         </div>
-        
+
         <div class="d-grid mt-3">
             <button type="submit" class="btn btn-primary btn-block">
                 @if (!loading) {

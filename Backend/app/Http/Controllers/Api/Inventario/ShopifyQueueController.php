@@ -413,16 +413,23 @@ class ShopifyQueueController extends Controller
                 return;
             }
 
-            // Crear inventario
-            $inventario = new \App\Models\Inventario\Inventario();
-            $inventario->id_producto = $productoId;
-            $inventario->id_bodega = $bodega->id;
-            $inventario->stock = $productoData['_stock'] ?? 0;
-            $inventario->stock_minimo = 0;
-            $inventario->stock_maximo = 1000;
-            $inventario->enable = true;
-            $inventario->save();
+            // Usar firstOrCreate para evitar duplicar inventario (producto + bodega)
+            $inventario = \App\Models\Inventario\Inventario::firstOrCreate(
+                [
+                    'id_producto' => $productoId,
+                    'id_bodega' => $bodega->id,
+                ],
+                [
+                    'stock' => $productoData['_stock'] ?? 0,
+                    'stock_minimo' => 0,
+                    'stock_maximo' => 1000,
+                ]
+            );
 
+            if (!$inventario->wasRecentlyCreated) {
+                $inventario->stock = $productoData['_stock'] ?? $inventario->stock;
+                $inventario->save();
+            }
         } catch (\Exception $e) {
             Log::error("Error creando inventario", [
                 'producto_id' => $productoId,

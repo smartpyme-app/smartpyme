@@ -56,11 +56,11 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
     public contabilidadHabilitada: boolean = false;
 
     constructor(
-        apiService: ApiService, 
-        public mhService: MHService, 
+        apiService: ApiService,
+        public mhService: MHService,
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private router: Router, 
+        private router: Router,
         private route: ActivatedRoute,
         private sharedDataService: SharedDataService,
         private funcionalidadesService: FuncionalidadesService,
@@ -638,6 +638,10 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
             this.numeros_ids = numsIds;
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); });
+  }
+
+  public imprimir(compra:any){
+    window.open(this.apiService.baseUrl + '/api/compra/impresion/' + compra.id + '?token=' + this.apiService.auth_token());
   }
 
   generarPartidaContable(compra:any){

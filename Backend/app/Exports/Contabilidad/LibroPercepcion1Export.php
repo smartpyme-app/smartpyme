@@ -76,11 +76,14 @@ class LibroPercepcion1Export implements FromCollection, WithMapping, WithHeading
         $documento = $compra->documento;
         $proveedor = optional($compra->proveedor);
 
+        // Si tiene sello_mh (DTE) usar ese en serie; si no, como estaba
+        $serie = $compra->sello_mh ? $compra->sello_mh : ($compra->serie ?? $compra->num_serie ?? '');
+
         return [
             $compra->proveedor->nit ?? '',
             $compra->fecha,
             $compra->tipo_documento,
-            $compra->serie,
+            $serie,
             $compra->referencia,
             $compra->sub_total,
             $compra->percepcion,

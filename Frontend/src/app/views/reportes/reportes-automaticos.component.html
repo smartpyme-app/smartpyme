@@ -126,6 +126,9 @@
               @if (config.tipo_reporte === 'ventas-por-utilidades') {
                 <span>Ventas por Utilidades</span>
               }
+              @if (config.tipo_reporte === 'cobros-por-vendedor') {
+              <span>Cobros por Vendedor</span>
+              }
               @if (
                 config.tipo_reporte !== 'ventas-por-vendedor' &&
                 config.tipo_reporte !== 'ventas-diarias' &&
@@ -134,7 +137,8 @@
                 config.tipo_reporte !== 'estado-financiero-consolidado-sucursales' &&
                 config.tipo_reporte !== 'detalle-ventas-vendedor' &&
                 config.tipo_reporte !== 'inventario-por-sucursal' &&
-                config.tipo_reporte !== 'ventas-por-utilidades'
+                config.tipo_reporte !== 'ventas-por-utilidades' &&
+                config.tipo_reporte !== 'cobros-por-vendedor'
               ) {
                 <span>{{ config.tipo_reporte }}</span>
               }
@@ -472,6 +476,44 @@
                   planificación de compras y prevención de desabastecimiento.
                   </p>
                   </div>
+                }
+                @case ('cobros-por-vendedor') {
+                  <div>
+                  <strong class="d-block mb-1"
+                    >Reporte de Cobros por Vendedor</strong
+                  >
+                  <p class="mb-2">
+                    Este reporte proporciona información detallada sobre las
+                    facturas pagadas y pendientes de pago por cada vendedor,
+                    incluyendo días de vencimiento y crédito.
+                  </p>
+                  <ul class="ps-3 mb-1">
+                    <li>
+                      Muestra facturas pendientes y pagadas agrupadas por vendedor
+                    </li>
+                    <li>
+                      Incluye días de vencimiento (positivo si está vencido,
+                      negativo si aún no vence)
+                    </li>
+                    <li>
+                      Calcula días de crédito hasta el pago (diferencia entre
+                      fecha del último abono y fecha de venta)
+                    </li>
+                    <li>
+                      Detalla saldo pendiente, total abonado y estado de cada
+                      factura
+                    </li>
+                    <li>
+                      Facilita el seguimiento de cobros y gestión de cartera por
+                      vendedor
+                    </li>
+                  </ul>
+                  <p class="mb-0 mt-2">
+                    <strong>Ideal para:</strong> Seguimiento de cobros, gestión
+                    de cartera, evaluación de desempeño de vendedores en cobranza
+                    y control de facturas vencidas.
+                  </p>
+                </div>
                 }
                 @default {
                   <div>

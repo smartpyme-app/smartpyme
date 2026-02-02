@@ -33,6 +33,7 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     public distritos:any = [];
     public actividad_economicas:any = [];
     public contacto: any = {};
+    public vendedores:any = [];
     //loading
     public loading_contacto = false;
     public esNuevo = false;
@@ -54,6 +55,16 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         this.distritos = JSON.parse(localStorage.getItem('distritos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+        
+        // Cargar vendedores
+        this.apiService.getAll('usuarios/list').subscribe(
+            (usuarios) => {
+                this.vendedores = usuarios;
+            },
+            (error) => {
+                this.alertService.error(error);
+            }
+        );
     }
 
     override openModal(template: TemplateRef<any>) {

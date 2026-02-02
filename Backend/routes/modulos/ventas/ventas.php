@@ -36,6 +36,8 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('ventas-por-utilidades/exportar', [VentasController::class, 'porUtilidadesExport']);
 
+    Route::get('cobros-por-vendedor/exportar', [VentasController::class, 'cobrosPorVendedorExport']);
+
     Route::post('ventas/importar', [VentasImportController::class, 'importar']);
     Route::get('ventas/plantilla', [VentasImportController::class, 'downloadPlantilla']);
 

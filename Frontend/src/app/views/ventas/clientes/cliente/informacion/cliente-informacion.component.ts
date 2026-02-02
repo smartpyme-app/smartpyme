@@ -36,6 +36,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   public municipios: any = [];
   public actividad_economicas: any = [];
   public contacto: any = {};
+  public vendedores: any = [];
   //loading
   public loading_contacto = false;
   public esNuevo = false;
@@ -67,6 +68,16 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
 
         // Verificar si tiene contabilidad habilitada
         this.verificarAccesoContabilidad();
+
+        // Cargar vendedores
+      this.apiService.getAll('usuarios/list').subscribe(
+        (usuarios) => {
+          this.vendedores = usuarios;
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
     }
 
     verificarAccesoContabilidad() {
@@ -179,7 +190,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     if (!this.distritos || !this.cliente.cod_departamento) {
       return [];
     }
-    return this.distritos.filter((distrito: any) => 
+    return this.distritos.filter((distrito: any) =>
       distrito.cod_departamento == this.cliente.cod_departamento
     );
   }
@@ -188,7 +199,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     if (!this.municipios || !this.cliente.cod_departamento) {
       return [];
     }
-    return this.municipios.filter((municipio: any) => 
+    return this.municipios.filter((municipio: any) =>
       municipio.cod_departamento == this.cliente.cod_departamento
     );
   }

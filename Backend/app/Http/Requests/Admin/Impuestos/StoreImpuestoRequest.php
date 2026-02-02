@@ -26,6 +26,10 @@ class StoreImpuestoRequest extends FormRequest
             'id' => ['nullable', 'integer', 'exists:impuestos,id'],
             'id_cuenta_contable_ventas' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_contable_compras' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
+            'aplica_ventas'    => ['sometimes, boolean'],
+            'aplica_gastos'    => ['sometimes, boolean'],
+            'aplica_compras'   => ['sometimes, boolean']
+
         ];
     }
 

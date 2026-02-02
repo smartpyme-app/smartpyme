@@ -30,6 +30,7 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
     public downloading:boolean = false;
     public productos:any = [];
     public sucursales:any = [];
+    public conceptos:any = [];
     public producto:any = {};
     public bodegaDe:any = {};
     public bodegaPara:any = {};
@@ -39,10 +40,10 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
     private isLoadingProductos: boolean = false;
 
     constructor(
-        apiService: ApiService, 
+        apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private router: Router, 
+        private router: Router,
         private route: ActivatedRoute,
         private cdr: ChangeDetectorRef
     ){
@@ -81,70 +82,24 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
         const empresa = this.apiService.auth_user()?.empresa;
         this.tieneShopify = !!empresa?.shopify_store_url;
 
-        const params = this.route.snapshot.queryParams;
-        this.filtros = {
-            search: params['search'] || '',
-            id_bodega_de: +params['id_bodega_de'] || '',
-            id_bodega_para: +params['id_bodega_para'] || '',
-            id_sucursal: +params['id_sucursal'] || '',
-            estado: params['estado'] || '',
-            orden: params['orden'] || 'id',
-            direccion: params['direccion'] || 'desc',
-            paginate: params['paginate'] || 10,
-            page: params['page'] || 1,
-        };
+        this.route.queryParams.subscribe(params => {
+            this.filtros = {
+                search: params['search'] || '',
+                id_bodega_de: +params['id_bodega_de'] || '',
+                id_bodega_para: +params['id_bodega_para'] || '',
+                id_sucursal: +params['id_sucursal'] || '',
+                estado: params['estado'] || '',
+                concepto: params['concepto'] || '',
+                orden: params['orden'] || 'id',
+                direccion: params['direccion'] || 'desc',
+                paginate: params['paginate'] || 10,
+                page: params['page'] || 1,
+            };
 
-        this.filtrarTrasladosSinNavegar();
+            this.filtrarTraslados();
+        });
 
-        this.queryParamsSubscription = this.route.queryParams
-            .pipe(
-                skip(1),
-                debounceTime(300),
-                distinctUntilChanged((prev, curr) => {
-                    return JSON.stringify({
-                        search: prev['search'] || '',
-                        id_bodega_de: +prev['id_bodega_de'] || '',
-                        id_bodega_para: +prev['id_bodega_para'] || '',
-                        id_sucursal: +prev['id_sucursal'] || '',
-                        estado: prev['estado'] || '',
-                        orden: prev['orden'] || 'id',
-                        direccion: prev['direccion'] || 'desc',
-                        paginate: prev['paginate'] || 10,
-                        page: prev['page'] || 1,
-                    }) === JSON.stringify({
-                        search: curr['search'] || '',
-                        id_bodega_de: +curr['id_bodega_de'] || '',
-                        id_bodega_para: +curr['id_bodega_para'] || '',
-                        id_sucursal: +curr['id_sucursal'] || '',
-                        estado: curr['estado'] || '',
-                        orden: curr['orden'] || 'id',
-                        direccion: curr['direccion'] || 'desc',
-                        paginate: curr['paginate'] || 10,
-                        page: curr['page'] || 1,
-                    });
-                }),
-                this.untilDestroyed()
-            )
-            .subscribe(params => {
-                if (!this.isNavigating) {
-                    this.filtros = {
-                        search: params['search'] || '',
-                        id_bodega_de: +params['id_bodega_de'] || '',
-                        id_bodega_para: +params['id_bodega_para'] || '',
-                        id_sucursal: +params['id_sucursal'] || '',
-                        estado: params['estado'] || '',
-                        orden: params['orden'] || 'id',
-                        direccion: params['direccion'] || 'desc',
-                        paginate: params['paginate'] || 10,
-                        page: params['page'] || 1,
-                    };
-                    this.filtrarTrasladosSinNavegar();
-                }
-                this.isNavigating = false;
-                this.cdr.markForCheck();
-            });
-
-        this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
@@ -163,6 +118,7 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
         this.filtros.id_sucursal = '';
         this.filtros.estado = '';
         this.filtros.search = '';
+        this.filtros.concepto = '';
         this.filtros.orden = 'created_at';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
@@ -189,7 +145,7 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
 
     private filtrarTrasladosSinNavegar(){
         this.loading = true;
-        this.apiService.getAll('traslados', this.filtros).pipe(this.untilDestroyed()).subscribe(traslados => { 
+        this.apiService.getAll('traslados', this.filtros).pipe(this.untilDestroyed()).subscribe(traslados => {
             this.traslados = traslados;
             this.loading = false;
             this.cdr.markForCheck();
@@ -256,26 +212,34 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
     }
 
     public openFilter(template: TemplateRef<any>) {
-        if(!this.productos.length && !this.isLoadingProductos){
-            this.isLoadingProductos = true;
-            this.apiService.getAll('productos/list').pipe(this.untilDestroyed()).subscribe({
-                next: (productos) => { 
-                    this.productos = productos;
-                    this.isLoadingProductos = false;
-                    this.cdr.markForCheck();
-                },
-                error: (error) => {
-                    this.alertService.error(error);
-                    this.isLoadingProductos = false;
-                    this.cdr.markForCheck();
-                }
-            });
+        this.apiService.getAll('productos/list').subscribe(productos => {
+            this.productos = productos;
+        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('traslados/conceptos').subscribe(conceptos => {
+            this.conceptos = conceptos;
+        }, error => {this.alertService.error(error); });
+        this.modalRef = this.modalManager.openModal(template);
+    }
+
+    public override async onSubmit(item?: any, isStatusChange?: boolean): Promise<void> {
+        const trasladoToSave = item || this.traslado;
+        this.saving = true;
+        trasladoToSave.id_usuario = this.apiService.auth_user().id;
+        try {
+            const traslado = await this.apiService.store('traslado', trasladoToSave)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            this.traslado = {};
+            this.alertService.success('Traslado realizado', 'El traslado fue añadido exitosamente.');
+            if (this.modalRef) {
+                this.closeModal();
+            }
+            this.loadAll();
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.saving = false;
         }
-        this.isNavigating = true;
-        super.openModal(template, undefined, {class: 'modal-md', backdrop: 'static'});
-        setTimeout(() => {
-            this.isNavigating = false;
-        }, 100);
     }
 
     generarPartidaContable(traslado:any){
@@ -284,6 +248,17 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
             this.cdr.markForCheck();
         },error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
+
+  public override delete(id:number) {
+    this.saving = true;
+    this.apiService.delete('traslado/', id).subscribe(traslado => {
+      this.traslado = {};
+      this.alertService.success('Traslado cancelado', 'El traslado fue cancelado exitosamente.');
+      this.modalRef.hide();
+      this.loadAll();
+      this.saving = false;
+    }, error => {this.alertService.error(error); this.saving = false;});
+  }
 
     public descargar(){
         this.downloading = true;
@@ -303,11 +278,71 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
         );
     }
 
+    public descargarPdfFiltrados(){
+        this.downloading = true;
+        const params = new URLSearchParams();
+        Object.keys(this.filtros).forEach(key => {
+            if (this.filtros[key] !== '' && this.filtros[key] !== null && this.filtros[key] !== undefined) {
+                params.append(key, this.filtros[key]);
+            }
+        });
+
+        this.apiService.download(`traslados/exportar-pdf?${params.toString()}`).subscribe({
+            next: (response) => {
+                const blob = new Blob([response], { type: 'application/pdf' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `traslados-${new Date().toISOString().split('T')[0]}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                this.downloading = false;
+                this.alertService.success('PDF descargado', 'El reporte de traslados se ha descargado correctamente.');
+            },
+            error: (error) => {
+                this.alertService.error('Error al descargar el PDF');
+                this.downloading = false;
+            }
+        });
+    }
+
+    public descargarPdf(traslado: any) {
+        this.downloading = true;
+        this.apiService.download(`traslado/${traslado.id}/pdf`).subscribe({
+            next: (response) => {
+                const blob = new Blob([response], { type: 'application/pdf' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `traslado-${traslado.id}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                this.downloading = false;
+                this.alertService.success('PDF descargado', 'El documento de traslado se ha descargado correctamente.');
+            },
+            error: (error) => {
+                this.alertService.error('Error al descargar el PDF');
+                this.downloading = false;
+            }
+        });
+    }
+
+    /**
+     * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
+     */
     getNombreCompleto(producto: any): string {
         if (this.tieneShopify && producto.nombre_variante) {
             return `${producto.nombre} ${producto.nombre_variante}`;
         }
         return producto.nombre;
+    }
+
+    public imprimir(traslado:any){
+        window.open(this.apiService.baseUrl + '/api/traslado/' + traslado.id + '/pdf?token=' + this.apiService.auth_token());
     }
 
 }

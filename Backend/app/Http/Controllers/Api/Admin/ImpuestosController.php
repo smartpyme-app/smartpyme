@@ -10,10 +10,10 @@ use App\Http\Requests\Admin\Impuestos\StoreImpuestoRequest;
 
 class ImpuestosController extends Controller
 {
-    
+
 
     public function index() {
-       
+
         $impuesto = Impuesto::all();
 
         return Response()->json($impuesto, 200);
@@ -36,8 +36,13 @@ class ImpuestosController extends Controller
         else
             $impuesto = new Impuesto;
 
-        
-        $impuesto->fill($request->all());
+        $data = $request->all();
+        $data['aplica_ventas'] = isset($data['aplica_ventas']) ? (bool)$data['aplica_ventas'] : false;
+        $data['aplica_gastos'] = isset($data['aplica_gastos']) ? (bool)$data['aplica_gastos'] : false;
+        $data['aplica_compras'] = isset($data['aplica_compras']) ? (bool)$data['aplica_compras'] : false;
+
+
+        $impuesto->fill($data);
         $impuesto->save();
 
         return Response()->json($impuesto, 200);
@@ -47,7 +52,7 @@ class ImpuestosController extends Controller
     public function delete($id){
         $impuesto = Impuesto::findOrFail($id);
         $impuesto->delete();
-        
+
         return Response()->json($impuesto, 201);
 
     }

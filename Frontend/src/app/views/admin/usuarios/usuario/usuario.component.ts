@@ -7,6 +7,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { EncryptService } from '@services/encryption/encrypt.service';
 import { BaseComponent } from '@shared/base/base.component';
+import { FilterPipe } from '@pipes/filter.pipe';
 
 
 interface Permission {
@@ -19,9 +20,9 @@ interface Permission {
     selector: 'app-usuario',
     templateUrl: './usuario.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, FilterPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    
+
 })
 export class UsuarioComponent extends BaseComponent implements OnInit {
   public usuario: any = {
@@ -29,6 +30,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     password_confirmation_show: false,
   };
   public sucursales: any = [];
+  public bodegas: any = [];
   public empleados: any = [];
   public roles: any = [];
   public rol: any = {};
@@ -166,7 +168,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       // Nuevo usuario
       this.usuario = {};
       this.usuario.rol_id = 2;
-      this.usuario.sucursal_id = this.apiService.auth_user().sucursal_id;
+      this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
       this.usuario.caja_id = 1;
       this.usuario.activo = true;
     } else {
@@ -185,6 +187,15 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       (error) => {
         this.alertService.error(error);
         this.cdr.markForCheck();
+      }
+    );
+
+    this.apiService.getAll('bodegas/list').subscribe(
+      (bodegas) => {
+        this.bodegas = bodegas;
+      },
+      (error) => {
+        this.alertService.error(error);
       }
     );
 
@@ -255,6 +266,13 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     }
 
     let formData: FormData = new FormData();
+    formData.append('id', this.usuario.id);
+    formData.append('name', this.usuario.name);
+    formData.append('telefono', this.getFullPhoneNumber());
+    formData.append('tipo', this.usuario.tipo);
+    formData.append('codigo', this.usuario.codigo);
+    formData.append('id_sucursal', this.usuario.id_sucursal);
+    formData.append('id_bodega', this.usuario.id_bodega);
 
     for (var key in this.usuario) {
       if (key == 'activo' || key == 'empleado') {
@@ -949,5 +967,10 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
 
   public usuarioLogueado() {
     this.authUser = this.apiService.auth_user();
+  }
+
+  selectSucursal() {
+    // Limpiar la bodega cuando cambia la sucursal
+    this.usuario.id_bodega = null;
   }
 }

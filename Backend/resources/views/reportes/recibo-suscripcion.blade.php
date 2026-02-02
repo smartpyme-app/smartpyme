@@ -84,13 +84,15 @@
         <div class="col-lg-12 text-center">
             <center>
             <img src="{{ public_path('img/smartpyme.png') }}" id="img"></center>
+            @if(isset($recibo->empresa->pais) && $recibo->empresa->pais == 'El Salvador')
             <p class="text-center" id="empresa">San Salvador, El Salvador</p>
+            @endif
         </div><br><br>
         <h4 class="" id="empresa">Detalles de Pago</h4><br>
         <div class="col-lg-12" id="cliente">
             <p><b>Ticket #: </b>{{$recibo->id }}</p>
             <p><b>Empresa: </b>{{ $recibo->empresa->nombre ?? 'N/A' }}</p>
-            <p><b>A nombre de: </b>{{ isset($recibo->empresa->usuarios) && count($recibo->empresa->usuarios) > 0 ? $recibo->empresa->usuarios[0]->name : 'N/A' }}</p>
+            <p><b>A nombre de: </b>{{ $recibo->empresa->nombre_propietario ?? $recibo->empresa->propietario ?? (isset($recibo->empresa->usuarios) && count($recibo->empresa->usuarios) > 0 ? $recibo->empresa->usuarios[0]->name : 'N/A') }}</p>
             <p><b>Estado: </b><span style="background-color: #DCFCE7 ; color: #14532D ; padding: 7px;">{{$recibo->estado}}</span></p>
             <p><b>Fecha: </b>{{$recibo->created_at->format('d/m/Y h:m:s a')}}</p>
         </div><br>
@@ -108,19 +110,21 @@
             <tr>
               <td id="cantidad"><center>1</center></td>
               <td id="producto">{{$recibo->descripcion}}</td>
-              <td class="text-right">${{number_format(($recibo->total / 1.13),2)}}</td>
-              <td class="text-right">${{number_format(($recibo->total / 1.13),2)}}</td>
+              <td class="text-right">${{number_format(isset($recibo->empresa->pais) && $recibo->empresa->pais == 'El Salvador' ? ($recibo->total / 1.13) : $recibo->total,2)}}</td>
+              <td class="text-right">${{number_format(isset($recibo->empresa->pais) && $recibo->empresa->pais == 'El Salvador' ? ($recibo->total / 1.13) : $recibo->total,2)}}</td>
             </tr>
           </tbody>
             <tfoot>
             <tr>
                 <td class="text-right" colspan="3"><b>Sub total: </b></td>
-                <td class="text-right">${{number_format(($recibo->total / 1.13),2)}}</td>
+                <td class="text-right">${{number_format(isset($recibo->empresa->pais) && $recibo->empresa->pais == 'El Salvador' ? ($recibo->total / 1.13) : $recibo->total,2)}}</td>
             </tr>
+            @if(isset($recibo->empresa->pais) && $recibo->empresa->pais == 'El Salvador')
             <tr>
                 <td class="text-right" colspan="3"><b>Impuesto (13%): </b></td>
                 <td class="text-right">${{number_format((($recibo->total / 1.13) * 0.13),2)}}</td>
             </tr>
+            @endif
             <tr>
                 <td class="text-right" colspan="3"><b>Total a pagar: </b></td>
                 <td class="text-right"><b>${{number_format($recibo->total,2)}}</b></td>

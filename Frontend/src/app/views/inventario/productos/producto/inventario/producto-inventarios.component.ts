@@ -22,6 +22,8 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
 
     @Input() producto: any = {};
     public bodegas: any = [];
+    /** Bodegas que aún no tienen inventario asignado para este producto (evita duplicados) */
+    public bodegasDisponibles: any = [];
     public sucursal: any = {};
     public inventario: any = {};
     public sucursalSelected: any = {};
@@ -52,6 +54,10 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
           .pipe(this.untilDestroyed())
           .subscribe(bodegas => {
             this.bodegas = bodegas;
+            const idsBodegasAsignadas = (this.producto?.inventarios || []).map((inv: any) => inv.id_bodega);
+            this.bodegasDisponibles = this.bodegas.filter((b: any) => 
+                !idsBodegasAsignadas.includes(b.id) || b.id === this.inventario?.id_bodega
+            );
             this.loading = false;
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });

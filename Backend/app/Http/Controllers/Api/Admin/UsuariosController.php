@@ -86,7 +86,7 @@ class UsuariosController extends Controller
         if ($request->id && $request->rol_id) {
             $usuario = Usuario::findOrFail($request->id);
             $rolActual = optional($usuario->roles->first())->id;
-            
+
             if ($rolActual != $request->rol_id) {
                 if ($response = $this->checkAuth('change_role', ['id_usuario' => $request->id])) {
                     return $response;
@@ -248,7 +248,19 @@ class UsuariosController extends Controller
     public function updateInfo(UpdateInfoRequest $request)
     {
         Log::info('updateInfo', $request->all());
-        $user = $this->usuarioService->actualizarInformacion($request->id, $request->all());
+        $request->validate([
+            'name' => 'required',
+            'telefono'      => 'sometimes|nullable|unique:users,telefono,' . $request->id,
+            'tipo' => 'required',
+            'codigo' => 'sometimes|nullable',
+            'id_sucursal' => 'required',
+            'id_bodega' => 'required',
+        ]);
+
+
+        $user = Usuario::findOrFail($request->id);
+        $user->fill($request->all());
+        $user->save();
         return Response()->json($user, 200);
     }
 

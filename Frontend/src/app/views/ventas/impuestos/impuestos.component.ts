@@ -65,7 +65,7 @@ export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit
         this.filtro.estado = '';
         this.apiService.getAll('impuestos')
             .pipe(this.untilDestroyed())
-            .subscribe(impuestos => { 
+            .subscribe(impuestos => {
                 this.impuestos = impuestos;
                 this.loading = false;
                 this.filtrado = false;
@@ -77,17 +77,37 @@ export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit
         this.loadAll();
     }
 
-    public override openModal(template: TemplateRef<any>, impuesto?: any) {
-        // Cargar catálogo antes de abrir el modal
-        this.apiService.getAll('catalogo/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(catalogo => {
-                this.catalogo = catalogo;
-                this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
-        
-        super.openModal(template, impuesto, {class: 'modal-md', backdrop: 'static'});
+  public override openModal(template: TemplateRef<any>, impuesto?: any) {
+    // Crear una copia del objeto para evitar modificar el original
+    this.impuesto = impuesto ? {...impuesto} : {};
+    if (!this.impuesto.id) {
+      this.impuesto.id_empresa = this.apiService.auth_user().id_empresa;
+      this.impuesto.enable = true;
+      // Solo establecer valores por defecto para nuevos impuestos
+      this.impuesto.aplica_ventas = true;
+      this.impuesto.aplica_gastos = true;
+      this.impuesto.aplica_compras = true;
+    } else {
+      // Para impuestos existentes, respetar los valores del backend
+      // Convertir valores null/undefined a false, pero mantener false y true como están
+      if (this.impuesto.aplica_ventas === undefined || this.impuesto.aplica_ventas === null) {
+        this.impuesto.aplica_ventas = false;
+      } else {
+        this.impuesto.aplica_ventas = Boolean(this.impuesto.aplica_ventas);
+      }
+      if (this.impuesto.aplica_gastos === undefined || this.impuesto.aplica_gastos === null) {
+        this.impuesto.aplica_gastos = false;
+      } else {
+        this.impuesto.aplica_gastos = Boolean(this.impuesto.aplica_gastos);
+      }
+      if (this.impuesto.aplica_compras === undefined || this.impuesto.aplica_compras === null) {
+        this.impuesto.aplica_compras = false;
+      } else {
+        this.impuesto.aplica_compras = Boolean(this.impuesto.aplica_compras);
+      }
     }
+    super.openModal(template, impuesto, {class: 'modal-sm', backdrop: 'static'});
+  }
 
     public setEstado(impuesto:any){
         this.impuesto = impuesto;
@@ -96,7 +116,7 @@ export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit
 
     public override delete(item: any | number): void {
         const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
+
         Swal.fire({
           title: '¿Estás seguro?',
           text: '¡No podrás revertir esto!',

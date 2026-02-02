@@ -28,6 +28,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
     public preferenciasIsCollapsed:boolean = true;
     public finanzasIsCollapsed:boolean = true;
     public paquetesIsCollapsed:boolean = true;
+    public planillaIsCollapsed:boolean = true;
     public adminIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
@@ -78,6 +79,11 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
             localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
         }else{
             this.paquetesIsCollapsed = JSON.parse(localStorage.getItem('paquetesIsCollapsed')!);
+        }
+        if (!localStorage.getItem('planillaIsCollapsed')) {
+            localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
+        }else{
+            this.planillaIsCollapsed = JSON.parse(localStorage.getItem('planillaIsCollapsed')!);
         }
         if (!localStorage.getItem('adminIsCollapsed')) {
             localStorage.setItem('adminIsCollapsed', this.adminIsCollapsed.toString());
@@ -185,6 +191,15 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
         this.toggleSidebarMenu();
     }
 
+    togglePlanilla() {
+        if(this.planillaIsCollapsed){
+            this.closeAll();
+        }
+        this.planillaIsCollapsed = !this.planillaIsCollapsed;
+        localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
     togglePaquetes() {
         if(this.paquetesIsCollapsed){
             this.closeAll();
@@ -213,6 +228,8 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
         localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
         this.finanzasIsCollapsed = true;
         localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
+        this.planillaIsCollapsed = true;
+        localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
         this.paquetesIsCollapsed = true;
         localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
         this.adminIsCollapsed = true;

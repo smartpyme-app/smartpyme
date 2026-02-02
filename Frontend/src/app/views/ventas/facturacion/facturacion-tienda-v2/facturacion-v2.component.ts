@@ -170,7 +170,8 @@ export class FacturacionV2Component implements OnInit {
 
     this.apiService.getAll('impuestos').subscribe(
       (impuestos) => {
-        this.impuestos = impuestos;
+        // Filtrar solo los impuestos que aplican a ventas
+        this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
         if (!this.venta.impuestos || this.venta.iva == 0) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
@@ -403,9 +404,52 @@ export class FacturacionV2Component implements OnInit {
             this.venta.cotizacion = 0;
             this.venta.num_cotizacion = this.venta.id;
             this.venta.id = null;
+            
+            // Obtener porcentaje de IVA para conversión de precios
+            const porcentajeIvaTotal = this.venta.cobrar_impuestos 
+              ? (this.apiService.auth_user()?.empresa?.iva || 0)
+              : 0;
+            
+            // Ajustar precios de los detalles para v2 (precios incluyen IVA)
             this.venta.detalles.forEach((detalle: any) => {
               detalle.id = null;
+              
+              // Si el detalle no tiene precio_iva, asumir que precio es sin IVA (versión anterior)
+              // y calcular precio_iva
+              if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
+                if (porcentajeIvaTotal > 0) {
+                  // El precio actual es sin IVA, calcular precio con IVA
+                  detalle.precio_iva = (parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+                } else {
+                  // Sin IVA, precio_iva es igual a precio
+                  detalle.precio_iva = parseFloat(detalle.precio || 0).toFixed(4);
+                }
+              } else {
+                // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
+                if (porcentajeIvaTotal > 0) {
+                  const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal);
+                  detalle.precio = precioSinIvaCalculado.toFixed(4);
+                } else {
+                  detalle.precio = parseFloat(detalle.precio_iva).toFixed(4);
+                }
+              }
+              
+              // Asegurar que precio_iva esté como número
+              detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
+              
+              // Recalcular total del detalle usando precio sin IVA
+              const precioSinIva = parseFloat(detalle.precio || 0);
+              detalle.total = (parseFloat(detalle.cantidad || 0) * precioSinIva - parseFloat(detalle.descuento || 0)).toFixed(4);
+              detalle.gravada = detalle.total;
+              
+              // Calcular total_iva para visualización
+              if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
+                detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+              } else {
+                detalle.total_iva = detalle.total;
+              }
             });
+            
             this.sumTotal();
 
             // Para proyectos
@@ -766,6 +810,11 @@ export class FacturacionV2Component implements OnInit {
             if(cliente.tipo_contribuyente == "Grande") {
                 this.venta.retencion = 1;
                 this.sumTotal();
+            }
+            
+            // Asignar vendedor si el cliente tiene uno asignado
+            if(cliente.id_vendedor) {
+                this.venta.id_vendedor = cliente.id_vendedor;
             }
             
             // Limpiar mensaje de validación al cambiar cliente

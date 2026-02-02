@@ -46,11 +46,12 @@ class Cliente extends Model {
        'id_usuario',
        'id_empresa',
        'id_cuenta_contable',
+       'id_vendedor',
        'tipo_persona',
        'tipo_documento',
        'codigo_cliente',
        'tiempo_pago',
-       
+
     ];
     protected $appends = ['nombre_completo'];
     protected $casts = ['enable' => 'boolean'];
@@ -66,7 +67,7 @@ class Cliente extends Model {
         }
     }
 
-    public function getNombreCompletoAttribute() 
+    public function getNombreCompletoAttribute()
     {
         return $this->nombre . ' ' . ($this->apellido ? $this->apellido : '');
     }
@@ -76,7 +77,7 @@ class Cliente extends Model {
         return $this->actividadEconomica ? $this->actividadEconomica->nombre : null;
     }
 
-    public function getEtiquetasAttribute($value) 
+    public function getEtiquetasAttribute($value)
     {
         return is_string($value) ? json_decode($value) : $value;
     }
@@ -86,32 +87,32 @@ class Cliente extends Model {
         $this->attributes['etiquetas'] = json_encode($valor);
     }
 
-    public function cotizaciones() 
+    public function cotizaciones()
     {
         return $this->hasMany('App\Models\Cotizaciones\Cotizacion', 'id_cliente');
     }
 
-    public function eventos() 
+    public function eventos()
     {
         return $this->hasMany('App\Models\Eventos\Evento', 'id_cliente');
     }
 
-    public function ventas() 
+    public function ventas()
     {
         return $this->hasMany('App\Models\Ventas\Venta', 'id_cliente');
     }
 
-    public function paquetes() 
+    public function paquetes()
     {
         return $this->hasMany('App\Models\Inventario\Paquete', 'id_cliente');
     }
 
-    public function creditos() 
+    public function creditos()
     {
         return $this->hasMany('App\Models\Creditos\Credito', 'id_cliente');
     }
-    
-    public function empresa() 
+
+    public function empresa()
     {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
@@ -121,9 +122,14 @@ class Cliente extends Model {
         return $this->hasMany(ContactoCliente::class, 'id_cliente')
                     ->where('estado', 1);
     }
-    
+
     public function actividadEconomica()
     {
         return $this->belongsTo(ActividadEconomica::class, 'cod_giro', 'cod');
+    }
+
+    public function vendedor()
+    {
+        return $this->belongsTo('App\Models\User', 'id_vendedor');
     }
 }

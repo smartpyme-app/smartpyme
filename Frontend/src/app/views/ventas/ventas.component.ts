@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -37,17 +37,23 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public sending: boolean = false;
   public downloadingDetalles: boolean = false;
   public downloadingVentas: boolean = false;
+  public downloadingCobrosVendedor: boolean = false;
   public reporteSeleccionado: string = '';
-  
+
+  // Propiedades booleanas para tipos de reporte
+  public esReporteMarca: boolean = false;
+  public esReporteUtilidades: boolean = false;
+  public esReporteCobrosVendedor: boolean = false;
+
   // Permisos para evitar problemas con ICU messages en el template
   public readonly permisoVentasCrear = 'ventas.crear';
   public readonly permisoVentasEditar = 'ventas.editar';
-  
+
   // Métodos helper para permisos
   public canEditVentas(): boolean {
     return this.apiService.canEditTest(this.permisoVentasEditar);
   }
-  
+
   public canCreateVentas(): boolean {
     return this.apiService.canCreateTest(this.permisoVentasCrear);
   }
@@ -67,6 +73,17 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public marcas: any[] = [];
   public numeros_ids: any = [];
   public contabilidadHabilitada: boolean = false;
+
+  // Campos para anulación
+  public fechaAnulacion: string = '';
+  public tipoAnulacion: number = 2;
+  public motivoAnulacion: string = '';
+  public codigoGeneracionRemplazo: string = '';
+  public motivosAnulacion: any[] = [
+    { valor: 1, texto: 'Error en la Información del Documento Tributario Electrónico a invalidar' },
+    { valor: 2, texto: 'Rescindir de la operación realizada' },
+    { valor: 3, texto: 'Otro' }
+  ];
   public filtrosAcumulado: any = {
     inicio: '',
     fin: '',
@@ -80,13 +97,23 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     fin: '',
     id_empresa: this.apiService.auth_user().empresa.id,
   };
+  public filtrosCobrosVendedor: any = {
+    inicio: '',
+    fin: '',
+    id_sucursal: '',
+    id_vendedor: '',
+  };
 
   public modalRefDescargar!: any; // BsModalRef
   public modalRefAcumulado!: any; // BsModalRef
   public modalRefPorMarca!: any; // BsModalRef
+  public modalRefCobrosVendedor!: any; // BsModalRef
   downloadingPorMarca: boolean = false;
 
   public override modalRef!: BsModalRef;
+
+  @ViewChild('modalAnulacion')
+  public modalAnulacionTemplate!: TemplateRef<any>;
 
   constructor(
     protected override apiService: ApiService,
@@ -255,6 +282,46 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       });
     }, 100);
 
+  }
+
+  public abrirModalFiltrosCobrosVendedor(template: TemplateRef<any>) {
+    if (this.modalRefDescargar) {
+      this.modalRefDescargar.hide();
+      this.modalRefDescargar = undefined;
+    }
+
+    // Cargar usuarios si no están cargados
+    if (!this.usuarios.length) {
+      this.apiService.getAll('usuarios/list')
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (usuarios) => {
+            this.usuarios = usuarios;
+            this.abrirModalCobrosVendedor(template);
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
+    } else {
+      this.abrirModalCobrosVendedor(template);
+    }
+  }
+
+  private abrirModalCobrosVendedor(template: TemplateRef<any>) {
+    // Inicializar filtros con valores por defecto si están vacíos
+    if (!this.filtrosCobrosVendedor.inicio && !this.filtrosCobrosVendedor.fin) {
+      this.filtrosCobrosVendedor.inicio = this.filtros.inicio || '';
+      this.filtrosCobrosVendedor.fin = this.filtros.fin || '';
+      this.filtrosCobrosVendedor.id_sucursal = this.filtros.id_sucursal || '';
+      this.filtrosCobrosVendedor.id_vendedor = this.filtros.id_vendedor || '';
+    }
+
+    setTimeout(() => {
+      this.modalRefCobrosVendedor = this.modalService.show(template, {
+        class: 'modal-md',
+      });
+    }, 100);
   }
 
   public setOrden(columna: string) {
@@ -577,6 +644,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   // }
   public openDescargar(template: TemplateRef<any>) {
     this.reporteSeleccionado = '';
+    // Resetear todas las propiedades booleanas
+    this.esReporteMarca = false;
+    this.esReporteUtilidades = false;
+    this.esReporteCobrosVendedor = false;
     this.modalRefDescargar = this.modalManager.openModal(template);
   }
 
@@ -712,6 +783,24 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
   public override async onSubmit(item?: any, isStatusChange?: boolean): Promise<void> {
     const ventaToSave = item || this.venta;
+
+    // Validar que el ID esté presente para editar
+    if (!ventaToSave.id) {
+      this.alertService.error('Error: No se puede guardar la venta sin un ID válido.');
+      return;
+    }
+
+    // Asegurar que el ID sea un número
+    ventaToSave.id = +ventaToSave.id;
+
+    // Normalizar campos que pueden venir como cadena vacía a null
+    if (ventaToSave.id_vendedor === '' || ventaToSave.id_vendedor === 'Todos' || ventaToSave.id_vendedor === null || ventaToSave.id_vendedor === undefined) {
+      ventaToSave.id_vendedor = null;
+    } else {
+      // Convertir a número si tiene valor
+      ventaToSave.id_vendedor = +ventaToSave.id_vendedor;
+    }
+
     this.saving = true;
     this.cdr.markForCheck();
     try {
@@ -817,50 +906,37 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     });
   }
 
+  openModalAnulacion(template: TemplateRef<any>, venta: any) {
+    this.venta = { ...venta }; // Crear copia para no modificar el original
+    // Inicializar valores por defecto
+    this.fechaAnulacion = this.apiService.date();
+    this.tipoAnulacion = 2;
+    this.motivoAnulacion = '';
+    this.codigoGeneracionRemplazo = '';
+    this.venta.errores = null; // Limpiar errores previos
+    this.saving = false; // Asegurar que saving esté en false
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-md',
+      backdrop: 'static'
+    });
+  }
+
+  onTipoAnulacionChange() {
+    // Limpiar el motivo cuando se cambia el tipo, excepto si es tipo 3
+    if (this.tipoAnulacion != 3) {
+      this.motivoAnulacion = '';
+    }
+    // Limpiar código de reemplazo si no es tipo 1 o 3
+    if (this.tipoAnulacion != 1 && this.tipoAnulacion != 3) {
+      this.codigoGeneracionRemplazo = '';
+    }
+  }
+
   anularDTE(venta: any) {
     this.venta = venta;
     if (venta.sello_mh && !venta.dte_invalidacion) {
-      if (confirm('¿Confirma anular la venta y el DTE?')) {
-        this.venta = venta;
-        this.saving = true;
-        this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
-          // this.alertService.success('DTE generado.');
-          this.venta.dte_invalidacion = dte;
-          this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
-            this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
-
-            if (dteFirmado.status == 'ERROR') {
-              this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
-            }
-
-            this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
-              if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                this.venta.dte_invalidacion.sello = dte.selloRecibido;
-                this.venta.sello_mh = dte.selloRecibido;
-                this.venta.estado = 'Anulada';
-                this.onSubmit();
-                if (this.venta.id_cliente) {
-                  setTimeout(() => {
-                    this.enviarDTE(this.venta);
-                  }, 3000);
-                }
-              }
-
-              this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
-            }, error => {
-              if (error.error.descripcionMsg) {
-                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
-              }
-              if (error.error.observaciones.length > 0) {
-                this.alertService.warning('Hubo un problema', error.error.observaciones);
-              }
-              this.saving = false;
-            });
-
-          }, error => { this.alertService.error(error); this.saving = false; });
-
-        }, error => { this.alertService.error(error); this.saving = false; });
-      }
+      // Abrir modal para ingresar fecha y motivo
+      this.openModalAnulacion(this.modalAnulacionTemplate, venta);
     }
     else {
       if (confirm('¿Confirma anular la venta?')) {
@@ -868,6 +944,125 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         this.onSubmit();
       }
     }
+  }
+
+  confirmarAnulacion() {
+    // Validar campos
+    if (!this.fechaAnulacion) {
+      this.alertService.error('Debe seleccionar una fecha de anulación.');
+      return;
+    }
+    if (!this.tipoAnulacion) {
+      this.alertService.error('Debe seleccionar un tipo de anulación.');
+      return;
+    }
+    if (this.tipoAnulacion == 3 && !this.motivoAnulacion) {
+      this.alertService.error('Debe ingresar el motivo de anulación.');
+      return;
+    }
+    if ((this.tipoAnulacion == 1 || this.tipoAnulacion == 3) && !this.codigoGeneracionRemplazo) {
+      this.alertService.error('Debe ingresar el código de generación de la venta que reemplaza a esta.');
+      return;
+    }
+
+    // Si el tipo no es 3, usar el texto predeterminado según el tipo
+    let motivoTexto = '';
+    if (this.tipoAnulacion == 1) {
+      motivoTexto = 'Error en la Información del Documento Tributario Electrónico a invalidar.';
+    } else if (this.tipoAnulacion == 2) {
+      motivoTexto = 'Se rescinde la operación.';
+    } else {
+      motivoTexto = this.motivoAnulacion;
+    }
+
+    // Asignar valores a la venta
+    this.venta.fecha_anulacion = this.fechaAnulacion;
+    this.venta.tipo_anulacion = this.tipoAnulacion;
+    this.venta.motivo_anulacion = motivoTexto;
+    this.venta.codigo_generacion_remplazo = (this.tipoAnulacion == 1 || this.tipoAnulacion == 3) ? this.codigoGeneracionRemplazo : null;
+    this.venta.errores = null; // Limpiar errores previos
+
+    this.saving = true;
+
+    this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
+      // this.alertService.success('DTE generado.');
+      this.venta.dte_invalidacion = dte;
+      this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+        this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
+
+        if (dteFirmado.status == 'ERROR') {
+          this.venta.errores = dteFirmado.body;
+          this.saving = false;
+          return;
+        }
+
+        this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
+          if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+            this.venta.dte_invalidacion.sello = dte.selloRecibido;
+            this.venta.sello_mh = dte.selloRecibido;
+            this.venta.estado = 'Anulada';
+
+            // Cerrar el modal primero
+            if (this.modalRef) {
+              this.modalRef.hide();
+            }
+
+            // Limpiar el estado del modal
+            this.saving = false;
+            this.venta.errores = null;
+
+            // Guardar la venta
+            this.onSubmit();
+
+            // Actualizar la venta en el listado
+            const index = this.ventas.data.findIndex((v: any) => v.id === this.venta.id);
+            if (index !== -1) {
+              this.ventas.data[index] = { ...this.venta };
+            }
+
+            if (this.venta.id_cliente) {
+              setTimeout(() => {
+                this.enviarDTE(this.venta);
+              }, 3000);
+            }
+
+            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+          } else {
+            this.venta.errores = dte;
+            this.saving = false;
+          }
+        }, error => {
+          this.saving = false;
+          if (error.error) {
+            if (error.error.descripcionMsg) {
+              this.venta.errores = { descripcionMsg: error.error.descripcionMsg };
+            } else if (error.error.observaciones && error.error.observaciones.length > 0) {
+              this.venta.errores = { observaciones: error.error.observaciones };
+            } else {
+              this.venta.errores = error.error;
+            }
+          } else {
+            this.venta.errores = error;
+          }
+        });
+
+      }, error => {
+        this.saving = false;
+        if (error.error) {
+          this.venta.errores = error.error;
+        } else {
+          this.venta.errores = error;
+        }
+      });
+
+    }, error => {
+      this.saving = false;
+      if (error.error) {
+        this.venta.errores = error.error;
+      } else {
+        this.venta.errores = error;
+      }
+    });
   }
 
   consultarDTE() {
@@ -1014,6 +1209,46 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     );
   }
 
+  public descargarCobrosPorVendedor() {
+    this.downloadingCobrosVendedor = true;
+    this.saving = true;
+    this.apiService.export('cobros-por-vendedor/exportar', this.filtrosCobrosVendedor).subscribe(
+      (data: Blob) => {
+        const blob = new Blob([data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const fechaInicio = this.filtrosCobrosVendedor.inicio || 'sin-fecha';
+        const fechaFin = this.filtrosCobrosVendedor.fin || 'sin-fecha';
+        a.download = 'cobros-por-vendedor_' + fechaInicio + '_' + fechaFin + '.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        // Cerrar ambos modales
+        if (this.modalRefCobrosVendedor) {
+          this.modalRefCobrosVendedor.hide();
+          this.modalRefCobrosVendedor = undefined;
+        }
+        if (this.modalRefDescargar) {
+          this.modalRefDescargar.hide();
+          this.modalRefDescargar = undefined;
+        }
+
+        this.downloadingCobrosVendedor = false;
+        this.saving = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.downloadingCobrosVendedor = false;
+        this.saving = false;
+      }
+    );
+  }
+
   public descargarReportePorMarcaOUtilidades() {
     if (this.reporteSeleccionado === 'marca') {
       this.descargarPorMarcasPorMes();
@@ -1045,6 +1280,30 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     const total = parseFloat(venta?.total || 0);
     const propina = parseFloat(venta?.propina || 0);
     return total + propina;
+  }
+
+  public seleccionarReporte(reporte: string) {
+    this.reporteSeleccionado = reporte;
+
+    // Resetear todas las propiedades booleanas
+    this.esReporteMarca = false;
+    this.esReporteUtilidades = false;
+    this.esReporteCobrosVendedor = false;
+
+    // Establecer la propiedad booleana correspondiente
+    if (reporte) {
+      switch (reporte) {
+        case 'marca':
+          this.esReporteMarca = true;
+          break;
+        case 'utilidades':
+          this.esReporteUtilidades = true;
+          break;
+        case 'cobros-vendedor':
+          this.esReporteCobrosVendedor = true;
+          break;
+      }
+    }
   }
 
 }

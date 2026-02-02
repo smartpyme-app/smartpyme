@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Ventas;
 use App\Http\Controllers\Controller;
 use App\Models\Ventas\Venta;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade as PDF;
 use App\Http\Requests\Ventas\StoreVentaRequest;
 use App\Http\Requests\Ventas\FacturacionRequest;
 use App\Http\Requests\Ventas\FacturacionConsignaRequest;
@@ -26,9 +27,17 @@ use App\Services\Ventas\ReporteEmailService;
 use App\Services\Ventas\CotizacionService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Documento;
+use App\Exports\VentasExport;
+use App\Exports\VentasDetallesExport;
+use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorExport;
+use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
+use App\Exports\VentasPorUtilidadesExport;
+use App\Exports\VentasPorMarcasExport;
+use App\Exports\CobrosPorVendedorExport;
+use App\Mail\ReporteVentasPorVendedor;
+use Maatwebsite\Excel\Facades\Excel;
 
 class VentasController extends Controller
 {
@@ -218,8 +227,20 @@ class VentasController extends Controller
             // Crear o actualizar venta
             $venta = $this->ventaService->crearOActualizarVenta($data);
 
-            // Asignar correlativo
-            $this->ventaService->asignarCorrelativo($venta, $data['id_documento']);
+                // Si es compuesto
+                if (isset($det['composiciones'])) {
+                    foreach ($det['composiciones'] as $item) {
+                        // Validar que id_compuesto exista antes de procesar
+                        if (!isset($item['id_compuesto']) || empty($item['id_compuesto'])) {
+                            continue; // Saltar esta composición si no tiene id_compuesto
+                        }
+                        $cd = new DetalleCompuesto;
+                        $cd->id_producto = $item['id_compuesto'];
+                        $cd->cantidad   = $item['cantidad'];
+                        $cd->id_detalle = $detalle->id;
+                        $cd->save();
+                    }
+                }
 
             // Guardar detalles
             $this->ventaService->guardarDetalles($venta, $data['detalles']);
@@ -382,6 +403,13 @@ class VentasController extends Controller
         return $this->reporteService->exportarPorUtilidades($request->validated());
     }
 
+    public function cobrosPorVendedorExport(Request $request)
+    {
+        $cobros = new CobrosPorVendedorExport();
+        $cobros->filter($request);
+        return Excel::download($cobros, 'cobros-por-vendedor.xlsx');
+    }
+
     public function enviarReporteDiario()
     {
         try {
@@ -415,6 +443,15 @@ class VentasController extends Controller
                     'sucursales' => $configuracion->sucursales ?? [],
                 ]);
                 $export = new VentasPorUtilidadesExport();
+                $export->filter($request);
+            } elseif ($configuracion->tipo_reporte === 'cobros-por-vendedor') {
+                $request = new Request([
+                    'id_empresa' => $empresa->id,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                ]);
+                $export = new CobrosPorVendedorExport();
                 $export->filter($request);
             }
             $filename = "{$configuracion->tipo_reporte}-{$fechaInicio}.xlsx";
@@ -478,6 +515,8 @@ class VentasController extends Controller
                 'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin,
                 'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
+                'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
+                'cobros-por-vendedor' => 'Reporte de Cobros por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -552,6 +591,16 @@ class VentasController extends Controller
                 $export = new VentasPorUtilidadesExport();
                 $export->filter($request);
                 $filename = "ventas-por-utilidades-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'cobros-por-vendedor') {
+                $request = new Request([
+                    'id_empresa' => $configuracion->id_empresa,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                ]);
+                $export = new CobrosPorVendedorExport();
+                $export->filter($request);
+                $filename = "cobros-por-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             }
 
             $relativePath = "reportes/{$filename}";
@@ -695,6 +744,16 @@ class VentasController extends Controller
                     'sucursales' => $configuracion->sucursales ?? [],
                 ]);
                 $export = new VentasPorUtilidadesExport();
+                $export->filter($request);
+                break;
+            case 'cobros-por-vendedor':
+                $request = new Request([
+                    'id_empresa' => $configuracion->id_empresa,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                ]);
+                $export = new CobrosPorVendedorExport();
                 $export->filter($request);
                 break;
             default:

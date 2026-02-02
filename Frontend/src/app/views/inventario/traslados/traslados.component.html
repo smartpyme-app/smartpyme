@@ -31,8 +31,11 @@
 
         <div class="col">
             <div class="d-flex gap-2">
-                <button [disabled]="downloading" tooltip="Descargar traslados" (click)="descargar()" class="btn btn-default tcla-F6">
-                    <img appLazyImage="/assets/icons/download.png" class="icon">
+                <button [disabled]="downloading" tooltip="Descargar traslados PDF" (click)="descargarPdfFiltrados()" class="btn btn-default">
+                  <img appLazyImage="/assets/icons/download.png" class="icon">
+                </button>
+                <button [disabled]="downloading" tooltip="Descargar traslados Excel" (click)="descargar()" class="btn btn-default tcla-F6">
+                  <img appLazyImage="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarTraslados()" autocomplete="off">
                     <div class="input-group">
@@ -91,20 +94,20 @@
                         <th>De</th>
                         <th>Para</th>
                         <th (click)="setOrden('cantidad')" [ngClass]="{'sorted-asc': filtros.orden == 'cantidad' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'cantidad' && filtros.direccion == 'desc'}" class="click text-center">Cantidad</th>
-                        <th class="text-center">Más</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (traslados?.total < 1 && !loading) {
                         <tr>
-                            <td colspan="8" class="text-center">
+                            <td colspan="10" class="text-center">
                                 <span class="badge bg-primary">No tiene traslados registrados</span>
                             </td>
                         </tr>
                     }
                     @if (loading) {
                         <tr>
-                            <td colspan="8" class="text-center">
+                            <td colspan="10" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
@@ -131,6 +134,9 @@
                                 <div class="list-group border-0">
                                     <a routerLink="/traslado/{{traslado.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                                    </a>
+                                    <a (click)="imprimir(traslado)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
                                     <a (click)="generarPartidaContable(traslado)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-edit"></i> Generar partida contable
@@ -300,6 +306,15 @@
                     }
                 </select>
             </div>
+          <div class="form-group col-md-12">
+            <label for="">Concepto:</label>
+            <select [(ngModel)]="filtros.concepto" class="form-select" name="filtros.concepto">
+              <option value="">Todos</option>
+              <option *ngFor="let concepto of conceptos" [value]="concepto">
+                {{ concepto }}
+              </option>
+            </select>
+          </div>
         </div>
         <div class="d-grid">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
