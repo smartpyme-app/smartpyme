@@ -131,4 +131,9 @@ class Cliente extends Model {
     {
         return $this->belongsTo('App\Models\User', 'id_vendedor');
     }
+
+    public function distritoRelation()
+    {
+        return $this->belongsTo(\App\Models\MH\Distrito::class, 'cod_distrito', 'cod');
+    }
 }
