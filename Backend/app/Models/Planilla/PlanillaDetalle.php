@@ -21,6 +21,7 @@ class PlanillaDetalle extends Model
         'dias_laborados',
         'horas_extra',
         'monto_horas_extra',
+        'detalle_horas_extra',
         'comisiones',
         'bonificaciones',
         'otros_ingresos',
@@ -43,7 +44,8 @@ class PlanillaDetalle extends Model
     ];
 
     protected $casts = [
-        'conceptos_personalizados' => 'array'
+        'conceptos_personalizados' => 'array',
+        'detalle_horas_extra' => 'array',
     ];
 
     public function planilla()
