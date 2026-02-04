@@ -337,6 +337,12 @@ Resources:
               - Name: AWS_BUCKET
                 Value: !ImportValue smartpyme-assets-bucket-name
               
+              # CloudFront Configuration
+              - Name: ASSET_URL
+                Value: !Sub 
+                  - 'https://${CloudFrontDomain}'
+                  - CloudFrontDomain: !ImportValue smartpyme-cloudfront-domain-name
+              
               # Cron API Key Secret ARN
               - Name: CRON_API_KEY_SECRET_ARN
                 Value: !ImportValue smartpyme-cron-api-key-secret-arn
@@ -346,8 +352,8 @@ Resources:
         AuthenticationConfiguration:
           AccessRoleArn: !GetAtt ECRAccessRole.Arn
       InstanceConfiguration:
-        Cpu: 4 vCPU
-        Memory: 8 GB
+        Cpu: 1 vCPU #4 vCPU
+        Memory: 4 GB #8 GB
         InstanceRoleArn: !GetAtt AppRunnerRole.Arn
       HealthCheckConfiguration:
         Protocol: HTTP
