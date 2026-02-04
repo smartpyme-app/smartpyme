@@ -4,8 +4,6 @@ namespace App\Imports;
 
 use App\Models\Admin\Canal;
 use App\Models\Admin\Documento;
-use App\Models\Inventario\Categorias\Categoria;
-use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Models\MH\Departamento;
 use App\Models\MH\Distrito;
@@ -26,8 +24,10 @@ use Maatwebsite\Excel\Events\AfterSheet;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
+//Importación de ventas desde Excel.
 class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 {
+    // El documento real se obtiene por nombre en buscarDocumentoPorNombre().
     protected $tipo_documento;
     protected $contador = 0;
     protected $errores = [];
@@ -35,9 +35,6 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
     protected $importar_hoja = true; // Flag para controlar si se importa la hoja actual
     protected $primera_hoja_procesada = false; // Flag para saber si ya se procesó la primera hoja
 
-    /**
-     * Definir los eventos para el control de hojas
-     */
     public function registerEvents(): array
     {
         return [
@@ -84,10 +81,6 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                 throw new \Exception('El archivo no contiene datos para importar.');
             }
 
-            $primeraFila = $rows[0];
-            $this->tipo_documento = $this->determinarTipoDocumento($primeraFila);
-            Log::info("Tipo de documento determinado: " . $this->tipo_documento);
-
             $ventasAgrupadas = [];
 
             foreach ($rows as $index => $row) {
@@ -104,12 +97,13 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                 $validRows++;
                 Log::info("Fila {$index} válida");
 
+                $this->tipo_documento = $this->determinarTipoDocumento($row);
                 $clienteKey = $this->generarClienteKey($row);
                 Log::info("Cliente key: " . $clienteKey);
 
                 if (!isset($ventasAgrupadas[$clienteKey])) {
                     $id_cliente = $this->buscarOCrearCliente($row);
-                    $id_documento = $this->buscarDocumento($this->tipo_documento);
+                    $id_documento = $this->buscarDocumentoPorNombre($row['tipo_documento_venta'] ?? '');
 
                     if (!$id_cliente || !$id_documento) {
                         Log::error("Error: ID de cliente o documento no válido. Cliente: {$id_cliente}, Documento: {$id_documento}");
@@ -214,11 +208,19 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         return false;
     }
 
+    // Determina si la venta es crédito_fiscal o consumidor_final solo para lógica de cliente (NIT, etc.).
     protected function determinarTipoDocumento($fila)
     {
+        $tipoVenta = isset($fila['tipo_documento_venta']) ? trim($fila['tipo_documento_venta']) : '';
+        if ($tipoVenta !== '') {
+            if (stripos($tipoVenta, 'crédito') !== false || stripos($tipoVenta, 'credito') !== false) {
+                return 'credito_fiscal';
+            }
+            return 'consumidor_final';
+        }
         $camposCredito = ['nit', 'nrc', 'cod_giro', 'nombre_comercial'];
         foreach ($camposCredito as $campo) {
-            if (isset($fila[$campo])) {
+            if (isset($fila[$campo]) && $fila[$campo] !== '' && $fila[$campo] !== null) {
                 return 'credito_fiscal';
             }
         }
@@ -295,15 +297,18 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
     protected function actualizarCliente($cliente, $fila)
     {
+        $dep = $this->buscarDepartamento($fila['cod_departamento'] ?? null);
+        $mun = $this->buscarMunicipio($fila['cod_municipio'] ?? null);
+        $dis = $this->buscarDistrito($dep ? $dep->cod : null, $mun ? $mun->cod : null);
         $datosCliente = [
             'nombre' => $fila['nombre'] ?? 'Consumidor Final',
             'apellido' => $fila['apellido'] ?? '',
             'telefono' => $fila['telefono'] ?? '',
             'correo' => $fila['correo'] ?? '',
             'direccion' => $fila['direccion'] ?? '',
-            'cod_departamento' => $this->buscarDepartamento($fila['cod_departamento'] ?? null)->cod ?? null,
-            'cod_municipio' => $this->buscarMunicipio($fila['cod_municipio'] ?? null)->cod ?? null,
-            'cod_distrito' => $this->buscarDistrito($fila['cod_distrito'] ?? null, $this->buscarMunicipio($fila['cod_municipio'] ?? null)->cod ?? null)->cod ?? null,
+            'cod_departamento' => $dep ? $dep->cod : null,
+            'cod_municipio' => $mun ? $mun->cod : null,
+            'cod_distrito' => $dis ? $dis->cod : null,
             'tipo_contribuyente' => $fila['tipo_contribuyente'] ?? 'Otro',
             'dui' => $fila['num_documento'] ?? ''
         ];
@@ -336,7 +341,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         $cliente = new Cliente();
         $departamento = $this->buscarDepartamento($fila['cod_departamento'] ?? null);
         $municipio = $this->buscarMunicipio($fila['cod_municipio'] ?? null);
-        $distrito = $this->buscarDistrito($municipio->cod ?? null, $departamento->cod ?? null);
+        $distrito = $this->buscarDistrito($departamento ? $departamento->cod : null, $municipio ? $municipio->cod : null);
 
         $datosCliente = [
             'nombre' => $fila['nombre'] ?? 'Consumidor Final',
@@ -344,12 +349,12 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             'telefono' => $fila['telefono'] ?? '',
             'correo' => $fila['correo'] ?? '',
             'direccion' => $fila['direccion'] ?? '',
-            'cod_departamento' => $departamento->cod ?? null,
-            'departamento' => $departamento->nombre ?? null,
-            'cod_municipio' => $municipio->cod ?? null,
-            'municipio' => $municipio->nombre ?? null,
-            'cod_distrito' => $distrito->cod ?? null,
-            'distrito' => $distrito->nombre ?? null,
+            'cod_departamento' => $departamento ? $departamento->cod : null,
+            'departamento' => $departamento ? $departamento->nombre : null,
+            'cod_municipio' => $municipio ? $municipio->cod : null,
+            'municipio' => $municipio ? $municipio->nombre : null,
+            'cod_distrito' => $distrito ? $distrito->cod : null,
+            'distrito' => $distrito ? $distrito->nombre : null,
             'id_usuario' => Auth::id(),
             'tipo' => $this->tipo_documento == 'credito_fiscal' ? 'Empresa' : 'Persona',
             'id_empresa' => Auth::user()->id_empresa
@@ -394,18 +399,28 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             ->first() : null;
     }
 
-    protected function buscarDocumento($tipo)
+    // Busca el documento por el nombre seleccionado en el Excel (Factura, Ticket, Crédito fiscal, Factura de exportación, etc.).
+    protected function buscarDocumentoPorNombre($nombreExcel)
     {
-        $documento = Documento::where('nombre', $tipo == 'credito_fiscal' ? 'Crédito Fiscal' : 'Factura')
-            ->where('id_sucursal', Auth::user()->id_sucursal)
+        $nombre = is_string($nombreExcel) ? trim($nombreExcel) : '';
+        if ($nombre === '') {
+            return null;
+        }
+        $documento = Documento::where('id_sucursal', Auth::user()->id_sucursal)
+            ->whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)])
             ->first();
         return $documento ? $documento->id : null;
     }
 
     protected function generarClienteKey($row)
     {
-        return $this->tipo_documento == 'credito_fiscal' ?
-            ($row['nit'] ?? '') . '-' . ($row['fecha'] ?? '') : ($row['nombre'] ?? '') . '-' . ($row['fecha'] ?? '');
+        $base = $this->tipo_documento == 'credito_fiscal'
+            ? ($row['nit'] ?? '') . '-' . ($row['fecha'] ?? '')
+            : ($row['nombre'] ?? '') . '-' . ($row['fecha'] ?? '');
+        $correlativo = isset($row['correlativo']) && $row['correlativo'] !== '' && $row['correlativo'] !== null
+            ? $row['correlativo']
+            : 'auto';
+        return $base . '-' . $correlativo;
     }
 
     protected function obtenerDatosCabecera($fila, $id_cliente, $id_documento)
@@ -418,9 +433,11 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         $iva = $this->extraerValorOCalcular($fila, 'iva', $gravada * 0.13);
         $total = $this->extraerValorOCalcular($fila, 'total', $subtotal + $iva);
 
+        $estado = $this->obtenerEstadoFactura($fila);
+
         $cabecera = [
             'fecha' => $fecha,
-            'estado' => 'Pagada',
+            'estado' => $estado,
             'forma_pago' => $fila['forma_pago'] ?? 'Tarjeta de crédito/débito',
             'condicion' => $fila['condicion'] ?? 'Contado',
             'credito' => (strtolower($fila['condicion'] ?? 'Contado') == 'crédito' || strtolower($fila['condicion'] ?? 'Contado') == 'credito') ? 1 : 0,
@@ -451,11 +468,41 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
         $documento = Documento::find($id_documento);
         if ($documento) {
-            $ultimoCorrelativo = Venta::where('id_documento', $id_documento)->max('correlativo');
-            $cabecera['correlativo'] = $ultimoCorrelativo ? $ultimoCorrelativo + 1 : $documento->correlativo;
+            $correlativoImportado = $this->extraerCorrelativoFila($fila);
+            if ($correlativoImportado !== null) {
+                $cabecera['correlativo'] = (int) $correlativoImportado;
+            } else {
+                $ultimoCorrelativo = Venta::where('id_documento', $id_documento)->max('correlativo');
+                $cabecera['correlativo'] = $ultimoCorrelativo ? $ultimoCorrelativo + 1 : $documento->correlativo;
+            }
         }
 
         return $cabecera;
+    }
+
+    protected function obtenerEstadoFactura($fila)
+    {
+        $estado = $fila['estado_factura'] ?? $fila['estado'] ?? 'Pagada';
+        if (is_string($estado)) {
+            $estado = trim($estado);
+        }
+        $validos = ['Pagada', 'Pendiente', 'Anulada'];
+        return in_array($estado, $validos) ? $estado : 'Pagada';
+    }
+
+    protected function extraerCorrelativoFila($fila)
+    {
+        $valor = $fila['correlativo'] ?? null;
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+        if (is_numeric($valor)) {
+            return (int) $valor;
+        }
+        if (is_string($valor) && is_numeric(trim($valor))) {
+            return (int) trim($valor);
+        }
+        return null;
     }
 
     protected function convertirFechaExcel($fecha)
@@ -468,50 +515,15 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             }
         }
 
-        if (is_string($fecha) && preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $fecha, $matches)) {
-            return "{$matches[3]}-{$matches[2]}-{$matches[1]}";
+        if (is_string($fecha) && preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/', trim($fecha), $matches)) {
+            $y = strlen($matches[3]) === 2 ? '20' . $matches[3] : $matches[3];
+            return "{$y}-{$matches[2]}-{$matches[1]}";
         }
 
         try {
             return Carbon::parse($fecha)->format('Y-m-d');
         } catch (\Exception $e) {
             return date('Y-m-d');
-        }
-    }
-
-    protected function buscarOCrearProducto($fila)
-    {
-        $descripcion = $fila['descripcion'] ?? 'Sin descripción';
-        Log::info('Buscando producto: ' . $descripcion);
-
-        $producto = Producto::where('nombre', $descripcion)
-            ->orWhere('descripcion', 'like', '%' . $descripcion . '%')
-            ->first();
-
-        if ($producto) {
-            Log::info('Producto encontrado: ID ' . $producto->id);
-            return $producto->id;
-        }
-
-        // Guardar el producto faltante para reportar al usuario
-        $this->productos_faltantes[] = $descripcion;
-
-        Log::warning('Producto no encontrado en el sistema: ' . $descripcion);
-        return 0;
-    }
-
-    protected function actualizarInventario($venta, $detalle)
-    {
-        if ($detalle->tipo_item == 'Producto') {
-            $inventario = Inventario::where('id_producto', $detalle->id_producto)
-                ->where('id_bodega', $venta->id_bodega)
-                ->first();
-
-            if ($inventario) {
-                $inventario->stock -= $detalle->cantidad;
-                $inventario->save();
-                $inventario->kardex($venta, $detalle->cantidad, $detalle->precio);
-            }
         }
     }
 
@@ -534,7 +546,8 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
     {
         Log::info('Procesando fila: ' . json_encode($fila));
 
-        $idProducto = $this->buscarOCrearProducto($fila);
+        // No se busca ni crea producto: se agrega el detalle con la descripción del Excel (id_producto = 0).
+        $idProducto = 0;
 
         $gravada = $this->extraerValorOCalcular($fila, 'gravada');
         $subtotal = $this->extraerValorOCalcular($fila, 'subtotal', $gravada);
@@ -553,18 +566,12 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             }
         }
 
-        $producto = Producto::find($idProducto);
-        if (!$producto) {
-            $costo = 0;
-            $total_costo = 0;
-        } else {
-            $costo = $producto->costo;
-            $total_costo = $cantidad * $costo;
-        }
+        $costo = 0;
+        $total_costo = 0;
 
         return [
             'id_producto' => $idProducto,
-            'descripcion' => $fila['descripcion'] ?? '',
+            'descripcion' => $fila['descripcion'] ?? 'Sin descripción',
             'cantidad' => $cantidad,
             'precio' => $precio,
             'costo' => $costo,
@@ -618,11 +625,6 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             $detallesInvalidos = [];
 
             foreach ($detalles as $detalle_data) {
-                // if (empty($detalle_data['id_producto'])) {
-                //     $detallesInvalidos[] = "Producto no encontrado: " . ($detalle_data['descripcion'] ?? 'Sin descripción');
-                //    // continue;
-                //    $detallesValidos[] = $detalle_data;
-                // }
                 $detallesValidos[] = $detalle_data;
             }
 
@@ -658,15 +660,12 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
                 $detalle->fill($detalle_data);
                 $detalle->save();
-
-                if ($venta->cotizacion == 0) {
-                    $this->actualizarInventario($venta, $detalle);
-                }
             }
 
             $documento = Documento::find($venta->id_documento);
             if ($documento) {
-                $documento->increment('correlativo');
+                $documento->correlativo = max($documento->correlativo, $venta->correlativo + 1);
+                $documento->save();
             }
 
             return true;
