@@ -475,9 +475,11 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
      * Resuelve departamento, municipio y distrito desde la fila del Excel (columnas por nombre).
      * Devuelve ['departamento' => modelo|null, 'municipio' => modelo|null, 'distrito' => modelo|null]
      * para usar ->cod en el registro de venta/cliente.
+     * Acepta array o objeto (p. ej. Collection) porque Maatwebsite/Excel puede devolver filas como objeto.
      */
-    protected function resolverUbicacionDesdeFila(array $fila)
+    protected function resolverUbicacionDesdeFila($fila)
     {
+        $fila = is_array($fila) ? $fila : (method_exists($fila, 'toArray') ? $fila->toArray() : (array) $fila);
         $dep = $this->buscarDepartamentoPorNombre($fila['departamento'] ?? null);
         $codDep = $dep ? $dep->cod : null;
         $mun = $this->buscarMunicipioPorNombre($fila['municipio'] ?? null, $codDep);
