@@ -434,7 +434,7 @@ class GenerarDocumentosController extends Controller
         }
 
         // Factura de exportación
-        if ($documento->nombre == 'Factura de exportación') {
+        if ($documento->nombre == 'Factura de exportación' && Auth::user()->id_empresa == 13) {
             $cliente = Cliente::withoutGlobalScope('empresa')->findOrfail($venta->id_cliente);
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
 

@@ -114,8 +114,8 @@
             <td colspan="2">
                 <div class="label">BUYER / COMPRADOR</div>
                 <div style="padding: 2px 5px;">
-                    {{ $cliente->nombre_completo }}<br>
-                    {{ $cliente->direccion? $cliente->direccion : $cliente->direccion_empresa }}<br>
+                    {{ $cliente->nombre ? $cliente->nombre_completo : $cliente->nombre_empresa }}<br>
+                    {{ $cliente->direccion ? $cliente->direccion : $cliente->empresa_direccion }}<br>
                     {{ $cliente->nit ? 'NIT: ' . $cliente->nit : '' }}<br>
                     {{ $cliente->ncr ? 'NRC: ' . $cliente->ncr : '' }}<br>
                     {{ $cliente->telefono ? 'Teléfono: ' . $cliente->telefono : '' }}
@@ -138,19 +138,19 @@
         </tr>
         <tr>
             <td colspan="2"> <div class="label">PAYMENT / PAGO</div> <div style="padding: 2px 5px;">{{ $venta->pago_descripcion ?? '—' }}</div> </td>
-            <td> <div class="label">INCOTERM</div> <div style="padding: 2px 5px;">{{ $venta->incoterm ?? '—' }} {{ $venta->recinto_fiscal ?? '—' }}</div> </td>
+            <td colspan="2"> <div class="label">INCOTERM</div> <div style="padding: 2px 5px;">{{ $venta->incoterm ?? '—' }} - {{ \App\Models\MH\Recinto::where('cod', $venta->recinto_fiscal)->first()->nombre ?? '—' }}</div> </td>
     </table>
 
 
-    <p>SHIPMENT FROM LITHUANIA, TO EL SALVADOR</p>
+    <p>{{$venta->observaciones}}</p>
 
     <table class="items">
         <thead>
             <tr>
                 <th style="text-align: center;">QUANTITY / CANTIDAD</th>
                 <th>GOODS OF DESCRIPTION / DESCRIPCIÓN</th>
-                <th>UNIT PRICE / P. UNITARIO</th>
-                <th>AMOUNT / TOTAL</th>
+                <th style="text-align: right;">UNIT PRICE / P. UNITARIO</th>
+                <th style="text-align: right;">AMOUNT / TOTAL</th>
             </tr>
         </thead>
         <tbody>
@@ -162,12 +162,6 @@
                 <td style="text-align: right;">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->total, 2) }}</td>
             </tr>
             @endforeach
-            <tr>
-                <td></td>
-                <td>País de Origen: LITUANIA</td>
-                <td></td>
-                <td></td>
-            </tr>
         </tbody>
         <tfoot>
             <tr>
@@ -187,7 +181,7 @@
             <tr>
                 <td colspan="2"></td>
                 <td>Taxes / Impuesto</td>
-                <td style="text-align: right;">-</td>
+                <td style="text-align: right;">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->iva, 2) }}</td>
             </tr>
             <tr>
                 <td colspan="2"></td>
