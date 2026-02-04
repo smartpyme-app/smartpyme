@@ -24,16 +24,34 @@ use Maatwebsite\Excel\Events\AfterSheet;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
-//Importación de ventas desde Excel.
+/**
+ * Importación de ventas desde Excel.
+ *
+ * Dos plantillas con columnas distintas:
+ *
+ * — CONSUMIDOR FINAL: nombre, tipo_documento, num_documento, departamento, municipio, distrito,
+ *   direccion, telefono, correo, fecha, tipo_documento_venta, correlativo, descripcion, forma_pago,
+ *   exenta, gravada, subtotal, iva, iva_retenido, total, condicion, fecha_pago.
+ *   tipo_documento: DUI | NIT | Pasaporte | Carnet de residente | Otro.
+ *   tipo_documento_venta: Factura | Ticket | Crédito fiscal | Factura de exportación.
+ *   condicion: Contado | Crédito.
+ *
+ * — CRÉDITO FISCAL: nombre_comercial, nombre, NIT, NRC, giro, departamento, municipio, distrito,
+ *   direccion, telefono, correo, fecha, descripcion, tipo_item, forma_pago, no_sujeta, exenta, gravada,
+ *   subtotal, iva, iva_retenido, total, condicion, fecha_pago.
+ *   tipo_documento_venta y condicion con las mismas opciones que arriba.
+ *
+ * Departamento, municipio y distrito se resuelven por nombre (LOWER) a códigos MH.
+ * El tipo de plantilla se detecta por fila: si tiene NIT con valor → crédito fiscal; si no → consumidor final.
+ */
 class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 {
-    // El documento real se obtiene por nombre en buscarDocumentoPorNombre().
     protected $tipo_documento;
     protected $contador = 0;
     protected $errores = [];
     protected $productos_faltantes = [];
-    protected $importar_hoja = true; // Flag para controlar si se importa la hoja actual
-    protected $primera_hoja_procesada = false; // Flag para saber si ya se procesó la primera hoja
+    protected $importar_hoja = true; 
+    protected $primera_hoja_procesada = false; 
 
     public function registerEvents(): array
     {
@@ -103,7 +121,8 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
                 if (!isset($ventasAgrupadas[$clienteKey])) {
                     $id_cliente = $this->buscarOCrearCliente($row);
-                    $id_documento = $this->buscarDocumentoPorNombre($row['tipo_documento_venta'] ?? '');
+                    $id_documento = $this->buscarDocumentoPorNombre($row['tipo_documento_venta'] ?? '')
+                        ?: $this->buscarDocumentoPorTipoImportacion();
 
                     if (!$id_cliente || !$id_documento) {
                         Log::error("Error: ID de cliente o documento no válido. Cliente: {$id_cliente}, Documento: {$id_documento}");
@@ -208,21 +227,14 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         return false;
     }
 
-    // Determina si la venta es crédito_fiscal o consumidor_final solo para lógica de cliente (NIT, etc.).
+    /**
+     * Determina si el documento es crédito_fiscal o consumidor_final facilmente si viene o no NIT.
+     */
     protected function determinarTipoDocumento($fila)
     {
-        $tipoVenta = isset($fila['tipo_documento_venta']) ? trim($fila['tipo_documento_venta']) : '';
-        if ($tipoVenta !== '') {
-            if (stripos($tipoVenta, 'crédito') !== false || stripos($tipoVenta, 'credito') !== false) {
-                return 'credito_fiscal';
-            }
-            return 'consumidor_final';
-        }
-        $camposCredito = ['nit', 'nrc', 'cod_giro', 'nombre_comercial'];
-        foreach ($camposCredito as $campo) {
-            if (isset($fila[$campo]) && $fila[$campo] !== '' && $fila[$campo] !== null) {
-                return 'credito_fiscal';
-            }
+        $nit = isset($fila['nit']) ? trim((string) $fila['nit']) : '';
+        if ($nit !== '') {
+            return 'credito_fiscal';
         }
         return 'consumidor_final';
     }
@@ -297,9 +309,10 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
     protected function actualizarCliente($cliente, $fila)
     {
-        $dep = $this->buscarDepartamento($fila['cod_departamento'] ?? null);
-        $mun = $this->buscarMunicipio($fila['cod_municipio'] ?? null);
-        $dis = $this->buscarDistrito($dep ? $dep->cod : null, $mun ? $mun->cod : null);
+        $ubicacion = $this->resolverUbicacionDesdeFila($fila);
+        $dep = $ubicacion['departamento'];
+        $mun = $ubicacion['municipio'];
+        $dis = $ubicacion['distrito'];
         $datosCliente = [
             'nombre' => $fila['nombre'] ?? 'Consumidor Final',
             'apellido' => $fila['apellido'] ?? '',
@@ -315,19 +328,17 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         if ($this->tipo_documento == 'credito_fiscal') {
             $datosCliente = array_merge($datosCliente, [
                 'nombre_empresa' => $fila['nombre_comercial'] ?? $fila['nombre'],
-                'nit' => $fila['nit'],
+                'nit' => $fila['nit'] ?? '',
                 'ncr' => $fila['nrc'] ?? '',
-                'cod_giro' => $fila['cod_giro'] ?? '',
+                'cod_giro' => $fila['giro'] ?? '',
                 'tipo_contribuyente' => 'Otro',
                 'dui' => $fila['num_documento'] ?? ''
             ]);
         } else {
+            // Consumidor final: solo tipo_documento y num_documento (no hay NIT, NRC, cod_giro, nombre_comercial)
             $datosCliente = array_merge($datosCliente, [
-                'nombre_empresa' => $fila['nombre_comercial'] ?? $fila['nombre'],
-                'nit' => $fila['nit'],
-                'ncr' => $fila['nrc'] ?? '',
-                'cod_giro' => $fila['cod_giro'] ?? '',
-                'tipo_contribuyente' => 'Otro',
+                'nombre_empresa' => $fila['nombre'] ?? '',
+                'tipo_documento' => $fila['tipo_documento'] ?? 'DUI',
                 'dui' => $fila['num_documento'] ?? ''
             ]);
         }
@@ -339,9 +350,10 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
     protected function crearCliente($fila)
     {
         $cliente = new Cliente();
-        $departamento = $this->buscarDepartamento($fila['cod_departamento'] ?? null);
-        $municipio = $this->buscarMunicipio($fila['cod_municipio'] ?? null);
-        $distrito = $this->buscarDistrito($departamento ? $departamento->cod : null, $municipio ? $municipio->cod : null);
+        $ubicacion = $this->resolverUbicacionDesdeFila($fila);
+        $departamento = $ubicacion['departamento'];
+        $municipio = $ubicacion['municipio'];
+        $distrito = $ubicacion['distrito'];
 
         $datosCliente = [
             'nombre' => $fila['nombre'] ?? 'Consumidor Final',
@@ -350,11 +362,11 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             'correo' => $fila['correo'] ?? '',
             'direccion' => $fila['direccion'] ?? '',
             'cod_departamento' => $departamento ? $departamento->cod : null,
-            'departamento' => $departamento ? $departamento->nombre : null,
+            'departamento' => $departamento ? $departamento->nombre : ($fila['departamento'] ?? null),
             'cod_municipio' => $municipio ? $municipio->cod : null,
-            'municipio' => $municipio ? $municipio->nombre : null,
+            'municipio' => $municipio ? $municipio->nombre : ($fila['municipio'] ?? null),
             'cod_distrito' => $distrito ? $distrito->cod : null,
-            'distrito' => $distrito ? $distrito->nombre : null,
+            'distrito' => $distrito ? $distrito->nombre : ($fila['distrito'] ?? null),
             'id_usuario' => Auth::id(),
             'tipo' => $this->tipo_documento == 'credito_fiscal' ? 'Empresa' : 'Persona',
             'id_empresa' => Auth::user()->id_empresa
@@ -365,7 +377,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                 'nombre_empresa' => $fila['nombre_comercial'] ?? $fila['nombre'],
                 'nit' => $fila['nit'],
                 'ncr' => $fila['nrc'] ?? '',
-                'cod_giro' => $fila['cod_giro'] ?? '',
+                'cod_giro' => $fila['giro'] ?? '',
                 'tipo_contribuyente' => 'Otro',
                 'dui' => $fila['num_documento'] ?? ''
             ]);
@@ -382,16 +394,26 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         return $cliente;
     }
 
+    /**
+     * Busca departamento por código (id). Para resolver por nombre del Excel usar buscarDepartamentoPorNombre.
+     */
     protected function buscarDepartamento($codigo)
     {
         return $codigo ? Departamento::where('id', $codigo)->first() : null;
     }
 
+    /**
+     * Busca municipio por código (id). Para resolver por nombre del Excel usar buscarMunicipioPorNombre.
+     */
     protected function buscarMunicipio($codigo)
     {
         return $codigo ? Municipio::where('id', $codigo)->first() : null;
     }
 
+    /**
+     * Busca distrito por códigos de departamento y municipio.
+     * Para resolver por nombre del Excel usar buscarDistritoPorNombre.
+     */
     protected function buscarDistrito($departamento, $municipio)
     {
         return ($departamento && $municipio) ? Distrito::where('cod_departamento', $departamento)
@@ -399,7 +421,79 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             ->first() : null;
     }
 
-    // Busca el documento por el nombre seleccionado en el Excel (Factura, Ticket, Crédito fiscal, Factura de exportación, etc.).
+    /**
+     * Busca departamento por nombre (comparación case-insensitive con LOWER).
+     * El Excel trae la columna "departamento" con el nombre; se devuelve el registro para obtener ->cod.
+     */
+    protected function buscarDepartamentoPorNombre($nombre)
+    {
+        if ($nombre === null || (is_string($nombre) && trim($nombre) === '')) {
+            return null;
+        }
+        $nombre = is_string($nombre) ? trim($nombre) : (string) $nombre;
+        return Departamento::whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)])->first();
+    }
+
+    /**
+     * Busca municipio por nombre (comparación case-insensitive con LOWER).
+     * Si se pasa cod_departamento se filtra por él para desambiguar.
+     */
+    protected function buscarMunicipioPorNombre($nombre, $cod_departamento = null)
+    {
+        if ($nombre === null || (is_string($nombre) && trim($nombre) === '')) {
+            return null;
+        }
+        $nombre = is_string($nombre) ? trim($nombre) : (string) $nombre;
+        $query = Municipio::whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)]);
+        if ($cod_departamento !== null && $cod_departamento !== '') {
+            $query->where('cod_departamento', $cod_departamento);
+        }
+        return $query->first();
+    }
+
+    /**
+     * Busca distrito por nombre (comparación case-insensitive con LOWER).
+     * Si se pasan cod_departamento y cod_municipio se filtran para desambiguar.
+     */
+    protected function buscarDistritoPorNombre($nombre, $cod_departamento = null, $cod_municipio = null)
+    {
+        if ($nombre === null || (is_string($nombre) && trim($nombre) === '')) {
+            return null;
+        }
+        $nombre = is_string($nombre) ? trim($nombre) : (string) $nombre;
+        $query = Distrito::whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)]);
+        if ($cod_departamento !== null && $cod_departamento !== '') {
+            $query->where('cod_departamento', $cod_departamento);
+        }
+        if ($cod_municipio !== null && $cod_municipio !== '') {
+            $query->where('cod_municipio', $cod_municipio);
+        }
+        return $query->first();
+    }
+
+    /**
+     * Resuelve departamento, municipio y distrito desde la fila del Excel (columnas por nombre).
+     * Devuelve ['departamento' => modelo|null, 'municipio' => modelo|null, 'distrito' => modelo|null]
+     * para usar ->cod en el registro de venta/cliente.
+     */
+    protected function resolverUbicacionDesdeFila(array $fila)
+    {
+        $dep = $this->buscarDepartamentoPorNombre($fila['departamento'] ?? null);
+        $codDep = $dep ? $dep->cod : null;
+        $mun = $this->buscarMunicipioPorNombre($fila['municipio'] ?? null, $codDep);
+        $codMun = $mun ? $mun->cod : null;
+        $dis = $this->buscarDistritoPorNombre($fila['distrito'] ?? null, $codDep, $codMun);
+        return [
+            'departamento' => $dep,
+            'municipio' => $mun,
+            'distrito' => $dis,
+        ];
+    }
+
+    /**
+     * Busca el documento por el valor de tipo_documento_venta del Excel.
+     * Valores válidos: Factura, Ticket, Crédito fiscal, Factura de exportación.
+     */
     protected function buscarDocumentoPorNombre($nombreExcel)
     {
         $nombre = is_string($nombreExcel) ? trim($nombreExcel) : '';
@@ -410,6 +504,31 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             ->whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)])
             ->first();
         return $documento ? $documento->id : null;
+    }
+
+    /**
+     * Fallback: obtiene id_documento según tipo de importación cuando tipo_documento_venta viene vacío.
+     * Crédito fiscal → "Crédito fiscal"; Consumidor final → "Ticket" o "Factura".
+     */
+    protected function buscarDocumentoPorTipoImportacion()
+    {
+        $id_sucursal = Auth::user()->id_sucursal;
+        if ($this->tipo_documento === 'credito_fiscal') {
+            $id = $this->buscarDocumentoPorNombre(config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL', 'Crédito fiscal'));
+            if ($id) {
+                return $id;
+            }
+        }
+        $id = $this->buscarDocumentoPorNombre(config('constants.TIPO_DOCUMENTO_TICKET', 'Ticket'));
+        if ($id) {
+            return $id;
+        }
+        $id = $this->buscarDocumentoPorNombre(config('constants.TIPO_DOCUMENTO_FACTURA', 'Factura'));
+        if ($id) {
+            return $id;
+        }
+        $cualquiera = Documento::where('id_sucursal', $id_sucursal)->first();
+        return $cualquiera ? $cualquiera->id : null;
     }
 
     protected function generarClienteKey($row)
