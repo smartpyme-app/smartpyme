@@ -16,4 +16,3 @@ use App\Http\Controllers\Api\Contabilidad\CajaChica\DetallesController;
     Route::delete('/caja-chica/detalle/{id}',      [DetallesController::class, 'delete']);
 
 
-?>

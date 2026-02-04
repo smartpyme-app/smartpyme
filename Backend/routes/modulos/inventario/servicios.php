@@ -17,4 +17,3 @@ use App\Http\Controllers\Api\Inventario\ServiciosController;
     Route::get('/servicios/exportar',          [ServiciosController::class, 'export']);
 
 
-?>

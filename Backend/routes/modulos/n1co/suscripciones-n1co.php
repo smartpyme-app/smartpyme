@@ -23,4 +23,3 @@ Route::group(['prefix' => 'payment'], function () {
 	Route::get('methods/{userId}', [N1coChargeController::class, 'getExistingPaymentMethod']);
     
 });
-?>

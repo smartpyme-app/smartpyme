@@ -15,4 +15,3 @@ Route::post('/cancelar-suscripcion', [AuthJWTController::class, 'cancelarSuscrip
 
 Route::get('/me/{id}', [AuthJWTController::class, 'me']);
 
-?>

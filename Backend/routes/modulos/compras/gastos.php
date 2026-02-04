@@ -22,5 +22,4 @@ use App\Http\Controllers\Api\Inventario\ProveedorController;
     Route::post('/gastos/importar-json', [GastosController::class, 'importarJson']);
     Route::post('/proveedores/buscar-nit', [ProveedorController::class, 'buscarPorNit']);
     Route::get('/gastos/nums-ids', [GastosController::class, 'getNumerosIdentificacion']);
-    
-?>
+

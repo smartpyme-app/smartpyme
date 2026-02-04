@@ -32,4 +32,3 @@ use Illuminate\Support\Facades\Route;
     Route::post('/usuario/informacion',       [UsuariosController::class, 'updateInfo']);
     Route::post('/usuario/avatar',       [UsuariosController::class, 'updateAvatar']);
 
-?>

@@ -10,5 +10,3 @@ use Illuminate\Support\Facades\Route;
     Route::delete('/sucursal/{id}',         [SucursalesController::class, 'delete']);
     Route::get('/marcas/list',              [SucursalesController::class, 'listaMarcas']);
 
-
-?>

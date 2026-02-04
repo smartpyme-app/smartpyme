@@ -29,4 +29,3 @@ use App\Http\Controllers\Api\Inventario\Categorias\SubCategoriasController;
     Route::post('/subcategorias/import',          [SubCategoriasController::class, 'import']);
 
 
-?>

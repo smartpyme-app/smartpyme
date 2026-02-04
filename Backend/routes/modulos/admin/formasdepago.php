@@ -7,6 +7,4 @@ use App\Http\Controllers\Api\Admin\FormasDePagosController;
     Route::post('/forma-de-pago', [FormasDePagosController::class, 'storeOrDelete']);
 
     Route::post('/wompi', [FormasDePagosController::class, 'wompi']);
-    
 
-?>

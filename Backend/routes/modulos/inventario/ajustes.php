@@ -8,5 +8,3 @@ use App\Http\Controllers\Api\Inventario\AjustesController;
     Route::delete('/ajuste/{id}',  		[AjustesController::class, 'delete']);
     Route::get('/ajustes/exportar',          [AjustesController::class, 'export']);
 
-
-?>

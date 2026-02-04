@@ -30,7 +30,3 @@ use Illuminate\Support\Facades\Route;
     Route::get('/reporte/corte/{id}',              [ReportesController::class, 'corte']);
 
 
-
-
-
-?>

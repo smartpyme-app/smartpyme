@@ -117,4 +117,4 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::post('/productos/shopify/cola/iniciar', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'iniciarImportacion']);
     Route::post('/productos/shopify/cola/continuar', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'continuarImportacion']);
     Route::get('/productos/shopify/cola/estado', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'verificarEstado']);
-?>
+

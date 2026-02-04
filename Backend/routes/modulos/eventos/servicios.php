@@ -9,5 +9,3 @@
     Route::get('/servicios/filtrar/{filtro}/{valor}', [ServiciosController::class, 'filter']);
     Route::post('/servicio',                    [ServiciosController::class, 'store']);
     Route::delete('/servicio/{id}',             [ServiciosController::class, 'delete']);
-
-?>

@@ -32,6 +32,4 @@ use Illuminate\Support\Facades\Route;
     Route::get('/libro-iva/percepcion1/descargar-anexo',         [LibrosIVAController::class, 'anexoPercepcion1Export']);
 
 
-?>
-
 

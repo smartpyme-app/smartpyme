@@ -8,4 +8,3 @@ use App\Http\Controllers\Api\SuperAdmin\UsuariosController;
     Route::get('/admin-usuario/{id}',             [UsuariosController::class, 'read']);
     Route::delete('/admin-usuario/{id}',          [UsuariosController::class, 'delete']);
 
-?>

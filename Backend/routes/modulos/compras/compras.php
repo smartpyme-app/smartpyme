@@ -28,4 +28,3 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('compras/nums-ids',    [ComprasController::class, 'getNumerosIdentificacion']);
 
-?>
