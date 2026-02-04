@@ -582,6 +582,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             'sub_total' => $subtotal,
             'total' => $total,
             'cobrar_impuestos' => $iva > 0 ? 1 : 0,
+            'importado' => true,
         ];
 
         $cabecera['fecha_pago'] = isset($fila['fecha_pago']) && !empty($fila['fecha_pago']) ?
