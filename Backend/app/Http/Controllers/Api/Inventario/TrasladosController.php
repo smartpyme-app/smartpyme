@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Traslado;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Lote;
 use App\Models\Admin\Empresa;
 
 use Carbon\Carbon;
@@ -60,6 +61,12 @@ class TrasladosController extends Controller
 
     public function store(Request $request){
 
+        // Si viene un array de detalles, procesar múltiples productos
+        if ($request->has('detalles') && is_array($request->detalles) && count($request->detalles) > 0) {
+            return $this->storeConDetalles($request);
+        }
+
+        // Procesamiento tradicional (un solo producto)
         $request->validate([
           // 'fecha'         => 'required',
           'estado'          => 'required',
@@ -68,7 +75,9 @@ class TrasladosController extends Controller
           'id_bodega'     => 'required|numeric',
           'concepto'        => 'required',
           'cantidad'      => 'required|numeric',
-          'id_usuario'      => 'required|numeric'
+          'id_usuario'      => 'required|numeric',
+          'lote_id'       => 'nullable|numeric|exists:lotes,id',
+          'lote_id_destino' => 'nullable|numeric|exists:lotes,id',
         ]);
 
         $traslado = new Traslado();
@@ -83,6 +92,78 @@ class TrasladosController extends Controller
         }
 
         $producto = Producto::where('id', $request->id_producto)->with('composiciones')->firstOrFail();
+        
+        // Si el producto tiene inventario por lotes, el lote_id es requerido
+        if ($producto->inventario_por_lotes && !$request->lote_id) {
+            return Response()->json(['error' => 'Debe seleccionar un lote para este producto.', 'code' => 400], 400);
+        }
+        
+        // Si tiene lote_id, verificar y procesar el lote
+        if ($request->lote_id && $producto->inventario_por_lotes) {
+            // Refrescar el lote desde la base de datos para obtener el stock actualizado
+            $loteOrigen = Lote::findOrFail($request->lote_id);
+            $loteOrigen->refresh(); // Asegurar que tenemos los datos más recientes
+            
+            if ($loteOrigen->id_bodega != $request->id_bodega_de) {
+                return Response()->json(['error' => 'El lote seleccionado no pertenece a la bodega de origen.', 'code' => 400], 400);
+            }
+            
+            // Convertir a float para comparación más precisa
+            $stockDisponible = (float) $loteOrigen->stock;
+            $cantidadRequerida = (float) $request->cantidad;
+            
+            if ($stockDisponible < $cantidadRequerida) {
+                return Response()->json([
+                    'error' => 'El lote no tiene stock suficiente. Stock disponible: ' . number_format($stockDisponible, 2) . ', Cantidad requerida: ' . number_format($cantidadRequerida, 2),
+                    'code' => 400
+                ], 400);
+            }
+            
+            // Descontar del lote de origen (usar las variables ya convertidas)
+            $loteOrigen->stock = max(0, $stockDisponible - $cantidadRequerida);
+            $loteOrigen->save();
+            
+            // Procesar lote en destino
+            if ($request->lote_id_destino) {
+                // Si se especificó un lote destino, validar y sumar a ese lote
+                $loteDestino = Lote::findOrFail($request->lote_id_destino);
+                
+                if ($loteDestino->id_bodega != $request->id_bodega) {
+                    return Response()->json(['error' => 'El lote de destino no pertenece a la bodega de destino.', 'code' => 400], 400);
+                }
+                
+                if ($loteDestino->id_producto != $producto->id) {
+                    return Response()->json(['error' => 'El lote de destino no corresponde al producto.', 'code' => 400], 400);
+                }
+                
+                $loteDestino->stock += $request->cantidad;
+                $loteDestino->save();
+            } else {
+                // Si no se especificó lote destino, buscar o crear uno con el mismo número
+                $loteDestino = Lote::where('id_producto', $producto->id)
+                    ->where('id_bodega', $request->id_bodega)
+                    ->where('numero_lote', $loteOrigen->numero_lote)
+                    ->first();
+                
+                if ($loteDestino) {
+                    $loteDestino->stock += $request->cantidad;
+                    $loteDestino->save();
+                } else {
+                    // Crear nuevo lote en destino con el mismo número
+                    $loteDestino = Lote::create([
+                        'id_producto' => $producto->id,
+                        'id_bodega' => $request->id_bodega,
+                        'numero_lote' => $loteOrigen->numero_lote,
+                        'fecha_vencimiento' => $loteOrigen->fecha_vencimiento,
+                        'fecha_fabricacion' => $loteOrigen->fecha_fabricacion,
+                        'stock' => $request->cantidad,
+                        'stock_inicial' => $request->cantidad,
+                        'id_empresa' => Auth::user()->id_empresa,
+                    ]);
+                }
+            }
+        }
+        
         $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega_de)->first();
         $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega)->first();
 
@@ -145,6 +226,160 @@ class TrasladosController extends Controller
         }
 
     }
+
+    /**
+     * Procesar traslado con múltiples detalles (array de productos)
+     */
+    private function storeConDetalles(Request $request)
+    {
+        $request->validate([
+            'estado' => 'required',
+            'origen_id' => 'required|numeric',
+            'destino_id' => 'required|numeric',
+            'detalles' => 'required|array',
+            'detalles.*.producto_id' => 'required|numeric',
+            'detalles.*.cantidad' => 'required|numeric|min:0.01',
+            'detalles.*.lote_id' => 'nullable|numeric|exists:lotes,id',
+        ]);
+
+        if ($request->origen_id == $request->destino_id) {
+            return Response()->json(['error' => 'Has seleccionado la misma bodega.', 'code' => 400], 400);
+        }
+        
+        // Mapear origen_id y destino_id a los nombres que espera el modelo
+        $request->merge([
+            'id_bodega_de' => $request->origen_id,
+            'id_bodega' => $request->destino_id,
+        ]);
+
+        DB::beginTransaction();
+        
+        try {
+            foreach ($request->detalles as $detalleData) {
+                $producto = Producto::where('id', $detalleData['producto_id'])->with('composiciones')->firstOrFail();
+                
+                // Si el producto tiene inventario por lotes, el lote_id es requerido
+                if ($producto->inventario_por_lotes && (!isset($detalleData['lote_id']) || !$detalleData['lote_id'])) {
+                    throw new \Exception("Debe seleccionar un lote para el producto {$producto->nombre}.");
+                }
+                
+                // Si tiene lote_id, verificar y procesar el lote
+                if (isset($detalleData['lote_id']) && $detalleData['lote_id'] && $producto->inventario_por_lotes) {
+                    // Refrescar el lote desde la base de datos para obtener el stock actualizado
+                    $loteOrigen = Lote::findOrFail($detalleData['lote_id']);
+                    $loteOrigen->refresh(); // Asegurar que tenemos los datos más recientes
+                    
+                    if ($loteOrigen->id_bodega != $request->origen_id) {
+                        throw new \Exception("El lote seleccionado no pertenece a la bodega de origen.");
+                    }
+                    
+                    // Convertir a float para comparación más precisa
+                    $stockDisponible = (float) $loteOrigen->stock;
+                    $cantidadRequerida = (float) $detalleData['cantidad'];
+                    
+                    if ($stockDisponible < $cantidadRequerida) {
+                        throw new \Exception("El lote no tiene stock suficiente para el producto {$producto->nombre}. Stock disponible: " . number_format($stockDisponible, 2) . ", Cantidad requerida: " . number_format($cantidadRequerida, 2));
+                    }
+                    
+            // Descontar del lote de origen (usar las variables ya convertidas)
+            $loteOrigen->stock = max(0, $stockDisponible - $cantidadRequerida);
+            $loteOrigen->save();
+                    
+                    // Procesar lote en destino
+                    if (isset($detalleData['lote_id_destino']) && $detalleData['lote_id_destino']) {
+                        // Si se especificó un lote destino, validar y sumar a ese lote
+                        $loteDestino = Lote::findOrFail($detalleData['lote_id_destino']);
+                        
+                        if ($loteDestino->id_bodega != $request->destino_id) {
+                            throw new \Exception("El lote de destino no pertenece a la bodega de destino.");
+                        }
+                        
+                        if ($loteDestino->id_producto != $producto->id) {
+                            throw new \Exception("El lote de destino no corresponde al producto.");
+                        }
+                        
+                        $loteDestino->stock += $detalleData['cantidad'];
+                        $loteDestino->save();
+                    } else {
+                        // Si no se especificó lote destino, buscar o crear uno con el mismo número
+                        $loteDestino = Lote::where('id_producto', $producto->id)
+                            ->where('id_bodega', $request->destino_id)
+                            ->where('numero_lote', $loteOrigen->numero_lote)
+                            ->first();
+                        
+                        if ($loteDestino) {
+                            $loteDestino->stock += $detalleData['cantidad'];
+                            $loteDestino->save();
+                        } else {
+                            // Crear nuevo lote en destino con el mismo número
+                            $loteDestino = Lote::create([
+                                'id_producto' => $producto->id,
+                                'id_bodega' => $request->destino_id,
+                                'numero_lote' => $loteOrigen->numero_lote,
+                                'fecha_vencimiento' => $loteOrigen->fecha_vencimiento,
+                                'fecha_fabricacion' => $loteOrigen->fecha_fabricacion,
+                                'stock' => $detalleData['cantidad'],
+                                'stock_inicial' => $detalleData['cantidad'],
+                                'id_empresa' => Auth::user()->id_empresa,
+                            ]);
+                        }
+                    }
+                }
+                
+                // Procesar inventario tradicional
+                $origen = Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $request->origen_id)
+                    ->first();
+                $destino = Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $request->destino_id)
+                    ->first();
+                
+                if (!$origen || $origen->stock < $detalleData['cantidad']) {
+                    throw new \Exception("La bodega origen no tiene stock suficiente para el producto {$producto->nombre}.");
+                }
+                
+                // Crear registro de traslado
+                $traslado = new Traslado();
+                $traslado->id_producto = $producto->id;
+                $traslado->id_bodega_de = $request->origen_id;
+                $traslado->id_bodega = $request->destino_id;
+                $traslado->cantidad = $detalleData['cantidad'];
+                $traslado->concepto = $request->nota ?? ($request->concepto ?? 'Traslado');
+                $traslado->estado = $request->estado;
+                $traslado->id_usuario = Auth::id();
+                $traslado->id_empresa = Auth::user()->id_empresa;
+                if (isset($detalleData['lote_id']) && $detalleData['lote_id']) {
+                    $traslado->lote_id = $detalleData['lote_id'];
+                }
+                $traslado->save();
+                
+                // Actualizar inventarios
+                $origen->stock -= $detalleData['cantidad'];
+                $origen->save();
+                $origen->kardex($traslado, $detalleData['cantidad'] * -1);
+                
+                if ($destino) {
+                    $destino->stock += $detalleData['cantidad'];
+                    $destino->save();
+                    $destino->kardex($traslado, $detalleData['cantidad']);
+                } else {
+                    $destino = new Inventario();
+                    $destino->id_producto = $producto->id;
+                    $destino->id_bodega = $request->destino_id;
+                    $destino->stock = $detalleData['cantidad'];
+                    $destino->save();
+                    $destino->kardex($traslado, $detalleData['cantidad']);
+                }
+            }
+            
+            DB::commit();
+            return Response()->json(['message' => 'Traslado procesado exitosamente'], 200);
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
     
     public function delete($id){
 
@@ -157,6 +392,31 @@ class TrasladosController extends Controller
         $traslado->save();
 
         $producto = Producto::where('id', $traslado->id_producto)->with('composiciones')->firstOrFail();
+        
+        // Si el traslado tiene lote_id, revertir el movimiento en los lotes
+        if ($traslado->lote_id) {
+            $loteOrigen = Lote::find($traslado->lote_id);
+            if ($loteOrigen) {
+                // Regresar stock al lote de origen
+                $loteOrigen->stock += $traslado->cantidad;
+                $loteOrigen->save();
+                
+                // Buscar y reducir stock del lote en destino
+                $loteDestino = Lote::where('id_producto', $producto->id)
+                    ->where('id_bodega', $traslado->id_bodega)
+                    ->where('numero_lote', $loteOrigen->numero_lote)
+                    ->first();
+                
+                if ($loteDestino) {
+                    $loteDestino->stock -= $traslado->cantidad;
+                    if ($loteDestino->stock < 0) {
+                        $loteDestino->stock = 0;
+                    }
+                    $loteDestino->save();
+                }
+            }
+        }
+        
         $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega_de)->first();
         $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega)->first();
 

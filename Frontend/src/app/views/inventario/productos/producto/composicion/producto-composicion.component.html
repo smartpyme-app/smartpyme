@@ -59,23 +59,24 @@
         <app-notificaciones-container></app-notificaciones-container>
         <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">
-            <div class="form-group col-md-12">
+            <div class="form-group col-md-12 mb-3">
                 <label>Producto:</label>
-                <ng-select name="id_compuesto" [(ngModel)]="composicion.id_compuesto" class="form-select p-0">
-                    <ng-option value="">Seleccionar producto</ng-option>
-                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
-                        {{producto.nombre}}
-                    </ng-option>
-                </ng-select>
+                <app-buscador-productos (selectProducto)="productoSelect($event)"></app-buscador-productos>
+                <div *ngIf="productoSeleccionado" class="mt-2">
+                    <span class="badge bg-info">{{ productoSeleccionado.nombre }}</span>
+                    <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProducto()">
+                        <i class="fa fa-times"></i> Limpiar
+                    </button>
+                </div>
             </div>
             <div class="form-group col-md-12">
                 <label>Cantidad:</label>
-                <input id="cantidad" type="number" class="form-control" [(ngModel)]="composicion.cantidad" name="cantidad" placeholder="Cantidad">
+                <input id="cantidad" type="number" class="form-control" [(ngModel)]="composicion.cantidad" name="cantidad" placeholder="Cantidad" step="0.01" min="0">
             </div>
         </div>
         <br><br>
         <div class="d-grid">
-            <button type="submit" [disabled]="saving || !composicion.id_compuesto" class="btn btn-primary btn-block">
+            <button type="submit" [disabled]="saving || !composicion.id_compuesto || !composicion.cantidad" class="btn btn-primary btn-block">
                 <span *ngIf="!saving">Agregar</span>
                 <span *ngIf="saving">Agregando...</span>
             </button>
@@ -92,14 +93,15 @@
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
     <div class="row">
-        <div class="form-group col-md-12">
+        <div class="form-group col-md-12 mb-3">
             <label for="">Seleccione un producto para agregarlo como opción:</label>
-            <ng-select name="id_producto" (change)="agregarOpcion()" [(ngModel)]="opcion.id_producto" class="form-select p-0">
-                <ng-option value="" selected>Seleccionar producto</ng-option>
-                <ng-option *ngFor="let producto of productos" [value]="producto.id">
-                    {{producto.nombre}}
-                </ng-option>
-            </ng-select>
+            <app-buscador-productos (selectProducto)="productoSelectOpcion($event)"></app-buscador-productos>
+            <div *ngIf="productoSeleccionado" class="mt-2">
+                <span class="badge bg-info">{{ productoSeleccionado.nombre }}</span>
+                <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProductoOpcion()">
+                    <i class="fa fa-times"></i> Limpiar
+                </button>
+            </div>
         </div>
 
         <label><b>Opciones:</b></label>

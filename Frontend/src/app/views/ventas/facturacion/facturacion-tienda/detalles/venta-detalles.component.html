@@ -47,6 +47,18 @@
                             <div>
                                 {{ detalle.descripcion }} <br>
                                 <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
+                                <br>
+                                <small class="text-muted" *ngIf="detalle.inventario_por_lotes">
+                                    <button class="btn btn-sm btn-outline-primary mt-1" 
+                                            (click)="abrirModalLoteVenta(mloteVenta, detalle)"
+                                            *ngIf="getLotesMetodologia() === 'Manual'">
+                                        <i class="fa fa-box"></i> 
+                                        {{ detalle.lote_id ? 'Lote: ' + (detalle.lote?.numero_lote || 'N/A') : 'Seleccionar lote' }}
+                                    </button>
+                                    <span *ngIf="getLotesMetodologia() !== 'Manual' && detalle.lote_id" class="badge bg-info">
+                                        Lote: {{ detalle.lote?.numero_lote || 'N/A' }}
+                                    </span>
+                                </small>
                                 <div style="font-size: 14px;" >
                                     <ul>
                                         <li class="mb-2" *ngFor="let composicion of detalle?.composiciones">
@@ -178,4 +190,71 @@
         </div>
     </div>
   </div>
+</ng-template>
+
+<!-- Modal para seleccionar lote en ventas -->
+<ng-template #mloteVenta>
+    <div class="modal-header">
+        <h4 class="modal-title">Seleccionar Lote - {{ detalleConLote?.descripcion }}</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i> 
+            Seleccione el lote del cual se descontará el stock para esta venta.
+        </div>
+        <div class="table-responsive" style="max-height: 400px;">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Stock disponible</th>
+                        <th>Vencimiento</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngIf="loading">
+                        <td colspan="5" class="text-center">Cargando...</td>
+                    </tr>
+                    <tr *ngIf="!loading && lotes.length == 0">
+                        <td colspan="5" class="text-center text-muted">No hay lotes disponibles con stock suficiente</td>
+                    </tr>
+                    <tr *ngFor="let lote of lotes">
+                        <td><strong>{{ lote.numero_lote || 'N/A' }}</strong></td>
+                        <td>
+                            <span class="badge" [ngClass]="lote.stock >= detalleConLote.cantidad ? 'bg-success' : 'bg-warning'">
+                                {{ lote.stock }}
+                            </span>
+                        </td>
+                        <td>
+                            {{ lote.fecha_vencimiento ? (lote.fecha_vencimiento | date:'dd/MM/yyyy') : 'Sin vencimiento' }}
+                            <br>
+                            <small class="text-muted" *ngIf="lote.dias_vencimiento !== null">
+                                ({{ lote.dias_vencimiento > 0 ? '+' : '' }}{{ lote.dias_vencimiento }} días)
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge" 
+                                  [ngClass]="{
+                                    'bg-danger': lote.dias_vencimiento < 0,
+                                    'bg-warning': lote.dias_vencimiento >= 0 && lote.dias_vencimiento <= 7,
+                                    'bg-success': lote.dias_vencimiento > 7 || lote.dias_vencimiento === null
+                                  }">
+                                {{ lote.dias_vencimiento < 0 ? 'Vencido' : (lote.dias_vencimiento <= 7 ? 'Vence pronto' : 'Vigente') }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" 
+                                    (click)="seleccionarLoteVenta(lote)"
+                                    [disabled]="lote.stock < detalleConLote.cantidad">
+                                Seleccionar
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </ng-template>

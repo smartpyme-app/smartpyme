@@ -45,16 +45,22 @@ export class TiendaVentaBuscadorComponent implements OnInit {
           .pipe(
             debounceTime(500),
             filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
-            switchMap((query: any) => 
-              this.apiService.getAll(`productos/buscar-by-query?query=${encodeURIComponent(query)}`).pipe(
+            switchMap((query: any) => {
+              const params: any = { query: query };
+              if (this.venta?.id_bodega) {
+                params.id_bodega = this.venta.id_bodega;
+              } else if (this.venta?.id_sucursal) {
+                params.id_sucursal = this.venta.id_sucursal;
+              }
+              return this.apiService.getAll(`productos/buscar-by-query`, params).pipe(
                 catchError(error => {
                   console.error('Error en la búsqueda:', error);
                   this.productos = []; // Limpiar resultados en caso de error.
                   this.loading = false; // Asegurar que el estado de carga se actualice.
                   return of([]); // Retornar un observable vacío para que el flujo continúe.
                 })
-              )
-            )
+              );
+            })
           )
           .subscribe({
             next: (results: any[]) => {
@@ -101,6 +107,12 @@ export class TiendaVentaBuscadorComponent implements OnInit {
 
     public filtrarProductos(){
         this.loading = true;
+        // Agregar id_bodega o id_sucursal a los filtros si están disponibles en la venta
+        if (this.venta?.id_bodega && !this.filtros.id_bodega) {
+            this.filtros.id_bodega = this.venta.id_bodega;
+        } else if (this.venta?.id_sucursal && !this.filtros.id_sucursal) {
+            this.filtros.id_sucursal = this.venta.id_sucursal;
+        }
         this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
             this.productosData = productos;
             this.loading = false;
@@ -158,9 +170,17 @@ export class TiendaVentaBuscadorComponent implements OnInit {
             }
 
         producto.inventarios        = producto.inventarios.filter((item:any) => item.id_bodega == this.venta.id_bodega);
-        if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
-            this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
-        }else{
+        
+        // Si el producto tiene inventario por lotes, calcular stock de lotes
+        if (producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0) {
+            // Filtrar lotes por bodega
+            const lotesBodega = producto.lotes.filter((lote: any) => lote.id_bodega == this.venta.id_bodega);
+            // Calcular stock total de lotes
+            const stockLotes = lotesBodega.reduce((sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0);
+            this.detalle.stock = stockLotes;
+        } else if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
+            this.detalle.stock = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+        } else {
             this.detalle.stock = null;
         }
         this.detalle.cantidad       = 1;

@@ -11,6 +11,7 @@ use App\Models\Registros\Proveedor;
 use App\Models\Compras\Devoluciones\Detalle;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Lote;
 use App\Models\Inventario\Kardex;
 use Illuminate\Support\Facades\DB;
 use App\Exports\DevolucionesComprasExport;
@@ -85,8 +86,26 @@ class DevolucionComprasController extends Controller
                                         
                 $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
                 
+                // Verificar si la empresa tiene lotes activos
+                $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
+                $lotesActivo = false;
+                if ($empresa && $empresa->custom_empresa) {
+                    $customConfig = is_string($empresa->custom_empresa) 
+                        ? json_decode($empresa->custom_empresa, true) 
+                        : $empresa->custom_empresa;
+                    $lotesActivo = $customConfig['configuraciones']['lotes_activo'] ?? false;
+                }
+                
                 // Anular y regresar stock
                 if(($compra->enable != '0') && ($request['enable'] == '0')){
+                    // Si el producto tiene lotes y el detalle tiene lote_id, regresar stock al lote
+                    if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
+                        $lote = Lote::find($detalle->lote_id);
+                        if ($lote) {
+                            $lote->stock += $detalle->cantidad;
+                            $lote->save();
+                        }
+                    }
 
                     if ($inventario) {
                         $inventario->stock += $detalle->cantidad;
@@ -97,6 +116,15 @@ class DevolucionComprasController extends Controller
                 }
                 // Cancelar anulación y descargar stock
                 if(($compra->enable == '0') && ($request['enable'] != '0')){
+                    // Si el producto tiene lotes y el detalle tiene lote_id, descontar del lote
+                    if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
+                        $lote = Lote::find($detalle->lote_id);
+                        if ($lote && $lote->stock >= $detalle->cantidad) {
+                            $lote->stock -= $detalle->cantidad;
+                            $lote->save();
+                        }
+                    }
+                    
                     // Aplicar stock
                     if ($inventario) {
                         $inventario->stock -= $detalle->cantidad;
@@ -175,7 +203,31 @@ class DevolucionComprasController extends Controller
                 
                 // Solo actualizar inventario si el tipo de devolución afecta inventario
                 if ($request->tipo !== 'descuento_ajuste') {
-                    // Actualizar inventario
+                    $producto = Producto::find($det['id_producto']);
+                    
+                    // Verificar si la empresa tiene lotes activos
+                    $empresa = \App\Models\Admin\Empresa::find($devolucion->id_empresa);
+                    $lotesActivo = false;
+                    if ($empresa && $empresa->custom_empresa) {
+                        $customConfig = is_string($empresa->custom_empresa) 
+                            ? json_decode($empresa->custom_empresa, true) 
+                            : $empresa->custom_empresa;
+                        $lotesActivo = $customConfig['configuraciones']['lotes_activo'] ?? false;
+                    }
+                    
+                    // Si el producto tiene lotes y se especificó un lote, actualizar el stock del lote
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo && isset($det['lote_id']) && $det['lote_id']) {
+                        $lote = Lote::find($det['lote_id']);
+                        if ($lote) {
+                            // Verificar que el lote pertenezca al producto y bodega correctos
+                            if ($lote->id_producto == $det['id_producto'] && $lote->id_bodega == $request->id_bodega) {
+                                $lote->stock -= $det['cantidad'];
+                                $lote->save();
+                            }
+                        }
+                    }
+                    
+                    // Actualizar inventario tradicional
                     $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $request->id_bodega)->first();
 
                     if ($inventario) {
