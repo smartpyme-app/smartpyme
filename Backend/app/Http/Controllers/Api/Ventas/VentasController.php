@@ -37,6 +37,7 @@ use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCateg
 use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
 use App\Exports\VentasPorUtilidadesExport;
 use App\Exports\VentasPorMarcasExport;
+use App\Exports\CobrosPorVendedorExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
 // use Auth;
@@ -183,6 +184,11 @@ class VentasController extends Controller
     {
 
         $venta = Venta::where('id', $id)->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto', 'abonos.usuario', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
+        
+        if (!$venta) {
+            return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
+        }
+        
         $venta->saldo = $venta->saldo;
         return Response()->json($venta, 200);
     }
@@ -318,13 +324,18 @@ class VentasController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'id'                => 'required|numeric',
             'fecha'             => 'required',
             'estado'            => 'required',
             'id_usuario'        => 'required',
         ]);
 
-
-        $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
+        // Buscar la venta respetando el scope global de empresa
+        $venta = Venta::where('id', $request->id)->with('detalles')->first();
+        
+        if (!$venta) {
+            return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
+        }
 
         // Ajustar stocks
         foreach ($venta->detalles as $detalle) {
@@ -410,6 +421,7 @@ class VentasController extends Controller
             }
         }
 
+        // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
         $venta->fill($request->all());
         $venta->save();
 
@@ -503,6 +515,8 @@ class VentasController extends Controller
                 $venta = Venta::findOrFail($request->id);
             else
                 $venta = new Venta;
+            
+            // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
             $venta->fill($request->all());
 
                 $documento = Documento::where('id', $request->id_documento)
@@ -554,6 +568,10 @@ class VentasController extends Controller
                 // Si es compuesto
                 if (isset($det['composiciones'])) {
                     foreach ($det['composiciones'] as $item) {
+                        // Validar que id_compuesto exista antes de procesar
+                        if (!isset($item['id_compuesto']) || empty($item['id_compuesto'])) {
+                            continue; // Saltar esta composición si no tiene id_compuesto
+                        }
                         $cd = new DetalleCompuesto;
                         $cd->id_producto = $item['id_compuesto'];
                         $cd->cantidad   = $item['cantidad'];
@@ -706,6 +724,11 @@ class VentasController extends Controller
                     // Inventario compuestos
                     if (isset($det['composiciones'])) {
                         foreach ($det['composiciones'] as $comp) {
+                            // Validar que id_compuesto exista antes de procesar
+                            if (!isset($comp['id_compuesto']) || empty($comp['id_compuesto'])) {
+                                continue; // Saltar esta composición si no tiene id_compuesto
+                            }
+                            
                             $productoCompuesto = Producto::where('id', $comp['id_compuesto'])->first();
                             
                             // Validar stock de productos compuestos solo si no es servicio
@@ -830,6 +853,16 @@ class VentasController extends Controller
                     }
                 }
             }
+
+            // Recalcular totales de la venta desde los detalles guardados (subtotal, descuento, gravada, exenta, no_sujeta)
+            $venta->load('detalles');
+            $venta->sub_total = round($venta->detalles->sum('total'), 4);
+            $venta->descuento = round($venta->detalles->sum('descuento'), 4);
+            $venta->gravada = round($venta->detalles->sum('gravada'), 4);
+            $venta->exenta = round($venta->detalles->sum('exenta'), 4);
+            $venta->no_sujeta = round($venta->detalles->sum('no_sujeta'), 4);
+            $venta->total_costo = round($venta->detalles->sum('total_costo'), 4);
+            $venta->save();
 
             // Evento
             if ($request->id_evento) {
@@ -1398,6 +1431,13 @@ class VentasController extends Controller
         return Excel::download($ventas, 'ventas-por-utilidades.xlsx');
     }
 
+    public function cobrosPorVendedorExport(Request $request)
+    {
+        $cobros = new CobrosPorVendedorExport();
+        $cobros->filter($request);
+        return Excel::download($cobros, 'cobros-por-vendedor.xlsx');
+    }
+
     public function enviarReporteDiario()
     {
         try {
@@ -1497,6 +1537,15 @@ class VentasController extends Controller
                 ]);
                 $export = new VentasPorUtilidadesExport();
                 $export->filter($request);
+            } elseif ($configuracion->tipo_reporte === 'cobros-por-vendedor') {
+                $request = new Request([
+                    'id_empresa' => $empresa->id,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                ]);
+                $export = new CobrosPorVendedorExport();
+                $export->filter($request);
             }
             $filename = "{$configuracion->tipo_reporte}-{$fechaInicio}.xlsx";
 
@@ -1559,6 +1608,8 @@ class VentasController extends Controller
                 'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin,
                 'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
+                'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
+                'cobros-por-vendedor' => 'Reporte de Cobros por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -1633,6 +1684,16 @@ class VentasController extends Controller
                 $export = new VentasPorUtilidadesExport();
                 $export->filter($request);
                 $filename = "ventas-por-utilidades-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'cobros-por-vendedor') {
+                $request = new Request([
+                    'id_empresa' => $configuracion->id_empresa,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                ]);
+                $export = new CobrosPorVendedorExport();
+                $export->filter($request);
+                $filename = "cobros-por-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             }
 
             $relativePath = "reportes/{$filename}";
@@ -1780,6 +1841,16 @@ class VentasController extends Controller
                     'sucursales' => $configuracion->sucursales ?? [],
                 ]);
                 $export = new VentasPorUtilidadesExport();
+                $export->filter($request);
+                break;
+            case 'cobros-por-vendedor':
+                $request = new Request([
+                    'id_empresa' => $configuracion->id_empresa,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                ]);
+                $export = new CobrosPorVendedorExport();
                 $export->filter($request);
                 break;
             default:

@@ -9,12 +9,14 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Traslado;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
+use App\Models\Admin\Empresa;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Exports\TrasladosExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade as PDF;
 
 
 class TrasladosController extends Controller
@@ -39,7 +41,10 @@ class TrasladosController extends Controller
                             ->when($request->search, function($query) use ($request){
                                 return $query->whereHas('producto', function($q) use ($request){
                                     $q->where('nombre', 'like',  '%'. $request->search . '%');
-                                });
+                                })->orWhere('concepto', 'like',  '%'. $request->search . '%');
+                            })
+                            ->when($request->concepto, function($query) use ($request){
+                                return $query->where('concepto', 'like', '%' . $request->concepto . '%');
                             })
                             ->when($request->estado, function($query) use ($request){
                                 $query->where('estado', $request->estado);
@@ -480,6 +485,78 @@ class TrasladosController extends Controller
         $tralados->filter($request);
 
         return Excel::download($tralados, 'tralados.xlsx');
+    }
+
+    public function generarPdf($id) {
+        $traslado = Traslado::where('id', $id)
+            ->with(['producto', 'origen', 'destino', 'empresa', 'usuario'])
+            ->firstOrFail();
+        
+        $empresa = Empresa::findOrFail($traslado->id_empresa);
+
+        $pdf = PDF::loadView('reportes.inventario.traslado-pdf', compact('traslado', 'empresa'));
+        $pdf->setPaper('US Letter', 'portrait');
+        return $pdf->stream('traslado-' . $traslado->id . '.pdf');
+    }
+
+    public function exportarPdf(Request $request) {
+        $traslados = Traslado::when($request->fin, function($query) use ($request){
+                                return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
+                            })
+                            ->when($request->id_bodega_de, function($query) use ($request){
+                                return $query->where('id_bodega_de', $request->id_bodega_de);
+                            })
+                            ->when($request->id_bodega_para, function($query) use ($request){
+                                return $query->where('id_bodega', $request->id_bodega_para);
+                            })
+                            ->when($request->search, function($query) use ($request){
+                                return $query->whereHas('producto', function($q) use ($request){
+                                    $q->where('nombre', 'like',  '%'. $request->search . '%');
+                                })->orWhere('concepto', 'like',  '%'. $request->search . '%');
+                            })
+                            ->when($request->concepto, function($query) use ($request){
+                                return $query->where('concepto', 'like', '%' . $request->concepto . '%');
+                            })
+                            ->when($request->estado, function($query) use ($request){
+                                $query->where('estado', $request->estado);
+                            })
+                            ->when($request->id_producto, function($query) use ($request){
+                                return $query->where('id_producto', $request->id_producto);
+                            })
+                            ->orderBy($request->orden ?? 'created_at', $request->direccion ?? 'desc')
+                            ->with(['producto', 'origen', 'destino', 'empresa', 'usuario'])
+                            ->get();
+        
+        if ($traslados->isEmpty()) {
+            return response()->json(['error' => 'No hay traslados para exportar'], 404);
+        }
+
+        $empresa = Empresa::findOrFail(Auth::user()->id_empresa);
+
+        // Agrupar traslados por concepto
+        $trasladosAgrupados = $traslados->groupBy(function($traslado) {
+            return $traslado->concepto ?? 'Sin concepto';
+        });
+
+        $pdf = PDF::loadView('reportes.inventario.traslados-pdf', compact('trasladosAgrupados', 'empresa'));
+        $pdf->setPaper('letter', 'portrait');
+        
+        return $pdf->download('traslados-' . date('Y-m-d') . '.pdf');
+    }
+
+    public function conceptos() {
+        $conceptos = Traslado::select('concepto')
+            ->whereNotNull('concepto')
+            ->where('concepto', '!=', '')
+            ->distinct()
+            ->orderBy('concepto', 'asc')
+            ->pluck('concepto')
+            ->map(function($concepto) {
+                return $concepto;
+            })
+            ->values();
+
+        return Response()->json($conceptos, 200);
     }
 
 }

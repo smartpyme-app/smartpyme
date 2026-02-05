@@ -5,6 +5,7 @@ import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -46,6 +47,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public showpassword: boolean = false;
     public showpassword2: boolean = false;
     public canales: any = [];
+    public tieneAccesoPropina: boolean = false;
 
     public customConfig: any = {
         columnas: {
@@ -55,7 +57,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     constructor(
         public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+        private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
+        private funcionalidadesService: FuncionalidadesService
     ) { }
 
     ngOnInit() {
@@ -65,6 +68,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         }, error => { this.alertService.error(error); });
 
         this.loadAll();
+        this.verificarAccesoPropina();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
@@ -1478,6 +1482,46 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             return tabNames[index];
         }
         return null;
+    }
+
+    public verificarAccesoPropina() {
+        this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
+            (acceso) => {
+                this.tieneAccesoPropina = acceso;
+            },
+            (error) => {
+                console.error('Error al verificar acceso a propina:', error);
+                this.tieneAccesoPropina = false;
+            }
+        );
+    }
+
+    public limpiarCacheYLogout() {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: 'Se limpiará el cache y se cerrará la sesión. Deberás iniciar sesión nuevamente.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, limpiar cache y cerrar sesión',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Limpiar cache del servicio de funcionalidades
+                this.funcionalidadesService.limpiarCache();
+                
+                // Limpiar localStorage y sessionStorage
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Cerrar sesión en el backend
+                this.apiService.logout();
+                
+                // Redirigir al login
+                this.router.navigate(['/login']);
+                
+                Swal.fire('Cache limpiado', 'El cache ha sido limpiado y la sesión cerrada. Por favor, inicia sesión nuevamente.', 'success');
+            }
+        });
     }
 
 }

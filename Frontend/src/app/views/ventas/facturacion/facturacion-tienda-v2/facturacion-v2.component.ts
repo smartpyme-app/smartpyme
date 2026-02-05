@@ -152,7 +152,8 @@ export class FacturacionV2Component implements OnInit {
 
     this.apiService.getAll('impuestos').subscribe(
       (impuestos) => {
-        this.impuestos = impuestos;
+        // Filtrar solo los impuestos que aplican a ventas
+        this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
         if (!this.venta.impuestos || this.venta.iva == 0) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
@@ -261,6 +262,8 @@ export class FacturacionV2Component implements OnInit {
     this.venta.iva = 0;
     this.venta.total_costo = 0;
     this.venta.total = 0;
+    this.venta.propina = 0;
+    this.venta.cobrar_propina = false;
     if(this.impuestos.length > 0){
       this.venta.impuestos = this.impuestos;
     }else{
@@ -303,6 +306,7 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
           },
           (error) => {
@@ -325,6 +329,7 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
                 this.venta.cliente = {};
             }else{
@@ -366,6 +371,7 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
                 this.venta.cliente = {};
             }else{
@@ -383,9 +389,57 @@ export class FacturacionV2Component implements OnInit {
             this.venta.cotizacion = 0;
             this.venta.num_cotizacion = this.venta.id;
             this.venta.id = null;
+            
+            // Obtener porcentaje de IVA para conversión de precios
+            const porcentajeIvaTotal = this.venta.cobrar_impuestos 
+              ? (this.apiService.auth_user()?.empresa?.iva || 0)
+              : 0;
+            
+            // Ajustar precios de los detalles para v2 (precios incluyen IVA)
             this.venta.detalles.forEach((detalle: any) => {
               detalle.id = null;
+              
+              // Si el detalle no tiene precio_iva, asumir que precio es sin IVA (versión anterior)
+              // y calcular precio_iva
+              if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
+                if (porcentajeIvaTotal > 0) {
+                  // El precio actual es sin IVA, calcular precio con IVA
+                  detalle.precio_iva = (parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+                } else {
+                  // Sin IVA, precio_iva es igual a precio
+                  detalle.precio_iva = parseFloat(detalle.precio || 0).toFixed(4);
+                }
+              } else {
+                // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
+                if (porcentajeIvaTotal > 0) {
+                  const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal);
+                  detalle.precio = precioSinIvaCalculado.toFixed(4);
+                } else {
+                  detalle.precio = parseFloat(detalle.precio_iva).toFixed(4);
+                }
+              }
+              
+              // Asegurar que precio_iva esté como número
+              detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
+              
+              // Recalcular total del detalle usando precio sin IVA
+              const precioSinIva = parseFloat(detalle.precio || 0);
+              detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
+              detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
+              const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
+              detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
+              detalle.gravada = detalle.tipo_gravado === 'gravada' ? detalle.total : 0;
+              detalle.exenta = detalle.tipo_gravado === 'exenta' ? detalle.total : 0;
+              detalle.no_sujeta = detalle.tipo_gravado === 'no_sujeta' ? detalle.total : 0;
+              
+              // Calcular total_iva para visualización (solo gravada lleva IVA)
+              if (detalle.tipo_gravado === 'gravada' && this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
+                detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+              } else {
+                detalle.total_iva = detalle.total;
+              }
             });
+            
             this.sumTotal();
 
             // Para proyectos
@@ -679,10 +733,16 @@ export class FacturacionV2Component implements OnInit {
       ? this.venta.sub_total * 0.10
       : 0;
 
-    // Calcular IVA sobre el sub_total (agregar IVA como en la versión original)
+    // Calcular propina basada en el porcentaje de la empresa y el subtotal
+    const propinaPorcentaje = parseFloat(this.apiService.auth_user().empresa.propina_porcentaje) || 0;
+    this.venta.propina = this.venta.cobrar_propina
+      ? parseFloat((this.venta.sub_total * (propinaPorcentaje / 100)).toFixed(4))
+      : 0;
+
+    // IVA solo sobre el monto gravado (exento y no sujeta no llevan IVA)
     if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
       this.venta.impuestos.forEach((impuesto: any) => {
-        impuesto.monto = parseFloat(this.venta.sub_total) * (impuesto.porcentaje / 100);
+        impuesto.monto = parseFloat(this.venta.gravada || 0) * (impuesto.porcentaje / 100);
       });
       this.venta.iva = parseFloat(
         this.sumPipe.transform(this.venta.impuestos, 'monto')
@@ -700,22 +760,16 @@ export class FacturacionV2Component implements OnInit {
     this.venta.total_costo = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'total_costo')
     ).toFixed(4);
-    // Inicializar propina si no existe
-    if (!this.venta.propina) {
-      this.venta.propina = 0;
-    }
     
-    // El total es sub_total + iva + otros impuestos (como en la versión original)
+    // El total NO incluye la propina (la propina se muestra por separado en "Total + Propina")
+    // sub_total ya es la suma de totales por línea (gravada + exenta + no_sujeta), no sumar exenta/no_sujeta de nuevo
     this.venta.total = (
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
       parseFloat(this.venta.cuenta_a_terceros) +
-      parseFloat(this.venta.exenta) +
-      parseFloat(this.venta.no_sujeta) +
       parseFloat(this.venta.iva_percibido) -
       parseFloat(this.venta.iva_retenido) -
-      parseFloat(this.venta.renta_retenida) +
-      parseFloat(this.venta.propina || 0)
+      parseFloat(this.venta.renta_retenida)
     ).toFixed(4);
 
 
@@ -745,6 +799,11 @@ export class FacturacionV2Component implements OnInit {
             if(cliente.tipo_contribuyente == "Grande") {
                 this.venta.retencion = 1;
                 this.sumTotal();
+            }
+            
+            // Asignar vendedor si el cliente tiene uno asignado
+            if(cliente.id_vendedor) {
+                this.venta.id_vendedor = cliente.id_vendedor;
             }
             
             // Limpiar mensaje de validación al cambiar cliente
@@ -1206,6 +1265,25 @@ export class FacturacionV2Component implements OnInit {
   }
 
 
+  /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura minúsculas para que el select coincida. */
+  private normalizarDetallesTipoGravado(venta: any) {
+    if (!venta?.detalles?.length) return;
+    const tiposValidos = ['gravada', 'exenta', 'no_sujeta'];
+    venta.detalles.forEach((d: any) => {
+      if (!d.tipo_gravado) {
+        const ex = parseFloat(d.exenta) || 0;
+        const no = parseFloat(d.no_sujeta) || 0;
+        d.tipo_gravado = ex > 0 ? 'exenta' : (no > 0 ? 'no_sujeta' : 'gravada');
+      }
+      const tipo = String(d.tipo_gravado).toLowerCase();
+      d.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
+      if (d.sub_total == null || d.sub_total === undefined) {
+        const precio = parseFloat(d.precio) || 0;
+        d.sub_total = Number((parseFloat(d.cantidad) * precio).toFixed(4));
+      }
+    });
+  }
+
   public verificarAccesoPropina() {
     this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
         (acceso) => {
@@ -1216,6 +1294,12 @@ export class FacturacionV2Component implements OnInit {
             this.tieneAccesoPropina = false;
         }
     );
+}
+
+public getTotalConPropina(): number {
+    const total = parseFloat(this.venta?.total || 0);
+    const propina = parseFloat(this.venta?.propina || 0);
+    return total + propina;
 }
 
 }

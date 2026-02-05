@@ -23,7 +23,7 @@
     "Droid Sans", "Helvetica Neue", sans-serif;
         margin: 0pt;
         padding: 0pt;
-        font-size: 10pt;
+        font-size: 9pt;
     }
 
     p{ margin: 0px; }
@@ -107,19 +107,19 @@
     
     <hr>
 
-    <table style="width: 100%; margin: auto;">
+    <table style="width: 80mm; max-width: 80mm; margin: auto;">
         <thead>
             <tr>
-                <th class="text-left">DETALLE</th>
-                <th width="50px" class="text-center">
+                <th style="max-width: 50%" class="text-left">DETALLE</th>
+                <th width="10%" class="text-center">
                     @if ($venta->empresa->modulo_paquetes)
                         LB/FT
                     @else
                         CANT
                     @endif
                 </th>
-                <th width="50px" class="text-center">P.U.</th>
-                <th width="50px" class="text-right">TOTAL</th>
+                <th width="10%" class="text-center">P.U.</th>
+                <th width="10%" class="text-right">TOTAL</th>
             </tr>
         </thead>
         <tbody>
@@ -181,10 +181,25 @@
                     <td class="text-right">${{number_format($venta->costo_envio,2)}}</td>
                 </tr>
             @endif
-            <tr>
-                <td class="text-right" colspan="3"><b>TOTAL</b>:</td>
-                <td class="text-right"><b>${{number_format($venta->total + $venta->costo_envio,2)}}</b></td>
-            </tr>
+            @if(isset($venta->propina) && floatval($venta->propina) > 0)
+                <tr>
+                    <td class="text-right" colspan="3">Propina:</td>
+                    <td class="text-right">${{number_format(floatval($venta->propina),2)}}</td>
+                </tr>
+                <tr>
+                    <td class="text-right" colspan="3"><b>Total:</b></td>
+                    <td class="text-right"><b>${{number_format($venta->total + $venta->costo_envio,2)}}</b></td>
+                </tr>
+                <tr>
+                    <td class="text-right" colspan="3"><b>Total + Propina:</b></td>
+                    <td class="text-right"><b>${{number_format($venta->total + $venta->costo_envio + floatval($venta->propina),2)}}</b></td>
+                </tr>
+            @else
+                <tr>
+                    <td class="text-right" colspan="3"><b>TOTAL</b>:</td>
+                    <td class="text-right"><b>${{number_format($venta->total + $venta->costo_envio,2)}}</b></td>
+                </tr>
+            @endif
         </tfoot>
     </table>
     <br>

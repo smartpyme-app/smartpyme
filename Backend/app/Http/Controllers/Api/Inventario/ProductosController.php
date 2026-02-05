@@ -326,15 +326,21 @@ class ProductosController extends Controller
         $producto->save();
 
 
-        // Configurar inventarios para las bodegas
+        // Configurar inventarios para las bodegas (firstOrCreate evita duplicados producto+bodega)
         if (!$request->id && $producto->tipo != 'Servicio') {
             $bodegas = Bodega::all();
             foreach ($bodegas as $bodega) {
-                $inventario = new Inventario;
-                $inventario->id_producto    = $producto->id;
-                $inventario->stock          = 0;
-                $inventario->id_bodega    = $bodega->id;
-                $inventario->save();
+                Inventario::firstOrCreate(
+                    [
+                        'id_producto' => $producto->id,
+                        'id_bodega' => $bodega->id,
+                    ],
+                    [
+                        'stock' => 0,
+                        'stock_minimo' => 0,
+                        'stock_maximo' => 0,
+                    ]
+                );
             }
         }
 
@@ -842,10 +848,14 @@ class ProductosController extends Controller
                     $destino->save();
                     $destino->kardex($traslado, $cantidad);
                 } else {
-                    $destino = new Inventario();
-                    $destino->id_producto = $idProducto;
-                    $destino->id_bodega = $request->id_bodega_destino;
-                    $destino->stock = $cantidad;
+                    $destino = Inventario::firstOrCreate(
+                        [
+                            'id_producto' => $idProducto,
+                            'id_bodega' => $request->id_bodega_destino,
+                        ],
+                        ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                    );
+                    $destino->stock += $cantidad;
                     $destino->save();
                     $destino->kardex($traslado, $cantidad);
                 }

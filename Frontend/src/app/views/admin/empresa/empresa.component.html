@@ -203,6 +203,14 @@
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
+                    <div class="form-group col-md-6 col-lg-4" *ngIf="tieneAccesoPropina">
+                        <label for="propina_porcentaje">Propina Porcentaje</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" [(ngModel)]="empresa.propina_porcentaje" name="propina_porcentaje"
+                                placeholder="Escriba aquí">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
                     <!-- <div class="form-group col-md-12">
                         <label for="descripcion">Descripción</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.descripcion" name="descripcion" placeholder="Escriba aquí">
@@ -495,8 +503,8 @@
                             [value]="getVersionFacturacion()"
                             (change)="updateVersionFacturacion($any($event.target).value)"
                             name="version_facturacion">
-                            <option value="original">Original (Los precios no incluyen IVA, se agrega al final.)</option>
-                            <option value="v2">V2 (Los precios ya incluyen IVA, se desglosa automáticamente.)</option>
+                            <option value="original">Sin IVA (Los precios no incluyen IVA, se agrega al final.)</option>
+                            <option value="v2">Con IVA (Los precios ya incluyen IVA, se desglosa automáticamente.)</option>
                         </select>
                     </div>
 
@@ -522,12 +530,22 @@
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Podrás seleccionar un vendedor por cada detalle de venta.</p>
+                        <p>Permitir seleccionar un vendedor por cada detalle de venta.</p>
                         <div class="form-switch bg-light-info rounded">
                             <label for="vendedor_detalle_venta">Vendedor por detalle</label>
                             <input class="form-check-input float-end" type="checkbox" role="switch"
                                 (change)="onSubmit()" [(ngModel)]="empresa.vendedor_detalle_venta"
                                 name="vendedor_detalle_venta">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Permitir cambiar el tipo de impuesto (Gravada, Exenta, No sujeta) por cada detalle de venta.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="cambiar_tipo_impuesto_venta">Cambiar tipo de impuesto en venta</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.cambiar_tipo_impuesto_venta"
+                                name="cambiar_tipo_impuesto_venta">
                         </div>
                     </div>
 
@@ -641,7 +659,11 @@
                           <label for="terms" class="my-3">Términos y condiciones Generales para documentos</label>
                           <textarea name="terms" class="form-control" rows="6" [(ngModel)]="empresa.cotizacion_compras_terminos"></textarea>
                     </div> -->
-                    <p class="my-3 pt-5">
+                    <p class="pt-5">
+                        ¿Quieres limpiar el cache del sistema? Esto hará que se reinicie la aplicación y se cierre la sesión.
+                        <a (click)="limpiarCacheYLogout()" class="btn btn-link">Limpiar cache y cerrar sesión</a>
+                    </p>
+                    <p class="my-3">
                         ¿Quieres eliminar los datos de tu cuenta?
                         <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
                     </p>

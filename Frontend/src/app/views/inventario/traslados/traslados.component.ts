@@ -19,6 +19,7 @@ export class TrasladosComponent implements OnInit {
     public filtros:any = {};
     public productos:any = [];
     public sucursales:any = [];
+    public conceptos:any = [];
     public producto:any = {};
     public productoFiltro:any = {};
     public bodegaDe:any = {};
@@ -47,6 +48,7 @@ export class TrasladosComponent implements OnInit {
                 id_bodega_para: +params['id_bodega_para'] || '',
                 id_sucursal: +params['id_sucursal'] || '',
                 estado: params['estado'] || '',
+                concepto: params['concepto'] || '',
                 orden: params['orden'] || 'id',
                 direccion: params['direccion'] || 'desc',
                 paginate: params['paginate'] || 10,
@@ -68,6 +70,7 @@ export class TrasladosComponent implements OnInit {
         this.filtros.id_sucursal = '';
         this.filtros.estado = '';
         this.filtros.search = '';
+        this.filtros.concepto = '';
         this.filtros.orden = 'created_at';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
@@ -329,6 +332,9 @@ export class TrasladosComponent implements OnInit {
         this.apiService.getAll('productos/list').subscribe(productos => { 
             this.productos = productos;
         }, error => {this.alertService.error(error); });
+        this.apiService.getAll('traslados/conceptos').subscribe(conceptos => { 
+            this.conceptos = conceptos;
+        }, error => {this.alertService.error(error); });
         this.modalRef = this.modalService.show(template);
     }
 
@@ -397,6 +403,59 @@ export class TrasladosComponent implements OnInit {
         );
     }
 
+    public descargarPdfFiltrados(){
+        this.downloading = true;
+        const params = new URLSearchParams();
+        Object.keys(this.filtros).forEach(key => {
+            if (this.filtros[key] !== '' && this.filtros[key] !== null && this.filtros[key] !== undefined) {
+                params.append(key, this.filtros[key]);
+            }
+        });
+        
+        this.apiService.download(`traslados/exportar-pdf?${params.toString()}`).subscribe({
+            next: (response) => {
+                const blob = new Blob([response], { type: 'application/pdf' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `traslados-${new Date().toISOString().split('T')[0]}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                this.downloading = false;
+                this.alertService.success('PDF descargado', 'El reporte de traslados se ha descargado correctamente.');
+            },
+            error: (error) => {
+                this.alertService.error('Error al descargar el PDF');
+                this.downloading = false;
+            }
+        });
+    }
+
+    public descargarPdf(traslado: any) {
+        this.downloading = true;
+        this.apiService.download(`traslado/${traslado.id}/pdf`).subscribe({
+            next: (response) => {
+                const blob = new Blob([response], { type: 'application/pdf' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `traslado-${traslado.id}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                this.downloading = false;
+                this.alertService.success('PDF descargado', 'El documento de traslado se ha descargado correctamente.');
+            },
+            error: (error) => {
+                this.alertService.error('Error al descargar el PDF');
+                this.downloading = false;
+            }
+        });
+    }
+
     /**
      * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
      */
@@ -405,6 +464,10 @@ export class TrasladosComponent implements OnInit {
             return `${producto.nombre} ${producto.nombre_variante}`;
         }
         return producto.nombre;
+    }
+
+    public imprimir(traslado:any){
+        window.open(this.apiService.baseUrl + '/api/traslado/' + traslado.id + '/pdf?token=' + this.apiService.auth_token());
     }
 
 }

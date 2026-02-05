@@ -514,6 +514,7 @@ class UsuariosController extends Controller
             'tipo' => 'required',
             'codigo' => 'sometimes|nullable',
             'id_sucursal' => 'required',
+            'id_bodega' => 'required',
         ]);
 
 

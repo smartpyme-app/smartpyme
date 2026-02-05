@@ -17,6 +17,8 @@ class Detalle extends Model {
         'precio_con_iva',
         'costo',
         'descuento',
+        'sub_total',
+        'tipo_gravado',
         'no_sujeta',
         'exenta',
         'gravada',
