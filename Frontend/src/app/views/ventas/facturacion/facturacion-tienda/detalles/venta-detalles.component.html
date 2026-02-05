@@ -16,6 +16,7 @@
                     <th style="width: 150px;">Cantidad</th>
                     <th style="width: 150px;">Precio</th>
                     <th style="width: 150px;">Descuento</th>
+                    <th style="width: 120px;" *ngIf="usuario.empresa.cambiar_tipo_impuesto_venta">Tipo</th>
                     <th style="width: 100px;" class="text-right">Total</th>
                     <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
                 </tr>
@@ -23,7 +24,7 @@
             <tbody class="align-top">
                 <!-- if no h ay ningun producto -->
                 <tr *ngIf="venta?.detalles?.length < 1">
-                    <td colspan="7" class="text-center">
+                    <td [attr.colspan]="6 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0) + (usuario.empresa.cambiar_tipo_impuesto_venta ? 1 : 0)" class="text-center">
                         <p class="text-muted my-3">
                             Agregue productos y servicios
                         </p>
@@ -109,6 +110,13 @@
                                     name="descuento_porcentaje">
                             </div>
                         </div>
+                    </td>
+                    <td style="width: 120px;" *ngIf="usuario.empresa.cambiar_tipo_impuesto_venta">
+                        <select class="form-select" [(ngModel)]="detalle.tipo_gravado" (change)="onTipoGravadoChange(detalle)" name="tipo_gravado">
+                            <option value="gravada">Gravada</option>
+                            <option value="exenta">Exenta</option>
+                            <option value="no_sujeta">No sujeta</option>
+                        </select>
                     </td>
                     <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}</td>
                     <td style="width: 50px;" class="text-center">

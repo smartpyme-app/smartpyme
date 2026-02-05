@@ -74,6 +74,35 @@ export class VentaDetallesV2Component implements OnInit {
         return this.apiService.auth_user()?.empresa?.iva || 0;
     }
 
+    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle */
+    private aplicarTipoGravado(detalle: any) {
+        const total = parseFloat(detalle.total) || 0;
+        detalle.gravada = 0;
+        detalle.exenta = 0;
+        detalle.no_sujeta = 0;
+        const tipo = (detalle.tipo_gravado || 'gravada').toLowerCase();
+        if (tipo === 'gravada') {
+            detalle.gravada = total;
+            if (this.venta.cobrar_impuestos && this.obtenerPorcentajeIvaTotal() > 0) {
+                detalle.total_iva = (total * (1 + this.obtenerPorcentajeIvaTotal() / 100)).toFixed(4);
+            } else {
+                detalle.total_iva = detalle.total;
+            }
+        } else if (tipo === 'exenta') {
+            detalle.exenta = total;
+            detalle.total_iva = detalle.total;
+        } else {
+            detalle.no_sujeta = total;
+            detalle.total_iva = detalle.total;
+        }
+    }
+
+    public onTipoGravadoChange(detalle: any) {
+        this.aplicarTipoGravado(detalle);
+        this.update.emit(this.venta);
+        this.sumTotal.emit();
+    }
+
     /**
      * Maneja el cambio de precio desde el selector dropdown
      */
@@ -139,22 +168,12 @@ export class VentaDetallesV2Component implements OnInit {
             detalle.descuento = 0;
         }
 
+        detalle.sub_total = Number((parseFloat(detalle.cantidad) * precioSinIva).toFixed(4));
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
-        
-        // El total es precio sin IVA * cantidad - descuento (usar precio)
-        detalle.total  = (parseFloat(detalle.cantidad) * precioSinIva - parseFloat(detalle.descuento)).toFixed(4);
-        
-        // La gravada es igual al total (ya que el total es sin IVA)
-        detalle.gravada = detalle.total;
-        
-        // Calcular total_iva (con IVA) solo para visualización
-        if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-            detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
-        } else {
-            detalle.total_iva = detalle.total;
-        }
-        
+        detalle.total  = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento)).toFixed(4);
+        this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
+        this.sumTotal.emit();
     }
 
     public modalSupervisor(detalle:any){
@@ -274,6 +293,9 @@ export class VentaDetallesV2Component implements OnInit {
 
             this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
             
+            if(!this.detalle.tipo_gravado){
+                this.detalle.tipo_gravado = 'gravada';
+            }
             if(!this.detalle.exenta){
                 this.detalle.exenta = 0;
             }
@@ -295,24 +317,13 @@ export class VentaDetallesV2Component implements OnInit {
                 }
             }
 
-            // En v2, el total se calcula usando precio (sin IVA)
             const porcentajeIvaTotal = this.obtenerPorcentajeIvaTotal();
             const precioSinIva = parseFloat(this.detalle.precio || 0);
+            this.detalle.sub_total = Number((parseFloat(this.detalle.cantidad) * precioSinIva).toFixed(4));
             if(!this.detalle.total || detalle){
-                this.detalle.total = (parseFloat(this.detalle.cantidad) * precioSinIva - parseFloat(this.detalle.descuento || 0)).toFixed(4);
+                this.detalle.total = (parseFloat(this.detalle.sub_total) - parseFloat(this.detalle.descuento || 0)).toFixed(4);
             }
-
-            // La gravada es igual al total (ya que el total es sin IVA)
-            if(!this.detalle.gravada){
-                this.detalle.gravada = this.detalle.total;
-            }
-
-            // Calcular total_iva (con IVA) solo para visualización
-            if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-                this.detalle.total_iva = (parseFloat(this.detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
-            } else {
-                this.detalle.total_iva = this.detalle.total;
-            }
+            this.aplicarTipoGravado(this.detalle);
 
             if(!this.detalle.id_vendedor){
                 this.detalle.id_vendedor = this.venta.id_vendedor;
