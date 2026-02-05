@@ -503,8 +503,8 @@
                             [value]="getVersionFacturacion()"
                             (change)="updateVersionFacturacion($any($event.target).value)"
                             name="version_facturacion">
-                            <option value="original">Original (Los precios no incluyen IVA, se agrega al final.)</option>
-                            <option value="v2">V2 (Los precios ya incluyen IVA, se desglosa automáticamente.)</option>
+                            <option value="original">Sin IVA (Los precios no incluyen IVA, se agrega al final.)</option>
+                            <option value="v2">Con IVA (Los precios ya incluyen IVA, se desglosa automáticamente.)</option>
                         </select>
                     </div>
 
@@ -529,12 +529,22 @@
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Podrás seleccionar un vendedor por cada detalle de venta.</p>
+                        <p>Permitir seleccionar un vendedor por cada detalle de venta.</p>
                         <div class="form-switch bg-light-info rounded">
                             <label for="vendedor_detalle_venta">Vendedor por detalle</label>
                             <input class="form-check-input float-end" type="checkbox" role="switch"
                                 (change)="onSubmit()" [(ngModel)]="empresa.vendedor_detalle_venta"
                                 name="vendedor_detalle_venta">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Permitir cambiar el tipo de impuesto (Gravada, Exenta, No sujeta) por cada detalle de venta.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="cambiar_tipo_impuesto_venta">Cambiar tipo de impuesto en venta</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.cambiar_tipo_impuesto_venta"
+                                name="cambiar_tipo_impuesto_venta">
                         </div>
                     </div>
 

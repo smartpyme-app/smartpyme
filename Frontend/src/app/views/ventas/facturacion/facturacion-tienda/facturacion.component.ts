@@ -306,6 +306,7 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
           },
           (error) => {
@@ -328,6 +329,7 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
                 this.venta.cliente = {};
             }else{
@@ -369,6 +371,7 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
                 this.venta.cliente = {};
             }else{
@@ -647,9 +650,10 @@ export class FacturacionComponent implements OnInit {
       ? parseFloat((this.venta.sub_total * (propinaPorcentaje / 100)).toFixed(4))
       : 0;
 
+    // IVA solo sobre el monto gravado (exento y no sujeta no llevan IVA)
     this.venta.impuestos.forEach((impuesto: any) => {
       if (this.venta.cobrar_impuestos) {
-        impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
+        impuesto.monto = parseFloat(this.venta.gravada || 0) * (impuesto.porcentaje / 100);
       } else {
         impuesto.monto = 0;
       }
@@ -665,12 +669,11 @@ export class FacturacionComponent implements OnInit {
       this.sumPipe.transform(this.venta.detalles, 'total_costo')
     ).toFixed(4);
     // El total NO incluye la propina (la propina se muestra por separado en "Total + Propina")
+    // sub_total ya es la suma de totales por línea (gravada + exenta + no_sujeta), no sumar exenta/no_sujeta de nuevo
     this.venta.total = (
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
       parseFloat(this.venta.cuenta_a_terceros) +
-      parseFloat(this.venta.exenta) +
-      parseFloat(this.venta.no_sujeta) +
       parseFloat(this.venta.iva_percibido) -
       parseFloat(this.venta.iva_retenido) -
       parseFloat(this.venta.renta_retenida)
@@ -1166,6 +1169,24 @@ export class FacturacionComponent implements OnInit {
     return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
   }
 
+
+  /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura minúsculas para que el select coincida. */
+  private normalizarDetallesTipoGravado(venta: any) {
+    if (!venta?.detalles?.length) return;
+    const tiposValidos = ['gravada', 'exenta', 'no_sujeta'];
+    venta.detalles.forEach((d: any) => {
+      if (!d.tipo_gravado) {
+        const ex = parseFloat(d.exenta) || 0;
+        const no = parseFloat(d.no_sujeta) || 0;
+        d.tipo_gravado = ex > 0 ? 'exenta' : (no > 0 ? 'no_sujeta' : 'gravada');
+      }
+      const tipo = String(d.tipo_gravado).toLowerCase();
+      d.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
+      if (d.sub_total == null || d.sub_total === undefined) {
+        d.sub_total = Number((parseFloat(d.cantidad) * parseFloat(d.precio)).toFixed(4));
+      }
+    });
+  }
 
   public verificarAccesoPropina() {
     this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
