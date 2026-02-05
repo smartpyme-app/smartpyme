@@ -14,8 +14,6 @@ class ImagenesController extends Controller
 
     public function store(Request $request)
     {
-        \Log::info('ImagenesController store function started');
-        
         $request->validate([
             // 'file'          => 'required_without:img|image|mimes:jpeg,png,jpg|max:3000|dimensions:ratio=1/1',
             'file'          => 'required_without:img|image|mimes:jpeg,png,jpg|max:2000',

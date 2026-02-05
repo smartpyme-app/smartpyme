@@ -71,10 +71,6 @@ class Producto extends Model
 
     public function getImgAttribute()
     {
-        $imagenesCount = $this->imagenes()->count();
-        $firstImg = $this->imagenes->pluck('img')->first();
-        \Log::info('Product images debug', ['product_id' => $this->id, 'imagenes_count' => $imagenesCount, 'first_img' => $firstImg]);
-        
         if ($this->imagenes()->count() > 0) {
             return $this->imagenes->pluck('img')->first();
         } else {
