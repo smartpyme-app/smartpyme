@@ -44,16 +44,19 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
           .pipe(
             debounceTime(500),
             filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
-            switchMap((query: any) => 
-              this.apiService.getAll(`productos/buscar-by-query?query=${encodeURIComponent(query)}`).pipe(
+            switchMap((query: any) => {
+              const params: any = { query: query };
+              if (this.venta?.id_bodega) params.id_bodega = this.venta.id_bodega;
+              if (this.venta?.id_sucursal) params.id_sucursal = this.venta.id_sucursal;
+              return this.apiService.getAll('productos/buscar-by-query', params).pipe(
                 catchError(error => {
                   console.error('Error en la búsqueda:', error);
                   this.productos = []; // Limpiar resultados en caso de error.
                   this.loading = false; // Asegurar que el estado de carga se actualice.
                   return of([]); // Retornar un observable vacío para que el flujo continúe.
                 })
-              )
-            )
+              );
+            })
           )
           .subscribe({
             next: (results: any[]) => {
@@ -100,6 +103,11 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
 
     public filtrarProductos(){
         this.loading = true;
+        if (this.venta?.id_bodega && !this.filtros.id_bodega) {
+            this.filtros.id_bodega = this.venta.id_bodega;
+        } else if (this.venta?.id_sucursal && !this.filtros.id_sucursal) {
+            this.filtros.id_sucursal = this.venta.id_sucursal;
+        }
         this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
             this.productosData = productos;
             this.loading = false;
@@ -184,11 +192,24 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
 
             }
 
-        producto.inventarios        = producto.inventarios.filter((item:any) => item.id_bodega == this.venta.id_bodega);
-        if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
-            this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
-        }else{
+        producto.inventarios        = producto.inventarios?.filter((item:any) => item.id_bodega == this.venta.id_bodega) || [];
+        // Si el producto tiene inventario por lotes, usar stock de lotes (como en v1)
+        if (producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0) {
+            const lotesBodega = this.venta.id_bodega
+                ? producto.lotes.filter((l: any) => l.id_bodega == this.venta.id_bodega)
+                : producto.lotes;
+            const stockLotes = lotesBodega.reduce((sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0);
+            this.detalle.stock = stockLotes;
+            this.detalle.inventario_por_lotes = true;
+            this.detalle.lote_id = null;
+        } else if (producto.tipo != 'Servicio' && producto.inventarios.length > 0) {
+            this.detalle.stock = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+            this.detalle.inventario_por_lotes = false;
+            this.detalle.lote_id = null;
+        } else {
             this.detalle.stock = null;
+            this.detalle.inventario_por_lotes = false;
+            this.detalle.lote_id = null;
         }
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;

@@ -26,6 +26,9 @@ export class VentaDetallesV2Component implements OnInit {
     @ViewChild('msupervisor')
     public supervisorTemplate!: TemplateRef<any>;
 
+    @ViewChild('mloteVenta')
+    public mloteVenta!: TemplateRef<any>;
+
     public buscador:string = '';
     public loading:boolean = false;
 
@@ -327,7 +330,30 @@ export class VentaDetallesV2Component implements OnInit {
 
             if(!this.detalle.id_vendedor){
                 this.detalle.id_vendedor = this.venta.id_vendedor;
-            }            
+            }
+
+            // Si el producto tiene inventario por lotes (y la empresa tiene lotes activos), igual que v1
+            if (producto.inventario_por_lotes && this.apiService.isLotesActivo()) {
+                const metodologia = this.getLotesMetodologia();
+                if (metodologia === 'Manual') {
+                    this.detalle.inventario_por_lotes = true;
+                    this.detalle.lote_id = null;
+                    if (!detalle) {
+                        this.venta.detalles.push(this.detalle);
+                    }
+                    this.update.emit(this.venta);
+                    setTimeout(() => {
+                        this.abrirModalLoteVenta(this.mloteVenta, this.detalle);
+                    }, 100);
+                    return;
+                } else {
+                    this.detalle.inventario_por_lotes = true;
+                    this.detalle.lote_id = null;
+                }
+            } else {
+                this.detalle.inventario_por_lotes = false;
+                this.detalle.lote_id = null;
+            }
             
             if(!detalle)
                 this.venta.detalles.push(this.detalle);
@@ -337,6 +363,46 @@ export class VentaDetallesV2Component implements OnInit {
             if (this.modalRef) { this.modalRef.hide() }
             console.log(this.venta);
         }
+
+    getLotesMetodologia(): string {
+        const empresa = this.apiService.auth_user()?.empresa;
+        if (!empresa?.custom_empresa) return 'FIFO';
+        const config = typeof empresa.custom_empresa === 'string' ? JSON.parse(empresa.custom_empresa) : empresa.custom_empresa;
+        return config?.configuraciones?.lotes_metodologia || 'FIFO';
+    }
+
+    public lotes: any[] = [];
+    public loteSeleccionado: any = null;
+    public detalleConLote: any = null;
+
+    abrirModalLoteVenta(template: TemplateRef<any>, detalle: any) {
+        this.detalleConLote = detalle;
+        this.cargarLotesDisponiblesVenta();
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg'});
+    }
+
+    cargarLotesDisponiblesVenta() {
+        if (!this.detalleConLote?.id_producto || !this.venta.id_bodega) return;
+        this.loading = true;
+        this.apiService.getAll('lotes/disponibles', {
+            id_producto: this.detalleConLote.id_producto,
+            id_bodega: this.venta.id_bodega,
+            cantidad: this.detalleConLote.cantidad
+        }).subscribe(lotes => {
+            this.lotes = lotes;
+            this.loading = false;
+        }, error => {
+            this.alertService.error(error);
+            this.loading = false;
+        });
+    }
+
+    seleccionarLoteVenta(lote: any) {
+        this.detalleConLote.lote_id = lote.id;
+        this.loteSeleccionado = lote;
+        this.modalRef.hide();
+        this.update.emit(this.venta);
+    }
 
     // Eliminar detalle
         public delete(detalle:any){
