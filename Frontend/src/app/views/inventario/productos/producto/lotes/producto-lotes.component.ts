@@ -113,6 +113,13 @@ export class ProductoLotesComponent implements OnInit, OnChanges {
     openModal(template: TemplateRef<any>, lote?: any) {
         if (lote) {
             this.lote = Object.assign({}, lote);
+            // input type="date" solo muestra valores en formato YYYY-MM-DD
+            if (this.lote.fecha_vencimiento) {
+                this.lote.fecha_vencimiento = this.toDateInputValue(this.lote.fecha_vencimiento);
+            }
+            if (this.lote.fecha_fabricacion) {
+                this.lote.fecha_fabricacion = this.toDateInputValue(this.lote.fecha_fabricacion);
+            }
         } else {
             this.lote = {
                 id_producto: this.producto.id,
@@ -121,6 +128,14 @@ export class ProductoLotesComponent implements OnInit, OnChanges {
             };
         }
         this.modalRef = this.modalService.show(template, {class: 'modal-lg'});
+    }
+
+    /** Convierte fecha (ISO o Date) a YYYY-MM-DD para input type="date" */
+    private toDateInputValue(date: string | Date): string {
+        if (!date) return '';
+        const d = typeof date === 'string' ? new Date(date) : date;
+        if (isNaN(d.getTime())) return '';
+        return d.toISOString().slice(0, 10);
     }
 
     public setAjuste(event: any) {
