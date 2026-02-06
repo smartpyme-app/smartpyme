@@ -82,6 +82,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public tieneAccesoPropina: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
+  public contabilidadHabilitada: boolean = false;
 
   public modalCredito!: any; // BsModalRef
 
@@ -112,8 +113,60 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
   ngOnInit() {
     this.cargarDatosIniciales();
+    this.verificarAccesoContabilidad();
     this.loadData();
     this.verificarAccesoPropina();
+  }
+
+  verificarAccesoContabilidad() {
+    this.funcionalidadesService.verificarAcceso('contabilidad')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (acceso) => {
+          this.contabilidadHabilitada = acceso;
+          this.cargarBancos(); // Cargar bancos después de verificar contabilidad
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          console.error('Error al verificar acceso a contabilidad:', error);
+          this.contabilidadHabilitada = false;
+          this.cargarBancos(); // Cargar bancos incluso si hay error
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  cargarBancos() {
+    // Si tiene contabilidad habilitada, usar el endpoint de cuentas bancarias
+    // Si no tiene contabilidad, usar el endpoint simple de bancos (index)
+    const endpoint = this.contabilidadHabilitada ? 'banco/cuentas/list' : 'bancos';
+    
+    this.apiService.getAll(endpoint).pipe(this.untilDestroyed()).subscribe(
+      (bancos) => {
+        // Si no tiene contabilidad, los bancos vienen como array de objetos {nombre, activo}
+        // del endpoint bancos (index)
+        // Necesitamos transformarlos para que tengan la estructura esperada {id, nombre_banco}
+        if (!this.contabilidadHabilitada) {
+          // Los bancos del endpoint bancos tienen estructura {nombre, activo}
+          // Transformar a formato {id, nombre_banco} para que coincida con lo esperado
+          // Usar el nombre como id temporal ya que no hay id en este endpoint
+          this.bancos = bancos
+            .filter((banco: any) => banco.activo === true || banco.activo === 1)
+            .map((banco: any) => ({
+              id: banco.nombre, // Usar nombre como id temporal
+              nombre_banco: banco.nombre
+            }));
+        } else {
+          // Con contabilidad, los bancos ya vienen en el formato correcto {id, nombre_banco, ...}
+          this.bancos = bancos;
+        }
+        this.cdr.markForCheck();
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.cdr.markForCheck();
+      }
+    );
   }
 
   public loadData() {
@@ -184,9 +237,21 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       }
     });
 
+    // Los bancos se cargan en cargarBancos() después de verificar contabilidad
+
     this.apiService.getAll('formas-de-pago/list').pipe(this.untilDestroyed()).subscribe(
       (formaPagos) => {
         this.formaPagos = formaPagos;
+        // Si ya hay un método de pago seleccionado y no es Efectivo, asignar el banco por defecto
+        if (this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Multiple' && this.venta.forma_pago !== 'Wompi') {
+          const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+          if (formaPagoSeleccionada && formaPagoSeleccionada.banco && formaPagoSeleccionada.banco.nombre_banco) {
+            // Solo asignar si no hay banco ya seleccionado
+            if (!this.venta.detalle_banco) {
+              this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+            }
+          }
+        }
         this.cdr.markForCheck();
       },
       (error) => {
@@ -1041,12 +1106,24 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             });
         }
 
-        // Limpiar banco y mensaje de error al cambiar método de pago
-        if (!this.requiereBanco()) {
+        // Si el método de pago no es "Efectivo", "Wompi" ni "Multiple", asignar el banco por defecto del método de pago
+        if (this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Multiple' && this.venta.forma_pago !== 'Wompi') {
+            const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+            
+            if (formaPagoSeleccionada && formaPagoSeleccionada.banco && formaPagoSeleccionada.banco.nombre_banco) {
+                // Si la forma de pago tiene un banco asignado, usarlo
+                this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+            } else {
+                // Si no tiene banco asignado, limpiar el campo
+                this.venta.detalle_banco = '';
+            }
+            this.mensajeErrorBanco = '';
+        } else if (this.venta.forma_pago === 'Efectivo' || this.venta.forma_pago === 'Wompi') {
+            // Si es efectivo o Wompi, limpiar el campo de banco
             this.venta.detalle_banco = '';
             this.mensajeErrorBanco = '';
         }
-        console.log(this.venta);
+        this.cdr.markForCheck();
     }
 
     public setDocumento(id_documento: any) {

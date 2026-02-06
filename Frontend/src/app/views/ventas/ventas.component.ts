@@ -542,10 +542,17 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
               });
           }
 
-          // Abrir el modal pasando ventaCompleta como parámetro
-          // BaseCrudComponent hará una copia con { ...item }, pero eso está bien para las propiedades de primer nivel
-          this.openModal(template, ventaCompleta);
-          this.cdr.markForCheck();
+          // Crear una copia profunda del objeto para evitar que los cambios se reflejen inmediatamente en el listado
+          const ventaCopia = JSON.parse(JSON.stringify(ventaCompleta));
+
+          // Inicializar el campo condicion si no existe
+          if (!ventaCopia.condicion) {
+            // Si el estado es Pendiente, probablemente es Crédito, de lo contrario Contado
+            ventaCopia.condicion = ventaCopia.estado === 'Pendiente' ? 'Crédito' : 'Contado';
+          }
+
+          // Abrir el modal pasando la copia como parámetro
+          this.openModal(template, ventaCopia);
         },
         error: (error) => {
           this.alertService.error(error);
@@ -778,6 +785,29 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       this.venta.nombre_documento = documento.nombre;
       this.venta.id_documento = documento.id;
       this.venta.correlativo = documento.correlativo;
+    }
+  }
+
+  public onCondicionChange() {
+    if (this.venta.condicion === 'Crédito') {
+      // Si se cambia a Crédito, establecer estado como Pendiente si no está ya establecido
+      if (this.venta.estado !== 'Pendiente' && this.venta.estado !== 'Anulada') {
+        this.venta.estado = 'Pendiente';
+      }
+      // Si no hay fecha de pago, establecer una fecha por defecto (30 días desde hoy)
+      if (!this.venta.fecha_pago) {
+        const fecha = new Date();
+        fecha.setDate(fecha.getDate() + 30);
+        this.venta.fecha_pago = fecha.toISOString().split('T')[0];
+      }
+    } else if (this.venta.condicion === 'Contado') {
+      // Si se cambia a Contado, establecer estado como Pagada si no está anulada
+      if (this.venta.estado !== 'Anulada') {
+        this.venta.estado = 'Pagada';
+      }
+      // Establecer fecha de pago como la fecha actual
+      const fecha = new Date();
+      this.venta.fecha_pago = fecha.toISOString().split('T')[0];
     }
   }
 

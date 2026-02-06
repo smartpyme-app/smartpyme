@@ -123,19 +123,6 @@ export class GastoComponent implements OnInit {
         }
       });
 
-    this.apiService.getAll('banco/cuentas/list')
-      .pipe(this.untilDestroyed())
-      .subscribe(
-      (bancos) => {
-        this.bancos = bancos;
-        this.cdr.markForCheck();
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.cdr.markForCheck();
-      }
-    );
-
     this.sharedDataService.getFormasDePago()
       .pipe(this.untilDestroyed())
       .subscribe({
@@ -149,13 +136,7 @@ export class GastoComponent implements OnInit {
         }
       });
 
-    this.apiService.getAll('gastos/categorias/list')
-      .pipe(this.untilDestroyed())
-      .subscribe(categorias => {
-      this.categorias = categorias;
-      this.loading = false;
-      this.cdr.markForCheck();
-    }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
+    // Los bancos y categorías se cargarán después de verificar contabilidad
 
     this.sharedDataService.getProveedores()
       .pipe(this.untilDestroyed())
@@ -650,6 +631,24 @@ export class GastoComponent implements OnInit {
       this.gasto.otros_impuestos = datosImpuestos;
     } else if (!this.mostrar_otros_impuestos) {
         this.gasto.otros_impuestos = [];
+    }
+
+    // Manejar campos según contabilidad
+    if (!this.contabilidadHabilitada) {
+      // Sin contabilidad: usar campo tipo, limpiar id_categoria
+      if (this.gasto.id_categoria) {
+        this.gasto.id_categoria = null;
+      }
+      // Asegurar que tipo esté presente
+      if (!this.gasto.tipo) {
+        this.gasto.tipo = '';
+      }
+    } else {
+      // Con contabilidad: usar id_categoria, limpiar tipo si es necesario
+      if (this.gasto.tipo && !this.gasto.id_categoria) {
+        // Si hay tipo pero no id_categoria, limpiar tipo
+        this.gasto.tipo = '';
+      }
     }
 
     try {
@@ -1246,13 +1245,65 @@ export class GastoComponent implements OnInit {
       .subscribe({
         next: (acceso) => {
           this.contabilidadHabilitada = acceso;
+          this.cargarBancos();
+          this.cargarCategorias();
           this.cdr.markForCheck();
         },
         error: (error) => {
           console.error('Error al verificar acceso a contabilidad:', error);
           this.contabilidadHabilitada = false;
+          this.cargarBancos();
+          this.cargarCategorias();
           this.cdr.markForCheck();
         }
       });
+  }
+
+  cargarBancos() {
+    const endpoint = this.contabilidadHabilitada ? 'banco/cuentas/list' : 'bancos';
+    this.apiService.getAll(endpoint)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (bancos) => {
+          if (!this.contabilidadHabilitada) {
+            // Filtrar solo bancos activos y transformar estructura
+            this.bancos = bancos
+              .filter((banco: any) => banco.activo === true || banco.activo === 1)
+              .map((banco: any) => ({
+                nombre: banco.nombre
+              }));
+          } else {
+            this.bancos = bancos;
+          }
+          this.cdr.markForCheck();
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.cdr.markForCheck();
+        }
+      );
+  }
+
+  cargarCategorias() {
+    // Solo cargar categorías si tiene contabilidad habilitada
+    if (this.contabilidadHabilitada) {
+      this.apiService.getAll('gastos/categorias/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(
+          (categorias) => {
+            this.categorias = categorias;
+            this.loading = false;
+            this.cdr.markForCheck();
+          },
+          (error) => {
+            this.alertService.error(error);
+            this.loading = false;
+            this.cdr.markForCheck();
+          }
+        );
+    } else {
+      this.categorias = [];
+      this.cdr.markForCheck();
+    }
   }
 }

@@ -640,7 +640,55 @@
                     </small>
                   </div>
 
-                  <div class="mb-3">
+                  <!-- Horas extra: agregar por tipo (solo El Salvador) -->
+                  <ng-container *ngIf="esElSalvador">
+                    <div class="mb-3">
+                      <label class="d-block mb-2"><i class="fa fa-clock me-1"></i> Horas extra (El Salvador)</label>
+                      <p class="text-muted small mb-2">Valor hora ordinaria: ${{ getValorHoraNormalES() | number : "1.2-2" }}. Agregue filas eligiendo tipo y cantidad de horas.</p>
+                      <div class="border rounded p-2 bg-light mb-2">
+                        <div *ngFor="let fila of listaHorasExtraES; let i = index" class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                          <select class="form-select form-select-sm" style="min-width: 180px;"
+                            [(ngModel)]="fila.tipo"
+                            (ngModelChange)="calcularTotalesUnificado()"
+                            [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
+                            [name]="'he_tipo_' + i">
+                            <option *ngFor="let opt of TIPOS_HORAS_EXTRA_ES" [value]="opt.value">{{ opt.label }}</option>
+                          </select>
+                          <input type="number" class="form-control form-control-sm" style="width: 70px;"
+                            [(ngModel)]="fila.horas"
+                            (input)="calcularTotalesUnificado()"
+                            (change)="calcularTotalesUnificado()"
+                            [name]="'he_horas_' + i"
+                            min="0" step="0.5"
+                            [disabled]="planilla.estado !== 2 && planilla.estado !== 3" />
+                          <span class="text-muted small">hrs</span>
+                          <span class="text-success fw-bold small">
+                            ${{ getMontoFilaHoraExtra(fila) | number : "1.2-2" }}
+                            <span *ngIf="fila.tipo === 'dia_descanso'" class="text-muted fw-normal" title="Solo horas con 50% recargo; el día compensatorio se suma al total">(solo horas)</span>
+                          </span>
+                          <button type="button" class="btn btn-outline-danger btn-sm ms-1"
+                            (click)="eliminarHoraExtraES(i)"
+                            [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
+                            title="Quitar">
+                            <i class="fa fa-times"></i>
+                          </button>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm"
+                          (click)="agregarHoraExtraES()"
+                          [disabled]="planilla.estado !== 2 && planilla.estado !== 3">
+                          <i class="fa fa-plus me-1"></i> Agregar hora extra
+                        </button>
+                      </div>
+                      <small class="text-muted d-block">
+                        Total: {{ detalleSeleccionado.horas_extra | number : "1.2-2" }} hrs — Monto total: ${{ detalleSeleccionado.monto_horas_extra | number : "1.2-2" }}
+                        <span *ngIf="getDetalleHorasExtraDesdeLista().dia_descanso_dias > 0" class="d-block mt-1 text-info">
+                          <strong>Desglose (Art. 175):</strong> horas trabajadas ${{ getDesgloseMontoHorasExtraES().montoHoras | number : "1.2-2" }} + {{ getDetalleHorasExtraDesdeLista().dia_descanso_dias }} día(s) compensatorio(s) remunerado(s) ${{ getDesgloseMontoHorasExtraES().montoDiaCompensatorio | number : "1.2-2" }} = ${{ detalleSeleccionado.monto_horas_extra | number : "1.2-2" }}
+                        </span>
+                      </small>
+                    </div>
+                  </ng-container>
+                  <!-- Horas extra único (otros países) -->
+                  <div class="mb-3" *ngIf="!esElSalvador">
                     <label>Horas Extra:</label>
                     <div class="input-group">
                       <input type="number" class="form-control"

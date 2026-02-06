@@ -73,9 +73,9 @@ class Kernel extends HttpKernel
         'limite.sucursales' => \App\Http\Middleware\LimiteSucursales::class,
         'external.api' => \App\Http\Middleware\ExternalApiAuth::class,
         //spatie
-        'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
-        'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
-        'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
+        'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+        'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+        'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         'company_scope' => \App\Http\Middleware\Authorization\EnsureCompanyScope::class,
     ];
 }

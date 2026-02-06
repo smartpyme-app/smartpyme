@@ -78,33 +78,35 @@
             <div class="form-group col-md-4 col-lg-3">
                 <label for="id_categoria" class="w-100">Categoria:</label>
                 <div class="input-group flex-nowrap">
-                  <ng-select name="id_categoria" [(ngModel)]="gasto.id_categoria" class="form-select p-0">
-                    <ng-option value="">Seleccione aquí</ng-option>
-                    @for (categoria of categorias; track categoria.id) {
-                    <ng-option [value]="categoria.id">
-                    {{ categoria.nombre }}
-                    </ng-option>
-                    }
-                  </ng-select>
-<!--                    <select name="tipo" [(ngModel)]="gasto.tipo" class="form-select">-->
-<!--                        <option value="">Seleccione aquí</option>-->
-<!--                        <option value="Alquiler">Alquiler</option>-->
-<!--                        <option value="Combustible">Combustible</option>-->
-<!--                        <option value="Costo de venta">Costo de venta</option>-->
-<!--                        <option value="Gastos varios">Gastos varios</option>-->
-<!--                        <option value="Insumos">Insumos</option>-->
-<!--                        <option value="Impuestos">Impuestos</option>-->
-<!--                        <option value="Gastos Administrativos">Gastos Administrativos</option>-->
-<!--                        <option value="Mantenimiento">Mantenimiento</option>-->
-<!--                        <option value="Marketing">Marketing</option>-->
-<!--                        <option value="Materia Prima">Materia Prima</option>-->
-<!--                        <option value="Servicios">Servicios</option>-->
-<!--                        <option value="Pago comisión">Pago comisión</option>-->
-<!--                        <option value="Planilla">Planilla</option>-->
-<!--                        <option value="Préstamos">Préstamos</option>-->
-<!--                        <option value="Publicidad">Publicidad</option>-->
-<!--                    </select>-->
-                    <!-- <app-crear-categoria-gasto (update)="setCategoria($event)"></app-crear-categoria-gasto> -->
+                  @if (contabilidadHabilitada) {
+                    <ng-select name="id_categoria" [(ngModel)]="gasto.id_categoria" class="form-select p-0">
+                      <ng-option value="">Seleccione aquí</ng-option>
+                      @for (categoria of categorias; track categoria.id) {
+                      <ng-option [value]="categoria.id">
+                      {{ categoria.nombre }}
+                      </ng-option>
+                      }
+                    </ng-select>
+                  } @else {
+                    <select name="tipo" [(ngModel)]="gasto.tipo" class="form-select">
+                        <option value="">Seleccione aquí</option>
+                        <option value="Alquiler">Alquiler</option>
+                        <option value="Combustible">Combustible</option>
+                        <option value="Costo de venta">Costo de venta</option>
+                        <option value="Gastos varios">Gastos varios</option>
+                        <option value="Insumos">Insumos</option>
+                        <option value="Impuestos">Impuestos</option>
+                        <option value="Gastos Administrativos">Gastos Administrativos</option>
+                        <option value="Mantenimiento">Mantenimiento</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Materia Prima">Materia Prima</option>
+                        <option value="Servicios">Servicios</option>
+                        <option value="Pago comisión">Pago comisión</option>
+                        <option value="Planilla">Planilla</option>
+                        <option value="Préstamos">Préstamos</option>
+                        <option value="Publicidad">Publicidad</option>
+                    </select>
+                  }
                 </div>
             </div>
           @if (contabilidadHabilitada) {
@@ -235,13 +237,23 @@
                     <option value="{{ forma.nombre }}" *ngFor="let forma of formaspago">{{ forma.nombre }}</option>
                 </select>
             </div>
-            <div class="form-group col-md-4 col-lg-3" *ngIf="gasto.forma_pago != 'Efectivo' && gasto.forma_pago != 'Wompi'">
+            @if (gasto.forma_pago != 'Efectivo' && gasto.forma_pago != 'Wompi') {
+            <div class="form-group col-md-4 col-lg-3">
                 <label for="detalle_banco">Bancos:</label>
                 <select name="detalle_banco" [(ngModel)]="gasto.detalle_banco" class="form-select">
                     <option value="">Seleccione aquí</option>
-                    <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+                    @if (contabilidadHabilitada) {
+                      @for (banco of bancos; track banco.id) {
+                        <option [value]="banco.nombre_banco">{{ banco.nombre_banco }}</option>
+                      }
+                    } @else {
+                      @for (banco of bancos; track banco.nombre) {
+                        <option [value]="banco.nombre">{{ banco.nombre }}</option>
+                      }
+                    }
                 </select>
             </div>
+            }
           </div>
     </div>
 

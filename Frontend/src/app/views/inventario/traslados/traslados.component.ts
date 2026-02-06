@@ -13,7 +13,7 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { Subscription } from 'rxjs';
-import { distinctUntilChanged, skip, debounceTime } from 'rxjs/operators';
+import { distinctUntilChanged, debounceTime } from 'rxjs/operators';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
@@ -25,6 +25,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 })
 export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit, OnDestroy {
 
+    // Propiedades propias del componente
     public traslados:any = [];
     public traslado:any = {};
     public downloading:boolean = false;
@@ -38,6 +39,15 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
     private queryParamsSubscription?: Subscription;
     private isNavigating: boolean = false;
     private isLoadingProductos: boolean = false;
+
+    // Propiedades heredadas - declaradas explícitamente para TypeScript
+    declare public filtros: any;
+    declare public loading: boolean;
+    declare public saving: boolean;
+    declare public modalRef?: any;
+    declare protected untilDestroyed: <T>() => (source: import('rxjs').Observable<T>) => import('rxjs').Observable<T>;
+    declare public closeModal: () => void;
+    declare public openLargeModal: (template: TemplateRef<any>, config?: any) => void;
 
     constructor(
         apiService: ApiService,
@@ -72,6 +82,8 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
                 this.traslado = {};
             }
         });
+        // Inicializar filtros después de llamar a super()
+        this.filtros = {};
     }
 
     protected aplicarFiltros(): void {
@@ -82,22 +94,50 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
         const empresa = this.apiService.auth_user()?.empresa;
         this.tieneShopify = !!empresa?.shopify_store_url;
 
-        this.route.queryParams.subscribe(params => {
-            this.filtros = {
-                search: params['search'] || '',
-                id_bodega_de: +params['id_bodega_de'] || '',
-                id_bodega_para: +params['id_bodega_para'] || '',
-                id_sucursal: +params['id_sucursal'] || '',
-                estado: params['estado'] || '',
-                concepto: params['concepto'] || '',
-                orden: params['orden'] || 'id',
-                direccion: params['direccion'] || 'desc',
-                paginate: params['paginate'] || 10,
-                page: params['page'] || 1,
-            };
+        // Inicializar filtros desde queryParams o valores por defecto
+        const params = this.route.snapshot.queryParams;
+        this.filtros = {
+            search: params['search'] || '',
+            id_bodega_de: +params['id_bodega_de'] || '',
+            id_bodega_para: +params['id_bodega_para'] || '',
+            id_sucursal: +params['id_sucursal'] || '',
+            estado: params['estado'] || '',
+            concepto: params['concepto'] || '',
+            orden: params['orden'] || 'id',
+            direccion: params['direccion'] || 'desc',
+            paginate: params['paginate'] || 10,
+            page: params['page'] || 1,
+        };
 
-            this.filtrarTraslados();
-        });
+        // Cargar datos iniciales
+        this.filtrarTrasladosSinNavegar();
+
+        // Suscribirse a cambios en queryParams
+        this.queryParamsSubscription = this.route.queryParams
+            .pipe(
+                distinctUntilChanged(),
+                debounceTime(100) // Evitar múltiples llamadas rápidas
+            )
+            .subscribe(params => {
+                // Solo cargar datos si no estamos navegando (para evitar loops infinitos)
+                if (!this.isNavigating) {
+                    this.filtros = {
+                        search: params['search'] || '',
+                        id_bodega_de: +params['id_bodega_de'] || '',
+                        id_bodega_para: +params['id_bodega_para'] || '',
+                        id_sucursal: +params['id_sucursal'] || '',
+                        estado: params['estado'] || '',
+                        concepto: params['concepto'] || '',
+                        orden: params['orden'] || 'id',
+                        direccion: params['direccion'] || 'desc',
+                        paginate: params['paginate'] || 10,
+                        page: params['page'] || 1,
+                    };
+
+                    // Cargar los datos después de actualizar los filtros
+                    this.filtrarTrasladosSinNavegar();
+                }
+            });
 
         this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
@@ -130,17 +170,20 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
 
     public filtrarTraslados(){
         if(this.modalRef){
-            this.closeModal();
+            (this as any).closeModal();
         }
         this.isNavigating = true;
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: this.filtros,
             queryParamsHandling: 'merge',
+        }).then(() => {
+            // Después de navegar, esperar un momento y luego cargar los datos
+            setTimeout(() => {
+                this.isNavigating = false;
+                // Los datos se cargarán automáticamente cuando cambien los queryParams
+            }, 100);
         });
-        setTimeout(() => {
-            this.isNavigating = false;
-        }, 100);
     }
 
     private filtrarTrasladosSinNavegar(){
@@ -208,7 +251,7 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.cdr.markForCheck();});
         }
-        super.openLargeModal(template);
+        (this as any).openLargeModal(template);
     }
 
     public openFilter(template: TemplateRef<any>) {
@@ -232,7 +275,7 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
             this.traslado = {};
             this.alertService.success('Traslado realizado', 'El traslado fue añadido exitosamente.');
             if (this.modalRef) {
-                this.closeModal();
+                (this as any).closeModal();
             }
             this.loadAll();
         } catch (error: any) {
@@ -262,20 +305,26 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('traslados/exportar', this.filtros).pipe(this.untilDestroyed()).subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'traslados.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            this.downloading = false;
-            this.cdr.markForCheck();
-          }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
-        );
+        this.apiService.export('traslados/exportar', this.filtros).pipe(this.untilDestroyed()).subscribe({
+            next: (data: unknown) => {
+                const blob = new Blob([data as Blob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'traslados.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                this.downloading = false;
+                this.cdr.markForCheck();
+            },
+            error: (error) => {
+                this.alertService.error(error);
+                this.downloading = false;
+                this.cdr.markForCheck();
+            }
+        });
     }
 
     public descargarPdfFiltrados(){

@@ -18,14 +18,28 @@ class TransaccionesService
         try {
             
             if($registro->forma_pago != 'Efectivo' && $registro->forma_pago != 'Cheque'){
-                $forma_pago = FormaDePago::with('banco')->where('nombre', $registro->forma_pago)->first();
-                if($forma_pago && $forma_pago->banco){
+                $cuenta_bancaria = null;
+                
+                // Si hay un banco seleccionado específicamente (detalle_banco), usarlo
+                if($registro->detalle_banco){
+                    $cuenta_bancaria = \App\Models\Bancos\Cuenta::where('nombre_banco', $registro->detalle_banco)->first();
+                }
+                
+                // Si no se encontró cuenta por detalle_banco, usar el banco por defecto del método de pago
+                if(!$cuenta_bancaria){
+                    $forma_pago = FormaDePago::with('banco')->where('nombre', $registro->forma_pago)->first();
+                    if($forma_pago && $forma_pago->banco){
+                        $cuenta_bancaria = $forma_pago->banco;
+                    }
+                }
+                
+                if($cuenta_bancaria){
                     $transaccion = new Transaccion;
                     $transaccion->estado = 'Pendiente';
                     $transaccion->tipo = $tipo;
                     $transaccion->tipo_operacion = 'Transferencia';
                     $transaccion->concepto = $concepto; //'Venta: ' + $registro->nombre_documento + ' #' + $registro->correlativo;
-                    $transaccion->id_cuenta = $forma_pago->banco->id;
+                    $transaccion->id_cuenta = $cuenta_bancaria->id;
                     $transaccion->referencia = $referencia;
                     $transaccion->id_referencia = $registro->id;
                     $transaccion->total = $registro->total;

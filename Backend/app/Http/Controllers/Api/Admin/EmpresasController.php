@@ -21,6 +21,7 @@ use App\Services\Suscripcion\SuscripcionService;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 use Intervention\Image\ImageManagerStatic as Image;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -85,12 +86,45 @@ class EmpresasController extends Controller
 
     public function list()
     {
+        try {
+            // Intentar obtener empresas activas
+            $empresas = Empresa::select('id', 'nombre')
+                ->where(function($query) {
+                    $query->where('activo', true)
+                          ->orWhere('activo', 1);
+                })
+                ->orderBy('nombre')
+                ->get();
 
-        $empresas = Empresa::orderby('nombre')
-            ->where('activo', true)
-            ->get();
-
-        return Response()->json($empresas, 200);
+            return Response()->json($empresas, 200);
+        } catch (QueryException $e) {
+            // Si hay un error de SQL, puede ser que la columna no exista
+            Log::error('Error SQL en EmpresasController@list: ' . $e->getMessage());
+            Log::error('Código SQL: ' . $e->getCode());
+            
+            // Intentar sin el filtro de activo
+            try {
+                $empresas = Empresa::select('id', 'nombre')
+                    ->orderBy('nombre')
+                    ->get();
+                
+                return Response()->json($empresas, 200);
+            } catch (\Exception $e2) {
+                Log::error('Error al cargar empresas sin filtro: ' . $e2->getMessage());
+                return Response()->json([
+                    'error' => 'Error al cargar las empresas',
+                    'message' => $e2->getMessage()
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error en EmpresasController@list: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return Response()->json([
+                'error' => 'Error al cargar las empresas',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
 

@@ -14,7 +14,7 @@ class FormaDePago extends Model {
         'orden',
         'id_empresa',
         'id_banco',
-
+        // 'activo', // No existe en la tabla, se maneja creando/eliminando registros
     );
 
     protected static function boot()

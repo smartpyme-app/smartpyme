@@ -359,13 +359,13 @@
                 </div>
             </div>
         }
-        @if (venta.forma_pago != 'Efectivo' && venta.forma_pago != 'Wompi') {
+        @if (venta.cotizacion != 1 && venta.forma_pago && venta.forma_pago !== 'Efectivo' && venta.forma_pago !== 'Wompi') {
             <div class="form-group col-md-6 col-lg-3">
                 <label for="detalle_banco">Bancos</label>
                 <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" class="form-select">
                     <option value="">Seleccione aquí</option>
                     @for (banco of bancos; track banco.id || $index) {
-                        <option [value]="banco.nombre">{{ banco.nombre }}</option>
+                        <option [value]="banco.nombre_banco">{{ banco.nombre_banco }}</option>
                     }
                 </select>
               <div class="text-danger mt-1" style="font-size: 11px;" *ngIf="mensajeErrorBanco">

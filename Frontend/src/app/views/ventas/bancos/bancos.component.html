@@ -31,7 +31,7 @@
           <td>{{ banco.nombre }}</td>
           <td>
             <div class="form-switch">
-              <input class="form-check-input ms-0" type="checkbox" role="switch" (click)="onSubmit(banco.nombre)" name="activo" [(ngModel)]="banco.activo">
+              <input class="form-check-input ms-0" type="checkbox" role="switch" (click)="toggleBanco(banco.nombre)" name="activo" [(ngModel)]="banco.activo">
             </div>
           </td>
         </tr>

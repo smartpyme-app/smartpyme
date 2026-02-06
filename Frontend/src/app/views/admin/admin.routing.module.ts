@@ -83,6 +83,11 @@ const routes: Routes = [
           title: 'Roles y permisos'
         },
         { 
+          path: 'bancos', 
+          loadComponent: () => import('@views/ventas/bancos/bancos.component').then(m => m.BancosComponent), 
+          title: 'Bancos' 
+        },
+        { 
           path: 'authorization/:code', 
           loadComponent: () => import('@shared/authorization/authorization-view/authorization-view.component').then(m => m.AuthorizationViewComponent), 
           title: 'Autorización' 
