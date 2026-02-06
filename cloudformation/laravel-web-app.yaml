@@ -269,19 +269,19 @@ Resources:
               
               # Pusher
               - Name: PUSHER_APP_ID
-                Value: '123456'
+                Value: 'REPLACE_HERE'
               - Name: PUSHER_APP_KEY
-                Value: 'abcdef123456'
+                Value: 'REPLACE_HERE'
               - Name: PUSHER_APP_CLUSTER
-                Value: 'us2'
+                Value: 'mt1'
               - Name: MIX_PUSHER_APP_KEY
-                Value: 'abcdef123456'
+                Value: 'REPLACE_HERE'
               - Name: MIX_PUSHER_APP_CLUSTER
-                Value: 'us2'
+                Value: 'REPLACE_HERE'
               
               # N1co
               - Name: NICO_CLIENT_ID
-                Value: 'default-client-id'
+                Value: '389afeb3-57ee-4734-a494-6a53fd852885'
               - Name: NICO_BASE_URL
                 Value: https://api.n1co.com/api/v2
               - Name: NICO_SANDBOX_URL
@@ -289,19 +289,19 @@ Resources:
               - Name: PAYMENT_GATEWAY
                 Value: 'n1co'
               - Name: PAYMENT_SANDBOX_MODE
-                Value: 'true'
+                Value: 'false'
               
               # WhatsApp Configuration
               - Name: WHATSAPP_API_URL
-                Value: https://graph.facebook.com/v21.0/131106576743413/messages
+                Value: https://graph.facebook.com/v22.0/706130322582871/messages
               - Name: WHATSAPP_WEBHOOK_URL
                 Value: /api/whatsapp/webhook
               - Name: WHATSAPP_VERIFY_TOKEN
-                Value: smartpyme_verify_token
+                Value: smartpyme_verify_token_2025
               - Name: WHATSAPP_DEV_MODE
                 Value: 'true'
               - Name: WHATSAPP_USE_AI
-                Value: 'false'
+                Value: 'true'
               - Name: WHATSAPP_USE_BUSINESS
                 Value: 'true'
               
