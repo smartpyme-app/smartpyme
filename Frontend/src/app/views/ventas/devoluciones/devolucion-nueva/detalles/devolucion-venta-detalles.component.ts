@@ -163,16 +163,7 @@ export class DevolucionVentaDetallesComponent implements OnInit {
     }
 
     public isLotesActivo(): boolean {
-        const empresa = this.apiService.auth_user()?.empresa;
-        if (!empresa || !empresa.custom_empresa) {
-            return false;
-        }
-        
-        const customConfig = typeof empresa.custom_empresa === 'string' 
-            ? JSON.parse(empresa.custom_empresa) 
-            : empresa.custom_empresa;
-        
-        return customConfig?.configuraciones?.lotes_activo === true;
+        return this.apiService.isLotesActivo();
     }
 
     public abrirModalLote(template: TemplateRef<any>, detalle: any) {

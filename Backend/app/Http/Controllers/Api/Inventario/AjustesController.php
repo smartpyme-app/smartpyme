@@ -182,13 +182,19 @@ class AjustesController extends Controller
             'id_usuario'        => 'required|numeric',
         ]);
 
+        $lote = Lote::findOrFail($request->lote_id);
+        if ($lote->id_producto != $request->id_producto || $lote->id_bodega != $request->id_bodega) {
+            return response()->json([
+                'error' => 'El lote no corresponde al producto o bodega especificados.'
+            ], 400);
+        }
+
         $ajuste = new Ajuste;
         $ajuste->fill($request->all());
         $ajuste->lote_id = $request->lote_id;
         $ajuste->save(); 
 
         // Actualizar lote
-        $lote = Lote::findOrFail($request->lote_id);
         $lote->stock = $request->stock_real;
         
         // Si es el primer ajuste y el stock_inicial es 0, actualizarlo

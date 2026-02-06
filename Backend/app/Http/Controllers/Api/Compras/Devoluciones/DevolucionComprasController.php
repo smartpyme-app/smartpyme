@@ -86,15 +86,8 @@ class DevolucionComprasController extends Controller
                                         
                 $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
                 
-                // Verificar si la empresa tiene lotes activos
                 $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
-                $lotesActivo = false;
-                if ($empresa && $empresa->custom_empresa) {
-                    $customConfig = is_string($empresa->custom_empresa) 
-                        ? json_decode($empresa->custom_empresa, true) 
-                        : $empresa->custom_empresa;
-                    $lotesActivo = $customConfig['configuraciones']['lotes_activo'] ?? false;
-                }
+                $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
                 
                 // Anular y regresar stock
                 if(($compra->enable != '0') && ($request['enable'] == '0')){
@@ -205,15 +198,8 @@ class DevolucionComprasController extends Controller
                 if ($request->tipo !== 'descuento_ajuste') {
                     $producto = Producto::find($det['id_producto']);
                     
-                    // Verificar si la empresa tiene lotes activos
                     $empresa = \App\Models\Admin\Empresa::find($devolucion->id_empresa);
-                    $lotesActivo = false;
-                    if ($empresa && $empresa->custom_empresa) {
-                        $customConfig = is_string($empresa->custom_empresa) 
-                            ? json_decode($empresa->custom_empresa, true) 
-                            : $empresa->custom_empresa;
-                        $lotesActivo = $customConfig['configuraciones']['lotes_activo'] ?? false;
-                    }
+                    $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
                     
                     // Si el producto tiene lotes y se especificó un lote, actualizar el stock del lote
                     if ($producto && $producto->inventario_por_lotes && $lotesActivo && isset($det['lote_id']) && $det['lote_id']) {

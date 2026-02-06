@@ -498,18 +498,10 @@ class VentasController extends Controller
 
         try {
 
-            // Obtener la empresa para verificar configuración de vender sin stock
+            // Obtener la empresa para verificar configuración de vender sin stock y lotes
             $empresa = Empresa::findOrFail(Auth::user()->id_empresa);
             $puedeVenderSinStock = $empresa->vender_sin_stock == 1;
-            
-            // Verificar si la empresa tiene lotes activos
-            $lotesActivo = false;
-            if ($empresa && $empresa->custom_empresa) {
-                $customConfig = is_string($empresa->custom_empresa) 
-                    ? json_decode($empresa->custom_empresa, true) 
-                    : $empresa->custom_empresa;
-                $lotesActivo = $customConfig['configuraciones']['lotes_activo'] ?? false;
-            }
+            $lotesActivo = $empresa->isLotesActivo();
 
             if ($request->id)
                 $venta = Venta::findOrFail($request->id);
@@ -615,20 +607,13 @@ class VentasController extends Controller
                         }
                     }
 
-                    // Verificar si el producto tiene inventario por lotes
+                    // Verificar si el producto tiene inventario por lotes (y la empresa tiene lotes activos)
                     $producto = Producto::find($det['id_producto']);
                     $loteSeleccionado = null;
                     
-                    if ($producto && $producto->inventario_por_lotes) {
-                        // Obtener metodología de la empresa
-                        $empresa = \App\Models\Admin\Empresa::find($venta->id_empresa);
-                        $metodologia = 'FIFO'; // Por defecto
-                        if ($empresa && $empresa->custom_empresa) {
-                            $config = is_string($empresa->custom_empresa) 
-                                ? json_decode($empresa->custom_empresa, true) 
-                                : $empresa->custom_empresa;
-                            $metodologia = $config['configuraciones']['lotes_metodologia'] ?? 'FIFO';
-                        }
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo) {
+                        $empresa = $empresa ?: \App\Models\Admin\Empresa::find($venta->id_empresa);
+                        $metodologia = $empresa->getLotesMetodologia();
                         
                         // Si se especificó un lote manualmente, usarlo
                         if (isset($det['lote_id']) && $det['lote_id']) {
@@ -645,25 +630,22 @@ class VentasController extends Controller
                                 
                                 switch ($metodologia) {
                                     case 'FIFO':
-                                        // Primero en entrar, primero en salir (por fecha de creación)
                                         $loteSeleccionado = $lotesQuery->orderBy('created_at', 'asc')->first();
                                         break;
                                     case 'LIFO':
-                                        // Último en entrar, primero en salir (por fecha de creación descendente)
                                         $loteSeleccionado = $lotesQuery->orderBy('created_at', 'desc')->first();
                                         break;
                                     case 'FEFO':
-                                        // Primero en vencer, primero en salir
-                                        $loteSeleccionado = $lotesQuery->whereNotNull('fecha_vencimiento')
+                                        // Primero en vencer, primero en salir (query sin mutar para fallback FIFO)
+                                        $loteSeleccionado = (clone $lotesQuery)
+                                            ->whereNotNull('fecha_vencimiento')
                                             ->orderBy('fecha_vencimiento', 'asc')
                                             ->first();
-                                        // Si no hay lotes con fecha de vencimiento, usar FIFO
                                         if (!$loteSeleccionado) {
                                             $loteSeleccionado = $lotesQuery->orderBy('created_at', 'asc')->first();
                                         }
                                         break;
                                     default:
-                                        // Por defecto FIFO
                                         $loteSeleccionado = $lotesQuery->orderBy('created_at', 'asc')->first();
                                 }
                             }
@@ -737,21 +719,13 @@ class VentasController extends Controller
                                 
                                 // Verificar si el producto compuesto tiene lotes activos
                                 if ($productoCompuesto->inventario_por_lotes && $lotesActivo) {
-                                    // Obtener metodología de la empresa
-                                    $metodologia = 'FIFO'; // Por defecto
-                                    if ($empresa && $empresa->custom_empresa) {
-                                        $config = is_string($empresa->custom_empresa) 
-                                            ? json_decode($empresa->custom_empresa, true) 
-                                            : $empresa->custom_empresa;
-                                        $metodologia = $config['configuraciones']['lotes_metodologia'] ?? 'FIFO';
-                                    }
+                                    $metodologia = $empresa->getLotesMetodologia();
                                     
                                     // Buscar lote para el producto compuesto
                                     $loteCompuesto = null;
                                     if (isset($comp['lote_id']) && $comp['lote_id']) {
                                         $loteCompuesto = \App\Models\Inventario\Lote::find($comp['lote_id']);
                                     } else {
-                                        // Seleccionar lote automáticamente según metodología
                                         if ($metodologia !== 'Manual') {
                                             $lotesQuery = \App\Models\Inventario\Lote::where('id_producto', $comp['id_compuesto'])
                                                 ->where('id_bodega', $venta->id_bodega)
@@ -765,7 +739,8 @@ class VentasController extends Controller
                                                     $loteCompuesto = $lotesQuery->orderBy('created_at', 'desc')->first();
                                                     break;
                                                 case 'FEFO':
-                                                    $loteCompuesto = $lotesQuery->whereNotNull('fecha_vencimiento')
+                                                    $loteCompuesto = (clone $lotesQuery)
+                                                        ->whereNotNull('fecha_vencimiento')
                                                         ->orderBy('fecha_vencimiento', 'asc')
                                                         ->first();
                                                     if (!$loteCompuesto) {

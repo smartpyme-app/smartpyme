@@ -95,12 +95,7 @@ export class InventarioEntradaComponent implements OnInit {
     }
     
     isLotesActivo(): boolean {
-        const empresa = this.apiService.auth_user()?.empresa;
-        if (!empresa || !empresa.custom_empresa) return false;
-        const customConfig = typeof empresa.custom_empresa === 'string' 
-            ? JSON.parse(empresa.custom_empresa) 
-            : empresa.custom_empresa;
-        return customConfig?.configuraciones?.lotes_activo ?? false;
+        return this.apiService.isLotesActivo();
     }
     
     abrirModalLote(detalle: any) {

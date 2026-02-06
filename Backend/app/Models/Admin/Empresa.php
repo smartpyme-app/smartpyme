@@ -561,6 +561,22 @@ class Empresa extends Model
     }
 
     /**
+     * Verificar si el módulo de lotes está activo para la empresa
+     */
+    public function isLotesActivo(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'lotes_activo', false);
+    }
+
+    /**
+     * Obtener la metodología de lotes (FIFO, LIFO, FEFO, Manual)
+     */
+    public function getLotesMetodologia(): string
+    {
+        return $this->getCustomConfigValue('configuraciones', 'lotes_metodologia', 'FIFO') ?: 'FIFO';
+    }
+
+    /**
      * Verificar si una columna está habilitada
      */
     public function isColumnEnabled($columnName)

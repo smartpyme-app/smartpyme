@@ -87,15 +87,14 @@ class TrasladosController extends Controller
          
         try {
 
-        if ($request->id_bodega == $request->id_bodega_de) {
-            return  Response()->json(['error' => 'Has seleccionado la misma sucursal.', 'code' => 400], 400);
+            if ($request->id_bodega == $request->id_bodega_de) {
+            throw new \Exception('Has seleccionado la misma sucursal.');
         }
 
         $producto = Producto::where('id', $request->id_producto)->with('composiciones')->firstOrFail();
         
-        // Si el producto tiene inventario por lotes, el lote_id es requerido
         if ($producto->inventario_por_lotes && !$request->lote_id) {
-            return Response()->json(['error' => 'Debe seleccionar un lote para este producto.', 'code' => 400], 400);
+            throw new \Exception('Debe seleccionar un lote para este producto.');
         }
         
         // Si tiene lote_id, verificar y procesar el lote
@@ -105,18 +104,14 @@ class TrasladosController extends Controller
             $loteOrigen->refresh(); // Asegurar que tenemos los datos más recientes
             
             if ($loteOrigen->id_bodega != $request->id_bodega_de) {
-                return Response()->json(['error' => 'El lote seleccionado no pertenece a la bodega de origen.', 'code' => 400], 400);
+                throw new \Exception('El lote seleccionado no pertenece a la bodega de origen.');
             }
             
-            // Convertir a float para comparación más precisa
             $stockDisponible = (float) $loteOrigen->stock;
             $cantidadRequerida = (float) $request->cantidad;
             
             if ($stockDisponible < $cantidadRequerida) {
-                return Response()->json([
-                    'error' => 'El lote no tiene stock suficiente. Stock disponible: ' . number_format($stockDisponible, 2) . ', Cantidad requerida: ' . number_format($cantidadRequerida, 2),
-                    'code' => 400
-                ], 400);
+                throw new \Exception('El lote no tiene stock suficiente. Stock disponible: ' . number_format($stockDisponible, 2) . ', Cantidad requerida: ' . number_format($cantidadRequerida, 2));
             }
             
             // Descontar del lote de origen (usar las variables ya convertidas)
@@ -129,11 +124,11 @@ class TrasladosController extends Controller
                 $loteDestino = Lote::findOrFail($request->lote_id_destino);
                 
                 if ($loteDestino->id_bodega != $request->id_bodega) {
-                    return Response()->json(['error' => 'El lote de destino no pertenece a la bodega de destino.', 'code' => 400], 400);
+                    throw new \Exception('El lote de destino no pertenece a la bodega de destino.');
                 }
                 
                 if ($loteDestino->id_producto != $producto->id) {
-                    return Response()->json(['error' => 'El lote de destino no corresponde al producto.', 'code' => 400], 400);
+                    throw new \Exception('El lote de destino no corresponde al producto.');
                 }
                 
                 $loteDestino->stock += $request->cantidad;
@@ -168,7 +163,7 @@ class TrasladosController extends Controller
         $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega)->first();
 
         if ($origen->stock < $request->cantidad) {
-            return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
+            throw new \Exception('La sucursal no tiene el stock suficiente.');
         }
 
         
@@ -184,7 +179,7 @@ class TrasladosController extends Controller
             $destino->kardex($traslado, $traslado->cantidad);
 
         }else{
-            return  Response()->json(['error' => 'Una de las sucursales no tiene inventario.', 'code' => 400], 400);
+            throw new \Exception('Una de las sucursales no tiene inventario.');
         }
 
         // Composiciones
@@ -210,7 +205,7 @@ class TrasladosController extends Controller
                 $destino->kardex($traslado, $cantidad);
 
             }else{
-                return  Response()->json(['error' => 'Una de las sucursales no tiene inventario.', 'code' => 400], 400);
+                throw new \Exception('Una de las sucursales no tiene inventario.');
             }
         }
       
@@ -240,6 +235,7 @@ class TrasladosController extends Controller
             'detalles.*.producto_id' => 'required|numeric',
             'detalles.*.cantidad' => 'required|numeric|min:0.01',
             'detalles.*.lote_id' => 'nullable|numeric|exists:lotes,id',
+            'detalles.*.lote_id_destino' => 'nullable|numeric|exists:lotes,id',
         ]);
 
         if ($request->origen_id == $request->destino_id) {
@@ -351,6 +347,9 @@ class TrasladosController extends Controller
                 if (isset($detalleData['lote_id']) && $detalleData['lote_id']) {
                     $traslado->lote_id = $detalleData['lote_id'];
                 }
+                if (isset($detalleData['lote_id_destino']) && $detalleData['lote_id_destino']) {
+                    $traslado->lote_id_destino = $detalleData['lote_id_destino'];
+                }
                 $traslado->save();
                 
                 // Actualizar inventarios
@@ -397,15 +396,18 @@ class TrasladosController extends Controller
         if ($traslado->lote_id) {
             $loteOrigen = Lote::find($traslado->lote_id);
             if ($loteOrigen) {
-                // Regresar stock al lote de origen
                 $loteOrigen->stock += $traslado->cantidad;
                 $loteOrigen->save();
                 
-                // Buscar y reducir stock del lote en destino
-                $loteDestino = Lote::where('id_producto', $producto->id)
-                    ->where('id_bodega', $traslado->id_bodega)
-                    ->where('numero_lote', $loteOrigen->numero_lote)
-                    ->first();
+                // Usar lote_id_destino si se guardó; si no, buscar por numero_lote
+                if ($traslado->lote_id_destino) {
+                    $loteDestino = Lote::find($traslado->lote_id_destino);
+                } else {
+                    $loteDestino = Lote::where('id_producto', $producto->id)
+                        ->where('id_bodega', $traslado->id_bodega)
+                        ->where('numero_lote', $loteOrigen->numero_lote)
+                        ->first();
+                }
                 
                 if ($loteDestino) {
                     $loteDestino->stock -= $traslado->cantidad;
@@ -437,7 +439,7 @@ class TrasladosController extends Controller
             $destino->kardex($traslado, $traslado->cantidad);
 
         }else{
-            return  Response()->json(['error' => 'Una de las sucursales no tiene inventario.', 'code' => 400], 400);
+            throw new \Exception('Una de las sucursales no tiene inventario.');
         }
 
         // Composiciones
@@ -463,7 +465,7 @@ class TrasladosController extends Controller
                 $destino->kardex($traslado, $cantidad);
 
             }else{
-                return  Response()->json(['error' => 'Una de las sucursales no tiene inventario.', 'code' => 400], 400);
+                throw new \Exception('Una de las sucursales no tiene inventario.');
             }
         }
 

@@ -219,13 +219,7 @@ class Inventario extends Model {
             $empresa = $producto->empresa ?? null;
         }
 
-        $lotesActivo = false;
-        if ($empresa) {
-            $customEmpresa = is_string($empresa->custom_empresa) 
-                ? json_decode($empresa->custom_empresa, true) 
-                : $empresa->custom_empresa;
-            $lotesActivo = $customEmpresa['configuraciones']['lotes_activo'] ?? false;
-        }
+        $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
 
         // Si el producto no usa lotes o los lotes no están activos, usar stock tradicional
         if (!$producto->inventario_por_lotes || !$lotesActivo) {

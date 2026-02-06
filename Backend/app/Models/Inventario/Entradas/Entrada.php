@@ -87,17 +87,9 @@ class Entrada extends Model {
     {
         $producto = Producto::findOrFail($detalle->id_producto);
         
-        // Verificar si la empresa tiene lotes activos
         $empresa = Empresa::find($this->id_empresa);
-        $lotesActivo = false;
-        if ($empresa && $empresa->custom_empresa) {
-            $customConfig = is_string($empresa->custom_empresa) 
-                ? json_decode($empresa->custom_empresa, true) 
-                : $empresa->custom_empresa;
-            $lotesActivo = $customConfig['configuraciones']['lotes_activo'] ?? false;
-        }
+        $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
         
-        // Si el producto tiene inventario por lotes y lotes está activo
         if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
             // Actualizar stock del lote
             $lote = Lote::find($detalle->lote_id);
@@ -165,17 +157,9 @@ class Entrada extends Model {
     {
         $producto = Producto::findOrFail($detalle->id_producto);
         
-        // Verificar si la empresa tiene lotes activos
         $empresa = Empresa::find($this->id_empresa);
-        $lotesActivo = false;
-        if ($empresa && $empresa->custom_empresa) {
-            $customConfig = is_string($empresa->custom_empresa) 
-                ? json_decode($empresa->custom_empresa, true) 
-                : $empresa->custom_empresa;
-            $lotesActivo = $customConfig['configuraciones']['lotes_activo'] ?? false;
-        }
+        $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
         
-        // Si el producto tiene inventario por lotes y lotes está activo
         if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
             // Revertir stock del lote
             $lote = Lote::find($detalle->lote_id);

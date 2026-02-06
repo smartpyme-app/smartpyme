@@ -410,15 +410,7 @@ export class FacturacionCompraComponent implements OnInit {
         public onSubmit() {
             // Validar que productos con lotes tengan lote_id
             if (this.compra.detalles && this.compra.detalles.length > 0) {
-                const empresa = this.apiService.auth_user()?.empresa;
-                let lotesActivo = false;
-                if (empresa && empresa.custom_empresa) {
-                    const customConfig = typeof empresa.custom_empresa === 'string' 
-                        ? JSON.parse(empresa.custom_empresa) 
-                        : empresa.custom_empresa;
-                    lotesActivo = customConfig?.configuraciones?.lotes_activo === true;
-                }
-                
+                const lotesActivo = this.apiService.isLotesActivo();
                 if (lotesActivo) {
                     for (let detalle of this.compra.detalles) {
                         if (detalle.inventario_por_lotes && !detalle.lote_id) {
