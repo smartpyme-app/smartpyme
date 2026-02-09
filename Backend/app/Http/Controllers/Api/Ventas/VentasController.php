@@ -24,6 +24,7 @@ use App\Models\Admin\Documento;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Lote;
 use App\Models\Inventario\Paquete;
 use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
@@ -348,6 +349,15 @@ class VentasController extends Controller
             // Anular venta y regresar stock
             if (($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')) {
 
+                // Si el detalle tiene lote_id, regresar stock al lote
+                if ($detalle->lote_id) {
+                    $lote = Lote::find($detalle->lote_id);
+                    if ($lote) {
+                        $lote->stock += $detalle->cantidad;
+                        $lote->save();
+                    }
+                }
+
                 if ($inventario) {
                     $inventario->stock += $detalle->cantidad;
                     $inventario->save();
@@ -375,6 +385,15 @@ class VentasController extends Controller
             }
             // Cancelar anulación de venta y descargar stock
             if (($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')) {
+                // Si el detalle tiene lote_id, descontar del lote
+                if ($detalle->lote_id) {
+                    $lote = Lote::find($detalle->lote_id);
+                    if ($lote && $lote->stock >= $detalle->cantidad) {
+                        $lote->stock -= $detalle->cantidad;
+                        $lote->save();
+                    }
+                }
+                
                 // Aplicar stock
                 if ($inventario) {
                     $inventario->stock -= $detalle->cantidad;
@@ -480,9 +499,10 @@ class VentasController extends Controller
 
         try {
 
-            // Obtener la empresa para verificar configuración de vender sin stock
+            // Obtener la empresa para verificar configuración de vender sin stock y lotes
             $empresa = Empresa::findOrFail(Auth::user()->id_empresa);
             $puedeVenderSinStock = $empresa->vender_sin_stock == 1;
+            $lotesActivo = $empresa->isLotesActivo();
 
             if ($request->id)
                 $venta = Venta::findOrFail($request->id);
@@ -588,13 +608,100 @@ class VentasController extends Controller
                         }
                     }
 
-                    // Restar inventario del producto principal
-                    $inventario = Inventario::where('id_producto', $det['id_producto'])
-                        ->where('id_bodega', $venta->id_bodega)->first();
-                    if ($inventario) {
-                        $inventario->stock -= $det['cantidad'];
-                        $inventario->save();
-                        $inventario->kardex($venta, $det['cantidad'], $det['precio']);
+                    // Verificar si el producto tiene inventario por lotes (y la empresa tiene lotes activos)
+                    $producto = Producto::find($det['id_producto']);
+                    $loteSeleccionado = null;
+                    
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo) {
+                        $empresa = $empresa ?: \App\Models\Admin\Empresa::find($venta->id_empresa);
+                        $metodologia = $empresa->getLotesMetodologia();
+                        
+                        // Si se especificó un lote manualmente, usarlo
+                        if (isset($det['lote_id']) && $det['lote_id']) {
+                            $loteSeleccionado = \App\Models\Inventario\Lote::find($det['lote_id']);
+                        } else {
+                            // Si la metodología es Manual, no seleccionar automáticamente
+                            if ($metodologia === 'Manual') {
+                                $loteSeleccionado = null;
+                            } else {
+                                // Seleccionar lote automáticamente según metodología
+                                $lotesQuery = \App\Models\Inventario\Lote::where('id_producto', $det['id_producto'])
+                                    ->where('id_bodega', $venta->id_bodega)
+                                    ->where('stock', '>', 0);
+                                
+                                switch ($metodologia) {
+                                    case 'FIFO':
+                                        $loteSeleccionado = $lotesQuery->orderBy('created_at', 'asc')->first();
+                                        break;
+                                    case 'LIFO':
+                                        $loteSeleccionado = $lotesQuery->orderBy('created_at', 'desc')->first();
+                                        break;
+                                    case 'FEFO':
+                                        // Primero en vencer, primero en salir (query sin mutar para fallback FIFO)
+                                        $loteSeleccionado = (clone $lotesQuery)
+                                            ->whereNotNull('fecha_vencimiento')
+                                            ->orderBy('fecha_vencimiento', 'asc')
+                                            ->first();
+                                        if (!$loteSeleccionado) {
+                                            $loteSeleccionado = $lotesQuery->orderBy('created_at', 'asc')->first();
+                                        }
+                                        break;
+                                    default:
+                                        $loteSeleccionado = $lotesQuery->orderBy('created_at', 'asc')->first();
+                                }
+                            }
+                        }
+                        
+                        if ($loteSeleccionado) {
+                            // Validar stock del lote
+                            if ($loteSeleccionado->stock < $det['cantidad']) {
+                                if (!$puedeVenderSinStock) {
+                                    DB::rollback();
+                                    return response()->json([
+                                        'error' => "No hay suficiente stock en el lote {$loteSeleccionado->numero_lote}. Stock disponible: {$loteSeleccionado->stock}, Cantidad requerida: {$det['cantidad']}"
+                                    ], 400);
+                                }
+                            }
+                            
+                            // Descontar del lote
+                            $loteSeleccionado->stock -= $det['cantidad'];
+                            $loteSeleccionado->save();
+                            
+                            // Guardar lote_id en el detalle
+                            $detalle->lote_id = $loteSeleccionado->id;
+                            $detalle->save();
+                            
+                            // También actualizar inventario tradicional para mantener consistencia
+                            $inventario = Inventario::where('id_producto', $det['id_producto'])
+                                ->where('id_bodega', $venta->id_bodega)->first();
+                            if ($inventario) {
+                                $inventario->stock -= $det['cantidad'];
+                                $inventario->save();
+                                $inventario->kardex($venta, $det['cantidad'], $det['precio']);
+                            }
+                        } else {
+                            // No hay lotes disponibles o no se seleccionó (metodología Manual sin lote_id)
+                            if ($metodologia === 'Manual' && !isset($det['lote_id'])) {
+                                DB::rollback();
+                                return response()->json([
+                                    'error' => "Debe seleccionar un lote para el producto: {$producto->nombre} (Metodología Manual)"
+                                ], 400);
+                            } elseif (!$puedeVenderSinStock) {
+                                DB::rollback();
+                                return response()->json([
+                                    'error' => "No hay lotes disponibles con stock para el producto: {$producto->nombre}"
+                                ], 400);
+                            }
+                        }
+                    } else {
+                        // Restar inventario del producto principal (sin lotes)
+                        $inventario = Inventario::where('id_producto', $det['id_producto'])
+                            ->where('id_bodega', $venta->id_bodega)->first();
+                        if ($inventario) {
+                            $inventario->stock -= $det['cantidad'];
+                            $inventario->save();
+                            $inventario->kardex($venta, $det['cantidad'], $det['precio']);
+                        }
                     }
 
                     // Inventario compuestos
@@ -609,45 +716,129 @@ class VentasController extends Controller
                             
                             // Validar stock de productos compuestos solo si no es servicio
                             if ($productoCompuesto && $productoCompuesto->tipo != 'Servicio') {
-                                $inventarioComp = Inventario::where('id_producto', $comp['id_compuesto'])
-                                    ->where('id_bodega', $venta->id_bodega)->first();
-                                
                                 $cantidadCompRequerida = $det['cantidad'] * $comp['cantidad'];
                                 
-                                if ($inventarioComp) {
-                                    $stockDisponibleComp = $inventarioComp->stock;
+                                // Verificar si el producto compuesto tiene lotes activos
+                                if ($productoCompuesto->inventario_por_lotes && $lotesActivo) {
+                                    $metodologia = $empresa->getLotesMetodologia();
                                     
-                                    // Si no se permite vender sin stock y no hay suficiente stock
-                                    if (!$puedeVenderSinStock && $stockDisponibleComp < $cantidadCompRequerida) {
-                                        DB::rollback();
-                                        return response()->json([
-                                            'error' => "No hay suficiente stock para el producto compuesto: {$productoCompuesto->nombre}. Stock disponible: {$stockDisponibleComp}, Cantidad requerida: {$cantidadCompRequerida}"
-                                        ], 400);
+                                    // Buscar lote para el producto compuesto
+                                    $loteCompuesto = null;
+                                    if (isset($comp['lote_id']) && $comp['lote_id']) {
+                                        $loteCompuesto = \App\Models\Inventario\Lote::find($comp['lote_id']);
+                                    } else {
+                                        if ($metodologia !== 'Manual') {
+                                            $lotesQuery = \App\Models\Inventario\Lote::where('id_producto', $comp['id_compuesto'])
+                                                ->where('id_bodega', $venta->id_bodega)
+                                                ->where('stock', '>', 0);
+                                            
+                                            switch ($metodologia) {
+                                                case 'FIFO':
+                                                    $loteCompuesto = $lotesQuery->orderBy('created_at', 'asc')->first();
+                                                    break;
+                                                case 'LIFO':
+                                                    $loteCompuesto = $lotesQuery->orderBy('created_at', 'desc')->first();
+                                                    break;
+                                                case 'FEFO':
+                                                    $loteCompuesto = (clone $lotesQuery)
+                                                        ->whereNotNull('fecha_vencimiento')
+                                                        ->orderBy('fecha_vencimiento', 'asc')
+                                                        ->first();
+                                                    if (!$loteCompuesto) {
+                                                        $loteCompuesto = $lotesQuery->orderBy('created_at', 'asc')->first();
+                                                    }
+                                                    break;
+                                                default:
+                                                    $loteCompuesto = $lotesQuery->orderBy('created_at', 'asc')->first();
+                                            }
+                                        }
+                                    }
+                                    
+                                    if ($loteCompuesto) {
+                                        // Validar stock del lote del producto compuesto
+                                        if ($loteCompuesto->stock < $cantidadCompRequerida) {
+                                            if (!$puedeVenderSinStock) {
+                                                DB::rollback();
+                                                return response()->json([
+                                                    'error' => "No hay suficiente stock en el lote {$loteCompuesto->numero_lote} del producto compuesto: {$productoCompuesto->nombre}. Stock disponible: {$loteCompuesto->stock}, Cantidad requerida: {$cantidadCompRequerida}"
+                                                ], 400);
+                                            }
+                                        }
+                                        
+                                        // Descontar del lote del producto compuesto
+                                        $loteCompuesto->stock -= $cantidadCompRequerida;
+                                        $loteCompuesto->save();
+                                    } else {
+                                        // Si no hay lote disponible, validar inventario tradicional
+                                        $inventarioComp = Inventario::where('id_producto', $comp['id_compuesto'])
+                                            ->where('id_bodega', $venta->id_bodega)->first();
+                                        
+                                        if ($inventarioComp) {
+                                            $stockDisponibleComp = $inventarioComp->stock;
+                                            
+                                            if (!$puedeVenderSinStock && $stockDisponibleComp < $cantidadCompRequerida) {
+                                                DB::rollback();
+                                                return response()->json([
+                                                    'error' => "No hay suficiente stock para el producto compuesto: {$productoCompuesto->nombre}. Stock disponible: {$stockDisponibleComp}, Cantidad requerida: {$cantidadCompRequerida}"
+                                                ], 400);
+                                            }
+                                        } else {
+                                            if (!$puedeVenderSinStock) {
+                                                DB::rollback();
+                                                return response()->json([
+                                                    'error' => "No existe inventario para el producto compuesto: {$productoCompuesto->nombre} en la bodega seleccionada"
+                                                ], 400);
+                                            }
+                                        }
                                     }
                                 } else {
-                                    // Si no existe inventario y no se permite vender sin stock
-                                    if (!$puedeVenderSinStock) {
-                                        DB::rollback();
-                                        return response()->json([
-                                            'error' => "No existe inventario para el producto compuesto: {$productoCompuesto->nombre} en la bodega seleccionada"
-                                        ], 400);
+                                    // Producto compuesto sin lotes, validar inventario tradicional
+                                    $inventarioComp = Inventario::where('id_producto', $comp['id_compuesto'])
+                                        ->where('id_bodega', $venta->id_bodega)->first();
+                                    
+                                    if ($inventarioComp) {
+                                        $stockDisponibleComp = $inventarioComp->stock;
+                                        
+                                        if (!$puedeVenderSinStock && $stockDisponibleComp < $cantidadCompRequerida) {
+                                            DB::rollback();
+                                            return response()->json([
+                                                'error' => "No hay suficiente stock para el producto compuesto: {$productoCompuesto->nombre}. Stock disponible: {$stockDisponibleComp}, Cantidad requerida: {$cantidadCompRequerida}"
+                                            ], 400);
+                                        }
+                                    } else {
+                                        if (!$puedeVenderSinStock) {
+                                            DB::rollback();
+                                            return response()->json([
+                                                'error' => "No existe inventario para el producto compuesto: {$productoCompuesto->nombre} en la bodega seleccionada"
+                                            ], 400);
+                                        }
                                     }
                                 }
-                            }
-                            
-                            // Restar inventario del producto compuesto
-                            $inventario = Inventario::where('id_producto', $comp['id_compuesto'])
-                                ->where('id_bodega', $venta->id_bodega)->first();
+                                
+                                // Restar inventario del producto compuesto (tradicional, para mantener consistencia)
+                                $inventario = Inventario::where('id_producto', $comp['id_compuesto'])
+                                    ->where('id_bodega', $venta->id_bodega)->first();
 
-                            if ($inventario) {
-                                $inventario->stock -= $det['cantidad'] * $comp['cantidad'];
-                                $inventario->save();
-                                $inventario->kardex($venta, ($det['cantidad'] * $comp['cantidad']));
+                                if ($inventario) {
+                                    $inventario->stock -= $cantidadCompRequerida;
+                                    $inventario->save();
+                                    $inventario->kardex($venta, $cantidadCompRequerida);
+                                }
                             }
                         }
                     }
                 }
             }
+
+            // Recalcular totales de la venta desde los detalles guardados (subtotal, descuento, gravada, exenta, no_sujeta)
+            $venta->load('detalles');
+            $venta->sub_total = round($venta->detalles->sum('total'), 4);
+            $venta->descuento = round($venta->detalles->sum('descuento'), 4);
+            $venta->gravada = round($venta->detalles->sum('gravada'), 4);
+            $venta->exenta = round($venta->detalles->sum('exenta'), 4);
+            $venta->no_sujeta = round($venta->detalles->sum('no_sujeta'), 4);
+            $venta->total_costo = round($venta->detalles->sum('total_costo'), 4);
+            $venta->save();
 
             // Evento
             if ($request->id_evento) {

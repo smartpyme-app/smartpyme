@@ -57,6 +57,7 @@ class Empresa extends Model
         'editar_descripcion_venta',
         'impresion_en_facturacion',
         'vendedor_detalle_venta',
+        'cambiar_tipo_impuesto_venta',
         'vendedor_asignado',
         'venta_consigna',
         'plan',
@@ -498,7 +499,28 @@ class Empresa extends Model
             return $this->initializeCustomConfig();
         }
 
-        return $this->custom_empresa;
+        $config = $this->custom_empresa;
+        // Asegurar que siempre sea array (evitar "Cannot use object of type stdClass as array")
+        return $this->ensureConfigArray($config);
+    }
+
+    /**
+     * Convierte config (array o stdClass) a array recursivamente.
+     * @return array|mixed
+     */
+    protected function ensureConfigArray($config)
+    {
+        if (is_array($config)) {
+            $result = [];
+            foreach ($config as $key => $value) {
+                $result[$key] = $this->ensureConfigArray($value);
+            }
+            return $result;
+        }
+        if ($config instanceof \stdClass) {
+            return $this->ensureConfigArray((array) $config);
+        }
+        return $config;
     }
 
     public function initializeCustomConfig()
@@ -508,12 +530,12 @@ class Empresa extends Model
                 'columna_proyecto' => false
                 // Para futuras columnas
             ],
-            'modulos' => (object)[],
-            'configuraciones' => (object)[
+            'modulos' => [],
+            'configuraciones' => [
                 'ticket_en_pdf' => false
                 // Para futuras configuraciones generales
             ],
-            'campos_personalizados' => (object)[]
+            'campos_personalizados' => []
             // Para futuros campos personalizados
         ];
 
@@ -557,6 +579,22 @@ class Empresa extends Model
         }
 
         return $config[$section][$key] ?? $default;
+    }
+
+    /**
+     * Verificar si el módulo de lotes está activo para la empresa
+     */
+    public function isLotesActivo(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'lotes_activo', false);
+    }
+
+    /**
+     * Obtener la metodología de lotes (FIFO, LIFO, FEFO, Manual)
+     */
+    public function getLotesMetodologia(): string
+    {
+        return $this->getCustomConfigValue('configuraciones', 'lotes_metodologia', 'FIFO') ?: 'FIFO';
     }
 
     /**

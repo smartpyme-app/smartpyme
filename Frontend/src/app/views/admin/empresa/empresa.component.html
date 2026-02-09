@@ -2,8 +2,8 @@
     <h2 class="page-heading" (click)="loadAll()">Cuenta</h2>
 </section>
 
-<tabset>
-    <tab heading="Datos de mi empresa">
+<tabset #tabset>
+    <tab heading="Datos de mi empresa" (selectTab)="onTabSelect($event)">
         <form name="form" (ngSubmit)="onSubmit()">
             <section class="bg-white p-4 rounded mb-3">
                 <div class="row justify-content-center">
@@ -312,7 +312,7 @@
             </section>
         </form>
     </tab>
-    <tab heading="Preferencias del sistema">
+    <tab heading="Preferencias del sistema" (selectTab)="onTabSelect($event)">
         <form name="form" (ngSubmit)="onSubmit()">
             <section class="bg-white p-4 rounded mb-3">
                 <div class="row mt-3">
@@ -503,11 +503,12 @@
                             [value]="getVersionFacturacion()"
                             (change)="updateVersionFacturacion($any($event.target).value)"
                             name="version_facturacion">
-                            <option value="original">Original (Los precios no incluyen IVA, se agrega al final.)</option>
-                            <option value="v2">V2 (Los precios ya incluyen IVA, se desglosa automáticamente.)</option>
+                            <option value="original">Sin IVA (Los precios no incluyen IVA, se agrega al final.)</option>
+                            <option value="v2">Con IVA (Los precios ya incluyen IVA, se desglosa automáticamente.)</option>
                         </select>
                     </div>
 
+                    
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Mostrar campos contables (Tipo de operación y Tipo de ingreso) en ventas.</p>
                         <div class="form-switch bg-light-info rounded">
@@ -529,12 +530,22 @@
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Podrás seleccionar un vendedor por cada detalle de venta.</p>
+                        <p>Permitir seleccionar un vendedor por cada detalle de venta.</p>
                         <div class="form-switch bg-light-info rounded">
                             <label for="vendedor_detalle_venta">Vendedor por detalle</label>
                             <input class="form-check-input float-end" type="checkbox" role="switch"
                                 (change)="onSubmit()" [(ngModel)]="empresa.vendedor_detalle_venta"
                                 name="vendedor_detalle_venta">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Permitir cambiar el tipo de impuesto (Gravada, Exenta, No sujeta) por cada detalle de venta.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="cambiar_tipo_impuesto_venta">Cambiar tipo de impuesto en venta</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.cambiar_tipo_impuesto_venta"
+                                name="cambiar_tipo_impuesto_venta">
                         </div>
                     </div>
 
@@ -566,6 +577,63 @@
                                 (change)="onSubmit()" [(ngModel)]="empresa.venta_consigna" name="venta_consigna">
                         </div>
                     </div>
+                    <hr>
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Configuraciones de Lotes</h4>
+                        <div class="form-group col-md-12 col-xl-6 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="lotes_activo">Activar módulo de lotes</label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="lotes_activo" 
+                                    [checked]="isLotesActivo()"
+                                    (change)="toggleLotesActivo()" 
+                                    name="lotes_activo">
+                            </div>
+                            <small class="text-muted">
+                                Habilita el uso de control de inventario por lotes en toda la empresa.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 col-xl-6" *ngIf="isLotesActivo()">
+                            <label for="lotes_metodologia">Metodología de selección de lotes</label>
+                            <select class="form-select" 
+                                id="lotes_metodologia"
+                                [value]="getLotesMetodologia()"
+                                (change)="updateLotesMetodologia($any($event.target).value)"
+                                name="lotes_metodologia">
+                                <option value="Manual">Manual (Selección manual del lote)</option>
+                                <option value="FIFO">FIFO - First In First Out (Primero en entrar, primero en salir)</option>
+                                <option value="LIFO">LIFO - Last In First Out (Último en entrar, primero en salir)</option>
+                                <option value="FEFO">FEFO - First Expired First Out (Primero en vencer, primero en salir)</option>
+                            </select>
+                            <small class="text-muted">
+                                Define cómo se seleccionarán automáticamente los lotes al realizar ventas.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 col-xl-6" *ngIf="isLotesActivo()">
+                            <label for="lotes_dias_anticipacion">Días de anticipación para alerta de vencimiento</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" 
+                                    id="lotes_dias_anticipacion"
+                                    [value]="getLotesDiasAnticipacion()"
+                                    (change)="updateLotesDiasAnticipacion($any($event.target).value)"
+                                    name="lotes_dias_anticipacion"
+                                    min="1" max="365">
+                                <span class="input-group-text">días</span>
+                            </div>
+                            <small class="text-muted">
+                                Número de días antes del vencimiento para mostrar alertas de productos próximos a vencer.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 mt-3" *ngIf="isLotesActivo()">
+                            <div class="d-flex justify-content-between mt-3">
+                                <app-activar-lotes-masivo></app-activar-lotes-masivo>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Activa o desactiva el inventario por lotes por categorías.
+                            </small>
+                        </div>
+                    </div>
+
                     <hr>
                     <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
                     <div class="form-group col-md-6">
@@ -753,7 +821,7 @@
         </section>
 
     </tab>
-    <tab heading="Integraciones">
+    <tab heading="Integraciones" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
 
             <div class="alert alert-info mb-4">
@@ -801,7 +869,7 @@
             </div>
         </section>
     </tab>
-    <tab heading="WooCommerce">
+    <tab heading="WooCommerce" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
             <div class="row">
                 <div class="col-12">
@@ -919,7 +987,7 @@
             </div>
         </section>
     </tab>
-    <tab heading="Shopify">
+    <tab heading="Shopify" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
             <div class="row">
                 <div class="col-12">

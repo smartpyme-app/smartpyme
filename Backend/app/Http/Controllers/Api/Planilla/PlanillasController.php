@@ -910,10 +910,16 @@ class PlanillasController extends Controller
 
     public function updateDetailsPayroll(Request $request, $id)
     {
-        $request->validate([
-            'horas_extra' => 'nullable|numeric|min:0',
-            'monto_horas_extra' => 'nullable|numeric|min:0',
-            'comisiones' => 'nullable|numeric|min:0',
+            $request->validate([
+                'horas_extra' => 'nullable|numeric|min:0',
+                'monto_horas_extra' => 'nullable|numeric|min:0',
+                'detalle_horas_extra' => 'nullable|array',
+                'detalle_horas_extra.diurna' => 'nullable|numeric|min:0',
+                'detalle_horas_extra.nocturna' => 'nullable|numeric|min:0',
+                'detalle_horas_extra.dia_descanso' => 'nullable|numeric|min:0',
+                'detalle_horas_extra.dia_descanso_dias' => 'nullable|integer|min:0',
+                'detalle_horas_extra.dia_asueto' => 'nullable|numeric|min:0',
+                'comisiones' => 'nullable|numeric|min:0',
             'bonificaciones' => 'nullable|numeric|min:0',
             'otros_ingresos' => 'nullable|numeric|min:0',
             'dias_laborados' => 'nullable|numeric|min:0|max:31',
@@ -930,6 +936,7 @@ class PlanillasController extends Controller
 
             $detalle = PlanillaDetalle::findOrFail($id);
             $planilla = $detalle->planilla;
+            $planilla->load('empresa');
 
             // Verificar que la planilla esté en estado editable
             if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
@@ -956,7 +963,6 @@ class PlanillasController extends Controller
 
             // Actualizar campos básicos
             $detalle->dias_laborados = $request->dias_laborados ?? $diasReferencia;
-            $detalle->horas_extra = $request->horas_extra ?? 0;
             $detalle->comisiones = $request->comisiones ?? 0;
             $detalle->bonificaciones = $request->bonificaciones ?? 0;
             $detalle->otros_ingresos = $request->otros_ingresos ?? 0;
@@ -1001,12 +1007,44 @@ class PlanillasController extends Controller
             }
             $detalle->salario_devengado = round($salarioDevengado, 2);
 
-            // Calcular monto de horas extra si aplica
-            if ($detalle->horas_extra > 0) {
+            // Horas extra: El Salvador con detalle por tipo (diurna, nocturna, día descanso, día asueto)
+            $esElSalvador = ($planilla->empresa->cod_pais ?? '') === 'SV';
+            $detalleHorasExtra = $request->detalle_horas_extra;
+
+            if ($esElSalvador && $detalleHorasExtra && is_array($detalleHorasExtra)) {
                 $valorHoraNormal = $salarioBaseAjustado / $diasReferencia / 8;
-                $detalle->monto_horas_extra = round($detalle->horas_extra * ($valorHoraNormal * 1.25), 2);
+                $salarioDiario = 8 * $valorHoraNormal;
+                // Art. 169 diurna 100% recargo; Art. 168+169 nocturna 100%+25%; Art. 175 día descanso 50%+día compensatorio; Art. 192 asueto 100% recargo
+                $horasDiurna = (float) ($detalleHorasExtra['diurna'] ?? 0);
+                $horasNocturna = (float) ($detalleHorasExtra['nocturna'] ?? 0);
+                $horasDiaDescanso = (float) ($detalleHorasExtra['dia_descanso'] ?? 0);
+                $horasDiaAsueto = (float) ($detalleHorasExtra['dia_asueto'] ?? 0);
+                $diaDescansoDias = (int) ($detalleHorasExtra['dia_descanso_dias'] ?? 0);
+                if ($horasDiaDescanso > 0 && $diaDescansoDias <= 0) {
+                    $diaDescansoDias = 1; // compat: si hay horas pero no días, 1 día
+                }
+                $detalle->horas_extra = round($horasDiurna + $horasNocturna + $horasDiaDescanso + $horasDiaAsueto, 2);
+                $montoDiurna = $horasDiurna * ($valorHoraNormal * 2);       // 100% recargo = pago doble (Art. 169)
+                $montoNocturna = $horasNocturna * ($valorHoraNormal * 2.25); // 100% + 25% nocturnidad (Art. 168)
+                $montoDiaDescanso = $horasDiaDescanso * ($valorHoraNormal * 1.5) + $diaDescansoDias * $salarioDiario; // Art. 175: 50% + día compensatorio
+                $montoDiaAsueto = $horasDiaAsueto * ($valorHoraNormal * 2);   // Art. 192: 100% recargo = doble
+                $detalle->monto_horas_extra = round($montoDiurna + $montoNocturna + $montoDiaDescanso + $montoDiaAsueto, 2);
+                $detalle->detalle_horas_extra = [
+                    'diurna' => $horasDiurna,
+                    'nocturna' => $horasNocturna,
+                    'dia_descanso' => $horasDiaDescanso,
+                    'dia_descanso_dias' => $diaDescansoDias,
+                    'dia_asueto' => $horasDiaAsueto,
+                ];
             } else {
-                $detalle->monto_horas_extra = 0;
+                $detalle->horas_extra = $request->horas_extra ?? 0;
+                if ($detalle->horas_extra > 0) {
+                    $valorHoraNormal = $salarioBaseAjustado / $diasReferencia / 8;
+                    $detalle->monto_horas_extra = round($detalle->horas_extra * ($valorHoraNormal * 1.25), 2);
+                } else {
+                    $detalle->monto_horas_extra = 0;
+                }
+                $detalle->detalle_horas_extra = null;
             }
 
             // Calcular total de ingresos
@@ -1823,7 +1861,7 @@ class PlanillasController extends Controller
                             'referencia' => $planilla->codigo,
                             'concepto' => "Salario neto - {$nombreEmpleado}",
                             'tipo' => 'Sueldos y Salarios',
-                            'estado' => 'Pagado',
+                            'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                             'forma_pago' => 'Transferencia',
                             'total' => $sueldoNeto,
                             'id_proveedor' => $proveedor->id,
@@ -1852,7 +1890,7 @@ class PlanillasController extends Controller
                     'referencia' => $planilla->codigo,
                     'concepto' => "Aporte patronal ISSS - Planilla {$planilla->codigo}",
                     'tipo' => 'ISSS Patronal',
-                    'estado' => 'Pagado',
+                    'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                     'forma_pago' => 'Transferencia',
                     'total' => $totalISSS_Patronal,
                     'id_proveedor' => $proveedor->id,
@@ -1879,7 +1917,7 @@ class PlanillasController extends Controller
                     'referencia' => $planilla->codigo,
                     'concepto' => "Aporte patronal AFP - Planilla {$planilla->codigo}",
                     'tipo' => 'AFP Patronal',
-                    'estado' => 'Pagado',
+                    'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                     'forma_pago' => 'Transferencia',
                     'total' => $totalAFP_Patronal,
                     'id_proveedor' => $proveedor->id,
