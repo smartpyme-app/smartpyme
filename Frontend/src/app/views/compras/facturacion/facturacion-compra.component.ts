@@ -408,6 +408,19 @@ export class FacturacionCompraComponent implements OnInit {
 
     // Guardar compra
         public onSubmit() {
+            // Validar que productos con lotes tengan lote_id
+            if (this.compra.detalles && this.compra.detalles.length > 0) {
+                const lotesActivo = this.apiService.isLotesActivo();
+                if (lotesActivo) {
+                    for (let detalle of this.compra.detalles) {
+                        if (detalle.inventario_por_lotes && !detalle.lote_id) {
+                            this.alertService.error(`El producto "${detalle.nombre_producto}" requiere seleccionar o crear un lote antes de guardar la compra.`);
+                            this.saving = false;
+                            return;
+                        }
+                    }
+                }
+            }
 
             this.saving = true;
             if(this.duplicarcompra){

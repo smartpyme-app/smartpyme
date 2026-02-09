@@ -24,7 +24,7 @@ class Kardex extends Model {
         'id_usuario',
     );
 
-    protected $appends = ['nombre_usuario', 'nombre_producto', 'modelo', 'modelo_detalle'];
+    protected $appends = ['nombre_usuario', 'nombre_producto', 'modelo', 'modelo_detalle', 'numero_lote'];
 
     public function getNombreUsuarioAttribute()
     {
@@ -116,6 +116,64 @@ class Kardex extends Model {
 
     public function usuario(){
         return $this->belongsTo('App\Models\User','id_usuario');
+    }
+
+    /**
+     * Obtiene el número de lote si el movimiento tiene un lote asociado
+     */
+    public function getNumeroLoteAttribute()
+    {
+        // Si es un ajuste, obtener el lote desde el ajuste
+        if (strpos($this->detalle, 'Ajuste') !== false || strpos($this->detalle, 'ajuste') !== false) {
+            $ajuste = \App\Models\Inventario\Ajuste::find($this->referencia);
+            if ($ajuste && $ajuste->lote_id) {
+                $lote = \App\Models\Inventario\Lote::find($ajuste->lote_id);
+                return $lote ? ($lote->numero_lote ?: 'Sin número') : null;
+            }
+        }
+        
+        // Si es un traslado, obtener el lote desde el traslado
+        if (strpos($this->detalle, 'Traslado') !== false || strpos($this->detalle, 'traslado') !== false) {
+            $traslado = \App\Models\Inventario\Traslado::find($this->referencia);
+            if ($traslado && $traslado->lote_id) {
+                $lote = \App\Models\Inventario\Lote::find($traslado->lote_id);
+                return $lote ? ($lote->numero_lote ?: 'Sin número') : null;
+            }
+        }
+        
+        // Si es una venta, obtener el lote desde el detalle de venta
+        if ($this->detalle == 'Venta' || $this->detalle == 'Venta a consigna' || $this->detalle == 'Venta Anulada') {
+            $venta = \App\Models\Ventas\Venta::find($this->referencia);
+            if ($venta) {
+                // Buscar el detalle de venta que corresponda a este producto
+                $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $venta->id)
+                    ->where('id_producto', $this->id_producto)
+                    ->whereNotNull('lote_id')
+                    ->first();
+                if ($detalleVenta && $detalleVenta->lote_id) {
+                    $lote = \App\Models\Inventario\Lote::find($detalleVenta->lote_id);
+                    return $lote ? ($lote->numero_lote ?: 'Sin número') : null;
+                }
+            }
+        }
+        
+        // Si es una compra, obtener el lote desde el detalle de compra
+        if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
+            $compra = \App\Models\Compras\Compra::find($this->referencia);
+            if ($compra) {
+                // Buscar el detalle de compra que corresponda a este producto
+                $detalleCompra = \App\Models\Compras\Detalle::where('id_compra', $compra->id)
+                    ->where('id_producto', $this->id_producto)
+                    ->whereNotNull('lote_id')
+                    ->first();
+                if ($detalleCompra && $detalleCompra->lote_id) {
+                    $lote = \App\Models\Inventario\Lote::find($detalleCompra->lote_id);
+                    return $lote ? ($lote->numero_lote ?: 'Sin número') : null;
+                }
+            }
+        }
+        
+        return null;
     }
 
 }

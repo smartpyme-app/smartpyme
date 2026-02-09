@@ -32,6 +32,7 @@ import { InventarioEntradaComponent } from '@views/inventario/entradas/entrada/i
 import { InventarioSalidaComponent } from '@views/inventario/salidas/salida/inventario-salida.component';
 import { EntradaDetalleComponent } from '@views/inventario/entradas/entrada-detalle/entrada-detalle.component';
 import { SalidaDetalleComponent } from '@views/inventario/salidas/salida-detalle/salida-detalle.component';
+import { LotesComponent } from '@views/inventario/lotes/lotes.component';
 
 const routes: Routes = [
   {
@@ -63,6 +64,8 @@ const routes: Routes = [
         
         { path: 'ajustes', component: AjustesComponent, title: 'Ajustes'  },
         { path: 'ajuste/:id', component: AjusteComponent, title: 'Ajuste'  },
+        
+        { path: 'lotes', component: LotesComponent, title: 'Lotes'  },
         
         { path: 'servicios', canActivate: [CitasGuard], component: ServiciosComponent, title: 'Servicios'},
         { path: 'servicio/crear', canActivate: [CitasGuard], component: ProductoComponent, title: 'Servicio' },
