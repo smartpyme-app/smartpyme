@@ -4,14 +4,16 @@
 
 export const environment = {
   production: false,
-      // API_URL: 'http://localhost:8000',
-//  API_URL: 'https://api.smartpyme.site',
-  API_URL: 'https://api.smartpyme.test',
-  // API_URL: 'https://apiconta.smartpyme.site',
-  // API_URL: 'https://apitest.smartpyme.site',
-  APP_URL: 'http://localhost:4200',
-      // API_URL: 'https://2arwsygm3n.us-east-2.awsapprunner.com',
-      // APP_URL: 'https://d37ls7cx9pvmle.cloudfront.net',
+  API_URL: 'https://kpjeyxmszj.us-east-2.awsapprunner.com',
+  APP_URL: 'https://smartpyme-assets-prod-320958346619.s3.us-east-2.amazonaws.com/public',
+//       // API_URL: 'http://localhost:8000',
+// //  API_URL: 'https://api.smartpyme.site',
+//   API_URL: 'https://api.smartpyme.test',
+//   // API_URL: 'https://apiconta.smartpyme.site',
+//   // API_URL: 'https://apitest.smartpyme.site',
+//   APP_URL: 'http://localhost:4200',
+//       // API_URL: 'https://2arwsygm3n.us-east-2.awsapprunner.com',
+//       // APP_URL: 'https://d37ls7cx9pvmle.cloudfront.net',
 };
 
 /*
