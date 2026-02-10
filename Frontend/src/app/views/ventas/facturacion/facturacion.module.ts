@@ -21,6 +21,12 @@ import { TiendaVentaCitasComponent } from './facturacion-tienda/citas/tienda-ven
 import { VentaDetallesComponent } from './facturacion-tienda/detalles/venta-detalles.component';
 import { MetodosDePagoComponent } from './facturacion-tienda/metodos-de-pago/metodos-de-pago.component';
 
+// V2 Components
+import { FacturacionV2Component } from './facturacion-tienda-v2/facturacion-v2.component';
+import { VentaDetallesV2Component } from './facturacion-tienda-v2/detalles/venta-detalles-v2.component';
+import { TiendaVentaBuscadorV2Component } from './facturacion-tienda-v2/buscador/tienda-venta-buscador-v2.component';
+import { TiendaVentaPaquetesV2Component } from './facturacion-tienda-v2/paquetes/tienda-venta-paquetes-v2.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -44,6 +50,11 @@ import { MetodosDePagoComponent } from './facturacion-tienda/metodos-de-pago/met
     TiendaVentaCitasComponent,
     VentaDetallesComponent,
     MetodosDePagoComponent,
+    // V2 Components
+    FacturacionV2Component,
+    VentaDetallesV2Component,
+    TiendaVentaBuscadorV2Component,
+    TiendaVentaPaquetesV2Component,
   ],
   exports: [
     FacturacionComponent,
@@ -54,6 +65,11 @@ import { MetodosDePagoComponent } from './facturacion-tienda/metodos-de-pago/met
     TiendaVentaCitasComponent,
     VentaDetallesComponent,
     MetodosDePagoComponent,
+    // V2 Components
+    FacturacionV2Component,
+    VentaDetallesV2Component,
+    TiendaVentaBuscadorV2Component,
+    TiendaVentaPaquetesV2Component,
   ]
 })
 export class FacturacionModule { }

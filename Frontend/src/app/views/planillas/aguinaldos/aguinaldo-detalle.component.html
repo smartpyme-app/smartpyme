@@ -1,0 +1,386 @@
+<section class="d-flex flex-column flex-md-row justify-content-between bg-white px-4 py-2 rounded mb-3 align-items-start align-items-md-center mt-3 gap-3">
+  <div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <h2 class="page-heading">Detalle de Aguinaldo</h2>
+      <span
+        class="badge"
+        [ngClass]="getEstadoBadgeClass(aguinaldo.estado)"
+      >
+        {{ getEstadoNombre(aguinaldo.estado) }}
+      </span>
+    </div>
+    <p class="text-muted mb-0" *ngIf="aguinaldo?.anio">
+      Año: {{ aguinaldo.anio }}
+    </p>
+    <div class="d-flex align-items-center gap-2 mt-2" *ngIf="aguinaldo?.anio && esBorrador()">
+      <label class="text-muted mb-0 small">Fecha de Cálculo:</label>
+      <input
+        type="date"
+        class="form-control form-control-sm"
+        style="width: auto;"
+        [value]="aguinaldo.fecha_calculo || (aguinaldo.anio + '-12-12')"
+        (change)="actualizarFechaCalculo($event)"
+        [disabled]="saving"
+        tooltip="Fecha límite para el cálculo del aguinaldo (por ley es 12 de diciembre)"
+      />
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 flex-wrap">
+    <button
+      *ngIf="esBorrador() && apiService.canCreate()"
+      (click)="openAgregarEmpleado(mAgregarEmpleado)"
+      class="btn btn-default"
+      tooltip="Agregar empleado"
+    >
+      <i class="fa fa-plus"></i> Agregar Empleado
+    </button>
+    <button
+      *ngIf="esBorrador() && apiService.canEdit()"
+      (click)="procesarPago()"
+      class="btn btn-primary"
+      [disabled]="procesando || detalles.length === 0"
+      tooltip="Procesar pago del aguinaldo"
+    >
+      <span *ngIf="procesando">
+        <i class="fa fa-spinner fa-spin"></i> Procesando...
+      </span>
+      <span *ngIf="!procesando">
+        <i class="fa fa-check"></i> Procesar Pago
+      </span>
+    </button>
+    <button class="btn btn-default text-danger" routerLink="/planilla/aguinaldos">
+      <i class="fa fa-arrow-left"></i> Regresar
+    </button>
+  </div>
+
+</section>
+
+
+<!-- Cards de Resumen -->
+<section class="bg-white p-4 rounded mb-3" *ngIf="!loading && aguinaldo.id">
+  <div class="row">
+    <div class="col-md-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <h6 class="card-title">Total Aguinaldos</h6>
+          <h3 class="mb-0">
+            {{ formatearMoneda(getTotalAguinaldos()) }}
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <h6 class="card-title">Total Retenciones</h6>
+          <h3 class="mb-0">
+            {{ formatearMoneda(getTotalRetenciones()) }}
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <h6 class="card-title">Total Neto</h6>
+          <h3 class="mb-0">{{ formatearMoneda(getTotalNeto()) }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-secondary text-white">
+        <div class="card-body">
+          <h6 class="card-title">Empleados</h6>
+          <h3 class="mb-0">{{ detalles.length }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tabla de Empleados -->
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row mb-3">
+    <div class="col-12">
+      <h5><i class="fa fa-users"></i> Empleados</h5>
+      <p class="text-muted">Lista de empleados con sus cálculos de aguinaldo</p>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover">
+      <thead>
+        <tr>
+          <th>Empleado</th>
+          <th class="text-end">Monto Bruto</th>
+          <th class="text-end">Exento</th>
+          <th class="text-end">Gravado</th>
+          <th class="text-end">Retención</th>
+          <th class="text-end">Neto</th>
+          <th class="text-center" *ngIf="esBorrador()">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="7" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="!loading && detalles.length === 0">
+          <td colspan="7" class="text-center">
+            <span class="badge bg-primary">No hay empleados agregados</span>
+          </td>
+        </tr>
+        <tr *ngFor="let detalle of detalles">
+          <td>
+            <div>
+              <strong>{{ detalle.nombres }} {{ detalle.apellidos }}</strong>
+              <br />
+              <small class="text-muted">{{ detalle.codigo }}</small>
+            </div>
+          </td>
+          <td class="text-end">
+            <span *ngIf="!editandoMonto[detalle.id]">
+              {{ formatearMoneda(detalle.monto_aguinaldo_bruto) }}
+              <button
+                *ngIf="esBorrador()"
+                class="btn btn-sm btn-link p-0 ms-2"
+                (click)="editarMonto(detalle)"
+                tooltip="Editar monto"
+              >
+                <i class="fa fa-edit text-primary"></i>
+              </button>
+            </span>
+            <div *ngIf="editandoMonto[detalle.id]" class="d-flex align-items-center gap-2">
+              <input
+                type="number"
+                class="form-control form-control-sm"
+                style="width: 120px;"
+                [(ngModel)]="montoTemporal[detalle.id]"
+                step="0.01"
+                min="0"
+              />
+              <button
+                class="btn btn-sm btn-success"
+                (click)="guardarMonto(detalle)"
+                [disabled]="saving"
+                tooltip="Guardar"
+              >
+                <i class="fa fa-check"></i>
+              </button>
+              <button
+                class="btn btn-sm btn-secondary"
+                (click)="cancelarEdicion(detalle.id)"
+                [disabled]="saving"
+                tooltip="Cancelar"
+              >
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+          </td>
+          <td class="text-end">
+            {{ formatearMoneda(detalle.monto_exento) }}
+          </td>
+          <td class="text-end">
+            {{ formatearMoneda(detalle.monto_gravado) }}
+          </td>
+          <td class="text-end">
+            {{ formatearMoneda(detalle.retencion_renta) }}
+          </td>
+          <td class="text-end">
+            <strong>{{ formatearMoneda(detalle.aguinaldo_neto) }}</strong>
+          </td>
+          <td class="text-center" *ngIf="esBorrador()">
+            <button
+              (click)="eliminarEmpleado(detalle)"
+              class="btn btn-sm btn-danger"
+              tooltip="Eliminar empleado"
+            >
+              <i class="fa fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <th>TOTALES</th>
+          <th class="text-end">{{ formatearMoneda(getTotalAguinaldos()) }}</th>
+          <th class="text-end">{{ formatearMoneda(getTotalExento()) }}</th>
+          <th class="text-end">{{ formatearMoneda(getTotalGravado()) }}</th>
+          <th class="text-end">{{ formatearMoneda(getTotalRetenciones()) }}</th>
+          <th class="text-end">
+            <strong>{{ formatearMoneda(getTotalNeto()) }}</strong>
+          </th>
+          <th *ngIf="esBorrador()"></th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</section>
+
+<!-- Modal Agregar Empleado -->
+<ng-template #mAgregarEmpleado>
+  <div class="modal-header">
+    <h4 class="modal-title">Agregar Empleado al Aguinaldo</h4>
+    <button
+      type="button"
+      class="btn-close"
+      aria-label="Close"
+      (click)="modalRef.hide()"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="agregarEmpleado()">
+      <div class="mb-3">
+        <label for="empleado" class="form-label">Empleado *</label>
+        <select
+          class="form-select"
+          id="empleado"
+          name="empleado"
+          [(ngModel)]="empleadoSeleccionado"
+          (change)="onEmpleadoSeleccionado()"
+          required
+        >
+          <option value="">Seleccione un empleado</option>
+          <option
+            *ngFor="let empleado of empleadosDisponibles"
+            [value]="empleado.id"
+          >
+            {{ empleado.nombres }} {{ empleado.apellidos }} -
+            {{ empleado.codigo }}
+          </option>
+        </select>
+        <small class="form-text text-muted" *ngIf="empleadosDisponibles.length === 0 && !loading">
+          No hay empleados disponibles. Solo empleados con contratos permanentes o temporales tienen derecho a aguinaldo.
+        </small>
+        <small class="form-text text-muted" *ngIf="empleadosDisponibles.length > 0">
+          Se muestran solo empleados con contratos permanentes o temporales (excluye servicios profesionales y por obra).
+        </small>
+      </div>
+
+      <!-- Sugerencia de Aguinaldo -->
+      <div class="mb-3" *ngIf="empleadoSeleccionado">
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Sugerencia calculada:</strong>
+            <span *ngIf="cargandoSugerencia" class="ms-2">
+              <i class="fa fa-spinner fa-spin"></i> Calculando...
+            </span>
+            <span *ngIf="!cargandoSugerencia && sugerenciaAguinaldo > 0" class="ms-2">
+              {{ formatearMoneda(sugerenciaAguinaldo) }}
+              <small class="text-muted ms-2">
+                ({{ mesesTrabajados }} {{ mesesTrabajados === 1 ? 'mes' : 'meses' }} trabajados)
+              </small>
+            </span>
+            <span *ngIf="!cargandoSugerencia && sugerenciaAguinaldo === 0" class="ms-2 text-muted">
+              No hay sugerencia disponible
+            </span>
+          </div>
+          <button
+            *ngIf="sugerenciaAguinaldo > 0"
+            type="button"
+            class="btn btn-sm btn-primary"
+            (click)="usarSugerencia()"
+          >
+            <i class="fa fa-check"></i> Usar Sugerencia
+          </button>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="montoBruto" class="form-label">Monto Aguinaldo Bruto *</label>
+        <input
+          type="number"
+          class="form-control"
+          id="montoBruto"
+          name="montoBruto"
+          [(ngModel)]="montoBrutoNuevo"
+          (ngModelChange)="onMontoBrutoChange()"
+          step="0.01"
+          min="0"
+          required
+          placeholder="0.00"
+        />
+        <small class="form-text text-muted">
+          Ingrese el monto bruto del aguinaldo. El sistema calculará automáticamente
+          la exención, monto gravado, retención y neto.
+        </small>
+      </div>
+
+      <!-- Preview en Tiempo Real -->
+      <div class="mb-3" *ngIf="montoBrutoNuevo > 0">
+        <div class="card border-primary">
+          <div class="card-header bg-primary text-white">
+            <strong><i class="fa fa-calculator"></i> Preview del Cálculo</strong>
+          </div>
+          <div class="card-body">
+            <div *ngIf="cargandoPreview" class="text-center">
+              <i class="fa fa-spinner fa-spin"></i> Calculando...
+            </div>
+            <div *ngIf="!cargandoPreview" class="row">
+              <div class="col-md-6 mb-2">
+                <strong>Monto Bruto:</strong>
+                <span class="float-end">{{ formatearMoneda(previewCalculo.monto_bruto) }}</span>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Monto Exento:</strong>
+                <span class="float-end text-success">{{ formatearMoneda(previewCalculo.monto_exento) }}</span>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Monto Gravado:</strong>
+                <span class="float-end">{{ formatearMoneda(previewCalculo.monto_gravado) }}</span>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Retención de Renta:</strong>
+                <span class="float-end text-danger">{{ formatearMoneda(previewCalculo.retencion_renta) }}</span>
+              </div>
+              <div class="col-12 mt-2 pt-2 border-top">
+                <strong class="fs-5">Aguinaldo Neto:</strong>
+                <span class="float-end fs-5 text-success fw-bold">
+                  {{ formatearMoneda(previewCalculo.aguinaldo_neto) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label for="notas" class="form-label">Notas</label>
+        <textarea
+          class="form-control"
+          id="notas"
+          name="notas"
+          rows="3"
+          [(ngModel)]="notasNuevo"
+          placeholder="Observaciones opcionales..."
+        ></textarea>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="modalRef.hide()"
+          [disabled]="saving"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="saving || !empleadoSeleccionado || !montoBrutoNuevo"
+        >
+          <span
+            *ngIf="saving"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          Agregar Empleado
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

@@ -142,11 +142,21 @@
                         </td>
                         <td class="text-end">
                             <span *ngIf="venta.estado != 'Pendiente' && !venta.abonos_sum_total">
-                                {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                <span *ngIf="venta.propina > 0">
+                                    {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
+                                </span>
+                                <span *ngIf="!(venta.propina > 0)">
+                                    {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                </span>
                             </span>
                             <span *ngIf="venta.estado == 'Pendiente' || venta.abonos_sum_total > 0" class="click"
                                 placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                                {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                <span *ngIf="venta.propina > 0">
+                                    {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
+                                </span>
+                                <span *ngIf="!(venta.propina > 0)">
+                                    {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                </span>
                             </span>
                             <ng-template #popTemplate>
                                 <table class="w-100">
@@ -154,6 +164,14 @@
                                         <tr>
                                             <td>Total</td>
                                             <td class="text-end">{{ venta.total | currency}}</td>
+                                        </tr>
+                                        <tr *ngIf="venta.propina > 0">
+                                            <td>Propina</td>
+                                            <td class="text-end">{{ venta.propina | currency}}</td>
+                                        </tr>
+                                        <tr *ngIf="venta.propina > 0">
+                                            <td><strong>Total + Propina</strong></td>
+                                            <td class="text-end"><strong>{{ getTotalConPropina(venta) | currency}}</strong></td>
                                         </tr>
                                         <tr>
                                             <td>Abonos</td>
@@ -296,13 +314,14 @@
         <p class="alert bg-info">Al seleccionar el reporte, se mostrará un boton para descargar los datos.</p>
         <div class="mb-3">
             <label class="form-label">Seleccione el reporte a descargar:</label>
-            <select class="form-select" [(ngModel)]="reporteSeleccionado">
+            <select class="form-select" [(ngModel)]="reporteSeleccionado" (ngModelChange)="seleccionarReporte($event)">
                 <option value="">Seleccione una opción</option>
                 <option value="detalles">Detalles de ventas por producto</option>
                 <option value="ventas">Detalles de ventas totales</option>
                 <option value="acumulado">Acumulado por producto</option>
                 <option value="marca">Detalles de ventas por marca</option>
                 <option value="utilidades">Detalles de ventas utilidades</option>
+                <option value="cobros-vendedor">Cobros por vendedor</option>
             </select>
         </div>
 
@@ -343,6 +362,13 @@
                 Descargar por Utilidades
             </button>
         </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'cobros-vendedor'">
+            <p>Descarga reporte de cobros por vendedor (facturas pagadas y pendientes con días de vencimiento y crédito).</p>
+            <button class="btn btn-primary" (click)="abrirModalFiltrosCobrosVendedor(mfiltrosCobrosVendedor)">
+                Descargar Cobros por Vendedor
+            </button>
+        </div>
     </div>
 </ng-template>
 
@@ -367,7 +393,7 @@
                 </div>
                 <div class="form-group col-md-6">
                     <label for="id_documento">Documento:</label>
-                    <select name="id_documento" [(ngModel)]="venta.id_documento" class="form-select">
+                    <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
                         <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}
                         </option>
                     </select>
@@ -375,6 +401,27 @@
                 <div class="form-group col-md-6">
                     <label for="correlativo">Correlativo:</label>
                     <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="estado">Estado:</label>
+                    <select name="estado" [(ngModel)]="venta.estado" class="form-select">
+                        <option value="">Estado</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Anulada">Anulada</option>
+                        <option value="Consigna">Consigna</option>
+                        <option value="Pagada">Pagada</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-6" *ngIf="apiService.isAdmin()">
+                    <label for="condicion">Condición de pago:</label>
+                    <select name="condicion" [(ngModel)]="venta.condicion" (change)="onCondicionChange()" class="form-select">
+                        <option value="Contado">Contado</option>
+                        <option value="Crédito">Crédito</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-6" *ngIf="apiService.isAdmin() && venta.condicion == 'Crédito'">
+                    <label for="fecha_pago">Fecha de pago:</label>
+                    <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
                 </div>
                 <div class="form-group col-sm-6">
                     <label for="venta.id_canal">Canal:</label>
@@ -391,6 +438,15 @@
                         <ng-option value="">Todos</ng-option>
                         <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
                             {{ usuario.name }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="id_vendedor">Vendedor:</label>
+                    <ng-select [(ngModel)]="venta.id_vendedor" class="form-select p-0" name="id_vendedor" [clearable]="true">
+                        <ng-option [value]="null">Todos</ng-option>
+                        <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                            {{ usuario.codigo ? usuario.codigo + ' - ' : '' }}{{ usuario.name }}
                         </ng-option>
                     </ng-select>
                 </div>
@@ -467,7 +523,7 @@
                                 [(ngModel)]="venta.descripcion_personalizada" name="venta.descripcion_personalizada">
                         </div>
                     </div>
-                    <div class="form-group col-md-12" *ngIf="venta.cotizacion != 1 && venta.descripcion_personalizada">
+                    <div class="form-group col-md-12" *ngIf="venta.descripcion_personalizada">
                         <label for="descripcion_impresion">Descripción a mostrar el la impresión del documento:</label>
                         <textarea class="form-control" placeholder="Escribe aquí"
                             [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
@@ -745,8 +801,7 @@
 
 <ng-template #mfiltrosPorMarca>
     <div class="modal-header">
-        <h4 class="modal-title text-center">Filtros para Reporte {{ reporteSeleccionado == 'marca' ? 'de Marcas' : 'de
-            Utilidades' }}</h4>
+        <h4 class="modal-title text-center">Filtros para Reporte {{ esReporteMarca ? 'de Marcas' : 'de Utilidades' }}</h4>
         <button type="button" class="btn-close" (click)="modalRefPorMarca.hide()" aria-label="Close"></button>
         <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
     </div>
@@ -777,5 +832,138 @@
                 </button>
             </div>
         </form>
+    </div>
+</ng-template>
+
+<ng-template #mfiltrosCobrosVendedor>
+    <div class="modal-header">
+        <h4 class="modal-title text-center">Filtros para Reporte de Cobros por Vendedor</h4>
+        <button type="button" class="btn-close" (click)="modalRefCobrosVendedor.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+
+        <form (ngSubmit)="descargarCobrosPorVendedor()">
+            <div class="row">
+                <!-- Fechas -->
+                <div class="form-group col-12">
+                    <label>Desde:</label>
+                    <input type="date" class="form-control" [(ngModel)]="filtrosCobrosVendedor.inicio" name="inicio" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-12">
+                    <label>Hasta:</label>
+                    <input type="date" class="form-control" [(ngModel)]="filtrosCobrosVendedor.fin" name="fin" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-12">
+                    <label>Sucursal:</label>
+                    <select class="form-select" [(ngModel)]="filtrosCobrosVendedor.id_sucursal" name="id_sucursal">
+                        <option value="">Todas las sucursales</option>
+                        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-12">
+                    <label>Vendedor:</label>
+                    <ng-select [(ngModel)]="filtrosCobrosVendedor.id_vendedor" class="form-select p-0" name="id_vendedor" [clearable]="true">
+                        <ng-option [value]="''">Todos los vendedores</ng-option>
+                        <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                            {{ usuario.name }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+            </div>
+
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary"
+                    [disabled]="downloadingCobrosVendedor || !filtrosCobrosVendedor.inicio || !filtrosCobrosVendedor.fin">
+                    <span *ngIf="!downloadingCobrosVendedor">Descargar Reporte</span>
+                    <span *ngIf="downloadingCobrosVendedor">Descargando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+
+<ng-template #modalAnulacion>
+    <div class="modal-header">
+        <h4 class="modal-title">Anular Venta y DTE</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); venta.errores = null;" [disabled]="saving" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-alerts-hacienda [errores]="venta.errores"></app-alerts-hacienda>
+        <app-notificaciones-container></app-notificaciones-container>
+        
+        <form (ngSubmit)="confirmarAnulacion()" *ngIf="!saving || venta.errores">
+            <div class="mb-3">
+                <label for="fechaAnulacion" class="form-label">Fecha de Anulación <span class="text-danger">*</span></label>
+                <input type="date" 
+                       class="form-control" 
+                       id="fechaAnulacion" 
+                       [(ngModel)]="fechaAnulacion" 
+                       name="fechaAnulacion"
+                       [disabled]="saving"
+                       required>
+            </div>
+            <div class="mb-3">
+                <label for="tipoAnulacion" class="form-label">Tipo de Anulación <span class="text-danger">*</span></label>
+                <select class="form-select" 
+                        id="tipoAnulacion" 
+                        [(ngModel)]="tipoAnulacion" 
+                        name="tipoAnulacion"
+                        (change)="onTipoAnulacionChange()"
+                        [disabled]="saving"
+                        required>
+                    <option *ngFor="let motivo of motivosAnulacion" [value]="motivo.valor">
+                        {{ motivo.texto }}
+                    </option>
+                </select>
+            </div>
+            <div class="mb-3" *ngIf="tipoAnulacion == 3">
+                <label for="motivoAnulacion" class="form-label">Motivo de Anulación <span class="text-danger">*</span></label>
+                <textarea class="form-control" 
+                          id="motivoAnulacion" 
+                          [(ngModel)]="motivoAnulacion" 
+                          name="motivoAnulacion"
+                          rows="3"
+                          placeholder="Ingrese el motivo de anulación"
+                          [disabled]="saving"
+                          required></textarea>
+            </div>
+            <div class="mb-3" *ngIf="tipoAnulacion == 1 || tipoAnulacion == 3">
+                <label for="codigoGeneracionRemplazo" class="form-label">Código de Generación de la venta que sustituye a esta <span class="text-danger">*</span></label>
+                <input type="text" 
+                       class="form-control" 
+                       id="codigoGeneracionRemplazo" 
+                       [(ngModel)]="codigoGeneracionRemplazo" 
+                       name="codigoGeneracionRemplazo"
+                       placeholder="Ingrese el código de generación de la venta que reemplaza esta"
+                       [disabled]="saving"
+                       required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="modalRef.hide(); venta.errores = null;" [disabled]="saving">Cancelar</button>
+                <button type="submit" class="btn btn-danger" [disabled]="saving">
+                    <span *ngIf="!saving">Confirmar Anulación</span>
+                    <span *ngIf="saving">
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        Anulando...
+                    </span>
+                </button>
+            </div>
+        </form>
+        
+        <div *ngIf="saving && !venta.errores" class="text-center py-4">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Anulando...</span>
+            </div>
+            <p class="mb-0">Anulando DTE...</p>
+        </div>
     </div>
 </ng-template>

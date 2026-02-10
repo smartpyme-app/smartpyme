@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
 import { AdminGuard } from '../../guards/admin.guard';
+import { FacturacionVersionGuard } from '../../guards/facturacion-version.guard';
 import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
 import { SolicitudesCompraComponent } from '@views/ventas/solicitudes-compra/solicitudes-compra.component';
 
@@ -21,6 +22,7 @@ import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/
 import { DevolucionVentaNuevaComponent } from '@views/ventas/devoluciones/devolucion-nueva/devolucion-nueva.component';
 import { FacturacionComponent } from '@views/ventas/facturacion/facturacion-tienda/facturacion.component';
 import { FacturacionConsignaComponent } from '@views/ventas/facturacion/facturacion-consigna/facturacion-consigna.component';
+import { FacturacionV2Component } from '@views/ventas/facturacion/facturacion-tienda-v2/facturacion-v2.component';
 
 import { ClientesComponent } from '@views/ventas/clientes/clientes.component';
 import { CuentasCobrarComponent } from '@views/ventas/clientes/cuentas-cobrar/cuentas-cobrar.component';
@@ -42,7 +44,8 @@ const routes: Routes = [
     children: [
 
         { path: 'ventas', canActivate: [AdminGuard], component: VentasComponent, title: 'Ventas'},
-        { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación'},
+        { path: 'venta/crear', canActivate: [FacturacionVersionGuard], component: FacturacionComponent, title: 'Facturación'},
+        { path: 'ventas-v2/crear', component: FacturacionV2Component, title: 'Facturación V2'},
         { path: 'venta/consigna/revisar/:id', component: FacturacionConsignaComponent, title: 'Facturación consigna'},
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
 

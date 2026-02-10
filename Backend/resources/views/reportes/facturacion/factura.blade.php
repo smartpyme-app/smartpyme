@@ -49,7 +49,9 @@
         #iva_retenido{position: absolute; top: 12cm; left: {{ number_format($venta->pos_sumas_x, 1) }}cm; width: {{ number_format($venta->pos_detalles_gravadas, 1) }}cm; text-align: right;}
         #no_sujeta   {position: absolute; top: 12.5cm; left: {{ number_format($venta->pos_sumas_x, 1) }}cm; width: {{ number_format($venta->pos_detalles_gravadas, 1) }}cm; text-align: right;}
         #exenta      {position: absolute; top: 13cm; left: {{ number_format($venta->pos_sumas_x, 1) }}cm; width: {{ number_format($venta->pos_detalles_gravadas, 1) }}cm; text-align: right;}
-        #total       {position: absolute; top: 13.5cm; left: {{ number_format($venta->pos_sumas_x, 1) }}cm; width: {{ number_format($venta->pos_detalles_gravadas, 1) }}cm; text-align: right;}
+        #propina     {position: absolute; top: 13.5cm; left: {{ number_format($venta->pos_sumas_x, 1) }}cm; width: {{ number_format($venta->pos_detalles_gravadas, 1) }}cm; text-align: right;}
+        #total       {position: absolute; top: 14cm; left: {{ number_format($venta->pos_sumas_x, 1) }}cm; width: {{ number_format($venta->pos_detalles_gravadas, 1) }}cm; text-align: right;}
+        #total_con_propina {position: absolute; top: 14.5cm; left: {{ number_format($venta->pos_sumas_x, 1) }}cm; width: {{ number_format($venta->pos_detalles_gravadas, 1) }}cm; text-align: right;}
 
 
         .no-print{position: absolute; top:0;}
@@ -112,7 +114,16 @@
 		@endif
 
 		<p id="retenido">	${{ number_format($venta->iva_retenido, 2) }}</p>
-		<p id="total"><b>	${{ number_format($venta->total, 2) }}</b></p>
+		@php
+			$propina = floatval($venta->propina ?? 0);
+		@endphp
+		@if($propina > 0)
+			<p id="propina">Propina: ${{ number_format($propina, 2) }}</p>
+			<p id="total"><b>Total: ${{ number_format($venta->total, 2) }}</b></p>
+			<p id="total_con_propina"><b>Total + Propina: ${{ number_format($venta->total + $propina, 2) }}</b></p>
+		@else
+			<p id="total"><b>	${{ number_format($venta->total, 2) }}</b></p>
+		@endif
 
 		<p id="letras">{{ $venta->total_letras }}</p>
 

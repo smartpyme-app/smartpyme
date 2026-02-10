@@ -231,7 +231,7 @@ class Indicador extends Model
 
     public function getTotalDevolucionesCompra(){
 
-        return $this->devoluciones_compras->count();
+        return $this->devoluciones_compras->sum('total');
     }
 
     public function getVentasAnuladas(){
@@ -256,12 +256,12 @@ class Indicador extends Model
 
     public function getTotalGastosPagados(){
 
-        return $this->gastos->where('estado', 'Confirmado')->sum('total');
+        return $this->gastos->whereIn('estado', ['Confirmado', 'Pagado'])->sum('total');
     }
 
     public function getCantidadGastosPagados(){
 
-        return $this->gastos->where('estado', 'Confirmado')->count();
+        return $this->gastos->whereIn('estado', ['Confirmado', 'Pagado'])->count();
     }
 
     public function getCantidadGastosPendientes(){
@@ -435,19 +435,49 @@ class Indicador extends Model
     }
 
     public function getTotalesSalidas($tiempo = 'DAY', $fecha = null){
-        $salidas = Compra::selectRaw($tiempo . '(fecha) as time')
-                                    ->selectRaw('sum(total) as total')
-                                    ->groupBy('time')
-                                    ->where('created_at', '>=', $fecha)
-                                    ->orderBy('time')
-                                    ->get();
+        $queryCompra = Compra::selectRaw($tiempo . '(fecha) as time')
+            ->selectRaw('sum(total) as total')
+            ->where('id_empresa', $this->id_empresa)
+            ->when($this->id_sucursal, function ($q) {
+                $q->where('id_sucursal', $this->id_sucursal);
+            })
+            ->where('created_at', '>=', $fecha)
+            ->where('estado', 'Pagada')
+            ->groupBy('time')
+            ->orderBy('time')
+            ->get()
+            ->keyBy('time');
+
+        $queryGasto = Gasto::selectRaw($tiempo . '(fecha) as time')
+            ->selectRaw('sum(total) as total')
+            ->where('id_empresa', $this->id_empresa)
+            ->when($this->id_sucursal, function ($q) {
+                $q->where('id_sucursal', $this->id_sucursal);
+            })
+            ->where('created_at', '>=', $fecha)
+            ->whereIn('estado', ['Confirmado', 'Pagado'])
+            ->groupBy('time')
+            ->orderBy('time')
+            ->get()
+            ->keyBy('time');
+
+        $times = $queryCompra->keys()->merge($queryGasto->keys())->unique()->sort()->values();
+        $salidas = $times->map(function ($time) use ($queryCompra, $queryGasto) {
+            $totalCompra = $queryCompra->get($time)->total ?? 0;
+            $totalGasto = $queryGasto->get($time)->total ?? 0;
+            return (object) [
+                'time' => $time,
+                'total' => $totalCompra + $totalGasto,
+            ];
+        })->values();
+
         if (count($salidas) == 0) {
-            $salidas->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
-            $salidas->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+            $salidas->push((object) ['time' => null, 'total' => 1]);
+            $salidas->push((object) ['time' => null, 'total' => 1]);
         }
 
         if (count($salidas) == 1) {
-            $salidas->prepend(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+            $salidas->prepend((object) ['time' => null, 'total' => 1]);
         }
         return $salidas;
     }

@@ -54,7 +54,11 @@ class ProductosController extends Controller
             if ($request->id_bodega) {
                 $q->where('id_bodega', $request->id_bodega);
             }
-        }, 'precios'])
+        }, 'precios', 'lotes' => function ($q) use ($request) {
+            if ($request->id_bodega) {
+                $q->where('id_bodega', $request->id_bodega);
+            }
+        }])
             ->when($request->id_categoria, function ($query) use ($request) {
                 return $query->where('id_categoria', $request->id_categoria);
             })
@@ -162,8 +166,7 @@ class ProductosController extends Controller
 
     public function search($txt)
     {
-
-        $productos = Producto::where('enable', true)->with('inventarios', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+        $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
             ->where(function ($q) use ($txt) {
                 $q->where('nombre', 'like', "%$txt%")
                     ->orWhere('barcode', 'like', "%$txt%")
@@ -180,7 +183,7 @@ class ProductosController extends Controller
     {
         $query = $request->query('query');
 
-        $productos = Producto::where('enable', true)->with('inventarios', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+        $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
             ->where(function ($q) use ($query) {
                 $q->where('nombre', 'like', "%$query%")
                     ->orWhere('barcode', 'like', "%$query%")
@@ -204,7 +207,7 @@ class ProductosController extends Controller
             $productos = Producto::where('enable', true)
                 ->with(['inventarios' => function ($q) use ($id_bodega) {
                     $q->where('id_bodega', $id_bodega);
-                }])
+                }, 'lotes'])
                 ->with('composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios')
                 ->whereHas('inventarios', function ($q) use ($id_bodega) {
                     $q->where('id_bodega', $id_bodega);
@@ -219,7 +222,7 @@ class ProductosController extends Controller
                 ->get();
         } else {
             // Si no se especifica bodega, usar la búsqueda normal
-            $productos = Producto::where('enable', true)->with('inventarios', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+            $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
                 ->where(function ($q) use ($query) {
                     $q->where('nombre', 'like', "%$query%")
                         ->orWhere('barcode', 'like', "%$query%")
@@ -323,15 +326,21 @@ class ProductosController extends Controller
         $producto->save();
 
 
-        // Configurar inventarios para las bodegas
+        // Configurar inventarios para las bodegas (firstOrCreate evita duplicados producto+bodega)
         if (!$request->id && $producto->tipo != 'Servicio') {
             $bodegas = Bodega::all();
             foreach ($bodegas as $bodega) {
-                $inventario = new Inventario;
-                $inventario->id_producto    = $producto->id;
-                $inventario->stock          = 0;
-                $inventario->id_bodega    = $bodega->id;
-                $inventario->save();
+                Inventario::firstOrCreate(
+                    [
+                        'id_producto' => $producto->id,
+                        'id_bodega' => $bodega->id,
+                    ],
+                    [
+                        'stock' => 0,
+                        'stock_minimo' => 0,
+                        'stock_maximo' => 0,
+                    ]
+                );
             }
         }
 
@@ -667,6 +676,39 @@ class ProductosController extends Controller
             'actualizados' => $productosActualizados
         ]);
     }
+
+    /**
+     * Habilitar inventario por lotes masivamente por categorías
+     */
+    public function habilitarLotesMasivo(Request $request)
+    {
+        $request->validate([
+            'categorias' => 'required|array',
+            'categorias.*' => 'required|exists:categorias,id',
+            'habilitar' => 'required|boolean',
+        ]);
+
+        $productosActualizados = 0;
+
+        // Obtener todos los productos de las categorías seleccionadas
+        $productos = Producto::whereIn('id_categoria', $request->categorias)
+            ->where('tipo', '!=', 'Servicio')
+            ->get();
+
+        foreach ($productos as $producto) {
+            $producto->inventario_por_lotes = $request->habilitar;
+            $producto->save();
+            $productosActualizados++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $request->habilitar 
+                ? 'Inventario por lotes habilitado masivamente' 
+                : 'Inventario por lotes deshabilitado masivamente',
+            'productos_actualizados' => $productosActualizados
+        ]);
+    }
     public function exportarWooCommerceTemplate(Request $request)
     {
         $user = Auth::user();
@@ -806,10 +848,14 @@ class ProductosController extends Controller
                     $destino->save();
                     $destino->kardex($traslado, $cantidad);
                 } else {
-                    $destino = new Inventario();
-                    $destino->id_producto = $idProducto;
-                    $destino->id_bodega = $request->id_bodega_destino;
-                    $destino->stock = $cantidad;
+                    $destino = Inventario::firstOrCreate(
+                        [
+                            'id_producto' => $idProducto,
+                            'id_bodega' => $request->id_bodega_destino,
+                        ],
+                        ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                    );
+                    $destino->stock += $cantidad;
                     $destino->save();
                     $destino->kardex($traslado, $cantidad);
                 }
@@ -1008,7 +1054,7 @@ class ProductosController extends Controller
         $productos = Producto::where('enable', true)
             ->where('id_empresa', $request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->with(['inventarios', 'precios', 'proveedores.proveedor'])
+            ->with(['inventarios', 'lotes', 'precios', 'proveedores.proveedor'])
             ->whereHas('proveedores', function ($q) use ($request) {
                 $q->where('cod_proveed_prod', $request->cod_proveed_prod);
             })
@@ -1061,7 +1107,7 @@ class ProductosController extends Controller
         $query = Producto::where('enable', true)
             ->where('id_empresa', $request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->with(['inventarios', 'precios']);
+            ->with(['inventarios', 'lotes', 'precios']);
 
         // Búsqueda principal por término completo
         $query->where(function ($q) use ($termino) {

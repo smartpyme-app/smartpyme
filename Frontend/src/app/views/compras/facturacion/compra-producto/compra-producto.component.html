@@ -10,6 +10,22 @@
                 <img src="{{ apiService.appUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px"> 
                 <p class="mb-0">
                     {{ getNombreCompleto(producto) }} <br>
+                    <small *ngIf="tieneShopify && producto.descripcion" class="text-muted">
+                        {{ getDescripcion(producto) }}
+                        <a href="javascript:void(0);" 
+                           *ngIf="necesitaVerMas(producto)" 
+                           (click)="toggleDescripcion($event, producto)"
+                           class="text-primary ms-1">
+                            ver más
+                        </a>
+                        <a href="javascript:void(0);" 
+                           *ngIf="estaExpandida(producto)" 
+                           (click)="toggleDescripcion($event, producto)"
+                           class="text-primary ms-1">
+                            ver menos
+                        </a>
+                    </small>
+                    <br>
                     <small class="text-muted">{{ producto.inventarios | filter:'id_bodega':compra.id_bodega | sum:'stock' }} disponibles</small>
                 </p>
               </a>
@@ -94,6 +110,22 @@
                                 <td>
                                     <img src="{{ apiService.appUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
                                     {{ getNombreCompleto(producto) }}
+                                    <br>
+                                    <small *ngIf="tieneShopify && producto.descripcion" class="text-muted">
+                                        {{ getDescripcion(producto) }}
+                                        <a href="javascript:void(0);" 
+                                           *ngIf="necesitaVerMas(producto)" 
+                                           (click)="toggleDescripcion($event, producto)"
+                                           class="text-primary ms-1">
+                                            ver más
+                                        </a>
+                                        <a href="javascript:void(0);" 
+                                           *ngIf="estaExpandida(producto)" 
+                                           (click)="toggleDescripcion($event, producto)"
+                                           class="text-primary ms-1">
+                                            ver menos
+                                        </a>
+                                    </small>
                                 </td>
                                 <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                                 <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>

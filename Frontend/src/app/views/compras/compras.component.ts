@@ -62,10 +62,13 @@ export class ComprasComponent implements OnInit {
                 forma_pago: params['forma_pago'] || '',
                 dte: params['dte'] || '',
                 estado: params['estado'] || '',
+                inicio: params['inicio'] || '',
+                fin: params['fin'] || '',
+                num_identificacion: params['num_identificacion'] || '',
                 orden: params['orden'] || 'id',
                 direccion: params['direccion'] || 'desc',
-                paginate: params['paginate'] || 10,
-                page: params['page'] || 1,
+                paginate: +params['paginate'] || 10,
+                page: +params['page'] || 1,
             };
 
             this.filtrarCompras();
@@ -89,9 +92,12 @@ export class ComprasComponent implements OnInit {
         this.filtros.dte = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
+        this.filtros.inicio = '';
+        this.filtros.fin = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
+        this.filtros.page = 1;
         this.filtros.num_identificacion = '';
 
         this.filtrarCompras();
@@ -469,5 +475,8 @@ export class ComprasComponent implements OnInit {
     }, error => {this.alertService.error(error); });
   } 
 
+  public imprimir(compra:any){
+    window.open(this.apiService.baseUrl + '/api/compra/impresion/' + compra.id + '?token=' + this.apiService.auth_token());
+  }
 
 }

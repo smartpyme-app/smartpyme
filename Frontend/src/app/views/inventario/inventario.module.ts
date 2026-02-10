@@ -21,6 +21,7 @@ import { ProductosComponent } from './productos/productos.component';
 import { ProductoComponent } from './productos/producto/producto.component';
 import { ProductoInformacionComponent } from './productos/producto/informacion/producto-informacion.component';
 import { ProductoInventariosComponent } from './productos/producto/inventario/producto-inventarios.component';
+import { ProductoLotesComponent } from './productos/producto/lotes/producto-lotes.component';
 import { ProductoSucursalesComponent } from './productos/producto/sucursales/producto-sucursales.component';
 import { ProductoProveedoresComponent } from './productos/producto/proveedores/producto-proveedores.component';
 import { ProductoComposicionComponent } from './productos/producto/composicion/producto-composicion.component';
@@ -63,6 +64,7 @@ import { InventarioEntradaComponent } from './entradas/entrada/inventario-entrad
 import { InventarioSalidaComponent } from './salidas/salida/inventario-salida.component';
 import { EntradaDetalleComponent } from './entradas/entrada-detalle/entrada-detalle.component';
 import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.component';
+import { LotesComponent } from './lotes/lotes.component';
 
 @NgModule({
   imports: [
@@ -91,6 +93,7 @@ import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.
     PromocionesComponent,
     ProductoInformacionComponent,
     ProductoInventariosComponent,
+    ProductoLotesComponent,
     ProductoSucursalesComponent,
     ProductoProveedoresComponent,
     ProductoComposicionComponent,
@@ -121,7 +124,8 @@ import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.
     InventarioEntradaComponent,
     InventarioSalidaComponent,
     EntradaDetalleComponent,
-    SalidaDetalleComponent
+    SalidaDetalleComponent,
+    LotesComponent
   ],
   exports: [
   	ProductosComponent,
@@ -130,6 +134,7 @@ import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.
     PromocionesComponent,
     ProductoInformacionComponent,
     ProductoInventariosComponent,
+    ProductoLotesComponent,
     ProductoSucursalesComponent,
     ProductoProveedoresComponent,
     ProductoComposicionComponent,
@@ -160,7 +165,8 @@ import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.
     InventarioEntradaComponent,
     InventarioSalidaComponent,
     EntradaDetalleComponent,
-    SalidaDetalleComponent
+    SalidaDetalleComponent,
+    LotesComponent
   ]
 })
 export class InventarioModule { }

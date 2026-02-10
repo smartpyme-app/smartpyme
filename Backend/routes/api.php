@@ -144,6 +144,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/inventario/bodegas.php');
 	require base_path('routes/modulos/inventario/paquetes.php');
 	require base_path('routes/modulos/inventario/entradas-salidas.php');
+	require base_path('routes/modulos/inventario/lotes.php');
 
 	// Eventos
 	require base_path('routes/modulos/eventos/eventos.php');
@@ -198,6 +199,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	require base_path('routes/modulos/planilla/empleados.php');
 	require base_path('routes/modulos/planilla/planillas.php');
+	require base_path('routes/modulos/planilla/aguinaldos.php');
 	require base_path('routes/modulos/planilla/configuraciones.php');
 	require base_path('routes/modulos/planilla/cargos.php');
 	require base_path('routes/modulos/planilla/departamentos-planilla.php');

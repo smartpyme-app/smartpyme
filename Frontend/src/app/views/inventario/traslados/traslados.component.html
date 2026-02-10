@@ -31,7 +31,10 @@
 
         <div class="col">
             <div class="d-flex gap-2">
-                <button [disabled]="downloading" tooltip="Descargar traslados" (click)="descargar()" class="btn btn-default tcla-F6">
+                <button [disabled]="downloading" tooltip="Descargar traslados PDF" (click)="descargarPdfFiltrados()" class="btn btn-default">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
+                <button [disabled]="downloading" tooltip="Descargar traslados Excel" (click)="descargar()" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarTraslados()" autocomplete="off">
@@ -84,14 +87,15 @@
                         <th>De</th>
                         <th>Para</th>
                         <th (click)="setOrden('cantidad')" [ngClass]="{'sorted-asc': filtros.orden == 'cantidad' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'cantidad' && filtros.direccion == 'desc'}" class="click text-center">Cantidad</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="traslados?.total < 1 && !loading">
+                        <td colspan="10" class="text-center" *ngIf="traslados?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene traslados registrados</span>
                         </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
+                        <td colspan="10" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -108,6 +112,18 @@
                         <td>{{ traslado.nombre_origen }}</td>
                         <td>{{ traslado.nombre_destino }}</td>
                         <td class="text-center"> {{ traslado.cantidad | number:'1.0' }} </td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a (click)="imprimir(traslado)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-print"></i> Imprimir
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -130,16 +146,17 @@
         <div class="row">
             <div class="form-group col-md-12">
                 <label for="">Producto</label>
-                <ng-select name="id_producto" (change)="setProducto()" [(ngModel)]="traslado.id_producto" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar producto</ng-option>
-                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
-                        {{getNombreCompleto(producto)}}
-                    </ng-option>
-                </ng-select>
+                <app-buscador-productos (selectProducto)="productoSelect($event)"></app-buscador-productos>
+                <div *ngIf="producto?.id" class="mt-2">
+                    <span class="badge bg-info">{{ getNombreCompleto(producto) }}</span>
+                    <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProducto()">
+                        <i class="fa fa-times"></i> Limpiar
+                    </button>
+                </div>
             </div>
             <div class="form-group col-md-6">
                 <label for="">De</label>
-                <ng-select [disabled]="!traslado.id_producto" name="id_bodega_de" (change)="setSucursalDe()" [(ngModel)]="traslado.id_bodega_de" class="form-select p-0">
+                <ng-select [disabled]="!producto?.id" name="id_bodega_de" (change)="setSucursalDe()" [(ngModel)]="traslado.id_bodega_de" class="form-select p-0">
                     <ng-option value="" selected>Seleccionar bodega</ng-option>
                     <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
                         {{inventario.nombre_bodega}}
@@ -149,7 +166,7 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="">Para</label>
-                <ng-select [disabled]="!traslado.id_producto" name="id_bodega" (change)="setSucursalPara()" [(ngModel)]="traslado.id_bodega" class="form-select p-0">
+                <ng-select [disabled]="!producto?.id" name="id_bodega" (change)="setSucursalPara()" [(ngModel)]="traslado.id_bodega" class="form-select p-0">
                     <ng-option value="" selected>Seleccionar bodega</ng-option>
                     <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
                         {{inventario.nombre_bodega}}
@@ -157,9 +174,39 @@
                     </ng-option>
                 </ng-select>
             </div>
+            <div class="form-group col-md-6" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.id_bodega_de">
+                <label for="">Lote Origen <span class="text-danger">*</span></label>
+                <ng-select name="lote_id" [(ngModel)]="traslado.lote_id" (change)="setLoteOrigen()" class="form-select p-0" [disabled]="loadingLotes" (open)="cargarLotes()" required>
+                    <ng-option value="">Seleccionar lote</ng-option>
+                    <ng-option *ngFor="let lote of lotes" [value]="lote.id">
+                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                        <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                            (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                        </span>
+                    </ng-option>
+                </ng-select>
+                <small class="text-muted" *ngIf="loadingLotes">Cargando lotes...</small>
+            </div>
+            <div class="form-group col-md-6" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.id_bodega">
+                <label for="">Lote Destino <small class="text-muted">(Opcional)</small></label>
+                <ng-select name="lote_id_destino" [(ngModel)]="traslado.lote_id_destino" class="form-select p-0" [disabled]="loadingLotesDestino" (open)="cargarLotesDestino()">
+                    <ng-option value="">Crear nuevo lote</ng-option>
+                    <ng-option *ngFor="let lote of lotesDestino" [value]="lote.id">
+                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                        <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                            (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                        </span>
+                    </ng-option>
+                </ng-select>
+                <small class="text-muted" *ngIf="loadingLotesDestino">Cargando lotes...</small>
+                <small class="text-muted d-block mt-1">Si no selecciona un lote, se creará uno nuevo con el mismo número del lote origen</small>
+            </div>
             <div class="form-group col-md-6">
                 <label for="stock_real">Cantidad a trasladar:</label>
-                <input type="number" [disabled]="!traslado.id_bodega_de && !traslado.id_bodega" class="form-control text-center" [(ngModel)]="traslado.cantidad" name="cantidad">
+                <input type="number" [disabled]="!traslado.id_bodega_de || !traslado.id_bodega || (producto?.inventario_por_lotes && isLotesActivo() && !traslado.lote_id)" class="form-control text-center" [(ngModel)]="traslado.cantidad" (change)="validarStockLote()" name="cantidad">
+                <small class="text-danger" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.lote_id && traslado.cantidad && !stockLoteSuficiente()">
+                    Stock insuficiente en el lote seleccionado
+                </small>
             </div>
 
             <div class="form-group col-md-6">
@@ -169,12 +216,12 @@
             
             <div class="form-group col-md-6" *ngIf="traslado.id_bodega_de">
                 <label for="traslado">Stock luego del traslado:</label>
-                <p>{{ (bodegaDe.stock * 1) - (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
+                <p>{{ getStockOrigenDespues() | number:'1.2' }}</p>
             </div>
             
             <div class="form-group col-md-6" *ngIf="traslado.id_bodega">
                 <label for="traslado">Stock luego del traslado:</label>
-                <p>{{ (bodegaPara.stock * 1) + (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
+                <p>{{ getStockDestinoDespues() | number:'1.2' }}</p>
             </div>
 
             <div class="form-group col-md-12">
@@ -214,12 +261,13 @@
             </div>
             <div class="form-group col-md-12">
                 <label for="">Producto</label>
-                <ng-select name="id_producto" [(ngModel)]="filtros.id_producto" class="form-select p-0">
-                    <ng-option value="" selected>Todos</ng-option>
-                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
-                        {{getNombreCompleto(producto)}}
-                    </ng-option>
-                </ng-select>
+                <app-buscador-productos (selectProducto)="productoFiltroSelect($event)"></app-buscador-productos>
+                <div *ngIf="productoFiltro?.id" class="mt-2">
+                    <span class="badge bg-info">{{ getNombreCompleto(productoFiltro) }}</span>
+                    <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProductoFiltro()">
+                        <i class="fa fa-times"></i> Limpiar
+                    </button>
+                </div>
             </div>
             <div class="form-group col-md-12">
                 <label for="">Estado:</label>
@@ -244,6 +292,15 @@
                     <option value="">Todos</option>
                     <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="">Concepto:</label>
+                <select [(ngModel)]="filtros.concepto" class="form-select" name="filtros.concepto">
+                    <option value="">Todos</option>
+                    <option *ngFor="let concepto of conceptos" [value]="concepto">
+                        {{ concepto }}
                     </option>
                 </select>
             </div>

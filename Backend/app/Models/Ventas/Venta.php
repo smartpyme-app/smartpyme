@@ -65,6 +65,7 @@ class Venta extends Model {
         'dte',
         'dte_invalidacion',
         'tipo_item_export',
+        'importado',
         'cod_incoterm',
         'incoterm',
         'recinto_fiscal',
@@ -75,6 +76,10 @@ class Venta extends Model {
         'tipo_operacion',
         'tipo_renta',
         'referencia_shopify',
+        'fecha_anulacion',
+        'tipo_anulacion',
+        'motivo_anulacion',
+        'codigo_generacion_remplazo',
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento', 'nombre_proyecto'];

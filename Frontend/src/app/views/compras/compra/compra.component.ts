@@ -1,5 +1,6 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
@@ -20,6 +21,7 @@ export class CompraComponent implements OnInit {
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
+        private location: Location
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
@@ -48,5 +50,12 @@ export class CompraComponent implements OnInit {
         this.modalRef = this.modalService.show(template);
     }
 
+    public goBack() {
+        this.location.back();
+    }
+
+    public imprimir(){
+        window.open(this.apiService.baseUrl + '/api/compra/impresion/' + this.compra.id + '?token=' + this.apiService.auth_token());
+    }
 
 }

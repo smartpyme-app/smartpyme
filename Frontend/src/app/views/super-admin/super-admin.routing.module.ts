@@ -14,6 +14,7 @@ import { DashboardComponent }     from '@views/super-admin/dashboards/dashboard/
 import { AdminSucursalesComponent } from './sucursales/admin-sucursales.component';
 import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.component';
 import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones.component';
+import { AdminPromocionalesComponent } from './promocionales/admin-promocionales.component';
 import { EmpresasFuncionalidadesComponent } from '@views/super-admin/funcionalidades/empresas-funcionalidades.component';
 
 
@@ -37,6 +38,7 @@ const routes: Routes = [
         { path: 'sucursal/:id', component: AdminSucursalComponent, title: 'Sucursal' },
 
         { path: 'suscripciones', component: AdminSuscripcionesComponent, title: 'Suscripciones' },
+        { path: 'promocionales', component: AdminPromocionalesComponent, title: 'Códigos Promocionales' },
         { path: 'funcionalidades', component: EmpresasFuncionalidadesComponent, title: 'Funcionalidades' },
     ]
   }

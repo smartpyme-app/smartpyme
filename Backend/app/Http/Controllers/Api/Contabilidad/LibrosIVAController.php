@@ -561,7 +561,7 @@ class LibrosIVAController extends Controller
 
     public function anuladosLibroExport(Request $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación', 'Crédito fiscal'])) {
             return $alerta;
         }
 
@@ -573,7 +573,7 @@ class LibrosIVAController extends Controller
 
     public function anuladosAnexoExport(Request $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
+        if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación', 'Crédito fiscal'])) {
             return $alerta;
         }
 

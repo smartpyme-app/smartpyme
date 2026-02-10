@@ -7,6 +7,9 @@ use App\Http\Controllers\Api\Inventario\TrasladosController;
     Route::post('/traslado',                 [TrasladosController::class, 'store']);
     Route::delete('/traslado/{id}',          [TrasladosController::class, 'delete']);
     Route::get('/traslados/exportar',        [TrasladosController::class, 'export']);
+    Route::get('/traslado/{id}/pdf',         [TrasladosController::class, 'generarPdf']);
+    Route::get('/traslados/exportar-pdf',    [TrasladosController::class, 'exportarPdf']);
+    Route::get('/traslados/conceptos',       [TrasladosController::class, 'conceptos']);
 
 // use App\Http\Controllers\Api\Inventario\Traslados\TrasladosController;
 // use App\Http\Controllers\Api\Inventario\Traslados\DetallesController;

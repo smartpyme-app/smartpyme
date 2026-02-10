@@ -1,0 +1,452 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3 *ngIf="venta.cotizacion == 1">Nueva Cotización</h3>
+    <h3 *ngIf="venta.cotizacion != 1">Nueva venta</h3>
+    <button *ngIf="venta.cotizacion == 1" class="btn btn-light text-danger" routerLink="/cotizaciones"><i class="fa fa-arrow-left"></i> Regresar</button>
+    <button *ngIf="venta.cotizacion != 1" class="btn btn-light text-danger" routerLink="/ventas"><i class="fa fa-arrow-left"></i> Regresar</button>
+</div>
+
+<section class="card border-0 p-3 mb-3">
+    <div class="row">
+        <div class="form-group col-md-4 col-lg-2">
+            <label for="fecha">Fecha</label><br>
+            <input type="date" class="form-control" [(ngModel)]="venta.fecha" name="fecha" id="fecha">
+        </div>
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="id_usuario">Usuario</label>
+            <select name="id_usuario" [(ngModel)]="venta.id_usuario" class="form-select">
+                <option value="">Seleccione aquí</option>
+                <option [value]="usuario.id" *ngFor="let usuario of usuarios | filter:'id_sucursal':venta.id_sucursal">
+                    {{ usuario.name }}
+                </option>
+            </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="id_bodega">Bodega</label>
+            <select name="id_bodega" [(ngModel)]="venta.id_bodega" class="form-select" (change)="setBodega()">
+                <option [value]="bodega.id" *ngFor="let bodega of bodegas">
+                    {{ bodega.nombre }}
+                </option>
+            </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-2">
+            <label for="id_documento">Documento</label>
+            <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
+                <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+            </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-2">
+            <label for="correlativo">Correlativo</label>
+            <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo" id="correlativo">
+        </div>
+    </div>
+    <div class="row">
+        <h6 class="mt-3">Detalles de la venta</h6>
+        <div class="form-group col-md-12 col-lg-4">
+            <label for="">Cliente</label>
+            <div class="input-group w-100">
+                <div class="flex-grow-1">
+                    <app-buscador-clientes [cliente]="venta?.cliente" (selectCliente)="setCliente($event)"></app-buscador-clientes>
+                </div>
+                <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
+            </div>
+        </div>
+
+        <div class="form-group col-md-12 col-lg-5" *ngIf="venta.cotizacion != 1">
+            <label for="observaciones">Observaciones:</label><br>
+            <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones">
+        </div>
+        <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
+            <label for="">Proyecto</label>
+            <div class="input-group flex-nowrap">
+                <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="venta.id_proyecto" class="form-select p-0">
+                    <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                        {{ proyecto.nombre }}
+                    </ng-option>
+                </ng-select>
+                <app-crear-proyecto [id_proyecto]="venta.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-3" *ngIf="isColumnEnabled('columna_proyecto')">
+            <label for="num_identificacion">Número identificación:</label>
+            <input 
+            type="text" 
+            [(ngModel)]="venta.num_identificacion" 
+            name="num_identificacion" 
+            class="form-control" 
+            id="num_identificacion" 
+            placeholder="Número de identificación">
+        </div>
+    </div>
+</section>
+
+<section class="card border-0 p-3 mb-3" *ngIf="venta.cotizacion != 1 && venta.nombre_documento == 'Factura de exportación'">
+    <div class="row">
+        <h6 class="mt-3">Detalles de exportación</h6>
+        <div class="form-group col-md-6 col-lg-4">
+            <label for="tipo_item_export">Tipo de Ítem</label>
+            <ng-select name="tipo_item_export" [(ngModel)]="venta.tipo_item_export" placeholder="Seleccione aquí" class="form-select p-0">
+                <ng-option value="1">Bienes</ng-option>
+                <ng-option value="2">Servicios</ng-option>
+                <ng-option value="3">Ambos</ng-option>
+                <ng-option value="4">Otros</ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-6 col-lg-4">
+            <label for="cod_incoterm">Tipo de Incoterm</label>
+            <ng-select name="cod_incoterm" [(ngModel)]="venta.cod_incoterm" placeholder="Seleccione aquí" (change)="setIncoterm()" class="form-select p-0">
+                <ng-option [value]="item.cod" *ngFor="let item of incoterms">{{ item.nombre }}</ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-6 col-lg-4">
+            <label for="recinto_fiscal">Recinto Fiscal</label>
+            <ng-select name="recinto_fiscal" [(ngModel)]="venta.recinto_fiscal" placeholder="Seleccione aquí" class="form-select p-0">
+                <ng-option [value]="item.cod" *ngFor="let item of recintos">{{ item.nombre }}</ng-option>
+            </ng-select>
+        </div> 
+        <div class="form-group col-md-6 col-lg-6">
+            <label for="regimen">Régimen</label>
+            <ng-select name="regimen" [(ngModel)]="venta.regimen" placeholder="Seleccione aquí" class="form-select p-0">
+                <ng-option [value]="item.cod" *ngFor="let item of regimenes">
+                    <span title="{{ item.nombre }}">{{ item.nombre }}</span>
+                </ng-option>
+            </ng-select>
+        </div>   
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="seguro">Seguro</label><br>
+            <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.seguro" name="seguro">
+        </div>   
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="flete">Flete</label><br>
+            <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.flete" name="flete">
+        </div>   
+    </div>
+</section>
+
+<section class="card border-0 p-3 mb-3">
+    <h6 class="mt-3">Productos y servicios</h6>
+
+    <app-venta-detalles-v2 [venta]="venta" [usuarios]="usuarios" (update)="updateVenta($event)" (sumTotal)="sumTotal()"></app-venta-detalles-v2>
+
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-sm table-borderless table-condensed mb-0">
+                <tbody>
+                    <tr>
+                        <td class="text-right"><b>Sub Total</b> </td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-right"><b>Descuentos</b> </td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.descuento | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-right"> <b>Impuestos</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngFor="let impuesto of venta?.impuestos">
+                        <td class="text-right"> {{ impuesto.nombre }} </td>
+                        <td style="width: 150px;" class="text-right">
+                            <span *ngIf="!impuesto?.monto">%{{ impuesto.porcentaje }}</span>
+                            <span *ngIf="impuesto?.monto > 0" tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje }}</span>
+                        </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.retencion">
+                        <td class="text-right"> <b>Retención (1%)</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.renta">
+                        <td class="text-right"> <b>Renta (10%)</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.renta_retenida | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.exenta > 0">
+                        <td class="text-right"> <b>Ventas Exentas</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.exenta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.no_sujeta > 0">
+                        <td class="text-right"> <b>Ventas No Sujetas</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.no_sujeta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.cuenta_a_terceros > 0">
+                        <td class="text-right"> <b>Cuenta a terceros</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="tieneAccesoPropina && venta.cobrar_propina">
+                        <td class="text-right"> <b>Propina ({{ apiService.auth_user().empresa.propina_porcentaje | number:'1.0-2' }}%)</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.propina | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-right"> <b>Total</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="tieneAccesoPropina && venta.cobrar_propina">
+                        <td class="text-right"> <b>Total + Propina</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ getTotalConPropina() | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+
+        </div>
+    </div>
+
+
+</section>
+
+<section class="card border-0 p-3 mb-3">
+    <div class="row">
+        <h6 class="mt-3">Detalles de facturación</h6>
+        <!-- Estado: {{ venta.estado }} -->
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
+            <div class="form-switch border rounded">
+              <label for="credito">Venta al crédito</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="venta.credito" name="venta.credito">
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="apiService.auth_user().empresa.venta_consigna && venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
+            <div class="form-switch border rounded">
+              <label for="consigna">Consigna</label>
+              <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch" (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-3" *ngIf="venta.cotizacion == 1">
+            <label for="fecha_expiracion">Fecha de expiración:</label><br>
+            <input type="date" class="form-control" [(ngModel)]="venta.fecha_expiracion" name="fecha_expiracion" id="fecha_expiracion">
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
+            <label for="fecha_pago">Fecha de pago:</label><br>
+            <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" (change)="validarFechaPago()" name="fecha_pago" id="fecha_pago">
+            <div class="text-danger mt-1" style="font-size: 11px;" *ngIf="mensajeValidacionFecha">
+                {{ mensajeValidacionFecha }}
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1">
+            <div class="form-switch bg-light-info rounded">
+              <label for="recurrente">Recurrente</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.recurrente" name="venta.recurrente">
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="percepcion">Retención (1%)</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="compra.retencion">
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-3 without-label ">
+            <div class="form-switch bg-light-info rounded">
+                <label for="renta">Renta (10%)</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.renta" name="renta">
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-3 without-label" *ngIf="tieneAccesoPropina">
+            <div class="form-switch bg-light-info rounded">
+                <label for="cobrar_propina">Propina ({{ apiService.auth_user().empresa.propina_porcentaje | number:'1.0-2' }}%)</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_propina" name="cobrar_propina">
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            <label for="forma_pago">Método de pago</label>
+            <div class="input-group flex-nowrap">
+                <select name="forma_pago" (change)="cambioMetodoDePago()" [(ngModel)]="venta.forma_pago" class="form-select">
+                    <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                </select>
+                <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos" (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.forma_pago != 'Efectivo' && venta.forma_pago != 'Wompi'">
+            <label for="detalle_banco">Bancos <span class="text-danger">*</span></label>
+            <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" (change)="mensajeErrorBanco = ''" class="form-select" [class.is-invalid]="mensajeErrorBanco" required>
+                <option value="">Seleccione aquí</option>
+                <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+            </select>
+            <div class="text-danger mt-1" style="font-size: 11px;" *ngIf="mensajeErrorBanco">
+                {{ mensajeErrorBanco }}
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            <label for="id_canal">Canal</label>
+            <select name="id_canal" [(ngModel)]="venta.id_canal" class="form-select">
+                <option value="">Seleccione aquí</option>
+                <option [value]="canal.id" *ngFor="let canal of canales">{{ canal.nombre }}</option>
+            </select>
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            <label for="id_vendedor">Vendedor</label>
+            <select name="id_vendedor" [(ngModel)]="venta.id_vendedor" class="form-select">
+                <option value="">Seleccione aquí</option>
+                <option [value]="usuario.id" *ngFor="let usuario of usuarios">
+                    {{ usuario.codigo ?  usuario.codigo + ' - ' : '' }} {{ usuario.name }}
+                </option>
+            </select>
+
+        </div>
+        <div class="form-group col-md-12 col-lg-12" *ngIf="venta.cotizacion == 1">
+            <label for="observaciones">Términos de venta:</label><br>
+            <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones" cols="30" rows="3"></textarea>
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            <label for="monto_pago">Efectivo recibido:</label><br>
+            <div class="input-group">
+                <!-- <div class="input-group-text">$</div> -->
+                <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                <input type="number" class="form-control" (keyup)="venta.cambio = venta.monto_pago ? (venta.monto_pago - (venta.efectivo ? venta.efectivo : venta.total)).toFixed(2) : ''" [(ngModel)]="venta.monto_pago" name="monto_pago" id="monto_pago">
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            <label for="cambio">Cambio:</label><br>
+            <div class="input-group">
+                <!-- <div class="input-group-text">$</div> -->
+                <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                <input type="number" class="form-control" disabled [(ngModel)]="venta.cambio" name="cambio" id="cambio">
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras'">
+            <label for="num_orden">Número de orden:</label><br>
+            <input type="text" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden" id="num_orden">
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras'">
+            <label for="num_orden_exento">Número de orden exento:</label><br>
+            <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento" id="num_orden_exento">
+        </div>
+    </div>
+    <div class="row" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta">
+        <div class="form-group col-md-12 col-lg-6 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="descripcion_personalizada">Agrupar detalles de venta y personalizar descripción</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="compra.descripcion_personalizada">
+            </div>
+        </div>
+        <div class="form-group col-md-12 col-lg-6" *ngIf="venta.descripcion_personalizada">
+            <label for="descripcion_impresion">Descripción a mostrar el la impresión del documento:</label>
+            <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
+        </div>
+    </div>
+    <div class="row" *ngIf="(apiService.auth_user()?.empresa?.custom_empresa?.configuraciones?.mostrar_campos_contables ?? true)">
+        <div class="form-group col-6 col-lg-4">
+            <label for="tipo_operacion">Tipo de operación:</label>
+            <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">
+                <option [ngValue]="null">Seleccione aquí</option>
+                <option value="Gravada">Gravada</option>
+                <option value="No Gravada">No Gravada</option>
+                <option value="Excluido">Excluido</option>
+                <option value="Mixta">Mixta</option>
+            </select>
+        </div>
+        <div class="form-group col-6 col-lg-4">
+            <label for="filtro.tipo_renta">Tipo de ingreso:</label>
+            <select name="tipo_renta" class="form-select" [(ngModel)]="venta.tipo_renta">
+                <option [ngValue]="null">Seleccione aquí</option>
+                <option value="Profesiones, Artes y Oficios">Profesiones, Artes y Oficios</option>
+                <option value="Actividades de Servicios">Actividades de Servicios</option>
+                <option value="Actividades Comerciales">Actividades Comerciales</option>
+                <option value="Actividades Industriales">Actividades Industriales</option>
+                <option value="Actividades Agropecuarias">Actividades Agropecuarias</option>
+                <option value="Utilidades y Dividendos">Utilidades y Dividendos</option>
+                <option value="Exportaciones de bienes">Exportaciones de bienes</option>
+                <option value="Servicios Realizados en el Exterior y Utilizados en El Salvador">Servicios Realizados en el Exterior y Utilizados en El Salvador</option>
+                <option value="Exportaciones de servicios">Exportaciones de servicios</option>
+                <option value="Otras Rentas Gravables">Otras Rentas Gravables</option>
+                <option value="Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910">Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910</option>
+                <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
+            </select>
+        </div>
+    </div>
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <button type="submit" (click)="onFacturar()" [disabled]="saving || emiting" class="ml-3 btn btn-primary float-end tcla-F8" title="Procesar venta (F8)">
+                <span *ngIf="!saving && !emiting">
+                    Procesar
+                    <span *ngIf="venta.cotizacion == 1">cotización</span>
+                    <span *ngIf="venta.cotizacion != 1">venta</span>
+                    <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                </span>
+                <span *ngIf="saving && !emiting">Procesando...</span>
+                <span *ngIf="emiting">Emitiendo...</span>
+            </button>
+            <!-- <button type="submit" (click)="openModalFacturar(mfacturar)" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar venta (F10)">
+                Revisar información <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+            </button> -->
+            <button (click)="limpiar()" class="tcla-Delete" style="opacity: 0;">.</button>
+        </div>
+    </div>
+</section>
+
+<ng-template #mfacturar>
+  <div class="modal-header">
+    <div class="modal-title text-center w-100">
+        <p class="my-0">{{venta.tipo_documento}}</p>
+        <h3>{{venta.correlativo}}</h3>
+    </div>
+    <button type="button" class="close float-end btn-option" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="facturacion" autocomplete="off" (ngSubmit)="onFacturar()">
+        <div class="row text-center">
+            <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ venta.total | currency:'USD':'symbol':'1.2' }}</span></h4>
+            <h4 class="col-md-6">Vuelto: <span class="badge badge-info" *ngIf="venta.recibido">{{ venta.recibido - venta.total | currency:'USD':'symbol':'1.2' }}</span> <span class="badge badge-info" *ngIf="!venta.recibido">$0.00</span></h4>
+            <div class="form-group text-center col-md-12 my-3">
+                <label for="recibido">Recibido:</label>
+                <input type="number" name="recibido" [(ngModel)]="venta.recibido" placeholder="{{ venta.total | currency:'USD':'symbol':'1.2' }}" class="form-control text-center">
+            </div>
+
+            <div class="form-group col-md-12 mb-3" *ngIf="!venta.nota">
+                <label for="nota">Nota:</label><br>
+                <input type="text" class="form-control" [(ngModel)]="venta.nota" name="nota" id="nota">
+            </div>
+
+            <label class="mt-4" style="font-size: 16px;"><input style="width: 15px; height: 15px;" type="checkbox" [(ngModel)]="imprimir" name="imprimir"> Imprimir</label>
+
+        </div>
+        <div class="row text-center">
+            <div class="col-md-12 mt-4">
+                <button type="submit" class="btn btn-primary btn-block tcla-F12" id="submit" [disabled]="loading">
+                    <span *ngIf="!loading">Cobrar <small>(F12)</small></span>
+                    <span *ngIf="loading">Cobrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #msupervisor>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Autorización</h4>
+  </div>
+  <div class="modal-body">
+    <div class="row text-center">
+        <form name="form" (ngSubmit)="supervisorCheck()" autocomplete="off">
+            <div class="form-group col-md-12">
+                <label for="codigo">Ingrese el código de supervisor:</label>
+                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center" autocomplete="off">
+            </div>
+            <div class="col-md-12">
+                <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+  </div>
+</ng-template>
+

@@ -12,10 +12,23 @@ class WooCommerceExportService
 {
     public function exportarProductos(User $user, $productos, $bodega)
     {
+        // Obtener la empresa del usuario para acceder a la configuración de WooCommerce
+        $empresa = $user->empresa;
+        
+        if (!$empresa) {
+            throw new \Exception("El usuario no tiene una empresa asociada");
+        }
+        
+        if (empty($empresa->woocommerce_store_url) || 
+            empty($empresa->woocommerce_consumer_key) || 
+            empty($empresa->woocommerce_consumer_secret)) {
+            throw new \Exception("La configuración de WooCommerce no está completa en la empresa");
+        }
+        
         $client = new WooCommerceApiClient(
-            $user->woocommerce_store_url,
-            $user->woocommerce_consumer_key,
-            $user->woocommerce_consumer_secret
+            $empresa->woocommerce_store_url,
+            $empresa->woocommerce_consumer_key,
+            $empresa->woocommerce_consumer_secret
         );
 
         // Precalcular stocks para todos los productos de una vez

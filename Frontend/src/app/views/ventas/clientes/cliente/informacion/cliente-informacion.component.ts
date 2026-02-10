@@ -23,6 +23,7 @@ export class ClienteInformacionComponent implements OnInit {
   public municipios: any = [];
   public actividad_economicas: any = [];
   public contacto: any = {};
+  public vendedores: any = [];
   //loading
   public loading_contacto = false;
   public esNuevo = false;
@@ -46,6 +47,16 @@ export class ClienteInformacionComponent implements OnInit {
     this.municipios = JSON.parse(localStorage.getItem('municipios')!);
     this.actividad_economicas = JSON.parse(
       localStorage.getItem('actividad_economicas')!
+    );
+    
+    // Cargar vendedores
+    this.apiService.getAll('usuarios/list').subscribe(
+      (usuarios) => {
+        this.vendedores = usuarios;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
     );
   }
 
