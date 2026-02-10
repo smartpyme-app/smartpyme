@@ -204,31 +204,15 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
                 
                 // Validar giro/actividad económica
                 'giro' => 'required|string',
-                'cod_giro' => [
-                    'required',
-                    Rule::exists('actividades_economicas', 'cod')
-                ],
                 
                 // Validar departamento
                 'departamento' => 'required|string',
-                'cod_departamento' => [
-                    'required',
-                    Rule::exists('departamentos', 'cod')
-                ],
                 
                 // Validar municipio
                 'municipio' => 'required|string', 
-                'cod_municipio' => [
-                    'required',
-                    Rule::exists('municipios', 'cod')
-                ],
                 
                 // Validar distrito
                 'distrito' => 'required|string',
-                'cod_distrito' => [
-                    'required',
-                    Rule::exists('distritos', 'cod')
-                ],
                 
                 // Campos opcionales
                 'tipo_contribuyente' => 'nullable|string|max:100',
@@ -260,19 +244,15 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
     {
         return [
             // Actividad económica
-            'cod_giro.exists' => 'El giro seleccionado no es válido.',
             'giro.required' => 'Debe seleccionar un giro de la lista.',
             
             // Departamento
-            'cod_departamento.exists' => 'El departamento seleccionado no es válido.',
             'departamento.required' => 'Debe seleccionar un departamento.',
             
             // Municipio
-            'cod_municipio.exists' => 'El municipio seleccionado no es válido.',
             'municipio.required' => 'Debe seleccionar un municipio.',
             
             // Distrito
-            'cod_distrito.exists' => 'El distrito seleccionado no es válido.',
             'distrito.required' => 'Debe seleccionar un distrito.',
             
             // Campos básicos

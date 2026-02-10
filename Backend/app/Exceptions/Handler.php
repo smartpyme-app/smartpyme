@@ -71,6 +71,18 @@ class Handler extends ExceptionHandler
 
             if ($exception instanceof ValidationException) {
 
+                // Importación Excel: incluir número de fila en cada mensaje
+                if ($exception instanceof \Maatwebsite\Excel\Validators\ValidationException) {
+                    $errors = [];
+                    foreach ($exception->failures() as $failure) {
+                        $fila = $failure->row();
+                        foreach ($failure->errors() as $mensaje) {
+                            $errors[] = "Fila {$fila}: {$mensaje}";
+                        }
+                    }
+                    return Response()->json(['error' => $errors, 'code' => 422], 422);
+                }
+
                 $errors = $exception->validator->messages()->all();
                 return  Response()->json(['error' => $errors, 'code' => 422], 422);
             }
