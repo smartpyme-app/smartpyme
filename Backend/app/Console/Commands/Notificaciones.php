@@ -77,7 +77,9 @@ class Notificaciones extends Command
                     }
                 }
        
+        // Solo facturas (no cotizaciones) pendientes de cobro
         $ventas = Venta::withoutGlobalScopes()->where('estado', 'Pendiente')
+                            ->where('cotizacion', 0)
                             ->whereBetween('fecha_pago', [$fechaStart, $fechaEnd])
                             ->get();
 
@@ -90,6 +92,31 @@ class Notificaciones extends Command
                             'descripcion' => $descripcion,
                             'tipo' => 'Cuentas por cobrar',
                             'categoria' => 'Ventas',
+                            'prioridad' => 'Alta',
+                            'leido' => false,
+                            'referencia' => 'venta',
+                            'id_referencia' => $venta->id,
+                            'id_empresa' => $venta->id_empresa,
+                            'id_sucursal' => $venta->id_sucursal,
+                        ]);
+                    }
+                }
+
+        // Cotizaciones pendientes → notificación de seguimiento
+        $cotizaciones = Venta::withoutGlobalScopes()->where('estado', 'Pendiente')
+                            ->where('cotizacion', 1)
+                            ->whereBetween('fecha_pago', [$fechaStart, $fechaEnd])
+                            ->get();
+
+                foreach($cotizaciones as $venta){
+                    $descripcion = $venta->nombre_documento . ' #' . $venta->correlativo .' de ' .$venta->nombre_cliente .' por $' . number_format($venta->total, 2) .' está por vencer el ' . Carbon::parse($venta->fecha_pago)->format('d/m/Y') . '.';
+                    $exite = Notificacion::where('descripcion', $descripcion)->first();
+                    if (!$exite) {
+                        Notificacion::create([
+                            'titulo' => '📋 Seguimiento',
+                            'descripcion' => $descripcion,
+                            'tipo' => 'Seguimiento',
+                            'categoria' => 'Cotizaciones',
                             'prioridad' => 'Alta',
                             'leido' => false,
                             'referencia' => 'venta',
