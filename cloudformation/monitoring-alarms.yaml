@@ -30,6 +30,8 @@ Resources:
       Dimensions:
         - Name: ServiceName
           Value: !ImportValue smartpyme-web-app-WebServiceName
+        - Name: ServiceId
+          Value: !ImportValue smartpyme-web-app-ServiceId
 
   WebAppHighMemoryAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -46,6 +48,8 @@ Resources:
       Dimensions:
         - Name: ServiceName
           Value: !ImportValue smartpyme-web-app-WebServiceName
+        - Name: ServiceId
+          Value: !ImportValue smartpyme-web-app-ServiceId
 
   WebAppHighResponseTimeAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -62,6 +66,8 @@ Resources:
       Dimensions:
         - Name: ServiceName
           Value: !ImportValue smartpyme-web-app-WebServiceName
+        - Name: ServiceId
+          Value: !ImportValue smartpyme-web-app-ServiceId
 
   # App Runner Worker Service Alarms
   WorkerAppHighCPUAlarm:
@@ -79,6 +85,8 @@ Resources:
       Dimensions:
         - Name: ServiceName
           Value: !ImportValue smartpyme-worker-app-WorkerServiceName
+        - Name: ServiceId
+          Value: !ImportValue smartpyme-worker-app-ServiceId
 
   WorkerAppHighMemoryAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -95,6 +103,8 @@ Resources:
       Dimensions:
         - Name: ServiceName
           Value: !ImportValue smartpyme-worker-app-WorkerServiceName
+        - Name: ServiceId
+          Value: !ImportValue smartpyme-worker-app-ServiceId
 
   # RDS Database Alarms
   DatabaseHighCPUAlarm:
@@ -302,10 +312,10 @@ Resources:
                 "height": 6,
                 "properties": {
                   "metrics": [
-                    [ "AWS/AppRunner", "CPUUtilization", "ServiceName", "${WebServiceName}" ],
-                    [ ".", "MemoryUtilization", ".", "." ],
-                    [ ".", "CPUUtilization", ".", "${WorkerServiceName}" ],
-                    [ ".", "MemoryUtilization", ".", "." ]
+                    [ "AWS/AppRunner", "CPUUtilization", "ServiceName", "${WebServiceName}", "ServiceId", "${WebServiceId}" ],
+                    [ ".", "MemoryUtilization", ".", ".", ".", "." ],
+                    [ ".", "CPUUtilization", ".", "${WorkerServiceName}", ".", "${WorkerServiceId}" ],
+                    [ ".", "MemoryUtilization", ".", ".", ".", "." ]
                   ],
                   "view": "timeSeries",
                   "stacked": false,
@@ -328,8 +338,8 @@ Resources:
                 "height": 6,
                 "properties": {
                   "metrics": [
-                    [ "AWS/AppRunner", "ResponseTime", "ServiceName", "${WebServiceName}" ],
-                    [ ".", "RequestCount", ".", "." ]
+                    [ "AWS/AppRunner", "ResponseTime", "ServiceName", "${WebServiceName}", "ServiceId", "${WebServiceId}" ],
+                    [ ".", "RequestCount", ".", ".", ".", "." ]
                   ],
                   "view": "timeSeries",
                   "stacked": false,
@@ -403,7 +413,9 @@ Resources:
             ]
           }
         - WebServiceName: !ImportValue smartpyme-web-app-WebServiceName
+          WebServiceId: !ImportValue smartpyme-web-app-ServiceId
           WorkerServiceName: !ImportValue smartpyme-worker-app-WorkerServiceName
+          WorkerServiceId: !ImportValue smartpyme-worker-app-ServiceId
           DailyReportsQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-queue-name]]
           ShopifySyncQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-queue-name]]
           EmailNotificationsQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-queue-name]]

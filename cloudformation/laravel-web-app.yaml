@@ -352,8 +352,8 @@ Resources:
         AuthenticationConfiguration:
           AccessRoleArn: !GetAtt ECRAccessRole.Arn
       InstanceConfiguration:
-        Cpu: 1 vCPU #4 vCPU
-        Memory: 4 GB #8 GB
+        Cpu: 4 vCPU
+        Memory: 8 GB
         InstanceRoleArn: !GetAtt AppRunnerRole.Arn
       HealthCheckConfiguration:
         Protocol: HTTP
@@ -388,6 +388,12 @@ Outputs:
     Value: smartpyme-web-app
     Export:
       Name: !Sub '${AWS::StackName}-WebServiceName'
+  
+  ServiceId:
+    Description: SmartPyme Web App Runner Service ID
+    Value: !GetAtt WebAppRunnerService.ServiceId
+    Export:
+      Name: !Sub '${AWS::StackName}-ServiceId'
   
   VpcConnectorArn:
     Description: VPC Connector ARN for sharing
