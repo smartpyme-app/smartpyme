@@ -28,4 +28,3 @@ use Illuminate\Support\Facades\Route;
     Route::get('/suscripcion/{id}/recibo-suscripcion',     [EmpresasController::class, 'printReciboSuscripcion']);
     Route::post('/suscripcion/pago-recurrente',     [EmpresasController::class, 'updatePagoRecurrente']);
 
-?>

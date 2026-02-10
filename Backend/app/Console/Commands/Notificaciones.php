@@ -135,16 +135,19 @@ class Notificaciones extends Command
             'descripcion' => 'Se generaron automáticamente los recordatorios.',
         ];
 
-        Mail::send('mails.notificacion', ['data' => $data ], function ($m) use ($data) {
+        /*Mail::send('mails.notificacion', ['data' => $data ], function ($m) use ($data) {
             $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
             ->to('alvarado.websis@gmail.com', 'Jesus Alvarado')
             ->to(env('MAIL_TO_ADDRESS'), 'SmartPyme')
             // ->cc('alvarado.websis@gmail.com')
             // ->replyTo($request->correo)
             ->subject('Notificaciones generados');
-        });
+        });*/
 
-
+        \Log::info('Notificaciones generadas automáticamente', [
+            'fecha' => Carbon::now()->format('Y-m-d H:i:s'),
+            'descripcion' => 'Se generaron automáticamente los recordatorios'
+        ]);
 
     }
 }

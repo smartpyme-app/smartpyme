@@ -7,4 +7,3 @@ use App\Http\Controllers\Api\SuperAdmin\TransaccionesController;
     Route::post('/transaccion',                  [TransaccionesController::class, 'store']);
     Route::delete('/transaccion/{id}',           [TransaccionesController::class, 'delete']);
 
-?>

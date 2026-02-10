@@ -141,7 +141,7 @@
                         <td *ngIf="usuario.empresa.vendedor_detalle_venta"> {{ detalle?.vendedor?.name }} </td>
                         <td class="d-flex">
                             <div>
-                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px">
+                                <img src="{{ apiService.appUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px">
                             </div>
                             <div class="ms-3">
                                 {{ detalle.descripcion }}<span *ngIf="detalle?.producto?.nombre_variante" class="text-info"> ({{ detalle?.producto?.nombre_variante }})</span> <br>

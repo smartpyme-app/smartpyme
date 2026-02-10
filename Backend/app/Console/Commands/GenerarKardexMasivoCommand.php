@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Kardex;
 use App\Mail\KardexMasivoMail;
-use App\Mail\KardexMasivoErrorMail;
+use App\Jobs\SendKardexMasivoErrorEmail;
 
 class GenerarKardexMasivoCommand extends Command
 {
@@ -59,7 +59,7 @@ class GenerarKardexMasivoCommand extends Command
 
             // Generar archivo CSV en lugar de Excel para mejor rendimiento
             $fileName = 'kardex_completo_' . $idEmpresa . '_' . date('Ymd_His') . '.csv';
-            $filePath = storage_path('app/temp/' . $fileName);
+            $filePath = '/tmp/app/temp/' . $fileName;
 
             // Crear directorio si no existe
             if (!file_exists(dirname($filePath))) {
@@ -165,26 +165,31 @@ class GenerarKardexMasivoCommand extends Command
 
             fclose($file);
 
-            $this->info("Archivo generado: {$filePath}");
+            $this->info("Archivo generado localmente: {$filePath}");
             $this->info("Total de registros procesados: {$totalProcessed}");
 
-            // Enviar por correo
-            Mail::to($email)->send(new KardexMasivoMail($filePath, $fileName));
+            // Subir archivo a S3
+            $s3Path = 'app/temp/' . $fileName;
+            \Storage::disk('s3-storage')->put($s3Path, file_get_contents($filePath));
+            $this->info("Archivo subido a S3: {$s3Path}");
 
-            $this->info("Correo enviado exitosamente a: {$email}");
-
-            // Limpiar archivo temporal
+            // Eliminar archivo local
             unlink($filePath);
+
+            // Enviar por correo usando cola con la ruta de S3
+            \App\Jobs\SendKardexMasivoEmail::dispatch($email, $s3Path, $fileName);
+
+            $this->info("Correo encolado exitosamente para: {$email}");
 
             return 0;
         } catch (\Exception $e) {
             $this->error("Error al generar kardex masivo: " . $e->getMessage());
 
-            // Enviar correo de error
+            // Enviar correo de error usando cola
             try {
-                Mail::to($email)->send(new KardexMasivoErrorMail($e->getMessage()));
+                \App\Jobs\SendKardexMasivoErrorEmail::dispatch($email, $e->getMessage());
             } catch (\Exception $mailError) {
-                $this->error("Error al enviar correo de error: " . $mailError->getMessage());
+                $this->error("Error al encolar correo de error: " . $mailError->getMessage());
             }
 
             return 1;

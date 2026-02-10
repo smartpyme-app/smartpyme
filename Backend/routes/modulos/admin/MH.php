@@ -37,4 +37,4 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
     // Generar DTE PDF
     Route::get('/reporte/dte-json/{id}/{tipo}',    [MHDTEController::class, 'generarDTEJSON']);
     
-?>
+

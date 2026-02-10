@@ -5,7 +5,7 @@
     </div>
     <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
       <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
-        <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1"> 
+        <img style="width: 45px; height: 45px;" src="{{ apiService.appUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1"> 
         <span id="producto_nombre" class="col-7 ps-1">
             <!-- <small>Nombre:</small> <br> -->
             {{ getNombreCompleto(producto) }} <br>

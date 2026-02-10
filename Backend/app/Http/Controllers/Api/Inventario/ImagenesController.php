@@ -30,14 +30,15 @@ class ImagenesController extends Controller
 
         if ($request->hasFile('file')) {
             if ($imagen->id && $imagen->img && $imagen->img != 'productos/default.jpg') {
-                Storage::delete($imagen->img);
+                $oldPath = 'img' . $imagen->img;
+                Storage::disk('s3-public')->delete($oldPath);
             }
             $path   = $request->file('file');
             $resize = Image::make($path)->resize(750,750)->encode('jpg', 75);
             $hash = md5($resize->__toString());
-            $path = "productos/{$hash}.jpg";
-            $resize->save(public_path('img/'.$path), 50);
-            $imagen->img = "/" . $path;
+            $s3Path = "img/productos/{$hash}.jpg";
+            Storage::disk('s3-public')->put($s3Path, $resize->__toString());
+            $imagen->img = "productos/{$hash}.jpg";
         }
 
         $imagen->save();
@@ -49,8 +50,10 @@ class ImagenesController extends Controller
     public function delete($id)
     {
         $imagen = Imagen::findOrFail($id);
-        if ($imagen->img)
-            Storage::delete($imagen->img);
+        if ($imagen->img) {
+            $s3Path = 'img/' . $imagen->img;
+            Storage::disk('s3-public')->delete($s3Path);
+        }
         $imagen->delete();
 
         return Response()->json($imagen, 201);

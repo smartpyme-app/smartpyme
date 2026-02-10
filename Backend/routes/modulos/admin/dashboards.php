@@ -9,4 +9,4 @@ use App\Http\Controllers\Api\Admin\DashboardsController;
     Route::delete('/dashboard/{id}',             [DashboardsController::class, 'delete']);
 
 
-?>
+

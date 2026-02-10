@@ -14,6 +14,11 @@ class Imagen extends Model {
     );
 
 
+    public function getImgAttribute($value)
+    {
+        return ltrim($value, '/');
+    }
+
     public function producto(){
         return $this->belongsTo('App\Models\Inventario\Producto', 'id_producto');
     }

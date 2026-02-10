@@ -10,5 +10,3 @@ use Illuminate\Support\Facades\Route;
     Route::post('/proyectos/filtrar',    [ProyectosController::class, 'filter']);
     Route::delete('/proyecto/{id}',      [ProyectosController::class, 'delete']);
 
-
-?>

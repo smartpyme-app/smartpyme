@@ -8,5 +8,4 @@ use App\Http\Controllers\Api\Compras\Gastos\AbonosController;
     Route::delete('/gasto/abono/{id}',    [AbonosController::class, 'delete']);
     Route::get('/gastos/abonos/exportar',    [AbonosController::class, 'export']);
 
-?>
 

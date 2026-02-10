@@ -7,7 +7,7 @@
             </div>
             <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
               <a href="javascript:void(0);" class="list-group-item d-flex gap-2" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
-                <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px"> 
+                <img src="{{ apiService.appUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px"> 
                 <p class="mb-0">
                     {{ getNombreCompleto(producto) }} <br>
                     <small *ngIf="tieneShopify && producto.descripcion" class="text-muted">
@@ -108,7 +108,7 @@
                                     <input type="radio" name="productos" id="producto{{producto.id}}" class="form-check" (click)="onCheckProducto(producto)">
                                 </td>
                                 <td>
-                                    <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
+                                    <img src="{{ apiService.appUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
                                     {{ getNombreCompleto(producto) }}
                                     <br>
                                     <small *ngIf="tieneShopify && producto.descripcion" class="text-muted">

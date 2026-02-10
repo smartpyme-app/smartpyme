@@ -7,4 +7,3 @@ use App\Http\Controllers\Api\SuperAdmin\PlanesController;
     Route::get('/plan/{id}',             [PlanesController::class, 'read']);
     Route::delete('/plan/{id}',          [PlanesController::class, 'delete']);
 
-?>

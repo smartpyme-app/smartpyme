@@ -24,6 +24,3 @@ use Illuminate\Support\Facades\Route;
     Route::get('/devolucion/ventas/buscar/{txt}',      [DevolucionVentasController::class, 'search']);
     Route::get('/devolucion/ventas/{filtro}/{valor}',  [DevolucionVentasController::class, 'filtro']);
     Route::get('/devolucion/venta/detalles/{id}',      [DevolucionVentasController::class, 'detalles']);
-
-
-?>

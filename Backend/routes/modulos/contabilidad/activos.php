@@ -13,5 +13,3 @@ use App\Http\Controllers\Api\Contabilidad\Activos\CategoriasController;
     Route::post('/activos/categoria',             [CategoriasController::class, 'store']);
     Route::delete('/activos/categoria/{id}',         [CategoriasController::class, 'delete']);
 
-
-?>

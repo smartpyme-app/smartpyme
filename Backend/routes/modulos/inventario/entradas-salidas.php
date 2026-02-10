@@ -41,4 +41,3 @@ use App\Http\Controllers\Api\Inventario\Salidas\DetallesController as SDControll
     Route::delete('/salida/detalle/{id}', [SDController::class, 'delete']);
 
 
-?>

@@ -1970,10 +1970,10 @@ class ProductosController extends Controller
             $imagenesExistentes = \App\Models\Inventario\Imagen::where('id_producto', $productoId)->get();
 
             foreach ($imagenesExistentes as $imagen) {
-                // Eliminar archivo físico si existe
-                $rutaImagen = public_path('img' . $imagen->img);
-                if (file_exists($rutaImagen)) {
-                    unlink($rutaImagen);
+                // Eliminar archivo de S3 si existe
+                if ($imagen->img && strpos($imagen->img, 'productos/') !== false) {
+                    $s3Path = 'img/' . $imagen->img;
+                    \Storage::disk('s3-public')->delete($s3Path);
                 }
 
                 // Eliminar registro de la base de datos
@@ -2010,18 +2010,12 @@ class ProductosController extends Controller
                 return;
             }
 
-            // Crear directorio si no existe
-            $directorioProductos = public_path('img/productos');
-            if (!file_exists($directorioProductos)) {
-                mkdir($directorioProductos, 0755, true);
-            }
-
             // Generar nombre único para la imagen
             $extension = pathinfo(parse_url($urlImagen, PHP_URL_PATH), PATHINFO_EXTENSION);
             $extension = $extension ?: 'jpg'; // Default a jpg si no se puede determinar
 
             $nombreArchivo = 'producto_' . $producto->id . '_' . $index . '_' . time() . '.' . $extension;
-            $rutaCompleta = $directorioProductos . '/' . $nombreArchivo;
+            $s3Path = 'productos/' . $nombreArchivo;
 
             // Descargar imagen
             $imagenContenido = $this->descargarImagenDesdeUrl($urlImagen);
@@ -2034,29 +2028,23 @@ class ProductosController extends Controller
                 return;
             }
 
-            // Guardar archivo
-            if (file_put_contents($rutaCompleta, $imagenContenido) === false) {
-                Log::error("Error guardando archivo de imagen", [
-                    'producto_id' => $producto->id,
-                    'ruta_archivo' => $rutaCompleta,
-                    'url_imagen' => $urlImagen
-                ]);
-                return;
-            }
+            // Subir archivo a S3
+            \Storage::disk('s3-public')->put($s3Path, $imagenContenido);
 
-            // Guardar en base de datos
+            // Guardar en base de datos con URL de S3
             $imagen = new \App\Models\Inventario\Imagen();
             $imagen->id_producto = $producto->id;
-            $imagen->img = '/productos/' . $nombreArchivo;
+            $imagen->img = 'productos/' . $nombreArchivo;
             $imagen->shopify_image_id = $imagenShopify['id'] ?? null;
             $imagen->save();
 
-            Log::info("Imagen descargada y guardada exitosamente", [
+            Log::info("Imagen descargada y guardada exitosamente en S3", [
                 'producto_id' => $producto->id,
                 'nombre_archivo' => $nombreArchivo,
+                's3_path' => $s3Path,
                 'url_original' => $urlImagen,
                 'shopify_image_id' => $imagenShopify['id'] ?? null,
-                'tamaño_archivo' => filesize($rutaCompleta)
+                's3_url' => $imagen->img
             ]);
         } catch (\Exception $e) {
             Log::error("Error descargando y guardando imagen: " . $e->getMessage(), [

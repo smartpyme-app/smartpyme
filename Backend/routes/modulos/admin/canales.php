@@ -9,4 +9,3 @@ use App\Http\Controllers\Api\Admin\CanalesController;
     Route::delete('/canal/{id}',              [CanalesController::class, 'delete']);
     
 
-?>
