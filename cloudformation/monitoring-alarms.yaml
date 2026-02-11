@@ -5,11 +5,6 @@ Parameters:
   DatabaseInstanceId:
     Type: String
     Description: RDS instance identifier
-  
-  CloudFrontDistributionId:
-    Type: String
-    Description: CloudFront distribution ID
-    Default: ""
 
 
 
@@ -30,7 +25,7 @@ Resources:
       Dimensions:
         - Name: ServiceName
           Value: !ImportValue smartpyme-web-app-WebServiceName
-        - Name: ServiceId
+        - Name: ServiceID
           Value: !ImportValue smartpyme-web-app-ServiceId
 
   WebAppHighMemoryAlarm:
@@ -48,7 +43,7 @@ Resources:
       Dimensions:
         - Name: ServiceName
           Value: !ImportValue smartpyme-web-app-WebServiceName
-        - Name: ServiceId
+        - Name: ServiceID
           Value: !ImportValue smartpyme-web-app-ServiceId
 
   WebAppHighResponseTimeAlarm:
@@ -56,17 +51,17 @@ Resources:
     Properties:
       AlarmName: SmartPyme-WebApp-High-Response-Time
       AlarmDescription: Alert when web app response time is high
-      MetricName: ResponseTime
+      MetricName: RequestLatency
       Namespace: AWS/AppRunner
-      Statistic: Average
+      Statistic: Maximum
       Period: 300
       EvaluationPeriods: 2
-      Threshold: 5000
+      Threshold: 3000
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ServiceName
           Value: !ImportValue smartpyme-web-app-WebServiceName
-        - Name: ServiceId
+        - Name: ServiceID
           Value: !ImportValue smartpyme-web-app-ServiceId
 
   # App Runner Worker Service Alarms
@@ -85,7 +80,7 @@ Resources:
       Dimensions:
         - Name: ServiceName
           Value: !ImportValue smartpyme-worker-app-WorkerServiceName
-        - Name: ServiceId
+        - Name: ServiceID
           Value: !ImportValue smartpyme-worker-app-ServiceId
 
   WorkerAppHighMemoryAlarm:
@@ -103,7 +98,7 @@ Resources:
       Dimensions:
         - Name: ServiceName
           Value: !ImportValue smartpyme-worker-app-WorkerServiceName
-        - Name: ServiceId
+        - Name: ServiceID
           Value: !ImportValue smartpyme-worker-app-ServiceId
 
   # RDS Database Alarms
@@ -155,41 +150,6 @@ Resources:
         - Name: DBInstanceIdentifier
           Value: !Ref DatabaseInstanceId
 
-  # CloudFront Alarms (conditional)
-  CloudFrontHighErrorRateAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Condition: HasCloudFront
-    Properties:
-      AlarmName: SmartPyme-CloudFront-High-Error-Rate
-      AlarmDescription: Alert when CloudFront 4xx/5xx error rate is high
-      MetricName: 4xxErrorRate
-      Namespace: AWS/CloudFront
-      Statistic: Average
-      Period: 300
-      EvaluationPeriods: 2
-      Threshold: 5
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: DistributionId
-          Value: !Ref CloudFrontDistributionId
-
-  CloudFrontHighLatencyAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Condition: HasCloudFront
-    Properties:
-      AlarmName: SmartPyme-CloudFront-High-Latency
-      AlarmDescription: Alert when CloudFront origin latency is high
-      MetricName: OriginLatency
-      Namespace: AWS/CloudFront
-      Statistic: Average
-      Period: 300
-      EvaluationPeriods: 2
-      Threshold: 3000
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: DistributionId
-          Value: !Ref CloudFrontDistributionId
-
   # CloudWatch Alarms for SQS Queues
   # Daily Reports Queue High Messages
   DailyReportsQueueHighMessagesAlarm:
@@ -197,12 +157,12 @@ Resources:
     Properties:
       AlarmName: SmartPyme-DailyReports-Queue-High-Messages
       AlarmDescription: Alert when daily reports queue has too many messages
-      MetricName: ApproximateNumberOfVisibleMessages
+      MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Average
-      Period: 300
+      Period: 1800
       EvaluationPeriods: 2
-      Threshold: 10
+      Threshold: 50
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
@@ -216,12 +176,12 @@ Resources:
     Properties:
       AlarmName: SmartPyme-ShopifySync-Queue-High-Messages
       AlarmDescription: Alert when Shopify sync queue has too many messages
-      MetricName: ApproximateNumberOfVisibleMessages
+      MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Average
-      Period: 300
+      Period: 1800
       EvaluationPeriods: 2
-      Threshold: 10
+      Threshold: 50
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
@@ -233,12 +193,12 @@ Resources:
     Properties:
       AlarmName: SmartPyme-EmailNotifications-Queue-High-Messages
       AlarmDescription: Alert when email notifications queue has too many messages
-      MetricName: ApproximateNumberOfVisibleMessages
+      MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Average
-      Period: 300
+      Period: 1800
       EvaluationPeriods: 2
-      Threshold: 10
+      Threshold: 50
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
@@ -250,9 +210,9 @@ Resources:
     Properties:
       AlarmName: SmartPyme-DailyReports-DLQ-Messages
       AlarmDescription: Alert when messages appear in daily reports DLQ
-      MetricName: ApproximateNumberOfVisibleMessages
+      MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
-      Statistic: Sum
+      Statistic: Maximum
       Period: 300
       EvaluationPeriods: 1
       Threshold: 0
@@ -268,9 +228,9 @@ Resources:
     Properties:
       AlarmName: SmartPyme-Email-DLQ-Messages
       AlarmDescription: Alert when messages appear in email DLQ
-      MetricName: ApproximateNumberOfVisibleMessages
+      MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
-      Statistic: Sum
+      Statistic: Maximum
       Period: 300
       EvaluationPeriods: 1
       Threshold: 0
@@ -284,9 +244,9 @@ Resources:
     Properties:
       AlarmName: SmartPyme-Shopify-DLQ-Messages
       AlarmDescription: Alert when messages appear in Shopify DLQ
-      MetricName: ApproximateNumberOfVisibleMessages
+      MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
-      Statistic: Sum
+      Statistic: Maximum
       Period: 300
       EvaluationPeriods: 1
       Threshold: 0
@@ -308,11 +268,11 @@ Resources:
                 "type": "metric",
                 "x": 0,
                 "y": 0,
-                "width": 12,
+                "width": 24,
                 "height": 6,
                 "properties": {
                   "metrics": [
-                    [ "AWS/AppRunner", "CPUUtilization", "ServiceName", "${WebServiceName}", "ServiceId", "${WebServiceId}" ],
+                    [ "AWS/AppRunner", "CPUUtilization", "ServiceName", "${WebServiceName}", "ServiceID", "${WebServiceId}" ],
                     [ ".", "MemoryUtilization", ".", ".", ".", "." ],
                     [ ".", "CPUUtilization", ".", "${WorkerServiceName}", ".", "${WorkerServiceId}" ],
                     [ ".", "MemoryUtilization", ".", ".", ".", "." ]
@@ -332,14 +292,14 @@ Resources:
               },
               {
                 "type": "metric",
-                "x": 12,
-                "y": 0,
+                "x": 0,
+                "y": 6,
                 "width": 12,
                 "height": 6,
                 "properties": {
                   "metrics": [
-                    [ "AWS/AppRunner", "ResponseTime", "ServiceName", "${WebServiceName}", "ServiceId", "${WebServiceId}" ],
-                    [ ".", "RequestCount", ".", ".", ".", "." ]
+                    [ "AWS/AppRunner", "RequestLatency", "ServiceName", "${WebServiceName}", "ServiceID", "${WebServiceId}", { "stat": "Maximum" } ],
+                    [ ".", "Requests", ".", ".", ".", ".", { "stat": "Sum" } ]
                   ],
                   "view": "timeSeries",
                   "stacked": false,
@@ -350,7 +310,7 @@ Resources:
               },
               {
                 "type": "metric",
-                "x": 0,
+                "x": 12,
                 "y": 6,
                 "width": 12,
                 "height": 6,
@@ -369,18 +329,17 @@ Resources:
               },
               {
                 "type": "metric",
-                "x": 12,
-                "y": 6,
+                "x": 0,
+                "y": 12,
                 "width": 12,
                 "height": 6,
                 "properties": {
                   "metrics": [
-                    [ "AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "${DailyReportsQueueName}" ],
-                    [ ".", ".", ".", "${ShopifySyncQueueName}" ],
-                    [ ".", ".", ".", "${EmailNotificationsQueueName}" ]
+                    [ "AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", "${DailyReportsQueueName}", { "stat": "Maximum" } ],
+                    [ ".", ".", ".", "${ShopifySyncQueueName}", { "stat": "Maximum" } ],
+                    [ ".", ".", ".", "${EmailNotificationsQueueName}", { "stat": "Maximum" } ]
                   ],
-                  "view": "timeSeries",
-                  "stacked": false,
+                  "view": "singleValue",
                   "region": "${AWS::Region}",
                   "title": "SQS Queue Messages",
                   "period": 300
@@ -388,26 +347,20 @@ Resources:
               },
               {
                 "type": "metric",
-                "x": 0,
+                "x": 12,
                 "y": 12,
-                "width": 24,
+                "width": 12,
                 "height": 6,
                 "properties": {
                   "metrics": [
-                    [ "AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "${DailyReportsDLQName}" ],
-                    [ ".", ".", ".", "${ShopifySyncDLQName}" ],
-                    [ ".", ".", ".", "${EmailNotificationsDLQName}" ]
+                    [ "AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", "${DailyReportsDLQName}", { "stat": "Maximum" } ],
+                    [ ".", ".", ".", "${ShopifySyncDLQName}", { "stat": "Maximum" } ],
+                    [ ".", ".", ".", "${EmailNotificationsDLQName}", { "stat": "Maximum" } ]
                   ],
-                  "view": "timeSeries",
-                  "stacked": false,
+                  "view": "singleValue",
                   "region": "${AWS::Region}",
                   "title": "Dead Letter Queues",
-                  "period": 300,
-                  "yAxis": {
-                    "left": {
-                      "min": 0
-                    }
-                  }
+                  "period": 300
                 }
               }
             ]
@@ -422,9 +375,6 @@ Resources:
           DailyReportsDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-dlq-name]]
           ShopifySyncDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-dlq-name]]
           EmailNotificationsDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-dlq-name]]
-
-Conditions:
-  HasCloudFront: !Not [!Equals [!Ref CloudFrontDistributionId, ""]]
 
 Outputs:
   DashboardURL:
