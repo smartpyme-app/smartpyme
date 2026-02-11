@@ -6,31 +6,33 @@ services:
     ports:
       - "8000:80"
     environment:
-      - APP_ENV=production
-      - APP_DEBUG=false
-      - APP_KEY=${APP_KEY}
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_KEY=base64:ELyquKROsIFaciP9dds3+zLVwmVPXN6Znm4yHj0Vr2M=
       - DB_CONNECTION=mysql
       - DB_HOST=db
       - DB_PORT=3306
       - DB_DATABASE=smartpyme
       - DB_USERNAME=smartpyme
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PASSWORD=password
+      - DB_SSLMODE=DISABLED
       - QUEUE_CONNECTION=database
       - FRONTEND_URL=http://localhost:4200
     volumes:
       - storage_data:/var/www/html/storage/app
+      - ./database.local.php:/var/www/html/config/database.php
     depends_on:
       - db
     networks:
       - smartpyme
 
   db:
-    image: mysql:8.0
+    image: mariadb:11.8
     environment:
       - MYSQL_DATABASE=smartpyme
       - MYSQL_USER=smartpyme
-      - MYSQL_PASSWORD=${DB_PASSWORD}
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_PASSWORD=password
+      - MYSQL_ROOT_PASSWORD=rootpassword
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
