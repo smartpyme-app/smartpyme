@@ -162,6 +162,11 @@ class Empresa extends Model
         'is_current_user_connected_to_shopify'
     ];
 
+    public function getLogoAttribute($value)
+    {
+        return ltrim($value, '/');
+    }
+
     public function limiteUsuarios()
     {
         if ($this->usuarios->where('enable', true)->count() < $this->user_limit)

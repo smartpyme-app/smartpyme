@@ -84,7 +84,7 @@
                     <td  style="width: 25%;">
                         {{-- Logo --}}
                         @if ($registro->empresa()->pluck('logo')->first())
-                            <img height="130" src="{{ env('ASSET_URL') }}/img{{ $registro->empresa()->pluck('logo')->first() }}" alt="Logo">
+                            <img height="130" src="{{ env('ASSET_URL') }}/img/{{ $registro->empresa()->pluck('logo')->first() }}" alt="Logo">
                         @endif
                     </td>
                     <td style="width: 50%; text-align: center;">

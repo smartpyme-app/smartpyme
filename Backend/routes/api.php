@@ -24,6 +24,7 @@ Route::get('/prueba', function () {
 	return Response()->json(['message' => 'Success'], 200);
 });
 
+
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
 // EventBridge Cron Endpoints

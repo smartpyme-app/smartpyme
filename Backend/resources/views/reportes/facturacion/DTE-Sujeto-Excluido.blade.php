@@ -41,9 +41,8 @@
             <tbody>
                 <tr>
                     <td  style="width: 25%;">
-                        {{-- Logo --}}
                         @if ($registro->empresa()->pluck('logo')->first())
-                            {{-- <img width="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo"> --}}
+                             <img width="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo"> 
                         @endif
                     </td>
                     <td style="width: 50%; text-align: center;">
