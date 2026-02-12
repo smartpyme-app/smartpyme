@@ -16,8 +16,6 @@ use App\Http\Controllers\Api\Admin\EmpresasController;
 use App\Http\Controllers\Api\Admin\EmpresasFuncionalidadesController;
 use App\Http\Controllers\Api\Admin\SuscripcionesController;
 use App\Http\Controllers\Api\Constants\ConstantsController;
-use App\Http\Controllers\Api\ImportMasivoController;
-use App\Http\Controllers\Api\ImportMasivoComprasController;
 use App\Http\Controllers\n1co\EstadoController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\n1co\N1coChargeController;
@@ -26,9 +24,6 @@ Route::get('/prueba', function () {
 	return Response()->json(['message' => 'Success'], 200);
 });
 
-// Importación masiva sin autenticación (GET: ejecutar desde navegador)
-Route::get('import-masivo', [ImportMasivoController::class, '__invoke']);
-Route::get('import-masivo-compras', [ImportMasivoComprasController::class, '__invoke']);
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
