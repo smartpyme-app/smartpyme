@@ -67,3 +67,5 @@ Cuando termine:
 - **Reintentos:** Si falla, puedes reanudar con el mismo `step` y `offset` donde quedaste.
 - **Stock en ventas:** La importación de ventas descuenta inventario y actualiza el kardex. Si no hay stock suficiente, permite continuar (puede quedar stock negativo).
 - **Compras:** La importación de compras suma al inventario y actualiza costo promedio del producto.
+- **Proveedores faltantes:** Si una compra referencia un `id_proveedor` que no está en `proveedores.php`, primero se busca en la BD si ya existe un proveedor con ese `id` e `id_empresa`. Si existe, se usa. Si no, se crea un placeholder ("Proveedor importación #...").
+- **Reimportar compras incompletas:** Si solo se importaron parte de las compras (p. ej. 21 de 32), borra `Backend/storage/app/import_masivo_compras_progress.json`, elimina manualmente las compras/detalles ya importados en BD si lo deseas, y vuelve a ejecutar desde `?step=proveedores&offset=0`.

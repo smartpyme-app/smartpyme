@@ -181,6 +181,26 @@ class ImportMasivoComprasController extends Controller
                 if ($idProveedorViejo !== null && $idProveedorViejo !== '' && $idEmpresa !== '') {
                     $clave = $idEmpresa . '|' . $idProveedorViejo;
                     $data['id_proveedor'] = $mapProveedor[$clave] ?? $mapProveedor[$idEmpresa . '|' . (int) $idProveedorViejo] ?? null;
+                    if ($data['id_proveedor'] === null) {
+                        $existente = Proveedor::withoutGlobalScopes()
+                            ->where('id_empresa', $idEmpresa)
+                            ->where('id', (int) $idProveedorViejo)
+                            ->first();
+                        if ($existente) {
+                            $mapProveedor[$clave] = $existente->id;
+                            $data['id_proveedor'] = $existente->id;
+                        } else {
+                            $proveedorPlaceholder = Proveedor::withoutGlobalScopes()->create([
+                                'nombre_empresa' => 'Proveedor importación #' . $idProveedorViejo,
+                                'tipo' => 'Empresa',
+                                'enable' => 1,
+                                'id_empresa' => $idEmpresa,
+                                'id_usuario' => $row['id_usuario'] ?? null,
+                            ]);
+                            $mapProveedor[$clave] = $proveedorPlaceholder->id;
+                            $data['id_proveedor'] = $proveedorPlaceholder->id;
+                        }
+                    }
                 }
                 $compra = Compra::withoutGlobalScopes()->create($data);
                 $mapCompra[$idViejo] = $compra->id;
