@@ -79,7 +79,7 @@
 
         <p>
             <b>FECHA Y HORA:</b> <br>
-            {{ \Carbon\Carbon::parse($venta->created_at)->format('d/m/Y') }} | {{ \Carbon\Carbon::parse($venta->created_at)->format('h:i:s a') }}
+            {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }} | {{ \Carbon\Carbon::parse($venta->created_at)->format('h:i:s a') }}
         </p>
         <p><b>TICKET:</b># {{ $venta->correlativo }}</p>
         <p><b>CAJERO:</b> {{ $venta->nombre_usuario }}</p>
