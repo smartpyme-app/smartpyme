@@ -276,8 +276,8 @@ Resources:
         AuthenticationConfiguration:
           AccessRoleArn: !GetAtt ECRAccessRole.Arn
       InstanceConfiguration:
-        Cpu: 4 vCPU
-        Memory: 8 GB
+        Cpu: 0.25 vCPU #4 vCPU
+        Memory: 1 GB #8 GB
         InstanceRoleArn: !GetAtt WorkerAppRunnerRole.Arn
       HealthCheckConfiguration:
         Protocol: HTTP
@@ -308,9 +308,3 @@ Outputs:
     Value: !Sub 'smartpyme-worker-${AWS::StackName}'
     Export:
       Name: !Sub '${AWS::StackName}-WorkerServiceName'
-
-  ServiceId:
-    Description: SmartPyme Worker App Runner Service ID
-    Value: !GetAtt WorkerAppRunnerService.ServiceId
-    Export:
-      Name: !Sub '${AWS::StackName}-ServiceId'
