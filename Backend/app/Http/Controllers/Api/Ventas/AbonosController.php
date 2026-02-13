@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use App\Models\Ventas\Abono;
 use App\Models\Ventas\Venta;
 use App\Models\Inventario\Paquete;
-use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\DB;
 use App\Exports\AbonosVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -172,7 +171,7 @@ class AbonosController extends Controller
         $recibo = Abono::with('documento')->where('id', $id)->first();
         $venta = Venta::with('empresa.currency')->where('id', $recibo->id_venta)->first();
 
-        $pdf = PDF::loadView('reportes.recibos.recibo', compact('venta', 'recibo'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.recibos.recibo', compact('venta', 'recibo'));
         $pdf->setPaper('US Letter', 'portrait');
         
         $nombreArchivo = ($recibo->nombre_documento ?? 'recibo') . '-' . ($recibo->correlativo ?? $recibo->id) . '.pdf';
