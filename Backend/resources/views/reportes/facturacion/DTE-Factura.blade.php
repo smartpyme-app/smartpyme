@@ -10,7 +10,7 @@
         }
         body {
             font-family: serif; 
-            margin: 50px;
+            margin: 270px 50px 50px 50px;
             font-size: 10px;
         }
         h1,h2,h3,h4,h5,h6{color: #003 !important; }
@@ -52,7 +52,10 @@
             background-color: #ddd;
         }
 
-        /* Sin position:fixed para evitar que logo/QR se superpongan con la tabla en DomPDF */
+        header {
+            margin: 50px 50px 0px 50px;
+            position: fixed;
+        }
 
     </style>
     
@@ -74,7 +77,7 @@
                 '13'
         ];
     @endphp
-    <div class="dte-header">
+    <header>
         <table class="table">
             <tbody>
                 <tr>
@@ -114,9 +117,7 @@
                 </tr>
             </tbody>
         </table>
-    </div>
-
-    <br>
+    </header>
 
     <table class="table bordered">
         <tbody>
