@@ -9,7 +9,7 @@ use App\Models\Registros\Cliente;
 use App\Models\Ventas\Venta as Cotizacion;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Detalle;
-use Barryvdh\DomPDF\Facade as PDF;
+// Usamos app('dompdf.wrapper') para evitar errores de Facade en producción
 use Carbon\Carbon;
 use JWTAuth;
 use Auth;
@@ -205,16 +205,16 @@ class CotizacionesController extends Controller
         $venta = Cotizacion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
 
         if(Auth::user()->id_empresa == 420){ //420
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-inversiones-andre', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.cotizacion-inversiones-andre', compact('venta'));
             $pdf->setPaper('US Letter', 'portrait');
         }elseif(Auth::user()->id_empresa == 498){ //13
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-grupo-split', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.cotizacion-grupo-split', compact('venta'));
             $pdf->setPaper('US Letter', 'portrait');
         }elseif(Auth::user()->id_empresa == 2){ //2 Super Admin
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-smartpyme', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.cotizacion-smartpyme', compact('venta'));
             $pdf->setPaper('US Letter', 'portrait');
         }else{
-            $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.cotizacion', compact('venta'));
             $pdf->setPaper('US Letter', 'portrait');
         }
         return $pdf->stream('cotizacion-' . $venta->id . '.pdf');
