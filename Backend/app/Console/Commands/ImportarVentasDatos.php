@@ -62,15 +62,20 @@ class ImportarVentasDatos extends Command
 
         try {
             DB::transaction(function () use ($ventas, $detalles_venta, $ventasColumns, $detallesColumns, $soloInsertar) {
-                $ventasFiltered = [];
+                $mapeoIdVenta = [];
+                $ultimoId = (int) DB::table('ventas')->max('id');
+
                 foreach ($ventas as $venta) {
+                    $idOriginal = $venta['id'] ?? null;
                     $filtered = array_intersect_key($venta, $ventasColumns);
+                    unset($filtered['id']);
                     if (!empty($filtered)) {
-                        $ventasFiltered[] = $filtered;
+                        DB::table('ventas')->insert($filtered);
+                        $ultimoId++;
+                        if ($idOriginal !== null) {
+                            $mapeoIdVenta[$idOriginal] = $ultimoId;
+                        }
                     }
-                }
-                foreach (array_chunk($ventasFiltered, 200) as $chunk) {
-                    DB::table('ventas')->insert($chunk);
                 }
 
                 $this->info('Insertando ' . count($detalles_venta) . ' detalles de venta...');
@@ -81,6 +86,11 @@ class ImportarVentasDatos extends Command
                         $detalle['sub_total'] = $detalle['subtotal'];
                     }
                     unset($detalle['subtotal'], $detalle['id']);
+                    $idVentaOriginal = $detalle['id_venta'] ?? null;
+                    if ($idVentaOriginal === null || !isset($mapeoIdVenta[$idVentaOriginal])) {
+                        continue;
+                    }
+                    $detalle['id_venta'] = $mapeoIdVenta[$idVentaOriginal];
                     $filtered = array_intersect_key($detalle, $detallesColumns);
                     if (!empty($filtered)) {
                         $detallesFiltered[] = $filtered;
@@ -94,7 +104,7 @@ class ImportarVentasDatos extends Command
 
                 if (!$soloInsertar) {
                     $this->info('Actualizando inventario y kardex...');
-                    $this->actualizarInventarioYKardex($detalles_venta, $ventas);
+                    $this->actualizarInventarioYKardex($detalles_venta, $ventas, $mapeoIdVenta);
                 }
             });
 
@@ -110,7 +120,7 @@ class ImportarVentasDatos extends Command
     /**
      * Actualiza inventario y kardex para cada detalle, igual que al generar una venta nueva.
      */
-    protected function actualizarInventarioYKardex(array $detalles_venta, array $ventas): void
+    protected function actualizarInventarioYKardex(array $detalles_venta, array $ventas, array $mapeoIdVenta = []): void
     {
         $ventasById = collect($ventas)->keyBy('id');
         $total = count($detalles_venta);
@@ -159,7 +169,8 @@ class ImportarVentasDatos extends Command
 
                 $inventario->decrement('stock', $cantidad);
 
-                $venta = Venta::withoutGlobalScopes()->find($det['id_venta']);
+                $idVentaKardex = $mapeoIdVenta[$det['id_venta']] ?? $det['id_venta'];
+                $venta = Venta::withoutGlobalScopes()->find($idVentaKardex);
                 if ($venta) {
                     $inventario->kardex($venta, $cantidad, $precio);
                 }

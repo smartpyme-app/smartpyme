@@ -62,15 +62,20 @@ class ImportarComprasDatos extends Command
 
         try {
             DB::transaction(function () use ($compras, $detalles_compra, $comprasColumns, $detallesColumns, $soloInsertar) {
-                $comprasFiltered = [];
+                $mapeoIdCompra = [];
+                $ultimoId = (int) DB::table('compras')->max('id');
+
                 foreach ($compras as $compra) {
+                    $idOriginal = $compra['id'] ?? null;
                     $filtered = array_intersect_key($compra, $comprasColumns);
+                    unset($filtered['id']);
                     if (!empty($filtered)) {
-                        $comprasFiltered[] = $filtered;
+                        DB::table('compras')->insert($filtered);
+                        $ultimoId++;
+                        if ($idOriginal !== null) {
+                            $mapeoIdCompra[$idOriginal] = $ultimoId;
+                        }
                     }
-                }
-                foreach (array_chunk($comprasFiltered, 200) as $chunk) {
-                    DB::table('compras')->insert($chunk);
                 }
 
                 $this->info('Insertando ' . count($detalles_compra) . ' detalles de compra...');
@@ -78,6 +83,11 @@ class ImportarComprasDatos extends Command
                 $detallesFiltered = [];
                 foreach ($detalles_compra as $detalle) {
                     unset($detalle['id']);
+                    $idCompraOriginal = $detalle['id_compra'] ?? null;
+                    if ($idCompraOriginal === null || !isset($mapeoIdCompra[$idCompraOriginal])) {
+                        continue;
+                    }
+                    $detalle['id_compra'] = $mapeoIdCompra[$idCompraOriginal];
                     $filtered = array_intersect_key($detalle, $detallesColumns);
                     if (!empty($filtered)) {
                         $detallesFiltered[] = $filtered;
@@ -91,7 +101,7 @@ class ImportarComprasDatos extends Command
 
                 if (!$soloInsertar) {
                     $this->info('Actualizando inventario y kardex...');
-                    $this->actualizarInventarioYKardex($detalles_compra, $compras);
+                    $this->actualizarInventarioYKardex($detalles_compra, $compras, $mapeoIdCompra);
                 }
             });
 
@@ -107,7 +117,7 @@ class ImportarComprasDatos extends Command
     /**
      * Actualiza inventario y kardex para cada detalle, igual que al generar una compra nueva.
      */
-    protected function actualizarInventarioYKardex(array $detalles_compra, array $compras): void
+    protected function actualizarInventarioYKardex(array $detalles_compra, array $compras, array $mapeoIdCompra = []): void
     {
         $comprasById = collect($compras)->keyBy('id');
         $total = count($detalles_compra);
@@ -173,7 +183,8 @@ class ImportarComprasDatos extends Command
 
                 $inventario->increment('stock', $cantidad);
 
-                $compra = Compra::withoutGlobalScopes()->find($det['id_compra']);
+                $idCompraKardex = $mapeoIdCompra[$det['id_compra']] ?? $det['id_compra'];
+                $compra = Compra::withoutGlobalScopes()->find($idCompraKardex);
                 if ($compra) {
                     $inventario->kardex($compra, $cantidad);
                 }
