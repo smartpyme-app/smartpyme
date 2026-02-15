@@ -7,7 +7,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 
 @Component({
     selector: 'app-ventas',
@@ -15,6 +15,7 @@ import { takeUntil } from 'rxjs/operators';
 })
 export class VentasComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private searchSubject$ = new Subject<void>();
   public ventas: any = {};
   public venta: any = {};
   public loading: boolean = false;
@@ -124,6 +125,11 @@ export class VentasComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.verificarAccesoContabilidad();
+
+    this.searchSubject$.pipe(
+      debounceTime(400),
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.filtrarVentas());
 
     this.route.queryParams.subscribe(params => {
       this.filtros = {
@@ -310,6 +316,10 @@ export class VentasComponent implements OnInit, OnDestroy {
       
     }
 
+
+  public onBuscadorInput() {
+    this.searchSubject$.next();
+  }
 
   public filtrarVentas() {
     // Limpiar valores vacíos antes de navegar
@@ -1249,6 +1259,13 @@ export class VentasComponent implements OnInit, OnDestroy {
     const total = parseFloat(venta?.total || 0);
     const propina = parseFloat(venta?.propina || 0);
     return total + propina;
+  }
+
+  public getSaldo(venta: any): number {
+    const total = parseFloat(venta?.total || 0);
+    const abonos = parseFloat(venta?.abonos_sum_total || 0);
+    const devoluciones = parseFloat(venta?.devoluciones_sum_total || 0);
+    return Math.round((total - abonos - devoluciones) * 100) / 100;
   }
 
   public seleccionarReporte(reporte: string) {
