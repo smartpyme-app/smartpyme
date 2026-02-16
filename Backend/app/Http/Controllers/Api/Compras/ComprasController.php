@@ -14,6 +14,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Kardex;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
@@ -28,8 +29,11 @@ class ComprasController extends Controller
     
 
     public function index(Request $request) {
-       
-        $compras = Compra::when($request->inicio, function($query) use ($request){
+        $excludeFromList = ['dte_invalidacion'];
+        $columns = array_diff(Schema::getColumnListing('compras'), $excludeFromList);
+
+        $compras = Compra::select($columns)
+            ->when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                         })
                         ->when($request->recurrente !== null, function($q) use ($request){
@@ -80,6 +84,7 @@ class ComprasController extends Controller
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
+                        ->with(['proveedor', 'usuario', 'sucursal', 'proyecto', 'empresa'])
                         ->withSum(['abonos' => function ($query) {
                             $query->where('estado', 'Confirmado');
                         }], 'total')
@@ -90,20 +95,27 @@ class ComprasController extends Controller
                         ->orderBy('id', 'desc')
                         ->paginate($request->paginate);
 
-        foreach ($compras as $compra) {
-            $compra->saldo = $compra->saldo;
-        }
-
         return Response()->json($compras, 200);
            
     }
 
     public function read($id) {
+        $compra = Compra::where('id', $id)
+            ->with('detalles', 'proveedor', 'abonos', 'devoluciones')
+            ->withSum(['abonos' => function ($query) {
+                $query->where('estado', 'Confirmado');
+            }], 'total')
+            ->withSum(['devoluciones' => function ($query) {
+                $query->where('enable', 1);
+            }], 'total')
+            ->first();
 
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'abonos', 'devoluciones')->first();
-        $compra->saldo = $compra->saldo;
+        if (!$compra) {
+            return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
+        }
+
+        $compra->saldo = round($compra->total - ($compra->abonos_sum_total ?? 0) - ($compra->devoluciones_sum_total ?? 0), 2);
         return Response()->json($compra, 200);
- 
     }
 
     public function search($txt) {
