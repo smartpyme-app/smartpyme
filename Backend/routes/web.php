@@ -45,6 +45,29 @@ Route::get('/inventariostock', function(){
 
 });
 
+Route::get('/ventassintipodte', function () {
+    $ventas = App\Models\Ventas\Venta::whereNull('tipo_dte')
+        ->whereNotNull('dte')
+        ->whereYear('fecha', 2026)
+        ->get();
+
+    $ventasProcesadas = 0;
+
+    foreach ($ventas as $venta) {
+        $tipoDte = data_get($venta->dte, 'identificacion.tipoDte');
+
+        if (!$tipoDte) {
+            continue;
+        }
+
+        $venta->tipo_dte = $tipoDte;
+        $venta->save();
+        $ventasProcesadas++;
+    }
+
+    return "Se procesaron {$ventasProcesadas} ventas";
+});
+
 
 Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
