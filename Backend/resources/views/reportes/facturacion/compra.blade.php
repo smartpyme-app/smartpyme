@@ -45,7 +45,7 @@
             <tbody>
                 <tr>
                     <td>
-                        <h1>{{ $compra->empresa()->pluck('nombre')->first() }}</h1>
+                        <h3>{{ $compra->empresa()->pluck('nombre')->first() }}</h3>
                         <p>
                             {{ $compra->empresa()->pluck('municipio')->first() }}
                             {{ $compra->empresa()->pluck('departamento')->first() }}
