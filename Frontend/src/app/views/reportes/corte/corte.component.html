@@ -78,6 +78,11 @@
                         <td class="text-right">{{ indicadores.cantidadVentasPagadas }}</td>
                         <td class="text-right">{{ indicadores.totalVentasPagadas | currency}}</td>
                     </tr>
+                    <tr *ngIf="(indicadores.totalPropina || 0) > 0">
+                        <td>Propina</td>
+                        <td class="text-right">—</td>
+                        <td class="text-right">{{ indicadores.totalPropina | currency}}</td>
+                    </tr>
                     <tr>
                         <td>Ventas al crédito</td>
                         <td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td>

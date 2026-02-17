@@ -183,6 +183,10 @@ class Indicador extends Model
         return $this->ventas_pagadas->sum('total');
     }
 
+    public function getTotalPropina(){
+        return $this->ventas_pagadas->sum('propina');
+    }
+
     public function getCantidadVentasPagadas(){
 
         return $this->ventas_pagadas->count();
