@@ -16,9 +16,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Exports\TrasladosExport;
 use Maatwebsite\Excel\Facades\Excel;
-use Barryvdh\DomPDF\Facade as PDF;
-
-
 class TrasladosController extends Controller
 {   
 
@@ -496,7 +493,7 @@ class TrasladosController extends Controller
         
         $empresa = Empresa::findOrFail($traslado->id_empresa);
 
-        $pdf = PDF::loadView('reportes.inventario.traslado-pdf', compact('traslado', 'empresa'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.inventario.traslado-pdf', compact('traslado', 'empresa'));
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('traslado-' . $traslado->id . '.pdf');
     }
@@ -540,7 +537,7 @@ class TrasladosController extends Controller
             return $traslado->concepto ?? 'Sin concepto';
         });
 
-        $pdf = PDF::loadView('reportes.inventario.traslados-pdf', compact('trasladosAgrupados', 'empresa'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.inventario.traslados-pdf', compact('trasladosAgrupados', 'empresa'));
         $pdf->setPaper('letter', 'portrait');
         
         return $pdf->download('traslados-' . date('Y-m-d') . '.pdf');

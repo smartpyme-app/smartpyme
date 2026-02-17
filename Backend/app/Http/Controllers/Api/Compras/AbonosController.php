@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Compras\Abono;
 use App\Models\Compras\Compra;
-use Barryvdh\DomPDF\Facade as PDF;
 use JWTAuth;
 
 use App\Exports\AbonosComprasExport;
@@ -118,11 +117,11 @@ class AbonosController extends Controller
         $compra = Compra::where('id', $recibo->id_compra)->first();
 
         if(JWTAuth::parseToken()->authenticate()->id_empresa == 38){
-            $pdf = PDF::loadView('reportes.recibos.velo-recibo', compact('compra', 'recibo'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.recibos.velo-recibo', compact('compra', 'recibo'));
             $pdf->setPaper('US Letter', 'portrait');
         }else{
-            $pdf = PDF::loadView('reportes.recibos.recibo', compact('compra', 'recibo'));
-            $pdf->setPaper('US Letter', 'portrait');  
+            $pdf = app('dompdf.wrapper')->loadView('reportes.recibos.recibo', compact('compra', 'recibo'));
+            $pdf->setPaper('US Letter', 'portrait');
         }     
 
         return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');

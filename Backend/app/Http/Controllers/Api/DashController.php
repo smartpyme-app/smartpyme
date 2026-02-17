@@ -169,7 +169,7 @@ class DashController extends Controller
 
         $indicadores = new Indicador(['inicio' => $fechaDe, 'fin' => $fechaDe, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $id_sucursal, 'id_usuario' => $id_usuario]);
 
-        $pdf = \PDF::loadView('reportes.corte', compact('indicadores'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.corte', compact('indicadores'));
         return $pdf->stream();
     }
 
@@ -178,7 +178,7 @@ class DashController extends Controller
         
         return view('reportes.barcode', compact('codigo'));
         
-        $reportes = \PDF::loadView('reportes.barcode', compact('codigo'))->setPaper('letter');
+        $reportes = app('dompdf.wrapper')->loadView('reportes.barcode', compact('codigo'))->setPaper('letter');
         return $reportes->stream();
 
     }

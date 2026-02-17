@@ -19,7 +19,6 @@ use App\Models\Transaccion;
 use App\Models\User;
 use App\Services\Suscripcion\SuscripcionService;
 use Illuminate\Support\Facades\Storage;
-use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\DB;
 use Intervention\Image\ImageManagerStatic as Image;
 use Carbon\Carbon;
@@ -557,7 +556,7 @@ class EmpresasController extends Controller
             $recibo->empresa = $empresa;
 
             // Generar el PDF
-            $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.recibo-suscripcion', compact('recibo'));
             $pdf->setPaper('US Letter', 'portrait');
 
             return $pdf->stream("recibo-plan-{$plan}.pdf");

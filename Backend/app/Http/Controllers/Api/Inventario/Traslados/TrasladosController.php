@@ -136,7 +136,7 @@ class TrasladosController extends Controller
         $traslado = Traslado::where('id', $id)->with('detalles', 'origen', 'destino')->firstOrFail();
         $empresa = Empresa::find(1);
 
-        $reportes = \PDF::loadView('reportes.inventario.traslado', compact('traslado', 'empresa'));
+        $reportes = app('dompdf.wrapper')->loadView('reportes.inventario.traslado', compact('traslado', 'empresa'));
         return $reportes->stream();
 
     }

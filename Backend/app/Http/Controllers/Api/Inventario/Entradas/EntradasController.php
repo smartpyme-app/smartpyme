@@ -184,7 +184,7 @@ class EntradasController extends Controller
         $entrada = Entrada::where('id', $id)->with('detalles')->firstOrFail();
         $empresa = Empresa::find($entrada->id_empresa);
 
-        $reportes = \PDF::loadView('reportes.inventario.entrada', compact('entrada', 'empresa'));
+        $reportes = app('dompdf.wrapper')->loadView('reportes.inventario.entrada', compact('entrada', 'empresa'));
         return $reportes->stream();
 
     }

@@ -359,7 +359,7 @@ class ClientesController extends Controller
         $cliente = Cliente::where('id', $id)->with('empresa')->firstOrFail();
         $cliente->ventas = $cliente->ventas()->where('estado', 'Pendiente')->get();
         // return $cliente;
-        $reportes = \PDF::loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
+        $reportes = app('dompdf.wrapper')->loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
         return $reportes->stream();
     }
 

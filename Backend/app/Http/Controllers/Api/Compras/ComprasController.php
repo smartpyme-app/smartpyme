@@ -21,7 +21,6 @@ use App\Exports\ComprasDetallesExport;
 use App\Exports\RentabilidadSucursalExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use Barryvdh\DomPDF\Facade as PDF;
 use Auth;
 
 class ComprasController extends Controller
@@ -775,7 +774,7 @@ class ComprasController extends Controller
     public function generarDoc($id){
         $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
 
-        $pdf = PDF::loadView('reportes.facturacion.compra', compact('compra'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.compra', compact('compra'));
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('compra-' . $compra->id . '.pdf');
 

@@ -27,7 +27,6 @@ use App\Exports\Contabilidad\LibroPercepcion1Export;
 use App\Exports\Contabilidad\AnexoPercepcion1Export;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
-use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -316,7 +315,7 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView(
+            $pdf = app('dompdf.wrapper')->loadView(
                 'reportes.contabilidad.libro-consumidores',
                 [
                     'libroconsumidores' => $libroconsumidores,
@@ -476,7 +475,7 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView(
+            $pdf = app('dompdf.wrapper')->loadView(
                 'reportes.contabilidad.libro-contribuyentes',
                 [
                     'librocontribuyentes' => $librocontribuyentes,
@@ -764,7 +763,7 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
             $pdf->setPaper('US Letter', 'landscape');
 
             return $pdf->stream('libro-compras.pdf');

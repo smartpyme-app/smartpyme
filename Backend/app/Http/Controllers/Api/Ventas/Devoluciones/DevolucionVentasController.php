@@ -21,7 +21,6 @@ use App\Exports\DevolucionesVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Creditos\Credito;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use JWTAuth;
 use Auth;
@@ -520,7 +519,7 @@ class DevolucionVentasController extends Controller
             $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
             $centavos = $formatter->toWords($n[1]);
 
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.NC-Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.NC-Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
             $pdf->setPaper('US Letter', 'portrait'); 
         }
         else if(Auth::user()->id_empresa == 250 && $venta->nombre_documento == "Nota de crédito"){//250  OK V2
@@ -536,7 +535,7 @@ class DevolucionVentasController extends Controller
             $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
             $centavos = $formatter->toWords($n[1]);
 
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.NC-Full-Solutions', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.NC-Full-Solutions', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
             $pdf->setPaper('Legal', 'portrait'); 
         }
         else if(Auth::user()->id_empresa == 128 && $venta->nombre_documento == "Nota de crédito"){//250  OK V2
@@ -552,10 +551,10 @@ class DevolucionVentasController extends Controller
             $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
             $centavos = $formatter->toWords($n[1]);
 
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.NC-Kiero', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.NC-Kiero', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
             $pdf->setPaper('Legal', 'portrait'); 
         }else{
-            $pdf = PDF::loadView('reportes.facturacion.nota-credito', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.nota-credito', compact('venta'));
             $pdf->setPaper('US Letter', 'portrait');
         }
 
