@@ -9,7 +9,7 @@ use App\Models\Registros\Cliente;
 use App\Models\Compras\Compra as Cotizacion;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Detalle;
-use Barryvdh\DomPDF\Facade as PDF;
+// Usamos app('dompdf.wrapper') para evitar errores de Facade en producción
 use Carbon\Carbon;
 use JWTAuth;
 use Auth;
@@ -200,7 +200,7 @@ class CotizacionesController extends Controller
     public function generarDoc($id){
         $compra = Cotizacion::where('id', $id)->with('detalles', 'proveedor')->firstOrFail();
 
-        $pdf = PDF::loadView('reportes.facturacion.orden-de-compra', compact('compra'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.orden-de-compra', compact('compra'));
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('orden-de-compra-' . $compra->id . '.pdf');
 
