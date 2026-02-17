@@ -96,6 +96,7 @@ class DashController extends Controller
         $indicadores->totalVentas = $indicadores->getTotalVentas();
         $indicadores->totalVentasPagadas = $indicadores->getTotalVentasPagadas();
         $indicadores->totalPropina = $indicadores->getTotalPropina();
+        $indicadores->cantidadPropina = $indicadores->getCantidadPropina();
         $indicadores->cantidadVentasPagadas = $indicadores->getCantidadVentasPagadas();
         $indicadores->totalRecibos = $indicadores->getTotalRecibos();
         $indicadores->totalVentasPendientes = $indicadores->getTotalVentasPendientes();

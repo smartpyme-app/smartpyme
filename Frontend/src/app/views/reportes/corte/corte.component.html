@@ -80,7 +80,7 @@
                     </tr>
                     <tr *ngIf="(indicadores.totalPropina || 0) > 0">
                         <td>Propina</td>
-                        <td class="text-right">—</td>
+                        <td class="text-right">{{ indicadores.cantidadPropina }}</td>
                         <td class="text-right">{{ indicadores.totalPropina | currency}}</td>
                     </tr>
                     <tr>
