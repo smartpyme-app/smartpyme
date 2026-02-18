@@ -37,6 +37,7 @@ use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
 use App\Exports\VentasPorUtilidadesExport;
 use App\Exports\VentasPorMarcasExport;
 use App\Exports\CobrosPorVendedorExport;
+use App\Exports\CuentasCobrarExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
 // use Auth;
@@ -1250,17 +1251,70 @@ class VentasController extends Controller
         return Response()->json($ivas, 200);
     }
 
-    public function cxc()
+    public function cxc(Request $request)
     {
+        $paginate = $request->paginate ?? 10;
+        $orden = $request->orden ?? 'fecha';
+        $direccion = $request->direccion ?? 'desc';
 
-        $cobros = Venta::where('estado', 'Pendiente')->orderBy('fecha', 'desc')->paginate(10);
+        $cobros = Venta::where('estado', 'Pendiente')
+            ->when($request->inicio, function ($query) use ($request) {
+                return $query->where('fecha', '>=', $request->inicio);
+            })
+            ->when($request->fin, function ($query) use ($request) {
+                return $query->where('fecha', '<=', $request->fin);
+            })
+            ->when($request->id_cliente, function ($query) use ($request) {
+                return $query->where('id_cliente', $request->id_cliente);
+            })
+            ->when($request->id_vendedor, function ($query) use ($request) {
+                return $query->where(function ($q) use ($request) {
+                    $q->where('id_vendedor', $request->id_vendedor)
+                        ->orWhereHas('detalles', function ($q2) use ($request) {
+                            $q2->where('id_vendedor', $request->id_vendedor);
+                        });
+                });
+            })
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                $buscador = '%' . $request->buscador . '%';
+                return $query->where(function ($q) use ($buscador) {
+                    $q->whereHas('cliente', function ($qCliente) use ($buscador) {
+                        $qCliente->where('nombre', 'like', $buscador)
+                            ->orWhere('nombre_empresa', 'like', $buscador)
+                            ->orWhere('ncr', 'like', $buscador)
+                            ->orWhere('nit', 'like', $buscador);
+                    })
+                        ->orWhere('correlativo', 'like', $buscador)
+                        ->orWhere('estado', 'like', $buscador)
+                        ->orWhere('observaciones', 'like', $buscador);
+                });
+            })
+            ->where('cotizacion', 0)
+            ->withSum(['abonos' => function ($query) {
+                $query->where('estado', 'Confirmado');
+            }], 'total')
+            ->withSum(['devoluciones' => function ($query) {
+                $query->where('enable', 1);
+            }], 'total')
+            ->orderBy($orden, $direccion)
+            ->orderBy('id', 'desc')
+            ->paginate($paginate);
 
         return Response()->json($cobros, 200);
     }
 
+    public function cxcExport(Request $request)
+    {
+        $export = new CuentasCobrarExport();
+        $export->filter($request);
+        return Excel::download($export, 'cuentas-por-cobrar.xlsx');
+    }
+
     public function cxcBuscar($txt)
     {
-
         $cobros = Venta::where('estado', 'Pendiente')
             ->whereHas('cliente', function ($query) use ($txt) {
                 $query->where('nombre', 'like', '%' . $txt . '%');

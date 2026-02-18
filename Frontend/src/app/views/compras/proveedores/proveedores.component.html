@@ -35,9 +35,9 @@
     </div>
 
     <div class="d-flex mb-3">
-        <div class="col d-flex gap-2">
-            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
-            <!-- <button class="btn btn-default">Traslados</button> -->
+        <div class="col d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/proveedores">Todos</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/proveedores/cuentas-pagar">Cuentas por pagar</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
             <select name="estado" (change)="filtrarProveedores()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">

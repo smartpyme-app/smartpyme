@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
+use App\Exports\CuentasPagarExport;
 use App\Exports\RentabilidadSucursalExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -562,12 +563,58 @@ class ComprasController extends Controller
 
     }
 
-    public function cxp() {
-       
-        $pagos = Compra::where('estado', 'Pendiente')->orderBy('fecha','desc')->paginate(10);
+    public function cxp(Request $request)
+    {
+        $paginate = $request->paginate ?? 10;
+        $orden = $request->orden ?? 'fecha';
+        $direccion = $request->direccion ?? 'desc';
+
+        $pagos = Compra::where('estado', 'Pendiente')
+            ->when($request->inicio, function ($query) use ($request) {
+                return $query->where('fecha', '>=', $request->inicio);
+            })
+            ->when($request->fin, function ($query) use ($request) {
+                return $query->where('fecha', '<=', $request->fin);
+            })
+            ->when($request->id_proveedor, function ($query) use ($request) {
+                return $query->where('id_proveedor', $request->id_proveedor);
+            })
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                $buscador = '%' . $request->buscador . '%';
+                return $query->where(function ($q) use ($buscador) {
+                    $q->whereHas('proveedor', function ($qProveedor) use ($buscador) {
+                        $qProveedor->where('nombre', 'like', $buscador)
+                            ->orWhere('nombre_empresa', 'like', $buscador)
+                            ->orWhere('ncr', 'like', $buscador)
+                            ->orWhere('nit', 'like', $buscador);
+                    })
+                        ->orWhere('referencia', 'like', $buscador)
+                        ->orWhere('estado', 'like', $buscador)
+                        ->orWhere('observaciones', 'like', $buscador);
+                });
+            })
+            ->where('cotizacion', 0)
+            ->withSum(['abonos' => function ($query) {
+                $query->where('estado', 'Confirmado');
+            }], 'total')
+            ->withSum(['devoluciones' => function ($query) {
+                $query->where('enable', 1);
+            }], 'total')
+            ->orderBy($orden, $direccion)
+            ->orderBy('id', 'desc')
+            ->paginate($paginate);
 
         return Response()->json($pagos, 200);
+    }
 
+    public function cxpExport(Request $request)
+    {
+        $export = new CuentasPagarExport();
+        $export->filter($request);
+        return Excel::download($export, 'cuentas-por-pagar.xlsx');
     }
 
     public function cxpBuscar($txt) {
