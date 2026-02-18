@@ -73,7 +73,7 @@ const routes: Routes = [
         { path: 'cliente/detalles/:id', component: ClienteDetallesComponent, title: 'Cliente'},
         { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente'},
         { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente'},
-        { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent },
+        { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent, title: 'Cuentas por cobrar' },
         { path: 'clientes/crm', component: ClientesDashComponent },
 
     // Reportes 

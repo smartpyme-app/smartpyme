@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
+import { ModalModule } from 'ngx-bootstrap/modal';
 import { TagInputModule } from 'ngx-chips';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
@@ -28,6 +29,7 @@ import { CuentasPagarComponent } from './cuentas-pagar/cuentas-pagar.component';
     NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
     PopoverModule.forRoot(),
+    ModalModule.forRoot(),
     FocusModule.forRoot(),
     TooltipModule.forRoot()
   ],
