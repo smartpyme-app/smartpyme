@@ -86,7 +86,13 @@ class EmpleadosController extends Controller
         $request->validate([
             'nombres' => 'required|string|max:100',
             'apellidos' => 'required|string|max:100',
-            'dui' => 'required|string|unique:empleados,dui,' . $request->id,
+            'dui' => [
+                'required',
+                'string',
+                Rule::unique('empleados', 'dui')
+                    ->ignore($request->id)
+                    ->where('id_empresa', auth()->user()->id_empresa),
+            ],
             'nit' => 'nullable|string',
             'isss' => 'nullable|string',
             'afp' => 'nullable|string',
@@ -238,7 +244,9 @@ class EmpleadosController extends Controller
                 $reglasDui = [
                     'sometimes',
                     'string',
-                    Rule::unique('empleados', 'dui')->ignore($id)
+                    Rule::unique('empleados', 'dui')
+                        ->ignore($id)
+                        ->where('id_empresa', auth()->user()->id_empresa),
                 ];
             } else {
                 // Si es el mismo DUI, solo validar formato
