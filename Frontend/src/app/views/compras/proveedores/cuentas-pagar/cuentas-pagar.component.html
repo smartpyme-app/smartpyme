@@ -22,6 +22,9 @@
                 <button tooltip="Descargar Excel" (click)="descargarReporte()" [disabled]="downloading" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
+                <button tooltip="Descargar Excel por fecha de corte" (click)="openModal(mFechaCorte)" [disabled]="downloading" class="btn btn-default">
+                    <i class="fa fa-calendar"></i>
+                </button>
                 <form class="d-flex input-group flex-grow-1" name="form" (ngSubmit)="filtrarPagos()" autocomplete="off">
                     <input type="search" name="buscador" class="form-control" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
@@ -188,5 +191,28 @@
                 </button>
             </div>
         </form>
+    </div>
+</ng-template>
+
+<ng-template #mFechaCorte>
+    <div class="modal-header">
+        <div class="modal-title text-center">
+            <h2 class="text-center no-margin">Reporte por fecha de corte</h2>
+        </div>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <p class="text-muted mb-3">Igual al reporte normal pero filtrado a una sola fecha. Muestra las cuentas por pagar pendientes a esa fecha con la sumatoria total al final.</p>
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="form-group mb-3">
+            <label for="fechaCorte">Fecha de corte:</label>
+            <input type="date" class="form-control" name="fechaCorte" [(ngModel)]="fechaCorte" />
+        </div>
+        <div class="d-grid">
+            <button type="button" (click)="descargarReportePorFechaCorte()" [disabled]="downloading || !fechaCorte" class="btn btn-primary btn-block">
+                <span *ngIf="!downloading">Generar reporte</span>
+                <span *ngIf="downloading">Descargando...</span>
+            </button>
+        </div>
     </div>
 </ng-template>

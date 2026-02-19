@@ -1308,9 +1308,16 @@ class VentasController extends Controller
 
     public function cxcExport(Request $request)
     {
-        $export = new CuentasCobrarExport();
-        $export->filter($request);
-        return Excel::download($export, 'cuentas-por-cobrar.xlsx');
+        try {
+            ini_set('memory_limit', '256M');
+            set_time_limit(120);
+            $export = new CuentasCobrarExport();
+            $export->filter($request);
+            return Excel::download($export, 'cuentas-por-cobrar.xlsx');
+        } catch (\Throwable $e) {
+            \Log::error('CXC Export error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Error al generar el reporte: ' . $e->getMessage()], 500);
+        }
     }
 
     public function cxcBuscar($txt)
