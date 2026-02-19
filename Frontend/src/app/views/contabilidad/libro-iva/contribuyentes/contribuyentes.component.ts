@@ -69,14 +69,14 @@ export class ContribuyentesComponent implements OnInit {
     } 
 
     private manejarErrorDescarga(error: any): void {
-        // Si el error viene como Blob (JSON convertido a Blob), leerlo y mostrar el mensaje
         if (error.error instanceof Blob) {
             error.error.text().then((text: string) => {
                 try {
                     const errorJson = JSON.parse(text);
-                    this.alertService.error({ status: error.status || 409, error: { message: errorJson.message } });
+                    const msg = errorJson.message ?? errorJson.error ?? text;
+                    this.alertService.error({ status: error.status || 409, error: { error: msg } });
                 } catch (e) {
-                    this.alertService.error({ status: error.status || 409, error: { message: text } });
+                    this.alertService.error({ status: error.status || 409, error: { error: text } });
                 }
             });
         } else {
@@ -156,6 +156,54 @@ export class ContribuyentesComponent implements OnInit {
         });
     }
 
+
+    public descargarNotasCredito(): void {
+        this.downloading = true;
+        const filtros = { ...this.filtros, tipo_nota: '05' };
+        this.apiService.export('libro-iva/contribuyentes/descargar-notas-credito-debito', filtros).subscribe(
+            (data: Blob) => this.procesarDescargaNotas(data, 'NotasCredito'),
+            (error: any) => this.manejarErrorDescarga(error)
+        );
+    }
+
+    public descargarNotasDebito(): void {
+        this.downloading = true;
+        const filtros = { ...this.filtros, tipo_nota: '06' };
+        this.apiService.export('libro-iva/contribuyentes/descargar-notas-credito-debito', filtros).subscribe(
+            (data: Blob) => this.procesarDescargaNotas(data, 'NotasDebito'),
+            (error: any) => this.manejarErrorDescarga(error)
+        );
+    }
+
+    private procesarDescargaNotas(data: Blob, prefijo: string): void {
+        if (data.type === 'text/plain') {
+            data.text().then((errorMessage: string) => {
+                this.alertService.error({ status: 400, error: { error: errorMessage } });
+                this.downloading = false;
+            });
+            return;
+        }
+        if (data.size === 0) {
+            this.alertService.error('El archivo descargado está vacío');
+            this.downloading = false;
+            return;
+        }
+        const fechaInicio = this.filtros.inicio.replace(/-/g, '');
+        const fechaFin = this.filtros.fin.replace(/-/g, '');
+        const filename = `${prefijo}_${fechaInicio}_${fechaFin}.zip`;
+        const url = window.URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 100);
+        this.downloading = false;
+        this.alertService.success('Éxito', 'Archivo descargado correctamente');
+    }
 
     public descargarDTECreditoFiscal(): void {
       this.downloading = true;
