@@ -17,6 +17,7 @@ export class CuentasPagarComponent implements OnInit {
 
     public proveedores: any[] = [];
     public sucursales: any[] = [];
+    public fechaCorte = '';
 
     constructor(
         public apiService: ApiService,
@@ -161,6 +162,39 @@ export class CuentasPagarComponent implements OnInit {
                 this.downloading = false;
             }
         );
+    }
+
+    descargarReportePorFechaCorte() {
+        if (!this.fechaCorte) return;
+        this.downloading = true;
+        const params: any = {
+            orden: this.filtros.orden,
+            direccion: this.filtros.direccion,
+            fecha_corte: this.fechaCorte
+        };
+        if (this.filtros.id_proveedor) params.id_proveedor = this.filtros.id_proveedor;
+        if (this.filtros.id_sucursal) params.id_sucursal = this.filtros.id_sucursal;
+        if (this.filtros.buscador) params.buscador = this.filtros.buscador;
+
+        this.apiService.export('cuentas-pagar/exportar', params).subscribe({
+            next: (data: Blob) => {
+                const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `cuentas-por-pagar-corte-${this.fechaCorte}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                this.downloading = false;
+                if (this.modalRef) this.modalRef.hide();
+            },
+            error: (err) => {
+                this.alertService.error(err);
+                this.downloading = false;
+            }
+        });
     }
 
     limpiarFiltros() {

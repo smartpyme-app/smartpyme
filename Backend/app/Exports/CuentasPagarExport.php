@@ -7,11 +7,14 @@ use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
 use Illuminate\Http\Request;
 
-class CuentasPagarExport implements FromCollection, WithHeadings, WithMapping
+class CuentasPagarExport implements FromCollection, WithHeadings, WithMapping, WithEvents
 {
     protected $request;
+    protected $totalSaldo = 0;
 
     public function filter(Request $request)
     {
@@ -37,14 +40,19 @@ class CuentasPagarExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         $request = $this->request;
+        $fechaCorte = $request->fecha_corte ?? null;
         $orden = $request->orden ?? 'fecha';
         $direccion = $request->direccion ?? 'desc';
 
-        return Compra::where('estado', 'Pendiente')
-            ->when($request->inicio, function ($query) use ($request) {
+        $query = Compra::query()
+            ->where('estado', 'Pendiente')
+            ->when($fechaCorte, function ($q) use ($fechaCorte) {
+                $q->where('fecha', '<=', $fechaCorte);
+            })
+            ->when(!$fechaCorte && $request->inicio, function ($query) use ($request) {
                 return $query->where('fecha', '>=', $request->inicio);
             })
-            ->when($request->fin, function ($query) use ($request) {
+            ->when(!$fechaCorte && $request->fin, function ($query) use ($request) {
                 return $query->where('fecha', '<=', $request->fin);
             })
             ->when($request->id_proveedor, function ($query) use ($request) {
@@ -80,24 +88,27 @@ class CuentasPagarExport implements FromCollection, WithHeadings, WithMapping
             ->orderBy($orden, $direccion)
             ->orderBy('id', 'desc')
             ->get();
+
+        return $query;
     }
 
     public function map($row): array
     {
-        $fechaActual = Carbon::now();
-        $fechaActual->setTime(0, 0, 0);
+        $fechaCorte = $this->request->fecha_corte ?? null;
+        $fechaRef = $fechaCorte ? Carbon::parse($fechaCorte)->setTime(0, 0, 0) : Carbon::now()->setTime(0, 0, 0);
 
         $fechaVence = $row->fecha_pago
             ? Carbon::parse($row->fecha_pago)->setTime(0, 0, 0)
             : Carbon::parse($row->fecha)->addDays(30)->setTime(0, 0, 0);
 
-        $dias = (int) $fechaActual->diffInDays($fechaVence, false);
+        $dias = (int) $fechaRef->diffInDays($fechaVence, false);
         $estado = $dias >= 0 ? 'Vigente' : 'Vencido';
 
         $documento = ($row->tipo_documento ?? '') . ' #' . ($row->referencia ?? '');
         $abonado = round((float) ($row->abonos_sum_total ?? 0), 2);
         $devoluciones = round((float) ($row->devoluciones_sum_total ?? 0), 2);
         $saldo = round((float) $row->total - $abonado - $devoluciones, 2);
+        $this->totalSaldo += $saldo;
 
         $ultimoAbono = '';
         if (!empty($row->abonos_max_fecha)) {
@@ -115,6 +126,20 @@ class CuentasPagarExport implements FromCollection, WithHeadings, WithMapping
             $abonado,
             $ultimoAbono,
             $saldo,
+        ];
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                $lastRow = $sheet->getHighestRow();
+                $totalRow = $lastRow + 1;
+                $sheet->setCellValue('A' . $totalRow, 'TOTAL');
+                $sheet->setCellValue('J' . $totalRow, round($this->totalSaldo, 2));
+                $sheet->getStyle('A' . $totalRow . ':J' . $totalRow)->getFont()->setBold(true);
+            },
         ];
     }
 }
