@@ -26,6 +26,10 @@ Route::get('/prueba', function () {
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
+// Ventas perdidas (reporte comparación sp_nova vs vps)
+Route::get('ventas-perdidas', [App\Http\Controllers\VentasPerdidasController::class, 'index'])->name('ventas.perdidas');
+Route::get('ventas-perdidas/excel', [App\Http\Controllers\VentasPerdidasController::class, 'excel'])->name('ventas.perdidas.excel');
+
 
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
