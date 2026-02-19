@@ -4,8 +4,10 @@
         <h2>Kardex</h2>
         <h4>{{ producto.nombre }}</h4>
     </div>
-    <div>
-        <button tooltip="Descargar ventas" (click)="descargarKardex()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+    <div class="d-flex gap-2 align-items-center">
+        <button tooltip="Descargar ventas" (click)="descargarKardex()" class="btn btn-default btn-md tcla-F6 py-1"><img src="/assets/icons/download.png" class="icon"></button>
+        <button tooltip="Regresar" routerLink="/productos" class="btn btn-light text-danger"><i class="fa fa-arrow-left"></i> Regresar</button>
+        
     </div>
 </section>
 

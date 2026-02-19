@@ -5,6 +5,7 @@ import { CitasGuard } from '@guards/citas.guard';
 import { AdminGuard } from '@guards/admin.guard';
 
 import { ProductosComponent } from '@views/inventario/productos/productos.component';
+import { DetalleProductoComponent } from '@views/inventario/productos/detalle-producto/detalle-producto.component';
 import { ProductoComponent } from '@views/inventario/productos/producto/producto.component';
 import { PromocionesComponent } from '@views/inventario/promociones/promociones.component';
 
@@ -41,6 +42,7 @@ const routes: Routes = [
     title: 'Inventario',
     children: [
         { path: 'productos', component: ProductosComponent, title: 'Productos' },
+        { path: 'detalle-producto/:id', component: DetalleProductoComponent, title: 'Detalle de producto' },
         { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
         { path: 'ajuste/crear', component: AjusteMasivoComponent, title: 'Ajuste masivo' },
         { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },

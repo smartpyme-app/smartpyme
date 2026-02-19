@@ -18,6 +18,7 @@ import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 import { InventarioRoutingModule } from './inventario.routing.module';
 
 import { ProductosComponent } from './productos/productos.component';
+import { DetalleProductoComponent } from './productos/detalle-producto/detalle-producto.component';
 import { ProductoComponent } from './productos/producto/producto.component';
 import { ProductoInformacionComponent } from './productos/producto/informacion/producto-informacion.component';
 import { ProductoInventariosComponent } from './productos/producto/inventario/producto-inventarios.component';
@@ -88,6 +89,7 @@ import { LotesComponent } from './lotes/lotes.component';
   ],
   declarations: [
   	ProductosComponent,
+    DetalleProductoComponent,
     ProductoComponent,
     KardexComponent,
     PromocionesComponent,
@@ -129,6 +131,7 @@ import { LotesComponent } from './lotes/lotes.component';
   ],
   exports: [
   	ProductosComponent,
+    DetalleProductoComponent,
     ProductoComponent,
     KardexComponent,
     PromocionesComponent,
