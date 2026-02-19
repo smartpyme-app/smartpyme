@@ -33,7 +33,7 @@ class Inventario extends Model {
         return $this->bodega()->first() ? $this->bodega()->first()->nombre_sucursal : null;
     }
 
-    public function kardex($modelo, $cantidad, $precio = NULL, $costo = NULL){
+    public function kardex($modelo, $cantidad, $precio = NULL, $costo = NULL, $fecha = null){
 
         $clase = get_class($modelo);
 
@@ -171,8 +171,10 @@ class Inventario extends Model {
         // Calcular el stock total según si el producto usa lotes o no
         $totalCantidad = $this->calcularStockParaKardex($producto, $modelo, $clase);
 
+        $fechaKardex = $fecha ? (is_string($fecha) ? $fecha : $fecha->format('Y-m-d')) : date('Y-m-d');
+
         Kardex::create([
-            'fecha'             => date('Y-m-d'),
+            'fecha'             => $fechaKardex,
             'id_producto'       => $this->id_producto,
             'id_inventario'     => $this->id_bodega,
             'detalle'           => $clase,
