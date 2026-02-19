@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Ventas;
 use App\Exports\ReportesAutomaticos\EstadoFinancieroConsolidadoSucursales\EstadoFinancieroConsolidadoSucursalesExport;
 use App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor\DetalleVentasVendedorExport;
 use App\Exports\ReportesAutomaticos\InventarioPorSucursal\InventarioExport;
+use App\Exports\ReportesAutomaticos\VentasComprasPorMarcaProveedor\VentasComprasPorMarcaProveedorExport;
 use App\Exports\VentasAcumuladoExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -1308,9 +1309,16 @@ class VentasController extends Controller
 
     public function cxcExport(Request $request)
     {
-        $export = new CuentasCobrarExport();
-        $export->filter($request);
-        return Excel::download($export, 'cuentas-por-cobrar.xlsx');
+        try {
+            ini_set('memory_limit', '256M');
+            set_time_limit(120);
+            $export = new CuentasCobrarExport();
+            $export->filter($request);
+            return Excel::download($export, 'cuentas-por-cobrar.xlsx');
+        } catch (\Throwable $e) {
+            \Log::error('CXC Export error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Error al generar el reporte: ' . $e->getMessage()], 500);
+        }
     }
 
     public function cxcBuscar($txt)
@@ -1557,6 +1565,14 @@ class VentasController extends Controller
                 ]);
                 $export = new CobrosPorVendedorExport();
                 $export->filter($request);
+            } elseif ($configuracion->tipo_reporte === 'ventas-compras-por-marca-proveedor') {
+                $export = new VentasComprasPorMarcaProveedorExport(
+                    $fechaInicio,
+                    $fechaFin,
+                    $empresa->id,
+                    $configuracion,
+                    $configuracion->sucursales ?? []
+                );
             }
             $filename = "{$configuracion->tipo_reporte}-{$fechaInicio}.xlsx";
 
@@ -1621,6 +1637,7 @@ class VentasController extends Controller
                 'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
                 'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
                 'cobros-por-vendedor' => 'Reporte de Cobros por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'ventas-compras-por-marca-proveedor' => 'Reporte de Ventas y Compras por Marca y Proveedor ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -1863,6 +1880,15 @@ class VentasController extends Controller
                 ]);
                 $export = new CobrosPorVendedorExport();
                 $export->filter($request);
+                break;
+            case 'ventas-compras-por-marca-proveedor':
+                $export = new VentasComprasPorMarcaProveedorExport(
+                    $fechaInicio,
+                    $fechaFin,
+                    $configuracion->id_empresa,
+                    $configuracion,
+                    $configuracion->sucursales ?? []
+                );
                 break;
             default:
                 return response()->json(['error' => 'Tipo de reporte no implementado'], 422);

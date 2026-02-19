@@ -612,9 +612,16 @@ class ComprasController extends Controller
 
     public function cxpExport(Request $request)
     {
-        $export = new CuentasPagarExport();
-        $export->filter($request);
-        return Excel::download($export, 'cuentas-por-pagar.xlsx');
+        try {
+            ini_set('memory_limit', '256M');
+            set_time_limit(120);
+            $export = new CuentasPagarExport();
+            $export->filter($request);
+            return Excel::download($export, 'cuentas-por-pagar.xlsx');
+        } catch (\Throwable $e) {
+            \Log::error('CXP Export error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Error al generar el reporte: ' . $e->getMessage()], 500);
+        }
     }
 
     public function cxpBuscar($txt) {

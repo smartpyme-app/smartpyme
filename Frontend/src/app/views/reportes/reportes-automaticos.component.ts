@@ -83,6 +83,10 @@ export class ReportesAutomaticosComponent implements OnInit {
       tipo: 'cobros-por-vendedor',
       nombre: 'Cobros por Vendedor',
     },
+    {
+      tipo: 'ventas-compras-por-marca-proveedor',
+      nombre: 'Ventas y Compras por Marca y Proveedor',
+    },
   ];
   public modalRefFechas!: BsModalRef;
   public fechaInicio: string = '';

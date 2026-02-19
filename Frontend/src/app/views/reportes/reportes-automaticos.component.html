@@ -126,6 +126,9 @@
               <span *ngIf="config.tipo_reporte === 'cobros-por-vendedor'"
                 >Cobros por Vendedor</span
               >
+              <span *ngIf="config.tipo_reporte === 'ventas-compras-por-marca-proveedor'"
+                >Ventas y Compras por Marca y Proveedor</span
+              >
               <span
                 *ngIf="
                   config.tipo_reporte !== 'ventas-por-vendedor' &&
@@ -137,7 +140,8 @@
                   config.tipo_reporte !== 'detalle-ventas-vendedor' &&
                   config.tipo_reporte !== 'inventario-por-sucursal' &&
                   config.tipo_reporte !== 'ventas-por-utilidades' &&
-                  config.tipo_reporte !== 'cobros-por-vendedor'
+                  config.tipo_reporte !== 'cobros-por-vendedor' &&
+                  config.tipo_reporte !== 'ventas-compras-por-marca-proveedor'
                 "
                 >{{ config.tipo_reporte }}</span
               >
