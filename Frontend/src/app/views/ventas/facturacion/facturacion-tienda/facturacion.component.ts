@@ -240,11 +240,6 @@ export class FacturacionComponent implements OnInit {
     this.venta.estado = 'Pagada';
     this.venta.condicion = 'Contado';
     
-    // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
-    if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
-      this.venta.credito = false;
-      this.venta.consigna = false;
-    }
     this.venta.tipo_operacion = 'Gravada';
     this.venta.tipo_renta = null;
     this.venta.detalle_banco = '';
@@ -713,8 +708,32 @@ export class FacturacionComponent implements OnInit {
                 this.venta.id_vendedor = cliente.id_vendedor;
             }
             
+            // Si el cliente tiene crédito habilitado, aplicar venta al crédito automáticamente
+            if (cliente.habilita_credito && cliente.dias_credito) {
+                this.venta.credito = true;
+                this.venta.estado = 'Pendiente';
+                this.venta.condicion = 'Crédito';
+                const fechaVenta = this.venta.fecha || this.apiService.date();
+                this.venta.fecha_pago = moment(fechaVenta).add(cliente.dias_credito, 'days').format('YYYY-MM-DD');
+            }
+            
+            // Obtener saldo pendiente si el cliente tiene límite de crédito
+            if (cliente.limite_credito) {
+                this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 };
+                this.apiService.getAll('cliente/' + cliente.id + '/saldo-pendiente').subscribe(
+                    (res: any) => {
+                        this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: res.saldo_pendiente ?? 0 };
+                    },
+                    () => { this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 }; }
+                );
+            } else {
+                this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
+            }
+
             // Limpiar mensaje de validación al cambiar cliente
             this.mensajeValidacionFecha = '';
+        } else {
+            this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
         }
         console.log(cliente);
     }
@@ -728,13 +747,6 @@ export class FacturacionComponent implements OnInit {
     }
 
     public setCredito() {
-        // Prevenir que usuarios "Ventas Limitado" activen ventas al crédito
-        if (this.apiService.auth_user().tipo === 'Ventas Limitado' && this.venta.credito) {
-            this.venta.credito = false;
-            this.alertService.error('Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.');
-            return;
-        }
-
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
             this.venta.condicion = 'Crédito';

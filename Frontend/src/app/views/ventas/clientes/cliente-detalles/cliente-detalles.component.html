@@ -2,6 +2,9 @@
     <div class="d-flex align-items-center">
         <h2 class="page-heading">Cliente</h2>
         <span class="badge bg-primary ms-2">{{ cliente.tipo }}</span>
+        <span *ngIf="cliente.habilita_credito" class="badge bg-info ms-2" [title]="'Límite: ' + (cliente.limite_credito ? ('$' + cliente.limite_credito) : 'Sin límite')">
+            Crédito {{ cliente.dias_credito }} días
+        </span>
     </div>
     <div class="d-flex align-items-center">
         <button class="btn btn-default" routerLink="/clientes">

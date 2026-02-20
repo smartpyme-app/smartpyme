@@ -59,15 +59,16 @@
                         <th class="d-none d-md-table-cell">NCR</th>
                         <th class="d-none d-lg-table-cell">Tipo</th>
                         <th class="d-none d-lg-table-cell">Estado</th>
+                        <th class="d-none d-md-table-cell">Crédito</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="clientes?.total < 1 && !loading">
+                        <td colspan="9" class="text-center" *ngIf="clientes?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene clientes registrados</span>
                         </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
+                        <td colspan="9" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -86,6 +87,13 @@
                           <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-success' : cliente.enable, 'bg-danger' : !cliente.enable}">
                             {{ cliente.enable ? 'Activo' : 'Inactivo' }}
                           </span>
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                          <span *ngIf="cliente.habilita_credito" class="badge bg-info py-2" style="font-size: 0.75rem;" 
+                            [title]="'Límite: ' + (cliente.limite_credito ? ('$' + cliente.limite_credito) : 'Sin límite')">
+                            {{ cliente.dias_credito }} días
+                          </span>
+                          <span *ngIf="!cliente.habilita_credito" class="text-muted">—</span>
                         </td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">

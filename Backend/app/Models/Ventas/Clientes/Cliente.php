@@ -42,6 +42,9 @@ class Cliente extends Model {
        'id_usuario',
        'id_empresa',
        'id_vendedor',
+       'habilita_credito',
+       'dias_credito',
+       'limite_credito',
 
        'cod_giro',
        'cod_municipio',
@@ -53,7 +56,10 @@ class Cliente extends Model {
        
     ];
     protected $appends = ['nombre_completo'];
-    protected $casts = ['enable' => 'boolean'];
+    protected $casts = [
+        'enable' => 'boolean',
+        'habilita_credito' => 'boolean',
+    ];
 
     protected static function boot()
     {
