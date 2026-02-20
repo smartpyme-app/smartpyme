@@ -443,6 +443,14 @@ class VentasController extends Controller
 
     public function facturacion(Request $request)
     {
+        // Validar que usuarios "Ventas Limitado" no puedan crear ventas al crédito
+        $user = auth()->user();
+        if ($user->tipo === 'Ventas Limitado' && $request->credito == 1) {
+            return response()->json([
+                'error' => 'Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.'
+            ], 403);
+        }
+
         // Validar límite de crédito del cliente (si aplica)
         if ($request->estado === 'Pendiente' && $request->id_cliente) {
             $cliente = Cliente::find($request->id_cliente);
