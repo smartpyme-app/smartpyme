@@ -34,7 +34,7 @@
                         <input type="text" class="form-control" (change)="verificarSiExiste()" placeholder="Escribe aquí" name="apellido" [(ngModel)]="proveedor.apellido">
                     </div>
                     <div class="form-group col-6 col-lg-4">
-                        <label for="dui">DUI</label>
+                        <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="proveedor.dui" [dropSpecialCharacters]="false" mask='00000000-0'>
                     </div>
                     <div class="form-group col-6 col-lg-4">
@@ -109,11 +109,11 @@
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="proveedor.nombre_empresa">
                     </div>
                     <div class="form-group col-6 col-lg-3">
-                        <label for="nit">NIT:</label>
+                        <label for="nit">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT:' : 'Identificación fiscal:' }}</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit">
                     </div>
                     <div class="form-group col-6 col-lg-3">
-                        <label for="ncr">NRC:</label>
+                        <label for="ncr">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NCR:' : 'Registro tributario:' }}</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="ncr" [(ngModel)]="proveedor.ncr">
                     </div>
                     <div class="form-group col-md-6 col-lg-3">
@@ -196,15 +196,15 @@
             <div class="form-group col-6 col-lg-3">
                 <label for="tipo_documento">Tipo de documento</label>
                 <select class="form-select" placeholder="Escribe aquí" name="tipo_documento" [(ngModel)]="proveedor.tipo_documento">
-                    <option value="13">DUI</option>
-                    <option value="36">NIT</option>
+                    <option value="13">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Documento de identidad' }}</option>
+                    <option value="36">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT' : 'Identificación fiscal' }}</option>
                     <option value="03">Pasaporte</option>
                     <option value="02">Carnet de residente</option>
                     <option value="37">Otro</option>
                 </select>
             </div>
             <div class="form-group col-6 col-lg-3">
-                <label for="dui">Número de Identificación</label>
+                <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</label>
                 <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="proveedor.dui">
             </div>
             <div class="form-group col-6">

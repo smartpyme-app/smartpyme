@@ -467,6 +467,7 @@ export class FacturacionV2Component implements OnInit {
             // Solo procesar productos si el cliente existe
             this.procesarProductosOrdenCompra(ordenCompra.detalles);
           }else{
+            const labelDoc = this.apiService.auth_user()?.empresa?.pais === 'El Salvador' ? 'DUI o NIT' : 'Número de identificación o Identificación fiscal';
             Swal.fire({
               title: 'Cliente no encontrado',
               html: `
@@ -475,7 +476,7 @@ export class FacturacionV2Component implements OnInit {
                   <p>Debe crear el cliente con los siguientes datos:</p>
                   <ul class="list-unstyled mt-3">
                     <li><strong>Nombre:</strong> ${ordenCompra.empresa.nombre || 'No disponible'}</li>
-                    <li><strong>DUI o NIT:</strong> ${ordenCompra.empresa.dui || ordenCompra.empresa.nit || 'No disponible'}</li>
+                    <li><strong>${labelDoc}:</strong> ${ordenCompra.empresa.dui || ordenCompra.empresa.nit || 'No disponible'}</li>
                   </ul>
                 </div>
               `,

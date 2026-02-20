@@ -1522,7 +1522,7 @@ class PlanillasController extends Controller
         try {
             $planilla = Planilla::with(['detalles' => function($query) {
                     $query->where('estado', '!=', 0);
-                }, 'detalles.empleado', 'empresa'])
+                }, 'detalles.empleado', 'empresa.currency'])
                 ->findOrFail($id);
 
             $pdf = app('dompdf.wrapper')->loadView('pdf.planilla-detalle', [
