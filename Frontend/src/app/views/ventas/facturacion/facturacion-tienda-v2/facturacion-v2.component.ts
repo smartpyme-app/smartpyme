@@ -840,6 +840,12 @@ export class FacturacionV2Component implements OnInit {
     }
 
     public setCredito() {
+        // Prevenir que usuarios "Ventas Limitado" activen ventas al crédito
+        if (this.apiService.auth_user().tipo === 'Ventas Limitado' && this.venta.credito) {
+            this.venta.credito = false;
+            this.alertService.error('Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.');
+            return;
+        }
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
             this.venta.condicion = 'Crédito';
@@ -1076,6 +1082,12 @@ export class FacturacionV2Component implements OnInit {
         ? this.venta.efectivo
         : this.venta.total;
       this.venta.cambio = 0;
+    }
+
+    // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
+    if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
+      this.venta.credito = false;
+      this.venta.consigna = false;
     }
 
     this.apiService.store('facturacion', this.venta).subscribe(
