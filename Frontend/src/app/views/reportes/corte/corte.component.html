@@ -26,7 +26,7 @@
 <section class="d-flex justify-content-between gap-2">
     <div class="card p-3">
         <h3 class="text-center text-success">
-            {{ (indicadores.totalVentas ? indicadores.totalVentas : 0) | currency }}
+            {{ (indicadores.totalVentas ? (indicadores.totalVentas + indicadores.totalPropina) : 0) | currency }}
         </h3>
         <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
     </div>
