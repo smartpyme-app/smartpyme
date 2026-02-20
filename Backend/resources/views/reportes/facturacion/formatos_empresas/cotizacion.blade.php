@@ -82,7 +82,7 @@
                         
                         @if ($venta->empresa()->pluck('id')->first() != 420)
                             <p>NCR:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
-                            <p>DUI:{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                            <p>@if($venta->empresa->pais == 'El Salvador')DUI:@else Número de identificación:@endif{{ $venta->cliente()->pluck('dui')->first() }}</p>
                             <p>Teléfono:{{ $venta->cliente()->pluck('telefono')->first() }}</p>
                         @else
                             <p>RTN:{{ $venta->cliente()->pluck('ncr')->first() }}</p>

@@ -77,8 +77,13 @@
                         </p>
                     </td>
                     <td>
-                        <p>NCR:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
-                        <p>DUI:{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                        @if($venta->empresa->pais == 'El Salvador')
+                            <p>NCR:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                            <p>DUI:{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                        @else
+                            <p>Registro tributario:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                            <p>Número de identificación:{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                        @endif
                         <p>Teléfono:{{ $venta->cliente()->pluck('telefono')->first() }}</p>
                     </td>
                     <td>

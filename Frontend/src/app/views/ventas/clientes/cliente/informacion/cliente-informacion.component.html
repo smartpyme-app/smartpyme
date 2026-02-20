@@ -51,8 +51,7 @@
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
                 </div>
                 <div class="form-group col-6 col-lg-3">
-                    <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">DUI</label>
-                    <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Número de Identificación</label>
+                    <label for="ncr">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false"  mask={{apiService.auth_user().empresa.validador_dui}}>
                 </div>
                 <div class="form-group col-6 col-lg-3">
@@ -135,13 +134,11 @@
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
                 </div>
                 <div class="form-group col-6 col-lg-3">
-                    <label for="nit" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NIT</label>
-                    <label for="nit" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Identificación Fiscal</label>
+                    <label for="nit">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT' : 'Identificación fiscal' }}</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
                 </div>
                 <div class="form-group col-6 col-lg-2">
-                    <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NCR</label>
-                    <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Registro Tributario</label>
+                    <label for="ncr">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NCR' : 'Registro tributario' }}</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="ncr" [(ngModel)]="cliente.ncr">
                 </div>
                 <div class="form-group col-md-6 col-lg-3">
@@ -292,15 +289,15 @@
             <div class="form-group col-6 col-lg-3">
                 <label for="tipo_documento">Tipo de documento</label>
                 <select class="form-select" placeholder="Escribe aquí" name="tipo_documento" [(ngModel)]="cliente.tipo_documento">
-                    <option value="13">DUI</option>
-                    <option value="36">NIT</option>
+                    <option value="13">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Documento de identidad' }}</option>
+                    <option value="36">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT' : 'Identificación fiscal' }}</option>
                     <option value="03">Pasaporte</option>
                     <option value="02">Carnet de residente</option>
                     <option value="37">Otro</option>
                 </select>
             </div>
             <div class="form-group col-6 col-lg-3">
-                <label for="dui">Número de Identificación</label>
+                <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</label>
                 <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui">
             </div>
             <div class="form-group col-6 col-lg-3">

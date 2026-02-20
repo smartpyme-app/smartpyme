@@ -45,8 +45,8 @@
         <p>{{ $empresa->propietario }}</p>
         <p>{{ $empresa->direccion }}</p>
         <p><b>Fecha:</b> {{ $venta->created_at->format('d-m-Y h:i:s a') }}</p>
-        <p><b>NIT:</b> {{ $empresa->nit }}</p> 
-        <p><b>NCR:</b> {{ $empresa->ncr }} </p>
+        <p><b>@if($empresa->pais == 'El Salvador')NIT:@else Identificación fiscal:@endif</b> {{ $empresa->nit }}</p> 
+        <p><b>@if($empresa->pais == 'El Salvador')NCR:@else Registro tributario:@endif</b> {{ $empresa->ncr }} </p>
         <p><b>GIRO:</b> {{ $empresa->giro }}</p>
         <p><b>CATEGORIA:</b> {{ $empresa->tamano }}<p>
         <p><b>TELÉFONO:</b> {{ $empresa->telefono }}</p>
@@ -150,11 +150,11 @@
                 <td>________________________</td>
             </tr>
             <tr>
-                <td width="100px">NIT:</td>
+                <td width="100px">@if($empresa->pais == 'El Salvador')NIT:@else Identificación fiscal:@endif</td>
                 <td>________________________</td>
             </tr>
             <tr>
-                <td width="100px">DUI:</td>
+                <td width="100px">@if($empresa->pais == 'El Salvador')DUI:@else Número de identificación:@endif</td>
                 <td>________________________</td>
             </tr>
             <tr>
