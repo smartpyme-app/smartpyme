@@ -7,7 +7,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 
 @Component({
     selector: 'app-ventas',
@@ -15,6 +15,7 @@ import { takeUntil } from 'rxjs/operators';
 })
 export class VentasComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private searchSubject$ = new Subject<void>();
   public ventas: any = {};
   public venta: any = {};
   public loading: boolean = false;
@@ -124,6 +125,11 @@ export class VentasComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.verificarAccesoContabilidad();
+
+    this.searchSubject$.pipe(
+      debounceTime(400),
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.filtrarVentas());
 
     this.route.queryParams.subscribe(params => {
       this.filtros = {
@@ -311,6 +317,10 @@ export class VentasComponent implements OnInit, OnDestroy {
     }
 
 
+  public onBuscadorInput() {
+    this.searchSubject$.next();
+  }
+
   public filtrarVentas() {
     // Limpiar valores vacíos antes de navegar
     const queryParams: any = {};
@@ -487,6 +497,13 @@ export class VentasComponent implements OnInit, OnDestroy {
 
           // Crear una copia profunda del objeto para evitar que los cambios se reflejen inmediatamente en el listado
           const ventaCopia = JSON.parse(JSON.stringify(ventaCompleta));
+          
+          // Inicializar el campo condicion si no existe
+          if (!ventaCopia.condicion) {
+            // Si el estado es Pendiente, probablemente es Crédito, de lo contrario Contado
+            ventaCopia.condicion = ventaCopia.estado === 'Pendiente' ? 'Crédito' : 'Contado';
+          }
+          
           // Abrir el modal pasando la copia como parámetro
           this.openModal(template, ventaCopia);
         },
@@ -720,6 +737,29 @@ export class VentasComponent implements OnInit, OnDestroy {
       this.venta.nombre_documento = documento.nombre;
       this.venta.id_documento = documento.id;
       this.venta.correlativo = documento.correlativo;
+    }
+  }
+
+  public onCondicionChange() {
+    if (this.venta.condicion === 'Crédito') {
+      // Si se cambia a Crédito, establecer estado como Pendiente si no está ya establecido
+      if (this.venta.estado !== 'Pendiente' && this.venta.estado !== 'Anulada') {
+        this.venta.estado = 'Pendiente';
+      }
+      // Si no hay fecha de pago, establecer una fecha por defecto (30 días desde hoy)
+      if (!this.venta.fecha_pago) {
+        const fecha = new Date();
+        fecha.setDate(fecha.getDate() + 30);
+        this.venta.fecha_pago = fecha.toISOString().split('T')[0];
+      }
+    } else if (this.venta.condicion === 'Contado') {
+      // Si se cambia a Contado, establecer estado como Pagada si no está anulada
+      if (this.venta.estado !== 'Anulada') {
+        this.venta.estado = 'Pagada';
+      }
+      // Establecer fecha de pago como la fecha actual
+      const fecha = new Date();
+      this.venta.fecha_pago = fecha.toISOString().split('T')[0];
     }
   }
 
@@ -1219,6 +1259,13 @@ export class VentasComponent implements OnInit, OnDestroy {
     const total = parseFloat(venta?.total || 0);
     const propina = parseFloat(venta?.propina || 0);
     return total + propina;
+  }
+
+  public getSaldo(venta: any): number {
+    const total = parseFloat(venta?.total || 0);
+    const abonos = parseFloat(venta?.abonos_sum_total || 0);
+    const devoluciones = parseFloat(venta?.devoluciones_sum_total || 0);
+    return Math.round((total - abonos - devoluciones) * 100) / 100;
   }
 
   public seleccionarReporte(reporte: string) {

@@ -19,7 +19,7 @@ export class LicenciaEmpresasComponent implements OnInit {
     public saving:boolean = false;
     modalRef!: BsModalRef;
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  
+    constructor(public apiService: ApiService, private alertService: AlertService,  
         private route: ActivatedRoute, private router: Router,
         private modalService: BsModalService
     ){ }

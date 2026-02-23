@@ -48,11 +48,22 @@
                             <tbody>
                                 <tr *ngFor=" let detalle of salida?.detalles, let i=index">
                                     <td>
-                                        <a tooltip="Eliminar" class="btn btn-default" (click)="eliminarDetalle(detalle)"><i class="fa fa-trash"></i>
-                                        </a>
+                                        <div class="d-flex gap-1">
+                                            <a tooltip="Eliminar" class="btn btn-default" (click)="eliminarDetalle(detalle)"><i class="fa fa-trash"></i></a>
+                                            <a *ngIf="detalle.inventario_por_lotes && isLotesActivo()" 
+                                               tooltip="Seleccionar lote" 
+                                               class="btn btn-sm" 
+                                               [ngClass]="{'btn-warning': !detalle.lote_id, 'btn-success': detalle.lote_id}"
+                                               (click)="abrirModalLote(detalle)">
+                                                <i class="fa fa-box"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                     <td class="text-center">{{ i + 1 }}</td>
-                                    <td>{{ detalle.nombre_producto }}</td>
+                                    <td>
+                                        {{ detalle.nombre_producto }}
+                                        <span *ngIf="detalle.lote" class="badge bg-info ms-2">{{ detalle.lote.numero_lote }}</span>
+                                    </td>
                                     <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.cantidad" class="form-control text-center"></td>
                                     <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.costo" class="form-control text-center"></td>
                                     <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
@@ -69,3 +80,54 @@
         </button>
     </div>
 </div>
+
+<!-- Modal para seleccionar lote -->
+<ng-template #mlote>
+    <div class="modal-header">
+        <h4 class="modal-title">Seleccionar Lote - {{ detalle.nombre_producto }}</h4>
+        <button type="button" class="btn-close" (click)="cerrarModalLote()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <h6 class="mb-3">Seleccionar lote existente</h6>
+        <div class="table-responsive" style="max-height: 400px;">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Stock</th>
+                        <th>Fabricación</th>
+                        <th>Vencimiento</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngIf="loading">
+                        <td colspan="5" class="text-center">Cargando...</td>
+                    </tr>
+                    <tr *ngIf="!loading && lotes.length == 0">
+                        <td colspan="5" class="text-center text-muted">
+                            <p class="mb-2">No hay lotes disponibles para este producto en esta bodega.</p>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let lote of lotes">
+                        <td><strong>{{ lote.numero_lote || 'Sin número' }}</strong></td>
+                        <td>{{ lote.stock | number:'1.2' }}</td>
+                        <td>{{ lote.fecha_fabricacion ? (lote.fecha_fabricacion | date:'dd/MM/yyyy') : 'N/A' }}</td>
+                        <td>
+                            <span *ngIf="lote.fecha_vencimiento">
+                                {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }}
+                                <span *ngIf="isLoteVencido(lote)" class="badge bg-danger ms-1">Vencido</span>
+                            </span>
+                            <span *ngIf="!lote.fecha_vencimiento" class="text-muted">Sin vencimiento</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" (click)="seleccionarLote(lote)" [disabled]="lote.stock <= 0">
+                                <i class="fa fa-check"></i> Seleccionar
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</ng-template>

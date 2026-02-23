@@ -32,6 +32,15 @@
             text-align: left;
             border: 1px solid #dee2e6;
         }
+
+        tfoot td {
+            padding: 3px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
         td, th {
             vertical-align: middle;
         }
@@ -92,7 +101,20 @@
                     <td class="text-right">${{ number_format($venta['sujeto_excluido'], 2) }}</td>
                 </tr>
             @endforeach
-        </tbody>  
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="5"><b>TOTALES</b></td>
+                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('compras_exentas'), 2) }}</b></td>
+                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('importaciones_exentas'), 2) }}</b></td>
+                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('compras_gravadas'), 2) }}</b></td>
+                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('importaciones_gravadas'), 2) }}</b></td>
+                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('credito_fiscal'), 2) }}</b></td>
+                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('anticipo_iva_percibido'), 2) }}</b></td>
+                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('total'), 2) }}</b></td>
+                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('sujeto_excluido'), 2) }}</b></td>
+            </tr>
+        </tfoot>
     </table>
 
 </body>

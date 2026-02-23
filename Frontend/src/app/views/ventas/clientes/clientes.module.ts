@@ -11,6 +11,7 @@ import { SharedModule } from '@shared/shared.module';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { NgChartsModule } from 'ng2-charts';
 import { PopoverModule } from 'ngx-bootstrap/popover';
+import { ModalModule } from 'ngx-bootstrap/modal';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { NgSelectModule } from '@ng-select/ng-select';
 
@@ -37,6 +38,7 @@ import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.componen
     NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
     PopoverModule.forRoot(),
+    ModalModule.forRoot(),
     TabsModule.forRoot(),
     TooltipModule.forRoot()
   ],

@@ -26,6 +26,10 @@ Route::get('/prueba', function () {
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
+// Ventas perdidas (reporte comparación sp_nova vs vps)
+Route::get('ventas-perdidas', [App\Http\Controllers\VentasPerdidasController::class, 'index'])->name('ventas.perdidas');
+Route::get('ventas-perdidas/excel', [App\Http\Controllers\VentasPerdidasController::class, 'excel'])->name('ventas.perdidas.excel');
+
 
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
@@ -74,6 +78,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/inventario/bodegas.php');
 	require base_path('routes/modulos/inventario/paquetes.php');
 	require base_path('routes/modulos/inventario/entradas-salidas.php');
+	require base_path('routes/modulos/inventario/lotes.php');
 
 	// Eventos
 	require base_path('routes/modulos/eventos/eventos.php');

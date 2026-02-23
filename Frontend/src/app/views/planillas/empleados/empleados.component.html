@@ -53,7 +53,7 @@
               type="text"
               name="buscador"
               class="form-control pull-right"
-              placeholder="Buscar por nombre, DUI o código"
+              placeholder="Buscar por nombre, {{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'número de identificación' }} o código"
               [(ngModel)]="filtros.buscador"
             />
           </form>
@@ -75,7 +75,7 @@
           <thead>
             <tr>
               <th>Código</th>
-              <th>DUI</th>
+              <th>Número de identificación</th>
               <th
                 (click)="setOrden('nombres')"
                 [ngClass]="{
@@ -367,7 +367,7 @@
   
           <!-- Documentos -->
           <div class="form-group col-md-6">
-            <label for="dui">DUI:</label>
+            <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI:' : 'Número de identificación:' }}</label>
             <input
               type="text"
               [(ngModel)]="empleado.dui"
@@ -377,7 +377,7 @@
             />
           </div>
           <div class="form-group col-md-6">
-            <label for="nit">NIT:</label>
+            <label for="nit">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT:' : 'Identificación fiscal:' }}</label>
             <input
               type="text"
               [(ngModel)]="empleado.nit"

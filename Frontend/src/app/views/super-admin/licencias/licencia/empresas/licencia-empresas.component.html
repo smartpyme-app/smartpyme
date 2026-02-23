@@ -13,8 +13,8 @@
                     <th>Empresa</th>
                     <th>Correo</th>
                     <th>Teléfono</th>
-                    <th class="d-none d-md-table-cell">DUI</th>
-                    <th class="d-none d-md-table-cell">NCR</th>
+                    <th class="d-none d-md-table-cell">{{ apiService.auth_user()?.empresa?.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</th>
+                    <th class="d-none d-md-table-cell">{{ apiService.auth_user()?.empresa?.pais == 'El Salvador' ? 'NCR' : 'Registro tributario' }}</th>
                     <th class="text-center"><i class="fa fa-cog"></i> </th>
                 </tr>
             </thead>

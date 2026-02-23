@@ -40,8 +40,8 @@
     <p class="text-center">{{ $empresa->sector }}</p>
     <p>{{ $empresa->propietario }}</p>
     <p>{{ $empresa->direccion }}</p>
-    <p><b>NIT:</b> {{ $empresa->nit }}</p> 
-    <p><b>NCR:</b> {{ $empresa->ncr }} </p>
+    <p><b>@if($empresa->pais == 'El Salvador')NIT:@else Identificación fiscal:@endif</b> {{ $empresa->nit }}</p> 
+    <p><b>@if($empresa->pais == 'El Salvador')NCR:@else Registro tributario:@endif</b> {{ $empresa->ncr }} </p>
     <p><b>GIRO:</b> {{ $empresa->giro }}</p>
     <p><b>TELÉFONO:</b> {{ $empresa->telefono }}</p>
 

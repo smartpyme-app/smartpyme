@@ -141,6 +141,26 @@ class ClientesController extends Controller
         return Response()->json($cliente, 200);
     }
 
+    public function saldoPendiente($id)
+    {
+        $ventasPendientes = \App\Models\Ventas\Venta::where('id_cliente', $id)
+            ->where('estado', 'Pendiente')
+            ->where(function ($q) {
+                $q->where('cotizacion', 0)->orWhereNull('cotizacion');
+            })
+            ->withSum(['abonos' => fn ($q) => $q->where('estado', 'Confirmado')], 'total')
+            ->withSum(['devoluciones' => fn ($q) => $q->where('enable', 1)], 'total')
+            ->get();
+
+        $saldoPendiente = $ventasPendientes->sum(function ($v) {
+            $abonos = $v->abonos_sum_total ?? 0;
+            $devoluciones = $v->devoluciones_sum_total ?? 0;
+            return round($v->total - $abonos - $devoluciones, 2);
+        });
+
+        return response()->json(['saldo_pendiente' => $saldoPendiente], 200);
+    }
+
     public function store(Request $request)
     {
         $rules = [
@@ -158,9 +178,14 @@ class ClientesController extends Controller
             $rules['id_usuario'] = 'sometimes';
         }
 
+        if ($this->puedeEditarCreditoCliente() && !empty($request->habilita_credito)) {
+            $rules['dias_credito'] = 'required|in:10,15,30,45,60';
+        }
+
         $request->validate($rules, [
             'nombre.required_if' => 'El campo nombre es obligatorio.',
-            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.'
+            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
+            'dias_credito.required' => 'Los días de crédito son obligatorios cuando el cliente tiene crédito habilitado.',
         ]);
 
         if ($request->id)
@@ -168,7 +193,14 @@ class ClientesController extends Controller
         else
             $cliente = new Cliente;
 
-        $cliente->fill($request->except('contactos'));
+        $data = $request->except('contactos');
+
+        // Solo Admin y Supervisores pueden modificar campos de crédito
+        if (!$this->puedeEditarCreditoCliente()) {
+            unset($data['habilita_credito'], $data['dias_credito'], $data['limite_credito']);
+        }
+
+        $cliente->fill($data);
         $cliente->save();
 
 
@@ -208,15 +240,26 @@ class ClientesController extends Controller
             'nombre_empresa' => 'required_if:tipo,"Empresa"',
             'id_empresa'     => 'required|numeric|exists:empresas,id',
         ];
+
+        if ($this->puedeEditarCreditoCliente() && !empty($request->habilita_credito)) {
+            $rules['dias_credito'] = 'required|in:10,15,30,45,60';
+        }
         
         $request->validate($rules, [
             'nombre.required_if' => 'El campo nombre es obligatorio.',
             'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
             'id_empresa.required' => 'El campo empresa es obligatorio.',
             'id_empresa.exists' => 'La empresa seleccionada no es válida.',
+            'dias_credito.required' => 'Los días de crédito son obligatorios cuando el cliente tiene crédito habilitado.',
         ]);
         
-        $cliente->fill($request->except('contactos'));
+        $data = $request->except('contactos');
+
+        if (!$this->puedeEditarCreditoCliente()) {
+            unset($data['habilita_credito'], $data['dias_credito'], $data['limite_credito']);
+        }
+        
+        $cliente->fill($data);
         $cliente->save();
         
         if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
@@ -359,7 +402,7 @@ class ClientesController extends Controller
         $cliente = Cliente::where('id', $id)->with('empresa')->firstOrFail();
         $cliente->ventas = $cliente->ventas()->where('estado', 'Pendiente')->get();
         // return $cliente;
-        $reportes = \PDF::loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
+        $reportes = app('dompdf.wrapper')->loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
         return $reportes->stream();
     }
 
@@ -517,5 +560,17 @@ class ClientesController extends Controller
 
 
         return Response()->json($cliente, 200);
+    }
+
+    /**
+     * Solo Administrador, Supervisor y Supervisor Limitado pueden editar crédito del cliente.
+     */
+    private function puedeEditarCreditoCliente(): bool
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+        $tipo = Auth::user()->tipo ?? '';
+        return in_array($tipo, ['Administrador', 'Supervisor', 'Supervisor Limitado'], true);
     }
 }

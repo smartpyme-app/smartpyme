@@ -229,4 +229,8 @@ export class SidebarComponent implements OnInit {
         this.authUser = this.apiService.auth_user();
       }
 
+    public isLotesActivo(): boolean {
+        return this.apiService.isLotesActivo();
+    }
+
 }

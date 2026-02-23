@@ -31,6 +31,7 @@ class Producto extends Model
         'etiquetas',
         'tipo',
         'enable',
+        'inventario_por_lotes',
         'id_empresa',
         'woocommerce_id',
         'shopify_product_id',
@@ -40,11 +41,12 @@ class Producto extends Model
         'last_shopify_sync',
     );
 
-    protected $appends = ['nombre_categoria', 'img', 'nombre_completo'];
+    protected $appends = ['nombre_categoria', 'img', 'nombre_completo', 'stock_total_lotes', 'fecha_vencimiento_proxima'];
     protected $casts = [
         'enable' => 'string',
         'syncing_from_shopify' => 'boolean',
         'last_shopify_sync' => 'datetime',
+        'inventario_por_lotes' => 'boolean',
     ];
 
     protected static function boot()
@@ -92,6 +94,57 @@ class Producto extends Model
             return $this->nombre . ' (' . $this->nombre_variante . ')';
         }
         return $this->nombre;
+    }
+
+    /**
+     * Obtiene el stock total de los lotes del producto
+     * Usa los lotes cargados en la relación para respetar filtros de bodega
+     */
+    public function getStockTotalLotesAttribute()
+    {
+        if (!$this->inventario_por_lotes) {
+            return null;
+        }
+
+        // Si los lotes ya están cargados en la relación, usar esos (respetan filtros)
+        if ($this->relationLoaded('lotes')) {
+            return $this->lotes->sum('stock');
+        }
+
+        // Si no están cargados, calcular desde la base de datos
+        return $this->lotes()->sum('stock');
+    }
+
+    /**
+     * Obtiene la fecha de vencimiento más próxima de los lotes del producto
+     */
+    public function getFechaVencimientoProximaAttribute()
+    {
+        if (!$this->inventario_por_lotes) {
+            return null;
+        }
+
+        // Si los lotes ya están cargados en la relación, usar esos (respetan filtros)
+        if ($this->relationLoaded('lotes')) {
+            $lotesConVencimiento = $this->lotes->filter(function ($lote) {
+                return $lote->fecha_vencimiento !== null && $lote->stock > 0;
+            });
+            
+            if ($lotesConVencimiento->isEmpty()) {
+                return null;
+            }
+
+            return $lotesConVencimiento->min('fecha_vencimiento');
+        }
+
+        // Si no están cargados, calcular desde la base de datos
+        $lote = $this->lotes()
+            ->whereNotNull('fecha_vencimiento')
+            ->where('stock', '>', 0)
+            ->orderBy('fecha_vencimiento', 'asc')
+            ->first();
+
+        return $lote ? $lote->fecha_vencimiento : null;
     }
 
     public function categoria()
@@ -169,5 +222,10 @@ class Producto extends Model
     public function kardex()
     {
         return $this->hasMany('App\Models\Inventario\Kardex', 'id_producto');
+    }
+
+    public function lotes()
+    {
+        return $this->hasMany('App\Models\Inventario\Lote', 'id_producto');
     }
 }

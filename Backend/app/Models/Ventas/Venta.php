@@ -65,6 +65,7 @@ class Venta extends Model {
         'dte',
         'dte_invalidacion',
         'tipo_item_export',
+        'importado',
         'cod_incoterm',
         'incoterm',
         'proforma',

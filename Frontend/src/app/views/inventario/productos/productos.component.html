@@ -141,43 +141,98 @@
                         <td class="text-right">{{ (producto.precio * 1) + (producto.precio *
                             (apiService.auth_user().empresa.iva / 100) ) | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
-                            <div class="click" tooltip="Realizar ajuste de stock" *ngIf="filtros.id_bodega"
-                                (click)="openModalAjuste(majuste, producto)">
-                                {{ producto.inventarios | sum:'stock' }}
+                            <!-- Si tiene lotes activados, mostrar stock de lotes -->
+                            <div *ngIf="producto.inventario_por_lotes">
+                                <div class="click" tooltip="Ver lotes" *ngIf="filtros.id_bodega"
+                                    routerLink="/producto/editar/{{producto.id}}">
+                                    {{ producto.stock_total_lotes || 0 | number:'1.2' }}
+                                </div>
+                                <div *ngIf="!filtros.id_bodega">
+                                    <span *ngIf="producto?.lotes?.length > 0"
+                                        style="display: block; height: 40px; line-height: 40px;" class="click"
+                                        placement="left" [popover]="popTemplateLotes" triggers="mouseenter:mouseleave">
+                                        {{ producto.stock_total_lotes || 0 | number:'1.2' }}
+                                    </span>
+                                    <span *ngIf="producto?.lotes?.length == 0">
+                                        0
+                                    </span>
+                                    <ng-template #popTemplateLotes>
+                                        <table class="table table-borderless">
+                                            <thead>
+                                                <tr>
+                                                    <th>Lote</th>
+                                                    <th>Bodega</th>
+                                                    <th class="text-center">Vencimiento</th>
+                                                    <th class="text-right">Stock</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let lote of producto?.lotes">
+                                                    <td class="text-nowrap">{{ lote.numero_lote || 'N/A' }}</td>
+                                                    <td class="text-nowrap">{{ lote.nombre_bodega || lote.bodega?.nombre }}</td>
+                                                    <td class="text-center">
+                                                        <span *ngIf="lote.fecha_vencimiento">
+                                                            {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }}
+                                                            <br>
+                                                            <small [ngClass]="getClaseVencimiento(lote.fecha_vencimiento)">
+                                                                {{ getDiasVencimiento(lote.fecha_vencimiento) }}
+                                                            </small>
+                                                        </span>
+                                                        <span *ngIf="!lote.fecha_vencimiento" class="text-muted">Sin vencimiento</span>
+                                                    </td>
+                                                    <td class="text-right">{{ lote.stock | number:'1.2' }}</td>
+                                                </tr>
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="3">Total</th>
+                                                    <th class="text-right">{{ producto.stock_total_lotes || 0 | number:'1.2' }}</th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </ng-template>
+                                </div>
                             </div>
-                            <div *ngIf="!filtros.id_bodega">
-                                <span *ngIf="producto?.inventarios?.length > 0"
-                                    style="display: block; height: 40px; line-height: 40px;" class="click"
-                                    placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                            <!-- Si no tiene lotes activados, mostrar stock tradicional -->
+                            <div *ngIf="!producto.inventario_por_lotes">
+                                <div class="click" tooltip="Realizar ajuste de stock" *ngIf="filtros.id_bodega"
+                                    (click)="openModalAjuste(majuste, producto)">
                                     {{ producto.inventarios | sum:'stock' }}
-                                </span>
-                                <span *ngIf="producto?.inventarios?.length == 0">
-                                    Sin control
-                                </span>
-                                <ng-template #popTemplate>
-                                    <table class="table table-borderless">
-                                        <thead>
-                                            <tr>
-                                                <th>Bodega</th>
-                                                <th>Sucursal</th>
-                                                <th class="text-right">Stock</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr *ngFor="let inventario of producto?.inventarios">
-                                                <td class="text-nowrap">{{ inventario.nombre_bodega}}</td>
-                                                <td class="text-nowrap">{{ inventario.nombre_sucursal}}</td>
-                                                <td class="text-right">{{ inventario.stock }}</td>
-                                            </tr>
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <th colspan="2">Total</th>
-                                                <th class="text-right">{{ producto.inventarios | sum:'stock' }}</th>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </ng-template>
+                                </div>
+                                <div *ngIf="!filtros.id_bodega">
+                                    <span *ngIf="producto?.inventarios?.length > 0"
+                                        style="display: block; height: 40px; line-height: 40px;" class="click"
+                                        placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                        {{ producto.inventarios | sum:'stock' }}
+                                    </span>
+                                    <span *ngIf="producto?.inventarios?.length == 0">
+                                        Sin control
+                                    </span>
+                                    <ng-template #popTemplate>
+                                        <table class="table table-borderless">
+                                            <thead>
+                                                <tr>
+                                                    <th>Bodega</th>
+                                                    <th>Sucursal</th>
+                                                    <th class="text-right">Stock</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let inventario of producto?.inventarios">
+                                                    <td class="text-nowrap">{{ inventario.nombre_bodega}}</td>
+                                                    <td class="text-nowrap">{{ inventario.nombre_sucursal}}</td>
+                                                    <td class="text-right">{{ inventario.stock }}</td>
+                                                </tr>
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="2">Total</th>
+                                                    <th class="text-right">{{ producto.inventarios | sum:'stock' }}</th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </ng-template>
+                                </div>
                             </div>
                         </td>
                         <td class="text-center" *ngIf="!apiService.isSupervisorLimitado()">
@@ -194,16 +249,10 @@
                                         class="btn text-start border-0">
                                         <img src="/assets/icons/file-text.png" class="icon me-2">Kardex
                                     </button>
-                                    <!-- <button type="button" class="btn text-start border-0">
-                                        <img  src="/assets/icons/tool.png" class="icon me-2">Ajustar
+                                    <button type="button" routerLink="/detalle-producto/{{producto.id}}"
+                                    class="btn text-start border-0 text-black">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalle
                                     </button>
-                                    <button type="button" class="btn text-start border-0">
-                                        <img  src="/assets/icons/corner-up-right.png" class="icon me-2">Trasladar
-                                    </button> -->
-
-                                    <!-- <button type="button" (click)="delete(producto.id)" class="btn text-start text-danger">
-                                        <img  src="/assets/icons/trash-2.png" class="icon me-2">Eliminar
-                                    </button> -->
                                 </div>
                             </ng-template>
                         </td>

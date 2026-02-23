@@ -60,7 +60,8 @@ export class AlertService {
             this.router.navigate(['/login']);
         }
         else if(message.status == 400) {
-            this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.statusText, 'mensaje' : message.error.error});
+            const mensaje = message.error?.error ?? message.error?.message ?? (typeof message.error === 'string' ? message.error : 'Solicitud incorrecta');
+            this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.statusText || 'Lo sentimos', 'mensaje' : mensaje});
         }
         else if(message.status == 422) {
             // Verificar si el error es un array o una cadena

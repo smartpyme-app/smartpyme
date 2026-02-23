@@ -26,6 +26,9 @@ export class VentaDetallesV2Component implements OnInit {
     @ViewChild('msupervisor')
     public supervisorTemplate!: TemplateRef<any>;
 
+    @ViewChild('mloteVenta')
+    public mloteVenta!: TemplateRef<any>;
+
     public buscador:string = '';
     public loading:boolean = false;
 
@@ -72,6 +75,35 @@ export class VentaDetallesV2Component implements OnInit {
         }
         // En v2, usar el IVA de la empresa directamente
         return this.apiService.auth_user()?.empresa?.iva || 0;
+    }
+
+    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle */
+    private aplicarTipoGravado(detalle: any) {
+        const total = parseFloat(detalle.total) || 0;
+        detalle.gravada = 0;
+        detalle.exenta = 0;
+        detalle.no_sujeta = 0;
+        const tipo = (detalle.tipo_gravado || 'gravada').toLowerCase();
+        if (tipo === 'gravada') {
+            detalle.gravada = total;
+            if (this.venta.cobrar_impuestos && this.obtenerPorcentajeIvaTotal() > 0) {
+                detalle.total_iva = (total * (1 + this.obtenerPorcentajeIvaTotal() / 100)).toFixed(4);
+            } else {
+                detalle.total_iva = detalle.total;
+            }
+        } else if (tipo === 'exenta') {
+            detalle.exenta = total;
+            detalle.total_iva = detalle.total;
+        } else {
+            detalle.no_sujeta = total;
+            detalle.total_iva = detalle.total;
+        }
+    }
+
+    public onTipoGravadoChange(detalle: any) {
+        this.aplicarTipoGravado(detalle);
+        this.update.emit(this.venta);
+        this.sumTotal.emit();
     }
 
     /**
@@ -139,22 +171,12 @@ export class VentaDetallesV2Component implements OnInit {
             detalle.descuento = 0;
         }
 
+        detalle.sub_total = Number((parseFloat(detalle.cantidad) * precioSinIva).toFixed(4));
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
-        
-        // El total es precio sin IVA * cantidad - descuento (usar precio)
-        detalle.total  = (parseFloat(detalle.cantidad) * precioSinIva - parseFloat(detalle.descuento)).toFixed(4);
-        
-        // La gravada es igual al total (ya que el total es sin IVA)
-        detalle.gravada = detalle.total;
-        
-        // Calcular total_iva (con IVA) solo para visualización
-        if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-            detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
-        } else {
-            detalle.total_iva = detalle.total;
-        }
-        
+        detalle.total  = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento)).toFixed(4);
+        this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
+        this.sumTotal.emit();
     }
 
     public modalSupervisor(detalle:any){
@@ -274,6 +296,9 @@ export class VentaDetallesV2Component implements OnInit {
 
             this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
             
+            if(!this.detalle.tipo_gravado){
+                this.detalle.tipo_gravado = 'gravada';
+            }
             if(!this.detalle.exenta){
                 this.detalle.exenta = 0;
             }
@@ -295,28 +320,40 @@ export class VentaDetallesV2Component implements OnInit {
                 }
             }
 
-            // En v2, el total se calcula usando precio (sin IVA)
             const porcentajeIvaTotal = this.obtenerPorcentajeIvaTotal();
             const precioSinIva = parseFloat(this.detalle.precio || 0);
+            this.detalle.sub_total = Number((parseFloat(this.detalle.cantidad) * precioSinIva).toFixed(4));
             if(!this.detalle.total || detalle){
-                this.detalle.total = (parseFloat(this.detalle.cantidad) * precioSinIva - parseFloat(this.detalle.descuento || 0)).toFixed(4);
+                this.detalle.total = (parseFloat(this.detalle.sub_total) - parseFloat(this.detalle.descuento || 0)).toFixed(4);
             }
-
-            // La gravada es igual al total (ya que el total es sin IVA)
-            if(!this.detalle.gravada){
-                this.detalle.gravada = this.detalle.total;
-            }
-
-            // Calcular total_iva (con IVA) solo para visualización
-            if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-                this.detalle.total_iva = (parseFloat(this.detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
-            } else {
-                this.detalle.total_iva = this.detalle.total;
-            }
+            this.aplicarTipoGravado(this.detalle);
 
             if(!this.detalle.id_vendedor){
                 this.detalle.id_vendedor = this.venta.id_vendedor;
-            }            
+            }
+
+            // Si el producto tiene inventario por lotes (y la empresa tiene lotes activos), igual que v1
+            if (producto.inventario_por_lotes && this.apiService.isLotesActivo()) {
+                const metodologia = this.getLotesMetodologia();
+                if (metodologia === 'Manual') {
+                    this.detalle.inventario_por_lotes = true;
+                    this.detalle.lote_id = null;
+                    if (!detalle) {
+                        this.venta.detalles.push(this.detalle);
+                    }
+                    this.update.emit(this.venta);
+                    setTimeout(() => {
+                        this.abrirModalLoteVenta(this.mloteVenta, this.detalle);
+                    }, 100);
+                    return;
+                } else {
+                    this.detalle.inventario_por_lotes = true;
+                    this.detalle.lote_id = null;
+                }
+            } else {
+                this.detalle.inventario_por_lotes = false;
+                this.detalle.lote_id = null;
+            }
             
             if(!detalle)
                 this.venta.detalles.push(this.detalle);
@@ -326,6 +363,46 @@ export class VentaDetallesV2Component implements OnInit {
             if (this.modalRef) { this.modalRef.hide() }
             console.log(this.venta);
         }
+
+    getLotesMetodologia(): string {
+        const empresa = this.apiService.auth_user()?.empresa;
+        if (!empresa?.custom_empresa) return 'FIFO';
+        const config = typeof empresa.custom_empresa === 'string' ? JSON.parse(empresa.custom_empresa) : empresa.custom_empresa;
+        return config?.configuraciones?.lotes_metodologia || 'FIFO';
+    }
+
+    public lotes: any[] = [];
+    public loteSeleccionado: any = null;
+    public detalleConLote: any = null;
+
+    abrirModalLoteVenta(template: TemplateRef<any>, detalle: any) {
+        this.detalleConLote = detalle;
+        this.cargarLotesDisponiblesVenta();
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg'});
+    }
+
+    cargarLotesDisponiblesVenta() {
+        if (!this.detalleConLote?.id_producto || !this.venta.id_bodega) return;
+        this.loading = true;
+        this.apiService.getAll('lotes/disponibles', {
+            id_producto: this.detalleConLote.id_producto,
+            id_bodega: this.venta.id_bodega,
+            cantidad: this.detalleConLote.cantidad
+        }).subscribe(lotes => {
+            this.lotes = lotes;
+            this.loading = false;
+        }, error => {
+            this.alertService.error(error);
+            this.loading = false;
+        });
+    }
+
+    seleccionarLoteVenta(lote: any) {
+        this.detalleConLote.lote_id = lote.id;
+        this.loteSeleccionado = lote;
+        this.modalRef.hide();
+        this.update.emit(this.venta);
+    }
 
     // Eliminar detalle
         public delete(detalle:any){

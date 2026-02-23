@@ -25,7 +25,7 @@
         <div class="card-body">
           <h6 class="card-title">Total Ingresos</h6>
           <h3 class="mb-0">
-            ${{ planilla.total_salarios | number : "1.2-2" }}
+            {{ planilla.total_salarios | currency }}
           </h3>
         </div>
       </div>
@@ -35,7 +35,7 @@
         <div class="card-body">
           <h6 class="card-title">Total Deducciones</h6>
           <h3 class="mb-0">
-            ${{ planilla.total_deducciones | number : "1.2-2" }}
+            {{ planilla.total_deducciones | currency }}
           </h3>
         </div>
       </div>
@@ -44,7 +44,7 @@
       <div class="card bg-success text-white">
         <div class="card-body">
           <h6 class="card-title">Total Neto</h6>
-          <h3 class="mb-0">${{ planilla.total_neto | number : "1.2-2" }}</h3>
+          <h3 class="mb-0">{{ planilla.total_neto | currency }}</h3>
         </div>
       </div>
     </div>
@@ -162,41 +162,41 @@
             </td>
         
             <td class="text-end">
-              ${{ detalle.salario_base | number : "1.2-2" }}
+              {{ detalle.salario_base | currency }}
             </td>
         
             <td class="text-end">
-              ${{ detalle.salario_devengado | number : "1.2-2" }}
+              {{ detalle.salario_devengado | currency }}
             </td>
         
             <td class="text-end">
-              ${{ getIngresosAdicionales(detalle) | number : "1.2-2" }}
+              {{ getIngresosAdicionales(detalle) | currency }}
             </td>
         
             <td class="text-end">
-              ${{ detalle.total_ingresos | number : "1.2-2" }}
+              {{ detalle.total_ingresos | currency }}
             </td>
         
             <!-- Para El Salvador: columnas fijas -->
             <td class="text-end" *ngIf="esElSalvador">
-              ${{ detalle.isss_empleado | number : "1.2-2" }}
+              {{ detalle.isss_empleado | currency }}
             </td>
             <td class="text-end" *ngIf="esElSalvador">
-              ${{ detalle.afp_empleado | number : "1.2-2" }}
+              {{ detalle.afp_empleado | currency }}
             </td>
             <td class="text-end" *ngIf="esElSalvador">
-              ${{ detalle.renta | number : "1.2-2" }}
+              {{ detalle.renta | currency }}
             </td>
         
             <!-- Para otros países: columnas dinámicas -->
             <ng-container *ngIf="!esElSalvador">
               <td class="text-end" *ngFor="let concepto of conceptosEmpleado">
-                ${{ calcularConcepto(detalle, concepto[1]) | number : "1.2-2" }}
+                {{ calcularConcepto(detalle, concepto[1]) | currency }}
               </td>
             </ng-container>
         
             <td class="text-end">
-              ${{ detalle.sueldo_neto | number : "1.2-2" }}
+                {{ detalle.sueldo_neto | currency }}
             </td>
         
             <td class="text-center">
@@ -235,38 +235,38 @@
           <tr class="border-top">
             <th>Totales</th>
             <th class="text-end">
-              ${{ getTotalCampo('salario_base') | number : "1.2-2" }}
+              {{ getTotalCampo('salario_base') | currency }}
             </th>
             <th class="text-end">
-              ${{ getTotalCampo('salario_devengado') | number : "1.2-2" }}
+              {{ getTotalCampo('salario_devengado') | currency }}
             </th>
             <th class="text-end">
-              ${{ (planilla.bonificaciones_total + planilla.comisiones_total + planilla.otros_ingresos_total) | number : "1.2-2" }}
+              {{ (planilla.bonificaciones_total + planilla.comisiones_total + planilla.otros_ingresos_total) | currency }}
             </th>
             <th class="text-end">
-              ${{ getTotalCampoReal('total_ingresos') | number : '1.2-2' }}
+              {{ getTotalCampoReal('total_ingresos') | currency }}
             </th>
         
             <!-- Columnas fijas si es El Salvador -->
             <th class="text-end" *ngIf="esElSalvador">
-              ${{ getTotalCampoReal('isss_empleado') | number : '1.2-2' }}
+              {{ getTotalCampoReal('isss_empleado') | currency }}
             </th>
             <th class="text-end" *ngIf="esElSalvador">
-              ${{ getTotalCampoReal('afp_empleado') | number : '1.2-2' }}
+              {{ getTotalCampoReal('afp_empleado') | currency }}
             </th>
             <th class="text-end" *ngIf="esElSalvador">
-              ${{ getTotalCampoReal('renta') | number : '1.2-2' }}
+              {{ getTotalCampoReal('renta') | currency }}
             </th>
             
             <!-- Columnas dinámicas si NO es El Salvador -->
             <ng-container *ngIf="!esElSalvador">
               <th class="text-end" *ngFor="let concepto of conceptosEmpleado">
-                ${{ getTotalConcepto(concepto[0]) | number : '1.2-2' }}
+                {{ getTotalConcepto(concepto[0]) | currency }}
               </th>
             </ng-container>
         
             <th class="text-end">
-              ${{ getTotalCampoReal('sueldo_neto') | number : "1.2-2" }}
+              {{ getTotalCampoReal('sueldo_neto') | currency }}
             </th>
             <th></th>
           </tr>
@@ -291,7 +291,7 @@
           <div class="card-body">
             <h6 class="card-title">Total ISSS Patronal</h6>
             <h3 class="mb-0">
-              ${{ descuentosPatronales.resumen?.total_isss_patronal | number : "1.2-2" }}
+              {{ descuentosPatronales.resumen?.total_isss_patronal | currency }}
             </h3>
             <small>7.5% del salario</small>
           </div>
@@ -302,7 +302,7 @@
           <div class="card-body">
             <h6 class="card-title">Total AFP Patronal</h6>
             <h3 class="mb-0">
-              ${{ descuentosPatronales.resumen?.total_afp_patronal | number : "1.2-2" }}
+              {{ descuentosPatronales.resumen?.total_afp_patronal | currency }}
             </h3>
             <small>8.75% del salario</small>
           </div>
@@ -313,7 +313,7 @@
           <div class="card-body">
             <h6 class="card-title">Total Descuentos Patronales</h6>
             <h3 class="mb-0">
-              ${{ getTotalDescuentosPatronales() | number : "1.2-2" }}
+                {{ getTotalDescuentosPatronales() | currency }}
             </h3>
             <small>ISSS + AFP Patronal</small>
           </div>
@@ -363,33 +363,33 @@
             </td>
         
             <td class="text-end">
-              ${{ detalle.salario_base | number : "1.2-2" }}
+              {{ detalle.salario_base | currency }}
             </td>
             <td class="text-end">
-              ${{ detalle.salario_devengado | number : "1.2-2" }}
+              {{ detalle.salario_devengado | currency }}
             </td>
         
             <!-- ✅ Aportes patronales para El Salvador -->
             <ng-container *ngIf="esElSalvador; else dinamicos">
-              <td class="text-end">$ {{ detalle.isss_patronal | number : '1.2-2' }}</td>
-              <td class="text-end">$ {{ detalle.afp_patronal | number : '1.2-2' }}</td>
+              <td class="text-end">{{ detalle.isss_patronal | currency }}</td>
+              <td class="text-end">{{ detalle.afp_patronal | currency }}</td>
             </ng-container>
         
             <!-- ✅ Aportes patronales dinámicos para otros países -->
             <ng-template #dinamicos>
               <td class="text-end" *ngFor="let concepto of conceptosPatronales">
-                ${{ calcularConcepto(detalle, concepto[1]) | number : '1.2-2' }}
+                {{ calcularConcepto(detalle, concepto[1]) | currency }}
               </td>
             </ng-template>
         
             <!-- Total aportes patronales -->
             <td class="text-end text-danger fw-bold">
-              ${{ getTotalAportesPatronales(detalle) | number : "1.2-2" }}
+              {{ getTotalAportesPatronales(detalle) | currency }}
             </td>
         
             <!-- Porcentaje sobre salario devengado -->
             <td class="text-end text-muted">
-              {{ (getTotalAportesPatronales(detalle) / detalle.salario_devengado * 100) | number : "1.2-2" }}%
+              {{ (getTotalAportesPatronales(detalle) / detalle.salario_devengado * 100) | number : '1.2-2' }}%
             </td>
           </tr>
         </tbody>
@@ -593,7 +593,55 @@
                     </small>
                   </div>
 
-                  <div class="mb-3">
+                  <!-- Horas extra: agregar por tipo (solo El Salvador) -->
+                  <ng-container *ngIf="esElSalvador">
+                    <div class="mb-3">
+                      <label class="d-block mb-2"><i class="fa fa-clock me-1"></i> Horas extra (El Salvador)</label>
+                      <p class="text-muted small mb-2">Valor hora ordinaria: ${{ getValorHoraNormalES() | number : "1.2-2" }}. Agregue filas eligiendo tipo y cantidad de horas.</p>
+                      <div class="border rounded p-2 bg-light mb-2">
+                        <div *ngFor="let fila of listaHorasExtraES; let i = index" class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                          <select class="form-select form-select-sm" style="min-width: 180px;"
+                            [(ngModel)]="fila.tipo"
+                            (ngModelChange)="calcularTotalesUnificado()"
+                            [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
+                            [name]="'he_tipo_' + i">
+                            <option *ngFor="let opt of TIPOS_HORAS_EXTRA_ES" [value]="opt.value">{{ opt.label }}</option>
+                          </select>
+                          <input type="number" class="form-control form-control-sm" style="width: 70px;"
+                            [(ngModel)]="fila.horas"
+                            (input)="calcularTotalesUnificado()"
+                            (change)="calcularTotalesUnificado()"
+                            [name]="'he_horas_' + i"
+                            min="0" step="0.5"
+                            [disabled]="planilla.estado !== 2 && planilla.estado !== 3" />
+                          <span class="text-muted small">hrs</span>
+                          <span class="text-success fw-bold small">
+                            ${{ getMontoFilaHoraExtra(fila) | number : "1.2-2" }}
+                            <span *ngIf="fila.tipo === 'dia_descanso'" class="text-muted fw-normal" title="Solo horas con 50% recargo; el día compensatorio se suma al total">(solo horas)</span>
+                          </span>
+                          <button type="button" class="btn btn-outline-danger btn-sm ms-1"
+                            (click)="eliminarHoraExtraES(i)"
+                            [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
+                            title="Quitar">
+                            <i class="fa fa-times"></i>
+                          </button>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm"
+                          (click)="agregarHoraExtraES()"
+                          [disabled]="planilla.estado !== 2 && planilla.estado !== 3">
+                          <i class="fa fa-plus me-1"></i> Agregar hora extra
+                        </button>
+                      </div>
+                      <small class="text-muted d-block">
+                        Total: {{ detalleSeleccionado.horas_extra | number : "1.2-2" }} hrs — Monto total: ${{ detalleSeleccionado.monto_horas_extra | number : "1.2-2" }}
+                        <span *ngIf="getDetalleHorasExtraDesdeLista().dia_descanso_dias > 0" class="d-block mt-1 text-info">
+                          <strong>Desglose (Art. 175):</strong> horas trabajadas ${{ getDesgloseMontoHorasExtraES().montoHoras | number : "1.2-2" }} + {{ getDetalleHorasExtraDesdeLista().dia_descanso_dias }} día(s) compensatorio(s) remunerado(s) ${{ getDesgloseMontoHorasExtraES().montoDiaCompensatorio | number : "1.2-2" }} = ${{ detalleSeleccionado.monto_horas_extra | number : "1.2-2" }}
+                        </span>
+                      </small>
+                    </div>
+                  </ng-container>
+                  <!-- Horas extra único (otros países) -->
+                  <div class="mb-3" *ngIf="!esElSalvador">
                     <label>Horas Extra:</label>
                     <div class="input-group">
                       <input type="number" class="form-control" 

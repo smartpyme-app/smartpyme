@@ -21,8 +21,13 @@ export class TrasladosComponent implements OnInit {
     public sucursales:any = [];
     public conceptos:any = [];
     public producto:any = {};
+    public productoFiltro:any = {};
     public bodegaDe:any = {};
     public bodegaPara:any = {};
+    public lotes: any[] = [];
+    public lotesDestino: any[] = [];
+    public loadingLotes: boolean = false;
+    public loadingLotesDestino: boolean = false;
     private tieneShopify: boolean = false;
 
     modalRef!: BsModalRef;
@@ -119,31 +124,197 @@ export class TrasladosComponent implements OnInit {
         }
     }
 
-    public setProducto(){
-        this.producto = this.productos.find((item:any) => item.id == this.traslado.id_producto);
-        this.traslado.costo = this.producto.costo;
+    public productoSelect(producto: any) {
+        this.producto = producto;
+        this.traslado.id_producto = producto.id;
+        this.traslado.costo = producto.costo;
+        this.traslado.lote_id = null;
+        this.traslado.lote_id_destino = null;
+        this.lotes = [];
+        this.lotesDestino = [];
+        
+        // Si el producto tiene inventario por lotes, cargar los lotes cuando se seleccione la bodega origen
+        if (this.producto?.inventario_por_lotes && this.traslado.id_bodega_de) {
+            this.cargarLotes();
+        }
+        
+        // Si ya hay bodega destino, cargar lotes de destino
+        if (this.producto?.inventario_por_lotes && this.traslado.id_bodega) {
+            this.cargarLotesDestino();
+        }
+    }
+
+    public limpiarProducto() {
+        this.producto = {};
+        this.traslado.id_producto = null;
+        this.traslado.id_bodega_de = null;
+        this.traslado.id_bodega = null;
+        this.traslado.lote_id = null;
+        this.traslado.lote_id_destino = null;
+        this.traslado.cantidad = null;
+        this.lotes = [];
+        this.lotesDestino = [];
+        this.bodegaDe = {};
+        this.bodegaPara = {};
+    }
+
+    public productoFiltroSelect(producto: any) {
+        this.productoFiltro = producto;
+        this.filtros.id_producto = producto.id;
+    }
+
+    public limpiarProductoFiltro() {
+        this.productoFiltro = {};
+        this.filtros.id_producto = null;
+    }
+
+    public cargarLotes() {
+        if (!this.traslado.id_producto || !this.traslado.id_bodega_de) return;
+        
+        this.loadingLotes = true;
+        this.apiService.getAll(`lotes/producto/${this.traslado.id_producto}`, {
+            id_bodega: this.traslado.id_bodega_de
+        }).subscribe(lotes => {
+            this.lotes = Array.isArray(lotes) ? lotes : [];
+            this.loadingLotes = false;
+        }, error => {
+            this.alertService.error(error);
+            this.loadingLotes = false;
+            this.lotes = [];
+        });
+    }
+
+    public cargarLotesDestino() {
+        if (!this.traslado.id_producto || !this.traslado.id_bodega) return;
+        
+        this.loadingLotesDestino = true;
+        this.apiService.getAll(`lotes/producto/${this.traslado.id_producto}`, {
+            id_bodega: this.traslado.id_bodega
+        }).subscribe(lotes => {
+            this.lotesDestino = Array.isArray(lotes) ? lotes : [];
+            this.loadingLotesDestino = false;
+        }, error => {
+            this.alertService.error(error);
+            this.loadingLotesDestino = false;
+            this.lotesDestino = [];
+        });
+    }
+
+    public setLoteOrigen() {
+        // Recargar lotes para obtener stock actualizado cuando se selecciona un lote
+        if (this.producto?.inventario_por_lotes && this.isLotesActivo() && this.traslado.lote_id && this.traslado.id_bodega_de) {
+            this.cargarLotes();
+        }
+    }
+
+    public validarStockLote() {
+        // Recargar lotes para obtener stock actualizado cuando se cambia la cantidad
+        if (this.producto?.inventario_por_lotes && this.isLotesActivo() && this.traslado.lote_id && this.traslado.id_bodega_de) {
+            this.cargarLotes();
+        }
+    }
+
+    public stockLoteSuficiente(): boolean {
+        if (!this.producto?.inventario_por_lotes || !this.isLotesActivo() || !this.traslado.lote_id || !this.traslado.cantidad) {
+            return true;
+        }
+        
+        const loteSeleccionado = this.lotes.find((l: any) => l.id == this.traslado.lote_id);
+        if (!loteSeleccionado) {
+            return false;
+        }
+        
+        const stockDisponible = parseFloat(loteSeleccionado.stock) || 0;
+        const cantidadRequerida = parseFloat(this.traslado.cantidad) || 0;
+        
+        return stockDisponible >= cantidadRequerida;
+    }
+
+    public getStockOrigen(): number {
+        // Si tiene lotes activos y hay un lote seleccionado, usar el stock del lote
+        if (this.producto?.inventario_por_lotes && this.isLotesActivo() && this.traslado.lote_id) {
+            const loteSeleccionado = this.lotes.find((l: any) => l.id == this.traslado.lote_id);
+            if (loteSeleccionado) {
+                return parseFloat(loteSeleccionado.stock) || 0;
+            }
+        }
+        // Si no tiene lotes, usar el stock tradicional de la bodega
+        return this.bodegaDe?.stock ? parseFloat(this.bodegaDe.stock) : 0;
+    }
+
+    public getStockDestino(): number {
+        // Si tiene lotes activos y hay un lote destino seleccionado, usar el stock del lote
+        if (this.producto?.inventario_por_lotes && this.isLotesActivo() && this.traslado.lote_id_destino) {
+            const loteDestinoSeleccionado = this.lotesDestino.find((l: any) => l.id == this.traslado.lote_id_destino);
+            if (loteDestinoSeleccionado) {
+                return parseFloat(loteDestinoSeleccionado.stock) || 0;
+            }
+        }
+        // Si no tiene lotes, usar el stock tradicional de la bodega
+        return this.bodegaPara?.stock ? parseFloat(this.bodegaPara.stock) : 0;
+    }
+
+    public getStockOrigenDespues(): number {
+        if (!this.traslado.cantidad) {
+            return this.getStockOrigen();
+        }
+        const cantidad = Number(this.traslado.cantidad) || 0;
+        const stockOrigen = this.getStockOrigen();
+        return Math.max(0, stockOrigen - cantidad);
+    }
+
+    public getStockDestinoDespues(): number {
+        if (!this.traslado.cantidad) {
+            return this.getStockDestino();
+        }
+        const cantidad = Number(this.traslado.cantidad) || 0;
+        const stockDestino = this.getStockDestino();
+        return stockDestino + cantidad;
+    }
+
+    public isLotesActivo(): boolean {
+        return this.apiService.isLotesActivo();
     }
 
     public setSucursalDe(){
         this.bodegaDe = this.producto?.inventarios.find((item:any) => item.id_bodega == this.traslado.id_bodega_de);
+        this.traslado.lote_id = null;
+        this.lotes = [];
+        
+        // Si el producto tiene inventario por lotes, cargar los lotes
+        if (this.producto?.inventario_por_lotes && this.traslado.id_bodega_de) {
+            this.cargarLotes();
+        }
     }
 
     public setSucursalPara(){
         this.bodegaPara = this.producto?.inventarios.find((item:any) => item.id_bodega == this.traslado.id_bodega);
+        this.traslado.lote_id_destino = null;
+        this.lotesDestino = [];
+        
+        // Si el producto tiene inventario por lotes, cargar los lotes de destino
+        if (this.producto?.inventario_por_lotes && this.traslado.id_bodega) {
+            this.cargarLotesDestino();
+        }
     }
 
     public openModal(template: TemplateRef<any>) {
-        this.traslado.id_producto = '';
-        this.traslado.id_bodega = '';
-        this.traslado.id_bodega_de = '';
+        this.traslado = {};
+        this.producto = {};
+        this.bodegaDe = {};
+        this.bodegaPara = {};
+        this.lotes = [];
+        this.lotesDestino = [];
+        this.traslado.id_producto = null;
+        this.traslado.id_bodega = null;
+        this.traslado.id_bodega_de = null;
+        this.traslado.lote_id = null;
+        this.traslado.lote_id_destino = null;
 
         this.traslado.id_usuario = this.apiService.auth_user().id;
         this.traslado.id_empresa = this.apiService.auth_user().id_empresa;
         this.traslado.estado = 'Confirmado';
 
-        this.apiService.getAll('productos/list').subscribe(productos => {
-            this.productos = productos;
-        }, error => {this.alertService.error(error);});
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop:'static'});
     }
@@ -159,10 +330,35 @@ export class TrasladosComponent implements OnInit {
     }
 
     public onSubmit() {
+        // Validar que si el producto tiene lotes, se haya seleccionado un lote
+        if (this.producto?.inventario_por_lotes && this.isLotesActivo() && !this.traslado.lote_id) {
+            this.alertService.error('Debe seleccionar un lote para este producto.');
+            return;
+        }
+
+        // Validar stock del lote antes de enviar
+        if (this.producto?.inventario_por_lotes && this.isLotesActivo() && this.traslado.lote_id && this.traslado.cantidad) {
+            const loteSeleccionado = this.lotes.find((l: any) => l.id == this.traslado.lote_id);
+            if (loteSeleccionado) {
+                const stockDisponible = parseFloat(loteSeleccionado.stock) || 0;
+                const cantidadRequerida = parseFloat(this.traslado.cantidad) || 0;
+                if (stockDisponible < cantidadRequerida) {
+                    this.alertService.error(`El lote no tiene stock suficiente. Stock disponible: ${stockDisponible.toFixed(2)}, Cantidad requerida: ${cantidadRequerida.toFixed(2)}`);
+                    // Recargar lotes para obtener stock actualizado
+                    this.cargarLotes();
+                    return;
+                }
+            }
+        }
+
         this.saving = true;
         this.traslado.id_usuario = this.apiService.auth_user().id;
         this.apiService.store('traslado', this.traslado).subscribe(traslado => { 
             this.traslado = {};
+            this.producto = {};
+            this.bodegaDe = {};
+            this.bodegaPara = {};
+            this.lotes = [];
             this.alertService.success('Traslado realizado', 'El traslado fue añadido exitosamente.');
             this.modalRef.hide();
             this.loadAll();

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
     Route::get('/clientes',                         [ClientesController::class, 'index']);
     Route::get('/clientes/list',                    [ClientesController::class, 'list']);
     Route::get('/clientes/search',                  [ClientesController::class, 'searchClientes']);
+    Route::get('/cliente/{id}/saldo-pendiente',     [ClientesController::class, 'saldoPendiente']);
     Route::get('/cliente/{id}',                     [ClientesController::class, 'read']);
     Route::get('/clientes/buscar/{text}',           [ClientesController::class, 'search']);
     Route::post('/cliente',                         [ClientesController::class, 'store']);
@@ -30,6 +31,7 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/cuentas-cobrar',                  [VentasController::class, 'cxc']);
     Route::get('/cuentas-cobrar/buscar/{text}',    [VentasController::class, 'cxcBuscar']);
+    Route::get('/cuentas-cobrar/exportar',         [VentasController::class, 'cxcExport']);
 
     Route::get('/cliente/{id}/documentos',           [DocumentosController::class, 'index']);
     Route::get('/cliente/documento/{id}',           [DocumentosController::class, 'read']);

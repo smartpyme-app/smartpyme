@@ -127,6 +127,8 @@ export class ProductoInformacionComponent implements OnInit {
         }
     }
 
-    
+    public isLotesActivo(): boolean {
+        return this.apiService.isLotesActivo();
+    }
 
 }
