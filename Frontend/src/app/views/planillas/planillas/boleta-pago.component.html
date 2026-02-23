@@ -50,27 +50,27 @@
               <tbody>
                 <tr>
                   <td>Salario Base</td>
-                  <td class="text-end">${{planillaDetalle?.salario_base | number:'1.2-2'}}</td>
+                  <td class="text-end">{{planillaDetalle?.salario_base | currency}}</td>
                 </tr>
                 <tr>
                   <td>Horas Extra</td>
-                  <td class="text-end">${{planillaDetalle?.monto_horas_extra | number:'1.2-2'}}</td>
+                  <td class="text-end">{{planillaDetalle?.monto_horas_extra | currency}}</td>
                 </tr>
                 <tr>
                   <td>Comisiones</td>
-                  <td class="text-end">${{planillaDetalle?.comisiones | number:'1.2-2'}}</td>
+                  <td class="text-end">{{planillaDetalle?.comisiones | currency}}</td>
                 </tr>
                 <tr>
                   <td>Bonificaciones</td>
-                  <td class="text-end">${{planillaDetalle?.bonificaciones | number:'1.2-2'}}</td>
+                  <td class="text-end">{{planillaDetalle?.bonificaciones | currency}}</td>
                 </tr>
                 <tr>
                   <td>Otros Ingresos</td>
-                  <td class="text-end">${{planillaDetalle?.otros_ingresos | number:'1.2-2'}}</td>
+                  <td class="text-end">{{planillaDetalle?.otros_ingresos | currency}}</td>
                 </tr>
                 <tr class="table-primary">
                   <th>Total Ingresos</th>
-                  <th class="text-end">${{planillaDetalle?.total_ingresos | number:'1.2-2'}}</th>
+                  <th class="text-end">{{planillaDetalle?.total_ingresos | currency}}</th>
                 </tr>
               </tbody>
             </table>
@@ -83,27 +83,27 @@
               <tbody>
                 <tr>
                   <td>ISSS (3%)</td>
-                  <td class="text-end">${{planillaDetalle?.isss_empleado | number:'1.2-2'}}</td>
+                  <td class="text-end">{{planillaDetalle?.isss_empleado | currency}}</td>
                 </tr>
                 <tr>
                   <td>AFP (7.25%)</td>
-                  <td class="text-end">${{planillaDetalle?.afp_empleado | number:'1.2-2'}}</td>
+                  <td class="text-end">{{planillaDetalle?.afp_empleado | currency}}</td>
                 </tr>
                 <tr>
                   <td>ISR</td>
-                  <td class="text-end">${{planillaDetalle?.renta | number:'1.2-2'}}</td>
+                  <td class="text-end">{{planillaDetalle?.renta | currency}}</td>
                 </tr>
                 <tr>
                   <td>Préstamos</td>
-                  <td class="text-end">${{planillaDetalle?.prestamos | number:'1.2-2'}}</td>
+                  <td class="text-end">{{planillaDetalle?.prestamos | currency}}</td>
                 </tr>
                 <tr>
                   <td>Otros Descuentos</td>
-                  <td class="text-end">${{planillaDetalle?.otros_descuentos | number:'1.2-2'}}</td>
+                  <td class="text-end">{{planillaDetalle?.otros_descuentos | currency}}</td>
                 </tr>
                 <tr class="table-danger">
                   <th>Total Deducciones</th>
-                  <th class="text-end">${{planillaDetalle?.total_descuentos | number:'1.2-2'}}</th>
+                  <th class="text-end">{{planillaDetalle?.total_descuentos | currency}}</th>
                 </tr>
               </tbody>
             </table>

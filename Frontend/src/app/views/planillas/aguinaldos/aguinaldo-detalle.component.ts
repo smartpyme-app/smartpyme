@@ -81,14 +81,6 @@ export class AguinaldoDetalleComponent implements OnInit {
     });
   }
 
-  public formatearMoneda(valor: number): string {
-    return new Intl.NumberFormat('es-SV', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(valor || 0);
-  }
-
   public editarMonto(detalle: any) {
     this.editandoMonto[detalle.id] = true;
     this.montoTemporal[detalle.id] = detalle.monto_aguinaldo_bruto;

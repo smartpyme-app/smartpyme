@@ -65,7 +65,7 @@
         <div class="card-body">
           <h6 class="card-title">Total Aguinaldos</h6>
           <h3 class="mb-0">
-            {{ formatearMoneda(getTotalAguinaldos()) }}
+            {{ getTotalAguinaldos() | currency }}
           </h3>
         </div>
       </div>
@@ -75,7 +75,7 @@
         <div class="card-body">
           <h6 class="card-title">Total Retenciones</h6>
           <h3 class="mb-0">
-            {{ formatearMoneda(getTotalRetenciones()) }}
+            {{ getTotalRetenciones() | currency }}
           </h3>
         </div>
       </div>
@@ -84,7 +84,7 @@
       <div class="card bg-success text-white">
         <div class="card-body">
           <h6 class="card-title">Total Neto</h6>
-          <h3 class="mb-0">{{ formatearMoneda(getTotalNeto()) }}</h3>
+          <h3 class="mb-0">{{ getTotalNeto() | currency }}</h3>
         </div>
       </div>
     </div>
@@ -144,7 +144,7 @@
           </td>
           <td class="text-end">
             <span *ngIf="!editandoMonto[detalle.id]">
-              {{ formatearMoneda(detalle.monto_aguinaldo_bruto) }}
+              {{ detalle.monto_aguinaldo_bruto | currency }}
               <button
                 *ngIf="esBorrador()"
                 class="btn btn-sm btn-link p-0 ms-2"
@@ -182,16 +182,16 @@
             </div>
           </td>
           <td class="text-end">
-            {{ formatearMoneda(detalle.monto_exento) }}
+            {{ detalle.monto_exento | currency }}
           </td>
           <td class="text-end">
-            {{ formatearMoneda(detalle.monto_gravado) }}
+            {{ detalle.monto_gravado | currency }}
           </td>
           <td class="text-end">
-            {{ formatearMoneda(detalle.retencion_renta) }}
+            {{ detalle.retencion_renta | currency }}
           </td>
           <td class="text-end">
-            <strong>{{ formatearMoneda(detalle.aguinaldo_neto) }}</strong>
+            <strong>{{ detalle.aguinaldo_neto | currency }}</strong>
           </td>
           <td class="text-center" *ngIf="esBorrador()">
             <button
@@ -207,12 +207,12 @@
       <tfoot>
         <tr>
           <th>TOTALES</th>
-          <th class="text-end">{{ formatearMoneda(getTotalAguinaldos()) }}</th>
-          <th class="text-end">{{ formatearMoneda(getTotalExento()) }}</th>
-          <th class="text-end">{{ formatearMoneda(getTotalGravado()) }}</th>
-          <th class="text-end">{{ formatearMoneda(getTotalRetenciones()) }}</th>
+          <th class="text-end">{{ getTotalAguinaldos() | currency }}</th>
+          <th class="text-end">{{ getTotalExento() | currency }}</th>
+          <th class="text-end">{{ getTotalGravado() | currency }}</th>
+          <th class="text-end">{{ getTotalRetenciones() | currency }}</th>
           <th class="text-end">
-            <strong>{{ formatearMoneda(getTotalNeto()) }}</strong>
+            <strong>{{ getTotalNeto() | currency }}</strong>
           </th>
           <th *ngIf="esBorrador()"></th>
         </tr>
@@ -270,7 +270,7 @@
               <i class="fa fa-spinner fa-spin"></i> Calculando...
             </span>
             <span *ngIf="!cargandoSugerencia && sugerenciaAguinaldo > 0" class="ms-2">
-              {{ formatearMoneda(sugerenciaAguinaldo) }}
+              {{ sugerenciaAguinaldo | currency }}
               <small class="text-muted ms-2">
                 ({{ mesesTrabajados }} {{ mesesTrabajados === 1 ? 'mes' : 'meses' }} trabajados)
               </small>
@@ -323,24 +323,24 @@
             <div *ngIf="!cargandoPreview" class="row">
               <div class="col-md-6 mb-2">
                 <strong>Monto Bruto:</strong>
-                <span class="float-end">{{ formatearMoneda(previewCalculo.monto_bruto) }}</span>
+                <span class="float-end">{{ previewCalculo.monto_bruto | currency }}</span>
               </div>
               <div class="col-md-6 mb-2">
                 <strong>Monto Exento:</strong>
-                <span class="float-end text-success">{{ formatearMoneda(previewCalculo.monto_exento) }}</span>
+                <span class="float-end text-success">{{ previewCalculo.monto_exento | currency }}</span>
               </div>
               <div class="col-md-6 mb-2">
                 <strong>Monto Gravado:</strong>
-                <span class="float-end">{{ formatearMoneda(previewCalculo.monto_gravado) }}</span>
+                <span class="float-end">{{ previewCalculo.monto_gravado | currency }}</span>
               </div>
               <div class="col-md-6 mb-2">
                 <strong>Retención de Renta:</strong>
-                <span class="float-end text-danger">{{ formatearMoneda(previewCalculo.retencion_renta) }}</span>
+                <span class="float-end text-danger">{{ previewCalculo.retencion_renta | currency }}</span>
               </div>
               <div class="col-12 mt-2 pt-2 border-top">
                 <strong class="fs-5">Aguinaldo Neto:</strong>
                 <span class="float-end fs-5 text-success fw-bold">
-                  {{ formatearMoneda(previewCalculo.aguinaldo_neto) }}
+                  {{ previewCalculo.aguinaldo_neto | currency }}
                 </span>
               </div>
             </div>
