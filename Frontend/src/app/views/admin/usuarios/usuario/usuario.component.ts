@@ -21,6 +21,7 @@ export class UsuarioComponent implements OnInit {
     password_confirmation_show: false,
   };
   public sucursales: any = [];
+  public bodegas: any = [];
   public empleados: any = [];
   public roles: any = [];
   public rol: any = {};
@@ -134,7 +135,7 @@ export class UsuarioComponent implements OnInit {
     public encryptService: EncryptService
   ) {}
   public authUser: any = {};
-  public empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488, 543];
+  public empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488, 543,569,657,538];
 
 
   ngOnInit() {
@@ -145,7 +146,7 @@ export class UsuarioComponent implements OnInit {
       // Nuevo usuario
       this.usuario = {};
       this.usuario.rol_id = 2;
-      this.usuario.sucursal_id = this.apiService.auth_user().sucursal_id;
+      this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
       this.usuario.caja_id = 1;
       this.usuario.activo = true;
     } else {
@@ -157,6 +158,15 @@ export class UsuarioComponent implements OnInit {
       (sucursales) => {
         this.sucursales = sucursales;
         this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+
+    this.apiService.getAll('bodegas/list').subscribe(
+      (bodegas) => {
+        this.bodegas = bodegas;
       },
       (error) => {
         this.alertService.error(error);
@@ -203,6 +213,7 @@ export class UsuarioComponent implements OnInit {
     formData.append('tipo', this.usuario.tipo);
     formData.append('codigo', this.usuario.codigo);
     formData.append('id_sucursal', this.usuario.id_sucursal);
+    formData.append('id_bodega', this.usuario.id_bodega);
 
 
 
@@ -610,5 +621,10 @@ export class UsuarioComponent implements OnInit {
 
   public usuarioLogueado() {
     this.authUser = this.apiService.auth_user();
+  }
+
+  selectSucursal() {
+    // Limpiar la bodega cuando cambia la sucursal
+    this.usuario.id_bodega = null;
   }
 }

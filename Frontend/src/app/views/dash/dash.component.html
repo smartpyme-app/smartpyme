@@ -1,6 +1,6 @@
-<app-admin-dash *ngIf="apiService.isAdmin() && !usuario.empresa.licencia"></app-admin-dash>
-<app-caja-dash *ngIf="usuario.tipo == 'Ventas'"></app-caja-dash>
+<app-admin-dash *ngIf="apiService.isAdmin()"></app-admin-dash>
+<app-caja-dash *ngIf="usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado'"></app-caja-dash>
 <app-vendedor-dash *ngIf="usuario.tipo == 'Vendedor'"></app-vendedor-dash>
 
-<app-organizaciones-dash *ngIf="usuario.id_empresa != 2 && usuario.empresa.licencia"></app-organizaciones-dash>
+<!-- <app-organizaciones-dash *ngIf="usuario.id_empresa != 2 && usuario.empresa.licencia"></app-organizaciones-dash> -->
 

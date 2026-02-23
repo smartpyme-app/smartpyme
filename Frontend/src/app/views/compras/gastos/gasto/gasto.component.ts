@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -38,7 +39,8 @@ export class GastoComponent implements OnInit {
     private alertService: AlertService,
     private route: ActivatedRoute,
     private router: Router,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private location: Location
   ) {}
 
   ngOnInit() {
@@ -118,7 +120,8 @@ export class GastoComponent implements OnInit {
 
 
     this.apiService.getAll('impuestos').subscribe(impuestos => {
-      this.impuestos = impuestos;
+      // Filtrar solo los impuestos que aplican a gastos
+      this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_gastos !== false && impuesto.aplica_gastos !== 0);
       this.loading = false;
     
       if (this.gasto && this.gasto.otros_impuestos && this.gasto.otros_impuestos.length > 0) {
@@ -1004,5 +1007,9 @@ export class GastoComponent implements OnInit {
 
   public isColumnEnabled(columnName: string): boolean {
       return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+  }
+
+  public goBack() {
+    this.location.back();
   }
 }

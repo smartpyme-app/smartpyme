@@ -43,7 +43,7 @@
                     <td  style="width: 25%;">
                         {{-- Logo --}}
                         @if ($registro->empresa()->pluck('logo')->first())
-                            {{-- <img width="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo"> --}}
+                            <img width="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
                     </td>
                     <td style="width: 50%; text-align: center;">
@@ -201,10 +201,27 @@
                     <td colspan="2">Retención de Renta: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'], 2) }}</td>
                 </tr>
+                @if(isset($registro->propina) && floatval($registro->propina) > 0)
+                    <tr>
+                        <td colspan="4"></td>
+                        <td colspan="2">Propina: </td>
+                        <td class="text-right">${{ number_format(floatval($registro->propina), 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4"></td>
+                        <td class="bg-light" colspan="2"><b>Total:</b></td>
+                        <td class="bg-light text-right"><b>${{ number_format(floatval($DTE['resumen']['totalPagar'] ?? 0), 2) }}</b></td>
+                    </tr>
+                    <tr>
+                        <td colspan="4"></td>
+                        <td class="bg-light" colspan="2"><b>Total + Propina:</b></td>
+                        <td class="bg-light text-right"><b>${{ number_format(floatval($DTE['resumen']['totalPagar'] ?? 0) + floatval($registro->propina), 2) }}</b></td>
+                    </tr>
+                @endif
                 <tr>
                     <td colspan="4"></td>
                     <td class="bg-light" colspan="2"><b>Total a pagar:</b></td>
-                    <td class="bg-light text-right"><b>${{ number_format($DTE['resumen']['totalPagar'], 2) }}</b></td>
+                    <td class="bg-light text-right"><b>${{ number_format(floatval($DTE['resumen']['totalPagar'] ?? 0) + (isset($registro->propina) && floatval($registro->propina) > 0 ? floatval($registro->propina) : 0), 2) }}</b></td>
                 </tr>
             </tfoot>
         </table>

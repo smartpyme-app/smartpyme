@@ -20,6 +20,11 @@ class TrabajosPendientes extends Model
         'fecha_inicio',
         'fecha_fin',
         'resultado',
+        'prioridad',
+        'datos',
+        'intentos',
+        'max_intentos',
+        'fecha_procesamiento',
         'id_usuario',
         'id_empresa'
     ];

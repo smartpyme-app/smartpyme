@@ -23,6 +23,7 @@ class Cliente extends Model {
        'giro',
        'tipo',
        'tipo_contribuyente',
+       'clasificacion',
        'dui',
        'nit',
        'nombre_empresa',
@@ -37,6 +38,7 @@ class Cliente extends Model {
        'fecha_cumpleanos',
        'telefono',
        'correo',
+       'shopify_customer_id',
        'nota',
        'red_social',
        'enable',
@@ -44,6 +46,10 @@ class Cliente extends Model {
        'id_usuario',
        'id_empresa',
        'id_tipo_cliente',
+       'id_vendedor',
+       'habilita_credito',
+       'dias_credito',
+       'limite_credito',
 
        'cod_giro',
        'cod_municipio',
@@ -52,10 +58,13 @@ class Cliente extends Model {
        'tipo_persona',
        'tipo_documento',
        'codigo_cliente',
-       
+
     ];
     protected $appends = ['nombre_completo'];
-    protected $casts = ['enable' => 'boolean'];
+    protected $casts = [
+        'enable' => 'boolean',
+        'habilita_credito' => 'boolean',
+    ];
 
     protected static function boot()
     {
@@ -65,7 +74,7 @@ class Cliente extends Model {
         static::addGlobalScope('empresa', function (Builder $builder) {
             $user = Auth::user();
             $empresa = $user->empresa;
-            
+
             if ($empresa) {
                 if ($empresa->esEmpresaPadre()) {
                     // Empresa padre: solo ve sus propios clientes
@@ -86,13 +95,13 @@ class Cliente extends Model {
                 }
             }
 
-            
+
         });
     }
 
     }
 
-    public function getNombreCompletoAttribute() 
+    public function getNombreCompletoAttribute()
     {
         return $this->nombre . ' ' . ($this->apellido ? $this->apellido : '');
     }
@@ -102,7 +111,7 @@ class Cliente extends Model {
         return $this->actividadEconomica ? $this->actividadEconomica->nombre : null;
     }
 
-    public function getEtiquetasAttribute($value) 
+    public function getEtiquetasAttribute($value)
     {
         return is_string($value) ? json_decode($value) : $value;
     }
@@ -112,32 +121,32 @@ class Cliente extends Model {
         $this->attributes['etiquetas'] = json_encode($valor);
     }
 
-    public function cotizaciones() 
+    public function cotizaciones()
     {
         return $this->hasMany('App\Models\Cotizaciones\Cotizacion', 'id_cliente');
     }
 
-    public function eventos() 
+    public function eventos()
     {
         return $this->hasMany('App\Models\Eventos\Evento', 'id_cliente');
     }
 
-    public function ventas() 
+    public function ventas()
     {
         return $this->hasMany('App\Models\Ventas\Venta', 'id_cliente');
     }
 
-    public function paquetes() 
+    public function paquetes()
     {
         return $this->hasMany('App\Models\Inventario\Paquete', 'id_cliente');
     }
 
-    public function creditos() 
+    public function creditos()
     {
         return $this->hasMany('App\Models\Creditos\Credito', 'id_cliente');
     }
-    
-    public function empresa() 
+
+    public function empresa()
     {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
@@ -147,7 +156,7 @@ class Cliente extends Model {
         return $this->hasMany(ContactoCliente::class, 'id_cliente')
                     ->where('estado', 1);
     }
-    
+
     public function actividadEconomica()
     {
         return $this->belongsTo(ActividadEconomica::class, 'cod_giro', 'cod');
@@ -178,13 +187,13 @@ class Cliente extends Model {
         if ($this->tipoCliente) {
             return $this->tipoCliente;
         }
-        
+
         // Si la empresa tiene licencia, usar la configuración de la empresa padre
         $empresaEfectiva = $this->empresa;
         if ($empresaEfectiva && $empresaEfectiva->esEmpresaHija()) {
             $empresaEfectiva = $empresaEfectiva->getEmpresaPadre();
         }
-        
+
         return $empresaEfectiva ? $empresaEfectiva->tipoClienteDefault : null;
     }
 
@@ -228,5 +237,15 @@ class Cliente extends Model {
     public function getDireccionEfectiva()
     {
         return $this->tipo === 'Empresa' ? $this->empresa_direccion : $this->direccion;
+    }
+
+    public function vendedor()
+    {
+        return $this->belongsTo('App\Models\User', 'id_vendedor');
+    }
+
+    public function distritoRelation()
+    {
+        return $this->belongsTo(\App\Models\MH\Distrito::class, 'cod_distrito', 'cod');
     }
 }

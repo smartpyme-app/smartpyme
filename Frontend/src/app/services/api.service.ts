@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
-import { map, catchError, retry } from 'rxjs/operators';
+import { map, catchError, retry, timeout } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
@@ -29,6 +29,14 @@ export class ApiService {
     filter(url:string, filter: any) {return this.http.get<any>(this.apiUrl + url + filter).pipe(retry(0), catchError(this.handleError) )}
 
     store(url:string, model:any) {return this.http.post<any>(this.apiUrl + url, model).pipe(retry(0), catchError(this.handleError) )}
+    
+    storeWithTimeout(url:string, model:any, timeoutMs: number = 300000) {
+        return this.http.post<any>(this.apiUrl + url, model).pipe(
+            timeout(timeoutMs),
+            retry(0), 
+            catchError(this.handleError)
+        );
+    }
 
     update(url: string, id: number, model: any) {return this.http .put<any>(`${this.apiUrl}${url}/${id}`, model) .pipe(retry(0), catchError(this.handleError)); }
 
@@ -42,6 +50,10 @@ export class ApiService {
 
     export(url:string, filtros: any): Observable<Blob> {
         return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros });
+    }
+
+    exportWithUrl(url: string, filtros: any): Observable<any> {
+        return this.http.get(this.apiUrl + url, { params: filtros });
     }
 
     exportAcumulado(url: string, filtros: any): Observable<Blob> {
@@ -113,6 +125,18 @@ export class ApiService {
 
     auth_user(){ return JSON.parse(localStorage.getItem('SP_auth_user')!); }
     register_user(){ return JSON.parse(localStorage.getItem('SP_user_register')!); }
+
+    /** Indica si el módulo de lotes está activo para la empresa del usuario actual */
+    isLotesActivo(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.lotes_activo === true;
+    }
 
     auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
 
@@ -263,6 +287,18 @@ export class ApiService {
     isSupervisorLimitado() {
         let usuario = this.auth_user();
         if (usuario.tipo == 'Supervisor Limitado') return true;
+        return false;
+    }
+
+    isVentasLimitado() {
+        let usuario = this.auth_user();
+        if (usuario.tipo == 'Ventas Limitado') return true;
+        return false;
+    }
+
+    isVentas() {
+        let usuario = this.auth_user();
+        if (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado') return true;
         return false;
     }
 

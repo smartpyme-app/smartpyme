@@ -57,7 +57,7 @@ class EmpresasController extends Controller
         $empresa->fill($request->all());
         $empresa->save();
 
-        return Response()->json($empresa, 200);
+        return Response()->json($empresa->load('empresa'), 200);
 
     }
 

@@ -30,6 +30,7 @@ import { GastoComponent } from './gastos/gasto/gasto.component';
 import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.component';
 import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
+import { AbonosGastosComponent } from './gastos/abonos/abonos-gastos.component';
 
 const routes: Routes = [
   {
@@ -67,6 +68,7 @@ const routes: Routes = [
         { path: 'reporte/compras/categorias', component: CategoriasComprasComponent },
 
         { path: 'gastos', component: GastosComponent, title:'Gastos' },
+        { path: 'gastos/abonos', component: AbonosGastosComponent, title:'Abonos de gastos' },
         { path: 'gastos/recurrentes', component: GastosRecurrentesComponent, title:'Gastos recurrentes' },
         { path: 'gasto/detalles/:id', component: GastoDetallesComponent, title:'Gasto' },
         { path: 'gasto/:id', component: GastoComponent, title:'Gasto' },

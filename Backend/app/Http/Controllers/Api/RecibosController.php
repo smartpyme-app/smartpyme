@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade as PDF;
 use App\Models\Ventas\Venta;
 use App\Models\Recibo;
 
@@ -42,7 +41,7 @@ class RecibosController extends Controller
 
         $venta = Venta::where('id', $recibo->id_venta)->first();
 
-        $pdf = PDF::loadView('reportes.recibo', compact('venta', 'recibo'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.recibo', compact('venta', 'recibo'));
         $pdf->setPaper('US Letter', 'portrait');  
 
         return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');

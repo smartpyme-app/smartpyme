@@ -35,9 +35,9 @@
     </div>
 
     <div class="d-flex mb-3">
-        <div class="col d-flex gap-2">
-            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
-            <!-- <button class="btn btn-default">Traslados</button> -->
+        <div class="col d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/proveedores">Todos</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/proveedores/cuentas-pagar">Cuentas por pagar</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
             <select name="estado" (change)="filtrarProveedores()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
@@ -53,10 +53,9 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Nombre</th>
-                        <th>Correo</th>
                         <th>Teléfono</th>
-                        <th class="d-none d-md-table-cell">DUI</th>
-                        <th class="d-none d-md-table-cell">NCR</th>
+                        <th class="d-none d-md-table-cell">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</th>
+                        <th class="d-none d-md-table-cell">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NCR' : 'Registro tributario' }}</th>
                         <th class="d-none d-lg-table-cell">Tipo</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
@@ -72,7 +71,6 @@
                     </tr>
                     <tr *ngFor=" let proveedor of proveedores?.data">
                         <td>{{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}</td>
-                        <td>{{ proveedor.correo }}</td>
                         <td>{{ proveedor.telefono }}</td>
                         <td class="d-none d-md-table-cell">{{ proveedor.dui}}</td>
                         <td class="d-none d-md-table-cell">{{ proveedor.ncr }}</td>

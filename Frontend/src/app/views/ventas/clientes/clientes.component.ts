@@ -22,9 +22,9 @@ export class ClientesComponent implements OnInit {
     public tieneFidelizacionHabilitada: boolean = false;
     modalRef!: BsModalRef;
 
-    constructor( 
-        public apiService:ApiService, 
-        private alertService:AlertService, 
+    constructor(
+        public apiService:ApiService,
+        private alertService:AlertService,
         private modalService: BsModalService,
         private funcionalidadesService: FuncionalidadesService
     ){}
@@ -53,12 +53,12 @@ export class ClientesComponent implements OnInit {
 
     public filtrarClientes(){
         this.loading = true;
-        this.apiService.getAll('clientes', this.filtros).subscribe(clientes => { 
+        this.apiService.getAll('clientes', this.filtros).subscribe(clientes => {
             this.clientes = clientes;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
-    
+
     public setOrden(columna: string) {
         if (this.filtros.orden === columna) {
           this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
@@ -93,18 +93,18 @@ export class ClientesComponent implements OnInit {
     public delete(cliente:any){
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('cliente/', cliente.id) .subscribe(data => {
-                for (let i = 0; i < this.clientes.data.length; i++) { 
+                for (let i = 0; i < this.clientes.data.length; i++) {
                     if (this.clientes.data[i].id == data.id )
                         this.clientes.data.splice(i, 1);
                 }
             }, error => {this.alertService.error(error); });
-                   
+
         }
     }
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.clientes.path + '?page='+ event.page).subscribe(clientes => { 
+        this.apiService.paginate(this.clientes.path + '?page='+ event.page).subscribe(clientes => {
             this.clientes = clientes;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -185,6 +185,10 @@ export class ClientesComponent implements OnInit {
                 this.tieneFidelizacionHabilitada = false;
             }
         });
+    }
+
+    public generarEstadoCuenta(cliente: any){
+        window.open(this.apiService.baseUrl + '/api/cliente/estado-de-cuenta/' + cliente.id + '?token=' + this.apiService.auth_token(), '_blank');
     }
 
 }

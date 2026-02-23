@@ -293,4 +293,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
         // Limpiar suscripciones si es necesario
     }
 
+    public isLotesActivo(): boolean {
+        return this.apiService.isLotesActivo();
+    }
+
 }

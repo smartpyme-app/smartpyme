@@ -30,6 +30,7 @@ class Empleado extends Model
         'nit',
         'isss',
         'afp',
+        'configuracion_descuentos',
         'fecha_nacimiento',
         'direccion',
         'telefono',
@@ -52,6 +53,26 @@ class Empleado extends Model
         'id_empresa',
     ];
 
+    protected $casts = [
+        'configuracion_descuentos' => 'array',
+    ];
+
+    /**
+     * Boot del modelo - Establece valores por defecto
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($empleado) {
+            if (is_null($empleado->configuracion_descuentos)) {
+                $empleado->configuracion_descuentos = [
+                    'aplicar_afp' => true,
+                    'aplicar_isss' => true
+                ];
+            }
+        });
+    }
 
     // Relaciones
     public function sucursal()
@@ -132,5 +153,37 @@ class Empleado extends Model
         return $this->tipo_contrato == 4;
     }
 
+    /**
+     * Verifica si se debe aplicar descuento de AFP
+     * 
+     * @return bool
+     */
+    public function aplicarAfp()
+    {
+        $config = $this->configuracion_descuentos ?? [];
+        return isset($config['aplicar_afp']) ? (bool) $config['aplicar_afp'] : true;
+    }
+
+    /**
+     * Verifica si se debe aplicar descuento de ISSS
+     * 
+     * @return bool
+     */
+    public function aplicarIsss()
+    {
+        $config = $this->configuracion_descuentos ?? [];
+        return isset($config['aplicar_isss']) ? (bool) $config['aplicar_isss'] : true;
+    }
+
+    /**
+     * Establece la configuración de descuentos
+     */
+    public function setConfiguracionDescuentos($aplicarAfp = true, $aplicarIsss = true)
+    {
+        $this->configuracion_descuentos = [
+            'aplicar_afp' => $aplicarAfp,
+            'aplicar_isss' => $aplicarIsss,
+        ];
+    }
 
 }

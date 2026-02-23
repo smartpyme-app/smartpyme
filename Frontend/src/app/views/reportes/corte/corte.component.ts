@@ -19,7 +19,7 @@ export class CorteComponent implements OnInit {
     ngOnInit(){
         this.usuario = this.apiService.auth_user();
 
-        if(this.usuario.tipo != 'Ventas'){
+        if(this.usuario.tipo != 'Ventas' && this.usuario.tipo != 'Ventas Limitado'){
             this.filtros.id_sucursal = '';
             this.filtros.id_usuario = '';
         }else{
@@ -55,6 +55,11 @@ export class CorteComponent implements OnInit {
         this.apiService.getAll('corte', this.filtros).subscribe(indicadores => { 
             this.indicadores = indicadores;
         }, error => {this.alertService.error(error); });
+    }
+
+    public onUsuarioClear(){
+        this.filtros.id_usuario = '';
+        this.filtrar();
     }
     
 }

@@ -113,6 +113,10 @@ export class CrearProductoComponent implements OnInit {
         });
     }
 
+    public isLotesActivo(): boolean {
+        return this.apiService.isLotesActivo();
+    }
+
     public barcode() {
         var ventana = window.open(
             this.apiService.baseUrl + "/api/barcode/" + this.producto.codigo + "?token=" + this.apiService.auth_token(),

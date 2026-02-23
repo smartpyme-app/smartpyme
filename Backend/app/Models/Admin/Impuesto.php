@@ -12,9 +12,17 @@ class Impuesto extends Model {
     protected $fillable = array(
         'nombre',
         'porcentaje',
-        'id_empresa'
-
+        'id_empresa',
+        'aplica_ventas',
+        'aplica_gastos',
+        'aplica_compras'
     );
+
+    protected $casts = [
+        'aplica_ventas' => 'boolean',
+        'aplica_gastos' => 'boolean',
+        'aplica_compras' => 'boolean',
+    ];
 
     protected static function boot()
     {

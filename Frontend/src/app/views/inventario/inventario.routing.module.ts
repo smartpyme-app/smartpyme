@@ -5,6 +5,7 @@ import { CitasGuard } from '@guards/citas.guard';
 import { AdminGuard } from '@guards/admin.guard';
 
 import { ProductosComponent } from '@views/inventario/productos/productos.component';
+import { DetalleProductoComponent } from '@views/inventario/productos/detalle-producto/detalle-producto.component';
 import { ProductoComponent } from '@views/inventario/productos/producto/producto.component';
 import { PromocionesComponent } from '@views/inventario/promociones/promociones.component';
 
@@ -32,6 +33,7 @@ import { InventarioEntradaComponent } from '@views/inventario/entradas/entrada/i
 import { InventarioSalidaComponent } from '@views/inventario/salidas/salida/inventario-salida.component';
 import { EntradaDetalleComponent } from '@views/inventario/entradas/entrada-detalle/entrada-detalle.component';
 import { SalidaDetalleComponent } from '@views/inventario/salidas/salida-detalle/salida-detalle.component';
+import { LotesComponent } from '@views/inventario/lotes/lotes.component';
 
 const routes: Routes = [
   {
@@ -40,6 +42,7 @@ const routes: Routes = [
     title: 'Inventario',
     children: [
         { path: 'productos', component: ProductosComponent, title: 'Productos' },
+        { path: 'detalle-producto/:id', component: DetalleProductoComponent, title: 'Detalle de producto' },
         { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
         { path: 'ajuste/crear', component: AjusteMasivoComponent, title: 'Ajuste masivo' },
         { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
@@ -63,6 +66,8 @@ const routes: Routes = [
         
         { path: 'ajustes', component: AjustesComponent, title: 'Ajustes'  },
         { path: 'ajuste/:id', component: AjusteComponent, title: 'Ajuste'  },
+        
+        { path: 'lotes', component: LotesComponent, title: 'Lotes'  },
         
         { path: 'servicios', canActivate: [CitasGuard], component: ServiciosComponent, title: 'Servicios'},
         { path: 'servicio/crear', canActivate: [CitasGuard], component: ProductoComponent, title: 'Servicio' },

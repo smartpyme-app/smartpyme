@@ -48,6 +48,12 @@ export class FacturacionCompraComponent implements OnInit {
     public searchLoading: boolean = false;
     public searchProductos$ = new Subject<string>();
 
+    // Propiedades para crear productos nuevos
+    public modalCrearProducto!: BsModalRef;
+    public nuevoProducto: any = {};
+    public creandoProducto: boolean = false;
+    public categorias: any[] = [];
+
     
     modalRef!: BsModalRef;
     modalCredito!: BsModalRef;
@@ -96,6 +102,7 @@ export class FacturacionCompraComponent implements OnInit {
             this.searchResults = results || [];
             this.searchLoading = false;
         });
+
     }
 
     ngOnInit() {
@@ -123,7 +130,8 @@ export class FacturacionCompraComponent implements OnInit {
         }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('impuestos').subscribe(impuestos => {
-            this.impuestos = impuestos;
+            // Filtrar solo los impuestos que aplican a compras
+            this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_compras !== false && impuesto.aplica_compras !== 0);
             this.compra.impuestos = this.impuestos;
             this.sumTotal();
 
@@ -141,6 +149,17 @@ export class FacturacionCompraComponent implements OnInit {
     }
 
     public cargarDocumentos(){
+        // Lista de documentos permitidos para compras
+        const documentosPermitidos = [
+            'Factura',
+            'Crédito fiscal',
+            'Ticket',
+            'Recibo',
+            'Sujeto excluido',
+            'Recibo',
+            'Factura de exportación'
+        ];
+
         this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
@@ -152,7 +171,12 @@ export class FacturacionCompraComponent implements OnInit {
                     this.compra.referencia = documento.correlativo;
                 }
             }else{
-                this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
+                // Filtrar solo los documentos permitidos, excluyendo notas de débito y crédito
+                this.documentos = this.documentos.filter((x:any) => 
+                    documentosPermitidos.includes(x.nombre) && 
+                    x.nombre != 'Nota de crédito' && 
+                    x.nombre != 'Nota de débito'
+                );
             }
         }, error => {this.alertService.error(error);});
     }
@@ -181,6 +205,7 @@ export class FacturacionCompraComponent implements OnInit {
         this.compra.iva = 0;
         this.compra.total_costo = 0;
         this.compra.total = 0;
+        this.compra.impuestos = [];
         this.detalle = {};
         this.compra.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
         this.compra.cobrar_percepcion = false;
@@ -206,6 +231,10 @@ export class FacturacionCompraComponent implements OnInit {
                 this.loading = true;
                 this.apiService.read('compra/', params.id).subscribe(compra => {
                     this.compra = compra;
+                    // Asegurar que impuestos existe y es un array
+                    if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos)) {
+                        this.compra.impuestos = this.impuestos || [];
+                    }
                     this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
                     this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
                     this.loading = false;
@@ -219,6 +248,15 @@ export class FacturacionCompraComponent implements OnInit {
             this.duplicarcompra = true;
             this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
                 this.compra = compra;
+                // Asegurar que impuestos existe y es un array, y usar los impuestos filtrados
+                if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos)) {
+                    this.compra.impuestos = this.impuestos || [];
+                } else {
+                    // Filtrar los impuestos para mantener solo los que aplican a compras
+                    this.compra.impuestos = this.compra.impuestos.filter((impuesto: any) => 
+                        impuesto.aplica_compras !== false && impuesto.aplica_compras !== 0
+                    );
+                }
                 this.compra.fecha = this.apiService.date();
                 this.compra.fecha_pago = this.apiService.date();
                 this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
@@ -261,16 +299,28 @@ export class FacturacionCompraComponent implements OnInit {
     }
 
     public sumTotal() {
+        // Asegurar que impuestos existe y es un array
+        if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos)) {
+            this.compra.impuestos = [];
+        }
+
         this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
         this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0; 
         this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
         this.compra.renta_retenida = this.compra.renta ? this.compra.sub_total * 0.10 : 0; 
 
-        if(this.compra.cobrar_impuestos){
-            this.compra.iva = ( this.compra.sub_total * (this.apiService.auth_user().empresa.iva / 100) ).toFixed(2);
-        }else{
-            this.compra.iva = 0;
-        }
+        // Calcular impuestos usando la lista de impuestos (igual que en ventas)
+        this.compra.impuestos.forEach((impuesto: any) => {
+            if (this.compra.cobrar_impuestos) {
+                impuesto.monto = this.compra.sub_total * (impuesto.porcentaje / 100);
+            } else {
+                impuesto.monto = 0;
+            }
+        });
+
+        this.compra.iva = parseFloat(
+            this.sumPipe.transform(this.compra.impuestos, 'monto')
+        ).toFixed(2);
 
         this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
         this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);
@@ -358,6 +408,19 @@ export class FacturacionCompraComponent implements OnInit {
 
     // Guardar compra
         public onSubmit() {
+            // Validar que productos con lotes tengan lote_id
+            if (this.compra.detalles && this.compra.detalles.length > 0) {
+                const lotesActivo = this.apiService.isLotesActivo();
+                if (lotesActivo) {
+                    for (let detalle of this.compra.detalles) {
+                        if (detalle.inventario_por_lotes && !detalle.lote_id) {
+                            this.alertService.error(`El producto "${detalle.nombre_producto}" requiere seleccionar o crear un lote antes de guardar la compra.`);
+                            this.saving = false;
+                            return;
+                        }
+                    }
+                }
+            }
 
             this.saving = true;
             if(this.duplicarcompra){
@@ -466,20 +529,55 @@ export class FacturacionCompraComponent implements OnInit {
       }
 
       getProveedor(proveedor: any) {
-        // Buscar primero por NIT
         //console.log('Buscando proveedor del DTE:', proveedor);
-        let proveedorEncontrado = this.searchNit(proveedor.nit);
-        if (!proveedorEncontrado) {
-          // Si no lo encuentra por NIT, buscar por nombre
+        let proveedorEncontrado = null;
+        
+        // 1. Buscar primero por NIT (prioridad más alta)
+        if (proveedor.nit) {
+          proveedorEncontrado = this.searchNit(proveedor.nit);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por NIT:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
+        }
+        
+        // 2. Buscar por NRC si no se encontró por NIT
+        if (proveedor.nrc && !proveedorEncontrado) {
+          proveedorEncontrado = this.searchNrc(proveedor.nrc);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por NRC:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
+        }
+        
+        // 3. Buscar por DUI si no se encontró por NIT ni NRC
+        if (proveedor.dui && !proveedorEncontrado) {
+          proveedorEncontrado = this.searchDui(proveedor.dui);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por DUI:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
+        }
+        
+        // 4. Como último recurso, buscar por nombre
+        if (!proveedorEncontrado && proveedor.nombre) {
           proveedorEncontrado = this.searchNombre(proveedor.nombre);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por nombre:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
         }
         
-        // Si no encuentra por NIT ni por nombre, NO se selecciona nada
+        // Si no encuentra por ningún método, NO se selecciona nada
         if (!proveedorEncontrado) {
-          console.log('No se encontró proveedor específico, no se selecciona ninguno');
+          console.log('No se encontró proveedor con los datos:', {
+            nit: proveedor.nit,
+            nrc: proveedor.nrc,
+            dui: proveedor.dui,
+            nombre: proveedor.nombre
+          });
         }
         
-        //console.log('Proveedor final seleccionado:', proveedorEncontrado);
         return proveedorEncontrado;
       }
 
@@ -508,6 +606,32 @@ export class FacturacionCompraComponent implements OnInit {
         });
         
         // console.log('Proveedor encontrado por nombre:', proveedor);
+        return proveedor;
+      }
+
+      searchNrc(nrc: string) {
+        // console.log('Buscando proveedor por NRC:', nrc);
+        // console.log('Lista de proveedores:', this.proveedores);
+        
+        let proveedor = this.proveedores.find((proveedor: any) => {
+          // console.log('Comparando NRC:', proveedor.ncr, 'con:', nrc);
+          return proveedor.ncr === nrc || proveedor.ncr == nrc;
+        });
+        
+        // console.log('Proveedor encontrado por NRC:', proveedor);
+        return proveedor;
+      }
+
+      searchDui(dui: string) {
+        // console.log('Buscando proveedor por DUI:', dui);
+        // console.log('Lista de proveedores:', this.proveedores);
+        
+        let proveedor = this.proveedores.find((proveedor: any) => {
+          // console.log('Comparando DUI:', proveedor.dui, 'con:', dui);
+          return proveedor.dui === dui || proveedor.dui == dui;
+        });
+        
+        // console.log('Proveedor encontrado por DUI:', proveedor);
         return proveedor;
       }
 
@@ -806,6 +930,11 @@ export class FacturacionCompraComponent implements OnInit {
             this.compra.tipo_documento = this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
         }
     
+        // Ahora se asigna el  código de generación como numero de referencia
+        if (jsonData.identificacion.codigoGeneracion) {
+            this.compra.referencia = jsonData.identificacion.codigoGeneracion;
+        }
+    
         let proveedor = this.getProveedor(jsonData.emisor);
         if(proveedor && proveedor.id){
             this.compra.id_proveedor = proveedor.id;
@@ -827,6 +956,18 @@ export class FacturacionCompraComponent implements OnInit {
                     this.compra.cobrar_impuestos = true;
                 }
             }
+
+            // Percepción (DTE.resumen.ivaPerci1): si trae percepción, asignar monto y sello a la compra
+            const percepcion = parseFloat(jsonData.resumen.ivaPerci1) || 0;
+            if (percepcion > 0) {
+                this.compra.percepcion = percepcion;
+                this.compra.cobrar_percepcion = true;
+                // Agregar el sello a la compra cuando el DTE tiene percepción
+                const sello = jsonData.selloRecibido || jsonData.sello || (jsonData.documento && jsonData.documento.selloRecibido);
+                if (sello) {
+                    this.compra.sello_mh = sello;
+                }
+            }
         }
     
         // Procesar productos del cuerpoDocumento de forma optimizada
@@ -838,6 +979,117 @@ export class FacturacionCompraComponent implements OnInit {
     // Método para activar la búsqueda desde el template
     onSearchProducts(term: string) {
         this.searchProductos$.next(term);
+    }
+
+    // Métodos para crear productos nuevos
+    openModalCrearProducto(template: TemplateRef<any>) {
+        this.nuevoProducto = {
+            nombre: '',
+            tipo: '',
+            codigo: '',
+            cod_proveed_prod: '',
+            costo: 0,
+            precio: 0,
+            marca: '',
+            stock: 0,
+            descripcion: '',
+            id_categoria: '',
+            id_empresa: this.apiService.auth_user().id_empresa,
+            id_usuario: this.apiService.auth_user().id
+        };
+        this.creandoProducto = false;
+        
+        // Cargar categorías si no están cargadas
+        if (this.categorias.length === 0) {
+            this.cargarCategorias();
+        }
+        
+        this.modalCrearProducto = this.modalService.show(template, { class: 'modal-lg' });
+    }
+
+    cargarCategorias() {
+        this.apiService.getAll('categorias/list').subscribe(
+            categorias => {
+                this.categorias = categorias;
+            },
+            error => {
+                console.error('Error cargando categorías:', error);
+                this.alertService.error('Error cargando categorías');
+            }
+        );
+    }
+
+    crearProducto() {
+        // Debug: mostrar valores actuales
+        console.log('Valores del formulario:', {
+            nombre: this.nuevoProducto.nombre,
+            tipo: this.nuevoProducto.tipo,
+            costo: this.nuevoProducto.costo,
+            id_categoria: this.nuevoProducto.id_categoria
+        });
+
+        // Validación más específica
+        const errores = [];
+        
+        if (!this.nuevoProducto.nombre || this.nuevoProducto.nombre.trim() === '') {
+            errores.push('Nombre');
+        }
+        
+        if (!this.nuevoProducto.tipo || this.nuevoProducto.tipo === '') {
+            errores.push('Tipo');
+        }
+        
+        if (!this.nuevoProducto.costo || this.nuevoProducto.costo <= 0) {
+            errores.push('Costo');
+        }
+        
+        if (!this.nuevoProducto.id_categoria || this.nuevoProducto.id_categoria === '') {
+            errores.push('Categoría');
+        }
+
+        if (errores.length > 0) {
+            this.alertService.error(`Por favor, complete los campos obligatorios: ${errores.join(', ')}`);
+            return;
+        }
+
+        this.creandoProducto = true;
+
+        // Preparar datos para el backend
+        const datosProducto = {
+            nombre: this.nuevoProducto.nombre,
+            tipo: this.nuevoProducto.tipo,
+            codigo: this.nuevoProducto.codigo || null,
+            cod_proveed_prod: this.nuevoProducto.cod_proveed_prod || null,
+            costo: parseFloat(this.nuevoProducto.costo),
+            precio: parseFloat(this.nuevoProducto.precio) || parseFloat(this.nuevoProducto.costo),
+            marca: this.nuevoProducto.marca || null,
+            stock: this.nuevoProducto.stock || 0,
+            descripcion: this.nuevoProducto.descripcion || null,
+            id_empresa: this.apiService.auth_user().id_empresa,
+            id_usuario: this.apiService.auth_user().id,
+            id_categoria: parseInt(this.nuevoProducto.id_categoria),
+            medida: 'Unidad' // Medida por defecto
+        };
+
+        // Crear el producto en el backend usando la ruta correcta
+        this.apiService.store('producto', datosProducto).subscribe(
+            (productoCreado: any) => {
+                // NO agregar automáticamente al DTE
+                // El producto solo estará disponible para asignar en la consolidación
+                
+                // Cerrar el modal
+                this.modalCrearProducto.hide();
+                
+                // Mostrar mensaje de éxito
+                this.alertService.success('Producto creado', 'El producto ha sido creado exitosamente. Estará disponible para asignar en la consolidación.');
+                
+                this.creandoProducto = false;
+            },
+            (error) => {
+                this.alertService.error('Error al crear el producto: ' + error);
+                this.creandoProducto = false;
+            }
+        );
     }
     
     

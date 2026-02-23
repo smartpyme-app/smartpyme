@@ -150,11 +150,14 @@ export class RecurrentesComponent implements OnInit {
     public openModalEdit(template: TemplateRef<any>, venta:any) {
         this.venta = venta;
         
-        this.apiService.getAll('documentos').subscribe(documentos => {
+        this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
+            this.documentos = this.documentos.filter(
+                (x: any) => x.id_sucursal == this.venta.id_sucursal
+            );
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
+        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
@@ -170,7 +173,7 @@ export class RecurrentesComponent implements OnInit {
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
         
-        this.apiService.getAll('documentos').subscribe(documentos => { 
+        this.apiService.getAll('documentos/list-nombre').subscribe(documentos => { 
             this.documentos = documentos;
         }, error => {this.alertService.error(error); });
 
@@ -238,6 +241,15 @@ export class RecurrentesComponent implements OnInit {
 
     public linkWompi(venta:any){
         window.open(this.apiService.baseUrl + '/api/venta/wompi-link/' + venta.id + '?token=' + this.apiService.auth_token());
+    }
+
+    public setDocumento(id_documento: any) {
+        let documento = this.documentos.find((x: any) => x.id == id_documento);
+        if (documento) {
+            this.venta.nombre_documento = documento.nombre;
+            this.venta.id_documento = documento.id;
+            this.venta.correlativo = documento.correlativo;
+        }
     }
 
     public onSubmit() {

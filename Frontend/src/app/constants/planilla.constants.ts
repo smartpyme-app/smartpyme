@@ -44,6 +44,11 @@ export class PlanillaConstants {
         return this.constants?.RENTA || {};
     }
 
+    // ==================== AGUINALDOS ====================
+    static get AGUINALDO() {
+        return this.constants?.AGUINALDO || {};
+    }
+
     // ==================== NUEVAS TABLAS 2025 ====================
     static get RENTA_TABLAS() {
         return this.constants?.RENTA_TABLAS || {};

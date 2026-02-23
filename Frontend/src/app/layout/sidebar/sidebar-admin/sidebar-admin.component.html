@@ -98,6 +98,20 @@
                   </ul>
                 </div>
             </li>
+            <li class="mb-1">
+                <button (click)="togglePlanilla()" tooltip="Planilla" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!planillaIsCollapsed" aria-controls="collapsePlanilla">
+                    <img src="/assets/icons/clipboard.png" class="icon me-2">Planilla
+                </button>
+                <div [collapse]="planillaIsCollapsed" [isAnimated]="true">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/empleados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Empleados</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Planillas</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/aguinaldos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/gift.png" class="icon me-2">Aguinaldos</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/configuracion-planilla']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración Planillas</a></li>
+                    <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/detalles']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Detalles planilla</a></li> -->
+                  </ul>
+                </div>
+            </li>
             <li class="mb-1" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'">
                 <button (click)="toggleAdmin()" tooltip="Admin" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!adminIsCollapsed" aria-controls="collapseBasic">
                     <img src="/assets/icons/3-layers.png" class="icon me-2">Super Admin
@@ -115,8 +129,13 @@
                         </a>
                     </li>
                     <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                        <a [routerLink]="['/admin/licencias']" tooltip="Licencias" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                            <img src="/assets/icons/star.png" class="icon me-2">Licencias
+                        <a [routerLink]="['/admin/promocionales']" tooltip="Códigos Promocionales" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                            <img src="/assets/icons/tag.png" class="icon me-2">Códigos Promocionales
+                        </a>
+                    </li>
+                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                        <a [routerLink]="['/admin/licencias']" tooltip="Organizaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                            <img src="/assets/icons/star.png" class="icon me-2">Organizaciones
                         </a>
                     </li>
                     <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">

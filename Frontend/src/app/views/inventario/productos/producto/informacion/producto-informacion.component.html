@@ -126,10 +126,22 @@
             <textarea class="form-control" [(ngModel)]="producto.descripcion" name="Descripcion" placeholder="Escribe aquí" cols="30" rows="2"></textarea>
         </div>
 
+        <div class="form-group col-lg-12" *ngIf="apiService.auth_user().empresa.shopify_store_url">
+            <label for="descripcion_completa">Descripción completa <small class="text-muted">(Shopify)</small></label>
+            <textarea class="form-control" [(ngModel)]="producto.descripcion_completa" name="descripcion_completa" placeholder="Descripción completa del producto que se sincronizará con Shopify..." cols="30" rows="5"></textarea>
+        </div>
+
         <div class="form-group col-md-6 col-lg-5 without-label " *ngIf="producto.tipo != 'Servicio'">
             <div class="form-switch bg-light-info rounded">
               <label>¿Es producto compuesto?</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCompuesto()" [checked]="producto.tipo == 'Compuesto'" name="compuesto">
+            </div>
+        </div>
+
+        <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.tipo != 'Servicio' && isLotesActivo()">
+            <div class="form-switch bg-light-info rounded">
+                <label>¿El inventario se maneja por lotes?</label>
+                <input class="form-check-input float-end" type="checkbox" role="switch" (change)=" producto.id ? onSubmit() : '' " [(ngModel)]="producto.inventario_por_lotes" name="inventario_por_lotes">
             </div>
         </div>
 

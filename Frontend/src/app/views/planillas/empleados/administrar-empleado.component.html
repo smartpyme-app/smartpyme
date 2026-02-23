@@ -86,7 +86,7 @@
                   <!-- Documentos -->
                   <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Documentos</h6>
                   <div class="form-group col-md-3">
-                    <label for="dui">DUI:</label>
+                    <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI:' : 'Número de identificación:' }}</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.dui"
@@ -99,7 +99,7 @@
                     />
                   </div>
                   <div class="form-group col-md-3">
-                    <label for="nit">NIT:</label>
+                    <label for="nit">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT:' : 'Identificación fiscal:' }}</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.nit"
@@ -133,7 +133,9 @@
                   </div>
 
                   <!-- Información Laboral -->
-                  <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Información Laboral</h6>
+                  <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">
+                    Información Laboral
+                  </h6>
                   <div class="form-group col-md-4">
                     <label for="id_departamento">Departamento:</label>
                     <div class="input-group">
@@ -196,7 +198,9 @@
                   </div>
 
                   <!-- Salario y Fechas -->
-                  <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Salario y Fechas</h6>
+                  <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">
+                    Salario y Fechas
+                  </h6>
                   <div class="form-group col-md-4">
                     <label for="salario_base">Salario Base:</label>
                     <div class="input-group">
@@ -242,7 +246,10 @@
                       required
                     >
                       <option value="">Seleccione...</option>
-                      <option *ngFor="let tipo of tiposJornada" [value]="tipo.id">
+                      <option
+                        *ngFor="let tipo of tiposJornada"
+                        [value]="tipo.id"
+                      >
                         {{ tipo.nombre }}
                       </option>
                     </select>
@@ -277,10 +284,88 @@
                       required
                     >
                       <option value="">Seleccione...</option>
-                      <option *ngFor="let estado of estadosEmpleado" [value]="estado.id">
+                      <option
+                        *ngFor="let estado of estadosEmpleado"
+                        [value]="estado.id"
+                      >
                         {{ estado.nombre }}
                       </option>
                     </select>
+                  </div>
+
+                  <!-- Opciones Avanzadas -->
+                  <div class="col-12 mt-4">
+                    <div class="card">
+                      <div class="card-header bg-light">
+                        <button
+                          class="btn btn-link text-decoration-none w-100 text-start p-0 d-flex justify-content-between align-items-center"
+                          type="button"
+                          (click)="
+                            mostrarOpcionesAvanzadas = !mostrarOpcionesAvanzadas
+                          "
+                        >
+                          <span class="fw-bold text-dark">
+                            <i class="fa fa-cog me-2"></i>Opciones Avanzadas
+                          </span>
+                          <i
+                            class="fa"
+                            [ngClass]="{
+                              'fa-chevron-down': !mostrarOpcionesAvanzadas,
+                              'fa-chevron-up': mostrarOpcionesAvanzadas
+                            }"
+                          ></i>
+                        </button>
+                      </div>
+                      <div class="card-body" *ngIf="mostrarOpcionesAvanzadas">
+                        <!-- Configuración de Descuentos -->
+                        <h6 class="pb-2 mb-3 fw-bold">
+                          Configuración de Descuentos
+                        </h6>
+                        <div class="row">
+                          <div class="form-group col-md-6">
+                            <div class="form-switch margin-for-checkbox">
+                              <input
+                                class="form-check-input"
+                                type="checkbox"
+                                id="aplicar_afp"
+                                [(ngModel)]="
+                                  empleado.configuracion_descuentos.aplicar_afp
+                                "
+                                name="aplicar_afp"
+                              />
+                              <label class="form-check-label margin-label-for-checkbox" for="aplicar_afp">
+                                Aplicar descuento de AFP
+                              </label>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                              Desmarca esta opción para quitar el descuento de AFP a este empleado
+                            </small>
+                          </div>
+                          <div class="form-group col-md-6">
+                            <div class="form-switch margin-for-checkbox">
+                              <input
+                                class="form-check-input"
+                                type="checkbox"
+                                id="aplicar_isss"
+                                [(ngModel)]="
+                                  empleado.configuracion_descuentos.aplicar_isss
+                                "
+                                name="aplicar_isss"
+                              />
+                              <label
+                                class="form-check-label margin-label-for-checkbox"
+                                for="aplicar_isss"
+                              >
+                                Aplicar descuento de ISSS
+                              </label>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                              Debes marcar esta opción para quitar el descuento de ISSS a este empleado
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Contacto -->
@@ -365,7 +450,9 @@
                       class="form-select"
                     >
                       <option value="">Seleccione...</option>
-                      <option value="Transferencia">Transferencia bancaria</option>
+                      <option value="Transferencia">
+                        Transferencia bancaria
+                      </option>
                       <option value="Cheque">Cheque</option>
                       <option value="Efectivo">Efectivo</option>
                     </select>
@@ -737,17 +824,19 @@
         <div class="form-group col-12 mb-3">
           <label for="id_departamento">Departamento:</label>
           <select
-          [(ngModel)]="cargo.id_departamento"
-          (ngModelChange)="empleado.id_departamento = $event; onDepartamentoChange($event)"
-          name="id_departamento"
-          class="form-select"
-          required
-        >
-          <option [ngValue]="null">Seleccione un departamento</option>
-          <option *ngFor="let dept of departamentos" [ngValue]="dept.id">
-            {{ dept.nombre }}
-          </option>
-        </select>
+            [(ngModel)]="cargo.id_departamento"
+            (ngModelChange)="
+              empleado.id_departamento = $event; onDepartamentoChange($event)
+            "
+            name="id_departamento"
+            class="form-select"
+            required
+          >
+            <option [ngValue]="null">Seleccione un departamento</option>
+            <option *ngFor="let dept of departamentos" [ngValue]="dept.id">
+              {{ dept.nombre }}
+            </option>
+          </select>
           <small class="text-muted d-block mt-1" *ngIf="cargo.id_departamento">
             El cargo será asignado al departamento:
             <strong>{{ getNombreDepartamento(cargo.id_departamento) }}</strong>
@@ -838,8 +927,8 @@
           <option value="2">Despido</option>
           <option value="3">Terminación de contrato</option>
           <option value="4">Alta</option>
-          <option value="5">DUI</option>
-          <option value="6">NIT</option>
+          <option value="5">Número de identificación</option>
+          <option value="6">Identificación fiscal</option>
           <option value="7">ISSS</option>
           <option value="8">AFP</option>
           <option value="9">Título</option>

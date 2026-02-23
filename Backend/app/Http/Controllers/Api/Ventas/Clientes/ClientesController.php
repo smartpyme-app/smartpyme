@@ -31,7 +31,7 @@ class ClientesController extends Controller
         // Optimización: Remover withSum que es muy lento y usar lazy loading si es necesario
         $clientes = Cliente::select([
                 'id', 'nombre', 'apellido', 'nombre_empresa', 'tipo', 'tipo_contribuyente',
-                'nit', 'dui', 'ncr', 'giro', 'telefono', 'correo', 'direccion', 
+                'nit', 'dui', 'ncr', 'giro', 'telefono', 'correo', 'direccion',
                 'red_social', 'enable', 'fecha_cumpleanos', 'created_at', 'updated_at'
             ])
             ->with(['contactos' => function($query) {
@@ -75,7 +75,7 @@ class ClientesController extends Controller
 
         // Si necesitas el total de ventas, puedes agregarlo como un endpoint separado
         // o calcularlo solo cuando sea necesario para clientes específicos
-        
+
         return Response()->json($clientes, 200);
     }
 
@@ -93,11 +93,11 @@ class ClientesController extends Controller
     {
         $term = $request->get('q', ''); // Término de búsqueda
         $limit = $request->get('limit', 50); // Límite de resultados (default 50)
-        
+
         if (strlen($term) < 2) {
             return response()->json([], 200);
         }
-        
+
         $clientes = Cliente::select(['id', 'nombre', 'apellido', 'nombre_empresa', 'tipo', 'correo', 'telefono'])
             ->where('enable', true)
             ->where(function ($query) use ($term) {
@@ -108,7 +108,7 @@ class ClientesController extends Controller
                 ->orWhereRaw("CONCAT(nombre, ' ', apellido) LIKE ?", ["%{$term}%"]);
             })
             ->orderByRaw("
-                CASE 
+                CASE
                     WHEN nombre LIKE '{$term}%' THEN 1
                     WHEN nombre_empresa LIKE '{$term}%' THEN 2
                     WHEN CONCAT(nombre, ' ', apellido) LIKE '{$term}%' THEN 3
@@ -118,7 +118,7 @@ class ClientesController extends Controller
             ->orderBy('nombre', 'asc')
             ->limit($limit)
             ->get();
-        
+
         return response()->json($clientes, 200);
     }
 
@@ -130,14 +130,13 @@ class ClientesController extends Controller
                 $query->where('nombre', 'like', '%' . $txt . '%')
                       ->orWhere('apellido', 'like', $txt . '%')
                       ->orWhere('nombre_empresa', 'like', $txt . '%')
-                      ->orWhere('nit', 'like', $txt . '%')
-                      ->orWhere('dui', 'like', $txt . '%')
                       ->orWhere('telefono', 'like', $txt . '%')
                       ->orWhere('empresa_telefono', 'like', $txt . '%')
                       ->orWhere('red_social', 'like', $txt . '%')
                       ->orWhere('etiquetas', 'like', $txt . '%')
                       ->orWhere('codigo_cliente', 'like', $txt . '%')
                       ->orWhereRaw('REPLACE(ncr, "-", "") like ?', [$txtClean . '%'])
+                      ->orWhereRaw('REPLACE(nit, "-", "") like ?', [$txtClean . '%'])
                       ->orWhereRaw('REPLACE(dui, "-", "") like ?', [$txtClean . '%'])
                       ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ['%' . $txt . '%']);
             })
@@ -169,6 +168,26 @@ class ClientesController extends Controller
         return Response()->json(['total_ventas' => $totalVentas], 200);
     }
 
+    public function saldoPendiente($id)
+    {
+        $ventasPendientes = \App\Models\Ventas\Venta::where('id_cliente', $id)
+            ->where('estado', 'Pendiente')
+            ->where(function ($q) {
+                $q->where('cotizacion', 0)->orWhereNull('cotizacion');
+            })
+            ->withSum(['abonos' => fn ($q) => $q->where('estado', 'Confirmado')], 'total')
+            ->withSum(['devoluciones' => fn ($q) => $q->where('enable', 1)], 'total')
+            ->get();
+
+        $saldoPendiente = $ventasPendientes->sum(function ($v) {
+            $abonos = $v->abonos_sum_total ?? 0;
+            $devoluciones = $v->devoluciones_sum_total ?? 0;
+            return round($v->total - $abonos - $devoluciones, 2);
+        });
+
+        return response()->json(['saldo_pendiente' => $saldoPendiente], 200);
+    }
+
     public function store(Request $request)
     {
         $rules = [
@@ -186,9 +205,14 @@ class ClientesController extends Controller
             $rules['id_usuario'] = 'sometimes';
         }
 
+        if ($this->puedeEditarCreditoCliente() && !empty($request->habilita_credito)) {
+            $rules['dias_credito'] = 'required|in:10,15,30,45,60';
+        }
+
         $request->validate($rules, [
             'nombre.required_if' => 'El campo nombre es obligatorio.',
-            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.'
+            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
+            'dias_credito.required' => 'Los días de crédito son obligatorios cuando el cliente tiene crédito habilitado.',
         ]);
 
         if ($request->id)
@@ -196,7 +220,14 @@ class ClientesController extends Controller
         else
             $cliente = new Cliente;
 
-        $cliente->fill($request->except('contactos'));
+        $data = $request->except('contactos');
+
+        // Solo Admin y Supervisores pueden modificar campos de crédito
+        if (!$this->puedeEditarCreditoCliente()) {
+            unset($data['habilita_credito'], $data['dias_credito'], $data['limite_credito']);
+        }
+
+        $cliente->fill($data);
         $cliente->save();
 
 
@@ -229,35 +260,46 @@ class ClientesController extends Controller
     public function update(Request $request)
     {
         $cliente = Cliente::findOrFail($request->id);
-        
+
         $rules = [
             'nombre'         => 'required_if:tipo,"Persona"',
             'apellido'       => 'required_if:tipo,"Persona"',
             'nombre_empresa' => 'required_if:tipo,"Empresa"',
             'id_empresa'     => 'required|numeric|exists:empresas,id',
         ];
-        
+
+        if ($this->puedeEditarCreditoCliente() && !empty($request->habilita_credito)) {
+            $rules['dias_credito'] = 'required|in:10,15,30,45,60';
+        }
+
         $request->validate($rules, [
             'nombre.required_if' => 'El campo nombre es obligatorio.',
             'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
             'id_empresa.required' => 'El campo empresa es obligatorio.',
             'id_empresa.exists' => 'La empresa seleccionada no es válida.',
+            'dias_credito.required' => 'Los días de crédito son obligatorios cuando el cliente tiene crédito habilitado.',
         ]);
-        
-        $cliente->fill($request->except('contactos'));
+
+        $data = $request->except('contactos');
+
+        if (!$this->puedeEditarCreditoCliente()) {
+            unset($data['habilita_credito'], $data['dias_credito'], $data['limite_credito']);
+        }
+
+        $cliente->fill($data);
         $cliente->save();
-        
+
         if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
             ContactoCliente::where('id_cliente', $cliente->id)->delete();
-            
+
             // Crear nuevos contactos
             foreach ($request->contactos as $contactoData) {
                 // Validar que al menos tenga nombre o correo
-                if (empty($contactoData['nombre']) && empty($contactoData['name']) && 
+                if (empty($contactoData['nombre']) && empty($contactoData['name']) &&
                     empty($contactoData['correo']) && empty($contactoData['email'])) {
                     continue; // Saltar contactos vacíos
                 }
-                
+
                 ContactoCliente::create([
                     'id_cliente' => $cliente->id,
                     'nombre' => $contactoData['nombre'] ?? $contactoData['name'] ?? null,
@@ -272,10 +314,10 @@ class ClientesController extends Controller
                 ]);
             }
         }
-        
+
         // Retornar el cliente actualizado con sus contactos
         $cliente = Cliente::with('contactos')->findOrFail($cliente->id);
-        
+
         return Response()->json($cliente, 200);
     }
 
@@ -386,9 +428,8 @@ class ClientesController extends Controller
 
         $cliente = Cliente::where('id', $id)->with('empresa')->firstOrFail();
         $cliente->ventas = $cliente->ventas()->where('estado', 'Pendiente')->get();
-        $cliente->fletes = $cliente->fletes()->where('estado', 'Pendiente')->get();
         // return $cliente;
-        $reportes = \PDF::loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
+        $reportes = app('dompdf.wrapper')->loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
         return $reportes->stream();
     }
 
@@ -441,7 +482,7 @@ class ClientesController extends Controller
             if ($clientesProcesados > 0 && count($errores) > 0) {
                 $mensajeExito = "✅ Se procesaron correctamente {$clientesProcesados} clientes.";
                 $mensajeFalla = "❌ No se pudieron procesar " . count($errores) . " clientes debido a errores.";
-                
+
                 // Separar errores por tipo para mejor análisis
                 $erroresDuiDuplicado = array_filter($errores, function($error) {
                     return strpos($error, 'Ya existe un cliente con el DUI') !== false;
@@ -538,17 +579,25 @@ class ClientesController extends Controller
         $cliente = Cliente::where('id', $request->id)->firstOrFail();
 
         $ventas = $cliente->ventas()->whereBetween('fecha', [$request->inicio, $request->fin])->get();
-        $fletes = $cliente->fletes()->whereBetween('fecha', [$request->inicio, $request->fin])->get();
 
         $cliente->total_ventas_pagadas = $ventas->where('estado', 'Pagada')->sum('total');
         $cliente->total_ventas_pendientes = $ventas->where('estado', 'Pendiente')->sum('total');
 
-        $cliente->total_fletes_pagados = $fletes->where('estado', 'Pagado')->sum('total');
-        $cliente->total_fletes_pendientes = $fletes->where('estado', 'Pendiente')->sum('total');
-
-        $cliente->total_balance = $cliente->total_ventas_pagadas - $cliente->total_ventas_pendientes - $cliente->total_fletes_pendientes;
+        $cliente->total_balance = $cliente->total_ventas_pagadas - $cliente->total_ventas_pendientes;
 
 
         return Response()->json($cliente, 200);
+    }
+
+    /**
+     * Solo Administrador, Supervisor y Supervisor Limitado pueden editar crédito del cliente.
+     */
+    private function puedeEditarCreditoCliente(): bool
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+        $tipo = Auth::user()->tipo ?? '';
+        return in_array($tipo, ['Administrador', 'Supervisor', 'Supervisor Limitado'], true);
     }
 }

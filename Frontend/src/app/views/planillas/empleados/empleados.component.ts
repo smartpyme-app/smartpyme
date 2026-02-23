@@ -18,6 +18,12 @@ export class EmpleadosComponent implements OnInit {
   public cargos: any = [];
   public filtros: any = {};
 
+  public datosImportacion = {
+    archivo: null as File | null,
+  };
+
+  public procesandoImportacion = false;
+
   modalRef!: BsModalRef;
 
   // Expose enum to template
@@ -153,6 +159,11 @@ export class EmpleadosComponent implements OnInit {
     this.modalRef = this.modalService.show(template);
   }
 
+  public openModal(template: TemplateRef<any>) {
+    this.datosImportacion.archivo = null;
+    this.modalRef = this.modalService.show(template);
+  }
+
   public getEstadoClass(estado: number): string {
     if (estado === PlanillaConstants.ESTADOS_EMPLEADO.ACTIVO) return 'bg-success';
     if (estado === PlanillaConstants.ESTADOS_EMPLEADO.INACTIVO) return 'bg-danger';
@@ -186,6 +197,86 @@ export class EmpleadosComponent implements OnInit {
       }
       this.empleado.documento_respaldo = file;
     }
+  }
+
+  public onFileSelectedImport(event: any) {
+    if (event.target.files.length > 0) {
+      const file = event.target.files[0];
+      // Validar tipo de archivo
+      const allowedTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        this.alertService.error(
+          'Por favor seleccione un archivo Excel válido (.xlsx o .xls)'
+        );
+        event.target.value = '';
+        return;
+      }
+      // Validar tamaño (10MB máximo)
+      if (file.size > 10 * 1024 * 1024) {
+        this.alertService.error('El archivo no puede ser mayor a 10MB');
+        event.target.value = '';
+        return;
+      }
+      this.datosImportacion.archivo = file;
+    }
+  }
+
+  public descargarPlantilla() {
+    this.apiService.download('planillas/plantilla-importacion').subscribe(
+      (response: any) => {
+        const blob = new Blob([response], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'plantilla_importacion_planillas.xlsx';
+        link.click();
+        window.URL.revokeObjectURL(url);
+      },
+      (error) => {
+        this.alertService.error('Error al descargar la plantilla');
+      }
+    );
+  }
+
+  public importarEmpleados() {
+    if (!this.datosImportacion.archivo) {
+      this.alertService.error('Por favor seleccione un archivo Excel');
+      return;
+    }
+
+    this.procesandoImportacion = true;
+    const formData = new FormData();
+    formData.append('archivo', this.datosImportacion.archivo);
+
+    this.apiService.store('empleados/importar', formData).subscribe({
+      next: (response: any) => {
+        this.alertService.success(
+          'Éxito',
+          `Empleados importados correctamente. Creados: ${response.data?.creados || 0}, Actualizados: ${response.data?.actualizados || 0}`
+        );
+        this.modalRef.hide();
+        this.loadEmpleados(); // Recargar la lista de empleados
+        this.procesandoImportacion = false;
+        this.datosImportacion.archivo = null;
+        
+        // Mostrar errores si los hay
+        if (response.data?.errores && response.data.errores.length > 0) {
+          const errores = response.data.errores
+            .map((e: any) => `${e.nombre}: ${e.error}`)
+            .join('\n');
+          this.alertService.error(`Errores en la importación:\n${errores}`);
+        }
+      },
+      error: (error) => {
+        this.alertService.error(error);
+        this.procesandoImportacion = false;
+      },
+    });
   }
 
   public openModalDarAlta(template: TemplateRef<any>, empleado: any) {

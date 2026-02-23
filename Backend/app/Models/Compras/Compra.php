@@ -54,7 +54,7 @@ class Compra extends Model {
         'tipo_costo_gasto',
     );
 
-    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal', 'nombre_proyecto'];
+    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal', 'nombre_proyecto', 'empresa_nombre'];
 
     protected static function boot()
     {
@@ -78,7 +78,9 @@ class Compra extends Model {
     }
 
     public function getSaldoAttribute(){
-        return round($this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total'),2);
+        $abonos = $this->abonos()->where('estado', 'Confirmado')->sum('total');
+        $devoluciones = $this->devoluciones()->where('enable', 1)->sum('total');
+        return round($this->total - $abonos - $devoluciones,2);
     }
 
 
@@ -106,6 +108,11 @@ class Compra extends Model {
     public function getNombreProyectoAttribute()
     {
         return $this->proyecto ? $this->proyecto->nombre : null;
+    }
+
+    public function getEmpresaNombreAttribute()
+    {
+        return $this->empresa->nombre ?? '';
     }
 
     public function bodega(){

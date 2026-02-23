@@ -14,20 +14,26 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Kardex;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
+use App\Exports\CuentasPagarExport;
 use App\Exports\RentabilidadSucursalExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Auth;
 
 class ComprasController extends Controller
 {
     
 
     public function index(Request $request) {
-       
-        $compras = Compra::when($request->inicio, function($query) use ($request){
+        $excludeFromList = ['dte_invalidacion'];
+        $columns = array_diff(Schema::getColumnListing('compras'), $excludeFromList);
+
+        $compras = Compra::select($columns)
+            ->when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                         })
                         ->when($request->recurrente !== null, function($q) use ($request){
@@ -78,24 +84,38 @@ class ComprasController extends Controller
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
+                        ->with(['proveedor', 'usuario', 'sucursal', 'proyecto', 'empresa'])
+                        ->withSum(['abonos' => function ($query) {
+                            $query->where('estado', 'Confirmado');
+                        }], 'total')
+                        ->withSum(['devoluciones' => function ($query) {
+                            $query->where('enable', 1);
+                        }], 'total')
                         ->orderBy($request->orden, $request->direccion)
                         ->orderBy('id', 'desc')
                         ->paginate($request->paginate);
-
-        foreach ($compras as $compra) {
-            $compra->saldo = $compra->saldo;
-        }
 
         return Response()->json($compras, 200);
            
     }
 
     public function read($id) {
+        $compra = Compra::where('id', $id)
+            ->with('detalles', 'proveedor', 'abonos', 'devoluciones')
+            ->withSum(['abonos' => function ($query) {
+                $query->where('estado', 'Confirmado');
+            }], 'total')
+            ->withSum(['devoluciones' => function ($query) {
+                $query->where('enable', 1);
+            }], 'total')
+            ->first();
 
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'abonos')->first();
-        $compra->saldo = $compra->saldo;
+        if (!$compra) {
+            return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
+        }
+
+        $compra->saldo = round($compra->total - ($compra->abonos_sum_total ?? 0) - ($compra->devoluciones_sum_total ?? 0), 2);
         return Response()->json($compra, 200);
- 
     }
 
     public function search($txt) {
@@ -285,13 +305,72 @@ class ComprasController extends Controller
                 }
 
                 if ($request->cotizacion == 0) {
-                    // Actualizar inventario
-                    $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $compra->id_bodega)->first();
+                    // Verificar si el producto tiene inventario por lotes
+                    $producto = Producto::find($det['id_producto']);
+                    
+                    $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
+                    $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+                    
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo) {
+                        // Validar que se haya especificado un lote
+                        if (!isset($det['lote_id']) || !$det['lote_id']) {
+                            DB::rollBack();
+                            return Response()->json([
+                                'error' => "El producto '{$producto->nombre}' requiere seleccionar o crear un lote.",
+                                'code' => 400
+                            ], 400);
+                        }
+                        
+                        // Si tiene lotes y se especificó un lote, actualizar el stock del lote
+                        $lote = \App\Models\Inventario\Lote::find($det['lote_id']);
+                        if (!$lote) {
+                            DB::rollBack();
+                            return Response()->json([
+                                'error' => "El lote especificado no existe.",
+                                'code' => 400
+                            ], 400);
+                        }
+                        
+                        // Verificar que el lote pertenezca al producto y bodega correctos
+                        if ($lote->id_producto != $det['id_producto'] || $lote->id_bodega != $compra->id_bodega) {
+                            DB::rollBack();
+                            return Response()->json([
+                                'error' => "El lote seleccionado no corresponde al producto o bodega especificados.",
+                                'code' => 400
+                            ], 400);
+                        }
+                        
+                        // Actualizar stock del lote
+                        $lote->stock += $det['cantidad'];
+                        $lote->save();
+                        
+                        // También actualizar el inventario tradicional para mantener consistencia
+                        $inventario = Inventario::where('id_producto', $det['id_producto'])
+                            ->where('id_bodega', $compra->id_bodega)
+                            ->lockForUpdate()
+                            ->first();
 
-                    if ($inventario) {
-                        $inventario->stock += $det['cantidad'];
-                        $inventario->save();
-                        $inventario->kardex($compra, $det['cantidad']);
+                        if ($inventario) {
+                            $inventario->stock += $det['cantidad'];
+                            $inventario->save();
+                            $inventario->kardex($compra, $det['cantidad']);
+                        }
+                    } else {
+                        // Actualizar inventario tradicional (sin lotes)
+                        $inventario = Inventario::where('id_producto', $det['id_producto'])
+                            ->where('id_bodega', $compra->id_bodega)
+                            ->lockForUpdate() // Bloquear fila para evitar condiciones de carrera
+                            ->first();
+
+                        if ($inventario) {
+                            // Actualizar stock de forma atómica
+                            $inventario->stock += $det['cantidad'];
+                            $inventario->save();
+                            
+                            // Registrar kardex
+                            // Si falla el kardex, la transacción hará rollback automáticamente
+                            $inventario->kardex($compra, $det['cantidad']);
+                        }
                     }
 
                 }
@@ -301,15 +380,15 @@ class ComprasController extends Controller
             }
 
         // Incrementar el correlarivo de orden de compra
-        if ($request->estado == 'Pre-compra') {
-            $documento = Documento::where('nombre', $compra->tipo_documento)->first();
+        if (!$request->id && $request->tipo_documento == 'Orden de compra') {
+            $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
             $documento->increment('correlativo');
         }
 
         
         // Incrementar el correlarivo de Sujeto excluido
-        if ($request->tipo_documento == 'Sujeto excluido') {
-            $documento = Documento::where('nombre', $compra->tipo_documento)->first();
+        if (!$request->id && $request->tipo_documento == 'Sujeto excluido') {
+            $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
             $documento->increment('correlativo');
         }
 
@@ -323,8 +402,6 @@ class ComprasController extends Controller
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
         }
-        
-        return Response()->json($compra, 200);
 
     }
 
@@ -486,12 +563,65 @@ class ComprasController extends Controller
 
     }
 
-    public function cxp() {
-       
-        $pagos = Compra::where('estado', 'Pendiente')->orderBy('fecha','desc')->paginate(10);
+    public function cxp(Request $request)
+    {
+        $paginate = $request->paginate ?? 10;
+        $orden = $request->orden ?? 'fecha';
+        $direccion = $request->direccion ?? 'desc';
+
+        $pagos = Compra::where('estado', 'Pendiente')
+            ->when($request->inicio, function ($query) use ($request) {
+                return $query->where('fecha', '>=', $request->inicio);
+            })
+            ->when($request->fin, function ($query) use ($request) {
+                return $query->where('fecha', '<=', $request->fin);
+            })
+            ->when($request->id_proveedor, function ($query) use ($request) {
+                return $query->where('id_proveedor', $request->id_proveedor);
+            })
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                $buscador = '%' . $request->buscador . '%';
+                return $query->where(function ($q) use ($buscador) {
+                    $q->whereHas('proveedor', function ($qProveedor) use ($buscador) {
+                        $qProveedor->where('nombre', 'like', $buscador)
+                            ->orWhere('nombre_empresa', 'like', $buscador)
+                            ->orWhere('ncr', 'like', $buscador)
+                            ->orWhere('nit', 'like', $buscador);
+                    })
+                        ->orWhere('referencia', 'like', $buscador)
+                        ->orWhere('estado', 'like', $buscador)
+                        ->orWhere('observaciones', 'like', $buscador);
+                });
+            })
+            ->where('cotizacion', 0)
+            ->withSum(['abonos' => function ($query) {
+                $query->where('estado', 'Confirmado');
+            }], 'total')
+            ->withSum(['devoluciones' => function ($query) {
+                $query->where('enable', 1);
+            }], 'total')
+            ->orderBy($orden, $direccion)
+            ->orderBy('id', 'desc')
+            ->paginate($paginate);
 
         return Response()->json($pagos, 200);
+    }
 
+    public function cxpExport(Request $request)
+    {
+        try {
+            ini_set('memory_limit', '256M');
+            set_time_limit(120);
+            $export = new CuentasPagarExport();
+            $export->filter($request);
+            return Excel::download($export, 'cuentas-por-pagar.xlsx');
+        } catch (\Throwable $e) {
+            \Log::error('CXP Export error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Error al generar el reporte: ' . $e->getMessage()], 500);
+        }
     }
 
     public function cxpBuscar($txt) {
@@ -587,6 +717,122 @@ class ComprasController extends Controller
         
         return Response()->json($numsIds, 200);
      }
+
+    public function generarCompraDesdeOrdenCompra(Request $request){
+        $request->validate([
+            'id' => 'required', // ID de la venta
+            'num_orden' => 'required',
+        ]);
+
+        DB::beginTransaction();
+        
+        try {
+            // Buscar la venta
+            $venta = \App\Models\Ventas\Venta::where('id', $request->id)
+                ->with('detalles', function($query) use ($request){
+                    $query->withoutGlobalScope('empresa');
+                }, 'cliente')
+                ->firstOrFail();
+            
+            $orden_compra = Compra::withoutGlobalScope('empresa')->where('id', $request->num_orden)
+                ->where('cotizacion', 1)
+                ->with('detalles', 'proveedor')
+                ->firstOrFail();
+
+            // Buscar si ya existe una compra con el mismo tipo de documento, proveedor y correlativo
+            $compraExistente = Compra::withoutGlobalScope('empresa')->where('tipo_documento', $venta->nombre_documento)
+                ->where('id_proveedor', $orden_compra->id_proveedor)
+                ->where('referencia', $venta->correlativo)
+                ->where('id_empresa', $orden_compra->id_empresa)
+                ->where('cotizacion', 0)
+                ->first();
+
+            if ($compraExistente) {
+                return Response()->json([
+                    'error' => 'Ya existe una compra con este tipo de documento, proveedor y correlativo.',
+                ], 403);
+            }
+            
+            // Crear la nueva compra basada en la venta
+            $compra = new Compra();
+            
+            // Configurar campos básicos de la compra
+            $compra->fecha = $venta->fecha;
+            $compra->estado = $venta->estado;
+            $compra->tipo_documento = $venta->nombre_documento;
+            $compra->referencia = $venta->correlativo;
+            $compra->forma_pago = $venta->forma_pago;
+            $compra->fecha_pago = $venta->fecha_pago;
+            $compra->id_usuario = $orden_compra->id_usuario;
+            $compra->id_empresa = $orden_compra->id_empresa;
+            $compra->id_bodega = $orden_compra->id_bodega;
+            $compra->id_sucursal = $orden_compra->id_sucursal;
+            $compra->cotizacion = 0; // Marcar como compra real, no cotización
+            $compra->id_proveedor = $orden_compra->id_proveedor; // Usar el cliente como proveedor
+            
+            $compra->sub_total = $venta->sub_total;
+            $compra->iva = $venta->iva;
+            $compra->total = $venta->total;
+            
+            $compra->save();
+            
+            // Crear detalles de la compra a partir de los detalles de la venta
+            foreach ($venta->detalles as $detalle_venta) {
+                // Obtener el código del producto de la venta
+                $producto_venta = \App\Models\Inventario\Producto::withoutGlobalScope('empresa')->where('id_empresa', $orden_compra->id_empresa)->where('codigo', $detalle_venta->codigo)->firstOrFail();
+                if ($producto_venta) {
+                        $detalle_compra = new Detalle();
+                        $detalle_compra->id_producto = $producto_venta->id; // ID del producto en la empresa hija
+                        $detalle_compra->cantidad = $detalle_venta->cantidad;
+                        $detalle_compra->costo = $detalle_venta->precio; // Precio de la venta como costo
+                        $detalle_compra->total = $detalle_venta->total;
+                        $detalle_compra->descuento = $detalle_venta->descuento ?? 0;
+                        $detalle_compra->id_compra = $compra->id;
+                        $detalle_compra->save();
+
+                        // Actualizar costo producto al de la ultima compra    
+                            $producto_venta->costo_anterior   = $producto_venta->costo;
+                            $producto_venta->costo            = $detalle_venta->precio;
+                            $producto_venta->costo_promedio   = $detalle_venta->precio;
+                            $producto_venta->save();
+
+                        // Actualizar inventario
+                        $inventario = Inventario::withoutGlobalScope('empresa')->where('id_producto', $producto_venta->id)
+                            ->where('id_bodega', $compra->id_bodega)
+                            ->first();
+
+                        if ($inventario) {
+                            $inventario->stock += $detalle_venta->cantidad;
+                            $inventario->save();
+                            $inventario->kardex($compra, $detalle_venta->cantidad);
+                        }
+
+                }
+            }
+
+            $orden_compra->estado = 'Aceptada';
+            $orden_compra->save();
+
+            DB::commit();
+            return Response()->json($compra, 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    public function generarDoc($id){
+        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
+
+        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.compra', compact('compra'));
+        $pdf->setPaper('US Letter', 'portrait');
+        return $pdf->stream('compra-' . $compra->id . '.pdf');
+
+    }
 
 
 }

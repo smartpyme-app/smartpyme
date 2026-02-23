@@ -9,11 +9,16 @@ class Detalle extends Model {
     protected $table = 'detalles_venta';
     protected $fillable = array(
         'id_producto',
+        'lote_id',
         'descripcion',
         'cantidad',
         'precio',
+        'precio_sin_iva',
+        'precio_con_iva',
         'costo',
         'descuento',
+        'sub_total',
+        'tipo_gravado',
         'no_sujeta',
         'exenta',
         'gravada',
@@ -25,7 +30,7 @@ class Detalle extends Model {
         'iva',
     );
 
-    protected $appends = ['nombre_producto', 'img'];
+    protected $appends = ['nombre_producto', 'img', 'codigo', 'marca'];
 
     public function getNombreProductoAttribute(){
         if ($this->descripcion) {
@@ -37,6 +42,14 @@ class Detalle extends Model {
             }
             return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first();
         }
+    }
+
+    public function getCodigoAttribute(){
+        return $this->producto()->pluck('codigo')->first();
+    }
+
+    public function getMarcaAttribute(){
+        return $this->producto()->pluck('marca')->first();
     }
 
     public function getDescripcionAttribute($value){
@@ -73,6 +86,10 @@ class Detalle extends Model {
 
     public function vendedor(){
         return $this->belongsTo('App\Models\User','id_vendedor');
+    }
+
+    public function lote(){
+        return $this->belongsTo('App\Models\Inventario\Lote','lote_id');
     }
 
 

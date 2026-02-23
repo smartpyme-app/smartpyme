@@ -10,8 +10,9 @@
         <table class="table table-borderless table-hover">
             <thead>
                 <tr>
-                    <th width="30%">Precio sin IVA</th>
-                    <th width="30%">Precio con IVA</th>
+                    <th width="20%">Precio sin IVA</th>
+                    <th width="20%">Precio con IVA</th>
+                    <th width="20%">Clasificación</th>
                     <th>Usuarios autorizados</th>
                     <th width="100" class="text-center"><i class="fa fa-cog"></i> </th>
                 </tr>
@@ -25,20 +26,28 @@
                 <tr>
                     <td>{{ producto.precio | currency }}</td>
                     <td>{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
-                    <td>Todos</td>
+                    <td>{{ producto.clasificacion }}</td>
+                    <td>Todos los usuarios</td>
                 </tr>
 
                 <tr class="animated fadeIn" *ngFor=" let precio of producto?.precios">
                     <td>{{ precio.precio | currency }}</td>
                     <td>{{ (precio.precio * 1) + (precio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
+                    <td>{{ precio.clasificacion }}</td>
                     <td>
-                        Todos
+                        <span [attr.data-bs-toggle]="precio.usuarios && precio.usuarios.length > 0 ? 'tooltip' : null"
+                              [attr.data-bs-placement]="'top'"
+                              [attr.data-bs-title]="getTooltipUsuarios(precio)"
+                              [attr.data-bs-html]="'true'"
+                              style="cursor: help;">
+                            {{ getUsuariosAutorizados(precio) }}
+                        </span>
                     </td>
                     <td width="100" class="text-center">
-                        <!-- <div class="d-flex gap-2"> -->
+                        <div class="d-flex justify-content-center gap-2">
                             <a (click)="delete(precio)" class="btn btn-light" tooltip="Eliminar"><i class="fa fa-trash"></i></a>
                             <!-- <a (click)="openModal(mPrecio, precio)" class="btn btn-light"><i class="fa fa-pencil-alt"></i></a> -->
-                        <!-- </div> -->
+                        </div>
                     </td>
                 </tr>
             </tbody>
@@ -56,19 +65,28 @@
         <form autocomplete="off" (ngSubmit)="onSubmit()">
             <p><span class="fw-medium">Producto:</span> {{ producto.nombre }}</p>
         <div class="row">
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-6 col-lg-4">
                 <label for="" class="fw-medium">Precio sin IVA:</label>
                 <div class="input-group">
                     <span class="input-group-text">$</span>
                     <input id="precio" type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()"  [(ngModel)]="precio.precio" name="precio" focus="true">
                 </div>
             </div>
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-6 col-lg-4">
                 <label for="" class="fw-medium">Precio con IVA:</label>
                 <div class="input-group">
                     <span class="input-group-text">$</span>
                     <input id="precio" type="number" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="precio.precio_final" name="precio_final">
                 </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="" class="fw-medium">Clasificación:</label>
+                <select class="form-select" [(ngModel)]="precio.clasificacion" name="clasificacion">
+                    <option [ngValue]="null">Seleccione una clasificación</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                </select>
             </div>
             <p class="text-muted" for="precio">Se mostrará como opción al momento de vender</p>
         </div>

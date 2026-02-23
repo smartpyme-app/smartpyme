@@ -19,7 +19,6 @@ use App\Models\Transaccion;
 use App\Models\User;
 use App\Services\Suscripcion\SuscripcionService;
 use Illuminate\Support\Facades\Storage;
-use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\DB;
 use Intervention\Image\ImageManagerStatic as Image;
 use Carbon\Carbon;
@@ -123,6 +122,11 @@ class EmpresasController extends Controller
 
         $this->handleCustomEmpresa($request, $empresa); // Maneja la personalización de la empresa
 
+        // Si se envía el país pero no el cod_pais, establecerlo automáticamente
+        if ($request->has('pais') && !$request->has('cod_pais')) {
+            $request->merge(['cod_pais' => $this->mapearCodigoPais($request->pais)]);
+        }
+
         $empresa->fill($request->all());
 
         if ($request->hasFile('file')) {
@@ -138,6 +142,11 @@ class EmpresasController extends Controller
 
     private function createEmpresa(Request $request)
     {
+        // Si se envía el país pero no el cod_pais, establecerlo automáticamente
+        if ($request->has('pais') && !$request->has('cod_pais')) {
+            $request->merge(['cod_pais' => $this->mapearCodigoPais($request->pais)]);
+        }
+
         $empresa = new Empresa;
         $empresa->fill($request->all());
 
@@ -547,7 +556,7 @@ class EmpresasController extends Controller
             $recibo->empresa = $empresa;
 
             // Generar el PDF
-            $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.recibo-suscripcion', compact('recibo'));
             $pdf->setPaper('US Letter', 'portrait');
 
             return $pdf->stream("recibo-plan-{$plan}.pdf");

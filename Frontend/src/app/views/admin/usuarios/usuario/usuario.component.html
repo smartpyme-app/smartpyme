@@ -193,6 +193,7 @@
                       <option value="Administrador">Administrador</option>
                       <option value="Supervisor">Supervisor</option>
                       <option value="Ventas">Ventas</option>
+                      <option value="Ventas Limitado">Ventas Limitado</option>
                       <option value="Cajero">Cajero</option>
                       <option value="Supervisor Limitado" *ngIf="empresas_supervisor_limitado.includes(authUser?.id_empresa)">Supervisor Limitado</option>
                     </select>
@@ -216,6 +217,7 @@
                   <div class="form-floating">
                     <select
                       [(ngModel)]="usuario.id_sucursal"
+                      (change)="selectSucursal()"
                       class="form-select"
                       name="id_sucursal"
                       required
@@ -228,6 +230,25 @@
                       </option>
                     </select>
                     <label>Sucursal</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <select
+                      [(ngModel)]="usuario.id_bodega"
+                      class="form-select"
+                      name="id_bodega"
+                      required
+                    >
+                      <option value="">Seleccione una bodega</option>
+                      <option
+                        *ngFor="let bodega of bodegas | filter:'id_sucursal':usuario.id_sucursal"
+                        [value]="bodega.id"
+                      >
+                        {{ bodega.nombre }}
+                      </option>
+                    </select>
+                    <label>Bodega</label>
                   </div>
                 </div>
               </div>

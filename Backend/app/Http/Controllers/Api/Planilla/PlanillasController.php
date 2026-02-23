@@ -15,7 +15,6 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use PDF;
 use App\Imports\PlanillasImport;
 use App\Mail\BoletaPagoMailable;
 use App\Models\Compras\Gastos\Categoria;
@@ -44,23 +43,23 @@ class PlanillasController extends Controller
             ->where('id_empresa', auth()->user()->id_empresa)
             ->where('id_sucursal', auth()->user()->id_sucursal);
 
-        if ($request->has('anio') && $request->anio !== null) {
+        if ($request->filled('anio')) {
             $query->where('anio', $request->anio);
         }
 
-        if ($request->has('mes') && $request->mes !== null) {
+        if ($request->filled('mes')) {
             $query->where('mes', $request->mes);
         }
 
-        if ($request->has('estado') && $request->estado !== null) {
+        if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
         }
 
-        if ($request->has('tipo_planilla') && $request->tipo_planilla !== null) {
+        if ($request->filled('tipo_planilla')) {
             $query->where('tipo_planilla', $request->tipo_planilla);
         }
 
-        if ($request->has('buscador')) {
+        if ($request->filled('buscador')) {
             $busqueda = $request->buscador;
             $query->whereHas('detalles.empleado', function ($q) use ($busqueda) {
                 $q->where('nombres', 'LIKE', "%$busqueda%")
@@ -364,9 +363,26 @@ class PlanillasController extends Controller
         }
     }
 
-    private function calcularSalarioDevengado($salarioBase, $diasLaborados)
+    private function calcularSalarioDevengado($salarioBase, $diasLaborados, $tipoContrato = null, $tipoPlanilla = 'mensual')
     {
-        return ($salarioBase / 30) * $diasLaborados;
+        if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA) {
+            // Para contratos Por Obra, el salario base ES el monto total del período
+            // NO se divide proporcionalmente
+            return $salarioBase;
+        } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
+            // Para Servicios Profesionales, el salario base es MENSUAL
+            // Se divide según tipo de planilla pero NO usa días laborados
+            if ($tipoPlanilla === 'quincenal') {
+                return $salarioBase / 2;
+            } elseif ($tipoPlanilla === 'semanal') {
+                return $salarioBase / 4.33;
+            } else {
+                return $salarioBase; // mensual
+            }
+        } else {
+            // Para empleados asalariados regulares, calcular proporcionalmente según días laborados
+            return ($salarioBase / 30) * $diasLaborados;
+        }
     }
 
     private function calcularISSSyAFP($salarioDevengado)
@@ -671,19 +687,40 @@ class PlanillasController extends Controller
 
         // Calcular salario base ajustado según tipo de planilla
         $salarioBase = $empleado->salario_base;
-        $salarioBaseAjustado = $salarioBase;
-
-        if ($tipoPlanilla === 'quincenal') {
-            $salarioBaseAjustado = $salarioBase / 2;
-        } elseif ($tipoPlanilla === 'semanal') {
-            $salarioBaseAjustado = $salarioBase / 4.33;
-        }
+        $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+        $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
 
         // Días laborados (por defecto el período completo)
         $diasLaborados = $diasReferencia;
 
-        // Salario devengado proporcional
-        $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
+        // Calcular salario devengado
+        if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA) {
+            // Para contratos Por Obra, el salario base ES el monto total del período
+            // NO se divide proporcionalmente
+            $salarioBaseAjustado = $salarioBase;
+            $salarioDevengado = $salarioBase;
+        } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
+            // Para Servicios Profesionales, el salario base es MENSUAL
+            // Se divide según tipo de planilla pero NO usa días laborados
+            $salarioBaseAjustado = $salarioBase;
+            if ($tipoPlanilla === 'quincenal') {
+                $salarioDevengado = $salarioBase / 2;
+            } elseif ($tipoPlanilla === 'semanal') {
+                $salarioDevengado = $salarioBase / 4.33;
+            } else {
+                $salarioDevengado = $salarioBase; // mensual
+            }
+        } else {
+            // Para empleados asalariados regulares, ajustar según tipo de planilla y días laborados
+            $salarioBaseAjustado = $salarioBase;
+            if ($tipoPlanilla === 'quincenal') {
+                $salarioBaseAjustado = $salarioBase / 2;
+            } elseif ($tipoPlanilla === 'semanal') {
+                $salarioBaseAjustado = $salarioBase / 4.33;
+            }
+            // Calcular proporcionalmente según días laborados
+            $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
+        }
 
         // 🎯 PREPARAR DATOS PARA EL SERVICE
         $datosEmpleado = [
@@ -752,11 +789,15 @@ class PlanillasController extends Controller
             $detalle->renta = 0;
 
         } else {
-            // EL SALVADOR (aunque tenga configuración)
-            Log::info('🇸🇻 Usando campos fijos El Salvador', [
-                'pais' => $pais
+            // EL SALVADOR - Usar valores del servicio (que ya maneja servicios profesionales)
+            Log::info('🇸🇻 Usando valores del servicio para El Salvador', [
+                'pais' => $pais,
+                'isss_empleado' => $resultados['isss_empleado'] ?? 0,
+                'afp_empleado' => $resultados['afp_empleado'] ?? 0,
+                'renta' => $resultados['renta'] ?? 0
             ]);
 
+            // El servicio ya calculó correctamente según tipo de contrato (incluyendo servicios profesionales)
             $detalle->isss_empleado = $resultados['isss_empleado'] ?? 0;
             $detalle->isss_patronal = $resultados['isss_patronal'] ?? 0;
             $detalle->afp_empleado = $resultados['afp_empleado'] ?? 0;
@@ -868,10 +909,16 @@ class PlanillasController extends Controller
 
     public function updateDetailsPayroll(Request $request, $id)
     {
-        $request->validate([
-            'horas_extra' => 'nullable|numeric|min:0',
-            'monto_horas_extra' => 'nullable|numeric|min:0',
-            'comisiones' => 'nullable|numeric|min:0',
+            $request->validate([
+                'horas_extra' => 'nullable|numeric|min:0',
+                'monto_horas_extra' => 'nullable|numeric|min:0',
+                'detalle_horas_extra' => 'nullable|array',
+                'detalle_horas_extra.diurna' => 'nullable|numeric|min:0',
+                'detalle_horas_extra.nocturna' => 'nullable|numeric|min:0',
+                'detalle_horas_extra.dia_descanso' => 'nullable|numeric|min:0',
+                'detalle_horas_extra.dia_descanso_dias' => 'nullable|integer|min:0',
+                'detalle_horas_extra.dia_asueto' => 'nullable|numeric|min:0',
+                'comisiones' => 'nullable|numeric|min:0',
             'bonificaciones' => 'nullable|numeric|min:0',
             'otros_ingresos' => 'nullable|numeric|min:0',
             'dias_laborados' => 'nullable|numeric|min:0|max:31',
@@ -879,7 +926,8 @@ class PlanillasController extends Controller
             'anticipos' => 'nullable|numeric|min:0',
             'otros_descuentos' => 'nullable|numeric|min:0',
             'descuentos_judiciales' => 'nullable|numeric|min:0',
-            'detalle_otras_deducciones' => 'nullable|string'
+            'detalle_otras_deducciones' => 'nullable|string',
+            'salario_base' => 'nullable|numeric|min:0' // ✅ Permitir editar salario_base para contratos por obra
         ]);
 
         try {
@@ -887,6 +935,7 @@ class PlanillasController extends Controller
 
             $detalle = PlanillaDetalle::findOrFail($id);
             $planilla = $detalle->planilla;
+            $planilla->load('empresa');
 
             // Verificar que la planilla esté en estado editable
             if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
@@ -907,9 +956,12 @@ class PlanillasController extends Controller
                 $factorAjuste = 4.33;
             }
 
+            // Verificar tipo de contrato primero
+            $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+            $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
+
             // Actualizar campos básicos
             $detalle->dias_laborados = $request->dias_laborados ?? $diasReferencia;
-            $detalle->horas_extra = $request->horas_extra ?? 0;
             $detalle->comisiones = $request->comisiones ?? 0;
             $detalle->bonificaciones = $request->bonificaciones ?? 0;
             $detalle->otros_ingresos = $request->otros_ingresos ?? 0;
@@ -919,19 +971,79 @@ class PlanillasController extends Controller
             $detalle->descuentos_judiciales = $request->descuentos_judiciales ?? 0;
             $detalle->detalle_otras_deducciones = $request->detalle_otras_deducciones;
 
-            // Calcular salario devengado según días laborados
+            // ✅ PERMITIR EDITAR SALARIO_BASE SOLO PARA CONTRATOS POR OBRA (tipo 3)
+            if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA && $request->has('salario_base') && $request->salario_base !== null) {
+                // Para contratos Por obra, permitir editar el monto total del período
+                $detalle->salario_base = $request->salario_base;
+            }
+
+            // Calcular salario devengado
             $salarioBaseMensual = $detalle->salario_base;
-            $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
-                $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
-            $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
+
+            if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA) {
+                // Para contratos Por Obra, el salario base ES el monto total del período
+                // NO se divide proporcionalmente
+                $salarioDevengado = $salarioBaseMensual;
+                $salarioBaseAjustado = $salarioBaseMensual;
+            } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
+                // Para Servicios Profesionales, el salario base es MENSUAL
+                // Se divide según tipo de planilla pero NO usa días laborados
+                if ($planilla->tipo_planilla === 'quincenal') {
+                    $salarioDevengado = $salarioBaseMensual / 2;
+                    $salarioBaseAjustado = $salarioBaseMensual / 2;
+                } elseif ($planilla->tipo_planilla === 'semanal') {
+                    $salarioDevengado = $salarioBaseMensual / 4.33;
+                    $salarioBaseAjustado = $salarioBaseMensual / 4.33;
+                } else {
+                    $salarioDevengado = $salarioBaseMensual; // mensual
+                    $salarioBaseAjustado = $salarioBaseMensual;
+                }
+            } else {
+                // Para empleados asalariados regulares, calcular proporcionalmente según días laborados
+                $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
+                    $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
+                $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
+            }
             $detalle->salario_devengado = round($salarioDevengado, 2);
 
-            // Calcular monto de horas extra si aplica
-            if ($detalle->horas_extra > 0) {
+            // Horas extra: El Salvador con detalle por tipo (diurna, nocturna, día descanso, día asueto)
+            $esElSalvador = ($planilla->empresa->cod_pais ?? '') === 'SV';
+            $detalleHorasExtra = $request->detalle_horas_extra;
+
+            if ($esElSalvador && $detalleHorasExtra && is_array($detalleHorasExtra)) {
                 $valorHoraNormal = $salarioBaseAjustado / $diasReferencia / 8;
-                $detalle->monto_horas_extra = round($detalle->horas_extra * ($valorHoraNormal * 1.25), 2);
+                $salarioDiario = 8 * $valorHoraNormal;
+                // Art. 169 diurna 100% recargo; Art. 168+169 nocturna 100%+25%; Art. 175 día descanso 50%+día compensatorio; Art. 192 asueto 100% recargo
+                $horasDiurna = (float) ($detalleHorasExtra['diurna'] ?? 0);
+                $horasNocturna = (float) ($detalleHorasExtra['nocturna'] ?? 0);
+                $horasDiaDescanso = (float) ($detalleHorasExtra['dia_descanso'] ?? 0);
+                $horasDiaAsueto = (float) ($detalleHorasExtra['dia_asueto'] ?? 0);
+                $diaDescansoDias = (int) ($detalleHorasExtra['dia_descanso_dias'] ?? 0);
+                if ($horasDiaDescanso > 0 && $diaDescansoDias <= 0) {
+                    $diaDescansoDias = 1; // compat: si hay horas pero no días, 1 día
+                }
+                $detalle->horas_extra = round($horasDiurna + $horasNocturna + $horasDiaDescanso + $horasDiaAsueto, 2);
+                $montoDiurna = $horasDiurna * ($valorHoraNormal * 2);       // 100% recargo = pago doble (Art. 169)
+                $montoNocturna = $horasNocturna * ($valorHoraNormal * 2.25); // 100% + 25% nocturnidad (Art. 168)
+                $montoDiaDescanso = $horasDiaDescanso * ($valorHoraNormal * 1.5) + $diaDescansoDias * $salarioDiario; // Art. 175: 50% + día compensatorio
+                $montoDiaAsueto = $horasDiaAsueto * ($valorHoraNormal * 2);   // Art. 192: 100% recargo = doble
+                $detalle->monto_horas_extra = round($montoDiurna + $montoNocturna + $montoDiaDescanso + $montoDiaAsueto, 2);
+                $detalle->detalle_horas_extra = [
+                    'diurna' => $horasDiurna,
+                    'nocturna' => $horasNocturna,
+                    'dia_descanso' => $horasDiaDescanso,
+                    'dia_descanso_dias' => $diaDescansoDias,
+                    'dia_asueto' => $horasDiaAsueto,
+                ];
             } else {
-                $detalle->monto_horas_extra = 0;
+                $detalle->horas_extra = $request->horas_extra ?? 0;
+                if ($detalle->horas_extra > 0) {
+                    $valorHoraNormal = $salarioBaseAjustado / $diasReferencia / 8;
+                    $detalle->monto_horas_extra = round($detalle->horas_extra * ($valorHoraNormal * 1.25), 2);
+                } else {
+                    $detalle->monto_horas_extra = 0;
+                }
+                $detalle->detalle_horas_extra = null;
             }
 
             // Calcular total de ingresos
@@ -943,22 +1055,42 @@ class PlanillasController extends Controller
 
             // ✅ OBTENER TIPO DE CONTRATO DEL EMPLEADO
             $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
-            $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
+            $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
 
-            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
-            if ($esServiciosProfesionales) {
-                // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO Y CONFIGURACIÓN DEL EMPLEADO
+            if ($esContratoSinPrestaciones) {
+                // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Sin ISSS ni AFP
                 $detalle->isss_empleado = 0;
                 $detalle->isss_patronal = 0;
                 $detalle->afp_empleado = 0;
                 $detalle->afp_patronal = 0;
             } else {
+                // Obtener configuración de descuentos del empleado
+                $empleado = $detalle->empleado;
+                $configDescuentos = $empleado->configuracion_descuentos ?? [];
+                $aplicarAfp = $configDescuentos['aplicar_afp'] ?? true; // Por defecto true
+                $aplicarIsss = $configDescuentos['aplicar_isss'] ?? true; // Por defecto true
+
                 // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
-                $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
-                $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
-                $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
-                $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
-                $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+                // Verificar configuración antes de calcular
+                if ($aplicarIsss) {
+                    $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
+                    $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
+                    $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
+                } else {
+                    // No aplicar ISSS si está desactivado en la configuración
+                    $detalle->isss_empleado = 0;
+                    $detalle->isss_patronal = 0;
+                }
+
+                if ($aplicarAfp) {
+                    $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
+                    $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+                } else {
+                    // No aplicar AFP si está desactivado en la configuración
+                    $detalle->afp_empleado = 0;
+                    $detalle->afp_patronal = 0;
+                }
             }
 
             // ✅ CALCULAR RENTA CON TIPO DE CONTRATO
@@ -1390,10 +1522,10 @@ class PlanillasController extends Controller
         try {
             $planilla = Planilla::with(['detalles' => function($query) {
                     $query->where('estado', '!=', 0);
-                }, 'detalles.empleado', 'empresa'])
+                }, 'detalles.empleado', 'empresa.currency'])
                 ->findOrFail($id);
 
-            $pdf = PDF::loadView('pdf.planilla-detalle', [
+            $pdf = app('dompdf.wrapper')->loadView('pdf.planilla-detalle', [
                 'planilla' => $planilla,
                 'detalles' => $planilla->detalles,
                 'empresa' => $planilla->empresa
@@ -1617,7 +1749,7 @@ class PlanillasController extends Controller
                 }, 'detalles.empleado', 'empresa', 'sucursal'])
                 ->findOrFail($id);
 
-            $pdf = PDF::loadView('pdf.boletas-pago', [
+            $pdf = app('dompdf.wrapper')->loadView('pdf.boletas-pago', [
                 'planilla' => $planilla,
                 'empresa' => $planilla->empresa,
                 'sucursal' => $planilla->sucursal,
@@ -1728,7 +1860,7 @@ class PlanillasController extends Controller
                             'referencia' => $planilla->codigo,
                             'concepto' => "Salario neto - {$nombreEmpleado}",
                             'tipo' => 'Sueldos y Salarios',
-                            'estado' => 'Pagado',
+                            'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                             'forma_pago' => 'Transferencia',
                             'total' => $sueldoNeto,
                             'id_proveedor' => $proveedor->id,
@@ -1757,7 +1889,7 @@ class PlanillasController extends Controller
                     'referencia' => $planilla->codigo,
                     'concepto' => "Aporte patronal ISSS - Planilla {$planilla->codigo}",
                     'tipo' => 'ISSS Patronal',
-                    'estado' => 'Pagado',
+                    'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                     'forma_pago' => 'Transferencia',
                     'total' => $totalISSS_Patronal,
                     'id_proveedor' => $proveedor->id,
@@ -1784,7 +1916,7 @@ class PlanillasController extends Controller
                     'referencia' => $planilla->codigo,
                     'concepto' => "Aporte patronal AFP - Planilla {$planilla->codigo}",
                     'tipo' => 'AFP Patronal',
-                    'estado' => 'Pagado',
+                    'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                     'forma_pago' => 'Transferencia',
                     'total' => $totalAFP_Patronal,
                     'id_proveedor' => $proveedor->id,
@@ -1836,7 +1968,7 @@ class PlanillasController extends Controller
                 $detalle->otros_descuentos;
 
             // Generar el PDF
-            $pdf = PDF::loadView('pdf.boleta-individual', [
+            $pdf = app('dompdf.wrapper')->loadView('pdf.boleta-individual', [
                 'detalle' => $detalle,
                 'totalIngresos' => $totalIngresos,
                 'totalDeducciones' => $totalDeducciones,
@@ -1999,18 +2131,18 @@ class PlanillasController extends Controller
     {
         try {
             // Calcular salario base según el tipo de planilla
-            $salarioBase = $empleado->salario_base;
+            $salarioBaseMensual = $empleado->salario_base;
+            $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+            $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
             $diasReferencia = 30; // Por defecto, mensual
 
             // Ajustar según el tipo de planilla
             switch ($planilla->tipo_planilla) {
                 case 'quincenal':
                     $diasReferencia = 15;
-                    $salarioBase = $salarioBase / 2;
                     break;
                 case 'semanal':
                     $diasReferencia = 7;
-                    $salarioBase = $salarioBase / 4.33; // Aproximadamente 4.33 semanas por mes
                     break;
                 default:
                     $diasReferencia = 30;
@@ -2020,20 +2152,71 @@ class PlanillasController extends Controller
             // Calcular días laborados (por defecto el período completo)
             $diasLaborados = $diasReferencia;
 
-            // Calcular salario devengado proporcional
-            $salarioDevengado = ($salarioBase / $diasReferencia) * $diasLaborados;
+            // Calcular salario base y devengado según tipo de contrato
+            if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA) {
+                // Para contratos Por Obra, el salario base ES el monto total del período
+                // NO se divide proporcionalmente
+                $salarioBase = $salarioBaseMensual;
+                $salarioDevengado = $salarioBaseMensual;
+            } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
+                // Para Servicios Profesionales, el salario base es MENSUAL
+                // Se divide según tipo de planilla pero NO usa días laborados
+                $salarioBase = $salarioBaseMensual;
+                switch ($planilla->tipo_planilla) {
+                    case 'quincenal':
+                        $salarioDevengado = $salarioBaseMensual / 2;
+                        break;
+                    case 'semanal':
+                        $salarioDevengado = $salarioBaseMensual / 4.33;
+                        break;
+                    default:
+                        $salarioDevengado = $salarioBaseMensual; // mensual
+                        break;
+                }
+            } else {
+                // Para empleados asalariados regulares, ajustar según tipo de planilla y días laborados
+                $salarioBase = $salarioBaseMensual;
+                switch ($planilla->tipo_planilla) {
+                    case 'quincenal':
+                        $salarioBase = $salarioBaseMensual / 2;
+                        break;
+                    case 'semanal':
+                        $salarioBase = $salarioBaseMensual / 4.33;
+                        break;
+                }
+                // Calcular proporcionalmente según días laborados
+                $salarioDevengado = ($salarioBase / $diasReferencia) * $diasLaborados;
+            }
 
-            // Calcular deducciones de seguridad social
-            $isssEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
-            $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
+            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO (variables ya definidas arriba)
+            if ($esContratoSinPrestaciones) {
+                // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Sin ISSS ni AFP
+                $isssEmpleado = 0;
+                $isssPatronal = 0;
+                $afpEmpleado = 0;
+                $afpPatronal = 0;
+            } else {
+                // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
+                $baseISSSEmpleado = min($salarioDevengado, 1000);
+                $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
+                $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+                $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
+                $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+            }
 
-            // Calcular aportes patronales
-            $isssPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
-            $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
-
-            // Calcular renta usando las nuevas tablas
-            $calculoRenta = $this->calcularRenta($salarioDevengado, $isssEmpleado, $afpEmpleado, $planilla->tipo_planilla);
-            $renta = $calculoRenta['retencion_renta'];
+            // Calcular renta usando las nuevas tablas (con tipo de contrato)
+            $salarioGravado = RentaHelper::calcularSalarioGravado(
+                $salarioDevengado,
+                $isssEmpleado,
+                $afpEmpleado,
+                $planilla->tipo_planilla,
+                $tipoContrato
+            );
+            $renta = RentaHelper::calcularRetencionRenta(
+                $salarioGravado,
+                $planilla->tipo_planilla,
+                $tipoContrato
+            );
 
             // Inicializar otros valores
             $horasExtra = 0;
@@ -2389,13 +2572,6 @@ class PlanillasController extends Controller
                 $empresaId,
                 $tipoPlanilla
             );
-
-            Log::info('✅ RESULTADOS HÍBRIDO EXITOSO', [
-                'isss_empleado' => $resultados['isss_empleado'] ?? 'N/A',
-                'afp_empleado' => $resultados['afp_empleado'] ?? 'N/A',
-                'renta' => $resultados['renta'] ?? 'N/A'
-            ]);
-
             return $resultados;
 
         } catch (\Exception $e) {
@@ -2478,16 +2654,39 @@ class PlanillasController extends Controller
         $diasLaborados = $diasReferencia;
         $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
 
-        // Usar tus métodos actuales exactos
-        $baseISSSEmpleado = min($salarioDevengado, 1000);
-        $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
-        $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
-        $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
-        $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+        // ✅ VERIFICAR SI ES CONTRATO SIN PRESTACIONES
+        $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+        $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
 
-        // Calcular renta usando RentaHelper actual
-        $calculoRenta = $this->calcularRenta($salarioDevengado, $isssEmpleado, $afpEmpleado, $tipoPlanilla);
-        $renta = $calculoRenta['retencion_renta'];
+        // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
+        if ($esContratoSinPrestaciones) {
+            // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Sin ISSS ni AFP
+            $isssEmpleado = 0;
+            $isssPatronal = 0;
+            $afpEmpleado = 0;
+            $afpPatronal = 0;
+        } else {
+            // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
+            $baseISSSEmpleado = min($salarioDevengado, 1000);
+            $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
+            $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+            $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
+            $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+        }
+
+        // Calcular renta usando RentaHelper actual (con tipo de contrato)
+        $salarioGravado = RentaHelper::calcularSalarioGravado(
+            $salarioDevengado,
+            $isssEmpleado,
+            $afpEmpleado,
+            $tipoPlanilla,
+            $tipoContrato
+        );
+        $renta = RentaHelper::calcularRetencionRenta(
+            $salarioGravado,
+            $tipoPlanilla,
+            $tipoContrato
+        );
 
         $totalIngresos = $salarioDevengado;
         $totalDescuentos = $isssEmpleado + $afpEmpleado + $renta;

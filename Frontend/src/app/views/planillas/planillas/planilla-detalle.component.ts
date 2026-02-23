@@ -11,6 +11,13 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-planilla-detalle',
   templateUrl: './planilla-detalle.component.html',
+  styles: [
+    `
+      .text-alert-descuentos {
+        font-size: 0.8rem;
+      }
+    `,
+  ],
 })
 export class PlanillaDetalleComponent implements OnInit {
   public planilla: any = {};
@@ -210,7 +217,23 @@ export class PlanillaDetalleComponent implements OnInit {
 
 
   get esElSalvador(): boolean {
-    return this.planilla?.empresa?.cod_pais === 'SV';
+    // 1. Verificar código de país de la empresa
+    if (this.planilla?.empresa?.cod_pais === 'SV') {
+      return true;
+    }
+
+    // 2. Verificar pais_configuracion de la configuración de planilla
+    if (this.configPlanilla?.pais_configuracion === 'EL SALVADOR' ||
+        this.configPlanilla?.cod_pais === 'SV') {
+      return true;
+    }
+
+    // 3. Verificar pais_configuracion del primer detalle (fallback)
+    if (this.detalles && this.detalles.length > 0) {
+      return this.detalles[0]?.pais_configuracion === 'SV';
+    }
+
+    return false;
   }
 
   get conceptosEmpleado() {
@@ -286,6 +309,8 @@ export class PlanillaDetalleComponent implements OnInit {
   loadConceptosConfigurados() {
     this.configPlanillaService.obtenerConfiguracion().subscribe({
       next: (config) => {
+        // Guardar la configuración completa para acceder a pais_configuracion
+        this.configPlanilla = config;
         this.conceptosConfigurados = config?.configuracion?.conceptos || null;
         this.cargarConceptosDeduccion();
       },
@@ -381,6 +406,79 @@ export class PlanillaDetalleComponent implements OnInit {
     }
   }
 
+  /** Tipo de hora extra El Salvador */
+  public readonly TIPOS_HORAS_EXTRA_ES: { value: 'diurna' | 'nocturna' | 'dia_descanso' | 'dia_asueto'; label: string }[] = [
+    { value: 'diurna', label: 'Diurna (100% recargo - Art. 169)' },
+    { value: 'nocturna', label: 'Nocturna (100%+25% nocturnidad - Art. 168)' },
+    { value: 'dia_descanso', label: 'Día de descanso (50% recargo + día compensatorio - Art. 175)' },
+    { value: 'dia_asueto', label: 'Día de asueto (100% recargo - Art. 192)' },
+  ];
+
+  /** Lista dinámica de filas de horas extra (El Salvador). Se convierte a detalle_horas_extra al calcular/guardar. */
+  public listaHorasExtraES: { tipo: 'diurna' | 'nocturna' | 'dia_descanso' | 'dia_asueto'; horas: number }[] = [];
+
+  /** Estructura por defecto de detalle de horas extra (El Salvador) */
+  public getDetalleHorasExtraDefault(): { diurna: number; nocturna: number; dia_descanso: number; dia_asueto: number } {
+    return { diurna: 0, nocturna: 0, dia_descanso: 0, dia_asueto: 0 };
+  }
+
+  /** Convierte listaHorasExtraES a objeto { diurna, nocturna, dia_descanso, dia_asueto, dia_descanso_dias } (suma por tipo; dias = cantidad de filas tipo día descanso) */
+  public getDetalleHorasExtraDesdeLista(): { diurna: number; nocturna: number; dia_descanso: number; dia_asueto: number; dia_descanso_dias?: number } {
+    const out = this.getDetalleHorasExtraDefault();
+    let diaDescansoDias = 0;
+    (this.listaHorasExtraES || []).forEach((fila) => {
+      const h = Number(fila.horas) || 0;
+      if (fila.tipo === 'dia_descanso') diaDescansoDias += 1;
+      if (fila.tipo in out) (out as Record<string, number>)[fila.tipo] += h;
+    });
+    return { ...out, dia_descanso_dias: diaDescansoDias };
+  }
+
+  /** Multiplicadores hora extra El Salvador: diurna 100%, nocturna 100%+25%, día asueto 100% (Art. 192). Día descanso: solo parte horaria 50% (Art. 175); el monto real usa getMontoFilaHoraExtra. */
+  public readonly MULTIPLICADORES_HORAS_EXTRA_ES: Record<string, number> = {
+    diurna: 2,
+    nocturna: 2.25,
+    dia_descanso: 1.5,
+    dia_asueto: 2,
+  };
+
+  public agregarHoraExtraES(): void {
+    this.listaHorasExtraES = this.listaHorasExtraES || [];
+    this.listaHorasExtraES.push({ tipo: 'diurna', horas: 0 });
+    this.calcularTotalesUnificado();
+  }
+
+  public eliminarHoraExtraES(index: number): void {
+    this.listaHorasExtraES.splice(index, 1);
+    this.calcularTotalesUnificado();
+  }
+
+  /** Monto mostrado por fila. Art. 175 día descanso: solo parte horaria (50% recargo); el día compensatorio se suma una vez al total. Art. 192 asueto: 100% recargo (2×). */
+  public getMontoFilaHoraExtra(fila: { tipo: 'diurna' | 'nocturna' | 'dia_descanso' | 'dia_asueto'; horas: number }): number {
+    const h = Number(fila.horas) || 0;
+    const V = this.getValorHoraNormalES();
+    if (fila.tipo === 'diurna') return Number((h * V * 2).toFixed(2));
+    if (fila.tipo === 'nocturna') return Number((h * V * 2.25).toFixed(2));
+    if (fila.tipo === 'dia_descanso') return Number((h * V * 1.5).toFixed(2)); // solo 50% por hora; día compensatorio se suma al total
+    if (fila.tipo === 'dia_asueto') return Number((h * V * 2).toFixed(2)); // 100% recargo
+    return 0;
+  }
+
+  public getNombreTipoHoraExtra(tipo: string): string {
+    return this.TIPOS_HORAS_EXTRA_ES.find((t) => t.value === tipo)?.label || tipo;
+  }
+
+  /** Desglose del monto horas extra para presentación: horas trabajadas vs día compensatorio (Art. 175). */
+  public getDesgloseMontoHorasExtraES(): { montoHoras: number; montoDiaCompensatorio: number } {
+    const dhe = this.getDetalleHorasExtraDesdeLista();
+    const dias = dhe.dia_descanso_dias ?? 0;
+    const V = this.getValorHoraNormalES();
+    let montoHoras = 0;
+    (this.listaHorasExtraES || []).forEach((fila) => { montoHoras += this.getMontoFilaHoraExtra(fila); });
+    const montoDiaCompensatorio = Number((dias * (8 * V)).toFixed(2));
+    return { montoHoras: Number(montoHoras.toFixed(2)), montoDiaCompensatorio };
+  }
+
   public editarDetalle(detalle: any) {
     if (this.planilla.estado !== 2) {
       this.alertService.warning(
@@ -390,6 +488,37 @@ export class PlanillaDetalleComponent implements OnInit {
       return;
     }
     this.detalleSeleccionado = { ...detalle };
+    this.listaHorasExtraES = [];
+    if (this.esElSalvador) {
+      const dhe = detalle.detalle_horas_extra;
+      if (dhe && typeof dhe === 'object' && ['diurna', 'nocturna', 'dia_descanso', 'dia_asueto'].every((k) => k in dhe)) {
+        const obj = dhe as Record<string, number>;
+        this.detalleSeleccionado.detalle_horas_extra = {
+          diurna: Number(obj['diurna']) || 0,
+          nocturna: Number(obj['nocturna']) || 0,
+          dia_descanso: Number(obj['dia_descanso']) || 0,
+          dia_asueto: Number(obj['dia_asueto']) || 0,
+        };
+        (['diurna', 'nocturna', 'dia_asueto'] as const).forEach((tipo) => {
+          const horas = Number(obj[tipo]) || 0;
+          if (horas > 0) this.listaHorasExtraES.push({ tipo, horas });
+        });
+        const horasDiaDescanso = Number(obj['dia_descanso']) || 0;
+        const diasDescanso = Math.max(1, Math.round(Number(obj['dia_descanso_dias']) || 0));
+        if (horasDiaDescanso > 0) {
+          const horasPorDia = horasDiaDescanso / diasDescanso;
+          for (let i = 0; i < diasDescanso; i++) this.listaHorasExtraES.push({ tipo: 'dia_descanso', horas: Number(horasPorDia.toFixed(2)) });
+        }
+      } else {
+        const def = this.getDetalleHorasExtraDefault();
+        if (Number(detalle.horas_extra) > 0) def.diurna = Number(detalle.horas_extra) || 0;
+        this.detalleSeleccionado.detalle_horas_extra = def;
+        if (def.diurna > 0) this.listaHorasExtraES.push({ tipo: 'diurna', horas: def.diurna });
+        if (def.nocturna > 0) this.listaHorasExtraES.push({ tipo: 'nocturna', horas: def.nocturna });
+        if (def.dia_descanso > 0) this.listaHorasExtraES.push({ tipo: 'dia_descanso', horas: def.dia_descanso });
+        if (def.dia_asueto > 0) this.listaHorasExtraES.push({ tipo: 'dia_asueto', horas: def.dia_asueto });
+      }
+    }
     this.calcularTotales();
 
     setTimeout(() => {
@@ -400,6 +529,7 @@ export class PlanillaDetalleComponent implements OnInit {
 
   public cancelarEdicion() {
     this.detalleSeleccionado = null;
+    this.listaHorasExtraES = [];
   }
 
   getEstadoDetalle(estado: number) {
@@ -473,7 +603,7 @@ export class PlanillaDetalleComponent implements OnInit {
 
     this.saving = true;
 
-    const datosActualizados = {
+    const datosActualizados: any = {
       // Datos de entrada
       horas_extra: this.detalleSeleccionado.horas_extra || 0,
       monto_horas_extra: this.detalleSeleccionado.monto_horas_extra || 0,
@@ -510,6 +640,20 @@ export class PlanillaDetalleComponent implements OnInit {
       detalle_otras_deducciones:
         this.detalleSeleccionado.detalle_otras_deducciones || '',
     };
+    if (this.esElSalvador) {
+      const dhe = this.listaHorasExtraES?.length
+        ? this.getDetalleHorasExtraDesdeLista()
+        : (this.detalleSeleccionado.detalle_horas_extra as Record<string, number> | null);
+      if (dhe) {
+        datosActualizados.detalle_horas_extra = {
+          diurna: Number(dhe['diurna']) || 0,
+          nocturna: Number(dhe['nocturna']) || 0,
+          dia_descanso: Number(dhe['dia_descanso']) || 0,
+          dia_asueto: Number(dhe['dia_asueto']) || 0,
+          dia_descanso_dias: Number(dhe['dia_descanso_dias']) || 0,
+        };
+      }
+    }
 
     this.apiService
       .store(
@@ -1010,59 +1154,118 @@ export class PlanillaDetalleComponent implements OnInit {
     // Obtener valores base
     const salarioBase = Number(this.detalleSeleccionado.salario_base) || 0;
     const diasLaborados = Number(this.detalleSeleccionado.dias_laborados) || 30;
-    const horasExtra = Number(this.detalleSeleccionado.horas_extra) || 0;
+    let horasExtra = Number(this.detalleSeleccionado.horas_extra) || 0;
     const comisiones = Number(this.detalleSeleccionado.comisiones) || 0;
     const bonificaciones = Number(this.detalleSeleccionado.bonificaciones) || 0;
     const otrosIngresos = Number(this.detalleSeleccionado.otros_ingresos) || 0;
-  
+
+    // Obtener tipo de contrato
+    const tipoContrato = this.detalleSeleccionado.empleado?.tipo_contrato || 1;
+    const esPorObra = tipoContrato === 3;
+    const esServiciosProfesionales = tipoContrato === 4;
+
     // Calcular salario devengado
-    const salarioDevengado = (salarioBase / 30) * diasLaborados;
+    let salarioDevengado = 0;
+    if (esPorObra) {
+      // Para Por obra, el salario_base ES el monto total ganado en este período
+      // NO se divide proporcionalmente
+      salarioDevengado = salarioBase;
+    } else if (esServiciosProfesionales) {
+      // Para Servicios Profesionales, el salario_base es MENSUAL
+      // Se divide según el tipo de planilla, pero NO usa días laborados
+      if (this.planilla.tipo_planilla === 'quincenal') {
+        salarioDevengado = salarioBase / 2;
+      } else if (this.planilla.tipo_planilla === 'semanal') {
+        salarioDevengado = salarioBase / 4.33;
+      } else {
+        salarioDevengado = salarioBase; // mensual
+      }
+    } else {
+      // Para empleados regulares, calcular proporcionalmente según días laborados
+      salarioDevengado = (salarioBase / 30) * diasLaborados;
+    }
     this.detalleSeleccionado.salario_devengado = Number(salarioDevengado.toFixed(2));
-  
+
+    // Horas extra: El Salvador — monto desde lista. Día descanso (Art. 175): por hora solo 1.5×; día compensatorio (8×V) se suma una vez por cada día de descanso.
     let montoHorasExtra = 0;
-    if (horasExtra > 0) {
-      const valorHoraNormal = salarioBase / 30 / 8; // Valor hora normal
-      montoHorasExtra = horasExtra * (valorHoraNormal * 1.25); // 25% de recargo
+    if (this.esElSalvador) {
+      const dhe = this.getDetalleHorasExtraDesdeLista();
+      this.detalleSeleccionado.detalle_horas_extra = { diurna: dhe.diurna, nocturna: dhe.nocturna, dia_descanso: dhe.dia_descanso, dia_asueto: dhe.dia_asueto };
+      const lista = this.listaHorasExtraES || [];
+      const V = this.getValorHoraNormalES();
+      const diaDescansoDias = dhe.dia_descanso_dias ?? 0;
+      horasExtra = dhe.diurna + dhe.nocturna + dhe.dia_descanso + dhe.dia_asueto;
+      lista.forEach((fila) => { montoHorasExtra += this.getMontoFilaHoraExtra(fila); });
+      montoHorasExtra += diaDescansoDias * (8 * V); // día compensatorio remunerado (una vez por día de descanso trabajado)
+      this.detalleSeleccionado.horas_extra = Number(horasExtra.toFixed(2));
+    } else if (horasExtra > 0) {
+      const valorHoraNormal = salarioBase / 30 / 8;
+      montoHorasExtra = horasExtra * (valorHoraNormal * 1.25);
     }
     this.detalleSeleccionado.monto_horas_extra = Number(montoHorasExtra.toFixed(2));
   
     // Calcular total de ingresos
     const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos;
     this.detalleSeleccionado.total_ingresos = Number(totalIngresos.toFixed(2));
-  
-    const tipoContrato = this.detalleSeleccionado.empleado?.tipo_contrato || 1;
-    const esServiciosProfesionales = tipoContrato === 4;
-  
+
+    // Calcular deducciones (ISSS, AFP, Renta)
+    // Ambos tipos de contrato sin prestaciones (Por obra y Servicios Profesionales) no tienen ISSS/AFP
+    const esContratoSinPrestaciones = esPorObra || esServiciosProfesionales;
+
+    // Obtener configuración de descuentos del empleado
+    const configDescuentos = this.detalleSeleccionado.empleado?.configuracion_descuentos || {};
+    const aplicarAfp = configDescuentos.aplicar_afp !== false; // Por defecto true si no existe
+    const aplicarIsss = configDescuentos.aplicar_isss !== false; // Por defecto true si no existe
+
     let isssEmpleado = 0;
     let afpEmpleado = 0;
     let isssPatronal = 0;
     let afpPatronal = 0;
-  
-    if (esServiciosProfesionales) {
+
+    if (esContratoSinPrestaciones) {
+      // Sin deducciones de seguridad social para contratos sin prestaciones
       isssEmpleado = 0;
       afpEmpleado = 0;
       isssPatronal = 0;
       afpPatronal = 0;
     } else {
-      const baseISSSEmpleado = Math.min(totalIngresos, 1000.00);
-      isssEmpleado = baseISSSEmpleado * 0.03;
-      afpEmpleado = totalIngresos * 0.0725;
-      isssPatronal = baseISSSEmpleado * 0.075;
-      afpPatronal = totalIngresos * 0.0875;
+      // Para empleados regulares - verificar configuración del empleado
+      if (aplicarIsss) {
+        const baseISSSEmpleado = Math.min(totalIngresos, 1000.00);
+        isssEmpleado = baseISSSEmpleado * 0.03;
+        isssPatronal = baseISSSEmpleado * 0.075;
+      } else {
+        // No aplicar ISSS si está desactivado en la configuración
+        isssEmpleado = 0;
+        isssPatronal = 0;
+      }
+
+      if (aplicarAfp) {
+        afpEmpleado = totalIngresos * 0.0725;
+        afpPatronal = totalIngresos * 0.0875;
+      } else {
+        // No aplicar AFP si está desactivado en la configuración
+        afpEmpleado = 0;
+        afpPatronal = 0;
+      }
     }
-  
+
     this.detalleSeleccionado.isss_empleado = Number(isssEmpleado.toFixed(2));
     this.detalleSeleccionado.afp_empleado = Number(afpEmpleado.toFixed(2));
     this.detalleSeleccionado.isss_patronal = Number(isssPatronal.toFixed(2));
     this.detalleSeleccionado.afp_patronal = Number(afpPatronal.toFixed(2));
-  
-    // ✅ CORREGIDO: calcular renta primero y guardarla
+
+    // Calcular renta
     let renta = 0;
-    if (esServiciosProfesionales) {
+    if (esContratoSinPrestaciones) {
+      // 10% fijo para contratos sin prestaciones (Por obra y Servicios Profesionales)
+      // Se calcula sobre el TOTAL de ingresos (salario + comisiones + bonos + otros)
       renta = totalIngresos * 0.10;
+      this.detalleSeleccionado.renta = Number(renta.toFixed(2));
     } else {
-      this.actualizarRenta(); // primero actualizas la renta
-      renta = Number(this.detalleSeleccionado.renta) || 0; // y luego la usas
+      // Usar tablas de renta para empleados regulares
+      this.actualizarRenta();
+      renta = Number(this.detalleSeleccionado.renta) || 0;
     }
   
     // Calcular otros descuentos
@@ -1084,7 +1287,37 @@ export class PlanillaDetalleComponent implements OnInit {
       this.actualizarDeduccionesCalculadas();
     }
   }
-  
+
+  /**
+   * Recalcula SOLO el sueldo neto sin recalcular deducciones de ley
+   * Usar cuando solo cambian préstamos, anticipos u otros descuentos manuales
+   */
+  public recalcularSueldoNeto() {
+    if (!this.detalleSeleccionado) {
+      return;
+    }
+
+    // Obtener valores actuales de deducciones de ley (YA calculadas, no recalcular)
+    const isssEmpleado = Number(this.detalleSeleccionado.isss_empleado) || 0;
+    const afpEmpleado = Number(this.detalleSeleccionado.afp_empleado) || 0;
+    const renta = Number(this.detalleSeleccionado.renta) || 0;
+
+    // Obtener descuentos manuales (estos SÍ pueden haber cambiado)
+    const prestamos = Number(this.detalleSeleccionado.prestamos) || 0;
+    const anticipos = Number(this.detalleSeleccionado.anticipos) || 0;
+    const otrosDescuentos = Number(this.detalleSeleccionado.otros_descuentos) || 0;
+    const descuentosJudiciales = Number(this.detalleSeleccionado.descuentos_judiciales) || 0;
+
+    // Recalcular total de descuentos
+    const totalDescuentos = isssEmpleado + afpEmpleado + renta + prestamos + anticipos + otrosDescuentos + descuentosJudiciales;
+    this.detalleSeleccionado.total_descuentos = Number(totalDescuentos.toFixed(2));
+
+    // Recalcular sueldo neto
+    const totalIngresos = Number(this.detalleSeleccionado.total_ingresos) || 0;
+    const sueldoNeto = totalIngresos - totalDescuentos;
+    this.detalleSeleccionado.sueldo_neto = Number(sueldoNeto.toFixed(2));
+  }
+
 
   public getTipoContratoNombre(tipoContrato: number): string {
     switch (tipoContrato) {
@@ -1098,6 +1331,11 @@ export class PlanillaDetalleComponent implements OnInit {
 
   public esServiciosProfesionales(): boolean {
     return this.detalleSeleccionado?.empleado?.tipo_contrato === 4;
+  }
+
+  public esContratoSinPrestaciones(): boolean {
+    const tipoContrato = this.detalleSeleccionado?.empleado?.tipo_contrato;
+    return tipoContrato === 3 || tipoContrato === 4;
   }
 
   // Agregar después de calcularTotales()
@@ -1521,6 +1759,37 @@ export class PlanillaDetalleComponent implements OnInit {
     return Number(valorHoraExtra.toFixed(2));
   }
 
+  /** Valor hora ordinaria para cálculos El Salvador (salario_base / 30 / 8 para mensual). */
+  public getValorHoraNormalES(): number {
+    if (!this.detalleSeleccionado || !this.planilla) return 0;
+    const salarioBase = Number(this.detalleSeleccionado.salario_base) || 0;
+    let salarioBaseAjustado = salarioBase;
+    let diasReferencia = 30;
+    if (this.planilla.tipo_planilla === 'quincenal') {
+      salarioBaseAjustado = salarioBase / 2;
+      diasReferencia = 15;
+    } else if (this.planilla.tipo_planilla === 'semanal') {
+      salarioBaseAjustado = salarioBase / 4.33;
+      diasReferencia = 7;
+    }
+    const valorHoraNormal = salarioBaseAjustado / diasReferencia / 8;
+    return Number(valorHoraNormal);
+  }
+
+  /** Valor por hora extra según tipo (El Salvador): diurna, nocturna, dia_descanso, dia_asueto. */
+  public getValorHoraExtraPorTipo(tipo: 'diurna' | 'nocturna' | 'dia_descanso' | 'dia_asueto'): number {
+    const valorHora = this.getValorHoraNormalES();
+    const mult = this.MULTIPLICADORES_HORAS_EXTRA_ES[tipo] ?? 2;
+    return Number((valorHora * mult).toFixed(2));
+  }
+
+  /** Monto subtotal de un tipo de hora extra (horas * valor por tipo). */
+  public getMontoHorasExtraPorTipo(tipo: 'diurna' | 'nocturna' | 'dia_descanso' | 'dia_asueto'): number {
+    if (!this.detalleSeleccionado?.detalle_horas_extra) return 0;
+    const horas = Number((this.detalleSeleccionado.detalle_horas_extra as any)[tipo]) || 0;
+    return Number((horas * this.getValorHoraExtraPorTipo(tipo)).toFixed(2));
+  }
+
 
   public exportarVistaActual() {
     this.downloading = true;
@@ -1596,11 +1865,16 @@ export class PlanillaDetalleComponent implements OnInit {
   private aplicarResultadosConfigurables(resultado: any): void {
     const resultados = resultado.resultados;
 
-    // Aplicar valores calculados
-    this.detalleSeleccionado.isss_empleado = this.round(resultados.isss_empleado || 0);
-    this.detalleSeleccionado.isss_patronal = this.round(resultados.isss_patronal || 0);
-    this.detalleSeleccionado.afp_empleado = this.round(resultados.afp_empleado || 0);
-    this.detalleSeleccionado.afp_patronal = this.round(resultados.afp_patronal || 0);
+    // Obtener configuración de descuentos del empleado
+    const configDescuentos = this.detalleSeleccionado.empleado?.configuracion_descuentos || {};
+    const aplicarAfp = configDescuentos.aplicar_afp !== false; // Por defecto true si no existe
+    const aplicarIsss = configDescuentos.aplicar_isss !== false; // Por defecto true si no existe
+
+    // Aplicar valores calculados respetando la configuración del empleado
+    this.detalleSeleccionado.isss_empleado = aplicarIsss ? this.round(resultados.isss_empleado || 0) : 0;
+    this.detalleSeleccionado.isss_patronal = aplicarIsss ? this.round(resultados.isss_patronal || 0) : 0;
+    this.detalleSeleccionado.afp_empleado = aplicarAfp ? this.round(resultados.afp_empleado || 0) : 0;
+    this.detalleSeleccionado.afp_patronal = aplicarAfp ? this.round(resultados.afp_patronal || 0) : 0;
     this.detalleSeleccionado.renta = this.round(resultados.renta || 0);
 
     // Aplicar totales
@@ -1626,6 +1900,11 @@ export class PlanillaDetalleComponent implements OnInit {
     const otrosDescuentos = Number(this.detalleSeleccionado.otros_descuentos) || 0;
     const descuentosJudiciales = Number(this.detalleSeleccionado.descuentos_judiciales) || 0;
 
+    // Obtener configuración de descuentos del empleado
+    const configDescuentos = this.detalleSeleccionado.empleado?.configuracion_descuentos || {};
+    const aplicarAfp = configDescuentos.aplicar_afp !== false; // Por defecto true si no existe
+    const aplicarIsss = configDescuentos.aplicar_isss !== false; // Por defecto true si no existe
+
     // Usar tu lógica actual (PlanillaConstants)
     const calculos = PlanillaConstants.calcularDescuentosEmpleado(
       salarioDevengado,
@@ -1636,12 +1915,12 @@ export class PlanillaDetalleComponent implements OnInit {
       this.planilla.tipo_planilla
     );
 
-    // Asignar valores calculados
+    // Asignar valores calculados respetando la configuración del empleado
     this.detalleSeleccionado.total_ingresos = calculos.totalIngresos;
-    this.detalleSeleccionado.isss_empleado = calculos.isssEmpleado;
-    this.detalleSeleccionado.isss_patronal = calculos.isssPatronal;
-    this.detalleSeleccionado.afp_empleado = calculos.afpEmpleado;
-    this.detalleSeleccionado.afp_patronal = calculos.afpPatronal;
+    this.detalleSeleccionado.isss_empleado = aplicarIsss ? calculos.isssEmpleado : 0;
+    this.detalleSeleccionado.isss_patronal = aplicarIsss ? calculos.isssPatronal : 0;
+    this.detalleSeleccionado.afp_empleado = aplicarAfp ? calculos.afpEmpleado : 0;
+    this.detalleSeleccionado.afp_patronal = aplicarAfp ? calculos.afpPatronal : 0;
     this.detalleSeleccionado.renta = calculos.renta;
 
     // Calcular total de descuentos

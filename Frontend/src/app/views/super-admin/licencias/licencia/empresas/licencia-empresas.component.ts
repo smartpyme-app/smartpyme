@@ -16,10 +16,10 @@ export class LicenciaEmpresasComponent implements OnInit {
     public empresa: any = {};
     public buscador:string = '';
     public loading:boolean = false;
-
+    public saving:boolean = false;
     modalRef!: BsModalRef;
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  
+    constructor(public apiService: ApiService, private alertService: AlertService,  
         private route: ActivatedRoute, private router: Router,
         private modalService: BsModalService
     ){ }
@@ -54,17 +54,17 @@ export class LicenciaEmpresasComponent implements OnInit {
 
 
     public onSubmit() {
-        this.loading = true;
+        this.saving = true;
         this.empresa.id_licencia = this.licencia.id;
         this.apiService.store('licencia/empresa', this.empresa).subscribe(empresa => {
             if(!this.empresa.id)
                 this.licencia.empresas.push(empresa);
             this.empresa = {};
-            this.loading = false;
+            this.saving = false;
             this.modalRef.hide();
             this.alertService.modal = false;
             this.alertService.success('Empresa agregado', 'El empresa fue agregado exitosamente.');
-        },error => {this.alertService.error(error); this.loading = false; });
+        },error => {this.alertService.error(error); this.saving = false; });
     }
 
     public delete(empresa:any) {

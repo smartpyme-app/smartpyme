@@ -8,12 +8,37 @@
         <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1"> 
         <span id="producto_nombre" class="col-7 ps-1">
             <!-- <small>Nombre:</small> <br> -->
-            {{ producto.nombre }} <br>
+            {{ getNombreCompleto(producto) }} <br>
+            <small *ngIf="producto.codigo" class="text-muted">SKU: {{ producto.codigo }}</small>
+            <br *ngIf="producto.codigo">
+            <small *ngIf="tieneShopify && producto.descripcion" class="text-muted">
+                {{ getDescripcion(producto) }}
+                <a href="javascript:void(0);" 
+                   *ngIf="necesitaVerMas(producto)" 
+                   (click)="toggleDescripcion($event, producto)"
+                   class="text-primary ms-1">
+                    ver más
+                </a>
+                <a href="javascript:void(0);" 
+                   *ngIf="estaExpandida(producto)" 
+                   (click)="toggleDescripcion($event, producto)"
+                   class="text-primary ms-1">
+                    ver menos
+                </a>
+            </small>
+            <br>
             <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span> <span class="ms-3 badge bg-light text-muted">{{ producto.tipo }}</span></small>
         </span>
         <span class="col-2 text-center" id="stock">
             <!-- <small>Stock:</small> <br> -->
-            <span *ngIf="producto.tipo != 'Servicio'">{{ producto.inventarios | filter:'id_bodega':venta.id_bodega | sum:'stock' }} <small>en stock</small></span>
+            <span *ngIf="producto.tipo != 'Servicio'">
+                <span *ngIf="producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0">
+                    {{ producto.lotes | filter:'id_bodega':venta.id_bodega | sum:'stock' }} <small>en stock</small>
+                </span>
+                <span *ngIf="!producto.inventario_por_lotes || !producto.lotes || producto.lotes.length == 0">
+                    {{ producto.inventarios | filter:'id_bodega':venta.id_bodega | sum:'stock' }} <small>en stock</small>
+                </span>
+            </span>
         </span>
         <span class="col-2 text-end">
             <!-- <small>Precio:</small> <br> -->

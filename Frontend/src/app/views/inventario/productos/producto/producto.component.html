@@ -12,14 +12,19 @@
         </div>
     </div>
 </div>
-<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo =='Compuesto'">
+<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo !='Materia Prima'">
     <div class="col-lg-12">
         <app-producto-composicion [producto]='producto'></app-producto-composicion>
     </div>
 </div>
-<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo !='Servicio'">
+<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo !='Servicio' && !producto.inventario_por_lotes">
     <div class="col-lg-12">
         <app-producto-inventarios [producto]='producto'></app-producto-inventarios>
+    </div>
+</div>
+<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo !='Servicio' && producto.inventario_por_lotes">
+    <div class="col-lg-12">
+        <app-producto-lotes [producto]='producto'></app-producto-lotes>
     </div>
 </div>
 <div class="bg-white rounded p-3 mb-3" *ngIf="producto.id">

@@ -107,13 +107,54 @@
   <div class="modal-body">
     <form name="form" autocomplete="off" (ngSubmit)="editDetalle()">
         <div class="form-group col-sm-12">
+            <label for="">Producto</label>
+            <app-buscador-productos (selectProducto)="productoSelect($event)"></app-buscador-productos>
+            <div *ngIf="producto?.id" class="mt-2">
+                <span class="badge bg-info">{{ producto.nombre }}</span>
+                <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProducto()">
+                    <i class="fa fa-times"></i> Limpiar
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.origen_id">
+            <label for="lote_id">Lote Origen <span class="text-danger">*</span></label>
+            <ng-select name="lote_id" [(ngModel)]="detalle.lote_id" (change)="setLoteOrigen()" class="form-select p-0" [disabled]="loadingLotes" (open)="cargarLotes()" required>
+                <ng-option value="">Seleccionar lote</ng-option>
+                <ng-option *ngFor="let lote of lotes" [value]="lote.id">
+                    {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                    <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                        (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                    </span>
+                </ng-option>
+            </ng-select>
+            <small class="text-muted" *ngIf="loadingLotes">Cargando lotes...</small>
+        </div>
+        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.destino_id">
+            <label for="lote_id_destino">Lote Destino <small class="text-muted">(Opcional)</small></label>
+            <ng-select name="lote_id_destino" [(ngModel)]="detalle.lote_id_destino" class="form-select p-0" [disabled]="loadingLotesDestino" (open)="cargarLotesDestino()">
+                <ng-option value="">Crear nuevo lote</ng-option>
+                <ng-option *ngFor="let lote of lotesDestino" [value]="lote.id">
+                    {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                    <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                        (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                    </span>
+                </ng-option>
+            </ng-select>
+            <small class="text-muted" *ngIf="loadingLotesDestino">Cargando lotes...</small>
+            <small class="text-muted d-block mt-1">Si no selecciona un lote, se creará uno nuevo con el mismo número del lote origen</small>
+        </div>
+        <div class="form-group col-sm-12">
             <label for="cantidad">Cantidad:</label>
-            <input id="cantidad" type="number" min="1" class="form-control text-center" [(ngModel)]="detalle.cantidad" name="cantidad" focus="true">
+            <input id="cantidad" type="number" min="1" class="form-control text-center" [(ngModel)]="detalle.cantidad" (change)="validarStockLote()" name="cantidad" focus="true">
+            <small class="text-danger" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && detalle.lote_id && detalle.cantidad && !stockLoteSuficiente()">
+                Stock insuficiente en el lote seleccionado
+            </small>
         </div>
 
         <div class="row text-center">
             <div class="col-md-12">
-                <button type="submit" [disabled]="!detalle.cantidad" class="btn btn-primary btn-block">
+                <button type="submit" [disabled]="!detalle.cantidad || !detalle.producto_id || (producto?.inventario_por_lotes && isLotesActivo() && !detalle.lote_id)" class="btn btn-primary btn-block">
                     <span *ngIf="!loading">Guardar</span>
                     <span *ngIf="loading">Guardando...</span>
                 </button>
@@ -133,28 +174,62 @@
   <div class="modal-body">
     <form #form="ngForm" name="form" class="buscador" autocomplete="off" (ngSubmit)="agregarDetalle()">
         <div class="form-group col-sm-12">
+            <label for="">Producto</label>
             <app-buscador-productos (selectProducto)="productoSelect($event)"></app-buscador-productos>
+            <div *ngIf="producto?.id" class="mt-2">
+                <span class="badge bg-info">{{ producto.nombre }}</span>
+                <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProducto()">
+                    <i class="fa fa-times"></i> Limpiar
+                </button>
+            </div>
         </div>
 
+        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.origen_id">
+            <label for="lote_id">Lote Origen <span class="text-danger">*</span></label>
+            <ng-select name="lote_id" [(ngModel)]="detalle.lote_id" (change)="setLoteOrigen()" class="form-select p-0" [disabled]="loadingLotes" (open)="cargarLotes()" required>
+                <ng-option value="">Seleccionar lote</ng-option>
+                <ng-option *ngFor="let lote of lotes" [value]="lote.id">
+                    {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                    <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                        (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                    </span>
+                </ng-option>
+            </ng-select>
+            <small class="text-muted" *ngIf="loadingLotes">Cargando lotes...</small>
+        </div>
+        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.destino_id">
+            <label for="lote_id_destino">Lote Destino <small class="text-muted">(Opcional)</small></label>
+            <ng-select name="lote_id_destino" [(ngModel)]="detalle.lote_id_destino" class="form-select p-0" [disabled]="loadingLotesDestino" (open)="cargarLotesDestino()">
+                <ng-option value="">Crear nuevo lote</ng-option>
+                <ng-option *ngFor="let lote of lotesDestino" [value]="lote.id">
+                    {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                    <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                        (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                    </span>
+                </ng-option>
+            </ng-select>
+            <small class="text-muted" *ngIf="loadingLotesDestino">Cargando lotes...</small>
+            <small class="text-muted d-block mt-1">Si no selecciona un lote, se creará uno nuevo con el mismo número del lote origen</small>
+        </div>
         <div class="form-group col-sm-12">
             <label for="cantidad">Cantidad:</label>
-            <input id="cantidad" type="number" min="1" class="form-control text-center" [(ngModel)]="detalle.cantidad" name="cantidad" required>
+            <input id="cantidad" type="number" min="1" class="form-control text-center" [(ngModel)]="detalle.cantidad" (change)="validarStockLote()" name="cantidad" required>
+            <small class="text-danger" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && detalle.lote_id && detalle.cantidad && !stockLoteSuficiente()">
+                Stock insuficiente en el lote seleccionado
+            </small>
         </div>
 
         <div class="row" *ngIf="producto.id && detalle.cantidad">
-            <div class="form-group col-md-4 text-center"  *ngIf="producto.inventarios[traslado.origen_id - 1]">
-                <label for="precio">{{ producto.inventarios[traslado.origen_id - 1].nombre_bodega }}</label><br>
-                <p>{{ producto.inventarios[traslado.origen_id - 1].stock * 1 - detalle.cantidad }}</p>
+            <div class="form-group col-md-4 text-center" *ngIf="traslado.origen_id">
+                <label for="precio">{{ getNombreBodegaOrigen() }}</label><br>
+                <p>{{ getStockOrigenDespues() | number:'1.2' }}</p>
             </div>
             <div class="form-group col-md-4 text-center text-muted">
                 <i class="fa fa-random fa-2x"></i>
             </div>
-            <div class="form-group col-md-4 text-center" *ngIf="producto.inventarios[traslado.destino_id - 1]">
-                <label for="medida">{{ producto.inventarios[traslado.destino_id - 1].nombre_bodega }}</label><br>
-                <p>{{ producto.inventarios[traslado.destino_id - 1].stock * 1 + detalle.cantidad}}</p>
-            </div>
-            <div class="form-group col-md-4 text-center" *ngIf="!producto.inventarios[traslado.destino_id - 1]">
-                <p>No esta configurada la bodega</p>
+            <div class="form-group col-md-4 text-center" *ngIf="traslado.destino_id">
+                <label for="medida">{{ getNombreBodegaDestino() }}</label><br>
+                <p>{{ getStockDestinoDespues() | number:'1.2' }}</p>
             </div>
         </div>
 

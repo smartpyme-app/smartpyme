@@ -33,7 +33,10 @@ class ImpuestosController extends Controller
         $request->validate([
             'nombre'        => 'required|max:255',
             'porcentaje'        => 'required|numeric',
-            'id_empresa'       => 'required|numeric'
+            'id_empresa'       => 'required|numeric',
+            'aplica_ventas'    => 'sometimes|boolean',
+            'aplica_gastos'    => 'sometimes|boolean',
+            'aplica_compras'   => 'sometimes|boolean'
         ]);
 
         if($request->id)
@@ -41,8 +44,13 @@ class ImpuestosController extends Controller
         else
             $impuesto = new Impuesto;
 
+        // Convertir valores de checkboxes a booleanos
+        $data = $request->all();
+        $data['aplica_ventas'] = isset($data['aplica_ventas']) ? (bool)$data['aplica_ventas'] : false;
+        $data['aplica_gastos'] = isset($data['aplica_gastos']) ? (bool)$data['aplica_gastos'] : false;
+        $data['aplica_compras'] = isset($data['aplica_compras']) ? (bool)$data['aplica_compras'] : false;
         
-        $impuesto->fill($request->all());
+        $impuesto->fill($data);
         $impuesto->save();
 
         return Response()->json($impuesto, 200);

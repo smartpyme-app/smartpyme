@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Constants\FacturacionElectronica\FEConstants;
 use App\Models\Admin\Documento;
+use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle;
 use App\Models\MH\MHFactura;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Mail;
 class MHPruebasMasivasService
 {
     protected $baseVenta;
+    protected $baseGasto;
     protected $empresa;
     protected $sucursal;
     protected $ambiente;
@@ -36,6 +38,7 @@ class MHPruebasMasivasService
     protected $ventasCCFGeneradas = [];
     protected $notasCreditoRequeridas = 50;
     protected $notasDebitoRequeridas = 50;
+    protected $detallesOriginales;
 
     public function __construct() {}
 
@@ -99,7 +102,7 @@ class MHPruebasMasivasService
             ],
             'notasCredito' => [
                 'emitidas' => \App\Models\Ventas\Devoluciones\Devolucion::where('tipo_dte', FEConstants::TIPO_DTE_NOTA_DE_CREDITO)
-                // ->where('prueba_masiva', true)
+                    // ->where('prueba_masiva', true)
                     ->where('sello_mh', '!=', null)
                     ->where('dte', '!=', null)
                     ->where('id_empresa', $this->empresa->id)
@@ -108,7 +111,7 @@ class MHPruebasMasivasService
             ],
             'notasDebito' => [
                 'emitidas' => \App\Models\Ventas\Devoluciones\Devolucion::where('tipo_dte', FEConstants::TIPO_DTE_NOTA_DE_DEBITO)
-                // ->where('prueba_masiva', true)
+                    // ->where('prueba_masiva', true)
                     ->where('sello_mh', '!=', null)
                     ->where('dte', '!=', null)
                     ->where('id_empresa', $this->empresa->id)
@@ -124,15 +127,15 @@ class MHPruebasMasivasService
                     ->count(),
                 'requeridas' => 90
             ],
-            // 'sujetoExcluido' => [
-            //     'emitidas' => Venta::where('tipo_dte', FEConstants::TIPO_DTE_FACTURA_DE_SUJETO_EXCLUIDO)
-            //         // ->where('prueba_masiva', true)
-            //         ->where('sello_mh', '!=', null)
-            //         ->where('dte', '!=', null)
-            //         ->where('id_empresa', $this->empresa->id)
-            //         ->count(),
-            //     'requeridas' => 25
-            // ],
+            'sujetoExcluido' => [
+                'emitidas' => \App\Models\Compras\Gastos\Gasto::where('tipo_dte', FEConstants::TIPO_DTE_FACTURA_DE_SUJETO_EXCLUIDO)
+                    // ->where('prueba_masiva', true)
+                    ->where('sello_mh', '!=', null)
+                    ->where('dte', '!=', null)
+                    ->where('id_empresa', $this->empresa->id)
+                    ->count(),
+                'requeridas' => 25
+            ],
         ];
 
         return $stats;
@@ -154,30 +157,61 @@ class MHPruebasMasivasService
             }
 
             if ($idDocumentoBase) {
-                $baseVentaExiste = Venta::where('id', $idDocumentoBase)
-                    ->where('id_empresa', $this->empresa->id)
-                    ->exists();
+                if ($tipo === '14') {
+                    // Para sujeto excluido, validar en gastos
+                    $baseGastoExiste = \App\Models\Compras\Gastos\Gasto::where('id', $idDocumentoBase)
+                        ->where('id_empresa', $this->empresa->id)
+                        ->where('tipo_dte', '14')
+                        ->where('sello_mh', '!=', null)
+                        ->exists();
 
-                if (!$baseVentaExiste) {
-                    return [
-                        'success' => false,
-                        'message' => 'No se encontró el documento base especificado'
-                    ];
+                    if (!$baseGastoExiste) {
+                        return [
+                            'success' => false,
+                            'message' => 'No se encontró el gasto de sujeto excluido especificado'
+                        ];
+                    }
+                } else {
+                    // Para otros tipos, validar en ventas
+                    $baseVentaExiste = Venta::where('id', $idDocumentoBase)
+                        ->where('id_empresa', $this->empresa->id)
+                        ->exists();
+
+                    if (!$baseVentaExiste) {
+                        return [
+                            'success' => false,
+                            'message' => 'No se encontró el documento base especificado'
+                        ];
+                    }
                 }
             } else {
+                if ($tipo === '14') {
+                    // Para sujeto excluido, buscar gastos
+                    $baseGastoExiste = \App\Models\Compras\Gastos\Gasto::where('tipo_dte', '14')
+                        ->where('sello_mh', '!=', null)
+                        ->where('id_empresa', $this->empresa->id)
+                        ->exists();
 
-                $tipoBase = ($tipo === '05' || $tipo === '06') ? '03' : $tipo;
-                
-                $baseVentaExiste = Venta::where('tipo_dte', $tipoBase)
-                    ->where('sello_mh', '!=', null)
-                    ->where('id_empresa', $this->empresa->id)
-                    ->exists();
+                    if (!$baseGastoExiste) {
+                        return [
+                            'success' => false,
+                            'message' => 'No se encontraron gastos de sujeto excluido para generar las pruebas'
+                        ];
+                    }
+                } else {
+                    $tipoBase = ($tipo === '05' || $tipo === '06') ? '03' : $tipo;
 
-                if (!$baseVentaExiste) {
-                    return [
-                        'success' => false,
-                        'message' => 'No se encontraron documentos base del tipo seleccionado para generar las pruebas'
-                    ];
+                    $baseVentaExiste = Venta::where('tipo_dte', $tipoBase)
+                        ->where('sello_mh', '!=', null)
+                        ->where('id_empresa', $this->empresa->id)
+                        ->exists();
+
+                    if (!$baseVentaExiste) {
+                        return [
+                            'success' => false,
+                            'message' => 'No se encontraron documentos base del tipo seleccionado para generar las pruebas'
+                        ];
+                    }
                 }
             }
 
@@ -233,29 +267,54 @@ class MHPruebasMasivasService
 
             // Obtener documento base
             if ($idDocumentoBase) {
-                $this->baseVenta = Venta::with(['detalles', 'cliente', 'empresa', 'sucursal', 'documento'])
-                    ->findOrFail($idDocumentoBase);
+                if ($tipo === '14') {
+                    // Para sujeto excluido, buscar en gastos
+                    $this->baseGasto = \App\Models\Compras\Gastos\Gasto::with(['proveedor', 'empresa', 'sucursal'])
+                        ->findOrFail($idDocumentoBase);
+                } else {
+                    $this->baseVenta = Venta::with(['detalles', 'cliente', 'empresa', 'sucursal', 'documento'])
+                        ->findOrFail($idDocumentoBase);
+                }
             } else {
+                if ($tipo === '14') {
+                    // Para sujeto excluido, buscar gasto base
+                    $this->baseGasto = \App\Models\Compras\Gastos\Gasto::with(['proveedor', 'empresa', 'sucursal'])
+                        ->where('tipo_dte', '14')
+                        ->where('sello_mh', '!=', null)
+                        ->where('id_empresa', $this->empresa->id)
+                        ->latest()
+                        ->first();
+                } else {
+                    $tipoBase = ($tipo === '05' || $tipo === '06') ? '03' : $tipo;
 
-                $tipoBase = ($tipo === '05' || $tipo === '06') ? '03' : $tipo;
-    
-                $this->baseVenta = Venta::with(['detalles', 'cliente', 'empresa', 'sucursal', 'documento'])
-                    ->where('tipo_dte', $tipoBase)
-                    ->where('sello_mh', '!=', null)
-                    ->where('id_empresa', $this->empresa->id)
-                    ->latest()
-                    ->first();
+                    $this->baseVenta = Venta::with(['detalles', 'cliente', 'empresa', 'sucursal', 'documento'])
+                        ->where('tipo_dte', $tipoBase)
+                        ->where('sello_mh', '!=', null)
+                        ->where('id_empresa', $this->empresa->id)
+                        ->latest()
+                        ->first();
+                }
             }
 
-            if (!$this->baseVenta) {
-                return [
-                    'success' => false,
-                    'message' => 'No se encontró un documento base para generar las pruebas'
-                ];
+            if ($tipo === '14') {
+                if (!$this->baseGasto) {
+                    return [
+                        'success' => false,
+                        'message' => 'No se encontró un gasto base para generar las pruebas de sujeto excluido'
+                    ];
+                }
+                $this->empresa = $this->baseGasto->empresa;
+                $this->sucursal = $this->baseGasto->sucursal;
+            } else {
+                if (!$this->baseVenta) {
+                    return [
+                        'success' => false,
+                        'message' => 'No se encontró un documento base para generar las pruebas'
+                    ];
+                }
+                $this->empresa = $this->baseVenta->empresa;
+                $this->sucursal = $this->baseVenta->sucursal;
             }
-
-            $this->empresa = $this->baseVenta->empresa;
-            $this->sucursal = $this->baseVenta->sucursal;
 
             $resultados = [
                 'exitosos' => 0,
@@ -264,20 +323,19 @@ class MHPruebasMasivasService
             ];
 
             // LÓGICA PRINCIPAL: Si es CCF, también generar notas automáticamente
-            if ($tipo === '03') { 
+            if ($tipo === '03') {
                 // CCF: genera CCF + NC + ND automáticamente
                 $resultados = $this->procesarCCFConNotas($cantidad, $correlativoInicial, $resultados);
-            } 
-
-            elseif ($tipo === '05') {
+            } elseif ($tipo === '05') {
                 // Solo NC: genera CCF + NC únicamente  
                 $resultados = $this->procesarNotasCredito($cantidad, $correlativoInicial, $resultados);
-            }
-            elseif ($tipo === '06') {
+            } elseif ($tipo === '06') {
                 // Solo ND: genera CCF + ND únicamente
                 $resultados = $this->procesarNotasDebito($cantidad, $correlativoInicial, $resultados);
-            }
-            else {
+            } elseif ($tipo === '14') {
+                // Sujeto Excluido: genera gastos de sujeto excluido
+                $resultados = $this->procesarSujetoExcluido($cantidad, $correlativoInicial, $resultados);
+            } else {
                 // Otros documentos (facturas, exportación)
                 $resultados = $this->procesarDocumentosNormales($tipo, $cantidad, $correlativoInicial, $resultados);
             }
@@ -290,9 +348,14 @@ class MHPruebasMasivasService
             // }
 
             // Restaurar correlativo y obtener estadísticas
-            $documento = $this->baseVenta->documento;
-            $correlativoOriginal = $documento->correlativo;
-            $this->restaurarCorrelativo($documento, $correlativoOriginal);
+            if ($tipo === '14') {
+                // Para gastos no hay correlativo que restaurar
+                // Los gastos usan referencia en lugar de correlativo
+            } else {
+                $documento = $this->baseVenta->documento;
+                $correlativoOriginal = $documento->correlativo;
+                $this->restaurarCorrelativo($documento, $correlativoOriginal);
+            }
 
             DB::commit();
 
@@ -310,7 +373,6 @@ class MHPruebasMasivasService
                 'resultados' => $resultados,
                 'stats' => $estadisticas
             ];
-
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Error en pruebas masivas: ' . $e->getMessage());
@@ -323,6 +385,84 @@ class MHPruebasMasivasService
                 'success' => false,
                 'message' => 'Error en el proceso: ' . $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * NUEVA FUNCIÓN: Procesar Sujeto Excluido
+     */
+    protected function procesarSujetoExcluido($cantidad, $correlativoInicial, $resultados)
+    {
+        DB::beginTransaction();
+
+        try {
+            // Obtener último número de referencia de gastos
+            $ultimaReferencia = \App\Models\Compras\Gastos\Gasto::where('tipo_dte', '14')
+                ->where('id_empresa', $this->empresa->id)
+                ->max('referencia');
+
+            $startReferencia = $correlativoInicial !== null ?
+                max($correlativoInicial, $ultimaReferencia + 1) :
+                max($this->baseGasto->referencia, $ultimaReferencia + 1);
+
+            $totalLotes = ceil($cantidad / $this->batchSize);
+            $token = null;
+
+            // Procesar gastos en lotes
+            for ($lote = 0; $lote < $totalLotes; $lote++) {
+                $tamanoLote = min($this->batchSize, $cantidad - ($lote * $this->batchSize));
+
+                if ($tamanoLote <= 0) break;
+
+                for ($i = 0; $i < $tamanoLote; $i++) {
+                    $newReferencia = $startReferencia + ($lote * $this->batchSize) + $i;
+
+                    try {
+                        // Generar gasto de sujeto excluido
+                        $gastoResult = $this->generarYEmitirGasto($newReferencia, $token);
+
+                        if ($gastoResult['success']) {
+                            $resultados['exitosos']++;
+                            $resultados['detalles'][] = [
+                                'correlativo' => $newReferencia,
+                                'tipo' => 'Sujeto Excluido',
+                                'status' => 'Éxito',
+                                'message' => 'Gasto de sujeto excluido emitido correctamente'
+                            ];
+
+                            if (isset($gastoResult['token'])) {
+                                $token = $gastoResult['token'];
+                            }
+                        } else {
+                            $resultados['fallidos']++;
+                            $resultados['detalles'][] = [
+                                'correlativo' => $newReferencia,
+                                'tipo' => 'Sujeto Excluido',
+                                'status' => 'Error',
+                                'message' => $gastoResult['message']
+                            ];
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Error en Sujeto Excluido: ' . $e->getMessage());
+                        $resultados['fallidos']++;
+                        $resultados['detalles'][] = [
+                            'correlativo' => $newReferencia,
+                            'tipo' => 'Sujeto Excluido',
+                            'status' => 'Error',
+                            'message' => 'Excepción: ' . $e->getMessage()
+                        ];
+                    }
+                }
+
+                if ($lote < $totalLotes - 1) {
+                    sleep(1);
+                }
+                gc_collect_cycles();
+            }
+
+            return $resultados;
+        } catch (\Exception $e) {
+            throw $e;
         }
     }
 
@@ -342,8 +482,8 @@ class MHPruebasMasivasService
                 ->where('id_documento', $this->baseVenta->id_documento)
                 ->max('correlativo');
 
-            $startCorrelativo = $correlativoInicial !== null ? 
-                max($correlativoInicial, $ultimoCorrelativo + 1) : 
+            $startCorrelativo = $correlativoInicial !== null ?
+                max($correlativoInicial, $ultimoCorrelativo + 1) :
                 max($correlativoOriginal, $ultimoCorrelativo + 1);
 
             $totalLotes = ceil($cantidad / $this->batchSize);
@@ -361,7 +501,7 @@ class MHPruebasMasivasService
                     try {
                         // Generar CCF
                         $ccfResult = $this->generarYEmitirDocumento('03', $newCorrelativo, $token);
-                        
+
                         if ($ccfResult['success']) {
                             $resultados['exitosos']++;
                             $resultados['detalles'][] = [
@@ -386,7 +526,6 @@ class MHPruebasMasivasService
                                 'message' => $ccfResult['message']
                             ];
                         }
-
                     } catch (\Exception $e) {
                         Log::error('Error en CCF: ' . $e->getMessage());
                         $resultados['fallidos']++;
@@ -409,7 +548,6 @@ class MHPruebasMasivasService
             $this->generarNotasAutomaticas($resultados, $token);
 
             return $resultados;
-
         } catch (\Exception $e) {
             throw $e;
         }
@@ -418,27 +556,27 @@ class MHPruebasMasivasService
     protected function procesarNotasCredito($cantidad, $correlativoInicial, $resultados)
     {
         DB::beginTransaction();
-    
+
         try {
             $documento = $this->baseVenta->documento;
             $correlativoOriginal = $documento->correlativo;
-    
+
             // Obtener último correlativo de CCF para generar nuevos CCF
             $ultimoCorrelativoCCF = Venta::where('tipo_dte', '03')
                 ->where('id_empresa', $this->empresa->id)
                 ->where('id_documento', $this->baseVenta->id_documento)
                 ->max('correlativo');
-    
+
             // Si hay correlativo inicial, usarlo para CCF, sino continuar después del último
-            $startCorrelativoCCF = $correlativoInicial !== null ? 
-                $correlativoInicial : 
+            $startCorrelativoCCF = $correlativoInicial !== null ?
+                $correlativoInicial :
                 max($correlativoOriginal, $ultimoCorrelativoCCF + 1);
-    
+
             // Obtener último correlativo de Notas de Crédito
             $ultimoCorrelativoNC = \App\Models\Ventas\Devoluciones\Devolucion::where('tipo_dte', '05')
                 ->where('id_empresa', $this->empresa->id)
                 ->max('correlativo');
-    
+
             // Si hay correlativo inicial, las NC empiezan después del último CCF que se va a generar
             // Si no hay correlativo inicial, las NC continúan después del último correlativo NC existente
             if ($correlativoInicial !== null) {
@@ -447,24 +585,24 @@ class MHPruebasMasivasService
             } else {
                 $startCorrelativoNC = ($ultimoCorrelativoNC ?? 0) + 1;
             }
-    
+
             $totalLotes = ceil($cantidad / $this->batchSize);
             $token = null;
-    
+
             // Generar CCF y NC en lotes
             for ($lote = 0; $lote < $totalLotes; $lote++) {
                 $tamanoLote = min($this->batchSize, $cantidad - ($lote * $this->batchSize));
                 if ($tamanoLote <= 0) break;
-    
+
                 for ($i = 0; $i < $tamanoLote; $i++) {
                     $indiceProceso = ($lote * $this->batchSize) + $i;
                     $newCorrelativoCCF = $startCorrelativoCCF + $indiceProceso;
                     $newCorrelativoNC = $startCorrelativoNC + $indiceProceso;
-    
+
                     try {
                         // Generar CCF
                         $ccfResult = $this->generarYEmitirDocumento('03', $newCorrelativoCCF, $token);
-                        
+
                         if ($ccfResult['success']) {
                             $resultados['exitosos']++;
                             $resultados['detalles'][] = [
@@ -473,7 +611,7 @@ class MHPruebasMasivasService
                                 'status' => 'Éxito',
                                 'message' => 'CCF emitido correctamente'
                             ];
-    
+
                             // Generar Nota de Crédito con correlativo específico y secuencial
                             $notaCreditoResult = $this->generarNotaCredito($ccfResult['venta'], $token, $newCorrelativoNC);
                             if ($notaCreditoResult['success']) {
@@ -493,7 +631,7 @@ class MHPruebasMasivasService
                                     'message' => $notaCreditoResult['message']
                                 ];
                             }
-    
+
                             if (isset($ccfResult['token'])) {
                                 $token = $ccfResult['token'];
                             }
@@ -506,7 +644,6 @@ class MHPruebasMasivasService
                                 'message' => $ccfResult['message']
                             ];
                         }
-    
                     } catch (\Exception $e) {
                         Log::error('Error en NC: ' . $e->getMessage());
                         $resultados['fallidos']++;
@@ -518,44 +655,43 @@ class MHPruebasMasivasService
                         ];
                     }
                 }
-    
+
                 if ($lote < $totalLotes - 1) {
                     sleep(1);
                 }
                 gc_collect_cycles();
             }
-    
+
             return $resultados;
-    
         } catch (\Exception $e) {
             throw $e;
         }
     }
-    
+
     protected function procesarNotasDebito($cantidad, $correlativoInicial, $resultados)
     {
         DB::beginTransaction();
-    
+
         try {
             $documento = $this->baseVenta->documento;
             $correlativoOriginal = $documento->correlativo;
-    
+
             // Obtener último correlativo de CCF para generar nuevos CCF
             $ultimoCorrelativoCCF = Venta::where('tipo_dte', '03')
                 ->where('id_empresa', $this->empresa->id)
                 ->where('id_documento', $this->baseVenta->id_documento)
                 ->max('correlativo');
-    
+
             // Si hay correlativo inicial, usarlo para CCF, sino continuar después del último
-            $startCorrelativoCCF = $correlativoInicial !== null ? 
-                $correlativoInicial : 
+            $startCorrelativoCCF = $correlativoInicial !== null ?
+                $correlativoInicial :
                 max($correlativoOriginal, $ultimoCorrelativoCCF + 1);
-    
+
             // Obtener último correlativo de Notas de Débito
             $ultimoCorrelativoND = \App\Models\Ventas\Devoluciones\Devolucion::where('tipo_dte', '06')
                 ->where('id_empresa', $this->empresa->id)
                 ->max('correlativo');
-    
+
             // Si hay correlativo inicial, las ND empiezan después del último CCF que se va a generar
             // Si no hay correlativo inicial, las ND continúan después del último correlativo ND existente
             if ($correlativoInicial !== null) {
@@ -564,24 +700,24 @@ class MHPruebasMasivasService
             } else {
                 $startCorrelativoND = ($ultimoCorrelativoND ?? 0) + 1;
             }
-    
+
             $totalLotes = ceil($cantidad / $this->batchSize);
             $token = null;
-    
+
             // Generar CCF y ND en lotes
             for ($lote = 0; $lote < $totalLotes; $lote++) {
                 $tamanoLote = min($this->batchSize, $cantidad - ($lote * $this->batchSize));
                 if ($tamanoLote <= 0) break;
-    
+
                 for ($i = 0; $i < $tamanoLote; $i++) {
                     $indiceProceso = ($lote * $this->batchSize) + $i;
                     $newCorrelativoCCF = $startCorrelativoCCF + $indiceProceso;
                     $newCorrelativoND = $startCorrelativoND + $indiceProceso;
-    
+
                     try {
                         // Generar CCF
                         $ccfResult = $this->generarYEmitirDocumento('03', $newCorrelativoCCF, $token);
-                        
+
                         if ($ccfResult['success']) {
                             $resultados['exitosos']++;
                             $resultados['detalles'][] = [
@@ -590,7 +726,7 @@ class MHPruebasMasivasService
                                 'status' => 'Éxito',
                                 'message' => 'CCF emitido correctamente'
                             ];
-    
+
                             // Generar Nota de Débito con correlativo específico y secuencial
                             $notaDebitoResult = $this->generarNotaDebito($ccfResult['venta'], $token, $newCorrelativoND);
                             if ($notaDebitoResult['success']) {
@@ -610,7 +746,7 @@ class MHPruebasMasivasService
                                     'message' => $notaDebitoResult['message']
                                 ];
                             }
-    
+
                             if (isset($ccfResult['token'])) {
                                 $token = $ccfResult['token'];
                             }
@@ -623,7 +759,6 @@ class MHPruebasMasivasService
                                 'message' => $ccfResult['message']
                             ];
                         }
-    
                     } catch (\Exception $e) {
                         Log::error('Error en ND: ' . $e->getMessage());
                         $resultados['fallidos']++;
@@ -635,21 +770,20 @@ class MHPruebasMasivasService
                         ];
                     }
                 }
-    
+
                 if ($lote < $totalLotes - 1) {
                     sleep(1);
                 }
                 gc_collect_cycles();
             }
-    
+
             return $resultados;
-    
         } catch (\Exception $e) {
             throw $e;
         }
     }
 
-     /**
+    /**
      * NUEVA FUNCIÓN: Generar notas automáticamente a partir de CCF
      */
     protected function generarNotasAutomaticas(&$resultados, &$token)
@@ -658,10 +792,10 @@ class MHPruebasMasivasService
         $ultimoCorrelativoCCF = Venta::where('tipo_dte', '03')
             ->where('id_empresa', $this->empresa->id)
             ->max('correlativo');
-        
+
         $inicioNC = $ultimoCorrelativoCCF + 1;
         $inicioND = $inicioNC + count($this->ventasCCFGeneradas);
-        
+
         $contadorNC = 0;
         $contadorND = 0;
 
@@ -716,7 +850,6 @@ class MHPruebasMasivasService
                     ];
                 }
                 $contadorND++;
-
             } catch (\Exception $e) {
                 Log::error('Error generando notas automáticas: ' . $e->getMessage());
                 $resultados['fallidos'] += 2;
@@ -724,7 +857,7 @@ class MHPruebasMasivasService
         }
     }
 
-     /**
+    /**
      * NUEVA FUNCIÓN: Generar nota de crédito
      */
     protected function generarNotaCredito($ventaBase, &$token, $correlativoEspecifico = null)
@@ -733,7 +866,7 @@ class MHPruebasMasivasService
         try {
             // Crear una nueva devolución (nota de crédito)
             $devolucion = new \App\Models\Ventas\Devoluciones\Devolucion();
-            
+
             // Obtener el último correlativo de notas de crédito
             $ultimoCorrelativoNC = \App\Models\Ventas\Devoluciones\Devolucion::where('tipo_dte', '05')
                 ->where('id_empresa', $this->empresa->id)
@@ -793,12 +926,11 @@ class MHPruebasMasivasService
                     ->update([
                         'dte' => $dte,
                         'sello_mh' => $resultado['selloRecibido'] ?? null,
-                        'prueba_masiva' => true  
+                        'prueba_masiva' => true
                     ]);
             }
 
             return $resultado;
-
         } catch (\Exception $e) {
             Log::error('Error generando nota de crédito: ' . $e->getMessage());
             return [
@@ -808,7 +940,7 @@ class MHPruebasMasivasService
         }
     }
 
-        /**
+    /**
      * NUEVA FUNCIÓN: Generar nota de débito
      */
     protected function generarNotaDebito($ventaBase, &$token, $correlativoEspecifico = null)
@@ -819,11 +951,11 @@ class MHPruebasMasivasService
                 'venta_base_id' => $ventaBase->id,
                 'empresa_id' => $this->empresa->id
             ]);
-    
-            
+
+
             // Crear una nueva devolución (nota de débito)
             $devolucion = new \App\Models\Ventas\Devoluciones\Devolucion();
-            
+
             // Obtener el último correlativo de notas de débito
             $ultimoCorrelativoND = \App\Models\Ventas\Devoluciones\Devolucion::where('tipo_dte', '06')
                 ->where('id_empresa', $this->empresa->id)
@@ -888,7 +1020,6 @@ class MHPruebasMasivasService
             }
 
             return $resultado;
-
         } catch (\Exception $e) {
             Log::error('Error generando nota de débito: ' . $e->getMessage());
             return [
@@ -898,7 +1029,7 @@ class MHPruebasMasivasService
         }
     }
 
-     /**
+    /**
      * NUEVA FUNCIÓN: Generar DTE para nota de crédito
      */
     protected function generarDTENotaCredito($devolucion)
@@ -914,6 +1045,15 @@ class MHPruebasMasivasService
     {
         $mh = new MHNotaDebito();
         return $mh->generarDTE($devolucion);
+    }
+
+    /**
+     * NUEVA FUNCIÓN: Generar DTE para gasto de sujeto excluido
+     */
+    protected function generarDTEGasto($gasto)
+    {
+        $mh = new MHSujetoExcluidoGasto();
+        return $mh->generarDTE($gasto);
     }
 
     /**
@@ -933,8 +1073,8 @@ class MHPruebasMasivasService
                 ->where('id_documento', $this->baseVenta->id_documento)
                 ->max('correlativo');
 
-            $startCorrelativo = $correlativoInicial !== null ? 
-                max($correlativoInicial, $ultimoCorrelativo + 1) : 
+            $startCorrelativo = $correlativoInicial !== null ?
+                max($correlativoInicial, $ultimoCorrelativo + 1) :
                 max($correlativoOriginal, $ultimoCorrelativo + 1);
 
             $totalLotes = ceil($cantidad / $this->batchSize);
@@ -950,7 +1090,7 @@ class MHPruebasMasivasService
 
                     try {
                         $resultado = $this->generarYEmitirDocumento($tipo, $newCorrelativo, $token);
-                        
+
                         if ($resultado['success']) {
                             $resultados['exitosos']++;
                             $resultados['detalles'][] = [
@@ -970,7 +1110,6 @@ class MHPruebasMasivasService
                                 'message' => $resultado['message']
                             ];
                         }
-
                     } catch (\Exception $e) {
                         Log::error('Error en documento normal: ' . $e->getMessage());
                         $resultados['fallidos']++;
@@ -989,10 +1128,68 @@ class MHPruebasMasivasService
             }
 
             return $resultados;
-
         } catch (\Exception $e) {
             throw $e;
         }
+    }
+
+    /**
+     * NUEVA FUNCIÓN: Generar y emitir gasto de sujeto excluido
+     */
+    protected function generarYEmitirGasto($referencia, &$token)
+    {
+        // Crear nuevo gasto
+        $nuevoGasto = new \App\Models\Compras\Gastos\Gasto();
+        $nuevoGasto->fill([
+            'tipo_dte' => '14',
+            'referencia' => $referencia,
+            'numero_control' => 'DTE-14-' . $this->sucursal->cod_estable_mh . 'P001-' . str_pad($referencia, 15, '0', STR_PAD_LEFT),
+            'codigo_generacion' => strtoupper(Uuid::uuid4()->toString()),
+            'fecha' => Carbon::now()->format('Y-m-d'),
+            'fecha_pago' => Carbon::now()->format('Y-m-d'),
+            'prueba_masiva' => true,
+            'estado' => 'Pendiente',
+            'concepto' => 'Gasto de prueba generado automáticamente',
+            'sub_total' => $this->baseGasto->sub_total,
+            'descuento' => $this->baseGasto->descuento,
+            'iva' => $this->baseGasto->iva,
+            'iva_retenido' => $this->baseGasto->iva_retenido,
+            'renta_retenida' => $this->baseGasto->renta_retenida,
+            'total' => $this->baseGasto->total,
+            'forma_pago' => $this->baseGasto->forma_pago,
+            'id_proveedor' => $this->baseGasto->id_proveedor,
+            'id_usuario' => $this->baseGasto->id_usuario,
+            'id_empresa' => $this->empresa->id,
+            'id_sucursal' => $this->sucursal->id,
+            'codigo' => $this->baseGasto->codigo,
+            'nombre_proveedor' => $this->baseGasto->nombre_proveedor,
+            'tipo_documento' => $this->baseGasto->tipo_documento,
+            'num_identificacion' => $this->baseGasto->num_identificacion
+        ]);
+
+        $nuevoGasto->save();
+
+        // Recargar con relaciones
+        $nuevoGasto = \App\Models\Compras\Gastos\Gasto::with(['proveedor', 'empresa', 'sucursal'])
+            ->find($nuevoGasto->id);
+
+        // Generar el DTE
+        $dte = $this->generarDTEGasto($nuevoGasto);
+
+        // Firmar y emitir DTE
+        $resultado = $this->firmarYEmitirDTE($nuevoGasto, $dte, $token);
+
+        if ($resultado['success']) {
+            // Actualizar el gasto con los datos del DTE
+            \App\Models\Compras\Gastos\Gasto::where('id', $nuevoGasto->id)
+                ->update([
+                    'dte' => $dte,
+                    'sello_mh' => $resultado['selloRecibido'] ?? null,
+                    'estado' => 'Prueba'
+                ]);
+        }
+
+        return $resultado;
     }
 
     /**
@@ -1077,13 +1274,29 @@ class MHPruebasMasivasService
     {
         try {
             $usuario = \App\Models\User::find($this->userId);
+            $tipoTexto = $this->getTipoTexto($tipo);
+
+            // Log detallado de los resultados
+            Log::info('=== PRUEBAS MASIVAS COMPLETADAS ===', [
+                'usuario_id' => $this->userId,
+                'usuario_email' => $usuario ? $usuario->email : null,
+                'empresa_id' => $this->empresaId,
+                'tipo' => $tipo,
+                'tipo_texto' => $tipoTexto,
+                'cantidad_solicitada' => $cantidad,
+                'resultados' => [
+                    'exitosos' => $resultados['exitosos'] ?? 0,
+                    'fallidos' => $resultados['fallidos'] ?? 0,
+                    'total_procesados' => ($resultados['exitosos'] ?? 0) + ($resultados['fallidos'] ?? 0)
+                ],
+                'detalles' => $resultados['detalles'] ?? [],
+                'estadisticas' => $estadisticas
+            ]);
 
             if ($usuario && $usuario->email) {
-                $tipoTexto = $this->getTipoTexto($tipo);
-
                 Mail::send('mails.pruebas-masivas-completadas', [
                     'resultado' => $resultados,
-                    'tipo' => $tipo,      
+                    'tipo' => $tipo,
                     'tipoDTE' => $tipo,
                     'tipoTexto' => $tipoTexto,
                     'cantidad' => $cantidad,
@@ -1093,9 +1306,20 @@ class MHPruebasMasivasService
                     $mensaje->to($usuario->email, $usuario->name)
                         ->subject('Pruebas Masivas MH Completadas: ' . $tipoTexto);
                 });
+
+                Log::info('Correo de notificación enviado exitosamente', [
+                    'usuario_email' => $usuario->email,
+                    'tipo' => $tipoTexto
+                ]);
+            } else {
+                Log::warning('No se pudo enviar correo: usuario o email no encontrado', [
+                    'usuario_id' => $this->userId
+                ]);
             }
         } catch (\Exception $e) {
-            Log::error('Error al enviar correo de notificación: ' . $e->getMessage());
+            Log::error('Error al enviar correo de notificación: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
         }
     }
 
@@ -1103,24 +1327,47 @@ class MHPruebasMasivasService
     {
         try {
             $usuario = \App\Models\User::find($this->userId);
+            $tipoTexto = $this->getTipoTexto($tipo);
+
+            // Log detallado del error
+            Log::error('=== ERROR EN PRUEBAS MASIVAS ===', [
+                'usuario_id' => $this->userId,
+                'usuario_email' => $usuario ? $usuario->email : null,
+                'empresa_id' => $this->empresaId,
+                'tipo' => $tipo,
+                'tipo_texto' => $tipoTexto,
+                'cantidad_solicitada' => $cantidad,
+                'error' => $mensaje,
+                'fecha' => now()->toDateTimeString()
+            ]);
 
             if ($usuario && $usuario->email) {
-                $tipoTexto = $this->getTipoTexto($tipo);
-
                 Mail::send('mails.pruebas-masivas-error', [
                     'error' => $mensaje,
-                    'tipo' => $tipo,        
+                    'tipo' => $tipo,
                     'tipoDTE' => $tipo,
                     'tipoTexto' => $tipoTexto,
                     'cantidad' => $cantidad
                 ], function ($mensaje) use ($usuario, $tipoTexto) {
-                    // $mensaje->to("joseespana94@gmail.com", $usuario->name)
+                    // $mensaje->to("jose.e@smartpyme.sv", $usuario->name)
                     $mensaje->to($usuario->email, $usuario->name)
                         ->subject('Error en Pruebas Masivas MH: ' . $tipoTexto);
                 });
+
+                Log::info('Correo de error enviado exitosamente', [
+                    'usuario_email' => $usuario->email,
+                    'tipo' => $tipoTexto
+                ]);
+            } else {
+                Log::warning('No se pudo enviar correo de error: usuario o email no encontrado', [
+                    'usuario_id' => $this->userId
+                ]);
             }
         } catch (\Exception $e) {
-            Log::error('Error al enviar correo de notificación de error: ' . $e->getMessage());
+            Log::error('Error al enviar correo de notificación de error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'error_original' => $mensaje
+            ]);
         }
     }
 
@@ -1132,7 +1379,7 @@ class MHPruebasMasivasService
             '05' => 'Notas de Crédito',
             '06' => 'Notas de Débito',
             '11' => 'Facturas de Exportación',
-            '14' => 'Facturas Sujeto Excluido'
+            '14' => 'Facturas de Sujeto Excluido'
         ];
 
         return $tipos[$tipo] ?? 'Documento Tipo ' . $tipo;
@@ -1297,7 +1544,7 @@ class MHPruebasMasivasService
                         'correlativo' => $venta->correlativo,
                         'dte_completo' => $resultado
                     ]);
-                    
+
                     break;
 
                 case '14':
@@ -1308,7 +1555,7 @@ class MHPruebasMasivasService
                         'correlativo' => $venta->correlativo,
                         'dte_completo' => $resultado
                     ]);
-                    
+
                     break;
                 case '05':
                     $mh = new MHNotaCredito();
@@ -1318,7 +1565,7 @@ class MHPruebasMasivasService
                         'correlativo' => $venta->correlativo,
                         'dte_completo' => $resultado
                     ]);
-                    
+
                     break;
                 case '06':
                     $mh = new MHNotaDebito();
@@ -1328,7 +1575,7 @@ class MHPruebasMasivasService
                         'correlativo' => $venta->correlativo,
                         'dte_completo' => $resultado
                     ]);
-                    
+
                     break;
                 default:
                     throw new \Exception("Tipo de documento no soportado para pruebas masivas: {$venta->tipo_dte}");
@@ -1509,7 +1756,7 @@ class MHPruebasMasivasService
         return false;
     }
 
-   public function eliminarPruebasMasivas($empresaId = null)
+    public function eliminarPruebasMasivas($empresaId = null)
     {
         try {
             $idEmpresa = $empresaId ?? $this->empresaId;
@@ -1538,6 +1785,16 @@ class MHPruebasMasivasService
             foreach ($devolucionesToDelete as $devolucion) {
                 $devolucion->detalles()->delete();
                 $devolucion->delete();
+                $count++;
+            }
+
+            // NUEVO: Eliminar gastos marcados como pruebas masivas
+            $gastosToDelete = Gasto::where('prueba_masiva', true)
+                ->where('id_empresa', $idEmpresa)
+                ->get();
+
+            foreach ($gastosToDelete as $gasto) {
+                $gasto->delete();
                 $count++;
             }
 

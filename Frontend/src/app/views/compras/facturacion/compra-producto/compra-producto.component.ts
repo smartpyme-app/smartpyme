@@ -29,7 +29,9 @@ export class CompraProductoComponent implements OnInit {
     public buscador:any = '';
     public loading:boolean = false;
     public search:any = '';
-    // private apiService: ApiService, private alertService: AlertService,
+    public tieneShopify: boolean = false;
+    public descripcionesExpandidas: { [key: number]: boolean } = {};
+
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe,
@@ -38,6 +40,10 @@ export class CompraProductoComponent implements OnInit {
 
     ngOnInit() {
         this.alertService.modal = false;
+
+        // Cachear verificación de Shopify una sola vez
+        const empresa = this.apiService.auth_user()?.empresa;
+        this.tieneShopify = !!empresa?.shopify_store_url;
 
         this.searchControl.valueChanges
               .pipe(
@@ -136,7 +142,9 @@ export class CompraProductoComponent implements OnInit {
     onProductoCreated(producto: any) {
         // Aquí puedes manejar el producto creado si es necesario
         producto.id_producto    = producto.id;
-        producto.nombre_producto = producto.nombre;
+        
+        // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
+        producto.nombre_producto = this.getNombreCompleto(producto);
         producto.img            = producto.img;
         producto.precio         = parseFloat(producto.precio);
         producto.costo          = parseFloat(producto.costo);
@@ -144,6 +152,8 @@ export class CompraProductoComponent implements OnInit {
         producto.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         producto.cantidad       = 1;
         producto.descuento      = 0;
+        producto.inventario_por_lotes = producto.inventario_por_lotes || false;
+        producto.lote_id = null;
         
         console.log('Producto creado:', producto);
         
@@ -153,7 +163,9 @@ export class CompraProductoComponent implements OnInit {
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
         this.detalle.id_producto    = producto.id;
-        this.detalle.nombre_producto = producto.nombre;
+        
+        // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
+        this.detalle.nombre_producto = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.costo          = parseFloat(producto.costo);
@@ -161,13 +173,17 @@ export class CompraProductoComponent implements OnInit {
         this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
+        this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
+        this.detalle.lote_id = null;
         this.onSubmit();
     }
 
     onCheckProducto(producto:any){
         this.detalle = Object.assign({}, producto);
         this.detalle.id_producto    = producto.id;
-        this.detalle.nombre_producto = producto.nombre;
+        
+        // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
+        this.detalle.nombre_producto = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.costo          = parseFloat(producto.costo);
@@ -175,6 +191,8 @@ export class CompraProductoComponent implements OnInit {
         this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
+        this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
+        this.detalle.lote_id = null;
 
         console.log(this.detalle);
         let radio = document.getElementById('producto' + this.detalle.id_producto) as HTMLInputElement;
@@ -191,6 +209,57 @@ export class CompraProductoComponent implements OnInit {
         if(this.modalRef){
             this.modalRef.hide();
         }
+    }
+
+    /**
+     * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
+     */
+    getNombreCompleto(producto: any): string {
+        if (this.tieneShopify && producto.nombre_variante) {
+            return `${producto.nombre} ${producto.nombre_variante}`;
+        }
+        return producto.nombre;
+    }
+
+    /**
+     * Obtiene la descripción del producto (completa o truncada según el estado)
+     */
+    getDescripcion(producto: any): string {
+        if (!producto.descripcion) {
+            return '';
+        }
+        const estaExpandida = this.descripcionesExpandidas[producto.id] || false;
+        if (estaExpandida || producto.descripcion.length <= 20) {
+            return producto.descripcion;
+        }
+        return producto.descripcion.substring(0, 20) + '...';
+    }
+
+    /**
+     * Verifica si la descripción está truncada (necesita "ver más")
+     */
+    necesitaVerMas(producto: any): boolean {
+        if (!producto.descripcion) {
+            return false;
+        }
+        const estaExpandida = this.descripcionesExpandidas[producto.id] || false;
+        return !estaExpandida && producto.descripcion.length > 20;
+    }
+
+    /**
+     * Verifica si la descripción está expandida (muestra "ver menos")
+     */
+    estaExpandida(producto: any): boolean {
+        return this.descripcionesExpandidas[producto.id] || false;
+    }
+
+    /**
+     * Alterna el estado de expansión de la descripción
+     */
+    toggleDescripcion(event: Event, producto: any): void {
+        event.stopPropagation(); // Previene que se seleccione el producto
+        const estadoActual = this.descripcionesExpandidas[producto.id] || false;
+        this.descripcionesExpandidas[producto.id] = !estadoActual;
     }
 
 }

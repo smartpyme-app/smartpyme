@@ -21,9 +21,53 @@ class ShopifyInventarioObserver
         $this->cache = $cache;
     }
 
+
+    // SINCRONIZACIÓN INVERSA DESHABILITADA: Solo sincronización unidireccional (Shopify -> SmartPyme)
     public function updated(Inventario $inventario)
     {
+
+
+        $empresa = Empresa::where('id', $inventario->id_empresa)->first();
+        if (!$empresa) {
+            return;
+        }
+
+        // Si es bidireccional, sincroniza Shopify -> SmartPyme y SmartPyme -> Shopify
+        if ($empresa->shopify_sync_bidirectional) {
+            Log::info("Sincronización inversa habilitada para actualizaciones de inventario - SmartPyme -> Shopify ", [
+                'inventario_id' => $inventario->id,
+                'producto_id' => $inventario->id_producto,
+                'stock' => $inventario->stock,
+                'motivo' => 'Sincronización unidireccional configurada'
+            ]);
+            $this->syncBidirectional($inventario);
+        }
+
+        // Si no es bidireccional, no hacer nada\
+        // Log::info("Sincronización inversa deshabilitada para actualizaciones de inventario - solo Shopify -> SmartPyme", [
+        //     'inventario_id' => $inventario->id,
+        //     'producto_id' => $inventario->id_producto,
+        //     'stock' => $inventario->stock,
+        //     'motivo' => 'Sincronización unidireccional configurada'
+        // ]);
+        return;
+    }
+
+    // Para actualizacion de stock doble direccional (SmartPyme -> Shopify)
+    public function syncBidirectional(Inventario $inventario)
+    {
         if (!$inventario->isDirty('stock')) {
+            return;
+        }
+
+        // IMPORTANTE: Verificar si el producto está siendo sincronizado desde Shopify
+        $producto = $inventario->producto;
+        if ($producto && $producto->syncing_from_shopify) {
+            Log::info("Producto siendo sincronizado desde Shopify, omitiendo sincronización de inventario", [
+                'inventario_id' => $inventario->id,
+                'producto_id' => $inventario->id_producto,
+                'syncing_from_shopify' => $producto->syncing_from_shopify
+            ]);
             return;
         }
 
@@ -105,4 +149,5 @@ class ShopifyInventarioObserver
             $this->cache->saveInventorySnapshot($inventario, $inventario->id_producto);
         }
     }
+    
 }

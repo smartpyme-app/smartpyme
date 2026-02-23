@@ -47,12 +47,13 @@ export class DevolucionCompraNuevaComponent implements OnInit {
                 this.devolucion.id_proveedor = compra.id_proveedor;
                 this.devolucion.fecha = this.apiService.date();
                 this.devolucion.id_compra = id;
-                this.devolucion.tipo = 'Interna';
+                this.devolucion.tipo = 'devolucion';
                 this.devolucion.observaciones = '';
 
                 this.devolucion.cobrar_impuestos = this.compra.iva > 0 ? true : false;
                 this.devolucion.cobrar_percepcion = this.compra.percepcion > 0 ? true : false;
                 this.devolucion.retencion = this.compra.iva_retenido > 0 ? true : false;
+                this.devolucion.renta = this.compra.renta_retenida > 0 ? true : false;
 
                 let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
                 if (corte) {
@@ -96,7 +97,7 @@ export class DevolucionCompraNuevaComponent implements OnInit {
         this.cargarDocumentos();
         this.devolucion = {};
         this.devolucion.fecha = this.apiService.date();
-        this.devolucion.tipo = 'Interna';
+        this.devolucion.tipo = 'devolucion';
         this.devolucion.cliente = {};
         this.devolucion.detalles = [];
         this.devolucion.canal = 'Tienda';

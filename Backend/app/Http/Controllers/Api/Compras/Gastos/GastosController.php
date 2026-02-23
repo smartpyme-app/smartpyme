@@ -78,7 +78,8 @@ class GastosController extends Controller
     public function read($id)
     {
 
-        $gasto = Gasto::findOrFail($id);
+        $gasto = Gasto::where('id', $id)->with('abonos')->first();
+        $gasto->saldo = $gasto->saldo;
         return Response()->json($gasto, 200);
     }
 
@@ -148,7 +149,7 @@ class GastosController extends Controller
 
         // Incrementar el correlarivo de Sujeto excluido
         if (!$request->id && $request->tipo_documento == 'Sujeto excluido') {
-            $documento = Documento::where('nombre', $gasto->tipo_documento)->first();
+            $documento = Documento::where('nombre', $gasto->tipo_documento)->where('id_sucursal', $gasto->id_sucursal)->first();
             $documento->increment('correlativo');
         }
 

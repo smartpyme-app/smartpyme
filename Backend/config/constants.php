@@ -52,4 +52,8 @@ return [
 
     'MAIL_CC_ADDRESS_1' => 'gabrielaq@smartpyme.sv',
     'MAIL_CC_ADDRESS_2' => 'contact@smartpyme.sv',
+
+    'FRECUENCIA_PAGO_MENSUAL' => 'Mensual',
+    'FRECUENCIA_PAGO_TRIMESTRAL' => 'Trimestral',
+    'FRECUENCIA_PAGO_ANUAL' => 'Anual',
 ];

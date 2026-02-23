@@ -52,7 +52,9 @@
         #no_sujeta  {top: 18cm; left: 14cm; width: 2cm; text-align: right;}
         #sub_total  {top: 18.5cm; left: 14cm; width: 2cm; text-align: right;}
         #iva_retenido{top: 19cm; left: 14cm; width: 2cm; text-align: right;}
-        #total      {top: 19.5cm; left: 14cm; width: 2cm; text-align: right;}
+        #propina    {top: 19.5cm; left: 14cm; width: 2cm; text-align: right;}
+        #total      {top: 20cm; left: 14cm; width: 2cm; text-align: right;}
+        #total_con_propina {top: 20.5cm; left: 14cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}
 
@@ -112,7 +114,16 @@
             <p id="no_sujeta"> $ {{ number_format($venta->no_sujeta, 2) }}</p>
             <p id="exenta"> $ {{ number_format($venta->exenta, 2) }}</p>
             <p id="iva_retenido"> $ {{ number_format($venta->iva_retenido, 2) }}</p>
-            <p id="total"> <b>$ {{ number_format($venta->total, 2) }}</b></p>
+            @php
+                $propina = floatval($venta->propina ?? 0);
+            @endphp
+            @if($propina > 0)
+                <p id="propina">Propina: $ {{ number_format($propina, 2) }}</p>
+                <p id="total"> <b>Total: $ {{ number_format($venta->total, 2) }}</b></p>
+                <p id="total_con_propina"> <b>Total + Propina: $ {{ number_format($venta->total + $propina, 2) }}</b></p>
+            @else
+                <p id="total"> <b>$ {{ number_format($venta->total, 2) }}</b></p>
+            @endif
         </div>
     </section>
 

@@ -12,13 +12,17 @@
           <!-- ✅ Plan actual -->
           <div class="list-group mt-3 mb-2" *ngIf="showAllPlans">
             <h4>Plan actual:</h4>
-            <div class="list-group-item border mb-2 rounded-3 selected-plan hover-highlight plan-container visible">
+            <div
+              class="list-group-item border mb-2 rounded-3 selected-plan hover-highlight plan-container visible"
+            >
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 class="mb-1">Plan {{ planName }}</h6>
                   <p class="mb-1 text-muted small">{{ planFeatures[0] }}</p>
                 </div>
-                <span class="badge bg-primary rounded-pill">${{ this.montoPlanActual }}/mes</span>
+                <span class="badge bg-primary rounded-pill"
+                  >${{ this.montoPlanActual }}/mes</span
+                >
               </div>
             </div>
           </div>
@@ -38,20 +42,21 @@
           <!-- ✅ Modal de opciones de pago -->
           <div *ngIf="showPaymentOptions" class="payment-options-container">
             <h5 class="mb-3">Selecciona tu método de pago</h5>
-            
+
             <!-- Opción: Método de pago existente -->
             <div *ngIf="paymentMethodExists" class="mb-3">
-              <button 
+              <button
                 class="btn btn-outline-secondary btn-no-hover-white w-100 p-3 text-start"
                 (click)="selectPaymentOption('existing')"
-                [disabled]="loading">
+                [disabled]="loading"
+              >
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
                     <i class="fas fa-credit-card me-2"></i>
                     <strong>Usar tarjeta guardada</strong>
-                    <br>
+                    <br />
                     <small class="text-muted">
-                      {{ existingPaymentMethod?.marca_tarjeta }} 
+                      {{ existingPaymentMethod?.marca_tarjeta }}
                       ****{{ existingPaymentMethod?.ultimos_cuatro }}
                     </small>
                   </div>
@@ -62,16 +67,19 @@
 
             <!-- Opción: Nueva tarjeta -->
             <div class="mb-3">
-              <button 
+              <button
                 class="btn btn-outline-secondary btn-no-hover-white w-100 p-3 text-start"
                 (click)="selectPaymentOption('new')"
-                [disabled]="loading">
+                [disabled]="loading"
+              >
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
                     <i class="fas fa-plus me-2"></i>
                     <strong>Usar nueva tarjeta</strong>
-                    <br>
-                    <small class="text-muted">Ingresar nueva información de pago</small>
+                    <br />
+                    <small class="text-muted"
+                      >Ingresar nueva información de pago</small
+                    >
                   </div>
                   <i class="fas fa-chevron-right"></i>
                 </div>
@@ -79,9 +87,10 @@
             </div>
 
             <!-- Botón cancelar -->
-            <button 
+            <button
               class="btn btn-outline-secondary w-100"
-              (click)="cancelPayment()">
+              (click)="cancelPayment()"
+            >
               Cancelar
             </button>
           </div>
@@ -90,10 +99,11 @@
           <div *ngIf="showCardForm" class="payment-form">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="mb-0">Nueva tarjeta de pago</h5>
-              <button 
+              <button
                 class="btn btn-sm btn-outline-secondary"
                 (click)="backToPaymentOptions()"
-                *ngIf="paymentMethodExists">
+                *ngIf="paymentMethodExists"
+              >
                 <i class="fas fa-arrow-left me-1"></i>
                 Volver
               </button>
@@ -200,7 +210,9 @@
                     <option value="" disabled selected>
                       Seleccione un país
                     </option>
-                    <option *ngFor="let pais of paises" [value]="pais.cod">{{ pais.nombre }}</option>
+                    <option *ngFor="let pais of paises" [value]="pais.cod">
+                      {{ pais.nombre }}
+                    </option>
                   </select>
                 </div>
 
@@ -215,8 +227,15 @@
                     required
                     #stateCode="ngModel"
                   >
-                    <option value="" disabled selected>Selecciona estado</option>
-                    <option *ngFor="let estado of estados" [value]="estado.codigo">{{ estado.nombre }}</option>
+                    <option value="" disabled selected>
+                      Selecciona estado
+                    </option>
+                    <option
+                      *ngFor="let estado of estados"
+                      [value]="estado.codigo"
+                    >
+                      {{ estado.nombre }}
+                    </option>
                   </select>
                 </div>
 
@@ -252,7 +271,11 @@
                 <button
                   type="button"
                   class="btn btn-outline-secondary"
-                  (click)="paymentMethodExists ? backToPaymentOptions() : cancelPayment()"
+                  (click)="
+                    paymentMethodExists
+                      ? backToPaymentOptions()
+                      : cancelPayment()
+                  "
                 >
                   Cancelar
                 </button>
@@ -285,5 +308,6 @@
   *ngIf="mostrar3DSModal"
   [authUrl]="urlAutenticacion"
   (close)="mostrar3DSModal = false"
+  (messageReceived)="on3DSMessageReceived($event)"
 >
 </app-threeds-modal>

@@ -79,8 +79,13 @@
                             {{ $venta->cliente()->pluck('departamento')->first() }}
                             {{ $venta->cliente()->pluck('direccion')->first() }} <br>
                         </p>
-                        <p><b>NCR:</b>{{ $venta->cliente()->pluck('ncr')->first() }}</p>
-                        <p><b>DUI:</b>{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                        @if($venta->empresa->pais == 'El Salvador')
+                            <p><b>NCR:</b>{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                            <p><b>DUI:</b>{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                        @else
+                            <p><b>Registro tributario:</b>{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                            <p><b>Número de identificación:</b>{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                        @endif
                         <p><b>Teléfono:</b>{{ $venta->cliente()->pluck('telefono')->first() }}</p>
                     </td>
                     <td>

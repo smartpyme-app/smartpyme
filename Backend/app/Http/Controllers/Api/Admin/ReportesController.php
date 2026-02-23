@@ -33,7 +33,7 @@ class ReportesController extends Controller
         // return $requisicion;
 
         if ($requisicion) {
-            $reportes = \PDF::loadView('reportes.requisicion', compact('requisicion', 'empresa'));
+            $reportes = app('dompdf.wrapper')->loadView('reportes.requisicion', compact('requisicion', 'empresa'));
             return $reportes->download();
         }else{
             return "No entontrado";

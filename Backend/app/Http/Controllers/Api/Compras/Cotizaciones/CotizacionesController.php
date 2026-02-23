@@ -9,9 +9,10 @@ use App\Models\Registros\Cliente;
 use App\Models\Compras\Compra as Cotizacion;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Detalle;
-use Barryvdh\DomPDF\Facade as PDF;
+// Usamos app('dompdf.wrapper') para evitar errores de Facade en producción
 use Carbon\Carbon;
 use JWTAuth;
+use Auth;
 use App\Exports\OrdenesDeComprasExport;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -199,7 +200,7 @@ class CotizacionesController extends Controller
     public function generarDoc($id){
         $compra = Cotizacion::where('id', $id)->with('detalles', 'proveedor')->firstOrFail();
 
-        $pdf = PDF::loadView('reportes.facturacion.orden-de-compra', compact('compra'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.orden-de-compra', compact('compra'));
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('orden-de-compra-' . $compra->id . '.pdf');
 
@@ -230,6 +231,79 @@ class CotizacionesController extends Controller
         $cotizaciones->filter($request);
 
         return Excel::download($cotizaciones, 'cotizaciones.xlsx');
+    }
+
+    public function solicitudes(Request $request){
+        $user = Auth::user();
+        $licencia = $user->empresa()->first()->licencia()->first();
+        if(!$licencia){
+            return Response()->json(['error' => ['No tienes una licencia'], 'code' => 403], 403);
+        }
+        $empresaPadre = $licencia->empresa()->first(); // Empresa padre de la licencia
+        $empresasLicencia = $licencia->empresas()->pluck('id_empresa')->toArray();
+        
+        $cotizaciones = Cotizacion::withoutGlobalScope('empresa')
+        ->whereIn('id_empresa', $empresasLicencia)
+        ->whereHas('proveedor', function($query) use ($empresaPadre) {
+            return $query->withoutGlobalScope('empresa')
+                        ->where(function($q) use ($empresaPadre) {
+                            $q->where('nit', $empresaPadre->nit)
+                              ->orWhere('ncr', $empresaPadre->ncr);
+                        });
+        })
+        ->where('estado', 'Pendiente')
+        ->with(['proveedor' => function($query){
+            $query->withoutGlobalScope('empresa');
+        }])
+        ->when($request->buscador, function($query) use ($request){
+            return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                        ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                        ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
+                        ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
+            })
+            ->when($request->inicio, function($query) use ($request){
+                return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+            })
+            ->when($request->id_sucursal, function($query) use ($request){
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->id_usuario, function($query) use ($request){
+                return $query->where('id_usuario', $request->id_usuario);
+            })
+            ->when($request->id_proveedor, function($query) use ($request){
+                return $query->where('id_proveedor', $request->id_proveedor);
+            })
+            ->when($request->forma_pago, function($query) use ($request){
+                return $query->where('forma_pago', $request->forma_pago);
+            })
+            ->when($request->id_canal, function($query) use ($request){
+                return $query->where('id_canal', $request->id_canal);
+            })
+            ->when($request->id_documento, function($query) use ($request){
+                return $query->where('id_documento', $request->id_documento);
+            })
+            ->when($request->estado, function($query) use ($request){
+                return $query->where('estado', $request->estado);
+            })
+            ->when($request->metodo_pago, function($query) use ($request){
+                return $query->where('metodo_pago', $request->metodo_pago);
+            })
+            ->when($request->tipo_documento, function($query) use ($request){
+                return $query->where('tipo_documento', $request->tipo_documento);
+            })
+        ->where('cotizacion', 1)
+        ->orderBy($request->orden, $request->direccion)
+        ->orderBy('id', 'desc')
+        ->paginate($request->paginate);
+
+        return Response()->json($cotizaciones, 200);
+    }
+
+    public function solicitud($id) {
+
+        $cotizacion = Cotizacion::withoutGlobalScope('empresa')->where('id', $id)->with('proveedor', 'detalles')->firstOrFail();
+        return Response()->json($cotizacion, 200);
+
     }
 
 }

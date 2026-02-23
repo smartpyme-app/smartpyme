@@ -23,12 +23,36 @@ export class ClienteInformacionComponent implements OnInit {
   public municipios: any = [];
   public actividad_economicas: any = [];
   public contacto: any = {};
+  public vendedores: any = [];
   //loading
   public loading_contacto = false;
   public esNuevo = false;
   public tipoAnterior = '';
+  public diasCreditoOpciones = [10, 15, 30, 45, 60];
 
   modalRef?: BsModalRef;
+
+  puedeEditarCreditoCliente(): boolean {
+    const tipo = this.apiService.auth_user()?.tipo || '';
+    return ['Administrador', 'Supervisor', 'Supervisor Limitado'].includes(tipo);
+  }
+
+  onHabilitaCreditoChange() {
+    if (this.cliente.habilita_credito && !this.cliente.dias_credito) {
+      const clasificacion = this.cliente.clasificacion?.toUpperCase();
+      if (clasificacion === 'A' || clasificacion === 'B') {
+        this.cliente.dias_credito = 30;
+      } else if (clasificacion === 'C') {
+        this.cliente.dias_credito = 15;
+      } else {
+        this.cliente.dias_credito = 30;
+      }
+    }
+    if (!this.cliente.habilita_credito) {
+      this.cliente.dias_credito = null;
+      this.cliente.limite_credito = null;
+    }
+  }
 
   constructor(
     public apiService: ApiService,
@@ -46,6 +70,16 @@ export class ClienteInformacionComponent implements OnInit {
     this.municipios = JSON.parse(localStorage.getItem('municipios')!);
     this.actividad_economicas = JSON.parse(
       localStorage.getItem('actividad_economicas')!
+    );
+    
+    // Cargar vendedores
+    this.apiService.getAll('usuarios/list').subscribe(
+      (usuarios) => {
+        this.vendedores = usuarios;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
     );
   }
 
@@ -74,6 +108,9 @@ export class ClienteInformacionComponent implements OnInit {
         this.cliente.tipo = 'Persona';
         this.cliente.contactos = [];
         this.cliente.tipo_contribuyente = '';
+        this.cliente.habilita_credito = false;
+        this.cliente.dias_credito = null;
+        this.cliente.limite_credito = null;
         this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
         this.cliente.id_usuario = this.apiService.auth_user().id;
       }

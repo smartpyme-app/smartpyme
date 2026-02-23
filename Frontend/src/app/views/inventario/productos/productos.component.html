@@ -47,11 +47,16 @@
         <div class="d-flex gap-2 flex-wrap">
             <button class="tcla-F3 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()"
                 routerLink="/productos">Todos</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas">Consignas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Ajustes</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Traslados</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Consignas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Entradas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Salidas</button>
         </div>
         <div class="ms-auto d-flex gap-2">
             <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" 
@@ -62,8 +67,9 @@
                 </ng-option>
             </ng-select>
             <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega"
-                class="form-select bg-default select-width">
-                <option value="">Bodega</option>
+                class="form-select bg-default select-width"
+                [class.border-primary]="isShopifyActive() && filtros.id_bodega">
+                <option value="" [disabled]="isShopifyActive()">Bodega</option>
                 <option *ngFor="let bodega of bodegas" [value]="bodega.id">
                     {{bodega.nombre}}
                 </option>
@@ -108,13 +114,18 @@
                         </td>
                     </tr>
                     <tr *ngFor=" let producto of productos?.data">
-                        <!--  <td>
+                        <!-- <td>
                             <input type="checkbox" class="form-check">
                         </td> -->
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle"
                                 width="50px">
-                            {{ producto.nombre }}
+                            <span *ngIf="isShopifyActive() && producto.nombre_variante; else nombreNormal">
+                                {{ producto.nombre }} ({{ producto.nombre_variante }})
+                            </span>
+                            <ng-template #nombreNormal>
+                                {{ producto.nombre }}
+                            </ng-template>
                         </td>
                         <td class="d-none d-lg-table-cell">
                             <select name="enable" class="form-select w-auto border-0" (change)="setEstado(producto)"
@@ -130,43 +141,98 @@
                         <td class="text-right">{{ (producto.precio * 1) + (producto.precio *
                             (apiService.auth_user().empresa.iva / 100) ) | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
-                            <div class="click" tooltip="Realizar ajuste de stock" *ngIf="filtros.id_bodega"
-                                (click)="openModalAjuste(majuste, producto)">
-                                {{ producto.inventarios | sum:'stock' }}
+                            <!-- Si tiene lotes activados, mostrar stock de lotes -->
+                            <div *ngIf="producto.inventario_por_lotes">
+                                <div class="click" tooltip="Ver lotes" *ngIf="filtros.id_bodega"
+                                    routerLink="/producto/editar/{{producto.id}}">
+                                    {{ producto.stock_total_lotes || 0 | number:'1.2' }}
+                                </div>
+                                <div *ngIf="!filtros.id_bodega">
+                                    <span *ngIf="producto?.lotes?.length > 0"
+                                        style="display: block; height: 40px; line-height: 40px;" class="click"
+                                        placement="left" [popover]="popTemplateLotes" triggers="mouseenter:mouseleave">
+                                        {{ producto.stock_total_lotes || 0 | number:'1.2' }}
+                                    </span>
+                                    <span *ngIf="producto?.lotes?.length == 0">
+                                        0
+                                    </span>
+                                    <ng-template #popTemplateLotes>
+                                        <table class="table table-borderless">
+                                            <thead>
+                                                <tr>
+                                                    <th>Lote</th>
+                                                    <th>Bodega</th>
+                                                    <th class="text-center">Vencimiento</th>
+                                                    <th class="text-right">Stock</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let lote of producto?.lotes">
+                                                    <td class="text-nowrap">{{ lote.numero_lote || 'N/A' }}</td>
+                                                    <td class="text-nowrap">{{ lote.nombre_bodega || lote.bodega?.nombre }}</td>
+                                                    <td class="text-center">
+                                                        <span *ngIf="lote.fecha_vencimiento">
+                                                            {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }}
+                                                            <br>
+                                                            <small [ngClass]="getClaseVencimiento(lote.fecha_vencimiento)">
+                                                                {{ getDiasVencimiento(lote.fecha_vencimiento) }}
+                                                            </small>
+                                                        </span>
+                                                        <span *ngIf="!lote.fecha_vencimiento" class="text-muted">Sin vencimiento</span>
+                                                    </td>
+                                                    <td class="text-right">{{ lote.stock | number:'1.2' }}</td>
+                                                </tr>
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="3">Total</th>
+                                                    <th class="text-right">{{ producto.stock_total_lotes || 0 | number:'1.2' }}</th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </ng-template>
+                                </div>
                             </div>
-                            <div *ngIf="!filtros.id_bodega">
-                                <span *ngIf="producto?.inventarios?.length > 0"
-                                    style="display: block; height: 40px; line-height: 40px;" class="click"
-                                    placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                            <!-- Si no tiene lotes activados, mostrar stock tradicional -->
+                            <div *ngIf="!producto.inventario_por_lotes">
+                                <div class="click" tooltip="Realizar ajuste de stock" *ngIf="filtros.id_bodega"
+                                    (click)="openModalAjuste(majuste, producto)">
                                     {{ producto.inventarios | sum:'stock' }}
-                                </span>
-                                <span *ngIf="producto?.inventarios?.length == 0">
-                                    Sin control
-                                </span>
-                                <ng-template #popTemplate>
-                                    <table class="table table-borderless">
-                                        <thead>
-                                            <tr>
-                                                <th>Bodega</th>
-                                                <th>Sucursal</th>
-                                                <th class="text-right">Stock</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr *ngFor="let inventario of producto?.inventarios">
-                                                <td class="text-nowrap">{{ inventario.nombre_bodega}}</td>
-                                                <td class="text-nowrap">{{ inventario.nombre_sucursal}}</td>
-                                                <td class="text-right">{{ inventario.stock }}</td>
-                                            </tr>
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <th colspan="2">Total</th>
-                                                <th class="text-right">{{ producto.inventarios | sum:'stock' }}</th>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </ng-template>
+                                </div>
+                                <div *ngIf="!filtros.id_bodega">
+                                    <span *ngIf="producto?.inventarios?.length > 0"
+                                        style="display: block; height: 40px; line-height: 40px;" class="click"
+                                        placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                        {{ producto.inventarios | sum:'stock' }}
+                                    </span>
+                                    <span *ngIf="producto?.inventarios?.length == 0">
+                                        Sin control
+                                    </span>
+                                    <ng-template #popTemplate>
+                                        <table class="table table-borderless">
+                                            <thead>
+                                                <tr>
+                                                    <th>Bodega</th>
+                                                    <th>Sucursal</th>
+                                                    <th class="text-right">Stock</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let inventario of producto?.inventarios">
+                                                    <td class="text-nowrap">{{ inventario.nombre_bodega}}</td>
+                                                    <td class="text-nowrap">{{ inventario.nombre_sucursal}}</td>
+                                                    <td class="text-right">{{ inventario.stock }}</td>
+                                                </tr>
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="2">Total</th>
+                                                    <th class="text-right">{{ producto.inventarios | sum:'stock' }}</th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </ng-template>
+                                </div>
                             </div>
                         </td>
                         <td class="text-center" *ngIf="!apiService.isSupervisorLimitado()">
@@ -183,16 +249,10 @@
                                         class="btn text-start border-0">
                                         <img src="/assets/icons/file-text.png" class="icon me-2">Kardex
                                     </button>
-                                    <!-- <button type="button" class="btn text-start border-0">
-                                        <img  src="/assets/icons/tool.png" class="icon me-2">Ajustar
+                                    <button type="button" routerLink="/detalle-producto/{{producto.id}}"
+                                    class="btn text-start border-0 text-black">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalle
                                     </button>
-                                    <button type="button" class="btn text-start border-0">
-                                        <img  src="/assets/icons/corner-up-right.png" class="icon me-2">Trasladar
-                                    </button> -->
-
-                                    <!-- <button type="button" (click)="delete(producto.id)" class="btn text-start text-danger">
-                                        <img  src="/assets/icons/trash-2.png" class="icon me-2">Eliminar
-                                    </button> -->
                                 </div>
                             </ng-template>
                         </td>
@@ -249,8 +309,9 @@
                 <div class="form-group col-sm-6">
                     <label for="filtros.id_proveedor">Bodega:</label>
                     <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega"
-                        class="form-select">
-                        <option value="">Todas</option>
+                        class="form-select"
+                        [class.border-primary]="isShopifyActive() && filtros.id_bodega">
+                        <option value="" [disabled]="isShopifyActive()">Todas</option>
                         <option *ngFor="let bodega of bodegas" [value]="bodega.id">
                             {{bodega.nombre}}
                         </option>
@@ -280,6 +341,7 @@
                             [(ngModel)]="filtros.compuestos" name="compuestos">
                     </div>
                 </div>
+
 
             </div>
 
@@ -360,6 +422,106 @@
                 <label>Descargar detalle de inventario:</label>
                 <app-descargar-inventario></app-descargar-inventario>
             </div>
+            <div class="d-grid">
+                <label>Descargar Kardex:</label>
+                <button [disabled]="loading || !productos?.data?.length" 
+                        tooltip="Descargar kardex de productos mostrados" (click)="openDescargarKardex(mdescargarKardex)" class="btn btn-primary">
+                    <span *ngIf="!loading">Descargar kardex ({{ productos?.data?.length || 0 }})</span>
+                    <span *ngIf="loading">Descargando...</span>
+                </button>
+            </div>
+            <div class="d-grid my-4">
+                <label>Descargar Kardex Masivamente:</label>
+                <button [disabled]="loading" 
+                        tooltip="Descargar kardex completo por correo electrónico" (click)="openDescargarKardexMasivo(mdescargarKardexMasivo)" class="btn btn-primary">
+                    <span *ngIf="!loading">Descargar Kardex Masivamente</span>
+                    <span *ngIf="loading">Procesando...</span>
+                </button>
+            </div>
         </div>
+    </div>
+</ng-template>
+
+<!-- Modal para descargar Kardex con filtros de fecha -->
+<ng-template #mdescargarKardex>
+    <div class="modal-header">
+        <h4 class="modal-title pull-left">Descargar Kardex</h4>
+        <button type="button" class="btn-close pull-right" aria-label="Close" (click)="modalRef.hide()">
+            <span aria-hidden="true" class="visually-hidden">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="mb-3">
+            <span class="badge bg-info">{{ productos?.data?.length || 0 }} producto(s) en el listado</span>
+        </div>
+        
+        <form autocomplete="off" (ngSubmit)="descargarKardexConFiltros()">
+            <div class="row">
+                <div class="form-group col-sm-6">
+                    <label for="filtrosKardex.fecha_inicio">Fecha inicio:</label>
+                    <input type="date" [(ngModel)]="filtrosKardex.fecha_inicio" class="form-control" name="fecha_inicio">
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtrosKardex.fecha_fin">Fecha fin:</label>
+                    <input type="date" [(ngModel)]="filtrosKardex.fecha_fin" class="form-control" name="fecha_fin">
+                </div>
+            </div>
+            
+            <div class="d-grid mt-3">
+                <button type="submit" [disabled]="loading || !filtrosKardex.fecha_inicio || !filtrosKardex.fecha_fin" class="btn btn-primary">
+                    <span *ngIf="!loading">Descargar Kardex</span>
+                    <span *ngIf="loading">Descargando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+
+<!-- Modal para descargar Kardex Masivamente por correo -->
+<ng-template #mdescargarKardexMasivo>
+    <div class="modal-header">
+        <h4 class="modal-title pull-left">Descargar Kardex Masivamente</h4>
+        <button type="button" class="btn-close pull-right" aria-label="Close" (click)="modalRef.hide()">
+            <span aria-hidden="true" class="visually-hidden">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle me-2"></i>
+                    <strong>Información:</strong> Se generará el kardex completo de todos los productos de la empresa. 
+                    El proceso se ejecuta en segundo plano y recibirá un correo electrónico cuando esté listo.
+                </div>
+        
+        <form autocomplete="off" (ngSubmit)="solicitarKardexMasivo()">
+            <div class="row">
+                <div class="form-group col-md-12">
+                    <label for="emailKardex">Correo electrónico:</label>
+                    <input type="email" 
+                           [(ngModel)]="emailKardex" 
+                           class="form-control" 
+                           name="emailKardex"
+                           placeholder="ejemplo@correo.com"
+                           required>
+                    <small class="form-text text-muted">
+                        Se enviará el archivo del kardex completo a este correo electrónico.
+                    </small>
+                </div>
+            </div>
+            
+            <div class="d-grid mt-3">
+                <button type="submit" 
+                        [disabled]="loading || !emailKardex" 
+                        class="btn btn-primary">
+                    <span *ngIf="!loading">
+                        <i class="fa fa-envelope me-2"></i>Solicitar Kardex Completo
+                    </span>
+                    <span *ngIf="loading">
+                        <i class="fa fa-spinner fa-spin me-2"></i>Procesando solicitud...
+                    </span>
+                </button>
+            </div>
+        </form>
     </div>
 </ng-template>

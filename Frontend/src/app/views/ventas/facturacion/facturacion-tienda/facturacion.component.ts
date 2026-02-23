@@ -7,6 +7,7 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
 
@@ -41,6 +42,8 @@ export class FacturacionComponent implements OnInit {
   public facturarCotizacion = false;
   public api: boolean = false;
   public tieneAccesoPropina: boolean = false;
+  public mensajeValidacionFecha: string = '';
+  public mensajeErrorBanco: string = '';
 
   // Información de puntos canjeados
   public puntosCanjeados: number = 0;
@@ -57,14 +60,14 @@ export class FacturacionComponent implements OnInit {
   public puntosProximosAExpirarModal: any[] = [];
   public usarPuntosModal: boolean = false;
   public puntosACanjearModal: number = 0;
-  
+
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
   modalPuntosRef!: BsModalRef;
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
-  
+
   @ViewChild('modalPuntos')
   public modalPuntosTemplate!: TemplateRef<any>;
 
@@ -171,7 +174,8 @@ export class FacturacionComponent implements OnInit {
 
     this.apiService.getAll('impuestos').subscribe(
       (impuestos) => {
-        this.impuestos = impuestos;
+        // Filtrar solo los impuestos que aplican a ventas
+        this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
         if (!this.venta.impuestos || this.venta.iva == 0) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
@@ -257,6 +261,13 @@ export class FacturacionComponent implements OnInit {
     this.venta.tipo = 'Interna';
     this.venta.estado = 'Pagada';
     this.venta.condicion = 'Contado';
+
+    // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
+    if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
+      this.venta.credito = false;
+      this.venta.consigna = false;
+    }
+
     this.venta.tipo_operacion = 'Gravada';
     this.venta.tipo_renta = null;
     this.venta.detalle_banco = '';
@@ -274,6 +285,8 @@ export class FacturacionComponent implements OnInit {
     this.venta.iva = 0;
     this.venta.total_costo = 0;
     this.venta.total = 0;
+    this.venta.propina = 0;
+    this.venta.cobrar_propina = false;
     if(this.impuestos.length > 0){
       this.venta.impuestos = this.impuestos;
     }else{
@@ -306,6 +319,7 @@ export class FacturacionComponent implements OnInit {
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
       this.venta.cotizacion = 1;
       this.venta.estado = 'Pendiente';
+        this.venta.observaciones = this.venta.id_empresa == 2 ? 'Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \nPagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \nDisponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \nPropiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \nLimitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \nDuración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \nSituaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \nRenovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \nPolítica de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \nBrindar capacitaciones y soporte técnico a usuarios de negocios. \nGarantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \nOfrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\nBrindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
     }
 
     // Para editar cotizaciones Pre-venta
@@ -315,6 +329,7 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
           },
           (error) => {
@@ -337,6 +352,7 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
                 this.venta.cliente = {};
             }else{
@@ -378,6 +394,7 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
                 this.venta.cliente = {};
             }else{
@@ -411,6 +428,109 @@ export class FacturacionComponent implements OnInit {
           }
         );
     }
+
+    // Facturar orden de compra
+    if (this.route.snapshot.queryParamMap.get('facturar_orden_compra')!) {
+      this.apiService.read('orden-de-compra/solicitud/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).subscribe((ordenCompra) => {
+        this.venta.num_orden = ordenCompra.id;
+
+        this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit)).subscribe((empresa) => {
+          if(empresa.length > 0){
+            this.setCliente(empresa[0]);
+            console.log(empresa);
+
+            // Solo procesar productos si el cliente existe
+            this.procesarProductosOrdenCompra(ordenCompra.detalles);
+          }else{
+            const labelDoc = this.apiService.auth_user()?.empresa?.pais === 'El Salvador' ? 'DUI o NIT' : 'Número de identificación o Identificación fiscal';
+            Swal.fire({
+              title: 'Cliente no encontrado',
+              html: `
+                <div class="text-left">
+                  <p><strong>No se encontró el cliente para poder facturar.</strong></p>
+                  <p>Debe crear el cliente con los siguientes datos:</p>
+                  <ul class="list-unstyled mt-3">
+                    <li><strong>Nombre:</strong> ${ordenCompra.empresa.nombre || 'No disponible'}</li>
+                    <li><strong>${labelDoc}:</strong> ${ordenCompra.empresa.dui || ordenCompra.empresa.nit || 'No disponible'}</li>
+                  </ul>
+                </div>
+              `,
+              icon: 'warning',
+              confirmButtonText: 'Entendido',
+              confirmButtonColor: '#3085d6'
+            }).then(() => {
+              window.history.back();
+            });
+            // No procesar productos si el cliente no existe
+            return;
+          }
+        });
+      }, (error) => { this.alertService.error(error); this.loading = false; }
+    );
+    console.log(this.venta);
+    }
+    this.cargarDocumentos();
+  }
+    // Método para procesar productos de orden de compra
+  public procesarProductosOrdenCompra(detalles: any[]) {
+    detalles.forEach((detalleCompra: any) => {
+      this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
+        if (producto) {
+          let detalle: any = {};
+          detalle.cantidad = detalleCompra.cantidad;
+          detalle.descripcion = producto.nombre;
+          detalle.id_producto = producto.id;
+          detalle.precio = parseFloat(producto.precio);
+          detalle.costo = parseFloat(producto.costo);
+          detalle.gravada = detalle.total;
+          detalle.id_vendedor = this.venta.id_vendedor;
+          detalle.exenta = 0;
+          detalle.no_sujeta = 0;
+          detalle.cuenta_a_terceros = 0;
+          detalle.total = detalle.precio * detalle.cantidad;
+          this.venta.detalles.push(detalle);
+          this.sumTotal();
+        } else {
+           Swal.fire({
+             title: 'Producto no encontrado',
+             html: `
+               <div class="text-left">
+                 <p><strong>No se encontró el producto para poder facturar.</strong></p>
+                 <p>Debe verificar o crear el producto con el siguiente código:</p>
+                 <ul class="list-unstyled mt-3">
+                   <li><strong>Código del producto:</strong> ${detalleCompra.codigo || 'Sin código'}</li>
+                   <li><strong>Cantidad solicitada:</strong> ${detalleCompra.cantidad || 'No disponible'}</li>
+                 </ul>
+               </div>
+             `,
+             icon: 'warning',
+             confirmButtonText: 'Entendido',
+             confirmButtonColor: '#3085d6'
+           }).then(() => {
+             window.history.back();
+           });
+        }
+      }, (error) => {
+        Swal.fire({
+          title: 'Error al buscar producto',
+          html: `
+            <div class="text-left">
+              <p><strong>Error al buscar el producto.</strong></p>
+              <p>No se pudo encontrar el producto con el siguiente código:</p>
+              <ul class="list-unstyled mt-3">
+                <li><strong>Código del producto:</strong> ${detalleCompra.codigo || 'Sin código'}</li>
+                <li><strong>Cantidad solicitada:</strong> ${detalleCompra.cantidad || 'No disponible'}</li>
+              </ul>
+            </div>
+          `,
+          icon: 'error',
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#3085d6'
+        }).then(() => {
+          window.history.back();
+        });
+      });
+    });
 
     // Cita a venta
     if (this.route.snapshot.queryParamMap.get('id_cita')!) {
@@ -467,6 +587,10 @@ export class FacturacionComponent implements OnInit {
                       parseFloat(detalle.descuento)
                     ).toFixed(4);
 
+                    if (!this.venta.propina) {
+                      this.venta.propina = 0;
+                    }
+
                     if (!detalle.gravada) {
                       detalle.gravada = detalle.total;
                     }
@@ -489,11 +613,6 @@ export class FacturacionComponent implements OnInit {
           }
         );
     }
-
-    if(this.venta.cotizacion){
-      this.venta.observaciones = this.venta.id_empresa == 2 ? '➢ Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \n➢ Pagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \n➢ Disponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \n➢ Propiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \n➢ Limitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \n➢ Duración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \n➢ Situaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \n➢ Renovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \n➢ Política de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \n➢ Brindar capacitaciones y soporte técnico a usuarios de negocios. \n➢ Garantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \n➢ Ofrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\n➢ Brindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
-    }
-
 
     this.cargarDocumentos();
   }
@@ -549,9 +668,16 @@ export class FacturacionComponent implements OnInit {
       ? this.venta.sub_total * 0.10
       : 0;
 
+    // Calcular propina basada en el porcentaje de la empresa y el subtotal
+    const propinaPorcentaje = parseFloat(this.apiService.auth_user().empresa.propina_porcentaje) || 0;
+    this.venta.propina = this.venta.cobrar_propina
+      ? parseFloat((this.venta.sub_total * (propinaPorcentaje / 100)).toFixed(4))
+      : 0;
+
+    // IVA solo sobre el monto gravado (exento y no sujeta no llevan IVA)
     this.venta.impuestos.forEach((impuesto: any) => {
       if (this.venta.cobrar_impuestos) {
-        impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
+        impuesto.monto = parseFloat(this.venta.gravada || 0) * (impuesto.porcentaje / 100);
       } else {
         impuesto.monto = 0;
       }
@@ -566,21 +692,15 @@ export class FacturacionComponent implements OnInit {
     this.venta.total_costo = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'total_costo')
     ).toFixed(4);
-    // Inicializar propina si no existe
-    if (!this.venta.propina) {
-      this.venta.propina = 0;
-    }
-    
+    // El total NO incluye la propina (la propina se muestra por separado en "Total + Propina")
+    // sub_total ya es la suma de totales por línea (gravada + exenta + no_sujeta), no sumar exenta/no_sujeta de nuevo
     this.venta.total = (
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
       parseFloat(this.venta.cuenta_a_terceros) +
-      parseFloat(this.venta.exenta) +
-      parseFloat(this.venta.no_sujeta) +
       parseFloat(this.venta.iva_percibido) -
       parseFloat(this.venta.iva_retenido) -
-      parseFloat(this.venta.renta_retenida) +
-      parseFloat(this.venta.propina || 0) -
+      parseFloat(this.venta.renta_retenida) -
       (this.venta.descuento_puntos || 0)
     ).toFixed(4);
 
@@ -602,7 +722,7 @@ export class FacturacionComponent implements OnInit {
     }
   }
 
-  // Cliente
+    // Cliente
     public setCliente(cliente:any){
         if(cliente.id){
             cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
@@ -616,7 +736,38 @@ export class FacturacionComponent implements OnInit {
             this.resetearPuntos();
             // Cargar puntos del cliente
             this.cargarPuntosCliente();
+
+            // Asignar vendedor si el cliente tiene uno asignado
+            if(cliente.id_vendedor) {
+                this.venta.id_vendedor = cliente.id_vendedor;
+            }
+
+            // Si el cliente tiene crédito habilitado, aplicar venta al crédito automáticamente
+            if (cliente.habilita_credito && cliente.dias_credito) {
+                this.venta.credito = true;
+                this.venta.estado = 'Pendiente';
+                this.venta.condicion = 'Crédito';
+                const fechaVenta = this.venta.fecha || this.apiService.date();
+                this.venta.fecha_pago = moment(fechaVenta).add(cliente.dias_credito, 'days').format('YYYY-MM-DD');
+            }
+
+            // Obtener saldo pendiente si el cliente tiene límite de crédito
+            if (cliente.limite_credito) {
+                this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 };
+                this.apiService.getAll('cliente/' + cliente.id + '/saldo-pendiente').subscribe(
+                    (res: any) => {
+                        this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: res.saldo_pendiente ?? 0 };
+                    },
+                    () => { this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 }; }
+                );
+            } else {
+                this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
+            }
+
+            // Limpiar mensaje de validación al cambiar cliente
+            this.mensajeValidacionFecha = '';
         } else {
+            this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
             // Si no hay cliente, resetear puntos
             this.puntosCliente = 0;
             this.resetearPuntos();
@@ -633,14 +784,118 @@ export class FacturacionComponent implements OnInit {
     }
 
     public setCredito() {
+        // Prevenir que usuarios "Ventas Limitado" activen ventas al crédito
+        if (this.apiService.auth_user().tipo === 'Ventas Limitado' && this.venta.credito) {
+            this.venta.credito = false;
+            this.alertService.error('Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.');
+            return;
+        }
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
-            this.venta.condicion = 'Crédito'
+            this.venta.condicion = 'Crédito';
             this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
         } else {
             this.venta.estado = 'Pagada';
-            this.venta.condicion = 'Contado'
+            this.venta.condicion = 'Contado';
             this.venta.fecha_pago = moment().format('YYYY-MM-DD');
+            // Limpiar mensaje de validación al cambiar a contado
+            this.mensajeValidacionFecha = '';
+        }
+    }
+
+    /**
+     * Valida si la fecha de pago está dentro del rango permitido según la clasificación del cliente
+     * A: máximo 90 días, B: máximo 60 días, C: máximo 30 días
+     */
+    validarFechaPagoPorClasificacion(fechaPago: string): boolean {
+        if (!this.venta.cliente?.clasificacion || !fechaPago) {
+            return true; // Si no hay cliente o fecha, no validar
+        }
+
+        const hoy = moment();
+        const fechaSeleccionada = moment(fechaPago);
+        const diasDiferencia = fechaSeleccionada.diff(hoy, 'days');
+
+        let diasMaximos = 30; // Por defecto 30 días (clasificación C)
+
+        switch (this.venta.cliente.clasificacion.toUpperCase()) {
+            case 'A':
+                diasMaximos = 90;
+                break;
+            case 'B':
+                diasMaximos = 60;
+                break;
+            case 'C':
+                diasMaximos = 30;
+                break;
+            default:
+                diasMaximos = 30;
+                break;
+        }
+
+        return diasDiferencia <= diasMaximos;
+    }
+
+    /**
+     * Obtiene el mensaje de validación para la fecha de pago según la clasificación
+     */
+    obtenerMensajeValidacionFecha(): string {
+        if (!this.venta.cliente?.clasificacion) {
+            return '';
+        }
+
+        let diasMaximos = 30;
+        let clasificacion = 'C';
+
+        switch (this.venta.cliente.clasificacion.toUpperCase()) {
+            case 'A':
+                diasMaximos = 90;
+                clasificacion = 'A';
+                break;
+            case 'B':
+                diasMaximos = 60;
+                clasificacion = 'B';
+                break;
+            case 'C':
+                diasMaximos = 30;
+                clasificacion = 'C';
+                break;
+        }
+
+        return `Clientes de clasificación ${clasificacion} no puede exceder ${diasMaximos} días.`;
+    }
+
+    /**
+     * Valida la fecha de pago cuando cambia y muestra mensaje si está fuera del rango
+     */
+    public validarFechaPago() {
+        this.mensajeValidacionFecha = ''; // Limpiar mensaje anterior
+
+        if (this.venta.credito && this.venta.fecha_pago) {
+            if (!this.validarFechaPagoPorClasificacion(this.venta.fecha_pago)) {
+                this.mensajeValidacionFecha = this.obtenerMensajeValidacionFecha();
+
+                // Revertir a la fecha anterior o establecer una fecha válida
+                const hoy = moment();
+                let diasMaximos = 30;
+
+                if (this.venta.cliente?.clasificacion) {
+                    switch (this.venta.cliente.clasificacion.toUpperCase()) {
+                        case 'A':
+                            diasMaximos = 90;
+                            break;
+                        case 'B':
+                            diasMaximos = 60;
+                            break;
+                        case 'C':
+                            diasMaximos = 30;
+                            break;
+                    }
+                }
+
+                // Establecer la fecha máxima permitida
+                this.venta.fecha_pago = hoy.add(diasMaximos, 'days').format('YYYY-MM-DD');
+            }
         }
     }
 
@@ -664,6 +919,12 @@ export class FacturacionComponent implements OnInit {
             this.formaPagos.forEach((item: any) => {
                 item.total = null;
             });
+        }
+
+        // Limpiar banco y mensaje de error al cambiar método de pago
+        if (!this.requiereBanco()) {
+            this.venta.detalle_banco = '';
+            this.mensajeErrorBanco = '';
         }
         console.log(this.venta);
     }
@@ -717,6 +978,15 @@ export class FacturacionComponent implements OnInit {
     }
 
   public onFacturar() {
+    // Validar que si el método de pago requiere banco, este esté seleccionado
+    this.mensajeErrorBanco = '';
+
+    if (this.venta.cotizacion != 1 && this.requiereBanco() && !this.venta.detalle_banco) {
+      this.mensajeErrorBanco = 'Debe seleccionar un banco para este método de pago.';
+      this.alertService.error('Debe seleccionar un banco para este método de pago.');
+      return;
+    }
+
     if (
       confirm(
         '¿Confirma procesar la ' +
@@ -730,6 +1000,15 @@ export class FacturacionComponent implements OnInit {
       }
       this.onSubmit();
     }
+  }
+
+  /**
+   * Verifica si el método de pago requiere selección de banco
+   */
+  public requiereBanco(): boolean {
+    return this.venta.forma_pago &&
+           this.venta.forma_pago !== 'Efectivo' &&
+           this.venta.forma_pago !== 'Wompi';
   }
 
   // Guardar venta
@@ -747,6 +1026,12 @@ export class FacturacionComponent implements OnInit {
         ? this.venta.efectivo
         : this.venta.total;
       this.venta.cambio = 0;
+    }
+
+    // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
+    if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
+      this.venta.credito = false;
+      this.venta.consigna = false;
     }
 
     this.apiService.store('facturacion', this.venta).subscribe(
@@ -778,7 +1063,9 @@ export class FacturacionComponent implements OnInit {
           this.apiService.auth_user().empresa.impresion_en_facturacion
         ) {
           if (this.apiService.auth_user().empresa.facturacion_electronica) {
+            // Actualizar this.venta con los datos del backend, especialmente el correlativo correcto
             this.venta.id = venta.id;
+            this.venta.correlativo = venta.correlativo;
             this.emitirDTE();
           } else {
             window.open(
@@ -945,20 +1232,39 @@ export class FacturacionComponent implements OnInit {
     return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
   }
 
+
+  /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura minúsculas para que el select coincida. */
+  private normalizarDetallesTipoGravado(venta: any) {
+    if (!venta?.detalles?.length) return;
+    const tiposValidos = ['gravada', 'exenta', 'no_sujeta'];
+    venta.detalles.forEach((d: any) => {
+      if (!d.tipo_gravado) {
+        const ex = parseFloat(d.exenta) || 0;
+        const no = parseFloat(d.no_sujeta) || 0;
+        d.tipo_gravado = ex > 0 ? 'exenta' : (no > 0 ? 'no_sujeta' : 'gravada');
+      }
+      const tipo = String(d.tipo_gravado).toLowerCase();
+      d.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
+      if (d.sub_total == null || d.sub_total === undefined) {
+        d.sub_total = Number((parseFloat(d.cantidad) * parseFloat(d.precio)).toFixed(4));
+      }
+    });
+  }
+
   /**
    * Manejar canje de puntos desde el componente hijo
    */
   public onPuntosCanjeados(datos: {puntos: number, descuento: number}): void {
     this.puntosCanjeados = datos.puntos;
     this.descuentoPuntos = datos.descuento;
-    
+
     // Actualizar campos de la venta
     this.venta.puntos_canjeados = this.puntosCanjeados;
     this.venta.descuento_puntos = this.descuentoPuntos;
-    
+
     // Recalcular totales
     this.sumTotal();
-    
+
     console.log('Puntos canjeados:', {
       puntos: this.puntosCanjeados,
       descuento: this.descuentoPuntos
@@ -1048,7 +1354,7 @@ export class FacturacionComponent implements OnInit {
             this.puntosInfoModal = response.data;
             this.configuracionModal = response.data.configuracion || null;
             this.calcularPuntosProximosAExpirarModal();
-            
+
             // Si ya hay puntos aplicados, cargar los valores actuales
             if (this.puntosCanjeados > 0) {
               this.usarPuntosModal = true;
@@ -1118,20 +1424,20 @@ export class FacturacionComponent implements OnInit {
     // Validar y corregir si excede puntos disponibles
     if (this.puntosACanjearModal > puntosDisponibles) {
       this.puntosACanjearModal = puntosDisponibles;
-      this.alertService.warning('Puntos insuficientes', 
+      this.alertService.warning('Puntos insuficientes',
         `Solo tienes ${puntosDisponibles} puntos disponibles`);
     }
 
     // Validar y corregir si excede el máximo permitido
     if (this.puntosACanjearModal > maximo) {
       this.puntosACanjearModal = maximo;
-      this.alertService.warning('Límite excedido', 
+      this.alertService.warning('Límite excedido',
         `El máximo de canje para ${this.configuracionModal.tipo_cliente} es ${maximo} puntos`);
     }
 
     // Solo mostrar advertencia del mínimo, no corregir automáticamente
     if (this.puntosACanjearModal > 0 && this.puntosACanjearModal < minimo) {
-      this.alertService.warning('Cantidad inválida', 
+      this.alertService.warning('Cantidad inválida',
         `El mínimo de canje para ${this.configuracionModal.tipo_cliente} es ${minimo} puntos`);
     }
   }
@@ -1175,21 +1481,21 @@ export class FacturacionComponent implements OnInit {
 
     // Validar mínimo de canje
     if (this.puntosACanjearModal < minimo) {
-      this.alertService.warning('Cantidad inválida', 
+      this.alertService.warning('Cantidad inválida',
         `El mínimo de canje para ${this.configuracionModal.tipo_cliente} es ${minimo} puntos`);
       return;
     }
 
     // Validar máximo de canje
     if (this.puntosACanjearModal > maximo) {
-      this.alertService.warning('Límite excedido', 
+      this.alertService.warning('Límite excedido',
         `El máximo de canje para ${this.configuracionModal.tipo_cliente} es ${maximo} puntos`);
       return;
     }
 
     // Validar puntos disponibles
     if (this.puntosACanjearModal > puntosDisponibles) {
-      this.alertService.warning('Puntos insuficientes', 
+      this.alertService.warning('Puntos insuficientes',
         `Solo tienes ${puntosDisponibles} puntos disponibles`);
       return;
     }
@@ -1207,7 +1513,7 @@ export class FacturacionComponent implements OnInit {
     this.puntosCliente = (this.puntosInfoModal?.puntos_disponibles || 0) - this.puntosCanjeados;
 
     // Mostrar mensaje de éxito
-    this.alertService.success('¡Descuento aplicado!', 
+    this.alertService.success('¡Descuento aplicado!',
       `Se aplicó un descuento de $${this.descuentoPuntos.toFixed(2)} por ${this.puntosCanjeados} puntos`);
 
     // Mantener el modal abierto para permitir ajustes
@@ -1232,20 +1538,20 @@ export class FacturacionComponent implements OnInit {
     this.descuentoPuntos = 0;
     this.venta.puntos_canjeados = 0;
     this.venta.descuento_puntos = 0;
-    
+
     // Resetear modal
     this.usarPuntosModal = false;
     this.puntosACanjearModal = 0;
-    
+
     // Recalcular total
     this.sumTotal();
-    
+
     // Actualizar botón de puntos (recargar puntos disponibles)
     this.cargarPuntosCliente();
-    
+
     // Mostrar mensaje
     this.alertService.success('Descuento removido', 'El descuento por puntos ha sido eliminado');
-    
+
     // Cerrar modal
     this.cerrarModalPuntos();
   }
@@ -1257,10 +1563,10 @@ export class FacturacionComponent implements OnInit {
     if (!this.configuracionModal || !this.puntosInfoModal) {
       return 0;
     }
-    
+
     const maximoConfiguracion = this.configuracionModal.maximo_canje || 1000;
     const puntosDisponibles = this.puntosInfoModal.puntos_disponibles || 0;
-    
+
     return Math.min(maximoConfiguracion, puntosDisponibles);
   }
 
@@ -1284,8 +1590,8 @@ export class FacturacionComponent implements OnInit {
     const maximo = this.getMaximoCanje();
     const puntosDisponibles = this.puntosInfoModal.puntos_disponibles;
 
-    return this.puntosACanjearModal >= minimo && 
-           this.puntosACanjearModal <= maximo && 
+    return this.puntosACanjearModal >= minimo &&
+           this.puntosACanjearModal <= maximo &&
            this.puntosACanjearModal <= puntosDisponibles &&
            this.puntosACanjearModal > 0;
   }
@@ -1310,5 +1616,10 @@ export class FacturacionComponent implements OnInit {
         );
     }
 
+    public getTotalConPropina(): number {
+        const total = parseFloat(this.venta?.total || 0);
+        const propina = parseFloat(this.venta?.propina || 0);
+        return total + propina;
+    }
 
 }

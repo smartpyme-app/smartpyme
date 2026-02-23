@@ -22,4 +22,42 @@ export class EncryptService {
       return 0;
     }
   }
+
+  /**
+   * Genera un código promocional dinámico
+   * @param prefix Prefijo opcional para el código (ej: 'SMARTPYME', 'BOXFUL', etc.)
+   * @param length Longitud del código aleatorio (por defecto 8)
+   * @returns Código promocional generado
+   */
+  generatePromoCode(prefix: string = '', length: number = 8): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let randomPart = '';
+    
+    // Generar parte aleatoria
+    for (let i = 0; i < length; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    // Si hay prefijo, combinarlo con la parte aleatoria
+    if (prefix && prefix.trim() !== '') {
+      // Asegurar que el prefijo esté en mayúsculas y sin espacios
+      const cleanPrefix = prefix.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+      return `${cleanPrefix}${randomPart}`;
+    }
+    
+    // Si no hay prefijo, retornar solo la parte aleatoria
+    return randomPart;
+  }
+
+  /**
+   * Genera un código promocional único basado en un ID
+   * @param id ID base para generar el código
+   * @param prefix Prefijo opcional
+   * @returns Código promocional único
+   */
+  generatePromoCodeFromId(id: number, prefix: string = 'PROMO'): string {
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const idEncoded = id.toString(36).toUpperCase().padStart(4, '0');
+    return `${prefix}${idEncoded}${timestamp.slice(-4)}`;
+  }
 }

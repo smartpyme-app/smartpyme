@@ -1,9 +1,11 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { Subject } from 'rxjs';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 
 declare var $:any;
 
@@ -11,8 +13,9 @@ declare var $:any;
   selector: 'app-compras',
   templateUrl: './compras.component.html'
 })
-
-export class ComprasComponent implements OnInit {
+export class ComprasComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  private searchSubject$ = new Subject<void>();
 
     public compras:any = [];
     public compra:any = {};
@@ -49,7 +52,16 @@ export class ComprasComponent implements OnInit {
                 private modalService: BsModalService, private router: Router, private route: ActivatedRoute
     ){}
 
+    ngOnDestroy() {
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
+
     ngOnInit() {
+        this.searchSubject$.pipe(
+            debounceTime(400),
+            takeUntil(this.destroy$)
+        ).subscribe(() => this.filtrarCompras());
 
         this.route.queryParams.subscribe(params => {
             this.filtros = {
@@ -62,10 +74,13 @@ export class ComprasComponent implements OnInit {
                 forma_pago: params['forma_pago'] || '',
                 dte: params['dte'] || '',
                 estado: params['estado'] || '',
+                inicio: params['inicio'] || '',
+                fin: params['fin'] || '',
+                num_identificacion: params['num_identificacion'] || '',
                 orden: params['orden'] || 'id',
                 direccion: params['direccion'] || 'desc',
-                paginate: params['paginate'] || 10,
-                page: params['page'] || 1,
+                paginate: +params['paginate'] || 10,
+                page: +params['page'] || 1,
             };
 
             this.filtrarCompras();
@@ -89,12 +104,26 @@ export class ComprasComponent implements OnInit {
         this.filtros.dte = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
+        this.filtros.inicio = '';
+        this.filtros.fin = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
+        this.filtros.page = 1;
         this.filtros.num_identificacion = '';
 
         this.filtrarCompras();
+    }
+
+    public onBuscadorInput() {
+        this.searchSubject$.next();
+    }
+
+    public getSaldo(compra: any): number {
+        const total = parseFloat(compra?.total || 0);
+        const abonos = parseFloat(compra?.abonos_sum_total || 0);
+        const devoluciones = parseFloat(compra?.devoluciones_sum_total || 0);
+        return Math.round((total - abonos - devoluciones) * 100) / 100;
     }
 
     public filtrarCompras(){
@@ -273,8 +302,8 @@ export class ComprasComponent implements OnInit {
         );
     }
 
-    public openAbono(template: TemplateRef<any>, compra:any){
-        this.compra = compra;
+    public openAbono(template: TemplateRef<any>, compra: any){
+        this.compra = { ...compra, saldo: this.getSaldo(compra) };
         this.modalRef = this.modalService.show(template);
     }
 
@@ -469,5 +498,8 @@ export class ComprasComponent implements OnInit {
     }, error => {this.alertService.error(error); });
   } 
 
+  public imprimir(compra:any){
+    window.open(this.apiService.baseUrl + '/api/compra/impresion/' + compra.id + '?token=' + this.apiService.auth_token());
+  }
 
 }

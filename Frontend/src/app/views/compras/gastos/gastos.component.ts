@@ -46,10 +46,13 @@ export class GastosComponent implements OnInit {
                 tipo: params['tipo'] || '',
                 dte: params['dte'] || '',
                 estado: params['estado'] || '',
+                inicio: params['inicio'] || '',
+                fin: params['fin'] || '',
+                num_identificacion: params['num_identificacion'] || '',
                 orden: params['orden'] || 'id',
                 direccion: params['direccion'] || 'desc',
-                paginate: params['paginate'] || 10,
-                page: params['page'] || 1,
+                paginate: +params['paginate'] || 10,
+                page: +params['page'] || 1,
             };
 
             this.filtrarGastos();
@@ -70,9 +73,12 @@ export class GastosComponent implements OnInit {
         this.filtros.estado = '';
         this.filtros.tipo = '';
         this.filtros.buscador = '';
+        this.filtros.inicio = '';
+        this.filtros.fin = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
+        this.filtros.page = 1;
         this.filtros.num_identificacion = '';
 
         this.loading = true;
@@ -306,6 +312,11 @@ export class GastosComponent implements OnInit {
         this.apiService.getAll('gastos/nums-ids').subscribe(numsIds => { 
             this.numeros_ids = numsIds;
         }, error => {this.alertService.error(error); });
+    }
+
+    public openAbono(template: TemplateRef<any>, gasto:any){
+        this.gasto = gasto;
+        this.modalRef = this.modalService.show(template);
     }
 
 }

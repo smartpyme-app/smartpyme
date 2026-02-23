@@ -3,7 +3,12 @@
         <span *ngIf="!loading && compra.estado != 'Pre-compra'">Compra</span>
         <span *ngIf="!loading && compra.estado == 'Pre-compra'">Orden de compra</span>
     </h2>
-    <button class="btn btn-light text-danger" onclick="history.back()"><i class="fa fa-arrow-left"></i> Regresar</button>
+    <div class="d-flex gap-2">
+        <button *ngIf="compra.id" (click)="imprimir()" class="btn btn-default" tooltip="Imprimir compra">
+            <i class="fa fa-print"></i> Imprimir
+        </button>
+        <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>
+    </div>
 </section>
 
 <div class="card border-0">
@@ -55,7 +60,7 @@
                 <p>{{ compra?.proveedor?.giro  || 'N/A' }}</p>
             </div>
             <div class="form-group col-lg-3">
-                <label class="fw-medium">Nit</label>
+                <label class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT' : 'Identificación fiscal' }}</label>
                 <p>{{ compra?.proveedor?.nit || 'N/A' }}</p>
             </div>
         </div>
@@ -73,17 +78,17 @@
                         <!-- <th>N°</th> -->
                         <th>Producto</th>
                         <th width="100">Cantidad</th>
-                        <th width="100">Costo</th>
-                        <th width="100">Descuento</th>
-                        <th width="100" class="text-end">Total</th>
+                        <th *ngIf="!apiService.isSupervisorLimitado()" width="100">Costo</th>
+                        <th *ngIf="!apiService.isSupervisorLimitado()" width="100">Descuento</th>
+                        <th *ngIf="!apiService.isSupervisorLimitado()" width="100" class="text-end">Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="compra.detalles?.length < 1 && !loading">
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 3 : 6" class="text-center" *ngIf="compra.detalles?.length < 1 && !loading">
                             <span class="badge bg-primary">No tiene productos agregados</span>
                         </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 3 : 6" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -94,39 +99,39 @@
                             {{ detalle.nombre_producto }}
                         </td>
                         <td>{{ detalle.cantidad }}</td>
-                        <td>{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
-                        <td>{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td *ngIf="!apiService.isSupervisorLimitado()">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
+                        <td *ngIf="!apiService.isSupervisorLimitado()">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
+                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
                     </tr>
                     <tr>
-                        <td colspan="2" class="text-end"></td>
-                        <td colspan="2" class="text-end"><b>Sub Total:</b></td>
-                        <td class="text-end"><b>{{ compra?.sub_total + compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Sub Total:</b></td>
+                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.sub_total + compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
-                        <td colspan="2" class="text-end"></td>
-                        <td colspan="2" class="text-end"><b>Descuento:</b></td>
-                        <td class="text-end"><b>{{ compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Descuento:</b></td>
+                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
-                        <td colspan="2" class="text-end"></td>
-                        <td colspan="2" class="text-end"><b>IVA</b></td>
-                        <td class="text-end"><b>{{ compra?.iva | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>IVA</b></td>
+                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.iva | currency:'USD':'symbol':'1.2'}}</b> </td>
                     </tr>
                     <tr *ngIf="compra?.percepcion > 0">
-                        <td colspan="2" class="text-end"></td>
-                        <td colspan="2" class="text-end"><b>Percepción (1%)</b></td>
-                        <td class="text-end"><b>{{ compra?.percepcion | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Percepción (1%)</b></td>
+                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.percepcion | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="compra?.renta_retenida > 0">
-                        <td colspan="2" class="text-end"></td>
-                        <td colspan="2" class="text-end"><b>Renta retenida</b></td>
-                        <td class="text-end"><b>{{ compra?.renta_retenida | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Renta retenida</b></td>
+                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.renta_retenida | currency:'USD':'symbol':'1.2'}}</b> </td>
                     </tr>
                     <tr>
-                        <td colspan="2" class="text-end"></td>
-                        <td colspan="2" class="text-end"><b>Total:</b></td>
-                        <td class="text-end"><b>{{ compra?.total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Total:</b></td>
+                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                 </tbody>
             </table>
@@ -187,6 +192,50 @@
                                 <i class="fa fa-fw fa-print"></i>
                             </a>
                         </td> -->
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card" *ngIf="compra.devoluciones?.length > 0">
+    <h5 class="card-title p-3">
+        Devoluciones
+    </h5>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Tipo documento</th>
+                        <th>Referencia</th>
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6" class="text-center" *ngIf="compra.devoluciones?.length < 1 && !loading">
+                            <span class="badge bg-primary">No tiene devoluciones agregadas</span>
+                        </td>
+                        <td colspan="6" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let devolucion of compra.devoluciones; let i=index">
+                        <td>{{ devolucion.fecha | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ devolucion.tipo }}</td>
+                        <td>{{ devolucion.tipo_documento }}</td>
+                        <td>{{ devolucion.referencia }}</td>
+                        <td>
+                            <span class="badge" [ngClass]="{'bg-danger' : devolucion?.enable == '0', 'bg-success' : devolucion?.enable == '1'}">
+                                {{ devolucion?.enable == '1' ? 'Activa' : 'Anulada' }}
+                            </span>
+                        </td>
+                        <td class="text-end">{{ devolucion.total | currency:'USD':'symbol':'1.2' }}</td>
                     </tr>
                 </tbody>
             </table>

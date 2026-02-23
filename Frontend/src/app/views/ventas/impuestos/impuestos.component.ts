@@ -39,10 +39,33 @@ export class ImpuestosComponent implements OnInit {
     }
 
     public openModal(template: TemplateRef<any>, impuesto:any) {
-        this.impuesto = impuesto;
+        // Crear una copia del objeto para evitar modificar el original
+        this.impuesto = {...impuesto};
         if (!this.impuesto.id) {
             this.impuesto.id_empresa = this.apiService.auth_user().id_empresa;
             this.impuesto.enable = true;
+            // Solo establecer valores por defecto para nuevos impuestos
+            this.impuesto.aplica_ventas = true;
+            this.impuesto.aplica_gastos = true;
+            this.impuesto.aplica_compras = true;
+        } else {
+            // Para impuestos existentes, respetar los valores del backend
+            // Convertir valores null/undefined a false, pero mantener false y true como están
+            if (this.impuesto.aplica_ventas === undefined || this.impuesto.aplica_ventas === null) {
+                this.impuesto.aplica_ventas = false;
+            } else {
+                this.impuesto.aplica_ventas = Boolean(this.impuesto.aplica_ventas);
+            }
+            if (this.impuesto.aplica_gastos === undefined || this.impuesto.aplica_gastos === null) {
+                this.impuesto.aplica_gastos = false;
+            } else {
+                this.impuesto.aplica_gastos = Boolean(this.impuesto.aplica_gastos);
+            }
+            if (this.impuesto.aplica_compras === undefined || this.impuesto.aplica_compras === null) {
+                this.impuesto.aplica_compras = false;
+            } else {
+                this.impuesto.aplica_compras = Boolean(this.impuesto.aplica_compras);
+            }
         }
         this.modalRef = this.modalService.show(template, {class: 'modal-sm', backdrop: 'static'});
     }

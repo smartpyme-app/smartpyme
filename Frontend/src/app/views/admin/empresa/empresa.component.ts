@@ -1,28 +1,29 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef, } from 'ngx-bootstrap/modal';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-empresa',
-  templateUrl: './empresa.component.html'
+    selector: 'app-empresa',
+    templateUrl: './empresa.component.html'
 })
-export class EmpresaComponent implements OnInit {
+export class EmpresaComponent implements OnInit, AfterViewInit {
 
     public empresa: any = {};
     public loading = false;
     public saving = false;
     public cheking = false;
-    public departamentos:any = [];
-    public distritos:any = [];
-    public municipios:any = [];
-    public actividad_economicas:any = [];
-    public downloading:boolean = false;
-    public filtros:any = {};
+    public departamentos: any = [];
+    public distritos: any = [];
+    public municipios: any = [];
+    public actividad_economicas: any = [];
+    public downloading: boolean = false;
+    public filtros: any = {};
 
     public estadisticasPruebas: any = null;
     public documentosBase: any[] = [];
@@ -32,17 +33,21 @@ export class EmpresaComponent implements OnInit {
     public procesando: boolean = false;
     public modalRef!: BsModalRef;
     public procesandoPruebas: boolean = false;
-    public correlativoInicial: number | undefined = undefined; 
+    public correlativoInicial: number | undefined = undefined;
 
     @ViewChild('modalTemplate')
     modalTemplate!: TemplateRef<any>;
 
+    @ViewChild('tabset', { static: false })
+    tabset!: TabsetComponent;
+
     public estadoPruebasCompletado: boolean = false;
     public fechaCompletadoPruebas: string = '';
 
-    public showpassword:boolean = false;
-    public showpassword2:boolean = false;
-    public canales:any = [];
+    public showpassword: boolean = false;
+    public showpassword2: boolean = false;
+    public canales: any = [];
+    public tieneAccesoPropina: boolean = false;
 
     public customConfig: any = {
         columnas: {
@@ -50,18 +55,20 @@ export class EmpresaComponent implements OnInit {
         }
     };
 
-    constructor( 
+    constructor(
         public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+        private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
+        private funcionalidadesService: FuncionalidadesService
     ) { }
 
     ngOnInit() {
 
-        this.apiService.getAll('canales').subscribe(canales => { 
+        this.apiService.getAll('canales').subscribe(canales => {
             this.canales = canales;
-        }, error => {this.alertService.error(error); });
+        }, error => { this.alertService.error(error); });
 
         this.loadAll();
+        this.verificarAccesoPropina();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
@@ -69,7 +76,21 @@ export class EmpresaComponent implements OnInit {
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
 
     }
-    
+
+    ngAfterViewInit() {
+        // Suscribirse a cambios en los query params para manejar navegación directa
+        this.route.queryParams.subscribe(params => {
+            if (params['tab']) {
+                // Esperar a que el tabset y la empresa estén disponibles
+                setTimeout(() => {
+                    if (this.empresa && Object.keys(this.empresa).length > 0) {
+                        this.seleccionarTabPorNombre(params['tab']);
+                    }
+                }, 300);
+            }
+        });
+    }
+
 
     public loadAll() {
         this.loading = true;
@@ -82,9 +103,19 @@ export class EmpresaComponent implements OnInit {
             //Se cargan las facturas cuando ya se ha inicializado la empresa
             if (this.empresa && this.empresa.fe_ambiente === '00') {
                 this.cargarEstadisticasPruebas();
-                this.cargarDocumentosBase();
+                // this.cargarDocumentosBase();
             }
-        },error => {this.alertService.error(error); this.loading = false; });
+
+            // Después de cargar la empresa, verificar si hay un tab en la URL
+            const tabParam = this.route.snapshot.queryParams['tab'];
+            if (tabParam) {
+                setTimeout(() => {
+                    if (this.tabset && this.tabset.tabs) {
+                        this.seleccionarTabPorNombre(tabParam);
+                    }
+                }, 600);
+            }
+        }, error => { this.alertService.error(error); this.loading = false; });
     }
 
     public onSubmit(): Promise<any> {
@@ -96,127 +127,142 @@ export class EmpresaComponent implements OnInit {
 
                 this.initializeCustomConfig();
 
-                let user:any = {}; 
+                let user: any = {};
                 user = JSON.parse(localStorage.getItem('SP_auth_user')!);
                 user.empresa = empresa;
                 localStorage.setItem('SP_auth_user', JSON.stringify(user));
 
-                if(this.empresa.fe_ambiente == '01'){
+                if (this.empresa.fe_ambiente == '01') {
                     localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
-                }else{
+                } else {
                     localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
                 }
 
                 this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
                 this.saving = false;
                 resolve(null);
-            },error => {this.alertService.error(error); this.saving = false; resolve(null);});
-            
+            }, error => { this.alertService.error(error); this.saving = false; resolve(null); });
+
         });
     }
 
-    setGiro(){
-        this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_actividad_economica).nombre;
+    setGiro() {
+        this.empresa.giro = this.actividad_economicas.find((item: any) => item.cod == this.empresa.cod_actividad_economica).nombre;
         console.log(this.empresa);
     }
 
-    setDistrito(){
-        let distrito = this.distritos.find((item:any) => item.cod == this.empresa.cod_distrito && item.cod_departamento == this.empresa.cod_departamento);
+    setDistrito() {
+        let distrito = this.distritos.find((item: any) => item.cod == this.empresa.cod_distrito && item.cod_departamento == this.empresa.cod_departamento);
         console.log(distrito);
-        if(distrito){
+        if (distrito) {
             this.empresa.cod_municipio = distrito.cod_municipio;
             this.setMunicipio();
-            this.empresa.distrito = distrito.nombre; 
+            this.empresa.distrito = distrito.nombre;
             this.empresa.cod_distrito = distrito.cod;
         }
     }
 
-    setMunicipio(){
-        let municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio && item.cod_departamento == this.empresa.cod_departamento);
-        if(municipio){
-            this.empresa.municipio = municipio.nombre; 
+    setMunicipio() {
+        let municipio = this.municipios.find((item: any) => item.cod == this.empresa.cod_municipio && item.cod_departamento == this.empresa.cod_departamento);
+        if (municipio) {
+            this.empresa.municipio = municipio.nombre;
             this.empresa.cod_municipio = municipio.cod;
 
-            this.empresa.distrito = ''; 
+            this.empresa.distrito = '';
             this.empresa.cod_distrito = '';
         }
     }
 
-    setDepartamento(){
-        let departamento = this.departamentos.find((item:any) => item.cod == this.empresa.cod_departamento);
-        if(departamento){
-            this.empresa.departamento = departamento.nombre; 
+    setDepartamento() {
+        let departamento = this.departamentos.find((item: any) => item.cod == this.empresa.cod_departamento);
+        if (departamento) {
+            this.empresa.departamento = departamento.nombre;
             this.empresa.cod_departamento = departamento.cod;
 
         }
-        this.empresa.municipio = ''; 
+        this.empresa.municipio = '';
         this.empresa.cod_municipio = '';
-        this.empresa.distrito = ''; 
+        this.empresa.distrito = '';
         this.empresa.cod_distrito = '';
     }
 
-    setPais(){
-        if(this.empresa.pais == 'El Salvador'){
+    setPais() {
+        // Mapeo de países a códigos ISO
+        const mapeoCodigosPais: { [key: string]: string } = {
+            'El Salvador': 'SV',
+            'Belice': 'BZ',
+            'Guatemala': 'GT',
+            'Honduras': 'HN',
+            'Nicaragua': 'NI',
+            'Costa Rica': 'CR',
+            'Panamá': 'PA',
+            'México': 'MX'
+        };
+
+        // Establecer el código de país
+        this.empresa.cod_pais = mapeoCodigosPais[this.empresa.pais] || null;
+
+        // Configurar moneda e IVA según el país
+        if (this.empresa.pais == 'El Salvador') {
             this.empresa.moneda = 'USD';
             this.empresa.iva = 13;
         }
-        if(this.empresa.pais == 'Belice'){
+        if (this.empresa.pais == 'Belice') {
             this.empresa.moneda = 'BZD';
             this.empresa.iva = 12.5;
         }
-        if(this.empresa.pais == 'Guatemala'){
+        if (this.empresa.pais == 'Guatemala') {
             this.empresa.moneda = 'GTQ';
             this.empresa.iva = 12;
         }
-        if(this.empresa.pais == 'Honduras'){
+        if (this.empresa.pais == 'Honduras') {
             this.empresa.moneda = 'HNL';
             this.empresa.iva = 15;
         }
-        if(this.empresa.pais == 'Nicaragua'){
+        if (this.empresa.pais == 'Nicaragua') {
             this.empresa.moneda = 'NIO';
             this.empresa.iva = 15;
         }
-        if(this.empresa.pais == 'Costa Rica'){
+        if (this.empresa.pais == 'Costa Rica') {
             this.empresa.moneda = 'CRC';
             this.empresa.iva = 13;
         }
-        if(this.empresa.pais == 'Panamá'){
+        if (this.empresa.pais == 'Panamá') {
             this.empresa.moneda = 'PAB';
             this.empresa.iva = 7;
         }
-        if(this.empresa.pais == 'México'){
+        if (this.empresa.pais == 'México') {
             this.empresa.moneda = 'MXN';
             this.empresa.iva = 16;
         }
 
-        this.empresa.cod_departamento= " ";
-        this.empresa.cod_municipio= " ";
-
-        console.log(this.empresa);
+        // Limpiar códigos de ubicación cuando se cambia de país
+        this.empresa.cod_departamento = " ";
+        this.empresa.cod_municipio = " ";
     }
 
-    setCobrarIVA(){
+    setCobrarIVA() {
         console.log(this.empresa.cobra_iva);
-        if(this.empresa.cobra_iva == 'Si'){
+        if (this.empresa.cobra_iva == 'Si') {
             this.empresa.cobra_iva = 'No';
-        }else{
+        } else {
             this.empresa.cobra_iva = 'Si';
         }
         console.log(this.empresa.cobra_iva);
     }
-     
+
 
     setFile(event: any, type: string = 'logo') {
         const file = event.target.files[0];
-        
- 
+
+
         if (file && file.size > 2 * 1024 * 1024) {
             this.alertService.error('El archivo es demasiado grande. Máximo permitido: 2MB');
             event.target.value = '';
             return;
         }
 
-     
+
         if (type === 'sello') {
             this.empresa.sello_file = file;
         } else if (type === 'firma') {
@@ -231,9 +277,9 @@ export class EmpresaComponent implements OnInit {
         formData.append('id', this.empresa.id);
 
         this.loading = true;
-   
+
         let endpoint = 'empresa/imagenes';
-       
+
 
         this.apiService.store(endpoint, formData).subscribe(
             (response: any) => {
@@ -243,7 +289,7 @@ export class EmpresaComponent implements OnInit {
                 } else if (type === 'firma') {
                     this.empresa.firma = response.path;
                     this.alertService.success('Firma actualizada', 'Tu firma fue guardada exitosamente.');
-                }else{
+                } else {
                     this.empresa.logo = response.path;
                     this.alertService.success('Logo actualizado', 'Tu logo fue guardado exitosamente.');
                 }
@@ -256,57 +302,57 @@ export class EmpresaComponent implements OnInit {
         );
     }
 
-    public onCheckMH():void {
+    public onCheckMH(): void {
         this.cheking = true;
-        
+
         this.onSubmit().then(() => {
             this.mhService.auth().subscribe(response => {
 
-                if(response.status == 'ERROR'){
+                if (response.status == 'ERROR') {
                     this.cheking = false;
                     this.alertService.info('Revisar', response.body.descripcionMsg);
-                }else{
+                } else {
                     this.cheking = false;
                     this.alertService.success('Conexión a la API exitosa', 'El proceso se realizo correctamente.');
                 }
-            },error => {this.alertService.error(error); this.cheking = false; });
+            }, error => { this.alertService.error(error); this.cheking = false; });
         });
 
     }
 
-    public mostrarPassword(){
+    public mostrarPassword() {
         this.showpassword = !this.showpassword;
-    }  
-    
-    public mostrarPassword2(){
+    }
+
+    public mostrarPassword2() {
         this.showpassword2 = !this.showpassword2;
-    } 
+    }
 
     public onCheckFE() {
         this.cheking = true;
-        
-            this.mhService.verificarFirmador().subscribe(response => {
-                this.cheking = false;
-                console.log(response.status)
-                if (response.status === 200) {
-                  this.alertService.success('Conexión al firmador exitosa.', 'El proceso se realizo correctamente.');
-                } else {
-                  this.alertService.warning('Datos incorrectos','No se pudo conectar al firmador');
-                };
-            },error => {
-                console.log(error)
-                if (error.status == 200) {
-                  this.alertService.success('Conexión al firmador exitosa.', 'El proceso se realizo correctamente.');
-                } else {
-                  this.alertService.warning('Datos incorrectos','No se pudo conectar al firmador');
-                };
-                this.cheking = false;
-            });
+
+        this.mhService.verificarFirmador().subscribe(response => {
+            this.cheking = false;
+            console.log(response.status)
+            if (response.status === 200) {
+                this.alertService.success('Conexión al firmador exitosa.', 'El proceso se realizo correctamente.');
+            } else {
+                this.alertService.warning('Datos incorrectos', 'No se pudo conectar al firmador');
+            };
+        }, error => {
+            console.log(error)
+            if (error.status == 200) {
+                this.alertService.success('Conexión al firmador exitosa.', 'El proceso se realizo correctamente.');
+            } else {
+                this.alertService.warning('Datos incorrectos', 'No se pudo conectar al firmador');
+            };
+            this.cheking = false;
+        });
 
     }
 
     cargarEstadisticasPruebas() {
-        if(this.empresa.fe_ambiente == '00') {
+        if (this.empresa.fe_ambiente == '00') {
             this.mhService.obtenerEstadisticasPruebasMasivas().subscribe(
                 (data) => {
                     this.estadisticasPruebas = data.tipos;
@@ -320,113 +366,109 @@ export class EmpresaComponent implements OnInit {
             );
         }
     }
-    
-      getKeysPruebas(): string[] {
+
+    getKeysPruebas(): string[] {
         return this.estadisticasPruebas ? Object.keys(this.estadisticasPruebas) : [];
-      }
-    
-      getLabelTipo(tipo: string): string {
+    }
+
+    getLabelTipo(tipo: string): string {
         const labels: { [key: string]: string } = {
-          'facturas': 'Facturas',
-          'creditosFiscales': 'CCF',
-          'notasCredito': 'Notas Crédito',
-          'notasDebito': 'Notas Débito',
-          'facturasExportacion': 'Exportación',
-        //   'sujetoExcluido': 'Sujeto Excluido'
+            'facturas': 'Facturas',
+            'creditosFiscales': 'CCF',
+            'notasCredito': 'Notas Crédito',
+            'notasDebito': 'Notas Débito',
+            'facturasExportacion': 'Exportación',
+            'sujetoExcluido': 'Sujeto Excluido'
         };
-        
+
         return labels[tipo] || tipo;
-      }
-    
-      isPruebaCompleta(tipo: string): boolean {
+    }
+
+    isPruebaCompleta(tipo: string): boolean {
         if (!this.estadisticasPruebas || !this.estadisticasPruebas[tipo]) {
-          return false;
+            return false;
         }
-        
+
         return this.estadisticasPruebas[tipo].emitidas >= this.estadisticasPruebas[tipo].requeridas;
-      }
-    
-      getProgresoTipo(tipo: string): number {
+    }
+
+    getProgresoTipo(tipo: string): number {
         if (!this.estadisticasPruebas || !this.estadisticasPruebas[tipo]) {
-          return 0;
+            return 0;
         }
-        
+
         const { emitidas, requeridas } = this.estadisticasPruebas[tipo];
         return Math.min(100, Math.round((emitidas / requeridas) * 100));
-      }
+    }
 
-      /** NUEVO: Verificar si se pueden generar notas */
-      puedeGenerarNotas(tipo: string): boolean {
+    /** NUEVO: Verificar si se pueden generar notas */
+    puedeGenerarNotas(tipo: string): boolean {
         if (!this.estadisticasPruebas) return false;
-        
+
         // Solo permitir generar notas si hay CCF emitidos
         if (tipo === 'notasCredito' || tipo === 'notasDebito') {
             const ccfEmitidos = this.estadisticasPruebas['creditosFiscales']?.emitidas || 0;
             return ccfEmitidos > 0;
         }
-        
-        return true;
-      }
 
-      calcularCantidadFaltante(tipo: string): number {
+        return true;
+    }
+
+    calcularCantidadFaltante(tipo: string): number {
         if (!this.estadisticasPruebas || !this.estadisticasPruebas[tipo]) {
             return 1;
         }
-        
+
         const { emitidas, requeridas } = this.estadisticasPruebas[tipo];
-        
+
         // Para notas, limitamos la cantidad a los CCF disponibles
         if (tipo === 'notasCredito' || tipo === 'notasDebito') {
             const ccfEmitidos = this.estadisticasPruebas['creditosFiscales']?.emitidas || 0;
             const faltantes = Math.max(0, requeridas - emitidas);
             return Math.min(faltantes, ccfEmitidos - emitidas);
         }
-        
+
         return Math.max(0, requeridas - emitidas);
-      }
-    
-      getTotalProgress(): number {
+    }
+
+    getTotalProgress(): number {
         if (!this.estadisticasPruebas) {
-          return 0;
+            return 0;
         }
-        
+
         // Verificar si todos los tipos de documentos han alcanzado el mínimo requerido
-        const todosCompletados = Object.values(this.estadisticasPruebas).every((stat: any) => 
-          stat.emitidas >= stat.requeridas
+        const todosCompletados = Object.values(this.estadisticasPruebas).every((stat: any) =>
+            stat.emitidas >= stat.requeridas
         );
-        
+
         // Si todos los tipos han alcanzado el mínimo, mostrar 100%
         if (todosCompletados) {
-          return 100;
+            return 100;
         }
-        
+
         // Caso contrario, calcular el porcentaje real pero limitado a 100%
         let totalEmitidos = 0;
         let totalRequeridos = 0;
-        
+
         Object.values(this.estadisticasPruebas).forEach((stat: any) => {
-          // Para cada tipo, considerar como máximo el número requerido
-          totalEmitidos += Math.min(stat.emitidas, stat.requeridas);
-          totalRequeridos += stat.requeridas;
+            // Para cada tipo, considerar como máximo el número requerido
+            totalEmitidos += Math.min(stat.emitidas, stat.requeridas);
+            totalRequeridos += stat.requeridas;
         });
-        
+
         return Math.min(100, Math.round((totalEmitidos / totalRequeridos) * 100));
-      }
-    
-      cargarDocumentosBase() {
-        this.apiService.getAll('mh/pruebas-masivas/documentos-base').subscribe(
+    }
+
+    cargarDocumentosBase() {
+        // Llamar al endpoint con el tipo específico
+        const endpoint = `mh/pruebas-masivas/documentos-base?tipo=${this.tipoSeleccionado}`;
+
+        this.apiService.getAll(endpoint).subscribe(
             (data) => {
-                
-                this.documentosBase = data.filter((doc: any) => {
-                    if (this.tipoSeleccionado === 'facturas') return doc.tipo_dte === '01';
-                    if (this.tipoSeleccionado === 'creditosFiscales') return doc.tipo_dte === '03';
-                    if (this.tipoSeleccionado === 'notasCredito') return doc.tipo_dte === '03';
-                    if (this.tipoSeleccionado === 'notasDebito') return doc.tipo_dte === '03';
-                    if (this.tipoSeleccionado === 'facturasExportacion') return doc.tipo_dte === '11';
-                    // if (this.tipoSeleccionado === 'sujetoExcluido') return doc.tipo_dte === '14';
-                    
-                    return false;
-                });
+                // Asegurarse de que data sea un array
+                this.documentosBase = Array.isArray(data) ? data : [];
+
+                console.log(`Documentos base para ${this.tipoSeleccionado}:`, this.documentosBase);
             },
             (error) => {
                 console.error('Error al cargar documentos base:', error);
@@ -434,11 +476,11 @@ export class EmpresaComponent implements OnInit {
             }
         );
     }
-      
-      // Modifica este método para que abra el modal
-      ejecutarPruebasMasivas(template: TemplateRef<any>, tipo: string) {
+
+    // Modifica este método para que abra el modal
+    ejecutarPruebasMasivas(template: TemplateRef<any>, tipo: string) {
         this.tipoSeleccionado = tipo;
-        
+
         // Verificar si se pueden generar notas
         if ((tipo === 'notasCredito' || tipo === 'notasDebito') && !this.puedeGenerarNotas(tipo)) {
             this.alertService.error(
@@ -446,64 +488,64 @@ export class EmpresaComponent implements OnInit {
             );
             return;
         }
-        
+
         this.cargarDocumentosBase();
-    
+
 
         // Calcular cantidad considerando limitaciones
         // this.cantidadFaltante = this.calcularCantidadFaltante(tipo);
-        
+
         if (this.cantidadFaltante <= 0) {
             this.alertService.info(
-                'Pruebas completadas', 
+                'Pruebas completadas',
                 `Ya se han completado todas las pruebas requeridas para ${this.getLabelTipo(tipo)}`
             );
             return;
         }
-        
+
         // Mostrar el modal
         this.modalRef = this.modalService.show(template, {
             class: 'modal-md'
         });
     }
-      
+
     // Método para confirmar y ejecutar la emisión
     confirmarEjecucion() {
         this.modalRef.hide();
         this.procesando = true;
-        
+
         // Llamada al servicio para ejecutar las pruebas
         this.mhService.ejecutarPruebasMasivas(
-            this.tipoSeleccionado, 
-            this.cantidadFaltante, 
+            this.tipoSeleccionado,
+            this.cantidadFaltante,
             this.documentoBaseSeleccionado?.id,
             this.correlativoInicial || undefined
         ).subscribe(
             (response) => {
-            this.procesando = false;
-            
-            if (response.success) {
-                // Mostrar un mensaje más específico cuando se encola el trabajo
-                if (response.queued) {
-                this.alertService.success(
-                    'Proceso iniciado', 
-                    'Las pruebas se están ejecutando en segundo plano. Recibirá una notificación por correo electrónico cuando el proceso finalice.'
-                );
+                this.procesando = false;
+
+                if (response.success) {
+                    // Mostrar un mensaje más específico cuando se encola el trabajo
+                    if (response.queued) {
+                        this.alertService.success(
+                            'Proceso iniciado',
+                            'Las pruebas se están ejecutando en segundo plano. Recibirá una notificación por correo electrónico cuando el proceso finalice.'
+                        );
+                    } else {
+                        this.alertService.success('Proceso completado', response.message);
+                    }
+
+                    // Refrescar las estadísticas después de un breve retraso
+                    setTimeout(() => {
+                        this.cargarEstadisticasPruebas();
+                    }, 2000);
                 } else {
-                this.alertService.success('Proceso completado', response.message);
+                    this.alertService.error(response.message);
                 }
-                
-                // Refrescar las estadísticas después de un breve retraso
-                setTimeout(() => {
-                this.cargarEstadisticasPruebas();
-                }, 2000);
-            } else {
-                this.alertService.error(response.message);
-            }
             },
             (error) => {
-            this.procesando = false;
-            this.alertService.error('Error al ejecutar pruebas masivas: ' + error);
+                this.procesando = false;
+                this.alertService.error('Error al ejecutar pruebas masivas: ' + error);
             }
         );
     }
@@ -515,9 +557,9 @@ export class EmpresaComponent implements OnInit {
             ${this.cantidadFaltante} Notas de Débito relacionadas.
         </div>
         `;
-        
+
         mensaje += `Está a punto de emitir <strong>${this.cantidadFaltante}</strong> documentos de tipo <strong>${this.getLabelTipo(this.tipoSeleccionado)}</strong> en el ambiente de pruebas.`;
-        
+
         return mensaje;
     }
 
@@ -538,13 +580,13 @@ export class EmpresaComponent implements OnInit {
 
     public saveCredentials(tipo: 'shopify' | 'woocommerce') {
         this.saving = true;
-    
+
         const config = this.getCredentialConfig(tipo);
-        
-        const missingFields = config.requiredFields.filter(field => 
+
+        const missingFields = config.requiredFields.filter(field =>
             !this.empresa[field] || this.empresa[field] === '' || this.empresa[field] === '0' || this.empresa[field] === 0
         );
-    
+
         if (missingFields.length > 0) {
             this.saving = false;
             Swal.fire({
@@ -555,7 +597,7 @@ export class EmpresaComponent implements OnInit {
             });
             return;
         }
-    
+
         const canalField = tipo === 'shopify' ? 'shopify_canal_id' : 'woocommerce_canal_id';
         if (!this.empresa[canalField] || this.empresa[canalField] == 0 || this.empresa[canalField] == '0') {
             this.saving = false;
@@ -567,11 +609,11 @@ export class EmpresaComponent implements OnInit {
             });
             return;
         }
-    
+
 
         const otherPlatform = tipo === 'shopify' ? 'woocommerce' : 'shopify';
         const otherStatusField = `${otherPlatform}_status`;
-        
+
         if (this.empresa[otherStatusField] === 'connected') {
             this.saving = false;
             Swal.fire({
@@ -582,9 +624,9 @@ export class EmpresaComponent implements OnInit {
             });
             return;
         }
-    
+
         const credentials = this.prepareCredentials(tipo);
-        
+
         Swal.fire({
             title: 'Conectando...',
             text: `Verificando conexión con ${config.platformName}`,
@@ -593,7 +635,7 @@ export class EmpresaComponent implements OnInit {
                 Swal.showLoading();
             }
         });
-        
+
         this.apiService.store(config.endpoint, credentials).subscribe(
             response => {
                 this.saving = false;
@@ -639,10 +681,10 @@ export class EmpresaComponent implements OnInit {
                 }
             }
         };
-    
+
         return configs[tipo];
     }
-    
+
     private prepareCredentials(tipo: 'shopify' | 'woocommerce') {
         if (tipo === 'woocommerce') {
             return {
@@ -661,7 +703,7 @@ export class EmpresaComponent implements OnInit {
             };
         }
     }
-    
+
 
 
     public disconnectWooCommerce() {
@@ -670,7 +712,7 @@ export class EmpresaComponent implements OnInit {
         this.empresa.woocommerce_store_url = '';
         this.empresa.woocommerce_consumer_key = '';
         this.empresa.woocommerce_consumer_secret = '';
-        
+
         this.apiService.store('usuario/disconnect-woocommerce', {}).subscribe(
             response => {
                 this.saving = false;
@@ -702,7 +744,7 @@ export class EmpresaComponent implements OnInit {
 
         this.empresa.shopify_store_url = '';
         this.empresa.shopify_consumer_secret = '';
-        
+
         this.apiService.store('usuario/disconnect-shopify', {}).subscribe(
             response => {
                 this.saving = false;
@@ -729,7 +771,7 @@ export class EmpresaComponent implements OnInit {
 
     }
 
-    public exportarWooCommerce(){
+    public exportarWooCommerce() {
         Swal.fire({
             title: '¿Está seguro de exportar sus productos a WooCommerce?',
             html: `
@@ -773,7 +815,7 @@ export class EmpresaComponent implements OnInit {
         });
     }
 
-    public exportarShopify(){
+    public exportarShopify() {
         Swal.fire({
             title: '¿Está seguro de exportar sus productos a Shopify?',
             html: `
@@ -829,7 +871,7 @@ export class EmpresaComponent implements OnInit {
                 Swal.showLoading();
             }
         });
-        
+
         this.apiService.export('productos/exportar/woocommerce', this.filtros).subscribe(
             (data: Blob) => {
                 Swal.close();
@@ -842,22 +884,22 @@ export class EmpresaComponent implements OnInit {
                 });
                 const blob = new Blob([data], { type: 'text/csv' });
                 const url = window.URL.createObjectURL(blob);
-                
+
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = 'productos_woocommerce_' + new Date().toISOString().split('T')[0] + '.csv';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                
+
                 window.URL.revokeObjectURL(url);
                 this.downloading = false;
-                
+
                 this.alertService.success('Exportación completada', 'El archivo CSV ha sido generado correctamente.');
             },
-            (error) => { 
-                this.alertService.error('Error en la exportación: ' + error); 
-                this.downloading = false; 
+            (error) => {
+                this.alertService.error('Error en la exportación: ' + error);
+                this.downloading = false;
             }
         );
     }
@@ -874,7 +916,7 @@ export class EmpresaComponent implements OnInit {
                 Swal.showLoading();
             }
         });
-        
+
         this.apiService.export('productos/exportar/shopify', this.filtros).subscribe(
             (data: Blob) => {
                 Swal.close();
@@ -887,22 +929,164 @@ export class EmpresaComponent implements OnInit {
                 });
                 const blob = new Blob([data], { type: 'text/csv' });
                 const url = window.URL.createObjectURL(blob);
-                
+
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = 'productos_shopify_' + new Date().toISOString().split('T')[0] + '.csv';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                
+
                 window.URL.revokeObjectURL(url);
                 this.downloading = false;
-                
+
                 this.alertService.success('Exportación completada', 'El archivo CSV ha sido generado correctamente.');
             },
-            (error) => { 
-                this.alertService.error('Error en la exportación: ' + error); 
-                this.downloading = false; 
+            (error) => {
+                this.alertService.error('Error en la exportación: ' + error);
+                this.downloading = false;
+            }
+        );
+    }
+
+    public confirmarImportacionShopify() {
+        Swal.fire({
+            title: '¿Estás seguro de continuar?',
+            html: `
+                <p>Importarás tu inventario completo de Shopify en tu cuenta de SmartPyme, escribe <strong>"confirmar"</strong> en el campo de abajo para confirmar:</p>
+                <input type="text" id="confirmacionInput" class="swal2-input" placeholder="confirmar">
+                <br><br>
+                <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                    <strong>Nota:</strong> Los productos activos se importarán como activos, y los productos en borrador se importarán como inactivos.
+                </p>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, importar productos',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+                const confirmacionInput = document.getElementById('confirmacionInput') as HTMLInputElement;
+                const valor = confirmacionInput.value.toLowerCase().trim();
+
+                if (valor !== 'confirmar') {
+                    Swal.showValidationMessage('Debes escribir exactamente "confirmar" para continuar');
+                    return false;
+                }
+                return true;
+            },
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.importarProductosDesdeShopify();
+            }
+        });
+    }
+
+    public importarProductosDesdeShopify() {
+        Swal.fire({
+            title: 'Importando productos...',
+            text: 'Estamos importando los productos desde Shopify',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Preparar los datos de la empresa para enviar al backend
+        const datosEmpresa = {
+            shopify_store_url: this.empresa.shopify_store_url,
+            shopify_consumer_secret: this.empresa.shopify_consumer_secret,
+            id_empresa: this.empresa.id,
+            id_usuario: this.apiService.auth_user().id,
+            id_sucursal: this.apiService.auth_user().id_sucursal,
+            incluir_drafts: true // Siempre incluir productos draft como inactivos
+        };
+
+        // Usar timeout más corto ya que la respuesta es inmediata
+        this.apiService.storeWithTimeout('producto/importar-shopify', datosEmpresa, 30000).subscribe(
+            response => {
+                Swal.close();
+
+                if (response.procesando) {
+                    // Respuesta de procesamiento en segundo plano
+                    Swal.fire({
+                        title: 'Procesamiento Iniciado',
+                        html: `
+                            <p><strong>¡Procesamiento iniciado exitosamente!</strong></p>
+                            <p>Total productos a procesar: <strong>${response.total_productos_shopify || 0}</strong></p>
+                            <br>
+                            <p>Los productos se están procesando en segundo plano.</p>
+                            <p>Esto puede tomar varios minutos dependiendo de la cantidad de productos.</p>
+                            <br>
+                            <p><strong>Puedes cerrar esta ventana y continuar trabajando.</strong></p>
+                            <p>Los productos aparecerán en tu inventario una vez completado el procesamiento.</p>
+                        `,
+                        icon: 'info',
+                        confirmButtonText: 'Entendido',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    });
+
+                    console.log('=== PROCESAMIENTO INICIADO ===');
+                    console.log('Total productos en Shopify:', response.total_productos_shopify);
+                    console.log('Estado:', response.estado);
+                } else {
+                    // Respuesta de importación completada (modo síncrono)
+                    Swal.fire({
+                        title: 'Procesando importación de productos',
+                        text: 'Los productos están siendo procesados en segundo plano.',
+                        icon: 'info',
+                        confirmButtonText: 'Aceptar'
+                    });
+
+                    console.log('=== IMPORTACIÓN DESDE SHOPIFY COMPLETADA ===');
+                    console.log('Total productos en Shopify:', response.total_productos_shopify);
+                    console.log('Productos importados:', response.productos_importados);
+                }
+            },
+            error => {
+                Swal.close();
+
+                // Manejar diferentes tipos de errores
+                let errorMessage = 'Error al importar productos desde Shopify: ';
+
+                if (error.status === 0) {
+                    errorMessage += 'Error de conexión o timeout. ';
+                    errorMessage += 'El procesamiento puede haberse completado en el servidor. ';
+                    errorMessage += 'Verifica los logs del sistema o intenta nuevamente en unos minutos.';
+                } else if (error.error?.codigo_error === 'IMPORTACION_YA_REALIZADA') {
+                    // Error específico: Ya se realizó una importación
+                    Swal.fire({
+                        title: 'Importación Ya Realizada',
+                        html: `
+                                <p><strong>Ya se realizó una importación exitosa de productos desde Shopify.</strong></p>
+                                <p>Para evitar duplicados, no se puede volver a importar.</p>
+                                <br>
+                                <p>Si necesitas re-importar los productos, contacta al administrador del sistema.</p>
+                            `,
+                        icon: 'warning',
+                        confirmButtonText: 'Entendido',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    });
+                    return;
+                } else if (error.error?.mensaje) {
+                    errorMessage += error.error.mensaje;
+                } else if (error.message) {
+                    errorMessage += error.message;
+                } else {
+                    errorMessage += 'Error desconocido. Verifica los logs del sistema.';
+                }
+
+                this.alertService.error(errorMessage);
+
+                // Log del error para debugging
+                console.error('Error en importación Shopify:', error);
+                console.log('Status del error:', error.status);
+                console.log('Error completo:', error);
             }
         );
     }
@@ -916,15 +1100,20 @@ export class EmpresaComponent implements OnInit {
             },
             modulos: {},
             configuraciones: {
-                ticket_en_pdf: false
+                ticket_en_pdf: false,
+                version_facturacion: 'original', // 'original' o 'v2'
+                mostrar_campos_contables: true, // Mostrar tipo de operación y tipo de ingreso
+                lotes_activo: false, // Activar/desactivar módulo de lotes
+                lotes_metodologia: 'FIFO', // Manual, FIFO, LIFO, FEFO
+                lotes_dias_anticipacion: 30 // Días para alerta de vencimiento
             },
             campos_personalizados: {}
         };
-    
+
         if (this.empresa.custom_empresa) {
             // Hacer deep merge de la configuración existente con los valores por defecto
             this.customConfig = this.deepMerge(defaultConfig, this.empresa.custom_empresa);
-            
+
             // Convertir arrays a objetos si es necesario
             if (Array.isArray(this.customConfig.configuraciones)) {
                 this.customConfig.configuraciones = defaultConfig.configuraciones;
@@ -939,10 +1128,10 @@ export class EmpresaComponent implements OnInit {
             this.customConfig = defaultConfig;
         }
     }
-    
+
     private deepMerge(target: any, source: any): any {
         const result = { ...target };
-        
+
         for (const key in source) {
             if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
                 result[key] = this.deepMerge(result[key] || {}, source[key]);
@@ -950,18 +1139,18 @@ export class EmpresaComponent implements OnInit {
                 result[key] = source[key];
             }
         }
-        
+
         return result;
     }
 
     public updateColumnConfig(columnName: string, enabled: boolean) {
         this.customConfig.columnas[columnName] = enabled;
         this.empresa.custom_empresa = this.customConfig;
-        
+
         // Guardar automáticamente
         this.onSubmit().then(() => {
             this.alertService.success(
-                'Configuración actualizada', 
+                'Configuración actualizada',
                 `Columna ${columnName} ${enabled ? 'habilitada' : 'deshabilitada'} correctamente`
             );
         });
@@ -990,11 +1179,11 @@ export class EmpresaComponent implements OnInit {
         if (!this.customConfig[section] || Array.isArray(this.customConfig[section])) {
             return defaultValue;
         }
-        
+
         if (key) {
             return this.customConfig[section][key] !== undefined ? this.customConfig[section][key] : defaultValue;
         }
-        
+
         return this.customConfig[section];
     }
 
@@ -1006,11 +1195,11 @@ export class EmpresaComponent implements OnInit {
     // Método para cambiar la configuración de ticket en PDF
     public updateTicketEnPdf(enabled: boolean) {
         this.addCustomConfig('configuraciones', 'ticket_en_pdf', enabled);
-        
+
         // Guardar automáticamente
         this.onSubmit().then(() => {
             this.alertService.success(
-                'Configuración actualizada', 
+                'Configuración actualizada',
                 `Ticket en PDF ${enabled ? 'habilitado' : 'deshabilitado'} correctamente`
             );
         });
@@ -1022,19 +1211,316 @@ export class EmpresaComponent implements OnInit {
         this.updateTicketEnPdf(!currentValue);
     }
 
-    setCamposRenta(){
+    // Método para obtener la versión de facturación configurada
+    public getVersionFacturacion(): string {
+        return this.getCustomConfig('configuraciones', 'version_facturacion', 'original');
+    }
+
+    // Método para actualizar la versión de facturación
+    public updateVersionFacturacion(version: string) {
+        this.addCustomConfig('configuraciones', 'version_facturacion', version);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Versión de facturación cambiada a ${version === 'v2' ? 'V2 (precios con IVA)' : 'Original'}`
+            );
+        });
+    }
+
+    // Método para verificar si está usando la versión v2
+    public isVersionFacturacionV2(): boolean {
+        return this.getVersionFacturacion() === 'v2';
+    }
+
+    // Método para verificar si los campos contables están habilitados
+    public isCamposContablesEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'mostrar_campos_contables', true);
+    }
+
+    // Método para actualizar la configuración de campos contables
+    public updateCamposContables(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'mostrar_campos_contables', enabled);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Campos contables ${enabled ? 'habilitados' : 'deshabilitados'} correctamente`
+            );
+        });
+    }
+
+    // Método para alternar campos contables
+    public toggleCamposContables() {
+        const currentValue = this.isCamposContablesEnabled();
+        this.updateCamposContables(!currentValue);
+    }
+
+    // Métodos para configuraciones de lotes
+    public isLotesActivo(): boolean {
+        return this.getCustomConfig('configuraciones', 'lotes_activo', false);
+    }
+
+    public toggleLotesActivo() {
+        const currentValue = this.isLotesActivo();
+        this.updateLotesActivo(!currentValue);
+    }
+
+    public updateLotesActivo(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'lotes_activo', activo);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Módulo de lotes ${activo ? 'activado' : 'desactivado'} correctamente`
+            );
+        });
+    }
+
+    public getLotesMetodologia(): string {
+        return this.getCustomConfig('configuraciones', 'lotes_metodologia', 'FIFO');
+    }
+
+    public updateLotesMetodologia(metodologia: string) {
+        this.addCustomConfig('configuraciones', 'lotes_metodologia', metodologia);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Metodología de lotes actualizada a ${metodologia}`
+            );
+        });
+    }
+
+    public getLotesDiasAnticipacion(): number {
+        return this.getCustomConfig('configuraciones', 'lotes_dias_anticipacion', 30);
+    }
+
+    public updateLotesDiasAnticipacion(dias: number) {
+        this.addCustomConfig('configuraciones', 'lotes_dias_anticipacion', dias);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Días de anticipación actualizados a ${dias} días`
+            );
+        });
+    }
+
+    setCamposRenta() {
         this.onSubmit().then(() => {
             this.mhService.auth().subscribe(response => {
 
                 this.apiService.getAll('set-campos-nuevos').subscribe((usuario) => {
                     this.alertService.success(
-                      'Usuario guardado',
-                      'El usuario fue guardado exitosamente.'
+                        'Usuario guardado',
+                        'El usuario fue guardado exitosamente.'
                     );
-                  }, (error) => {this.alertService.error(error); this.saving = false; }
+                }, (error) => { this.alertService.error(error); this.saving = false; }
                 );
+
+            }, error => { this.alertService.error(error); this.cheking = false; });
+        });
+    }
+
+    /**
+     * Maneja el cambio de tab y actualiza la URL
+     * Este método se llama desde el evento selectTab del tabset
+     */
+    public onTabChange(event: any) {
+        console.log('onTabChange llamado con evento:', event); // Debug
+        
+        // Usar setTimeout para asegurar que el tab ya esté activo
+        setTimeout(() => {
+            if (!this.tabset || !this.tabset.tabs) {
+                console.log('Tabset no disponible'); // Debug
+                return;
+            }
+
+            // Buscar el tab activo
+            const activeTab = this.tabset.tabs.find(tab => tab.active);
+            console.log('Tab activo encontrado:', activeTab); // Debug
+            
+            if (activeTab && activeTab.heading) {
+                this.actualizarUrlDesdeTab(activeTab);
+            }
+        }, 100);
+    }
+
+    /**
+     * Método para actualizar la URL cuando se selecciona un tab
+     * Se llama desde el evento (selectTab) de cada tab individual
+     */
+    public onTabSelect(tab: any) {
+        console.log('onTabSelect llamado con tab:', tab); // Debug
+        
+        if (tab && tab.heading) {
+            const tabName = this.getTabNameByHeading(tab.heading);
+            console.log('Tab name mapeado:', tabName); // Debug
+            
+            if (tabName) {
+                const currentTab = this.route.snapshot.queryParams['tab'];
+                console.log('Tab actual en URL:', currentTab, 'Nuevo tab:', tabName); // Debug
                 
-            },error => {this.alertService.error(error); this.cheking = false; });
+                if (currentTab !== tabName) {
+                    console.log('Actualizando URL...'); // Debug
+                    this.router.navigate([], {
+                        relativeTo: this.route,
+                        queryParams: { tab: tabName },
+                        queryParamsHandling: 'merge',
+                        replaceUrl: true
+                    }).then(() => {
+                        console.log('URL actualizada exitosamente'); // Debug
+                    }).catch((error) => {
+                        console.error('Error al actualizar URL:', error); // Debug
+                    });
+                } else {
+                    console.log('La URL ya tiene el tab correcto, no se actualiza'); // Debug
+                }
+            } else {
+                console.warn('No se encontró mapeo para el heading:', tab.heading); // Debug
+            }
+        }
+    }
+
+    /**
+     * Actualiza la URL basándose en el tab activo
+     */
+    private actualizarUrlDesdeTab(activeTab: any) {
+        if (!activeTab || !activeTab.heading) {
+            return;
+        }
+
+        const tabName = this.getTabNameByHeading(activeTab.heading);
+        if (tabName) {
+            // Verificar si el parámetro ya está en la URL para evitar navegación innecesaria
+            const currentTab = this.route.snapshot.queryParams['tab'];
+            if (currentTab !== tabName) {
+                // Actualizar la URL sin recargar la página
+                this.router.navigate([], {
+                    relativeTo: this.route,
+                    queryParams: { tab: tabName },
+                    queryParamsHandling: 'merge',
+                    replaceUrl: true
+                });
+            }
+        }
+    }
+
+    /**
+     * Obtiene el nombre del tab por su heading
+     */
+    private getTabNameByHeading(heading: string): string | null {
+        const headingMap: { [key: string]: string } = {
+            'Datos de mi empresa': 'datos',
+            'Preferencias del sistema': 'preferencias',
+            'Facturación electrónica': 'facturacion-electronica',
+            'Integraciones': 'integraciones',
+            'WooCommerce': 'woocommerce',
+            'Shopify': 'shopify'
+        };
+        return headingMap[heading] ?? null;
+    }
+
+    /**
+     * Selecciona un tab por su nombre
+     */
+    private seleccionarTabPorNombre(tabName: string) {
+        if (!this.tabset || !this.tabset.tabs) {
+            return;
+        }
+
+        // Buscar el tab por su heading en lugar de índice, ya que algunos tabs pueden estar ocultos
+        const tabHeadingMap: { [key: string]: string } = {
+            'datos': 'Datos de mi empresa',
+            'preferencias': 'Preferencias del sistema',
+            'facturacion-electronica': 'Facturación electrónica',
+            'integraciones': 'Integraciones',
+            'woocommerce': 'WooCommerce',
+            'shopify': 'Shopify'
+        };
+
+        const heading = tabHeadingMap[tabName.toLowerCase()];
+        if (heading) {
+            const tab = this.tabset.tabs.find(t => t.heading === heading);
+            if (tab && !tab.active) {
+                // Desactivar todos los tabs primero
+                this.tabset.tabs.forEach(t => t.active = false);
+                // Activar el tab seleccionado
+                tab.active = true;
+            }
+        }
+    }
+
+    /**
+     * Obtiene el índice del tab por su nombre
+     * Considera que algunos tabs pueden estar ocultos condicionalmente
+     */
+    private getTabIndexByName(tabName: string): number | null {
+        const tabMap: { [key: string]: number } = {
+            'datos': 0,
+            'preferencias': 1,
+            'facturacion-electronica': 2,
+            'integraciones': 3,
+            'woocommerce': 4,
+            'shopify': 5
+        };
+        return tabMap[tabName.toLowerCase()] ?? null;
+    }
+
+    /**
+     * Obtiene el nombre del tab por su índice
+     */
+    private getTabNameByIndex(index: number): string | null {
+        const tabNames = ['datos', 'preferencias', 'facturacion-electronica', 'integraciones', 'woocommerce', 'shopify'];
+        if (index >= 0 && index < tabNames.length) {
+            return tabNames[index];
+        }
+        return null;
+    }
+
+    public verificarAccesoPropina() {
+        this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
+            (acceso) => {
+                this.tieneAccesoPropina = acceso;
+            },
+            (error) => {
+                console.error('Error al verificar acceso a propina:', error);
+                this.tieneAccesoPropina = false;
+            }
+        );
+    }
+
+    public limpiarCacheYLogout() {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: 'Se limpiará el cache y se cerrará la sesión. Deberás iniciar sesión nuevamente.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, limpiar cache y cerrar sesión',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Limpiar cache del servicio de funcionalidades
+                this.funcionalidadesService.limpiarCache();
+                
+                // Limpiar localStorage y sessionStorage
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Cerrar sesión en el backend
+                this.apiService.logout();
+                
+                // Redirigir al login
+                this.router.navigate(['/login']);
+                
+                Swal.fire('Cache limpiado', 'El cache ha sido limpiado y la sesión cerrada. Por favor, inicia sesión nuevamente.', 'success');
+            }
         });
     }
 

@@ -229,6 +229,13 @@ class ConstantsController extends Controller
                     ]
                 ],
                 'DEDUCCION_EMPLEADOS_ASALARIADOS' => $constants['DEDUCCION_EMPLEADOS_ASALARIADOS'],
+                'AGUINALDO' => [
+                    'EXENTO_DECRETO_2023' => $constants['AGUINALDO_EXENTO_DECRETO_2023'],
+                    'ESTADOS' => [
+                        'BORRADOR' => $constants['AGUINALDO_BORRADOR'],
+                        'PAGADO' => $constants['AGUINALDO_PAGADO'],
+                    ]
+                ],
                 'LISTAS' => [
                     'TIPOS_CONTRATO' => PlanillaConstants::getTiposContrato(),
                     'TIPOS_JORNADA' => PlanillaConstants::getTiposJornada(),

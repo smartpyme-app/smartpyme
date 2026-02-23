@@ -66,6 +66,7 @@ class Venta extends Model {
         'dte',
         'dte_invalidacion',
         'tipo_item_export',
+        'importado',
         'cod_incoterm',
         'incoterm',
         'recinto_fiscal',
@@ -78,6 +79,11 @@ class Venta extends Model {
         'puntos_ganados',
         'puntos_canjeados',
         'descuento_puntos',
+        'referencia_shopify',
+        'fecha_anulacion',
+        'tipo_anulacion',
+        'motivo_anulacion',
+        'codigo_generacion_remplazo',
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento', 'nombre_proyecto'];
@@ -87,7 +93,7 @@ class Venta extends Model {
         'puntos_canjeados' => 'integer',
         'descuento_puntos' => 'decimal:2'
     ];
-    
+
     protected static function boot()
     {
         parent::boot();
@@ -107,12 +113,12 @@ class Venta extends Model {
         return 'Consumidor Final';
     }
 
-    public function getDteAttribute($value) 
+    public function getDteAttribute($value)
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }
 
-    public function getDteInvalidacionAttribute($value) 
+    public function getDteInvalidacionAttribute($value)
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }
@@ -162,7 +168,9 @@ class Venta extends Model {
     }
 
     public function getSaldoAttribute(){
-        return round($this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total'),2);
+        $abonos = $this->abonos()->where('estado', 'Confirmado')->sum('total');
+        $devoluciones = $this->devoluciones()->where('enable', 1)->sum('total');
+        return round($this->total - $abonos - $devoluciones,2);
     }
 
     // Relaciones
@@ -258,13 +266,13 @@ class Venta extends Model {
     {
         $tipoCliente = $this->cliente->getTipoClienteEfectivo();
         if (!$tipoCliente) return 0;
-        
+
         return $tipoCliente->calcularPuntos($this->getMontoFinal());
     }
 
     public function tienePuntosGenerados()
     {
-        return $this->transaccionPuntos && 
+        return $this->transaccionPuntos &&
                $this->transaccionPuntos->tipo === TransaccionPuntos::TIPO_GANANCIA;
     }
 
@@ -275,12 +283,12 @@ class Venta extends Model {
         }
 
         $puntosCalculados = $this->calcularPuntosEsperados();
-        
+
         if ($puntosCalculados > 0) {
             $this->update(['puntos_ganados' => $puntosCalculados]);
             return $puntosCalculados;
         }
-        
+
         return 0;
     }
 
@@ -288,15 +296,15 @@ class Venta extends Model {
     {
         $tipoCliente = $this->cliente->getTipoClienteEfectivo();
         if (!$tipoCliente) return false;
-        
+
         $descuento = $tipoCliente->calcularDescuento($puntos);
         $maxDescuento = min($descuento, $this->total);
-        
+
         $this->update([
             'puntos_canjeados' => $puntos,
             'descuento_puntos' => $maxDescuento,
         ]);
-        
+
         return $maxDescuento;
     }
 
@@ -325,7 +333,7 @@ class Venta extends Model {
         return $this->descuento_puntos / $this->puntos_canjeados;
     }
 
-    
+
 
 
 

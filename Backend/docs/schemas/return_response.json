@@ -1,0 +1,211 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Return Response Schema",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Indica si la request fue exitosa"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Return"
+      }
+    },
+    "pagination": {
+      "$ref": "#/definitions/Pagination"
+    }
+  },
+  "required": ["success"],
+  "definitions": {
+    "Return": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "ID único de la devolución"
+        },
+        "fecha": {
+          "type": "string",
+          "format": "date",
+          "description": "Fecha de la devolución"
+        },
+        "correlativo": {
+          "type": ["string", "null"],
+          "description": "Número correlativo de la devolución"
+        },
+        "tipo": {
+          "type": ["string", "null"],
+          "description": "Tipo de devolución"
+        },
+        "sub_total": {
+          "type": "number",
+          "description": "Subtotal de la devolución"
+        },
+        "no_sujeta": {
+          "type": "number",
+          "description": "Monto no sujeto a impuestos"
+        },
+        "exenta": {
+          "type": "number",
+          "description": "Monto exento de impuestos"
+        },
+        "cuenta_a_terceros": {
+          "type": "number",
+          "description": "Cuenta a terceros"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total de la devolución"
+        },
+        "iva": {
+          "type": "number",
+          "description": "Monto del IVA"
+        },
+        "iva_retenido": {
+          "type": "number",
+          "description": "IVA retenido"
+        },
+        "observaciones": {
+          "type": ["string", "null"],
+          "description": "Observaciones de la devolución"
+        },
+        "enable": {
+          "type": "boolean",
+          "description": "Estado activo de la devolución"
+        },
+        "id_venta": {
+          "type": "integer",
+          "description": "ID de la venta original"
+        },
+        "nombre_cliente": {
+          "type": ["string", "null"],
+          "description": "Nombre del cliente"
+        },
+        "nombre_usuario": {
+          "type": ["string", "null"],
+          "description": "Nombre del usuario"
+        },
+        "nombre_documento": {
+          "type": ["string", "null"],
+          "description": "Nombre del documento"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de creación"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de última actualización"
+        },
+        "detalles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ReturnDetail"
+          },
+          "description": "Detalles de la devolución"
+        }
+      },
+      "required": ["id", "fecha", "total", "id_venta"]
+    },
+    "ReturnDetail": {
+      "type": "object",
+      "properties": {
+        "nombre_producto": {
+          "type": ["string", "null"],
+          "description": "Nombre del producto"
+        },
+        "codigo_producto": {
+          "type": ["string", "null"],
+          "description": "Código interno del producto"
+        },
+        "marca_producto": {
+          "type": ["string", "null"],
+          "description": "Marca del producto"
+        },
+        "descripcion": {
+          "type": ["string", "null"],
+          "description": "Descripción del producto"
+        },
+        "cantidad": {
+          "type": "number",
+          "description": "Cantidad devuelta"
+        },
+        "precio": {
+          "type": "number",
+          "description": "Precio unitario"
+        },
+        "costo": {
+          "type": "number",
+          "description": "Costo unitario"
+        },
+        "descuento": {
+          "type": "number",
+          "description": "Descuento aplicado"
+        },
+        "no_sujeta": {
+          "type": "number",
+          "description": "Monto no sujeto a impuestos"
+        },
+        "cuenta_a_terceros": {
+          "type": "number",
+          "description": "Cuenta a terceros"
+        },
+        "exenta": {
+          "type": "number",
+          "description": "Monto exento de impuestos"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total del detalle"
+        },
+        "medida": {
+          "type": ["string", "null"],
+          "description": "Unidad de medida"
+        }
+      },
+      "required": ["cantidad", "precio", "total"]
+    },
+    "Pagination": {
+      "type": "object",
+      "properties": {
+        "current_page": {
+          "type": "integer",
+          "description": "Página actual"
+        },
+        "per_page": {
+          "type": "integer",
+          "description": "Registros por página"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total de registros"
+        },
+        "total_pages": {
+          "type": "integer",
+          "description": "Total de páginas"
+        },
+        "has_next": {
+          "type": "boolean",
+          "description": "Indica si hay página siguiente"
+        },
+        "has_prev": {
+          "type": "boolean",
+          "description": "Indica si hay página anterior"
+        },
+        "from": {
+          "type": ["integer", "null"],
+          "description": "Primer registro de la página"
+        },
+        "to": {
+          "type": ["integer", "null"],
+          "description": "Último registro de la página"
+        }
+      },
+      "required": ["current_page", "per_page", "total", "total_pages", "has_next", "has_prev"]
+    }
+  }
+}

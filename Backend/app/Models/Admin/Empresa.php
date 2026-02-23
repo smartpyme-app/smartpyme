@@ -40,6 +40,7 @@ class Empresa extends Model
         'departamento',
         'logo',
         'propina',
+        'propina_porcentaje',
         'valor_inventario',
         'vender_sin_stock',
         'user_limit',
@@ -49,6 +50,9 @@ class Empresa extends Model
         'pais',
         'cod_pais',
         'total',
+        'frecuencia_pago',
+        'monto_mensual',
+        'monto_anual',
         'forma_pago',
         'link_pago',
         'fecha_ultimo_pago',
@@ -57,6 +61,8 @@ class Empresa extends Model
         'editar_descripcion_venta',
         'impresion_en_facturacion',
         'vendedor_detalle_venta',
+        'cambiar_tipo_impuesto_venta',
+        'vendedor_asignado',
         'venta_consigna',
         'plan',
         'cobra_iva',
@@ -66,6 +72,7 @@ class Empresa extends Model
         'pago_recurrente',
         'referido',
         'campania',
+        'codigo_promocional',
         'wompi_aplicativo',
         'wompi_id',
         'wompi_secret',
@@ -132,8 +139,10 @@ class Empresa extends Model
         'shopify_sync_total_batches',
         'shopify_sync_processed_batches',
         'shopify_sync_status',
+        'shopify_sync_bidirectional',
         'shopify_last_sync',
         'shopify_error',
+        'importacion_productos_shopify',
 
     ];
 
@@ -141,6 +150,8 @@ class Empresa extends Model
         'enviar_dte' => 'boolean',
         'facturacion_electronica' => 'boolean',
         'custom_empresa' => 'json',
+        'importacion_productos_shopify' => 'boolean',
+        'shopify_sync_bidirectional' => 'boolean',
     ];
 
     protected $appends = [
@@ -584,7 +595,28 @@ class Empresa extends Model
             return $this->initializeCustomConfig();
         }
 
-        return $this->custom_empresa;
+        $config = $this->custom_empresa;
+        // Asegurar que siempre sea array (evitar "Cannot use object of type stdClass as array")
+        return $this->ensureConfigArray($config);
+    }
+
+    /**
+     * Convierte config (array o stdClass) a array recursivamente.
+     * @return array|mixed
+     */
+    protected function ensureConfigArray($config)
+    {
+        if (is_array($config)) {
+            $result = [];
+            foreach ($config as $key => $value) {
+                $result[$key] = $this->ensureConfigArray($value);
+            }
+            return $result;
+        }
+        if ($config instanceof \stdClass) {
+            return $this->ensureConfigArray((array) $config);
+        }
+        return $config;
     }
 
     public function initializeCustomConfig()
@@ -594,12 +626,12 @@ class Empresa extends Model
                 'columna_proyecto' => false
                 // Para futuras columnas
             ],
-            'modulos' => (object)[],
-            'configuraciones' => (object)[
+            'modulos' => [],
+            'configuraciones' => [
                 'ticket_en_pdf' => false
                 // Para futuras configuraciones generales
             ],
-            'campos_personalizados' => (object)[]
+            'campos_personalizados' => []
             // Para futuros campos personalizados
         ];
 
@@ -643,6 +675,22 @@ class Empresa extends Model
         }
 
         return $config[$section][$key] ?? $default;
+    }
+
+    /**
+     * Verificar si el módulo de lotes está activo para la empresa
+     */
+    public function isLotesActivo(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'lotes_activo', false);
+    }
+
+    /**
+     * Obtener la metodología de lotes (FIFO, LIFO, FEFO, Manual)
+     */
+    public function getLotesMetodologia(): string
+    {
+        return $this->getCustomConfigValue('configuraciones', 'lotes_metodologia', 'FIFO') ?: 'FIFO';
     }
 
     /**

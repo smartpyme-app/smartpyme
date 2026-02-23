@@ -14,8 +14,8 @@
     .text-center { text-align: center; }
     .text-right { text-align: right; }
     *{ font-family: sans-serif; color: #333; }
-    .header { position: fixed; top: -50px;}
-    .header h1 { position: absolute; top: -15px; left: 100px; font-size: 25px;}
+    .header { position: fixed; top: -50px; width: 100%;}
+    .header h1 { position: absolute; top: -15px; left: 100px; font-size: 16px; text-align: left;}
     .header p { position: absolute; top: 15px; left: 100px;}
     .footer{ position: fixed; bottom: -10px; opacity: .6; }
     .footer span {position: absolute; bottom: 0px; right: 0px; counter-increment: page;}

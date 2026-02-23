@@ -37,7 +37,7 @@ export class UsuariosComponent implements OnInit {
     CountryISO.CostaRica,
     CountryISO.Panama
   ];
-  empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488];
+  empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488,569,657,538];
 
   modalRef?: BsModalRef;
 

@@ -63,6 +63,47 @@ class PlanesController extends Controller
         return response()->json($planes);
     }
 
-
+    /** Se obtienen los planes activos para el registro público y se agrupan por tipo (Mensual, Trimestral, Anual) */
+    public function getPlanesPublicos()
+    {
+        $planes = Plan::where('activo', true)
+            ->select('id', 'nombre', 'precio', 'duracion_dias', 'slug')
+            ->orderBy('precio', 'asc')
+            ->get();
+        
+        // se agrupan los planes por tipo de plan según duracion_dias
+        $planesAgrupados = [
+            'Mensual' => [],
+            'Trimestral' => [],
+            'Anual' => []
+        ];
+        
+        foreach ($planes as $plan) {
+            $tipoPlan = $this->getTipoPlan($plan->duracion_dias);
+            if ($tipoPlan && isset($planesAgrupados[$tipoPlan])) {
+                $planesAgrupados[$tipoPlan][] = $plan;
+            }
+        }
+        
+        return response()->json([
+            'planes' => $planes,
+            'planes_agrupados' => $planesAgrupados
+        ]);
+    }
+    
+    /** se determina el tipo de plan según la duración en días */
+    private function getTipoPlan($duracionDias)
+    {
+        if ($duracionDias == 30) {
+            return 'Mensual';
+        }
+        if ($duracionDias == 90) {
+            return 'Trimestral';
+        }
+        if ($duracionDias == 365 || $duracionDias == 360) {
+            return 'Anual';
+        }
+        return null;
+    }
 
 }

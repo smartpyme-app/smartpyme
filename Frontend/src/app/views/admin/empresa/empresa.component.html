@@ -2,71 +2,90 @@
     <h2 class="page-heading" (click)="loadAll()">Cuenta</h2>
 </section>
 
-<tabset>
-    <tab heading="Datos de mi empresa">
+<tabset #tabset>
+    <tab heading="Datos de mi empresa" (selectTab)="onTabSelect($event)">
         <form name="form" (ngSubmit)="onSubmit()">
             <section class="bg-white p-4 rounded mb-3">
-               <div class="row justify-content-center">
-                   <div class="form-group col-6 col-sm-4 col-md-2">
-                       <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar" style="min-height: 100px;">
-                           <!-- <img class="img-fluid" src="" alt="logo"> -->
-                           <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo}}" alt="logo" *ngIf="empresa.logo != null">
-                           <img class="img-fluid" src="https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg" alt="logo" *ngIf="empresa.logo == null">
-                           <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
-                       </figure>
-                   </div>
-               </div>
-               <div class="row justify-content-center">
-                <!-- <div class="form-group col-6 col-sm-6 col-md-6 align-items-center justify-content-center" style="display: flex;">
+                <div class="row justify-content-center">
+                    <div class="form-group col-6 col-sm-4 col-md-2">
+                        <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center"
+                            tooltip="Agregar" style="min-height: 100px;">
+                            <!-- <img class="img-fluid" src="" alt="logo"> -->
+                            <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo}}" alt="logo"
+                                *ngIf="empresa.logo != null">
+                            <img class="img-fluid"
+                                src="https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg"
+                                alt="logo" *ngIf="empresa.logo == null">
+                            <input type="file" name="img" (change)="setFile($event)"
+                                accept="image/png, image/jpeg, image/jpg">
+                        </figure>
+                    </div>
+                </div>
+                <div class="row justify-content-center">
+                    <!-- <div class="form-group col-6 col-sm-6 col-md-6 align-items-center justify-content-center" style="display: flex;">
                     <div class="btn btn-primary file-upload mr-3" type="button"> Agregar
                         <input type="file" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                     </div>
                     <div class="btn btn-primary" (click)="resetFileUploader()" type="button">Eliminar</div>
                 </div> -->
 
-               </div>
+                </div>
                 <h5 class="mb-3">Datos de mi empresa</h5>
                 <div class="row">
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="nombre">Nombre</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.nombre" name="nombre" placeholder="Escriba aquí" required>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.nombre" name="nombre"
+                            placeholder="Escriba aquí" required>
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="nombre_propietario">Propietario</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.nombre_propietario" name="nombre_propietario" placeholder="Escriba aquí">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.nombre_propietario"
+                            name="nombre_propietario" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="telefono">Teléfono</label>
-                        <input type="tel" class="form-control" [(ngModel)]="empresa.telefono" name="telefono" placeholder="Escriba aquí">
+                        <input type="tel" class="form-control" [(ngModel)]="empresa.telefono" name="telefono"
+                            placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="correo">Correo</label>
-                        <input type="email" class="form-control" [(ngModel)]="empresa.correo" name="correo" placeholder="Escriba aquí">
+                        <input type="email" class="form-control" [(ngModel)]="empresa.correo" name="correo"
+                            placeholder="Escriba aquí">
                     </div>
 
                     <!-- si la empresa ES salvadoreña -->
-                    <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
+                    <div class="form-group col-md-6 col-lg-4"
+                        *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
                         <label for="departamento">Departamento:</label>
-                        <ng-select [(ngModel)]="empresa.cod_departamento" (change)="setDepartamento()" class="form-select p-0" name="empresa.departamento">
+                        <ng-select [(ngModel)]="empresa.cod_departamento" (change)="setDepartamento()"
+                            class="form-select p-0" name="empresa.departamento">
                             <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
                                 {{ departamento.nombre }}
                             </ng-option>
                         </ng-select>
                     </div>
 
-                    <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
+                    <div class="form-group col-md-6 col-lg-4"
+                        *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
                         <label for="distrito">Distrito:</label>
-                        <ng-select  [(ngModel)]="empresa.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="empresa.cod_distrito">
-                            <ng-option *ngFor="let distrito of distritos | filter:'cod_departamento':empresa.cod_departamento" [value]="distrito.cod">
+                        <ng-select [(ngModel)]="empresa.cod_distrito" (change)="setDistrito()"
+                            placeholder="Escribe aquí" class="form-control form-select p-0" name="empresa.cod_distrito">
+                            <ng-option
+                                *ngFor="let distrito of distritos | filter:'cod_departamento':empresa.cod_departamento"
+                                [value]="distrito.cod">
                                 {{ distrito.nombre }}
                             </ng-option>
                         </ng-select>
                     </div>
 
-                    <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
+                    <div class="form-group col-md-6 col-lg-4"
+                        *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
                         <label for="municipio">Municipio:</label>
-                        <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0" name="empresa.municipio">
-                            <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':empresa.departamento" [value]="municipio.cod">
+                        <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0"
+                            name="empresa.municipio">
+                            <ng-option
+                                *ngFor="let municipio of municipios | filter:'nombre_departamento':empresa.departamento"
+                                [value]="municipio.cod">
                                 {{ municipio.nombre }}
                             </ng-option>
                         </ng-select>
@@ -74,29 +93,35 @@
 
 
                     <!-- si la empresa NO ES salvadoreña -->
-                    <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">
+                    <div class="form-group col-md-6 col-lg-4"
+                        *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">
                         <label for="departamento">Departamento:</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.departamento" name="empresa.departamento" placeholder="Escriba aquí">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.departamento"
+                            name="empresa.departamento" placeholder="Escriba aquí">
                     </div>
-                    <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">
+                    <div class="form-group col-md-6 col-lg-4"
+                        *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">
                         <label for="municipio">Municipio:</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.municipio" name="empresa.municipio" placeholder="Escriba aquí">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.municipio" name="empresa.municipio"
+                            placeholder="Escriba aquí">
                     </div>
 
 
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="direccion">Dirección</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion" placeholder="Escriba aquí">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion"
+                            placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
-                        <label for="nit" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NIT</label>
-                        <label for="nit" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Identificación Fiscal</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" mask='{{apiService.auth_user().empresa.validador_nit}}'>
+                        <label for="nit">Identificación fiscal</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit"
+                            placeholder="Escriba aquí" [dropSpecialCharacters]="false"
+                            mask='{{apiService.auth_user().empresa.validador_nit}}'>
                     </div>
                     <div class="form-group col-md-6 col-lg-3">
-                        <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NCR</label>
-                        <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Registro Tributario</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí">
+                        <label for="ncr">Registro tributario</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr"
+                            placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-3">
                         <label for="tipo_contribuyente">Tamaño</label>
@@ -126,13 +151,18 @@
                     </div> -->
                     <div class="form-group col-md-6">
                         <label for="actividad_economica">Actividad económica:</label>
-                        <ng-select *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="empresa.cod_actividad_economica" (change)="setGiro()" class="form-select p-0" name="empresa.cod_actividad_economica">
-                            <ng-option *ngFor="let actividad_economica of actividad_economicas" [value]="actividad_economica.cod">
+                        <ng-select *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'"
+                            [(ngModel)]="empresa.cod_actividad_economica" (change)="setGiro()" class="form-select p-0"
+                            name="empresa.cod_actividad_economica">
+                            <ng-option *ngFor="let actividad_economica of actividad_economicas"
+                                [value]="actividad_economica.cod">
                                 {{ actividad_economica.nombre }}
                             </ng-option>
                         </ng-select>
 
-                        <input type="text" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" class="form-control" [(ngModel)]="empresa.giro" name="empresa.cod_actividad_economica" placeholder="Escriba aquí">
+                        <input type="text" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'"
+                            class="form-control" [(ngModel)]="empresa.giro" name="empresa.cod_actividad_economica"
+                            placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="pais">País:</label>
@@ -164,7 +194,16 @@
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="iva">IVA</label>
                         <div class="input-group">
-                            <input type="number" class="form-control" [(ngModel)]="empresa.iva" name="iva" placeholder="Escriba aquí">
+                            <input type="number" class="form-control" [(ngModel)]="empresa.iva" name="iva"
+                                placeholder="Escriba aquí">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-4" *ngIf="tieneAccesoPropina">
+                        <label for="propina_porcentaje">Propina Porcentaje</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" [(ngModel)]="empresa.propina_porcentaje" name="propina_porcentaje"
+                                placeholder="Escriba aquí">
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
@@ -174,84 +213,102 @@
                     </div> -->
                 </div>
 
-            <div class="bg-white rounded p-3 mb-3">
-                <div class="form-group col-sm-12 pt-2 pb-4">
-                    <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
-                        <span *ngIf="!saving">Guardar <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                        <span *ngIf="saving">Guardando...</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="row">
-                <h6 class="my-3">Configuraciones de renta</h6>
-                <div class="alert alert-info">
-                    <p>
-                        Los campos seleccionados se aplicarán automáticamente a todos los registros actuales de ventas, compras y gastos para completar la información faltante.
-                        <br>
-                        También se usarán como valores predeterminados en los nuevos registros, aunque siempre podrá ajustarlos manualmente cuando sea necesario.
-                    </p>
-                </div>
-                <div class="form-group col-md-6 col-lg-3">
-                    <label for="tipo_renta_servicios">Tipo de renta para servicios:</label>
-                    <select class="form-control form-select" [(ngModel)]="empresa.tipo_renta_servicios" name="tipo_renta_servicios">
-                        <option [ngValue]="null">Seleccione aquí</option>
-                        <option value="Profesiones, Artes y Oficios">Profesiones, Artes y Oficios</option>
-                        <option value="Actividades de Servicios">Actividades de Servicios</option>
-                        <option value="Actividades Comerciales">Actividades Comerciales</option>
-                        <option value="Actividades Industriales">Actividades Industriales</option>
-                        <option value="Actividades Agropecuarias">Actividades Agropecuarias</option>
-                        <option value="Utilidades y Dividendos">Utilidades y Dividendos</option>
-                        <option value="Exportaciones de bienes">Exportaciones de bienes</option>
-                        <option value="Servicios Realizados en el Exterior y Utilizados en El Salvador">Servicios Realizados en el Exterior y Utilizados en El Salvador</option>
-                        <option value="Exportaciones de servicios">Exportaciones de servicios</option>
-                        <option value="Otras Rentas Gravables">Otras Rentas Gravables</option>
-                        <option value="Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910">Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910</option>
-                        <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
-                    </select>
-                </div>
-                <div class="form-group col-md-6 col-lg-3">
-                    <label for="tipo_renta_productos">Tipo de renta para productos:</label>
-                    <select class="form-control form-select" [(ngModel)]="empresa.tipo_renta_productos" name="tipo_renta_productos">
-                        <option [ngValue]="null">Seleccione aquí</option>
-                        <option value="Profesiones, Artes y Oficios">Profesiones, Artes y Oficios</option>
-                        <option value="Actividades de Servicios">Actividades de Servicios</option>
-                        <option value="Actividades Comerciales">Actividades Comerciales</option>
-                        <option value="Actividades Industriales">Actividades Industriales</option>
-                        <option value="Actividades Agropecuarias">Actividades Agropecuarias</option>
-                        <option value="Utilidades y Dividendos">Utilidades y Dividendos</option>
-                        <option value="Exportaciones de bienes">Exportaciones de bienes</option>
-                        <option value="Servicios Realizados en el Exterior y Utilizados en El Salvador">Servicios Realizados en el Exterior y Utilizados en El Salvador</option>
-                        <option value="Exportaciones de servicios">Exportaciones de servicios</option>
-                        <option value="Otras Rentas Gravables">Otras Rentas Gravables</option>
-                        <option value="Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910">Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910</option>
-                        <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
-                    </select>
+                <div class="bg-white rounded p-3 mb-3">
+                    <div class="form-group col-sm-12 pt-2 pb-4">
+                        <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8"
+                            tooltip="Guardar (F8)">
+                            <span *ngIf="!saving">Guardar <img src="assets/icons/arrow-right-stroke.png"
+                                    class="icon2 ms-2"></span>
+                            <span *ngIf="saving">Guardando...</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="form-group col-md-6 col-lg-3">
-                    <label for="tipo_sector">Sector:</label>
-                    <select name="tipo_sector" class="form-select" [(ngModel)]="empresa.tipo_sector">
-                        <option [ngValue]="null">Seleccione aquí</option>
-                        <option value="Industria">Industria</option>
-                        <option value="Comercio">Comercio</option>
-                        <option value="Agropecuaria">Agropecuaria</option>
-                        <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
-                    </select>
+                <div class="row">
+                    <h6 class="my-3">Configuraciones de renta</h6>
+                    <div class="alert alert-info">
+                        <p>
+                            Los campos seleccionados se aplicarán automáticamente a todos los registros actuales de
+                            ventas, compras y gastos para completar la información faltante.
+                            <br>
+                            También se usarán como valores predeterminados en los nuevos registros, aunque siempre podrá
+                            ajustarlos manualmente cuando sea necesario.
+                        </p>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-3">
+                        <label for="tipo_renta_servicios">Tipo de renta para servicios:</label>
+                        <select class="form-control form-select" [(ngModel)]="empresa.tipo_renta_servicios"
+                            name="tipo_renta_servicios">
+                            <option [ngValue]="null">Seleccione aquí</option>
+                            <option value="Profesiones, Artes y Oficios">Profesiones, Artes y Oficios</option>
+                            <option value="Actividades de Servicios">Actividades de Servicios</option>
+                            <option value="Actividades Comerciales">Actividades Comerciales</option>
+                            <option value="Actividades Industriales">Actividades Industriales</option>
+                            <option value="Actividades Agropecuarias">Actividades Agropecuarias</option>
+                            <option value="Utilidades y Dividendos">Utilidades y Dividendos</option>
+                            <option value="Exportaciones de bienes">Exportaciones de bienes</option>
+                            <option value="Servicios Realizados en el Exterior y Utilizados en El Salvador">Servicios
+                                Realizados en el Exterior y Utilizados en El Salvador</option>
+                            <option value="Exportaciones de servicios">Exportaciones de servicios</option>
+                            <option value="Otras Rentas Gravables">Otras Rentas Gravables</option>
+                            <option
+                                value="Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910">
+                                Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910
+                            </option>
+                            <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-3">
+                        <label for="tipo_renta_productos">Tipo de renta para productos:</label>
+                        <select class="form-control form-select" [(ngModel)]="empresa.tipo_renta_productos"
+                            name="tipo_renta_productos">
+                            <option [ngValue]="null">Seleccione aquí</option>
+                            <option value="Profesiones, Artes y Oficios">Profesiones, Artes y Oficios</option>
+                            <option value="Actividades de Servicios">Actividades de Servicios</option>
+                            <option value="Actividades Comerciales">Actividades Comerciales</option>
+                            <option value="Actividades Industriales">Actividades Industriales</option>
+                            <option value="Actividades Agropecuarias">Actividades Agropecuarias</option>
+                            <option value="Utilidades y Dividendos">Utilidades y Dividendos</option>
+                            <option value="Exportaciones de bienes">Exportaciones de bienes</option>
+                            <option value="Servicios Realizados en el Exterior y Utilizados en El Salvador">Servicios
+                                Realizados en el Exterior y Utilizados en El Salvador</option>
+                            <option value="Exportaciones de servicios">Exportaciones de servicios</option>
+                            <option value="Otras Rentas Gravables">Otras Rentas Gravables</option>
+                            <option
+                                value="Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910">
+                                Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910
+                            </option>
+                            <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group col-md-6 col-lg-3">
+                        <label for="tipo_sector">Sector:</label>
+                        <select name="tipo_sector" class="form-select" [(ngModel)]="empresa.tipo_sector">
+                            <option [ngValue]="null">Seleccione aquí</option>
+                            <option value="Industria">Industria</option>
+                            <option value="Comercio">Comercio</option>
+                            <option value="Agropecuaria">Agropecuaria</option>
+                            <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y
+                                oficios</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            <div class="bg-white rounded p-3 mb-5">
-                <div class="form-group col-sm-12 pt-2 pb-4">
-                    <button type="button" (click)="setCamposRenta()" [disabled]="saving || !empresa.tipo_sector || !empresa.tipo_renta_servicios || !empresa.tipo_renta_productos" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
-                        <span *ngIf="!saving">Guardar <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                        <span *ngIf="saving">Guardando...</span>
-                    </button>
+                <div class="bg-white rounded p-3 mb-5">
+                    <div class="form-group col-sm-12 pt-2 pb-4">
+                        <button type="button" (click)="setCamposRenta()"
+                            [disabled]="saving || !empresa.tipo_sector || !empresa.tipo_renta_servicios || !empresa.tipo_renta_productos"
+                            class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                            <span *ngIf="!saving">Guardar <img src="assets/icons/arrow-right-stroke.png"
+                                    class="icon2 ms-2"></span>
+                            <span *ngIf="saving">Guardando...</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
             </section>
         </form>
     </tab>
-    <tab heading="Preferencias del sistema">
+    <tab heading="Preferencias del sistema" (selectTab)="onTabSelect($event)">
         <form name="form" (ngSubmit)="onSubmit()">
             <section class="bg-white p-4 rounded mb-3">
                 <div class="row mt-3">
@@ -260,20 +317,25 @@
                     <h4 class="mb-0 fw-bold">Módulos habilitados</h4>
                     <div class="form-group col-md-6 col-xl-4 without-label">
                         <div class="form-switch bg-light-info rounded">
-                          <label for="modulo_citas">Módulo de citas</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.modulo_citas" name="modulo_citas">
+                            <label for="modulo_citas">Módulo de citas</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.modulo_citas" name="modulo_citas">
                         </div>
                     </div>
-                    <div *ngIf="apiService.auth_user().empresa.plan == 'Pro'" class="form-group col-md-6 col-xl-4 without-label">
+                    <div *ngIf="apiService.auth_user().empresa.plan == 'Pro'"
+                        class="form-group col-md-6 col-xl-4 without-label">
                         <div class="form-switch bg-light-info rounded">
-                          <label for="modulo_citas">Módulo de proyectos</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.modulo_proyectos" name="modulo_proyectos">
+                            <label for="modulo_citas">Módulo de proyectos</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.modulo_proyectos" name="modulo_proyectos">
                         </div>
                     </div>
-                    <div *ngIf="apiService.auth_user().empresa.plan == 'Pro'" class="form-group col-md-6 col-xl-4 without-label">
+                    <div *ngIf="apiService.auth_user().empresa.plan == 'Pro'"
+                        class="form-group col-md-6 col-xl-4 without-label">
                         <div class="form-switch bg-light-info rounded">
-                          <label for="modulo_citas">Módulo de paquetes</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.modulo_paquetes" name="modulo_paquetes">
+                            <label for="modulo_citas">Módulo de paquetes</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.modulo_paquetes" name="modulo_paquetes">
                         </div>
                     </div>
                     <hr>
@@ -284,16 +346,11 @@
                                 <label for="columna_proyecto" class="form-label">
                                     <strong>Mostrar columna proyecto</strong>
                                 </label>
-                                <input 
-                                    class="form-check-input float-end" 
-                                    type="checkbox" 
-                                    role="switch" 
-                                    id="columna_proyecto"
-                                    [checked]="isColumnEnabled('columna_proyecto')"
-                                    (change)="toggleColumn('columna_proyecto')"
-                                    name="columna_proyecto">
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="columna_proyecto" [checked]="isColumnEnabled('columna_proyecto')"
+                                    (change)="toggleColumn('columna_proyecto')" name="columna_proyecto">
                             </div>
-                        </div> 
+                        </div>
                     </div>
 
                     <hr>
@@ -304,21 +361,16 @@
                                 <label for="mostrar_ticket_pdf" class="form-label">
                                     <strong>Mostrar ticket en PDF</strong>
                                 </label>
-                                <input 
-                                    class="form-check-input float-end" 
-                                    type="checkbox" 
-                                    role="switch" 
-                                    id="mostrar_ticket_pdf"
-                                    [checked]="isTicketEnPdfEnabled()"
-                                    (change)="toggleTicketEnPdf()"
-                                    name="mostrar_ticket_pdf">
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="mostrar_ticket_pdf" [checked]="isTicketEnPdfEnabled()"
+                                    (change)="toggleTicketEnPdf()" name="mostrar_ticket_pdf">
                             </div>
                             <small class="text-muted">
                                 Los tickets se generarán en formato PDF.
                             </small>
-                        </div> 
+                        </div>
                     </div>
-      
+
                     <div class="row">
                         <h4 class="mb-0 fw-bold">Ajustes en ordenes de compra</h4>
                         <div class="form-group col-md-6 col-xl-4 without-label">
@@ -326,32 +378,23 @@
                                 <label for="mostrar_sello_firma" class="form-label">
                                     <strong>Mostrar sello y firma en ordenes de compra</strong>
                                 </label>
-                                <input 
-                                    class="form-check-input float-end" 
-                                    type="checkbox" 
-                                    role="switch" 
-                                    id="mostrar_sello_firma"
-                                    [(ngModel)]="empresa.mostrar_sello_firma"
-                                    (change)="onSubmit()"
-                                    name="mostrar_sello_firma">
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="mostrar_sello_firma" [(ngModel)]="empresa.mostrar_sello_firma"
+                                    (change)="onSubmit()" name="mostrar_sello_firma">
                             </div>
                             <small class="text-muted">
                                 Los sello y firma se generarán en formato PDF.
                             </small>
-                        </div> 
+                        </div>
 
                         <div class="form-group col-md-6 col-xl-4 without-label">
                             <div class="form-switch bg-light-info rounded">
                                 <label for="mostrar_sello_firma_cotizacion" class="form-label">
                                     <strong>Mostrar sello y firma en cotizaciones</strong>
                                 </label>
-                                <input 
-                                    class="form-check-input float-end" 
-                                    type="checkbox" 
-                                    role="switch" 
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
                                     id="mostrar_sello_firma_cotizacion"
-                                    [(ngModel)]="empresa.mostrar_sello_firma_cotizacion"
-                                    (change)="onSubmit()"
+                                    [(ngModel)]="empresa.mostrar_sello_firma_cotizacion" (change)="onSubmit()"
                                     name="mostrar_sello_firma_cotizacion">
                             </div>
                             <small class="text-muted">
@@ -364,14 +407,15 @@
                         <div class="col-md-6 mb-4">
                             <h6 class="mb-3">Subir sello</h6>
                             <div class="form-group">
-                                <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" 
-                                        style="min-height: 100px; border: 1px dashed #ccc; padding: 10px;">
-                                    <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.sello }}" 
-                                         alt="sello" *ngIf="empresa.sello != null">
-                                    <span class="text-muted" *ngIf="empresa.sello == null">Arrastra y suelta o haz clic para subir</span>
-                                    <input type="file" name="sello" 
-                                           (change)="setFile($event, 'sello')" 
-                                           accept="image/png, image/jpeg, image/jpg">
+                                <figure
+                                    class="img-thumbnail file-upload d-flex justify-content-center align-items-center"
+                                    style="min-height: 100px; border: 1px dashed #ccc; padding: 10px;">
+                                    <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.sello }}"
+                                        alt="sello" *ngIf="empresa.sello != null">
+                                    <span class="text-muted" *ngIf="empresa.sello == null">Arrastra y suelta o haz clic
+                                        para subir</span>
+                                    <input type="file" name="sello" (change)="setFile($event, 'sello')"
+                                        accept="image/png, image/jpeg, image/jpg">
                                 </figure>
                                 <small class="text-muted d-block mt-2">
                                     Formatos aceptados: PNG, JPEG, JPG. Máximo 2MB
@@ -382,14 +426,15 @@
                         <div class="col-md-6 mb-4">
                             <h6 class="mb-3">Subir firma</h6>
                             <div class="form-group">
-                                <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" 
-                                        style="min-height: 100px; border: 1px dashed #ccc; padding: 10px;">
-                                    <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.firma }}" 
-                                         alt="firma" *ngIf="empresa.firma != null">
-                                    <span class="text-muted" *ngIf="empresa.firma == null">Arrastra y suelta o haz clic para subir</span>
-                                    <input type="file" name="firma" 
-                                           (change)="setFile($event, 'firma')" 
-                                           accept="image/png, image/jpeg, image/jpg">
+                                <figure
+                                    class="img-thumbnail file-upload d-flex justify-content-center align-items-center"
+                                    style="min-height: 100px; border: 1px dashed #ccc; padding: 10px;">
+                                    <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.firma }}"
+                                        alt="firma" *ngIf="empresa.firma != null">
+                                    <span class="text-muted" *ngIf="empresa.firma == null">Arrastra y suelta o haz clic
+                                        para subir</span>
+                                    <input type="file" name="firma" (change)="setFile($event, 'firma')"
+                                        accept="image/png, image/jpeg, image/jpg">
                                 </figure>
                                 <small class="text-muted d-block mt-2">
                                     Formatos aceptados: PNG, JPEG, JPG. Máximo 2MB
@@ -398,86 +443,193 @@
                         </div>
                     </div>
 
-                    
+
                     <h4 class="mb-0 fw-bold">Facturación</h4>
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Calcular el IVA por defecto.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="cobrar_iva">Cobrar IVA</label>
-                          <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()" role="switch" (change)="onSubmit()" [checked]="empresa.cobra_iva == 'Si'">
+                            <label for="cobrar_iva">Cobrar IVA</label>
+                            <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()"
+                                role="switch" (change)="onSubmit()" [checked]="empresa.cobra_iva == 'Si'">
                         </div>
                     </div>
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Vender sin stock sin autorización.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="vender_sin_stock">Vender sin stock</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
+                            <label for="vender_sin_stock">Vender sin stock</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
                         </div>
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Permitir cambiar el precio en facturación.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="editar_precio_venta">Editar precio</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.editar_precio_venta" name="editar_precio_venta">
+                            <label for="editar_precio_venta">Editar precio</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.editar_precio_venta"
+                                name="editar_precio_venta">
                         </div>
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Puedes agrupar todos los detalles en una sola descripción.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="agrupar_detalles_venta">Agrupar detalles</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.agrupar_detalles_venta" name="agrupar_detalles_venta">
+                            <label for="agrupar_detalles_venta">Agrupar detalles</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.agrupar_detalles_venta"
+                                name="agrupar_detalles_venta">
                         </div>
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Editar las descripciones de los detalles de productos.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="editar_descripcion_venta">Editar descripciones</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.editar_descripcion_venta" name="editar_descripcion_venta">
+                            <label for="editar_descripcion_venta">Editar descripciones</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.editar_descripcion_venta"
+                                name="editar_descripcion_venta">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Versión de facturación.</p>
+                        <select class="form-select" 
+                            id="version_facturacion"
+                            [value]="getVersionFacturacion()"
+                            (change)="updateVersionFacturacion($any($event.target).value)"
+                            name="version_facturacion">
+                            <option value="original">Sin IVA (Los precios no incluyen IVA, se agrega al final.)</option>
+                            <option value="v2">Con IVA (Los precios ya incluyen IVA, se desglosa automáticamente.)</option>
+                        </select>
+                    </div>
+
+                    
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Mostrar campos contables (Tipo de operación y Tipo de ingreso) en ventas.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="mostrar_campos_contables">Mostrar campos contables</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="mostrar_campos_contables" [checked]="isCamposContablesEnabled()"
+                                (change)="toggleCamposContables()" name="mostrar_campos_contables">
                         </div>
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Se imprimirá el documento al momento de procesar la venta.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="impresion_en_facturacion">Imprimir en facturación</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.impresion_en_facturacion" name="impresion_en_facturacion">
+                            <label for="impresion_en_facturacion">Imprimir en facturación</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.impresion_en_facturacion"
+                                name="impresion_en_facturacion">
                         </div>
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Podrás seleccionar un vendedor por cada detalle de venta.</p>
+                        <p>Permitir seleccionar un vendedor por cada detalle de venta.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="vendedor_detalle_venta">Vendedor por detalle</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.vendedor_detalle_venta" name="vendedor_detalle_venta">
+                            <label for="vendedor_detalle_venta">Vendedor por detalle</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.vendedor_detalle_venta"
+                                name="vendedor_detalle_venta">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Permitir cambiar el tipo de impuesto (Gravada, Exenta, No sujeta) por cada detalle de venta.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="cambiar_tipo_impuesto_venta">Cambiar tipo de impuesto en venta</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.cambiar_tipo_impuesto_venta"
+                                name="cambiar_tipo_impuesto_venta">
                         </div>
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Habilitará el modulo para configurar Facturación Electrónica.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="facturacion_electronica">Facturación electrónica</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.facturacion_electronica" name="facturacion_electronica">
+                            <label for="facturacion_electronica">Facturación electrónica</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.facturacion_electronica"
+                                name="facturacion_electronica">
                         </div>
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Los usuarios de tipo "Vendedor" podrán crear y editar productos.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="vendedor_inventario">Gestión de productos por vendedores</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.vendedor_inventario" name="vendedor_inventario">
+                            <label for="vendedor_inventario">Gestión de productos por vendedores</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.vendedor_inventario"
+                                name="vendedor_inventario">
                         </div>
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Tendrás la opción de hacer ventas a consigna.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="venta_consigna">Venta a consigna</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.venta_consigna" name="venta_consigna">
+                            <label for="venta_consigna">Venta a consigna</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                (change)="onSubmit()" [(ngModel)]="empresa.venta_consigna" name="venta_consigna">
                         </div>
                     </div>
+                    <hr>
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Configuraciones de Lotes</h4>
+                        <div class="form-group col-md-12 col-xl-6 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="lotes_activo">Activar módulo de lotes</label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="lotes_activo" 
+                                    [checked]="isLotesActivo()"
+                                    (change)="toggleLotesActivo()" 
+                                    name="lotes_activo">
+                            </div>
+                            <small class="text-muted">
+                                Habilita el uso de control de inventario por lotes en toda la empresa.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 col-xl-6" *ngIf="isLotesActivo()">
+                            <label for="lotes_metodologia">Metodología de selección de lotes</label>
+                            <select class="form-select" 
+                                id="lotes_metodologia"
+                                [value]="getLotesMetodologia()"
+                                (change)="updateLotesMetodologia($any($event.target).value)"
+                                name="lotes_metodologia">
+                                <option value="Manual">Manual (Selección manual del lote)</option>
+                                <option value="FIFO">FIFO - First In First Out (Primero en entrar, primero en salir)</option>
+                                <option value="LIFO">LIFO - Last In First Out (Último en entrar, primero en salir)</option>
+                                <option value="FEFO">FEFO - First Expired First Out (Primero en vencer, primero en salir)</option>
+                            </select>
+                            <small class="text-muted">
+                                Define cómo se seleccionarán automáticamente los lotes al realizar ventas.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 col-xl-6" *ngIf="isLotesActivo()">
+                            <label for="lotes_dias_anticipacion">Días de anticipación para alerta de vencimiento</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" 
+                                    id="lotes_dias_anticipacion"
+                                    [value]="getLotesDiasAnticipacion()"
+                                    (change)="updateLotesDiasAnticipacion($any($event.target).value)"
+                                    name="lotes_dias_anticipacion"
+                                    min="1" max="365">
+                                <span class="input-group-text">días</span>
+                            </div>
+                            <small class="text-muted">
+                                Número de días antes del vencimiento para mostrar alertas de productos próximos a vencer.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 mt-3" *ngIf="isLotesActivo()">
+                            <div class="d-flex justify-content-between mt-3">
+                                <app-activar-lotes-masivo></app-activar-lotes-masivo>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Activa o desactiva el inventario por lotes por categorías.
+                            </small>
+                        </div>
+                    </div>
+
                     <hr>
                     <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
                     <div class="form-group col-md-6">
@@ -493,27 +645,33 @@
                         <p>Habilitar términos y condiciones por defecto en las cotizaciones.</p>
                         <div class="form-switch bg-light-info rounded">
                           <label for="terms_cond_toggle">Términos y condiciones</label> -->
-                          <!-- <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.facturacion_electronica" name="terms_cond_toggle"> -->
-                          <!-- <input class="form-check-input float-end" type="checkbox" role="switch" (change) = toggleDisplay()  name="terms_cond_toggle">
+                    <!-- <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.facturacion_electronica" name="terms_cond_toggle"> -->
+                    <!-- <input class="form-check-input float-end" type="checkbox" role="switch" (change) = toggleDisplay()  name="terms_cond_toggle">
                         </div>
                     </div> -->
 
-                                <!-- terminos y condiciones -->
-                   <!--  <div class="form-group col-md-6 col-xl-8 without-label" >
+                    <!-- terminos y condiciones -->
+                    <!--  <div class="form-group col-md-6 col-xl-8 without-label" >
                           <label for="terms" class="my-3">Términos y condiciones Generales para documentos</label>
                           <textarea name="terms" class="form-control" rows="6" [(ngModel)]="empresa.cotizacion_compras_terminos"></textarea>
                     </div> -->
-                    <p class="my-3 pt-5">
+                    <p class="pt-5">
+                        ¿Quieres limpiar el cache del sistema? Esto hará que se reinicie la aplicación y se cierre la sesión.
+                        <a (click)="limpiarCacheYLogout()" class="btn btn-link">Limpiar cache y cerrar sesión</a>
+                    </p>
+                    <p class="my-3">
                         ¿Quieres eliminar los datos de tu cuenta?
                         <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
                     </p>
                 </div>
-               
+
             </section>
             <div class="bg-white rounded p-3 mb-3">
                 <div class="form-group col-sm-12 pt-2 pb-4">
-                    <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
-                        <span *ngIf="!saving">Guardar <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                    <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8"
+                        tooltip="Guardar (F8)">
+                        <span *ngIf="!saving">Guardar <img src="assets/icons/arrow-right-stroke.png"
+                                class="icon2 ms-2"></span>
                         <span *ngIf="saving">Guardando...</span>
                     </button>
                 </div>
@@ -525,12 +683,15 @@
             <div class="row">
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="mh_usuario">Usuario:</label>
-                    <input type="text" class="form-control" [(ngModel)]="empresa.mh_usuario" name="mh_usuario" placeholder="Escribe aquí">
+                    <input type="text" class="form-control" [(ngModel)]="empresa.mh_usuario" name="mh_usuario"
+                        placeholder="Escribe aquí">
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="mh_contrasena">Contraseña de la API:</label>
                     <div class="input-group">
-                        <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="mh_contrasena" [(ngModel)]="empresa.mh_contrasena" placeholder="Escribe aquí" #mh_contrasena="ngModel" id="mh_contrasena" required />
+                        <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="mh_contrasena"
+                            [(ngModel)]="empresa.mh_contrasena" placeholder="Escribe aquí" #mh_contrasena="ngModel"
+                            id="mh_contrasena" required />
                         <button class="btn btn-light" type="button" (click)="mostrarPassword()">
                             <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword, 'fa-eye': showpassword }"></i>
                         </button>
@@ -539,7 +700,9 @@
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="mh_pwd_certificado">Clave Privada del Certificado:</label>
                     <div class="input-group">
-                        <input [type]="showpassword2 ? 'text' : 'password'" class="form-control" name="mh_pwd_certificado" [(ngModel)]="empresa.mh_pwd_certificado" placeholder="Escribe aquí" #mh_pwd_certificado="ngModel" id="mh_pwd_certificado" required />
+                        <input [type]="showpassword2 ? 'text' : 'password'" class="form-control"
+                            name="mh_pwd_certificado" [(ngModel)]="empresa.mh_pwd_certificado"
+                            placeholder="Escribe aquí" #mh_pwd_certificado="ngModel" id="mh_pwd_certificado" required />
                         <button class="btn btn-light" type="button" (click)="mostrarPassword2()">
                             <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword2, 'fa-eye': showpassword2 }"></i>
                         </button>
@@ -547,7 +710,8 @@
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="fe_ambiente">Ambiente:</label>
-                    <select name="fe_ambiente" class="form-select" (change)="cargarEstadisticasPruebas()" [(ngModel)]="empresa.fe_ambiente">
+                    <select name="fe_ambiente" class="form-select" (change)="cargarEstadisticasPruebas()"
+                        [(ngModel)]="empresa.fe_ambiente">
                         <option value="00">Pruebas</option>
                         <option value="01">Producción</option>
                     </select>
@@ -558,33 +722,37 @@
                 </div> -->
                 <div class="form-group col-md-6 col-xl-4 without-label">
                     <div class="form-switch bg-light-info rounded">
-                      <label for="enviar_dte">Enviar DTE por correo</label>
-                      <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.enviar_dte" name="enviar_dte">
+                        <label for="enviar_dte">Enviar DTE por correo</label>
+                        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                            [(ngModel)]="empresa.enviar_dte" name="enviar_dte">
                     </div>
                 </div>
             </div>
         </section>
         <div class="bg-white rounded p-3 mb-3">
             <div class="form-group col-sm-12 pt-2 pb-4">
-                <button [disabled]="cheking || !empresa.mh_usuario || !empresa.mh_contrasena || !empresa.mh_pwd_certificado" (click)="onCheckMH()" class="btn btn-primary float-end">
+                <button
+                    [disabled]="cheking || !empresa.mh_usuario || !empresa.mh_contrasena || !empresa.mh_pwd_certificado"
+                    (click)="onCheckMH()" class="btn btn-primary float-end">
                     <span *ngIf="!cheking">Comprobar datos</span>
                     <span *ngIf="cheking">Comprobando...</span>
                 </button>
             </div>
         </div>
 
-         <!-- Pruebas masivas -->
-         
-         <section *ngIf="empresa.fe_ambiente == '00'" class="bg-white rounded p-4 mb-3">
+        <!-- Pruebas masivas -->
+
+        <section *ngIf="empresa.fe_ambiente == '00'" class="bg-white rounded p-4 mb-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0"><i class="fa fa-rocket me-2"></i> Pruebas Masivas de Documentos</h5>
                 <!-- <button class="btn btn-primary" routerLink="/configuracion/pruebas-masivas">
                     <i class="fa fa-cogs me-1"></i> Administrar pruebas
                 </button> -->
             </div>
-            
+
             <div class="alert alert-info">
-                <p><i class="fa fa-info-circle me-2"></i> El Ministerio de Hacienda requiere un mínimo de documentos para validar su sistema:</p>
+                <p><i class="fa fa-info-circle me-2"></i> El Ministerio de Hacienda requiere un mínimo de documentos
+                    para validar su sistema:</p>
                 <ul class="mb-0">
                     <li>90 Facturas de Consumidor Final</li>
                     <li>75 Comprobantes de Crédito Fiscal</li>
@@ -594,9 +762,9 @@
                     <!-- <li><strong>Sujeto Excluido</strong></li> -->
                 </ul>
             </div>
-            
+
             <app-alerta-pruebas></app-alerta-pruebas>
-            
+
             <!-- <h3 class="form-label mb-2">Progreso General</h3> -->
             <!-- <div class="progress mb-2" style="height: 25px;">
                 <div *ngIf="estadisticasPruebas" class="progress-bar" role="progressbar"
@@ -609,7 +777,7 @@
                     Cargando...
                 </div>
             </div> -->
-            
+
             <div class="row" *ngIf="estadisticasPruebas">
                 <div class="col-md-6 mb-3" *ngFor="let tipo of getKeysPruebas()">
                     <div class="card h-100" [ngClass]="isPruebaCompleta(tipo) ? 'border-success' : ''">
@@ -621,24 +789,23 @@
                         </div>
                         <div class="card-body">
                             <!-- NUEVO: Información especial para notas -->
-                            <div *ngIf="(tipo === 'notasCredito' || tipo === 'notasDebito') && !puedeGenerarNotas(tipo)" 
-                                 class="alert alert-warning mb-3">
+                            <div *ngIf="(tipo === 'notasCredito' || tipo === 'notasDebito') && !puedeGenerarNotas(tipo)"
+                                class="alert alert-warning mb-3">
                                 <i class="fa fa-exclamation-triangle me-2"></i>
                                 Primero debe generar Comprobantes de Crédito Fiscal
                             </div>
-                            
+
                             <!-- NUEVO: Información de generación automática -->
                             <div *ngIf="tipo === 'creditosFiscales'" class="alert alert-info mb-3">
                                 <i class="fa fa-magic me-2"></i>
                                 <small>Al generar CCF se crearán automáticamente las notas de crédito y débito</small>
                             </div>
-                            
+
                             <div class="d-flex align-items-center justify-content-center">
-                                <button class="btn btn-md me-3" 
-                                    [ngClass]="isPruebaCompleta(tipo) ? 'btn-outline-success' : 'btn-outline-primary'" 
+                                <button class="btn btn-md me-3"
+                                    [ngClass]="isPruebaCompleta(tipo) ? 'btn-outline-success' : 'btn-outline-primary'"
                                     [disabled]="isPruebaCompleta(tipo) || !puedeGenerarNotas(tipo)"
-                                    (click)="ejecutarPruebasMasivas(mpruebasMasivas, tipo)" 
-                                    style="width: 150px;">
+                                    (click)="ejecutarPruebasMasivas(mpruebasMasivas, tipo)" style="width: 150px;">
                                     <i class="fa" [ngClass]="isPruebaCompleta(tipo) ? 'fa-check' : 'fa-play'"></i>
                                     {{isPruebaCompleta(tipo) ? 'Completado' : 'Generar faltantes'}}
                                 </button>
@@ -650,12 +817,13 @@
         </section>
 
     </tab>
-    <tab heading="Integraciones">
+    <tab heading="Integraciones" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
 
             <div class="alert alert-info mb-4">
-                <i class="fa fa-info-circle me-2"></i> 
-                En esta sección encontrará las credenciales necesarias para realizar integraciones con sistemas externos.
+                <i class="fa fa-info-circle me-2"></i>
+                En esta sección encontrará las credenciales necesarias para realizar integraciones con sistemas
+                externos.
             </div>
 
             <div class="row">
@@ -665,16 +833,10 @@
                     <div class="form-group">
                         <label for="key_webhook" class="form-label">Clave Api para integraciones:</label>
                         <div class="input-group">
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.woocommerce_api_key" 
-                                   name="key_webhook" 
-                                   placeholder="API Key para integraciones" 
-                                   readonly>
-                            <button class="btn btn-secondary" 
-                                    type="button" 
-                                    (click)="copyToClipboard(empresa.woocommerce_api_key)" 
-                                    tooltip="Copiar API Key">
+                            <input type="text" class="form-control" [(ngModel)]="empresa.woocommerce_api_key"
+                                name="key_webhook" placeholder="API Key para integraciones" readonly>
+                            <button class="btn btn-secondary" type="button"
+                                (click)="copyToClipboard(empresa.woocommerce_api_key)" tooltip="Copiar API Key">
                                 <i class="fa fa-copy"></i>
                             </button>
                         </div>
@@ -688,16 +850,10 @@
                     <div class="form-group">
                         <label for="key_webhook" class="form-label">Codigo de empresa para whatsapp:</label>
                         <div class="input-group">
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.codigo" 
-                                   name="key_webhook" 
-                                   placeholder="Codigo de empresa para whatsapp" 
-                                   readonly>
-                            <button class="btn btn-secondary" 
-                                    type="button" 
-                                    (click)="copyToClipboard(empresa.codigo)" 
-                                    tooltip="Copiar Codigo">
+                            <input type="text" class="form-control" [(ngModel)]="empresa.codigo" name="key_webhook"
+                                placeholder="Codigo de empresa para whatsapp" readonly>
+                            <button class="btn btn-secondary" type="button" (click)="copyToClipboard(empresa.codigo)"
+                                tooltip="Copiar Codigo">
                                 <i class="fa fa-copy"></i>
                             </button>
                         </div>
@@ -709,27 +865,22 @@
             </div>
         </section>
     </tab>
-    <tab heading="WooCommerce">
+    <tab heading="WooCommerce" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
             <div class="row">
                 <div class="col-12">
                     <h5 class="mb-3">Integración WooCommerce</h5>
-                    
+
                     <div class="row g-3">
-    
+
                         <div class="col-12">
                             <label for="url_webhook_woocomerce" class="form-label">URL Webhook para WooCommerce:</label>
                             <div class="input-group">
-                                <input type="text" 
-                                       class="form-control" 
-                                       [(ngModel)]="empresa.woocommerce_api_url" 
-                                       name="url_webhook_woocomerce" 
-                                       placeholder="URL del Webhook para WooCommerce" 
-                                       readonly>
-                                <button class="btn btn-secondary" 
-                                        type="button" 
-                                        (click)="copyToClipboard(empresa.woocommerce_api_url)" 
-                                        tooltip="Copiar URL">
+                                <input type="text" class="form-control" [(ngModel)]="empresa.woocommerce_api_url"
+                                    name="url_webhook_woocomerce" placeholder="URL del Webhook para WooCommerce"
+                                    readonly>
+                                <button class="btn btn-secondary" type="button"
+                                    (click)="copyToClipboard(empresa.woocommerce_api_url)" tooltip="Copiar URL">
                                     <i class="fa fa-copy"></i>
                                 </button>
                             </div>
@@ -741,40 +892,33 @@
 
                         <div class="col-md-6">
                             <label for="woocommerce_store_url" class="form-label">URL de la Tienda:</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.woocommerce_store_url" 
-                                   name="woocommerce_store_url" 
-                                   [readonly]="empresa.status_conexion_woocommerce === 'connected'"
-                                   placeholder="Ej: https://mitienda.com">
+                            <input type="text" class="form-control" [(ngModel)]="empresa.woocommerce_store_url"
+                                name="woocommerce_store_url"
+                                [readonly]="empresa.status_conexion_woocommerce === 'connected'"
+                                placeholder="Ej: https://mitienda.com">
                         </div>
 
                         <div class="col-md-6">
                             <label for="woocommerce_consumer_key" class="form-label">Clave de API:</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.woocommerce_consumer_key" 
-                                   name="woocommerce_consumer_key" 
-                                   [readonly]="empresa.status_conexion_woocommerce === 'connected'"
-                                   placeholder="Ingrese su clave de API de WooCommerce">
+                            <input type="text" class="form-control" [(ngModel)]="empresa.woocommerce_consumer_key"
+                                name="woocommerce_consumer_key"
+                                [readonly]="empresa.status_conexion_woocommerce === 'connected'"
+                                placeholder="Ingrese su clave de API de WooCommerce">
                         </div>
 
                         <div class="col-md-6">
                             <label for="woocommerce_consumer_secret" class="form-label">Clave Secreta:</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.woocommerce_consumer_secret" 
-                                   name="woocommerce_consumer_secret" 
-                                   [readonly]="empresa.status_conexion_woocommerce === 'connected'"
-                                   placeholder="Ingrese su clave secreta de WooCommerce">
+                            <input type="text" class="form-control" [(ngModel)]="empresa.woocommerce_consumer_secret"
+                                name="woocommerce_consumer_secret"
+                                [readonly]="empresa.status_conexion_woocommerce === 'connected'"
+                                placeholder="Ingrese su clave secreta de WooCommerce">
                         </div>
 
                         <div class="col-md-6">
                             <label for="woocommerce_canal" class="form-label">Canal de ventas:</label>
-                            <select class="form-select" 
-                                    [(ngModel)]="empresa.woocommerce_canal_id" 
-                                    name="woocommerce_canal"
-                                    [disabled]="empresa.status_conexion_woocommerce === 'connected'">
+                            <select class="form-select" [(ngModel)]="empresa.woocommerce_canal_id"
+                                name="woocommerce_canal"
+                                [disabled]="empresa.status_conexion_woocommerce === 'connected'">
                                 <option [value]="0" selected>Seleccione un canal</option>
                                 <option *ngFor="let canal of canales" [value]="canal.id">{{canal.nombre}}</option>
                             </select>
@@ -783,55 +927,55 @@
                             </small>
                         </div>
 
-       
+
                         <div class="col-12">
-                            <div *ngIf="empresa.woocommerce_store_url && empresa.woocommerce_consumer_key && empresa.woocommerce_consumer_secret" 
-                                class="alert mt-3" 
+                            <div *ngIf="empresa.woocommerce_store_url && empresa.woocommerce_consumer_key && empresa.woocommerce_consumer_secret"
+                                class="alert mt-3"
                                 [ngClass]="{'alert-success': empresa.woocommerce_status === 'connected', 'alert-warning': empresa.woocommerce_status === 'disconnected', 'alert-info': !empresa.woocommerce_status}">
-                                <i class="fa" [ngClass]="{'fa-check-circle': empresa.woocommerce_status === 'connected', 'fa-exclamation-circle': empresa.woocommerce_status === 'disconnected', 'fa-info-circle': !empresa.woocommerce_status}"></i>
-                                <span *ngIf="empresa.woocommerce_status === 'connected'"> Conexión establecida con WooCommerce</span>
-                                <span *ngIf="empresa.woocommerce_status === 'disconnected'"> Sin conexión con WooCommerce</span>
+                                <i class="fa"
+                                    [ngClass]="{'fa-check-circle': empresa.woocommerce_status === 'connected', 'fa-exclamation-circle': empresa.woocommerce_status === 'disconnected', 'fa-info-circle': !empresa.woocommerce_status}"></i>
+                                <span *ngIf="empresa.woocommerce_status === 'connected'"> Conexión establecida con
+                                    WooCommerce</span>
+                                <span *ngIf="empresa.woocommerce_status === 'disconnected'"> Sin conexión con
+                                    WooCommerce</span>
                                 <span *ngIf="!empresa.woocommerce_status"> Estado de conexión desconocido</span>
                             </div>
 
                             <div class="text-end mt-3">
-                                <button tooltip="importar productos a WooCommerce" 
-                                        (click)="exportarWooCommerce()" 
-                                        class="btn btn-light me-2" 
-                                        *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                <button tooltip="importar productos a WooCommerce" (click)="exportarWooCommerce()"
+                                    class="btn btn-light me-2"
+                                    *ngIf="empresa.status_conexion_woocommerce === 'connected'">
                                     <img src="/assets/icons/upload-cloud.png" class="icon me-2">
                                     Importar productos
                                 </button>
-                                
-                                <button tooltip="Descargar productos para importar en WooCommerce (F7)" 
-                                        (click)="descargarWooCommerce()" 
-                                        class="btn btn-light me-2" 
-                                        *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+
+                                <button tooltip="Descargar productos para importar en WooCommerce (F7)"
+                                    (click)="descargarWooCommerce()" class="btn btn-light me-2"
+                                    *ngIf="empresa.status_conexion_woocommerce === 'connected'">
                                     <img src="/assets/icons/woocommerce.png" class="icon me-2">
                                     Descargar productos
                                 </button>
 
-                                <button class="btn btn-light text-danger me-2" 
-                                        type="button"
-                                        *ngIf="empresa.is_current_user_connected_to_woocommerce"
-                                        (click)="disconnectWooCommerce()">
+                                <button class="btn btn-light text-danger me-2" type="button"
+                                    *ngIf="empresa.is_current_user_connected_to_woocommerce"
+                                    (click)="disconnectWooCommerce()">
                                     <i class="fa fa-unlink me-2"></i>
                                     Desconectar WooCommerce
                                 </button>
-                                <button class="btn btn-light text-success" 
-                                        type="button" 
-                                        *ngIf="empresa.status_conexion_woocommerce !== 'connected' || empresa.is_current_user_connected_to_woocommerce"
-                                        [disabled]="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce"
-                                        (click)="saveCredentials('woocommerce')">
+                                <button class="btn btn-light text-success" type="button"
+                                    *ngIf="empresa.status_conexion_woocommerce !== 'connected' || empresa.is_current_user_connected_to_woocommerce"
+                                    [disabled]="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce"
+                                    (click)="saveCredentials('woocommerce')">
                                     <i class="fa fa-save me-2"></i>
                                     Guardar Credenciales
                                 </button>
                             </div>
 
-                            <div class="alert alert-info mt-3" 
+                            <div class="alert alert-info mt-3"
                                 *ngIf="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce">
                                 <i class="fa fa-info-circle me-2"></i>
-                                Hay otros usuarios conectados a WooCommerce. Solo el usuario que estableció la conexión puede desconectarla.
+                                Hay otros usuarios conectados a WooCommerce. Solo el usuario que estableció la conexión
+                                puede desconectarla.
                             </div>
                         </div>
                     </div>
@@ -839,27 +983,21 @@
             </div>
         </section>
     </tab>
-    <tab heading="Shopify">
+    <tab heading="Shopify" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
             <div class="row">
                 <div class="col-12">
                     <h5 class="mb-3">Integración Shopify</h5>
-                    
+
                     <div class="row g-3">
-    
+
                         <div class="col-12">
                             <label for="url_webhook_shopify" class="form-label">URL Webhook para Shopify:</label>
                             <div class="input-group">
-                                <input type="text" 
-                                       class="form-control" 
-                                       [(ngModel)]="empresa.shopify_webhook_url" 
-                                       name="url_webhook_shopify" 
-                                       placeholder="URL del Webhook para Shopify" 
-                                       readonly>
-                                <button class="btn btn-secondary" 
-                                        type="button" 
-                                        (click)="copyToClipboard(empresa.shopify_webhook_url)" 
-                                        tooltip="Copiar URL">
+                                <input type="text" class="form-control" [(ngModel)]="empresa.shopify_webhook_url"
+                                    name="url_webhook_shopify" placeholder="URL del Webhook para Shopify" readonly>
+                                <button class="btn btn-secondary" type="button"
+                                    (click)="copyToClipboard(empresa.shopify_webhook_url)" tooltip="Copiar URL">
                                     <i class="fa fa-copy"></i>
                                 </button>
                             </div>
@@ -871,29 +1009,22 @@
 
                         <div class="col-md-6">
                             <label for="shopify_store_url" class="form-label">URL de la Tienda:</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.shopify_store_url" 
-                                   name="shopify_store_url" 
-                                   [readonly]="empresa.status_conexion_shopify === 'connected'"
-                                   placeholder="Ej: https://mitienda.com">
+                            <input type="text" class="form-control" [(ngModel)]="empresa.shopify_store_url"
+                                name="shopify_store_url" [readonly]="empresa.status_conexion_shopify === 'connected'"
+                                placeholder="Ej: https://mitienda.com">
                         </div>
                         <div class="col-md-6">
                             <label for="shopify_consumer_secret" class="form-label">Clave Secreta:</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.shopify_consumer_secret" 
-                                   name="shopify_consumer_secret" 
-                                   [readonly]="empresa.status_conexion_shopify === 'connected'"
-                                   placeholder="Ingrese su clave secreta de Shopify">
+                            <input type="text" class="form-control" [(ngModel)]="empresa.shopify_consumer_secret"
+                                name="shopify_consumer_secret"
+                                [readonly]="empresa.status_conexion_shopify === 'connected'"
+                                placeholder="Ingrese su clave secreta de Shopify">
                         </div>
 
                         <div class="col-md-6">
                             <label for="shopify_canal" class="form-label">Canal de ventas:</label>
-                            <select class="form-select" 
-                                    [(ngModel)]="empresa.shopify_canal_id" 
-                                    name="shopify_canal"
-                                    [disabled]="empresa.status_conexion_shopify === 'connected'">
+                            <select class="form-select" [(ngModel)]="empresa.shopify_canal_id" name="shopify_canal"
+                                [disabled]="empresa.status_conexion_shopify === 'connected'">
                                 <option [value]="0" selected>Seleccione un canal</option>
                                 <option *ngFor="let canal of canales" [value]="canal.id">{{canal.nombre}}</option>
                             </select>
@@ -902,55 +1033,64 @@
                             </small>
                         </div>
 
-       
+                        <!-- Importaciones -->
+                        <div class="col-12" *ngIf="empresa.status_conexion_shopify === 'connected'">
+                            <h5 class="mb-3">Importaciones</h5>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button tooltip="Importar productos desde Shopify"
+                                    (click)="confirmarImportacionShopify()" class="btn btn-primary">
+                                    <i class="fa fa-download me-2"></i>
+                                    Importar productos
+                                </button>
+
+                                <!-- <button tooltip="Importar clientes desde Shopify" 
+                                        (click)="confirmarImportacionClientesShopify()" 
+                                        class="btn btn-default">
+                                    <i class="fa fa-users me-2"></i>
+                                    Importar clientes
+                                </button> -->
+                            </div>
+                        </div>
+
+
                         <div class="col-12">
-                            <div *ngIf="empresa.shopify_store_url && empresa.shopify_consumer_secret" 
-                                class="alert mt-3" 
+                            <div *ngIf="empresa.shopify_store_url && empresa.shopify_consumer_secret" class="alert mt-3"
                                 [ngClass]="{'alert-success': empresa.shopify_status === 'connected', 'alert-warning': empresa.shopify_status === 'disconnected', 'alert-info': !empresa.shopify_status}">
-                                <i class="fa" [ngClass]="{'fa-check-circle': empresa.shopify_status === 'connected', 'fa-exclamation-circle': empresa.shopify_status === 'disconnected', 'fa-info-circle': !empresa.shopify_status}"></i>
-                                <span *ngIf="empresa.shopify_status === 'connected'"> Conexión establecida con Shopify</span>
+                                <i class="fa"
+                                    [ngClass]="{'fa-check-circle': empresa.shopify_status === 'connected', 'fa-exclamation-circle': empresa.shopify_status === 'disconnected', 'fa-info-circle': !empresa.shopify_status}"></i>
+                                <span *ngIf="empresa.shopify_status === 'connected'"> Conexión establecida con
+                                    Shopify</span>
                                 <span *ngIf="empresa.shopify_status === 'disconnected'"> Sin conexión con Shopify</span>
                                 <span *ngIf="!empresa.shopify_status"> Estado de conexión desconocido</span>
                             </div>
 
                             <div class="text-end mt-3">
-                                <!-- <button tooltip="importar productos a Shopify" 
-                                        (click)="exportarShopify()" 
-                                        class="btn btn-light me-2" 
-                                        *ngIf="empresa.status_conexion_shopify === 'connected'">
-                                    <img src="/assets/icons/upload-cloud.png" class="icon me-2">
-                                    Importar productos
-                                </button> -->
-                                
-                                <button tooltip="Descargar productos para importar en Shopify (F7)" 
-                                        (click)="descargarShopify()" 
-                                        class="btn btn-light me-2" 
-                                        *ngIf="empresa.status_conexion_shopify === 'connected'">
+                                <button tooltip="Descargar productos para importar en Shopify (F7)"
+                                    (click)="descargarShopify()" class="btn btn-light me-2"
+                                    *ngIf="empresa.status_conexion_shopify === 'connected'">
                                     <img src="/assets/icons/woocommerce.png" class="icon me-2">
                                     Descargar productos
                                 </button>
 
-                                <button class="btn btn-light text-danger me-2" 
-                                        type="button"
-                                        *ngIf="empresa.is_current_user_connected_to_shopify"
-                                        (click)="disconnectShopify()">
+                                <button class="btn btn-light text-danger me-2" type="button"
+                                    *ngIf="empresa.is_current_user_connected_to_shopify" (click)="disconnectShopify()">
                                     <i class="fa fa-unlink me-2"></i>
                                     Desconectar Shopify
                                 </button>
-                                <button class="btn btn-light text-success" 
-                                        type="button" 
-                                        *ngIf="empresa.status_conexion_shopify !== 'connected' || empresa.is_current_user_connected_to_shopify"
-                                        [disabled]="empresa.status_conexion_shopify === 'connected' && !empresa.is_current_user_connected_to_shopify"
-                                        (click)="saveCredentials('shopify')">
+                                <button class="btn btn-light text-success" type="button"
+                                    *ngIf="empresa.status_conexion_shopify !== 'connected' || empresa.is_current_user_connected_to_shopify"
+                                    [disabled]="empresa.status_conexion_shopify === 'connected' && !empresa.is_current_user_connected_to_shopify"
+                                    (click)="saveCredentials('shopify')">
                                     <i class="fa fa-save me-2"></i>
                                     Guardar Credenciales
                                 </button>
                             </div>
 
-                            <div class="alert alert-info mt-3" 
+                            <div class="alert alert-info mt-3"
                                 *ngIf="empresa.status_conexion_shopify === 'connected' && !empresa.is_current_user_connected_to_shopify">
                                 <i class="fa fa-info-circle me-2"></i>
-                                Hay otros usuarios conectados a Shopify. Solo el usuario que estableció la conexión puede desconectarla.
+                                Hay otros usuarios conectados a Shopify. Solo el usuario que estableció la conexión
+                                puede desconectarla.
                             </div>
                         </div>
                     </div>
@@ -972,16 +1112,18 @@
     </div>
     <div class="modal-body">
         <div class="alert alert-info">
-            <i class="fa fa-info-circle me-2"></i> 
-            El proceso se ejecutará en segundo plano y podrá continuar utilizando la aplicación. 
+            <i class="fa fa-info-circle me-2"></i>
+            El proceso se ejecutará en segundo plano y podrá continuar utilizando la aplicación.
             Recibirá una notificación por correo electrónico cuando se complete.
         </div>
 
         <!-- ACTUALIZADO: Mensaje dinámico -->
-        <div *ngIf="tipoSeleccionado === 'creditosFiscales' || tipoSeleccionado === 'facturasExportacion'" [innerHTML]="getMensajeConfirmacion()"></div>
-        
+        <div *ngIf="tipoSeleccionado === 'creditosFiscales' || tipoSeleccionado === 'facturasExportacion'"
+            [innerHTML]="getMensajeConfirmacion()"></div>
+
         <!-- ACTUALIZADO: Documento base con filtrado -->
-        <div class="form-group mb-3" *ngIf="tipoSeleccionado === 'facturas' || tipoSeleccionado === 'creditosFiscales' || tipoSeleccionado === 'facturasExportacion' || tipoSeleccionado === 'notasCredito' || tipoSeleccionado === 'notasDebito'">
+        <div class="form-group mb-3"
+            *ngIf="tipoSeleccionado === 'facturas' || tipoSeleccionado === 'creditosFiscales' || tipoSeleccionado === 'facturasExportacion' || tipoSeleccionado === 'notasCredito' || tipoSeleccionado === 'notasDebito' || tipoSeleccionado === 'sujetoExcluido'">
             <label for="documentoBase">Documento base (opcional):</label>
             <select class="form-select" id="documentoBase" [(ngModel)]="documentoBaseSeleccionado">
                 <option [ngValue]="null">Usar último documento emitido</option>
@@ -1004,10 +1146,8 @@
 
         <div class="form-group mb-3">
             <label for="correlativoInicial">Correlativo inicial:</label>
-            <input type="number" class="form-control" id="correlativoInicial" 
-                   [(ngModel)]="correlativoInicial" 
-                   min="1" 
-                   placeholder="Ej: 1001">
+            <input type="number" class="form-control" id="correlativoInicial" [(ngModel)]="correlativoInicial" min="1"
+                placeholder="Ej: 1001">
             <small class="form-text text-muted">
                 Ingrese el número desde donde desea comenzar la generación de documentos.
                 Si lo deja vacío, se usará automáticamente el siguiente correlativo disponible.
@@ -1016,19 +1156,18 @@
 
         <div class="form-group mb-3">
             <label for="cantidad">Cantidad de documentos:</label>
-            <input type="number" class="form-control" id="cantidad" 
-                   [(ngModel)]="cantidadFaltante" 
-                   [max]="tipoSeleccionado === 'notasCredito' || tipoSeleccionado === 'notasDebito' ? 
-                          (estadisticasPruebas['creditosFiscales']?.emitidas || 0) : 100"
-                   min="1" required>
-            <small class="form-text text-muted" *ngIf="tipoSeleccionado === 'notasCredito' || tipoSeleccionado === 'notasDebito'">
+            <input type="number" class="form-control" id="cantidad" [(ngModel)]="cantidadFaltante" [max]="tipoSeleccionado === 'notasCredito' || tipoSeleccionado === 'notasDebito' ? 
+                          (estadisticasPruebas['creditosFiscales']?.emitidas || 0) : 100" min="1" required>
+            <small class="form-text text-muted"
+                *ngIf="tipoSeleccionado === 'notasCredito' || tipoSeleccionado === 'notasDebito'">
                 Máximo permitido: {{ estadisticasPruebas['creditosFiscales']?.emitidas || 0 }} (CCF emitidos)
             </small>
         </div>
-        
+
         <div class="alert alert-warning">
-            <i class="fa fa-exclamation-triangle me-2"></i> 
-            Esta acción no afectará sus correlativos reales y los documentos generados no aparecerán en sus reportes normales.
+            <i class="fa fa-exclamation-triangle me-2"></i>
+            Esta acción no afectará sus correlativos reales y los documentos generados no aparecerán en sus reportes
+            normales.
         </div>
     </div>
     <div class="modal-footer">
