@@ -91,6 +91,17 @@
             placeholder="Número de identificación">
         </div>
     </div>
+    <div class="row mt-2" *ngIf="venta.cliente?.limite_credito && venta.cotizacion != 1">
+        <div class="col-12">
+            <div class="alert alert-info py-2 mb-0 small">
+                <strong>Crédito del cliente:</strong>
+                Límite permitido: {{ venta.cliente.limite_credito | currency:'USD':'symbol':'1.2' }}
+                • Límite actual: {{ ((venta.cliente.limite_credito ?? 0) - (venta.cliente.saldo_pendiente ?? 0)) | currency:'USD':'symbol':'1.2' }}
+                <span *ngIf="venta.cliente.dias_credito"> • Días de crédito: {{ venta.cliente.dias_credito }}</span>
+                • Saldo pendiente: {{ (venta.cliente.saldo_pendiente ?? 0) | currency:'USD':'symbol':'1.2' }}
+            </div>
+        </div>
+    </div>
 </section>
 
 <section class="card border-0 p-3 mb-3" *ngIf="venta.cotizacion != 1 && venta.nombre_documento == 'Factura de exportación'">
@@ -240,7 +251,9 @@
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
             <label for="fecha_pago">Fecha de pago:</label><br>
-            <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" (change)="validarFechaPago()" name="fecha_pago" id="fecha_pago">
+            <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" (change)="validarFechaPago()" name="fecha_pago" id="fecha_pago"
+                [disabled]="apiService.auth_user().tipo === 'Ventas' && venta.cliente?.limite_credito"
+                [title]="apiService.auth_user().tipo === 'Ventas' && venta.cliente?.limite_credito ? 'La fecha está definida por el plazo del cliente' : ''">
             <div class="text-danger mt-1" style="font-size: 11px;" *ngIf="mensajeValidacionFecha">
                 {{ mensajeValidacionFecha }}
             </div>

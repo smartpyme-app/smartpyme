@@ -451,6 +451,35 @@ class VentasController extends Controller
             ], 403);
         }
 
+        // Validar límite de crédito del cliente (si aplica)
+        if ($request->estado === 'Pendiente' && $request->id_cliente) {
+            $cliente = Cliente::find($request->id_cliente);
+            if ($cliente && $cliente->limite_credito !== null && $cliente->limite_credito > 0) {
+                $ventasPendientes = Venta::where('id_cliente', $request->id_cliente)
+                    ->where('estado', 'Pendiente')
+                    ->where(function ($q) {
+                        $q->where('cotizacion', 0)->orWhereNull('cotizacion');
+                    })
+                    ->when($request->id, fn ($q) => $q->where('id', '!=', $request->id))
+                    ->withSum(['abonos' => fn ($q) => $q->where('estado', 'Confirmado')], 'total')
+                    ->withSum(['devoluciones' => fn ($q) => $q->where('enable', 1)], 'total')
+                    ->get();
+
+                $saldoPendiente = $ventasPendientes->sum(function ($v) {
+                    $abonos = $v->abonos_sum_total ?? 0;
+                    $devoluciones = $v->devoluciones_sum_total ?? 0;
+                    return round($v->total - $abonos - $devoluciones, 2);
+                });
+
+                $nuevoSaldo = round($saldoPendiente + (float) $request->total, 2);
+                if ($nuevoSaldo > $cliente->limite_credito) {
+                    return response()->json([
+                        'error' => 'El cliente ha excedido su límite de crédito. Saldo pendiente: $' . number_format($saldoPendiente, 2) . '. Total con esta venta: $' . number_format($nuevoSaldo, 2) . '. Límite permitido: $' . number_format($cliente->limite_credito, 2) . '.'
+                    ], 422);
+                }
+            }
+        }
+
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required|max:255',
