@@ -51,6 +51,7 @@
     </style>
 </head>
 <body>
+    @php $empresa = Auth::user()->empresa()->with('currency')->first(); $simbolo_moneda = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : '$'; @endphp
 
     <h1 class="text-center">LIBRO DE COMPRAS</h1>
     <h2 class="text-center">{{ Auth::user()->empresa()->pluck('nombre')->first() }}</h2>
@@ -91,28 +92,28 @@
                     <td>{{ $venta['num_documento'] }}</td>
                     <td>{{ $venta['nit_nrc'] }}</td>
                     <td>{{ $venta['nombre_proveedor'] }}</td>
-                    <td class="text-right">${{ number_format($venta['compras_exentas'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['importaciones_exentas'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['compras_gravadas'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['importaciones_gravadas'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['credito_fiscal'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['anticipo_iva_percibido'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['total'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['sujeto_excluido'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['compras_exentas'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['importaciones_exentas'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['compras_gravadas'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['importaciones_gravadas'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['credito_fiscal'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['anticipo_iva_percibido'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['total'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['sujeto_excluido'], 2) }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="5"><b>TOTALES</b></td>
-                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('compras_exentas'), 2) }}</b></td>
-                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('importaciones_exentas'), 2) }}</b></td>
-                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('compras_gravadas'), 2) }}</b></td>
-                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('importaciones_gravadas'), 2) }}</b></td>
-                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('credito_fiscal'), 2) }}</b></td>
-                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('anticipo_iva_percibido'), 2) }}</b></td>
-                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('total'), 2) }}</b></td>
-                <td class="text-right"><b>${{ number_format(collect($librocompras)->sum('sujeto_excluido'), 2) }}</b></td>
+                <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format(collect($librocompras)->sum('compras_exentas'), 2) }}</b></td>
+                <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format(collect($librocompras)->sum('importaciones_exentas'), 2) }}</b></td>
+                <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format(collect($librocompras)->sum('compras_gravadas'), 2) }}</b></td>
+                <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format(collect($librocompras)->sum('importaciones_gravadas'), 2) }}</b></td>
+                <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format(collect($librocompras)->sum('credito_fiscal'), 2) }}</b></td>
+                <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format(collect($librocompras)->sum('anticipo_iva_percibido'), 2) }}</b></td>
+                <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format(collect($librocompras)->sum('total'), 2) }}</b></td>
+                <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format(collect($librocompras)->sum('sujeto_excluido'), 2) }}</b></td>
             </tr>
         </tfoot>
     </table>

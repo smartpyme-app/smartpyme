@@ -31,6 +31,7 @@
 </head>
 <body>
 {{-- <body onload="javascript:print();"> --}}
+    @php $simbolo_moneda = optional($empresa->currency)->currency_symbol ?? '$'; @endphp
     <p class="no-print">
         <button onClick="window.print();" autofocus>Imprimir</button>
         <button onClick="window.close();" autofocus>Cerrar</button>
@@ -82,8 +83,8 @@
             </tr>
             <tr>
                 <td> {{ number_format($detalle->cantidad, 2) }}</td>
-                <td class="text-center">   ${{ number_format($detalle->precio, 2 ) }}</td>
-                <td class="text-right"> ${{ number_format($detalle->total, 2) }}G </th>
+                <td class="text-center">   {{ $simbolo_moneda }}{{ number_format($detalle->precio, 2 ) }}</td>
+                <td class="text-right"> {{ $simbolo_moneda }}{{ number_format($detalle->total, 2) }}G </th>
             </tr>
         @endforeach
         </tbody>
@@ -93,23 +94,23 @@
         <tbody>
             <tr>
                 <td>Exenta:</td>
-                <td><b>${{ number_format($venta->exenta, 2) }}</b></td>
+                <td><b>{{ $simbolo_moneda }}{{ number_format($venta->exenta, 2) }}</b></td>
             </tr>
             <tr>
                 <td>Gravada:</td>
-                <td><b>${{ number_format($venta->gravada, 2) }}</b></td>
+                <td><b>{{ $simbolo_moneda }}{{ number_format($venta->gravada, 2) }}</b></td>
             </tr>
             <tr>
                 <td>No sujeta:</td>
-                <td><b>${{ number_format($venta->no_sujeta, 2) }}</b></td>
+                <td><b>{{ $simbolo_moneda }}{{ number_format($venta->no_sujeta, 2) }}</b></td>
             </tr>
             <tr>
                 <td>Propina:</td>
-                <td><b>${{ number_format($venta->propina, 2) }}</b></td>
+                <td><b>{{ $simbolo_moneda }}{{ number_format($venta->propina, 2) }}</b></td>
             </tr>
             <tr>
                 <td>Descuento:</td>
-                <td><b>${{ number_format($venta->descuento, 2) }}</b></td>
+                <td><b>{{ $simbolo_moneda }}{{ number_format($venta->descuento, 2) }}</b></td>
             </tr>
         </tbody>
     </table>
@@ -117,22 +118,22 @@
 
     <h2 class="text-center">
         <b>TOTAL: 
-        <span style="margin-left: 20px;">${{ number_format($venta->total, 2) }}</span></b>
+        <span style="margin-left: 20px;">{{ $simbolo_moneda }}{{ number_format($venta->total, 2) }}</span></b>
     </h2>
     <hr>
     <table style="margin: auto;">
         <tbody>
             <tr>
                 <td class="text-center">Efectivo:</td>
-                <td>${{ number_format($venta->recibido, 2) }}</td>
+                <td>{{ $simbolo_moneda }}{{ number_format($venta->recibido, 2) }}</td>
             </tr>
             <tr>
                 <td class="text-center">Importe:</td>
-                <td>${{ number_format($venta->total, 2) }}</td>
+                <td>{{ $simbolo_moneda }}{{ number_format($venta->total, 2) }}</td>
             </tr>
             <tr>
                 <td class="text-center">Su Cambio:</td>
-                <td><b>${{ number_format($venta->recibido - $venta->total, 2) }}</b></td>
+                <td><b>{{ $simbolo_moneda }}{{ number_format($venta->recibido - $venta->total, 2) }}</b></td>
             </tr>
         </tbody>
     </table>
