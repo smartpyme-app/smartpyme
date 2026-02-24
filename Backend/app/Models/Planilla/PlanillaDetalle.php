@@ -25,6 +25,8 @@ class PlanillaDetalle extends Model
         'comisiones',
         'bonificaciones',
         'otros_ingresos',
+        'abonos',
+        'abonos_sin_retencion',
         'isss_empleado',
         'isss_patronal',
         'afp_empleado',
@@ -46,6 +48,7 @@ class PlanillaDetalle extends Model
     protected $casts = [
         'conceptos_personalizados' => 'array',
         'detalle_horas_extra' => 'array',
+        'abonos_sin_retencion' => 'boolean',
     ];
 
     public function planilla()
@@ -101,7 +104,8 @@ class PlanillaDetalle extends Model
             $this->monto_horas_extra +
             $this->comisiones +
             $this->bonificaciones +
-            $this->otros_ingresos;
+            $this->otros_ingresos +
+            ($this->abonos ?? 0);
 
         $this->total_descuentos = $this->getTotalDeduccionesCombinado();
         $this->sueldo_neto = $this->total_ingresos - $this->total_descuentos;
