@@ -6,18 +6,21 @@
   <app-sidebar
     *ngIf="
       usuario.id_empresa != 2 &&
+      (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
       apiService.isAdmin()
     "
   ></app-sidebar>
   <app-sidebar-ventas
     *ngIf="
       usuario.id_empresa != 2 &&
+      (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
       usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado'
     "
   ></app-sidebar-ventas>
   <app-sidebar-servicios
     *ngIf="
       usuario.id_empresa != 2 &&
+      (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
       usuario.tipo == 'Citas'
     "
   ></app-sidebar-servicios>

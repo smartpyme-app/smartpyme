@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use App\Services\ShopifySyncCache;
+use App\Services\FidelizacionCliente\ConsumoPuntosService;
 
 class ShopifyController extends Controller
 {
@@ -847,6 +848,20 @@ class ShopifyController extends Controller
                     'venta_id' => $venta->id,
                     'documento_id' => $venta->id_documento
                 ]);
+            }
+
+            // Procesar puntos de fidelización si la venta está pagada
+            if ($venta->estado == 'Pagada' && $venta->id_cliente) {
+                try {
+                    $consumoPuntosService = app(ConsumoPuntosService::class);
+                    $consumoPuntosService->procesarAcumulacionPuntos($venta);
+                } catch (\Exception $e) {
+                    Log::error('Error al procesar puntos de fidelización en Shopify', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // No se interrumpe la transacción por errores en puntos
+                }
             }
 
             DB::commit();
