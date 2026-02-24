@@ -21,7 +21,7 @@
                 Libro de IVA PDF
             </button>
           </li>
-          <li>
+          <li *ngIf="isElSalvador">
             <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
                 <img src="/assets/icons/download.png" class="icon me-2"> 
                 Anexo CSV
@@ -33,25 +33,25 @@
                 Libro de Rentención 1% Excel
             </button>
           </li>
-          <li>
+          <li *ngIf="isElSalvador">
             <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexoRetencion()">
                 <img src="/assets/icons/download.png" class="icon me-2"> 
                 Anexo de Rentención 1% CSV
             </button>
           </li>
-          <li>
+          <li *ngIf="isElSalvador">
             <button class="dropdown-item d-flex align-items-center" (click)="descargarDTECreditoFiscal()" title="Descargar DTEs en zip como JSON ">
                 <img src="/assets/icons/download.png" class="icon me-2"> 
                 DTEs Zip
             </button>
           </li>
-          <li>
+          <li *ngIf="isElSalvador">
             <button class="dropdown-item d-flex align-items-center" (click)="descargarNotasCredito()" title="Descargar notas de crédito en ZIP (JSON) para declaración">
                 <img src="/assets/icons/download.png" class="icon me-2"> 
                 Notas de Crédito ZIP
             </button>
           </li>
-          <li>
+          <li *ngIf="isElSalvador">
             <button class="dropdown-item d-flex align-items-center" (click)="descargarNotasDebito()" title="Descargar notas de débito en ZIP (JSON) para declaración">
                 <img src="/assets/icons/download.png" class="icon me-2"> 
                 Notas de Débito ZIP

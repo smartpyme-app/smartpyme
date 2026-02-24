@@ -31,6 +31,7 @@
 </head>
 {{-- <body onload="javascript:print();"> --}}
 <body>
+    @php $simbolo_moneda = optional($empresa->currency)->currency_symbol ?? '$'; @endphp
 
     <button class="no-print tcla-c" onClick="window.close();" autofocus>Cerrar (C)</button>
     <button class="no-print tcla-p" onClick="javascript:print();" autofocus>Imprimir (P)</button>
@@ -59,37 +60,37 @@
     <p>VENTAS TICKETS </p>
     <p>Del &nbsp;&nbsp;&nbsp;&nbsp; Al </p>
     <p>{{ $corte->tickets_rango }} </p>
-    ${{ number_format($corte->tickets, 2) }}
+    {{ $simbolo_moneda }}{{ number_format($corte->tickets, 2) }}
 
     <hr>
     <p>VENTAS FACTURAS </p>
     <p>Del &nbsp;&nbsp;&nbsp;&nbsp; Al </p>
     <p>{{ $corte->facturas_rango }} </p>
-    <p><b>TOTAL: ${{ number_format($corte->facturas, 2) }}</b></p>
+    <p><b>TOTAL: {{ $simbolo_moneda }}{{ number_format($corte->facturas, 2) }}</b></p>
     <hr>
 
     <p>VENTAS CRÉDITOS FISCALES </p>
     <p>Del &nbsp;&nbsp;&nbsp;&nbsp; Al </p>
     <p>{{ $corte->creditos_fiscales_rango }} </p>
-    <p><b>TOTAL: ${{ number_format($corte->creditos_fiscales, 2) }}</b></p>
+    <p><b>TOTAL: {{ $simbolo_moneda }}{{ number_format($corte->creditos_fiscales, 2) }}</b></p>
     <hr>
 
     <p>VENTAS NOTAS DE CREDITO </p>
     <p>Del &nbsp;&nbsp;&nbsp;&nbsp; Al </p>
     <p>{{ $corte->notas_credito_rango }} </p>
-    <p><b>TOTAL: ${{ number_format($corte->notas_creditos, 2) }}</b></p>
+    <p><b>TOTAL: {{ $simbolo_moneda }}{{ number_format($corte->notas_creditos, 2) }}</b></p>
     <hr>
     TOTALES
     <hr>
     <table style="margin: auto;">
-      <tr><td>SUB TOTAL:</td> <td>${{ number_format($corte->subtotal,2 ) }}</td> </tr>
-      <tr><td>EXENTA:</td> <td>${{ number_format($corte->exenta,2 ) }}</td> </tr>
-      <tr><td>NO SUJETA:</td> <td>${{ number_format($corte->no_sujeta,2 ) }}</td> </tr>
-      <tr><td>IVA:</td> <td>${{ number_format($corte->iva,2 ) }}</td> </tr>
-      {{-- <tr><td>PERCEPCION:</td> <td>${{ number_format($corte->iva_retenido,2 ) }}</td> </tr> --}}
-      <tr><td>RETENCION:</td> <td>${{ number_format($corte->iva_retenido,2 ) }}</td> </tr>
-      <tr><td>SALDO INICIAL:</b></td> <td><b>${{ number_format($corte->saldo_inicial,2 ) }}</td> </tr>
-      <tr><td><b>TOTAL:</b></td> <td><b>${{ number_format($corte->ventas_suma,2 ) }}</b></td> </tr>
+      <tr><td>SUB TOTAL:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->subtotal,2 ) }}</td> </tr>
+      <tr><td>EXENTA:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->exenta,2 ) }}</td> </tr>
+      <tr><td>NO SUJETA:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->no_sujeta,2 ) }}</td> </tr>
+      <tr><td>IVA:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->iva,2 ) }}</td> </tr>
+      {{-- <tr><td>PERCEPCION:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->iva_retenido,2 ) }}</td> </tr> --}}
+      <tr><td>RETENCION:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->iva_retenido,2 ) }}</td> </tr>
+      <tr><td>SALDO INICIAL:</b></td> <td><b>{{ $simbolo_moneda }}{{ number_format($corte->saldo_inicial,2 ) }}</td> </tr>
+      <tr><td><b>TOTAL:</b></td> <td><b>{{ $simbolo_moneda }}{{ number_format($corte->ventas_suma,2 ) }}</b></td> </tr>
     </table>
     <br><br><br><br>
     <p>.</p>

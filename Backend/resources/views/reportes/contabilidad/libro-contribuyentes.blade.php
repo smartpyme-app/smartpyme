@@ -42,6 +42,7 @@
     </style>
 </head>
 <body>
+    @php $empresa = Auth::user()->empresa()->with('currency')->first(); $simbolo_moneda = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : '$'; @endphp
 
     <h1 class="text-center">LIBRO DE VENTAS A CONTRIBUYENTES</h1>
     <h2 class="text-center">{{ Auth::user()->empresa()->pluck('nombre')->first() }}</h2>
@@ -87,29 +88,29 @@
                     <td>{{ $venta['sello'] }}</td>
                     <td>{{ $venta['nombre_cliente'] }}</td>
                     <td>{{ $venta['nrc_cliente'] }}</td>
-                    <td class="text-right">${{ number_format($venta['ventas_exentas'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['ventas_internas_gravadas'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['debito_fiscal'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['ventas_exentas_a_cuenta_de_terceros'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['ventas_internas_gravadas_a_cuenta_de_terceros'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['debito_fiscal_por_cuenta_de_terceros'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['iva_retenido'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['iva_percibido'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['total'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['ventas_exentas'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['ventas_internas_gravadas'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['debito_fiscal'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['ventas_exentas_a_cuenta_de_terceros'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['ventas_internas_gravadas_a_cuenta_de_terceros'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['debito_fiscal_por_cuenta_de_terceros'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['iva_retenido'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['iva_percibido'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['total'], 2) }}</td>
                 </tr>
             @endforeach
             @if(isset($totalesContribuyentes))
                 <tr>
                     <td colspan="7" class="text-center"><b>Totales</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesContribuyentes['ventas_exentas'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesContribuyentes['ventas_internas_gravadas'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesContribuyentes['debito_fiscal'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesContribuyentes['ventas_exentas_a_cuenta_de_terceros'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesContribuyentes['ventas_internas_gravadas_a_cuenta_de_terceros'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesContribuyentes['debito_fiscal_por_cuenta_de_terceros'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesContribuyentes['iva_retenido'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesContribuyentes['iva_percibido'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesContribuyentes['total'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesContribuyentes['ventas_exentas'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesContribuyentes['ventas_internas_gravadas'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesContribuyentes['debito_fiscal'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesContribuyentes['ventas_exentas_a_cuenta_de_terceros'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesContribuyentes['ventas_internas_gravadas_a_cuenta_de_terceros'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesContribuyentes['debito_fiscal_por_cuenta_de_terceros'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesContribuyentes['iva_retenido'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesContribuyentes['iva_percibido'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesContribuyentes['total'], 2) }}</b></td>
                 </tr>
             @endif
         </tbody>  

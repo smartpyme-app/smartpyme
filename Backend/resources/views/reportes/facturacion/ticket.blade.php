@@ -121,8 +121,8 @@
                         {{ $venta->descripcion_impresion }}
                     </td>
                     <td class="text-center">1</td>
-                    <td class="text-right">${{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
-                    <td class="text-right">${{ number_format($venta->sub_total + $venta->iva, 2) }}G</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->sub_total + $venta->iva, 2) }}G</td>
                 </tr>
             @else
                 @foreach($venta->detalles as $detalle)

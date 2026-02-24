@@ -34,6 +34,7 @@
 </style>
 
 <body>
+    @php $simbolo_moneda = optional($empresa->currency)->currency_symbol ?? '$'; @endphp
 
     <div class="header">
     @if ($empresa->logo)
@@ -92,8 +93,8 @@
                 <td class="text-center">{{ $key + 1}}</td>
                 <td>{{ $detalle->nombre_producto }}</td>
                 <td class="text-center">{{ number_format($detalle->cantidad,0) }}</td>
-                <td class="text-center">${{ number_format($detalle->costo,2) }}</td>
-                <td class="text-center">${{ number_format($detalle->total,2) }}</td>
+                <td class="text-center">{{ $simbolo_moneda }}{{ number_format($detalle->costo,2) }}</td>
+                <td class="text-center">{{ $simbolo_moneda }}{{ number_format($detalle->total,2) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -101,8 +102,8 @@
             <tr>
                 <td class="text-right" colspan="2"><b>Total:</b></td>
                 <td class="text-center"><b>{{ number_format($entrada->detalles->sum('cantidad'), 0) }}</b></td>
-                <td class="text-center"><b>${{ number_format($entrada->detalles->sum('costo'),2) }}</b></td>
-                <td class="text-center"><b>${{ number_format($entrada->detalles->sum('total'),2) }}</b></td>
+                <td class="text-center"><b>{{ $simbolo_moneda }}{{ number_format($entrada->detalles->sum('costo'),2) }}</b></td>
+                <td class="text-center"><b>{{ $simbolo_moneda }}{{ number_format($entrada->detalles->sum('total'),2) }}</b></td>
             </tr>
         </tfoot>
     </table>
