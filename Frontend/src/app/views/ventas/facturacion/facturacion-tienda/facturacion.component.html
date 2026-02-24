@@ -62,6 +62,21 @@
                     <app-buscador-clientes [cliente]="venta?.cliente" (selectCliente)="setCliente($event)"></app-buscador-clientes>
                 </div>
                 <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
+                
+                <!-- Botón de Puntos -->
+                <button 
+                    *ngIf="venta?.cliente && venta.cliente.id" 
+                    type="button"
+                    class="btn ms-2"
+                    [class.btn-success]="puntosCliente > 0"
+                    [class.btn-outline-secondary]="puntosCliente === 0"
+                    [disabled]="loadingPuntos"
+                    (click)="abrirModalPuntos()"
+                    [title]="puntosCliente > 0 ? 'Canjear puntos por descuento' : 'Ver información de puntos'">
+                    <i class="fas fa-coins me-1" *ngIf="!loadingPuntos"></i>
+                    <span class="spinner-border spinner-border-sm me-1" *ngIf="loadingPuntos"></span>
+                    {{ formatNumber(puntosCliente) }} pts
+                </button>
             </div>
         </div>
 
@@ -212,6 +227,23 @@
                         <td class="text-right"><b>Descuentos</b> </td>
                         <td style="width: 150px;" class="text-right"> {{ venta.descuento | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="descuentoPuntos > 0" class="text-success">
+                        <td class="text-right">
+                            <i class="fas fa-coins me-1"></i>
+                            <b>Descuento por puntos</b>
+                            <small class="d-block text-muted">{{ formatNumber(puntosCanjeados) }} puntos canjeados</small>
+                        </td>
+                        <td style="width: 150px;" class="text-right"> -{{ descuentoPuntos | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;">
+                            <button 
+                                type="button" 
+                                class="btn btn-sm btn-outline-warning"
+                                (click)="abrirModalPuntos()"
+                                title="Editar descuento por puntos">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
                     </tr>
                     <tr>
                         <td class="text-right"> <b>Impuestos</b></td>
@@ -521,5 +553,187 @@
             </div>
         </form>
     </div>
+  </div>
+</ng-template>
+
+<!-- Modal de Puntos de Fidelización -->
+<ng-template #modalPuntos>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <i class="fas fa-coins text-success me-2"></i>
+      Puntos de Fidelización
+    </h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="cerrarModalPuntos()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <!-- Loading State -->
+    <div *ngIf="loadingModalPuntos" class="text-center py-4">
+      <div class="spinner-border text-success" role="status">
+        <span class="visually-hidden">Cargando puntos...</span>
+      </div>
+      <p class="mt-2 text-muted">Consultando información de puntos...</p>
+    </div>
+
+    <!-- Contenido del Modal -->
+    <div *ngIf="!loadingModalPuntos && puntosInfoModal">
+      
+      <!-- Información del Cliente -->
+      <div class="alert alert-info mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ venta.cliente?.nombre_completo || venta.cliente?.nombre_empresa }}</strong>
+            <small class="d-block text-muted" *ngIf="puntosInfoModal.configuracion">
+              {{ puntosInfoModal.configuracion.tipo_cliente }} - Nivel {{ puntosInfoModal.configuracion.nivel }}
+            </small>
+          </div>
+          <span class="badge bg-success fs-6">{{ formatNumber(puntosInfoModal.puntos_disponibles) }} pts</span>
+        </div>
+      </div>
+
+      <!-- Resumen de Puntos -->
+      <div class="row text-center mb-4">
+        <div class="col-4">
+          <div class="card border-success">
+            <div class="card-body py-2">
+              <h6 class="card-title text-success mb-1">Disponibles</h6>
+              <h5 class="text-success mb-0">{{ formatNumber(puntosInfoModal.puntos_disponibles) }}</h5>
+            </div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="card border-info">
+            <div class="card-body py-2">
+              <h6 class="card-title text-info mb-1">Total Ganados</h6>
+              <h5 class="text-info mb-0">{{ formatNumber(puntosInfoModal.puntos_totales_ganados) }}</h5>
+            </div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="card border-warning">
+            <div class="card-body py-2">
+              <h6 class="card-title text-warning mb-1">Canjeados</h6>
+              <h5 class="text-warning mb-0">{{ formatNumber(puntosInfoModal.puntos_totales_canjeados) }}</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Puntos próximos a expirar -->
+      <div *ngIf="puntosProximosAExpirarModal.length > 0" class="alert alert-warning mb-3">
+        <h6><i class="fas fa-exclamation-triangle me-1"></i>Próximos a expirar:</h6>
+        <ul class="mb-0">
+          <li *ngFor="let punto of puntosProximosAExpirarModal">
+            {{ formatNumber(punto.puntos_disponibles) }} puntos - 
+            <span [class]="getDiasExpiracionClass(punto.dias_para_expirar)">
+              {{ punto.dias_para_expirar }} días
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Opción de Canje -->
+      <div *ngIf="puntosInfoModal.puntos_disponibles > 0" class="card border-primary">
+        <div class="card-header bg-primary bg-opacity-10">
+          <div class="form-check d-flex align-items-center">
+            <input 
+              class="form-check-input me-2 flex-shrink-0" 
+              type="checkbox" 
+              id="usarPuntosModal"
+              [(ngModel)]="usarPuntosModal"
+              (change)="onToggleUsarPuntosModal()">
+            <label class="form-check-label fw-bold mb-0 d-flex align-items-center flex-nowrap" for="usarPuntosModal" style="white-space: nowrap;">
+              <i class="fas fa-gift me-1 flex-shrink-0"></i>
+              <span>Usar puntos como descuento</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="card-body" *ngIf="usarPuntosModal">
+          <div class="row">
+            <div class="col-8">
+              <label class="form-label small mb-1">Puntos a canjear:</label>
+              <div class="input-group">
+                <input 
+                  type="number" 
+                  class="form-control text-center"
+                  [(ngModel)]="puntosACanjearModal"
+                  (ngModelChange)="onCambiarPuntosModal()"
+                  [min]="configuracionModal?.minimo_canje || 1"
+                  [max]="getMaximoCanje()"
+                  placeholder="0">
+                <span class="input-group-text">pts</span>
+              </div>
+              <small class="text-muted">
+                Límites: {{ configuracionModal?.minimo_canje || 1 }} - {{ getMaximoCanje() }} puntos
+              </small>
+            </div>
+            <div class="col-4">
+              <button 
+                type="button"
+                class="btn btn-outline-success btn-sm w-100 mt-4"
+                (click)="usarTodosPuntosModal()"
+                [disabled]="puntosInfoModal.puntos_disponibles === 0">
+                <i class="fas fa-coins me-1"></i>
+                Usar todos
+              </button>
+            </div>
+          </div>
+
+          <!-- Preview del Descuento -->
+          <div *ngIf="puntosACanjearModal > 0" class="alert alert-success mt-3 mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <span>
+                <i class="fas fa-calculator me-1"></i>
+                <strong>Descuento:</strong>
+              </span>
+              <span class="h6 text-success mb-0">
+                ${{ getDescuentoTotalModal().toFixed(2) }}
+              </span>
+            </div>
+            <small class="text-muted">
+              {{ formatNumber(puntosACanjearModal) }} puntos × ${{ getValorPunto() }} = ${{ getDescuentoTotalModal().toFixed(2) }}
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mensaje cuando no hay puntos -->
+      <div *ngIf="puntosInfoModal.puntos_disponibles === 0" class="text-center py-4">
+        <i class="fas fa-coins fa-3x text-muted mb-3"></i>
+        <p class="text-muted mb-0">Este cliente no tiene puntos disponibles para canjear.</p>
+      </div>
+
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="!loadingModalPuntos && !puntosInfoModal" class="text-center py-4">
+      <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
+      <p class="text-danger mb-0">No se pudo cargar la información de puntos.</p>
+    </div>
+  </div>
+  
+  <div class="modal-footer" *ngIf="!loadingModalPuntos && puntosInfoModal">
+    <button type="button" class="btn btn-secondary" (click)="cerrarModalPuntos()">
+      Cerrar
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-danger me-2" 
+      *ngIf="puntosCanjeados > 0"
+      (click)="quitarDescuentoPuntos()">
+      <i class="fas fa-times me-1"></i>
+      Quitar Descuento
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-success" 
+      *ngIf="puntosInfoModal.puntos_disponibles > 0"
+      [disabled]="!isCanjeValido()"
+      (click)="aplicarCanjeModal()">
+      <i class="fas fa-check me-1"></i>
+      {{ puntosCanjeados > 0 ? 'Actualizar Descuento' : 'Aplicar Descuento' }}
+    </button>
   </div>
 </ng-template>

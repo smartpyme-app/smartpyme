@@ -20,6 +20,7 @@ import { TiendaVentaPaquetesComponent } from './facturacion-tienda/paquetes/tien
 import { TiendaVentaCitasComponent } from './facturacion-tienda/citas/tienda-venta-citas.component';
 import { VentaDetallesComponent } from './facturacion-tienda/detalles/venta-detalles.component';
 import { MetodosDePagoComponent } from './facturacion-tienda/metodos-de-pago/metodos-de-pago.component';
+import { PuntosClienteVentaComponent } from '../components/puntos-cliente-venta/puntos-cliente-venta.component';
 
 // V2 Components
 import { FacturacionV2Component } from './facturacion-tienda-v2/facturacion-v2.component';
@@ -55,6 +56,7 @@ import { TiendaVentaPaquetesV2Component } from './facturacion-tienda-v2/paquetes
     VentaDetallesV2Component,
     TiendaVentaBuscadorV2Component,
     TiendaVentaPaquetesV2Component,
+    PuntosClienteVentaComponent,
   ],
   exports: [
     FacturacionComponent,
@@ -65,6 +67,7 @@ import { TiendaVentaPaquetesV2Component } from './facturacion-tienda-v2/paquetes
     TiendaVentaCitasComponent,
     VentaDetallesComponent,
     MetodosDePagoComponent,
+    PuntosClienteVentaComponent,
     // V2 Components
     FacturacionV2Component,
     VentaDetallesV2Component,

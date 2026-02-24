@@ -29,6 +29,7 @@ import { CuentasCobrarComponent } from '@views/ventas/clientes/cuentas-cobrar/cu
 import { ClienteComponent } from '@views/ventas/clientes/cliente/cliente.component';
 import { ClienteDetallesComponent } from '@views/ventas/clientes/cliente-detalles/cliente-detalles.component';
 import { ClientesDashComponent } from '@views/ventas/clientes/dash/clientes-dash.component';
+import { ClienteVista360Component } from '@views/ventas/clientes/cliente-vista-360/cliente-vista-360.component';
 
 import { HistorialVentasComponent } from '@views/reportes/ventas/historial/historial-ventas.component';
 import { DetalleVentasComponent } from '@views/reportes/ventas/detalle/detalle-ventas.component';
@@ -71,6 +72,7 @@ const routes: Routes = [
     // Clientes
         { path: 'clientes', component: ClientesComponent, title: 'Clientes'},
         { path: 'cliente/detalles/:id', component: ClienteDetallesComponent, title: 'Cliente'},
+        { path: 'cliente/vista-360/:id', component: ClienteVista360Component, title: 'Vista 360° Cliente'},
         { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente'},
         { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente'},
         { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent, title: 'Cuentas por cobrar' },

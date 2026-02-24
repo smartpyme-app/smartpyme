@@ -128,7 +128,31 @@
                   </ul>
                 </div>
             </li>
+            <li *ngIf="tieneFidelizacionHabilitada" class="mb-1">
+                <button (click)="toggleLealtadClientes()" tooltip="Fidelización" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!lealtadClientesIsCollapsed" aria-controls="collapseLealtadClientes">
+                    <img src="/assets/icons/star.png" class="icon me-2">Lealtad Clientes
+                </button>
+                <div [collapse]="lealtadClientesIsCollapsed" [isAnimated]="true">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/fidelizacion/clientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Clientes</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/fidelizacion/configuracion-cliente']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración Cliente</a></li>
+                    <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/detalles']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Detalles planilla</a></li> -->
+                  </ul>
+                </div>
+            </li>
+            <li *ngIf="usuario.empresa.licencia && usuario.empresa.es_empresa_padre" class="mb-1">
+                <button (click)="toggleLicencias()" tooltip="Licencias" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!licenciasIsCollapsed" aria-controls="collapseLicencias">
+                    <img src="/assets/icons/pennant.png" class="icon me-2">Licencias
+                </button>
+                <div [collapse]="licenciasIsCollapsed" [isAnimated]="true">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/organizacion/empresas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/briefcase.png" class="icon me-2">Empresas</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/organizacion/empresas/usuarios']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Usuarios</a></li>
+                  </ul>
+                </div>
+            </li>
         </ul>
+
     </div>
     <div style="min-height: 37vh;">
         <ul class="list-unstyled ps-0 border-top pt-2">

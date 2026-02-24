@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Constants;
 
 use App\Constants\PlanillaConstants;
+use App\Constants\ClienteNotasConstants;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use ReflectionClass;
@@ -15,6 +16,7 @@ class ConstantsController extends Controller
 
         $appConstants = [
             'planilla' => $this->getPlanillaConstants(),
+            'cliente_notas' => $this->getClienteNotasConstants(),
             // 'ventas' => $this->getVentasConstants(), ejmplo
         ];
 
@@ -240,6 +242,91 @@ class ConstantsController extends Controller
                     'ESTADOS_EMPLEADO' => PlanillaConstants::getEstadosEmpleado(),
                     'TIPOS_DOCUMENTO' => PlanillaConstants::getTiposDocumento(),
                     'TIPOS_BAJA' => PlanillaConstants::getTiposBaja(),
+                ]
+            ]
+        ];
+
+        return $organizedConstants;
+    }
+
+    private function getClienteNotasConstants()
+    {
+        $reflection = new ReflectionClass(ClienteNotasConstants::class);
+        $constants = $reflection->getConstants();
+
+        // Organizamos las constantes por categorías
+        $organizedConstants = [
+            'original' => [
+                'ESTADOS' => [
+                    'ACTIVO' => $constants['ESTADO_ACTIVO'],
+                    'INACTIVO' => $constants['ESTADO_INACTIVO'],
+                ],
+                'TIPOS_INTERACCION' => [
+                    'VISITA_PRESENCIAL' => $constants['TIPO_VISITA_PRESENCIAL'],
+                    'LLAMADA_TELEFONICA' => $constants['TIPO_LLAMADA_TELEFONICA'],
+                    'WHATSAPP' => $constants['TIPO_WHATSAPP'],
+                    'EMAIL' => $constants['TIPO_EMAIL'],
+                    'NOTA_INTERNA' => $constants['TIPO_NOTA_INTERNA'],
+                    'PREFERENCIAS' => $constants['TIPO_PREFERENCIAS'],
+                    'QUEJAS' => $constants['TIPO_QUEJAS'],
+                ],
+                'TIPOS_VISITA' => [
+                    'PRESENCIAL' => $constants['VISITA_PRESENCIAL'],
+                    'VIRTUAL' => $constants['VISITA_VIRTUAL'],
+                ],
+                'PRIORIDADES' => [
+                    'BAJA' => $constants['PRIORIDAD_BAJA'],
+                    'MEDIA' => $constants['PRIORIDAD_MEDIA'],
+                    'ALTA' => $constants['PRIORIDAD_ALTA'],
+                    'URGENTE' => $constants['PRIORIDAD_URGENTE'],
+                ],
+                'ESTADOS_NOTA' => [
+                    'ACTIVO' => $constants['ESTADO_NOTA_ACTIVO'],
+                    'PENDIENTE' => $constants['ESTADO_NOTA_PENDIENTE'],
+                    'EN_PROCESO' => $constants['ESTADO_NOTA_EN_PROCESO'],
+                    'RESUELTO' => $constants['ESTADO_NOTA_RESUELTO'],
+                    'ARCHIVADO' => $constants['ESTADO_NOTA_ARCHIVADO'],
+                ],
+                'ICONOS' => $constants['ICONOS'],
+                'COLORES_PRIORIDAD' => $constants['COLORES_PRIORIDAD'],
+                'COLORES_ESTADO' => $constants['COLORES_ESTADO'],
+                'TEXTOS_PRIORIDAD' => $constants['TEXTOS_PRIORIDAD'],
+                'TEXTOS_ESTADO' => $constants['TEXTOS_ESTADO'],
+                'TEXTOS_TIPO' => $constants['TEXTOS_TIPO'],
+                'TEXTOS_TIPO_VISITA' => $constants['TEXTOS_TIPO_VISITA'],
+                'RESPONSABLES' => $constants['RESPONSABLES'],
+                'CATEGORIAS' => $constants['CATEGORIAS'],
+                'CONFIGURACION' => [
+                    'TIEMPO_SEGUIMIENTO_DEFAULT' => $constants['TIEMPO_SEGUIMIENTO_DEFAULT'],
+                    'TIEMPO_RECORDATORIO' => $constants['TIEMPO_RECORDATORIO'],
+                    'LIMITE_CARACTERES_TITULO' => $constants['LIMITE_CARACTERES_TITULO'],
+                    'LIMITE_CARACTERES_CONTENIDO' => $constants['LIMITE_CARACTERES_CONTENIDO'],
+                    'LIMITE_CARACTERES_RESOLUCION' => $constants['LIMITE_CARACTERES_RESOLUCION'],
+                    'NOTAS_POR_PAGINA' => $constants['NOTAS_POR_PAGINA'],
+                    'VISITAS_POR_PAGINA' => $constants['VISITAS_POR_PAGINA'],
+                    'FILTRO_FECHA_DESDE_DEFAULT' => $constants['FILTRO_FECHA_DESDE_DEFAULT'],
+                    'FILTRO_ESTADO_DEFAULT' => $constants['FILTRO_ESTADO_DEFAULT'],
+                    'FILTRO_PRIORIDAD_DEFAULT' => $constants['FILTRO_PRIORIDAD_DEFAULT'],
+                    'ESTADISTICAS_PERIODO_DEFAULT' => $constants['ESTADISTICAS_PERIODO_DEFAULT'],
+                    'ESTADISTICAS_TOP_LIMIT' => $constants['ESTADISTICAS_TOP_LIMIT'],
+                    'TITULO_MIN_LENGTH' => $constants['TITULO_MIN_LENGTH'],
+                    'CONTENIDO_MIN_LENGTH' => $constants['CONTENIDO_MIN_LENGTH'],
+                    'FECHA_FUTURA_MAX_DAYS' => $constants['FECHA_FUTURA_MAX_DAYS'],
+                ],
+                'NOTIFICACIONES' => [
+                    'SEGUIMIENTO_PENDIENTE' => $constants['NOTIFICACION_SEGUIMIENTO_PENDIENTE'],
+                    'NOTA_ALTA_PRIORIDAD' => $constants['NOTIFICACION_NOTA_ALTA_PRIORIDAD'],
+                    'NOTA_VENCIDA' => $constants['NOTIFICACION_NOTA_VENCIDA'],
+                ],
+                'EXPORTACION' => [
+                    'PDF' => $constants['FORMATO_EXPORTACION_PDF'],
+                    'EXCEL' => $constants['FORMATO_EXPORTACION_EXCEL'],
+                    'CSV' => $constants['FORMATO_EXPORTACION_CSV'],
+                ],
+                'METRICAS' => [
+                    'TIEMPO_RESPUESTA_OBJETIVO' => $constants['METRICA_TIEMPO_RESPUESTA_OBJETIVO'],
+                    'SATISFACCION_OBJETIVO' => $constants['METRICA_SATISFACCION_OBJETIVO'],
+                    'RESOLUCION_OBJETIVO' => $constants['METRICA_RESOLUCION_OBJETIVO'],
                 ]
             ]
         ];
