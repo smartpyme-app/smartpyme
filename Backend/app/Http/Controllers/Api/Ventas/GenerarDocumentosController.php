@@ -433,6 +433,25 @@ class GenerarDocumentosController extends Controller
             return $pdf->stream($empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
         }
 
+        // Factura de exportación
+        if ($documento->nombre == 'Factura comercial') {
+            if(Auth::user()->id_empresa == 729){ //729
+                $cliente = Cliente::withoutGlobalScope('empresa')->findOrfail($venta->id_cliente);
+                $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+                $formatter = new NumeroALetras();
+                $n = explode(".", number_format($venta->total,2));
+
+
+                $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
+                $centavos = $formatter->toWords($n[1]);
+                
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.jozano-llc', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+                return $pdf->stream($empresa->nombre . '-factura-exportacion-' . $venta->correlativo . '.pdf');
+            }
+        }
+
         return "No hay un formato para este tipo de documento de venta.";
 
     }

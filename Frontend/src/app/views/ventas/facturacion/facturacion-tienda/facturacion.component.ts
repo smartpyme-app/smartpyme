@@ -220,7 +220,7 @@ export class FacturacionComponent implements OnInit {
           } else {
             this.documentos = this.documentos.filter(
               (doc: any) =>
-                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Ticket' || doc.nombre === 'Recibo' || doc.nombre === 'Sujeto excluido'
+                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Factura comercial' || doc.nombre === 'Ticket' || doc.nombre === 'Recibo' || doc.nombre === 'Sujeto excluido'
             );
           }
         }
@@ -930,6 +930,13 @@ export class FacturacionComponent implements OnInit {
                     this.alertService.error(error);
                 }
             );
+        }
+        if (this.venta.nombre_documento == 'Factura comercial') {
+            this.venta.cobrar_impuestos = false;
+            this.sumTotal();
+        }else{
+            this.venta.cobrar_impuestos = true;
+            this.sumTotal();
         }
     }
 

@@ -104,6 +104,7 @@
     <div class="header">
         <h1>JOZATO<span style="font-size: 8pt;">LLC</span></h1>
         <p>3411 Riverside Road Tatnal Building<br>#104, Wilmington, New Castle, DE 19810, USA</p>
+        <p>TAX EIN: 37-2056013</p>
     </div>
 
     <div class="title">COMMERCIAL INVOICE</div>
@@ -138,7 +139,9 @@
         </tr>
         <tr>
             <td colspan="2"> <div class="label">PAYMENT / PAGO</div> <div style="padding: 2px 5px;">{{ $venta->pago_descripcion ?? '—' }}</div> </td>
-            <td colspan="2"> <div class="label">INCOTERM</div> <div style="padding: 2px 5px;">{{ $venta->incoterm ?? '—' }} - {{ \App\Models\MH\Recinto::where('cod', $venta->recinto_fiscal)->first()->nombre ?? '—' }}</div> </td>
+            <td colspan="2"> <div class="label">INCOTERM</div> <div style="padding: 2px 5px;">{{ $venta->incoterm }}</div> </td>
+        </tr>
+        
     </table>
 
 
@@ -162,6 +165,25 @@
                 <td style="text-align: right;">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->total, 2) }}</td>
             </tr>
             @endforeach
+            <tr>
+                <td></td>
+                <td>
+                    @if($venta->fob > 0)
+                    FOB: {{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->fob, 2) }} <br>
+                    @endif
+                    @if($venta->flete > 0)
+                    FLETE: {{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->flete, 2) }} <br>
+                    @endif
+                    @if($venta->cpt)
+                    CPT: {{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->cpt, 2) }} <br>
+                    @endif
+                    @if($venta->pais_origen)
+                        Pais de origen: {{ $venta->pais_origen }} <br>
+                    @endif
+                </td>
+                <td></td>
+                <td></td>
+            </tr>
         </tbody>
         <tfoot>
             <tr>
@@ -176,7 +198,7 @@
                     <!-- {{ $venta->detalles->sum('cantidad') }} Cajas -->
                 </td>
                 <td>Tax Rate / Tasa del Impuesto</td>
-                <td style="text-align: right;"></td>
+                <td style="text-align: right;">-</td>
             </tr>
             <tr>
                 <td colspan="2"></td>
