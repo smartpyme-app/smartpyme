@@ -366,6 +366,9 @@ class VentasController extends Controller
                     $abono->estado = 'Cancelado';
                     $abono->save();
                 }
+
+                // Paquetes de la venta: cambiar estado a En bodega
+                Paquete::where('id_venta', $venta->id)->update(['estado' => 'En bodega']);
             }
             // Cancelar anulación de venta y descargar stock
             if (($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')) {
@@ -403,6 +406,8 @@ class VentasController extends Controller
                     $abono->estado = 'Confirmado';
                     $abono->save();
                 }
+                // Paquetes de la venta: cambiar estado a En bodega
+                Paquete::where('id_venta', $venta->id)->update(['estado' => 'Facturado']);
             }
         }
 
