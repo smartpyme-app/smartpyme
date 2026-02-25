@@ -91,7 +91,7 @@ class DashController extends Controller
     public function corte(Request $request){
         $usuario = JWTAuth::parseToken()->authenticate();
 
-        $indicadores = new Indicador(['inicio' => $request->fecha, 'fin' => $request->fecha, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $request->id_sucursal, 'id_usuario' => $request->id_usuario]);
+        $indicadores = new Indicador(['inicio' => $request->fecha, 'fin' => $request->fecha, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $request->id_sucursal, 'id_usuario' => $request->id_usuario, 'id_canal' => $request->id_canal]);
         
         $indicadores->totalVentas = $indicadores->getTotalVentas();
         $indicadores->totalVentasPagadas = $indicadores->getTotalVentasPagadas();

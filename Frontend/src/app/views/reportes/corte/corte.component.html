@@ -13,10 +13,16 @@
                     {{ usuario.name }}
                 </ng-option>
             </ng-select>
-            <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default ">
+            <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select">
                 <option value="" *ngIf="usuario.tipo != 'Ventas' && usuario.tipo != 'Ventas Limitado'">Todas las sucursal</option>
                 <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
+                </option>
+            </select>
+            <select name="id_canal" (change)="filtrar()" [(ngModel)]="filtros.id_canal" class="form-select">
+                <option value="">Todos los canales</option>
+                <option *ngFor="let canal of canales" [value]="canal.id">
+                    {{ canal.nombre }}
                 </option>
             </select>
         </div>
