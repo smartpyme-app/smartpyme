@@ -23,8 +23,10 @@
             "allowedCommonJsDependencies": [
               "chart.js",
               "sweetalert2",
-              "moment"
-           ],
+              "moment",
+              "google-libphonenumber",
+              "pdfjs-dist"
+            ],
             "assets": [
               "src/favicon.ico",
               "src/assets",
