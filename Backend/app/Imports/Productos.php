@@ -35,7 +35,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
 
     public function model(array $row)
     {
-        if (empty($row['nombre']) || empty($row['precio']) || empty($row['costo']) || empty($row['categoria'])) {
+        if (empty($row['nombre']) || empty($row['precio_sin_iva']) || empty($row['costo']) || empty($row['categoria'])) {
             return null;
         }
 
@@ -91,7 +91,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
         }
 
         $producto->nombre = $row['nombre'];
-        $producto->precio = $row['precio'];
+        $producto->precio = $row['precio_sin_iva'];
         $producto->costo = $row['costo'];
         $producto->costo_promedio = $row['costo'];
         $producto->stock = $row['sucursal_1_stock'];
@@ -197,7 +197,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
     {
         return [
             'nombre' => 'required|string',
-            'precio' => 'required|numeric',
+            'precio_sin_iva' => 'required|numeric',
             'costo' => 'required|numeric',
             'sucursal_*_stock' => 'nullable|numeric|min:0',
             'categoria' => 'required|string',
