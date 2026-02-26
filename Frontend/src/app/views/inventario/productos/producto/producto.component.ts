@@ -38,6 +38,7 @@ export class ProductoComponent implements OnInit {
 				this.producto.tipo = 'Producto';
 				this.producto.medida = 'Unidad';
 				this.producto.id_empresa = this.apiService.auth_user().id_empresa;
+				this.producto.porcentaje_impuesto = this.apiService.auth_user().empresa.iva;
 
 				if (this.route.snapshot.queryParamMap.get('tipo')!) {
 				    this.producto.tipo = this.route.snapshot.queryParamMap.get('tipo')!;
