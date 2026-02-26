@@ -65,17 +65,25 @@ export class ProductoInformacionComponent implements OnInit {
         this.producto.costo = this.producto.costo_promedio;
     }
 
+    /** Porcentaje de impuesto: del producto o de la empresa. */
+    public getPorcentajeProducto(): number {
+        const p = this.producto?.porcentaje_impuesto;
+        if (p != null && p !== '') return Number(p);
+        return Number(this.usuario?.empresa?.iva ?? 0);
+    }
+
     public calPrecioBase(){
-        const pct = this.producto.porcentaje_impuesto || 0;
+        const pct = this.getPorcentajeProducto();
+        if (pct <= 0) return;
         this.producto.impuesto = pct / 100;
         this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(4);
     }
 
     public calPrecioFinal(){
-        const pct = this.producto.porcentaje_impuesto || 0;
+        const pct = this.getPorcentajeProducto();
+        if (pct <= 0) return;
         this.producto.impuesto = pct / 100;
         this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
-        console.log(this.producto.porcentaje_impuesto);
     }
 
 
