@@ -112,6 +112,7 @@ export class TiendaVentaPaquetesComponent implements OnInit {
         this.detalle.descripcion   = 'Número: ' + paquete.wr + ' Guia: ' + paquete.num_guia;
         this.detalle.img            = paquete.img;
         this.detalle.precio         = parseFloat(paquete.precio);
+        this.detalle.porcentaje_impuesto = paquete.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
         this.detalle.precios        = paquete.precios;
         this.detalle.precios.unshift({
                 'precio' : this.detalle.precio
@@ -141,6 +142,7 @@ export class TiendaVentaPaquetesComponent implements OnInit {
             this.detalle.id_producto    = this.servicio.id;
             this.detalle.descripcion = 'Número: ' + paquete.wr + ' Guia: ' + paquete.num_guia;
             this.detalle.img            = this.servicio.img;
+            this.detalle.porcentaje_impuesto = this.servicio.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
             // this.detalle.precio         = parseFloat(this.servicio.precio);
             this.detalle.id_paquete    = paquete.id;
             this.detalle.precio        = ((parseFloat(paquete.precio) + parseFloat(paquete.otros)) / 1.13).toFixed(4);
