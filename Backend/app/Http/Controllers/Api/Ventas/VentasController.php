@@ -108,10 +108,16 @@ class VentasController extends Controller
 
     public function index(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
         $excludeFromList = ['dte_invalidacion'];
         $columns = array_diff(Schema::getColumnListing('ventas'), $excludeFromList);
 
         $ventas = Venta::select($columns)
+            ->where('ventas.id_empresa', $user->id_empresa)
             ->when($request->inicio, function ($query) use ($request) {
                 return $query->where('fecha', '>=', $request->inicio);
             })
@@ -1136,7 +1142,12 @@ class VentasController extends Controller
                 ->orderBy('id', 'desc')
                 ->paginate(5000);
         } else {
-            $ventas  = Venta::where('estado', 'En Proceso')
+            $user = auth()->user();
+            if (!$user || !$user->id_empresa) {
+                return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+            }
+            $ventas  = Venta::where('ventas.id_empresa', $user->id_empresa)
+                ->where('estado', 'En Proceso')
                 ->orderBy('id', 'desc')
                 ->paginate(5000);
         }
@@ -1147,10 +1158,13 @@ class VentasController extends Controller
 
     public function vendedor()
     {
-
         $usuario = JWTAuth::parseToken()->authenticate();
+        if (!$usuario || !$usuario->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
 
-        $ventas  = Venta::where('estado', 'En Proceso')
+        $ventas  = Venta::where('ventas.id_empresa', $usuario->id_empresa)
+            ->where('estado', 'En Proceso')
             ->where('id_usuario', $usuario->id)
             ->orderBy('id', 'desc')
             ->paginate(5000);
@@ -1326,8 +1340,13 @@ class VentasController extends Controller
 
     public function sinDevolucion()
     {
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
 
-        $ventas = Venta::where('estado', '!=', 'Anulada')
+        $ventas = Venta::where('ventas.id_empresa', $user->id_empresa)
+            ->where('estado', '!=', 'Anulada')
             ->where(function ($query) {
                 // Obtener la fecha límite (hace dos meses desde ahora)
                 $fechaInicio = Carbon::now()->subMonths(2)->startOfMonth();
@@ -1347,10 +1366,17 @@ class VentasController extends Controller
 
     public function libroIva(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
         $star = $request->inicio;
         $end = $request->fin;
 
-        $ventas = Venta::with('cliente')->where('estado', '!=', 'Pendiente')
+        $ventas = Venta::with('cliente')
+            ->where('ventas.id_empresa', $user->id_empresa)
+            ->where('estado', '!=', 'Pendiente')
             ->when($request->tipo_documento, function ($query) use ($request) {
                 return $query->whereHas('documento', function ($q) use ($request) {
                     $q->where('nombre', $request->tipo_documento);
@@ -1393,11 +1419,17 @@ class VentasController extends Controller
 
     public function cxc(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
         $paginate = $request->paginate ?? 10;
         $orden = $request->orden ?? 'fecha';
         $direccion = $request->direccion ?? 'desc';
 
-        $cobros = Venta::where('estado', 'Pendiente')
+        $cobros = Venta::where('ventas.id_empresa', $user->id_empresa)
+            ->where('estado', 'Pendiente')
             ->when($request->inicio, function ($query) use ($request) {
                 return $query->where('fecha', '>=', $request->inicio);
             })
@@ -1462,7 +1494,13 @@ class VentasController extends Controller
 
     public function cxcBuscar($txt)
     {
-        $cobros = Venta::where('estado', 'Pendiente')
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
+        $cobros = Venta::where('ventas.id_empresa', $user->id_empresa)
+            ->where('estado', 'Pendiente')
             ->whereHas('cliente', function ($query) use ($txt) {
                 $query->where('nombre', 'like', '%' . $txt . '%');
             })
@@ -1473,8 +1511,14 @@ class VentasController extends Controller
 
     public function historial(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
 
-        $ventas = Venta::where('estado', 'Pagada')->whereBetween('fecha', [$request->inicio, $request->fin])
+        $ventas = Venta::where('ventas.id_empresa', $user->id_empresa)
+            ->where('estado', 'Pagada')
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
             ->groupBy(function ($date) {
                 return Carbon::parse($date->fecha)->format('d-m-Y');
