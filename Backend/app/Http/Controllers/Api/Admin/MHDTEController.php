@@ -40,10 +40,11 @@ use App\Http\Requests\MH\GenerarDTEPDFRequest;
 use App\Http\Requests\MH\GenerarDTEJSONRequest;
 use App\Http\Requests\MH\EnviarDTERequest;
 use App\Http\Requests\MH\ConsultarDTERequest;
+// Usamos app('dompdf.wrapper') en lugar de Facade para evitar errores de clase no encontrada en producción
 
 class MHDTEController extends Controller
 {
-    
+
 
     public function generarDTE(GenerarDTERequest $request){
         $venta = Venta::where('id', $request->id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
@@ -75,7 +76,7 @@ class MHDTEController extends Controller
 
     public function generarDTENotaCredito(GenerarDTENotaCreditoRequest $request){
         $devolucion = DevolucionVenta::where('id', $request->id)->with('detalles', 'cliente', 'empresa', 'venta')->firstOrFail();
-        
+
         // if (!$devolucion->venta || !$devolucion->venta->sello_mh) {
         if (!$devolucion->venta) {
             // return response()->json(['error' => 'La venta de este documento no ha sido emitida a hacienda.'], 400);
@@ -124,7 +125,7 @@ class MHDTEController extends Controller
         $DTEs = collect();
 
         foreach ($ventas as $venta) {
-            
+
             if ($venta->nombre_documento == 'Crédito fiscal') {
                 $mh = new MHCCF;
                 $DTE = $mh->generarDTE($venta);
@@ -156,7 +157,7 @@ class MHDTEController extends Controller
         }else{
             $venta = Venta::where('id', $request->id)->firstOrFail();
         }
-        
+
         // Guardar los datos de anulación si vienen en el request
         if ($request->has('fecha_anulacion')) {
             $venta->fecha_anulacion = $request->fecha_anulacion;
@@ -173,7 +174,7 @@ class MHDTEController extends Controller
         if ($request->has('fecha_anulacion') || $request->has('tipo_anulacion') || $request->has('motivo_anulacion') || $request->has('codigo_generacion_remplazo')) {
             $venta->save();
         }
-        
+
         $mh = new MHAnulacion;
         $DTEAnular = $mh->generarDTE($venta, $venta->dte);
 
@@ -183,7 +184,7 @@ class MHDTEController extends Controller
 
     public function generarDTEAnuladoSujetoExcluidoCompra(GenerarDTESujetoExcluidoCompraRequest $request){
         $compra = Compra::where('id', $request->id)->firstOrFail();
-        
+
         $mh = new MHAnulacion;
         $DTEAnular = $mh->generarDTE($compra, $compra->dte);
 
@@ -193,14 +194,14 @@ class MHDTEController extends Controller
 
     public function generarDTEAnuladoSujetoExcluidoGasto(GenerarDTESujetoExcluidoGastoRequest $request){
         $gasto = Gasto::where('id', $request->id)->firstOrFail();
-        
+
         $mh = new MHAnulacion;
         $DTEAnular = $mh->generarDTE($gasto, $gasto->dte);
 
         return Response()->json($DTEAnular, 200);
 
     }
-    
+
     public function generarTicket($id){
 
         $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
@@ -227,7 +228,7 @@ class MHDTEController extends Controller
         }
 
         $mh->venta = $venta;
-        
+
         $DTEAnular = $mh->generarDTEAnulado($DTE);
         // return $DTEAnular;
 
@@ -236,7 +237,7 @@ class MHDTEController extends Controller
         }
 
         $DTEFirmado = $mh->firmarDTE($DTEAnular);
-        
+
         if ($DTEFirmado['status'] == "ERROR") {
             return response()->json($DTEFirmado, 500);
         }
@@ -247,7 +248,7 @@ class MHDTEController extends Controller
         if (isset($DTEEnviado['estado']) == 'PROCESADO' && isset($DTEEnviado['selloRecibido'])) {
             $DTEAnular['sello'] = $DTEEnviado['selloRecibido'];
             $DTEAnular['firmaElectronica'] = $DTEFirmado['body'];
-            
+
             $v = Venta::findOrFail($venta->id);
             $v->estado = 'Anulada';
             $v->dte_invalidacion = $DTEAnular;
@@ -266,7 +267,7 @@ class MHDTEController extends Controller
             }
             $v->save();
 
-            
+
             return Response()->json($DTEEnviado, 200);
         }
 
@@ -287,7 +288,7 @@ class MHDTEController extends Controller
         }
 
         $mh->gasto = $gasto;
-        
+
         $DTEAnular = $mh->generarDTEAnulado($DTE);
         // return $DTEAnular;
 
@@ -296,7 +297,7 @@ class MHDTEController extends Controller
         }
 
         $DTEFirmado = $mh->firmarDTE($DTEAnular);
-        
+
         if ($DTEFirmado['status'] == "ERROR") {
             return response()->json($DTEFirmado, 500);
         }
@@ -307,13 +308,13 @@ class MHDTEController extends Controller
         if (isset($DTEEnviado['estado']) == 'PROCESADO' && isset($DTEEnviado['selloRecibido'])) {
             $DTEAnular['sello'] = $DTEEnviado['selloRecibido'];
             $DTEAnular['firmaElectronica'] = $DTEFirmado['body'];
-            
+
             $c = Gasto::findOrFail($gasto->id);
             $c->estado = 'Anulada';
             $c->dte_invalidacion = $DTEAnular;
             $c->save();
 
-            
+
             return Response()->json($DTEEnviado, 200);
         }
 
@@ -355,41 +356,41 @@ class MHDTEController extends Controller
         // Si esta anulado
         if ($registro->dte_invalidacion) {
             $DTE = $registro->dte_invalidacion;
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             return $pdf->stream($DTE['identificacion']['codigoGeneracion'] . '.pdf');
         }
 
         if ($DTE['identificacion']['tipoDte'] == '01') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-Factura', compact('registro', 'DTE'));
         }
         if ($DTE['identificacion']['tipoDte'] == '14') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-Factura', compact('registro', 'DTE'));
         }
         if ($DTE['identificacion']['tipoDte'] == '03') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
 
         }
         if ($DTE['identificacion']['tipoDte'] == '11') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
 
         }
         if ($DTE['identificacion']['tipoDte'] == '05') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
 
         }
         if ($DTE['identificacion']['tipoDte'] == '06') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Nota-Debito', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Debito', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
 
@@ -433,7 +434,7 @@ class MHDTEController extends Controller
 
 
     public function enviarDTE(EnviarDTERequest $request){
-        
+
         if ($request->tipo_dte == '01' || $request->tipo_dte == '03' || $request->tipo_dte == '11') {
             $registro = Venta::with('cliente')->where('id', $request->id)->firstOrFail();
             $correo = $registro->cliente ? $registro->cliente->correo : null;
@@ -474,7 +475,7 @@ class MHDTEController extends Controller
             $DTE = $registro->dte_invalidacion;
             $nombre = $DTE['documento']['nombre'];
 
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
             $pdfContent = $pdf->output();
 
             if ($correo) {
@@ -494,24 +495,24 @@ class MHDTEController extends Controller
             }
             return Response()->json(['error' => 'El cliente no tienen correo'], 400);
         }
-        
+
         if ($DTE['identificacion']['tipoDte'] == '01') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
+           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
         }
         elseif ($DTE['identificacion']['tipoDte'] == '11') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
+           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
 
         }
         elseif ($DTE['identificacion']['tipoDte'] == '05') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
+           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
 
         }
         elseif ($DTE['identificacion']['tipoDte'] == '14') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
+           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
 
         }
         elseif ($DTE['identificacion']['tipoDte'] == '03') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
+           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
 
         }
 

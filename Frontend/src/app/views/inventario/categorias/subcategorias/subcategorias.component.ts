@@ -7,13 +7,11 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
-import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
-
 @Component({
     selector: 'app-subcategorias',
     templateUrl: './subcategorias.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

@@ -20,7 +20,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 
 @Component({
     selector: 'app-ventas',
@@ -32,6 +32,7 @@ import { takeUntil } from 'rxjs/operators';
 })
 export class VentasComponent extends BaseCrudComponent<any> implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private searchSubject$ = new Subject<void>();
   public ventas: any = {};
   public venta: any = {};
   public sending: boolean = false;
@@ -176,6 +177,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.verificarAccesoContabilidad();
+
+    this.searchSubject$.pipe(
+      debounceTime(400),
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.filtrarVentas());
 
     this.route.queryParams.subscribe(params => {
       this.filtros = {
@@ -367,6 +373,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
     }
 
+
+  public onBuscadorInput() {
+    this.searchSubject$.next();
+  }
 
   public filtrarVentas() {
     // Limpiar valores vacíos antes de navegar
@@ -1310,6 +1320,13 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     const total = parseFloat(venta?.total || 0);
     const propina = parseFloat(venta?.propina || 0);
     return total + propina;
+  }
+
+  public getSaldo(venta: any): number {
+    const total = parseFloat(venta?.total || 0);
+    const abonos = parseFloat(venta?.abonos_sum_total || 0);
+    const devoluciones = parseFloat(venta?.devoluciones_sum_total || 0);
+    return Math.round((total - abonos - devoluciones) * 100) / 100;
   }
 
   public seleccionarReporte(reporte: string) {

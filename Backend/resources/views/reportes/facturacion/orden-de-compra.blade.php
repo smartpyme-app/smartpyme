@@ -89,8 +89,13 @@
                     </p>
                 </td>
                 <td>
-                    <p>NCR:{{ $compra->proveedor()->pluck('ncr')->first() }}</p>
-                    <p>DUI:{{ $compra->proveedor()->pluck('dui')->first() }}</p>
+                    @if($compra->empresa()->pluck('pais')->first() == 'El Salvador')
+                        <p>NCR:{{ $compra->proveedor()->pluck('ncr')->first() }}</p>
+                        <p>DUI:{{ $compra->proveedor()->pluck('dui')->first() }}</p>
+                    @else
+                        <p>Registro tributario:{{ $compra->proveedor()->pluck('ncr')->first() }}</p>
+                        <p>Número de identificación:{{ $compra->proveedor()->pluck('dui')->first() }}</p>
+                    @endif
                     <p>Teléfono:{{ $compra->proveedor()->pluck('telefono')->first() }}</p>
                 </td>
                 <td>

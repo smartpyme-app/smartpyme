@@ -37,16 +37,16 @@ export class HeaderComponent implements OnInit {
 
     ngOnInit() {
         // $('.drop-down').dropdown();
-        this.usuario = this.apiService.auth_user();
-
+        this.usuario = this.apiService.auth_user() ?? {};
 
         let user = localStorage.getItem('SP_user_permissions');
         if (user) {
             this.rol = JSON.parse(user).role;
-            this.rol = this.rol.replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase());
-        }else{
-            this.rol = this.usuario.roles[0].name;
-            this.rol = this.rol.replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase());
+            this.rol = this.rol?.replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase()) ?? '';
+        } else {
+            const roles = this.usuario?.roles;
+            const roleName = Array.isArray(roles) && roles.length > 0 ? roles[0].name : this.usuario?.tipo;
+            this.rol = (roleName ?? 'Usuario').replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase());
         }
 
 

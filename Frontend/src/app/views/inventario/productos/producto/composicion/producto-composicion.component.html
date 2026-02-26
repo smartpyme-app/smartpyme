@@ -16,6 +16,7 @@
                     <th class="text-end">Precio</th>
                     <th class="text-end">Costo</th>
                     <th class="text-end">Cantidad</th>
+                    <th class="text-end">Opciones</th>
                     <th width="100" class="text-center"><i class="fa fa-cog"></i> </th>
                 </tr>
             </thead>
@@ -42,6 +43,7 @@
                     <td class="text-end">{{ composicion.precio | currency }}</td>
                     <td class="text-end">{{ composicion.costo | currency }}</td>
                     <td class="text-end">{{ composicion.cantidad | number:'1.1' }}</td>
+                    <td class="text-end">{{ composicion?.opciones?.length }}</td>
                     <td class="text-center">
                         <div class="d-flex gap-2 justify-content-center">
                             <a (click)="delete(composicion)" class="btn btn-light"><i class="fa fa-trash"></i></a>
@@ -54,7 +56,7 @@
             </tbody>
         </table>
     </div>
-</div>        
+</div>
 
 <ng-template #mComposicion>
     <div class="modal-header">
@@ -65,7 +67,7 @@
         <app-notificaciones-container></app-notificaciones-container>
         <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">
-            <div class="form-group col-md-12">
+            <div class="form-group col-md-12 mb-3">
                 <label>Producto:</label>
                 <ng-select name="id_compuesto" [(ngModel)]="composicion.id_compuesto" class="form-select p-0">
                     <ng-option value="">Seleccionar producto</ng-option>
@@ -78,7 +80,7 @@
             </div>
             <div class="form-group col-md-12">
                 <label>Cantidad:</label>
-                <input id="cantidad" type="number" class="form-control" [(ngModel)]="composicion.cantidad" name="cantidad" placeholder="Cantidad">
+                <input id="cantidad" type="number" class="form-control" [(ngModel)]="composicion.cantidad" name="cantidad" placeholder="Cantidad" step="0.01" min="0">
             </div>
         </div>
         <br><br>
@@ -104,7 +106,7 @@
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
     <div class="row">
-        <div class="form-group col-md-12">
+        <div class="form-group col-md-12 mb-3">
             <label for="">Seleccione un producto para agregarlo como opción:</label>
             <ng-select name="id_producto" (change)="agregarOpcion()" [(ngModel)]="opcion.id_producto" class="form-select p-0">
                 <ng-option value="" selected>Seleccionar producto</ng-option>

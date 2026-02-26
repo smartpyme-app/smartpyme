@@ -205,6 +205,8 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
         producto.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         producto.cantidad       = 1;
         producto.descuento      = 0;
+        producto.inventario_por_lotes = producto.inventario_por_lotes || false;
+        producto.lote_id = null;
 
         console.log('Producto creado:', producto);
 
@@ -224,6 +226,8 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
         this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
+        this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
+        this.detalle.lote_id = null;
         this.onSubmit();
     }
 
@@ -240,6 +244,8 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
         this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
+        this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
+        this.detalle.lote_id = null;
 
         console.log(this.detalle);
         let radio = document.getElementById('producto' + this.detalle.id_producto) as HTMLInputElement;

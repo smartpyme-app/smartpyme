@@ -1,35 +1,36 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
-import { FuncionalidadesService } from '@services/functionalities.service';
 import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 import { BaseComponent } from '@shared/base/base.component';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
+import { filter as rxFilter } from 'rxjs/operators';
 
 @Component({
     selector: 'app-sidebar',
     templateUrl: './sidebar.component.html',
     standalone: true,
     imports: [
-        CommonModule, 
-        FormsModule, 
-        RouterModule, 
+        CommonModule,
+        FormsModule,
+        RouterModule,
         ReactiveFormsModule,
         CollapseModule,
         TooltipModule,
         LazyImageDirective
     ],
-    
+
 })
 
-export class SidebarComponent extends BaseComponent implements OnInit {
+export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy {
     public sidebarCollapsed:boolean = false;
 
     public productosIsCollapsed:boolean = true;
@@ -43,6 +44,8 @@ export class SidebarComponent extends BaseComponent implements OnInit {
 
     public contabilidadIsCollapsed:boolean = true;
     public bancosIsCollapsed:boolean = true;
+    public lealtadClientesIsCollapsed:boolean = true;
+    public licenciasIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
@@ -50,6 +53,7 @@ export class SidebarComponent extends BaseComponent implements OnInit {
     public items: any = [];
     public notificaciones: any = [];
     public authUser: any = {};
+    public tieneFidelizacionHabilitada: boolean = false;
     public modules: any = [];
     public contabilidadHabilitada: boolean = false;
 
@@ -121,6 +125,16 @@ export class SidebarComponent extends BaseComponent implements OnInit {
           this.bancosIsCollapsed = JSON.parse(localStorage.getItem('bancosIsCollapsed')!);
         }
 
+        if (!localStorage.getItem('lealtadClientesIsCollapsed')) {
+            localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        }else{
+            this.lealtadClientesIsCollapsed = JSON.parse(localStorage.getItem('lealtadClientesIsCollapsed')!);
+        }
+        if (!localStorage.getItem('licenciasIsCollapsed')) {
+            localStorage.setItem('licenciasIsCollapsed', this.licenciasIsCollapsed.toString());
+        }else{
+            this.licenciasIsCollapsed = JSON.parse(localStorage.getItem('licenciasIsCollapsed')!);
+        }
         this.usuario = this.apiService.auth_user();
 
         this.searchControl.valueChanges
@@ -139,6 +153,19 @@ export class SidebarComponent extends BaseComponent implements OnInit {
         this.loadModules();
         this.usuarioLogueado();
         this.verificarAccesoContabilidad();
+      this.verificarFidelizacionHabilitada();
+
+      // Suscribirse a cambios de ruta para verificar funcionalidades cuando el usuario cambie
+      this.router.events
+        .pipe(rxFilter(event => event instanceof NavigationEnd))
+        .subscribe(() => {
+          // Verificar si el usuario ha cambiado (nuevo login)
+          const currentUser = this.apiService.auth_user();
+          if (currentUser && (!this.authUser || this.authUser.id !== currentUser.id)) {
+            this.usuarioLogueado();
+            this.verificarFidelizacionHabilitada();
+          }
+        });
     }
 
     verificarAccesoContabilidad() {
@@ -255,6 +282,25 @@ export class SidebarComponent extends BaseComponent implements OnInit {
         this.toggleSidebarMenu();
     }
 
+
+    toggleLealtadClientes() {
+        if(this.lealtadClientesIsCollapsed){
+            this.closeAll();
+        }
+        this.lealtadClientesIsCollapsed = !this.lealtadClientesIsCollapsed;
+        localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
+    toggleLicencias() {
+        if(this.licenciasIsCollapsed){
+            this.closeAll();
+        }
+        this.licenciasIsCollapsed = !this.licenciasIsCollapsed;
+        localStorage.setItem('licenciasIsCollapsed', this.licenciasIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
     toggleContabilidad() {
       if(this.contabilidadIsCollapsed){
         this.closeAll();
@@ -302,6 +348,9 @@ export class SidebarComponent extends BaseComponent implements OnInit {
         localStorage.setItem('contabilidadIsCollapsed', this.contabilidadIsCollapsed.toString());
         this.bancosIsCollapsed = true;
         localStorage.setItem('bancosIsCollapsed', this.bancosIsCollapsed.toString());
+        localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
+        this.lealtadClientesIsCollapsed = true;
+        localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
     }
 
     public onSubmit(){
@@ -337,7 +386,27 @@ export class SidebarComponent extends BaseComponent implements OnInit {
 
     public usuarioLogueado() {
         this.authUser = this.apiService.auth_user();
-      }
+    }
+
+    private verificarFidelizacionHabilitada() {
+        this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneFidelizacionHabilitada = tieneAcceso;
+            },
+            error: (error) => {
+                console.error('Error al verificar acceso a fidelización:', error);
+                this.tieneFidelizacionHabilitada = false;
+            }
+        });
+    }
+
+    ngOnDestroy() {
+        // Limpiar suscripciones si es necesario
+    }
+
+    public isLotesActivo(): boolean {
+        return this.apiService.isLotesActivo();
+    }
 
     canShowOption(permission: string): boolean {
         return this.apiService.hasPermission(permission);
@@ -348,7 +417,10 @@ export class SidebarComponent extends BaseComponent implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe({
                 next: (modules) => {
-                    this.modules = modules;
+                    this.modules = Array.isArray(modules) ? modules : [];
+                },
+                error: () => {
+                    this.modules = [];
                 }
             });
     }

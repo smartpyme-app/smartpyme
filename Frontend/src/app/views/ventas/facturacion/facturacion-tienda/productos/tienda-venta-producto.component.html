@@ -86,52 +86,50 @@
                                 <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                                 <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
                                 <td class="text-right">
-                                    @if (apiService.auth_user().tipo == 'Ventas' || apiService.auth_user().tipo == 'Ventas Limitado') {
-                                        <div>
-                                            {{ producto.inventarios | filter:'id_bodega': apiService.auth_user().id_bodega | sum:'stock' }}
+                                    <div *ngIf="producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0">
+                                        <!-- Si tiene lotes, mostrar stock de lotes -->
+                                        <span *ngIf="apiService.auth_user().tipo == 'Ventas' || apiService.auth_user().tipo == 'Ventas Limitado'">
+                            {{ producto.lotes | filter:'id_bodega': apiService.auth_user().id_bodega | sum:'stock' }}
+                            </span>
+                            <span *ngIf="apiService.auth_user().tipo != 'Ventas' && apiService.auth_user().tipo != 'Ventas Limitado'">
+                            {{ producto.lotes | sum:'stock' }}
+                            </span>
+                        </div>
+                        <div *ngIf="!producto.inventario_por_lotes || !producto.lotes || producto.lotes.length == 0">
+                            <!-- Si no tiene lotes, mostrar stock tradicional -->
+                            <div *ngIf="apiService.auth_user().tipo == 'Ventas' || apiService.auth_user().tipo == 'Ventas Limitado' ">
+                            {{ producto.inventarios | filter:'id_bodega': apiService.auth_user().id_bodega | sum:'stock' }}
+                            </div>
+                            <div *ngIf="apiService.auth_user().tipo != 'Ventas' && apiService.auth_user().tipo != 'Ventas Limitado' ">
+                                <div *ngIf="filtros.id_sucursal">
+                            {{ producto.inventarios | sum:'stock' }}
+                            </div>
+                            <div *ngIf="!filtros.id_sucursal">
+                                <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                            {{ producto.inventarios | sum:'stock' }}
+                            </span>
+                            <span *ngIf="producto?.inventarios?.length == 0" >
+                                Sin control
+                            </span>
+                            <ng-template #popTemplate>
+                                <table width="200px">
+                                    <thead>
+                                        <tr>
+                                            <th>Sucursal</th>
+                                            <th class="text-right">Stock</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let inventario of producto?.inventarios">
+                                            <td>{{ inventario.nombre_sucursal}}</td>
+                                                                <td class="text-right">{{ inventario.stock }}</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </ng-template>
+                                            </div>
                                         </div>
-                                    }
-                                    @if (apiService.auth_user().tipo != 'Ventas' && apiService.auth_user().tipo != 'Ventas Limitado') {
-                                        <div>
-                                            @if (filtros.id_sucursal) {
-                                                <div>
-                                                    {{ producto.inventarios | sum:'stock' }}
-                                                </div>
-                                            }
-                                            @if (!filtros.id_sucursal) {
-                                                <div>
-                                                    @if (producto?.inventarios?.length > 0) {
-                                                        <span style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                                                            {{ producto.inventarios | sum:'stock' }}
-                                                        </span>
-                                                    }
-                                                    @if (producto?.inventarios?.length == 0) {
-                                                        <span>
-                                                            Sin control
-                                                        </span>
-                                                    }
-                                                    <ng-template #popTemplate>
-                                                        <table width="200px">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>Sucursal</th>
-                                                                    <th class="text-right">Stock</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                @for (inventario of producto?.inventarios; track inventario.id) {
-                                                                    <tr>
-                                                                        <td>{{ inventario.nombre_sucursal}}</td>
-                                                                        <td class="text-right">{{ inventario.stock }}</td>
-                                                                    </tr>
-                                                                }
-                                                            </tbody>
-                                                        </table>
-                                                    </ng-template>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
+                                    </div>
                                 </td>
                                 <td class="text-end">
                                     <input type="checkbox" name="producto" id="producto{{producto.id}}" class="form-check d-inline" (click)="onCheckProducto(producto)">
@@ -155,7 +153,7 @@
             <div class="row">
                 <div class="col">
                     <button class="btn btn-primary float-end" (click)="agregarDetalles();">
-                        Agregar 
+                        Agregar
                         @if (detalles.length > 0) {
                             <span>{{ detalles.length }} producto</span>
                         }

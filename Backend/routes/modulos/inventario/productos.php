@@ -106,6 +106,7 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::post('/productos/ajuste-masivo/importar', [ProductosController::class, 'importarAjustes']);
     //productos/ajuste-masivo
     Route::post('/productos/ajuste-masivo', [ProductosController::class, 'ajusteMasivo']);
+    Route::post('/productos/habilitar-lotes-masivo', [ProductosController::class, 'habilitarLotesMasivo']);
 
     Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
     //productos/exportar/woocommerce

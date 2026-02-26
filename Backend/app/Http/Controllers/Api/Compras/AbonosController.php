@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Services\Compras\AbonoCompraService;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use App\Models\Compras\Abono;
+use App\Models\Compras\Compra;
 use App\Exports\AbonosComprasExport;
 use Maatwebsite\Excel\Facades\Excel;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;

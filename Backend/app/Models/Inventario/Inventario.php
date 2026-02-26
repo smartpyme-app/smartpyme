@@ -4,6 +4,8 @@ namespace App\Models\Inventario;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventario\Kardex;
+use App\Models\Inventario\Lote;
+use App\Models\Admin\Empresa;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 
@@ -30,7 +32,7 @@ class Inventario extends Model {
         return $this->bodega()->first() ? $this->bodega()->first()->nombre_sucursal : null;
     }
 
-    public function kardex($modelo, $cantidad, $precio = NULL, $costo = NULL){
+    public function kardex($modelo, $cantidad, $precio = NULL, $costo = NULL, $fecha = null){
 
         $clase = get_class($modelo);
 
@@ -165,8 +167,13 @@ class Inventario extends Model {
             }
         }
 
+        // Calcular el stock total según si el producto usa lotes o no
+        $totalCantidad = $this->calcularStockParaKardex($producto, $modelo, $clase);
+
+        $fechaKardex = $fecha ? (is_string($fecha) ? $fecha : $fecha->format('Y-m-d')) : date('Y-m-d');
+
         Kardex::create([
-            'fecha'             => date('Y-m-d'),
+            'fecha'             => $fechaKardex,
             'id_producto'       => $this->id_producto,
             'id_inventario'     => $this->id_bodega,
             'detalle'           => $clase,
@@ -177,8 +184,8 @@ class Inventario extends Model {
             'entrada_valor'     => $entradaCantidad ? $entradaCantidad * $costo : null,
             'salida_cantidad'   => $salidaCantidad,
             'salida_valor'      => $salidaCantidad ? $salidaCantidad * $precio : null,
-            'total_cantidad'    => $this->stock,
-            'total_valor'       => $this->stock * $costo,
+            'total_cantidad'    => $totalCantidad,
+            'total_valor'       => $totalCantidad * $costo,
             'id_usuario'        => $modelo->id_usuario,
         ]);
     }
@@ -197,6 +204,134 @@ class Inventario extends Model {
 
     public function kardexs(){
         return $this->hasMany('App\Models\Inventario\Kardex', 'id_inventario');
+    }
+
+    /**
+     * Calcula el stock para el kardex según si el producto usa lotes o no
+     */
+    private function calcularStockParaKardex($producto, $modelo, $clase)
+    {
+        // Verificar si los lotes están activos en la empresa
+        $empresa = null;
+        if (Auth::user() && Auth::user()->empresa) {
+            $empresa = Auth::user()->empresa;
+        } else {
+            // Si no hay usuario autenticado, obtener la empresa desde el producto
+            $empresa = $producto->empresa ?? null;
+        }
+
+        $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+
+        // Si el producto no usa lotes o los lotes no están activos, usar stock tradicional
+        if (!$producto->inventario_por_lotes || !$lotesActivo) {
+            return $this->stock;
+        }
+
+        // Si el producto usa lotes, buscar el lote_id desde el modelo de referencia
+        $loteId = $this->obtenerLoteIdDesdeModelo($modelo, $clase, $producto->id);
+
+        if ($loteId) {
+            // Si hay un lote específico, usar su stock
+            $lote = Lote::find($loteId);
+            if ($lote) {
+                return $lote->stock;
+            }
+        }
+
+        // Si no hay lote específico pero el producto usa lotes, sumar stock de todos los lotes de esta bodega
+        $stockLotes = Lote::where('id_producto', $producto->id)
+            ->where('id_bodega', $this->id_bodega)
+            ->sum('stock');
+
+        return $stockLotes;
+    }
+
+    /**
+     * Obtiene el lote_id desde el modelo de referencia según el tipo de transacción
+     */
+    private function obtenerLoteIdDesdeModelo($modelo, $clase, $idProducto)
+    {
+        // Si es un ajuste
+        if (strpos($clase, 'Ajuste') !== false || strpos($clase, 'ajuste') !== false) {
+            if (isset($modelo->lote_id)) {
+                return $modelo->lote_id;
+            }
+        }
+
+        // Si es un traslado
+        if (strpos($clase, 'Traslado') !== false || strpos($clase, 'traslado') !== false) {
+            if (isset($modelo->lote_id)) {
+                return $modelo->lote_id;
+            }
+        }
+
+        // Si es una venta
+        if ($clase == 'Venta' || $clase == 'Venta a consigna' || $clase == 'Venta Anulada') {
+            $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $modelo->id)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleVenta && $detalleVenta->lote_id) {
+                return $detalleVenta->lote_id;
+            }
+        }
+
+        // Si es una compra
+        if ($clase == 'Compra' || $clase == 'Compra a consigna' || $clase == 'Compra Anulada') {
+            $detalleCompra = \App\Models\Compras\Detalle::where('id_compra', $modelo->id)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleCompra && $detalleCompra->lote_id) {
+                return $detalleCompra->lote_id;
+            }
+        }
+
+        // Si es una devolución de venta
+        if ($clase == 'Devolución Venta' || $clase == 'Devolución Venta Anulada') {
+            $detalleDevolucion = \App\Models\Ventas\Devoluciones\Detalle::where('id_devolucion', $modelo->id)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleDevolucion && $detalleDevolucion->lote_id) {
+                return $detalleDevolucion->lote_id;
+            }
+        }
+
+        // Si es una devolución de compra
+        if ($clase == 'Devolución Compra' || $clase == 'Devolución Compra Anulada') {
+            $detalleDevolucion = \App\Models\Compras\Devoluciones\Detalle::where('id_devolucion', $modelo->id)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleDevolucion && $detalleDevolucion->lote_id) {
+                return $detalleDevolucion->lote_id;
+            }
+        }
+
+        // Si es otra entrada
+        if ($clase == 'Otra Entrada' || $clase == 'Otra Entrada Anulada') {
+            $detalleEntrada = \App\Models\Inventario\Entradas\Detalle::where('id_entrada', $modelo->id)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleEntrada && $detalleEntrada->lote_id) {
+                return $detalleEntrada->lote_id;
+            }
+        }
+
+        // Si es otra salida
+        if ($clase == 'Otra Salida' || $clase == 'Otra Salida Anulada') {
+            $detalleSalida = \App\Models\Inventario\Salidas\Detalle::where('id_salida', $modelo->id)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleSalida && $detalleSalida->lote_id) {
+                return $detalleSalida->lote_id;
+            }
+        }
+
+        return null;
     }
 
 }

@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -12,6 +13,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 @Component({
     selector: 'app-clientes',
@@ -28,12 +30,17 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
     public downloading:boolean = false;
     public producto:any = {};
     public categorias:any = [];
+    public tieneFidelizacionHabilitada: boolean = false;
+    override modalRef!: BsModalRef;
 
     constructor(
         apiService:ApiService,
         alertService:AlertService,
         modalManager: ModalManagerService,
-        private cdr: ChangeDetectorRef
+        private modalService: BsModalService,
+        private cdr: ChangeDetectorRef,
+        private funcionalidadesService: FuncionalidadesService
+
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'cliente',
@@ -58,6 +65,7 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
     }
 
     ngOnInit() {
+        this.verificarFidelizacionHabilitada();
         this.loadAll();
     }
 
@@ -147,6 +155,19 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
         }
     }
 
+  public override setPagination(event:any):void{
+    this.loading = true;
+    this.apiService.paginate(this.clientes.path + '?page='+ event.page).subscribe(clientes => {
+      this.clientes = clientes;
+      this.loading = false;
+    }, error => {this.alertService.error(error); this.loading = false;});
+  }
+
+  override openModal(template: TemplateRef<any>) {
+    this.alertService.modal = true;
+    this.modalRef = this.modalService.show(template);
+  }
+
     public async descargarPersonas(): Promise<void> {
         this.downloading = true;
         try {
@@ -193,6 +214,40 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
         } finally {
             this.downloading = false;
         }
+    }
+
+  public descargarExtranjeros(){
+    this.downloading = true;
+    this.alertService.modal = false;
+    this.apiService.export('clientes-extranjeros/exportar', this.filtros).subscribe((data:Blob) => {
+        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'clientes-extranjeros.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.downloading = false;
+        this.alertService.modal = false;
+      }, (error) => { this.alertService.error(error); this.downloading = false; this.alertService.modal = false;}
+    );
+  }
+
+    /**
+     * Verificar si la empresa tiene fidelización habilitada
+     */
+    private verificarFidelizacionHabilitada(): void {
+        this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneFidelizacionHabilitada = tieneAcceso;
+            },
+            error: (error) => {
+                console.error('Error al verificar acceso a fidelización:', error);
+                this.tieneFidelizacionHabilitada = false;
+            }
+        });
     }
 
     public generarEstadoCuenta(cliente: any){

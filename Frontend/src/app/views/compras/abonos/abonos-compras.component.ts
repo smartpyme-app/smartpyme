@@ -31,7 +31,7 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
     public filtrado:boolean = false;
 
     constructor(
-        apiService: ApiService, 
+        apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private cdr: ChangeDetectorRef
@@ -61,7 +61,7 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
     ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => { 
+        this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
             this.proveedores = proveedores;
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
@@ -94,7 +94,7 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
         this.loading = true;
         this.apiService.getAll('compras/abonos', this.filtros)
             .pipe(this.untilDestroyed())
-            .subscribe(abonos => { 
+            .subscribe(abonos => {
                 this.abonos = abonos;
                 this.loading = false;
                 this.closeModal();
@@ -102,47 +102,32 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
             }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
-    public async setEstado(cotizacion:any){
-        try {
-            await this.apiService.store('compras/abonos/change-estado', cotizacion)
-                .pipe(this.untilDestroyed())
-                .toPromise();
-            
-            this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
-            this.cdr.markForCheck();
-        } catch (error: any) {
-            this.alertService.error(error);
-            this.cdr.markForCheck();
-        }
+    public setEstado(abono:any){
+        this.apiService.store('compra/abono', abono).subscribe(abono => {
+            this.alertService.success('Abono actualizado', 'El abono fue actualizado exitosamente.');
+        }, error => {this.alertService.error(error); });
     }
 
-    public override async delete(item: any | number): Promise<void> {
-        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
-        if (!confirm('¿Desea eliminar el Registro?')) {
-            return;
+
+    public override delete(id:number) {
+        if (confirm('¿Desea eliminar el Registro?')) {
+            this.apiService.delete('orden-de-compra/', id) .subscribe(data => {
+                for (let i = 0; i < this.abonos['data'].length; i++) {
+                    if (this.abonos['data'][i].id == data.id )
+                        this.abonos['data'].splice(i, 1);
+                }
+            }, error => {this.alertService.error(error); });
+
         }
 
+    }
+
+    public override setPagination(event:any):void{
         this.loading = true;
-        try {
-            // Nota: El endpoint original usa 'orden-de-compra/' pero debería ser 'compra/abono/'
-            const deletedItem = await this.apiService.delete('compra/abono/', itemToDelete)
-                .pipe(this.untilDestroyed())
-                .toPromise();
-            
-            const index = this.abonos.data?.findIndex((a: any) => a.id === deletedItem.id);
-            if (index !== -1 && index >= 0) {
-                this.abonos.data.splice(index, 1);
-            }
-            this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
-            this.cdr.markForCheck();
-        } catch (error: any) {
-            this.alertService.error(error);
-            this.cdr.markForCheck();
-        } finally {
+        this.apiService.paginate(this.abonos.path + '?page='+ event.page, this.filtros).subscribe(abonos => {
+            this.abonos = abonos;
             this.loading = false;
-            this.cdr.markForCheck();
-        }
+        }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public reemprimir(abono:any){
@@ -151,7 +136,7 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
 
     openModalEdit(template: TemplateRef<any>, abono:any) {
         this.abono = abono;
-        
+
         this.apiService.getAll('documentos')
             .pipe(this.untilDestroyed())
             .subscribe(documentos => {
@@ -165,7 +150,7 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
     public openFilter(template: TemplateRef<any>) {
         this.apiService.getAll('formas-de-pago/list')
             .pipe(this.untilDestroyed())
-            .subscribe(formaPagos => { 
+            .subscribe(formaPagos => {
                 this.formaPagos = formaPagos;
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.cdr.markForCheck(); });

@@ -180,7 +180,7 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="">De</label>
-                <ng-select [disabled]="!traslado.id_producto" name="id_bodega_de" (change)="setSucursalDe()" [(ngModel)]="traslado.id_bodega_de" class="form-select p-0">
+                <ng-select [disabled]="!producto?.id" name="id_bodega_de" (change)="setSucursalDe()" [(ngModel)]="traslado.id_bodega_de" class="form-select p-0">
                     <ng-option value="" selected>Seleccionar bodega</ng-option>
                     @for (inventario of producto?.inventarios; track inventario.id ?? (inventario.id_bodega + '_' + inventario.id_producto)) {
                         <ng-option [value]="inventario.id_bodega">
@@ -192,7 +192,7 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="">Para</label>
-                <ng-select [disabled]="!traslado.id_producto" name="id_bodega" (change)="setSucursalPara()" [(ngModel)]="traslado.id_bodega" class="form-select p-0">
+                <ng-select [disabled]="!producto?.id" name="id_bodega" (change)="setSucursalPara()" [(ngModel)]="traslado.id_bodega" class="form-select p-0">
                     <ng-option value="" selected>Seleccionar bodega</ng-option>
                     @for (inventario of producto?.inventarios; track inventario.id ?? (inventario.id_bodega + '_' + inventario.id_producto)) {
                         <ng-option [value]="inventario.id_bodega">
@@ -202,9 +202,39 @@
                     }
                 </ng-select>
             </div>
+            <div class="form-group col-md-6" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.id_bodega_de">
+                <label for="">Lote Origen <span class="text-danger">*</span></label>
+                <ng-select name="lote_id" [(ngModel)]="traslado.lote_id" (change)="setLoteOrigen()" class="form-select p-0" [disabled]="loadingLotes" (open)="cargarLotes()" required>
+                    <ng-option value="">Seleccionar lote</ng-option>
+                    <ng-option *ngFor="let lote of lotes" [value]="lote.id">
+                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                        <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                            (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                        </span>
+                    </ng-option>
+                </ng-select>
+                <small class="text-muted" *ngIf="loadingLotes">Cargando lotes...</small>
+            </div>
+            <div class="form-group col-md-6" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.id_bodega">
+                <label for="">Lote Destino <small class="text-muted">(Opcional)</small></label>
+                <ng-select name="lote_id_destino" [(ngModel)]="traslado.lote_id_destino" class="form-select p-0" [disabled]="loadingLotesDestino" (open)="cargarLotesDestino()">
+                    <ng-option value="">Crear nuevo lote</ng-option>
+                    <ng-option *ngFor="let lote of lotesDestino" [value]="lote.id">
+                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                        <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                            (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                        </span>
+                    </ng-option>
+                </ng-select>
+                <small class="text-muted" *ngIf="loadingLotesDestino">Cargando lotes...</small>
+                <small class="text-muted d-block mt-1">Si no selecciona un lote, se creará uno nuevo con el mismo número del lote origen</small>
+            </div>
             <div class="form-group col-md-6">
                 <label for="stock_real">Cantidad a trasladar:</label>
-                <input type="number" [disabled]="!traslado.id_bodega_de && !traslado.id_bodega" class="form-control text-center" [(ngModel)]="traslado.cantidad" name="cantidad">
+                <input type="number" [disabled]="!traslado.id_bodega_de || !traslado.id_bodega || (producto?.inventario_por_lotes && isLotesActivo() && !traslado.lote_id)" class="form-control text-center" [(ngModel)]="traslado.cantidad" (change)="validarStockLote()" name="cantidad">
+                <small class="text-danger" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.lote_id && traslado.cantidad && !stockLoteSuficiente()">
+                    Stock insuficiente en el lote seleccionado
+                </small>
             </div>
 
             <div class="form-group col-md-6">
@@ -212,19 +242,15 @@
                 <input type="text" class="form-control" [(ngModel)]="traslado.costo" name="costo">
             </div>
 
-            @if (traslado.id_bodega_de) {
-                <div class="form-group col-md-6">
-                    <label for="traslado">Stock luego del traslado:</label>
-                    <p>{{ (bodegaDe.stock * 1) - (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
-                </div>
-            }
+            <div class="form-group col-md-6" *ngIf="traslado.id_bodega_de">
+                <label for="traslado">Stock luego del traslado:</label>
+                <p>{{ getStockOrigenDespues() | number:'1.2' }}</p>
+            </div>
 
-            @if (traslado.id_bodega) {
-                <div class="form-group col-md-6">
-                    <label for="traslado">Stock luego del traslado:</label>
-                    <p>{{ (bodegaPara.stock * 1) + (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
-                </div>
-            }
+            <div class="form-group col-md-6" *ngIf="traslado.id_bodega">
+                <label for="traslado">Stock luego del traslado:</label>
+                <p>{{ getStockDestinoDespues() | number:'1.2' }}</p>
+            </div>
 
             <div class="form-group col-md-12">
                 <label for="concepto">Concepto:</label>

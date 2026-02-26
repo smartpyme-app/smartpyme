@@ -25,6 +25,14 @@
   @if (apiService.isNotSuperAdmin() && !usuario.empresa.licencia) {
       <app-sidebar></app-sidebar>
   }
+  @if (apiService.isNotSuperAdmin() && (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
+  (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado')) {
+  <app-sidebar-ventas></app-sidebar-ventas>
+  }
+  @if (apiService.isNotSuperAdmin() && (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
+  usuario.tipo == 'Citas') {
+  <app-sidebar-servicios></app-sidebar-servicios>
+  }
   <!-- <app-sidebar-ventas *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia && apiService.verifyVentasRole()"></app-sidebar-ventas> -->
   <!-- <app-sidebar-servicios *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia && apiService.verifyCitasRole()"></app-sidebar-servicios> -->
   <!-- <app-sidebar-organizaciones *ngIf="apiService.isNotSuperAdmin() && usuario.empresa.licencia"></app-sidebar-organizaciones> -->

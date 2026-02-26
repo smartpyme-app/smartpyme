@@ -29,6 +29,7 @@ class StoreAjusteRequest extends FormRequest
             'concepto' => ['required', 'string', 'max:255'],
             'id_empresa' => ['required', 'integer', 'exists:empresas,id'],
             'id_usuario' => ['required', 'integer', 'exists:users,id'],
+            'lote_id'    => ['nullable' ,'numeric', 'exists:lotes,id'],
         ];
     }
 

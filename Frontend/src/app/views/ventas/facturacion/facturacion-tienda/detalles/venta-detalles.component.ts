@@ -12,6 +12,7 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { BsModalService } from 'ngx-bootstrap/modal';
 
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
@@ -48,8 +49,11 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   @Output() update = new EventEmitter();
   @Output() sumTotal = new EventEmitter();
 
-  @ViewChild('msupervisor')
-  public supervisorTemplate!: TemplateRef<any>;
+    @ViewChild('msupervisor')
+    public supervisorTemplate!: TemplateRef<any>;
+
+    @ViewChild('mloteVenta')
+    public mloteVenta!: TemplateRef<any>;
 
   public buscador: string = '';
   public override loading: boolean = false;
@@ -58,6 +62,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     public apiService: ApiService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
+    private modalService: BsModalService,
     private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
@@ -72,30 +77,52 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     this.openModal(template, { class: 'modal-md', backdrop: 'static' });
   }
 
-  public updateTotal(detalle:any){
-    if(!detalle.cantidad){
-      detalle.cantidad = 0;
-    }
-    if(detalle.descuento_porcentaje){
-      detalle.descuento = Number((detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
-    }else if(detalle.descuento_monto){
-      detalle.descuento = Number((detalle.cantidad * detalle.descuento_monto).toFixed(4));
-    }else{
-      detalle.descuento = 0;
+    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle */
+    private aplicarTipoGravado(detalle: any) {
+        const total = parseFloat(detalle.total) || 0;
+        detalle.gravada = 0;
+        detalle.exenta = 0;
+        detalle.no_sujeta = 0;
+        const tipo = (detalle.tipo_gravado || 'gravada').toLowerCase();
+        if (tipo === 'gravada') {
+            detalle.gravada = total;
+            if (detalle.iva !== undefined && detalle.iva !== null) {
+                detalle.iva = parseFloat((total * (this.apiService.auth_user().empresa.iva / 100)).toFixed(4));
+            }
+        } else if (tipo === 'exenta') {
+            detalle.exenta = total;
+            if (detalle.iva !== undefined && detalle.iva !== null) { detalle.iva = 0; }
+        } else {
+            detalle.no_sujeta = total;
+            if (detalle.iva !== undefined && detalle.iva !== null) { detalle.iva = 0; }
+        }
     }
 
-    detalle.total_costo = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
-    detalle.total = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
-    detalle.gravada = detalle.total;
-    this.cdr.markForCheck();
+    public updateTotal(detalle:any){
+        if(!detalle.cantidad){
+            detalle.cantidad = 0;
+        }
+        if(detalle.descuento_porcentaje){
+            detalle.descuento = Number((detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
+        }else if(detalle.descuento_monto){
+            detalle.descuento = Number((detalle.cantidad * detalle.descuento_monto).toFixed(4));
+        }else{
+            detalle.descuento = 0;
+        }
 
-    // Recalcular IVA cuando cambia la cantidad, precio o descuento
-    if(detalle.iva !== undefined && detalle.iva !== null){
-      detalle.iva = parseFloat(detalle.total) * (this.apiService.auth_user().empresa.iva / 100);
+        detalle.sub_total = Number((parseFloat(detalle.cantidad) * parseFloat(detalle.precio)).toFixed(4));
+        detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
+        detalle.total  = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento)).toFixed(4);
+        this.aplicarTipoGravado(detalle);
+        this.update.emit(this.venta);
+        this.sumTotal.emit();
     }
 
-    this.update.emit(this.venta);
-  }
+    public onTipoGravadoChange(detalle: any) {
+        this.aplicarTipoGravado(detalle);
+        this.update.emit(this.venta);
+        this.sumTotal.emit();
+    }
 
   public modalSupervisor(detalle: any) {
     this.detalle = detalle;
@@ -218,38 +245,61 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
       this.detalle.cantidad += producto.cantidad;
     }
 
-    this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
+            this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
 
-    if (!this.detalle.exenta) {
-      this.detalle.exenta = 0;
-    }
-    if (!this.detalle.no_sujeta) {
-      this.detalle.no_sujeta = 0;
-    }
+            if(!this.detalle.tipo_gravado){
+                this.detalle.tipo_gravado = 'gravada';
+            }
+            if(!this.detalle.exenta){
+                this.detalle.exenta = 0;
+            }
+            if(!this.detalle.no_sujeta){
+                this.detalle.no_sujeta = 0;
+            }
 
     if (!this.detalle.cuenta_a_terceros) {
       this.detalle.cuenta_a_terceros = 0;
     }
 
-    if(!this.detalle.total || detalle){
-      this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.precio) - parseFloat(this.detalle.descuento)).toFixed(4);
-    }
-
-    if (!this.detalle.gravada) {
-      this.detalle.gravada = this.detalle.total;
-    }
-
-            // Recalcular IVA siempre que se actualice el total (especialmente cuando se agrega más cantidad)
-            if(!this.detalle.iva || detalle){
-                this.detalle.iva = this.detalle.total * (this.apiService.auth_user().empresa.iva / 100);
+            this.detalle.sub_total = Number((parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.precio)).toFixed(4));
+            if(!this.detalle.total || detalle){
+                this.detalle.total = (parseFloat(this.detalle.sub_total) - parseFloat(this.detalle.descuento || 0)).toFixed(4);
             }
 
-    if (!this.detalle.id_vendedor) {
-      this.detalle.id_vendedor = this.venta.id_vendedor;
-    }
+            this.aplicarTipoGravado(this.detalle);
 
-    if (!detalle)
-      this.venta.detalles.push(this.detalle);
+            if(!this.detalle.id_vendedor){
+                this.detalle.id_vendedor = this.venta.id_vendedor;
+            }
+
+            // Si el producto tiene inventario por lotes, verificar si necesita selección manual
+            if (producto.inventario_por_lotes) {
+                const metodologia = this.getLotesMetodologia();
+                if (metodologia === 'Manual') {
+                    // Si es manual, abrir modal para seleccionar lote
+                    this.detalle.inventario_por_lotes = true;
+                    this.detalle.lote_id = null;
+                    if (!detalle) {
+                        this.venta.detalles.push(this.detalle);
+                    }
+                    this.update.emit(this.venta);
+                    // Abrir modal automáticamente para seleccionar lote
+                    setTimeout(() => {
+                        this.abrirModalLoteVenta(this.mloteVenta, this.detalle);
+                    }, 100);
+                    return;
+                } else {
+                    // Si es automático, el backend se encargará de seleccionar el lote
+                    this.detalle.inventario_por_lotes = true;
+                    this.detalle.lote_id = null; // Se asignará automáticamente en el backend
+                }
+            } else {
+                this.detalle.inventario_por_lotes = false;
+                this.detalle.lote_id = null;
+            }
+
+            if(!detalle)
+                this.venta.detalles.push(this.detalle);
 
     this.cdr.markForCheck();
     this.update.emit(this.venta);
@@ -260,8 +310,51 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     console.log(this.venta);
   }
 
-  // Eliminar detalle
-  public delete(detalle: any) {
+    // Métodos para gestión de lotes en ventas
+    public lotes: any[] = [];
+    public loteSeleccionado: any = null;
+    public detalleConLote: any = null;
+
+    getLotesMetodologia(): string {
+        const empresa = this.apiService.auth_user()?.empresa;
+        if (empresa?.custom_empresa?.configuraciones?.lotes_metodologia) {
+            return empresa.custom_empresa.configuraciones.lotes_metodologia;
+        }
+        return 'FIFO'; // Por defecto
+    }
+
+    abrirModalLoteVenta(template: TemplateRef<any>, detalle: any) {
+        this.detalleConLote = detalle;
+        this.cargarLotesDisponiblesVenta();
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg'});
+    }
+
+    cargarLotesDisponiblesVenta() {
+        if (!this.detalleConLote?.id_producto || !this.venta.id_bodega) return;
+
+        this.loading = true;
+        this.apiService.getAll('lotes/disponibles', {
+            id_producto: this.detalleConLote.id_producto,
+            id_bodega: this.venta.id_bodega,
+            cantidad: this.detalleConLote.cantidad
+        }).subscribe(lotes => {
+            this.lotes = lotes;
+            this.loading = false;
+        }, error => {
+            this.alertService.error(error);
+            this.loading = false;
+        });
+    }
+
+    seleccionarLoteVenta(lote: any) {
+        this.detalleConLote.lote_id = lote.id;
+        this.loteSeleccionado = lote;
+        this.modalRef?.hide();
+        this.update.emit(this.venta);
+    }
+
+    // Eliminar detalle
+        public delete(detalle:any){
 
     Swal.fire({
       title: '¿Estás seguro?',

@@ -8,7 +8,7 @@
             <button tooltip="Descargar" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
             <input type="date" name="fecha" (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
             <ng-select [(ngModel)]="filtros.id_usuario" (change)="filtrar()" (clear)="onUsuarioClear()" [clearable]="filtros.id_usuario !== ''" class="form-select  p-0" name="filtros.id_usuario">
-                <ng-option value="">Usuario</ng-option>
+                <ng-option value="">Todos los usuarios</ng-option>
                 @for (usuario of usuarios; track usuario.id) {
                     <ng-option [value]="usuario.id">
                         {{ usuario.name }}
@@ -32,7 +32,7 @@
 <section class="d-flex justify-content-between gap-2">
     <div class="card p-3">
         <h3 class="text-center text-success">
-            {{ (indicadores.totalVentas ? indicadores.totalVentas : 0) | currency }}
+            {{ (indicadores.totalVentas ? (indicadores.totalVentas + indicadores.totalPropina) : 0) | currency }}
         </h3>
         <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
     </div>
@@ -54,7 +54,7 @@
         </h3>
         <p class="mb-0 text-center">TOTAL <br> DEVOLUCIONES</p>
     </div>
-    @if (usuario.tipo == 'Administrador') {
+    @if (usuario.tipo != 'Ventas' && usuario.tipo != 'Ventas Limitado') {
         <div class="card p-3">
             <h3 class="text-center text-secondary">
                 {{ (indicadores.totalGastosPagados ? indicadores.totalGastosPagados : 0) | currency }}
@@ -85,6 +85,11 @@
                         <td>Ventas del día</td>
                         <td class="text-right">{{ indicadores.cantidadVentasPagadas }}</td>
                         <td class="text-right">{{ indicadores.totalVentasPagadas | currency}}</td>
+                    </tr>
+                    <tr *ngIf="(indicadores.totalPropina || 0) > 0">
+                        <td>Propina</td>
+                        <td class="text-right">{{ indicadores.cantidadPropina }}</td>
+                        <td class="text-right">{{ indicadores.totalPropina | currency}}</td>
                     </tr>
                     <tr>
                         <td>Ventas al crédito</td>

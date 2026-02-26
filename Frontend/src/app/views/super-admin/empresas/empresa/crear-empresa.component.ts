@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { BsModalRef } from 'ngx-bootstrap/modal';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -35,8 +36,10 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
     public municipios:any = [];
     public actividad_economicas:any = [];
 
+  override modalRef!: BsModalRef;
+
     constructor(
-        private apiService: ApiService,
+        protected apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private route: ActivatedRoute, private router: Router

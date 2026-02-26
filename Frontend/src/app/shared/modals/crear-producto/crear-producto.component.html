@@ -138,6 +138,13 @@
                   </div>
                 }
 
+                <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.tipo != 'Servicio' && isLotesActivo()">
+                    <div class="form-switch bg-light-info rounded">
+                        <label>¿Inventario por lotes?</label>
+                        <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="producto.inventario_por_lotes" name="inventario_por_lotes">
+                    </div>
+                </div>
+
                 <div class="form-group col-lg-12 mt-3">
                     <button [disabled]="guardar" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                         @if (!guardar) {

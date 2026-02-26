@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
+import { ModalModule } from 'ngx-bootstrap/modal';
 import { TagInputModule } from 'ngx-chips';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
@@ -19,7 +20,7 @@ import { CuentasPagarComponent } from './cuentas-pagar/cuentas-pagar.component';
 @NgModule({
   imports: [
     CommonModule,
-    FormsModule,  
+    FormsModule,
     RouterModule,
     PipesModule,
     SharedModule,
@@ -30,10 +31,14 @@ import { CuentasPagarComponent } from './cuentas-pagar/cuentas-pagar.component';
     TooltipModule.forRoot(),
     // Componentes standalone
     ProveedoresComponent,
+    CuentasPagarComponent,
+    ModalModule.forRoot()
+  ],
+  declarations: [
+  	ProveedoresComponent,
     ProveedorComponent,
     ProveedorDetallesComponent,
-    ProveedorComprasComponent,
-    CuentasPagarComponent
+    ProveedorComprasComponent
   ],
   exports: [
   	ProveedoresComponent,

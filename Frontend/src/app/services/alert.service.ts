@@ -13,7 +13,7 @@ export class AlertService {
     private alertSubject = new BehaviorSubject<any>(null);
 
     getAlert(): Observable<any> { return this.alertSubject.asObservable(); }
-     
+
     constructor(private router: Router) {
     }
 
@@ -45,13 +45,13 @@ export class AlertService {
 
     error(message: any) {
         console.log(message);
-    
+
         // Para errores de validación (422), siempre mostrar el alert incluso si hay modal abierto
         if(message.status == 422) {
             // Forzar modal a false ANTES de procesar el error
             this.modal = false;
         }
-    
+
         if(message.status == 0) {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : 'No hay conexión con el servidor, intentar nuevamente'});
         }
@@ -66,13 +66,14 @@ export class AlertService {
             this.router.navigate(['/login']);
         }
         else if(message.status == 400) {
-            this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.error.titulo, 'mensaje' : message.error.error});
+            const mensaje = message.error?.error ?? message.error?.message ?? (typeof message.error === 'string' ? message.error : 'Solicitud incorrecta');
+            this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.statusText || 'Lo sentimos', 'mensaje' : mensaje});
         }
         else if(message.status == 422) {
             // Manejar diferentes formatos de errores de validación
             let errorMessage = '';
             let errorTitle = 'Error de validación';
-            
+
             // Formato 1: message.error.error (array o string)
             if(message.error && message.error.error) {
                 if(Array.isArray(message.error.error)) {
@@ -118,16 +119,16 @@ export class AlertService {
             else {
                 errorMessage = 'Ocurrió un error de validación. Por favor, verifica los datos ingresados.';
             }
-            
+
             const alertData = {
                 'tipo': 'alert-warning',
                 'titulo': errorTitle,
                 'mensaje': errorMessage
             };
-            
+
             // Emitir el alert inmediatamente
             this.alertSubject.next(alertData);
-            
+
             // Asegurar que el modal no bloquee la visualización del error
             setTimeout(() => {
                 this.modal = false;
@@ -162,7 +163,7 @@ export class AlertService {
             'forma_pago': 'Forma de pago',
             'estado': 'Estado'
         };
-        
+
         return translations[fieldName] || fieldName;
     }
 

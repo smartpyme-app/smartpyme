@@ -103,13 +103,13 @@
           <tr *ngFor="let aguinaldo of aguinaldos?.data">
             <td>{{ aguinaldo.anio }}</td>
             <td class="text-end">
-              ${{ aguinaldo.total_aguinaldos | number : "1.2-2" }}
+              {{ aguinaldo.total_aguinaldos | currency }}
             </td>
             <td class="text-end">
-              ${{ aguinaldo.total_retenciones | number : "1.2-2" }}
+              {{ aguinaldo.total_retenciones | currency }}
             </td>
             <td class="text-end">
-              ${{ (aguinaldo.total_aguinaldos - aguinaldo.total_retenciones) | number : "1.2-2" }}
+              {{ (aguinaldo.total_aguinaldos - aguinaldo.total_retenciones) | currency }}
             </td>
             <td>
               <span

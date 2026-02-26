@@ -90,7 +90,7 @@
                             ATENCION: {{ $venta->cliente->nombre  }} <br>
                             TEL: {{ $venta->cliente->telefono  }}
                         </p>
-                        <p>Comentarios o instrucciones especiales: {{ $venta->observaciones }}</p>
+                        {{-- <p>Comentarios o instrucciones especiales: {{ $venta->observaciones }}</p> --}}
                     </td>
                     <td>
                         <p class="text-right">Fecha: {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
@@ -122,7 +122,7 @@
                     <td></td>
                     <td>
                         {{-- {{ \Carbon\Carbon::parse($venta->fecha)->diffInDays(\Carbon\Carbon::parse($venta->fecha_expiracion), false) }} --}}
-                        31 días
+                        {{ $venta->observaciones }}
                     </td>
                 </tr>
             </tbody>

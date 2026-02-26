@@ -200,11 +200,4 @@ export class AguinaldosComponent implements OnInit {
     return 'bg-secondary';
   }
 
-  public formatearMoneda(valor: number): string {
-    return new Intl.NumberFormat('es-SV', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(valor || 0);
-  }
 }

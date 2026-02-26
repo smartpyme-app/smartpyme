@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Lote;
 use App\Models\KardexMasivoQueue;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\Inventario\KardexExport;
@@ -39,9 +40,23 @@ class KardexController extends Controller
             ->when($request->detalle, function ($q) use ($request) {
                 return $q->where('detalle', 'like', '%' . $request->detalle . '%');
             })
-            ->orderBy($request->orden, $request->direccion)
+            ->orderBy($request->orden ?? 'fecha', $request->direccion ?? 'desc')
             ->orderBy('id', 'desc')
             ->get();
+
+        // Filtrar por lote_id si se proporciona
+        if ($request->lote_id) {
+            $lote = Lote::find($request->lote_id);
+            if ($lote) {
+                $kardex = $kardex->filter(function ($movimiento) use ($lote, $producto) {
+                    // Obtener el lote_id del movimiento usando la misma lógica que getNumeroLoteAttribute
+                    $loteIdMovimiento = $this->obtenerLoteIdDelMovimiento($movimiento, $producto->id);
+                    return $loteIdMovimiento == $lote->id;
+                })->values();
+            } else {
+                $kardex = collect([]);
+            }
+        }
 
 
         $producto->movimientos = $kardex;
@@ -169,5 +184,95 @@ class KardexController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Obtiene el lote_id de un movimiento del kardex
+     */
+    private function obtenerLoteIdDelMovimiento($movimiento, $idProducto)
+    {
+        // Si es un ajuste
+        if (strpos($movimiento->detalle, 'Ajuste') !== false || strpos($movimiento->detalle, 'ajuste') !== false) {
+            $ajuste = \App\Models\Inventario\Ajuste::find($movimiento->referencia);
+            if ($ajuste && $ajuste->lote_id) {
+                return $ajuste->lote_id;
+            }
+        }
+        
+        // Si es un traslado
+        if (strpos($movimiento->detalle, 'Traslado') !== false || strpos($movimiento->detalle, 'traslado') !== false) {
+            $traslado = \App\Models\Inventario\Traslado::find($movimiento->referencia);
+            if ($traslado && $traslado->lote_id) {
+                return $traslado->lote_id;
+            }
+        }
+        
+        // Si es una venta
+        if (in_array($movimiento->detalle, ['Venta', 'Venta a consigna', 'Venta Anulada'])) {
+            $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $movimiento->referencia)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleVenta && $detalleVenta->lote_id) {
+                return $detalleVenta->lote_id;
+            }
+        }
+        
+        // Si es una compra
+        if (in_array($movimiento->detalle, ['Compra', 'Compra a consigna', 'Compra Anulada'])) {
+            $detalleCompra = \App\Models\Compras\Detalle::where('id_compra', $movimiento->referencia)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleCompra && $detalleCompra->lote_id) {
+                return $detalleCompra->lote_id;
+            }
+        }
+        
+        // Si es una devolución de venta
+        if (strpos($movimiento->detalle, 'Devolución Venta') !== false) {
+            $detalleDevolucion = \App\Models\Ventas\Devoluciones\Detalle::where('id_devolucion', $movimiento->referencia)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleDevolucion && $detalleDevolucion->lote_id) {
+                return $detalleDevolucion->lote_id;
+            }
+        }
+        
+        // Si es una devolución de compra
+        if (strpos($movimiento->detalle, 'Devolución Compra') !== false) {
+            $detalleDevolucion = \App\Models\Compras\Devoluciones\Detalle::where('id_devolucion', $movimiento->referencia)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleDevolucion && $detalleDevolucion->lote_id) {
+                return $detalleDevolucion->lote_id;
+            }
+        }
+        
+        // Si es otra entrada
+        if (in_array($movimiento->detalle, ['Otra Entrada', 'Otra Entrada Anulada'])) {
+            $detalleEntrada = \App\Models\Inventario\Entradas\Detalle::where('id_entrada', $movimiento->referencia)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleEntrada && $detalleEntrada->lote_id) {
+                return $detalleEntrada->lote_id;
+            }
+        }
+        
+        // Si es otra salida
+        if (in_array($movimiento->detalle, ['Otra Salida', 'Otra Salida Anulada'])) {
+            $detalleSalida = \App\Models\Inventario\Salidas\Detalle::where('id_salida', $movimiento->referencia)
+                ->where('id_producto', $idProducto)
+                ->whereNotNull('lote_id')
+                ->first();
+            if ($detalleSalida && $detalleSalida->lote_id) {
+                return $detalleSalida->lote_id;
+            }
+        }
+        
+        return null;
     }
 }

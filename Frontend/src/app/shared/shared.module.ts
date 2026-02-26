@@ -5,6 +5,9 @@ import { RouterModule } from '@angular/router';
 
 // TooltipModule removido - los módulos lo importan directamente cuando lo necesitan (LayoutModule ya lo tiene)
 // TypeaheadModule removido - los componentes lo importan directamente cuando lo necesitan
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { TypeaheadModule } from 'ngx-bootstrap/typeahead';
+import { ModalModule } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 // MultimediaComponent removido - los componentes lo importan directamente cuando lo necesitan
 import { PipesModule } from '@pipes/pipes.module';
@@ -28,6 +31,7 @@ import { CrearCargoEmpleadoComponent } from './modals/crear-cargo-empleado/crear
 import { CrearProveedorComponent } from './modals/crear-proveedor/crear-proveedor.component';
 import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.component';
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
+import { CrearAjusteLoteComponent } from './modals/crear-ajuste-lote/crear-ajuste-lote.component';
 import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
 import { CrearAbonoGastoComponent } from './modals/crear-abono-gasto/crear-abono-gasto.component';
@@ -51,6 +55,14 @@ import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel
 import { NotificacionesContainerComponent } from './parts/notificaciones/notificaciones-container.component';
 import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';
 import { DescargarInventarioComponent } from './parts/descargar-inventario/descargar-inventario.component';
+import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados/shared/ver-historial-button.component';
+
+import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
+
+import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda.component';
+
+import { SelectSearchComponent } from './parts/select-search/select-search.component';
+import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activar-lotes-masivo.component';
 
 @NgModule({
   imports: [
@@ -72,12 +84,11 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     NotificacionesContainerComponent,
     ImportarExcelComponent,
     DescargarInventarioComponent,
-    // Todos los componentes son standalone ahora
+    // Componentes y pipes standalone - importados (no declarados)
     BusquedaClienteComponent,
     BusquedaProductoComponent,
     CrearProductoComponent,
     ClienteDireccionComponent,
-    // MultimediaComponent removido - los componentes lo importan directamente
     BuscadorProductosComponent,
     BuscadorClientesComponent,
     BuscadorMateriasPrimasComponent,
@@ -89,23 +100,19 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     CrearProveedorComponent,
     CrearClienteComponent,
     CrearAjusteComponent,
+    CrearAjusteLoteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearAbonoGastoComponent,
-    // CrearEventoComponent removido - solo se usa en citas, los componentes lo importan directamente
-    // CrearProyectoComponent removido - los componentes lo importan directamente cuando lo necesitan
     CrearImpuestoComponent,
-    // VerHistorialButtonComponent removido - solo se usa en planillas (módulo lazy)
-    // ThreedsModalComponent removido - solo se usa en auth, los componentes lo importan directamente
-    // AlertsHaciendaComponent removido - solo se usa en módulos lazy
-    // AuthorizationRequestModalComponent removido - se carga dinámicamente cuando se necesita
-    // AuthorizationViewComponent removido - solo se usa en módulos lazy
-    // CrearDepartamentoComponent removido - solo se usa en módulos lazy
-    // CrearAreaEmpresaComponent removido - solo se usa en módulos lazy
-    // SelectSearchComponent removido - solo se usa en módulos lazy
-  ],
-  declarations: [
-    // Todos los componentes son standalone, se importan arriba
+    VerHistorialButtonComponent,
+    ThreedsModalComponent,
+    AlertsHaciendaComponent,
+    SelectSearchComponent,
+    ActivarLotesMasivoComponent,
+    TooltipModule.forRoot(),
+    TypeaheadModule.forRoot(),
+    ModalModule.forRoot()
   ],
   exports: [
     CommonModule,
@@ -139,6 +146,7 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     CrearProveedorComponent,
     CrearClienteComponent,
     CrearAjusteComponent,
+    CrearAjusteLoteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearAbonoGastoComponent,
@@ -162,7 +170,10 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     DescargarExcelComponent,
     NotificacionesContainerComponent,
     ImportarExcelComponent,
-    DescargarInventarioComponent
+    DescargarInventarioComponent,
+    AlertsHaciendaComponent,
+    SelectSearchComponent,
+    ActivarLotesMasivoComponent
   ],
   providers: [
     AlertService

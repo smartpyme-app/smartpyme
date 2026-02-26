@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,6 +16,8 @@ import { SharedDataService } from '@services/shared-data.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
+import { Subject } from 'rxjs';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 
 declare var $:any;
 
@@ -27,7 +29,9 @@ declare var $:any;
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
-export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
+export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  private searchSubject$ = new Subject<void>();
 
     public compras:any = [];
     public compra:any = {};
@@ -97,7 +101,16 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
         this.filtrarCompras();
     }
 
+    ngOnDestroy() {
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
+
     ngOnInit() {
+        this.searchSubject$.pipe(
+            debounceTime(400),
+            takeUntil(this.destroy$)
+        ).subscribe(() => this.filtrarCompras());
         this.verificarAccesoContabilidad();
 
         this.route.queryParams
@@ -161,6 +174,17 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
         this.filtros.num_identificacion = '';
 
         this.filtrarCompras();
+    }
+
+    public onBuscadorInput() {
+        this.searchSubject$.next();
+    }
+
+    public getSaldo(compra: any): number {
+        const total = parseFloat(compra?.total || 0);
+        const abonos = parseFloat(compra?.abonos_sum_total || 0);
+        const devoluciones = parseFloat(compra?.devoluciones_sum_total || 0);
+        return Math.round((total - abonos - devoluciones) * 100) / 100;
     }
 
     public filtrarCompras(){
@@ -382,11 +406,10 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
         );
     }
 
-    public openAbono(template: TemplateRef<any>, compra:any){
-        this.compra = compra;
-        this.alertService.modal = true;
-        this.openModal(template);
-    }
+    public openAbono(template: TemplateRef<any>, compra: any){
+      this.compra = { ...compra, saldo: this.getSaldo(compra) };
+      this.alertService.modal = true;
+      this.openModal(template);    }
 
     public openFilter(template: TemplateRef<any>) {
 

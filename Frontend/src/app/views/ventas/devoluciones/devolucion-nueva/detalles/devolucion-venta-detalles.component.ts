@@ -8,7 +8,7 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
-import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
+import { BsModalService } from 'ngx-bootstrap/modal';
 
 import Swal from 'sweetalert2';
 
@@ -16,7 +16,7 @@ import Swal from 'sweetalert2';
     selector: 'app-devolucion-venta-detalles',
     templateUrl: './devolucion-venta-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DevolucionVentaDetallesComponent extends BaseModalComponent implements OnInit {
@@ -32,15 +32,29 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
     @ViewChild('msupervisor')
     public supervisorTemplate!: TemplateRef<any>;
 
+    @ViewChild('mlote')
+    public mloteTemplate!: TemplateRef<any>;
+
     public buscador:string = '';
     public override loading:boolean = false;
 
     private cdr = inject(ChangeDetectorRef);
 
-    constructor( 
+    public lotes: any[] = [];
+    public loteSeleccionado: any = null;
+    public nuevoLote: any = {
+        numero_lote: '',
+        fecha_vencimiento: null,
+        fecha_fabricacion: null,
+        observaciones: ''
+    };
+    public crearNuevoLote: boolean = false;
+
+    constructor(
         private apiService: ApiService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private modalService: BsModalService
     ) {
         super(modalManager, alertService);
     }
@@ -66,7 +80,7 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
         if(!this.detalle.no_sujeta){
             this.detalle.no_sujeta = 0;
         }
-        
+
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(2);
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(2);
         this.update.emit(this.devolucion);
@@ -149,7 +163,7 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
             }).then((result) => {
               if (result.isConfirmed) {
                 let indexAEliminar:any;
-                
+
                     indexAEliminar = this.devolucion.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
                     if (indexAEliminar !== -1) {
                         this.devolucion.detalles.splice(indexAEliminar, 1);
@@ -165,6 +179,120 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
 
     public sumTotalEmit(){
         this.sumTotal.emit();
+    }
+
+    public isLotesActivo(): boolean {
+        return this.apiService.isLotesActivo();
+    }
+
+    public abrirModalLote(template: TemplateRef<any>, detalle: any) {
+        this.detalle = detalle;
+        this.crearNuevoLote = false;
+        this.loteSeleccionado = null;
+        this.nuevoLote = {
+            numero_lote: '',
+            fecha_vencimiento: null,
+            fecha_fabricacion: null,
+            observaciones: ''
+        };
+        this.cargarLotesDisponibles();
+        setTimeout(() => {
+            this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+        }, 100);
+    }
+
+    cargarLotesDisponibles() {
+        if (!this.detalle.id_producto || !this.devolucion.id_bodega) {
+            this.lotes = [];
+            return;
+        }
+
+        this.loading = true;
+        this.apiService.getAll(`lotes/producto/${this.detalle.id_producto}`, {
+            id_bodega: this.devolucion.id_bodega
+        }).subscribe(lotes => {
+            this.lotes = Array.isArray(lotes) ? lotes : [];
+            this.loading = false;
+        }, error => {
+            console.error('Error al cargar lotes:', error);
+            this.alertService.error('Error al cargar los lotes del producto');
+            this.loading = false;
+            this.lotes = [];
+        });
+    }
+
+    seleccionarLote(lote: any) {
+        this.loteSeleccionado = lote;
+        this.crearNuevoLote = false;
+        this.detalle.lote_id = lote.id;
+        this.detalle.lote = lote;
+        this.modalRef?.hide();
+        this.update.emit(this.devolucion);
+    }
+
+    cambiarModoLote(crear: boolean) {
+        this.crearNuevoLote = crear;
+        if (crear) {
+            this.loteSeleccionado = null;
+        }
+    }
+
+    crearLote() {
+        if (!this.detalle.id_producto || !this.devolucion.id_bodega) {
+            this.alertService.error('Faltan datos para crear el lote');
+            return;
+        }
+
+        if (!this.nuevoLote.numero_lote || this.nuevoLote.numero_lote.trim() === '') {
+            this.alertService.error('El número de lote es requerido');
+            return;
+        }
+
+        this.loading = true;
+        const loteData = {
+            id_producto: this.detalle.id_producto,
+            id_bodega: this.devolucion.id_bodega,
+            numero_lote: this.nuevoLote.numero_lote.trim(),
+            fecha_vencimiento: this.nuevoLote.fecha_vencimiento,
+            fecha_fabricacion: this.nuevoLote.fecha_fabricacion,
+            stock: 0,
+            observaciones: this.nuevoLote.observaciones
+        };
+
+        this.apiService.store('lotes', loteData).subscribe(lote => {
+            this.detalle.lote_id = lote.id;
+            this.detalle.lote = lote;
+            this.alertService.success('Lote creado', 'El lote fue creado exitosamente.');
+            this.nuevoLote = {
+                numero_lote: '',
+                fecha_vencimiento: null,
+                fecha_fabricacion: null,
+                observaciones: ''
+            };
+            this.crearNuevoLote = false;
+            this.loading = false;
+            this.modalRef?.hide();
+            this.update.emit(this.devolucion);
+            this.cargarLotesDisponibles();
+        }, error => {
+            this.alertService.error(error);
+            this.loading = false;
+        });
+    }
+
+    public cerrarModalLote() {
+        if (this.modalRef) {
+            this.modalRef?.hide();
+        }
+    }
+
+    public isLoteVencido(fechaVencimiento: any): boolean {
+        if (!fechaVencimiento) return false;
+        const fecha = new Date(fechaVencimiento);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        fecha.setHours(0, 0, 0, 0);
+        return fecha < hoy;
     }
 
 }

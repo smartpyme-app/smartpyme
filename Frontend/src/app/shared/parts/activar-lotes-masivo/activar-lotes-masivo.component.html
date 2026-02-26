@@ -1,0 +1,115 @@
+<button *ngIf="isLotesActivo() && apiService.canCreate()" 
+        (click)="openModal()" 
+        tooltip="Activar lotes masivamente por categorías" 
+        class="btn btn-default h-100">
+        <img src="/assets/icons/2-layers.png" class="icon me-2"> Activar lotes masivo
+</button>
+
+<!-- Modal para activación masiva de lotes -->
+<ng-template #mlotesMasivo>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Activar Lotes Masivamente</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef?.hide();" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    
+    <div class="alert alert-info">
+        <i class="fa fa-info-circle"></i> 
+        Esta acción <strong>{{ habilitarLotes ? 'habilitará' : 'deshabilitará' }}</strong> el inventario por lotes para todos los productos (excepto servicios) de las categorías seleccionadas.
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="form-switch bg-light-info rounded p-3 mb-3">
+                <label for="habilitarLotes" class="fw-bold">Acción:</label>
+                <div class="d-flex align-items-center mt-2">
+                    <input class="form-check-input ms-3" type="checkbox" role="switch" id="habilitarLotes" 
+                           [(ngModel)]="habilitarLotes" name="habilitarLotes">
+                    <span class="ms-3">
+                        <span *ngIf="habilitarLotes" class="badge bg-success">Habilitar lotes</span>
+                        <span *ngIf="!habilitarLotes" class="badge bg-danger">Deshabilitar lotes</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="fw-bold">Seleccionar categorías:</label>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="seleccionarTodasCategorias()">
+                        <i class="fa fa-check-square"></i> Seleccionar todas
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="deseleccionarTodasCategorias()">
+                        <i class="fa fa-square"></i> Deseleccionar todas
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive" style="max-height: 400px; border: 1px solid #dee2e6; border-radius: 0.375rem;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th width="50" class="text-center">
+                                <input type="checkbox" 
+                                       [checked]="todasCategoriasSeleccionadas()"
+                                       (change)="todasCategoriasSeleccionadas() ? deseleccionarTodasCategorias() : seleccionarTodasCategorias()">
+                            </th>
+                            <th>Categoría</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngIf="loading">
+                            <td colspan="3" class="text-center">
+                                <span class="badge bg-primary">Cargando categorías...</span>
+                            </td>
+                        </tr>
+                        <tr *ngIf="!loading && categorias?.length === 0">
+                            <td colspan="3" class="text-center text-muted">No hay categorías disponibles</td>
+                        </tr>
+                        <tr *ngFor="let cat of categorias | filter:['enable']:'1'">
+                            <td class="text-center">
+                                <input type="checkbox" 
+                                       [checked]="isCategoriaSeleccionada(cat.id)"
+                                       (change)="toggleCategoriaLote(cat.id)">
+                            </td>
+                            <td>{{ cat.nombre }}</td>
+                            <td>
+                                <span class="badge" [ngClass]="{'bg-success': cat.enable, 'bg-danger': !cat.enable}">
+                                    {{ cat.enable ? 'Activa' : 'Inactiva' }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <small class="text-muted mt-2 d-block">
+                Categorías seleccionadas: <strong>{{ categoriasSeleccionadas.length }}</strong>
+            </small>
+        </div>
+    </div>
+    
+    <div class="d-grid gap-2">
+        <button type="button" 
+                [disabled]="procesandoLotes || categoriasSeleccionadas.length === 0" 
+                class="btn btn-primary btn-block" 
+                (click)="habilitarLotesMasivo()">
+            <span *ngIf="!procesandoLotes">
+                <i class="fa fa-check"></i> 
+                {{ habilitarLotes ? 'Habilitar' : 'Deshabilitar' }} lotes para {{ categoriasSeleccionadas.length }} categoría(s)
+            </span>
+            <span *ngIf="procesandoLotes">
+                <i class="fa fa-spinner fa-spin"></i> Procesando...
+            </span>
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="modalRef?.hide()">
+            Cancelar
+        </button>
+    </div>
+  </div>
+</ng-template>

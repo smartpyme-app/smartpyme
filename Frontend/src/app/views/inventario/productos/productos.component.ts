@@ -27,7 +27,9 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 export class ProductosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public productos: any = [];
+    public override loading: boolean = false;
     public downloading: boolean = false;
+    public override filtros: any = {};
     public producto: any = {};
     public bodegas: any = [];
     public categorias: any = [];
@@ -42,10 +44,10 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
     public emailKardex: string = '';
 
     constructor(
-        apiService: ApiService, 
+        apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private router: Router, 
+        private router: Router,
         private route: ActivatedRoute,
         private cdr: ChangeDetectorRef
     ) {
@@ -204,7 +206,16 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
     }
 
     public override delete(id: number) {
-        super.delete(id);
+        if (confirm('¿Desea eliminar el Registro?')) {
+            this.apiService.delete('producto/', id).subscribe(data => {
+                for (let i = 0; i < this.productos['data'].length; i++) {
+                    if (this.productos['data'][i].id == data.id)
+                        this.productos['data'].splice(i, 1);
+                }
+            }, error => { this.alertService.error(error); });
+
+        }
+
     }
 
     public setOrden(columna: string) {
@@ -222,6 +233,12 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
         await super.onSubmit(item, isStatusChange);
         this.filtrarProductos();
     }
+
+  public override setPagination(event: any): void {
+    this.loading = true;
+    this.filtros.page = event.page;
+    this.filtrarProductos();
+  }
 
     public openDescargar(template: TemplateRef<any>) {
         this.openModal(template);
@@ -429,6 +446,52 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
         return !!(empresa.shopify_store_url &&
             empresa.shopify_consumer_secret &&
             empresa.shopify_status === 'connected');
+    }
+
+    /**
+     * Calcula los días hasta el vencimiento
+     */
+    public getDiasVencimiento(fechaVencimiento: string): string {
+        if (!fechaVencimiento) return '';
+
+        const hoy = new Date();
+        const vencimiento = new Date(fechaVencimiento);
+        const diasRestantes = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (diasRestantes < 0) {
+            return `Vencido hace ${Math.abs(diasRestantes)} día(s)`;
+        } else if (diasRestantes === 0) {
+            return 'Vence hoy';
+        } else if (diasRestantes === 1) {
+            return 'Vence mañana';
+        } else {
+            return `${diasRestantes} días`;
+        }
+    }
+
+    /**
+     * Obtiene la clase CSS según el estado de vencimiento
+     */
+    public getClaseVencimiento(fechaVencimiento: string): string {
+        if (!fechaVencimiento) return '';
+
+        const hoy = new Date();
+        const vencimiento = new Date(fechaVencimiento);
+        const diasRestantes = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (diasRestantes < 0) {
+            return 'text-danger';
+        } else if (diasRestantes === 0) {
+            return 'text-warning';
+        } else if (diasRestantes <= 7) {
+            return 'text-info';
+        } else {
+            return 'text-success';
+        }
+    }
+
+    public isLotesActivo(): boolean {
+        return this.apiService.isLotesActivo();
     }
 
 }

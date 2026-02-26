@@ -37,8 +37,8 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
     public override filtros:any = {};
     public buscador:any = '';
 
-    constructor( 
-        apiService: ApiService, 
+    constructor(
+        apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private sumPipe:SumPipe,
@@ -61,14 +61,21 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
               .pipe(
                 debounceTime(500),
                 filter((query: string) => query.trim().length > 0),
-                switchMap((query: any) => this.apiService.read('productos/buscar/', query)),
-                this.untilDestroyed()
+                switchMap((query: any) => {
+                  const params: any = {};
+                  if (this.venta?.id_bodega) {
+                    params.id_bodega = this.venta.id_bodega;
+                  } else if (this.venta?.id_sucursal) {
+                    params.id_sucursal = this.venta.id_sucursal;
+                  }
+                  return this.apiService.getAll(`productos/buscar/${encodeURIComponent(query)}`, params);
+                })
               )
               .subscribe((results: any[]) => {
                 this.productos = Array.isArray(results) ? results : [];
                 this.loading = false;
 
-                if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) { 
+                if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) {
                     this.selectProducto(results[0]);
                 }
                 this.cdr.markForCheck();
@@ -101,7 +108,13 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
 
     public filtrarProductos(){
         this.loading = true;
-        this.apiService.getAll('productos', this.filtros).pipe(this.untilDestroyed()).subscribe(productos => { 
+        // Agregar id_bodega o id_sucursal a los filtros si están disponibles en la venta
+        if (this.venta?.id_bodega && !this.filtros.id_bodega) {
+            this.filtros.id_bodega = this.venta.id_bodega;
+        } else if (this.venta?.id_sucursal && !this.filtros.id_sucursal) {
+            this.filtros.id_sucursal = this.venta.id_sucursal;
+        }
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
             this.productosData = productos;
             this.loading = false;
             this.cdr.markForCheck();
@@ -132,7 +145,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         this.detalle.precios.unshift({
                 'precio' : this.detalle.precio
             });
-        
+
         if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
             this.detalle.costo          = parseFloat(producto.costo_promedio);
         }else{
@@ -147,6 +160,8 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
         this.detalle.descuento_porcentaje      = 0;
+        this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
+        this.detalle.lote_id = null;
         console.log(this.detalle);
         this.onSubmit();
     }
@@ -164,21 +179,35 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
             this.detalle.precios.unshift({
                     'precio' : this.detalle.precio
                 });
-            
+
             if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
                 this.detalle.costo          = parseFloat(producto.costo_promedio);
             }else{
                 this.detalle.costo          = parseFloat(producto.costo);
             }
             producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
-            if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
-                this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
-            }else{
+
+            // Si el producto tiene inventario por lotes, calcular stock de lotes
+            if (producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0) {
+                // Filtrar lotes por sucursal (necesitamos obtener las bodegas de la sucursal)
+                // Por ahora, si hay id_bodega en la venta, filtrar por bodega, sino usar todos los lotes
+                let lotesFiltrados = producto.lotes;
+                if (this.venta.id_bodega) {
+                    lotesFiltrados = producto.lotes.filter((lote: any) => lote.id_bodega == this.venta.id_bodega);
+                }
+                // Calcular stock total de lotes
+                const stockLotes = lotesFiltrados.reduce((sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0);
+                this.detalle.stock = stockLotes;
+            } else if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
+                this.detalle.stock = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+            } else {
                 this.detalle.stock = null;
             }
             this.detalle.cantidad       = 1;
             this.detalle.descuento      = 0;
             this.detalle.descuento_porcentaje      = 0;
+            this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
+            this.detalle.lote_id = null;
             this.detalles.unshift(this.detalle);
         }else{
             // radio.checked = false;
@@ -202,7 +231,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
     }
 
     agregarDetalles(){
-        for (let i = 0; i < this.detalles.length; i++) { 
+        for (let i = 0; i < this.detalles.length; i++) {
             this.productoSelect.emit(this.detalles[i]);
         }
 

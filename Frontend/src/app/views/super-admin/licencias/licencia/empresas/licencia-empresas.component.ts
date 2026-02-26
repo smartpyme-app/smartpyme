@@ -14,7 +14,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './licencia-empresas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+
 })
 export class LicenciaEmpresasComponent extends BaseCrudComponent<any> implements OnInit {
 

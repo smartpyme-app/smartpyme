@@ -569,94 +569,45 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     this.onSubmit();
   }
 
-  // Guardar compra
-  // public onSubmit() {
-  //   this.saving = true;
+    // Guardar compra
+        public onSubmit() {
+            // Validar que productos con lotes tengan lote_id
+            if (this.compra.detalles && this.compra.detalles.length > 0) {
+                const lotesActivo = this.apiService.isLotesActivo();
+                if (lotesActivo) {
+                    for (let detalle of this.compra.detalles) {
+                        if (detalle.inventario_por_lotes && !detalle.lote_id) {
+                            this.alertService.error(`El producto "${detalle.nombre_producto}" requiere seleccionar o crear un lote antes de guardar la compra.`);
+                            this.saving = false;
+                            return;
+                        }
+                    }
+                }
+            }
 
-  //   if (this.duplicarcompra) {
-  //     this.compra.recurrente = false;
-  //   }
+            this.saving = true;
+            if(this.duplicarcompra){
+                this.compra.recurrente = false;
+            }
+            this.apiService.store('compra/facturacion', this.compra).subscribe(compra => {
+                this.saving = false;
 
-  //   this.apiService.store('compra/facturacion', this.compra).subscribe(
-  //     compra => {
-  //       this.saving = false;
+                if(this.compra.cotizacion == 1){
+                    this.router.navigate(['/ordenes-de-compras']);
+                    this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
+                }else{
+                    this.router.navigate(['/compras']);
+                    this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+                }
 
-  //       // Verificar si la compra está pendiente de autorización
-  //       if (compra.estado === 'Pendiente Autorización') {
-  //         this.alertService.success(
-  //           'Compra pendiente de autorización',
-  //           'La compra se ha creado y está esperando aprobación. Recibirá una notificación cuando sea autorizada.'
-  //         );
-  //         this.router.navigate(['/compras']);
-  //         return;
-  //       }
+                // Si es cotización
+                if(this.facturarCotizacion){
+                    this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
+                        compra.estado = 'Aceptada';
+                        this.apiService.store('compra', compra).subscribe(compra => {
 
-  //       // Flujo normal para compras aprobadas
-  //       if (this.compra.cotizacion == 1) {
-  //         this.router.navigate(['/ordenes-de-compras']);
-  //         this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
-  //       } else {
-  //         this.router.navigate(['/compras']);
-  //         this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
-
-  //         // Generar partida contable solo para compras aprobadas
-  //         if (this.apiService.auth_user().empresa.generar_partidas == 'Auto') {
-  //           this.apiService.store('contabilidad/partida/compra', compra).subscribe(
-  //             compra => {},
-  //             error => { this.alertService.error(error); }
-  //           );
-  //         }
-  //       }
-  //     },
-  //     error => {
-  //       this.saving = false;
-
-  //       // Error 403 = primera solicitud de autorización (abre modal)
-  //       if (error.status === 403 && error.error?.requires_authorization) {
-  //         // El interceptor ya abrió el modal
-  //         // No hacer nada más aquí
-  //         return;
-  //       }
-
-  //       this.alertService.error(error);
-  //     }
-  //   );
-  // }
-
-  // Guardar compra
-  public onSubmit() {
-    this.saving = true;
-
-    if (this.duplicarcompra) {
-      this.compra.recurrente = false;
-    }
-
-    this.apiService.store('compra/facturacion', this.compra)
-      .pipe(this.untilDestroyed())
-      .subscribe(
-      compra => {
-        this.saving = false;
-
-        // Verificar si la compra está pendiente de autorización
-        if (compra.estado === 'Pendiente Autorización') {
-          this.alertService.success(
-            'Compra pendiente de autorización',
-            'La compra se ha creado y está esperando aprobación. Recibirá una notificación cuando sea autorizada.'
-          );
-          this.router.navigate(['/compras']);
-          this.cdr.markForCheck();
-          return;
-        }
-
-        // Flujo normal para compras aprobadas
-        if (this.compra.cotizacion == 1) {
-          this.router.navigate(['/ordenes-de-compras']);
-          this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
-          this.cdr.markForCheck();
-        } else {
-          this.router.navigate(['/compras']);
-          this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
-          this.cdr.markForCheck();
+                        },error => {this.alertService.error(error); this.saving = false; });
+                    },error => {this.alertService.error(error); this.saving = false; });
 
           // Generar partida contable solo para compras aprobadas
           if (this.apiService.auth_user().empresa.generar_partidas == 'Auto') {

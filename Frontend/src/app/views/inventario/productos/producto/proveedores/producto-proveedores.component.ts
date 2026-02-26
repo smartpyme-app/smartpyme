@@ -26,10 +26,10 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
     public buscador:string = '';
 
     constructor(
-        private apiService: ApiService, 
+        protected apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
-        private route: ActivatedRoute, 
+        private route: ActivatedRoute,
         private router: Router,
         private cdr: ChangeDetectorRef
     ){
@@ -83,14 +83,14 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
     public delete(proveedor:any) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('producto/proveedor/', proveedor.id).pipe(this.untilDestroyed()).subscribe(data => {
-                for (let i = 0; i < this.producto.proveedores.length; i++) { 
+                for (let i = 0; i < this.producto.proveedores.length; i++) {
                     if (this.producto.proveedores[i].id == data.id )
                         this.producto.proveedores.splice(i, 1);
                 }
                 this.alertService.success('Proveedor eliminado', 'El proveedor fue eliminado exitosamente.');
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
-                   
+
         }
 
     }

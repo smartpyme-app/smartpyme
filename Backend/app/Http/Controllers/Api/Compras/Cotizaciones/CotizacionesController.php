@@ -9,6 +9,7 @@ use App\Models\Registros\Cliente;
 use App\Models\Compras\Compra as Cotizacion;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Detalle;
+// Usamos app('dompdf.wrapper') para evitar errores de Facade en producción
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
@@ -61,13 +62,13 @@ class CotizacionesController extends Controller
         if ($request->usuario_id) {
             $request->merge(['id_usuario' => $request->usuario_id]);
         }
-        
+
         // Establecer paginación por defecto alta para mantener compatibilidad
         // con consumidores que esperan recibir todos los resultados filtrados
         if (!$request->has('paginate')) {
             $request->merge(['paginate' => 100000]);
         }
-        
+
         $cotizaciones = $this->ordenCompraService->listarOrdenes($request);
         return Response()->json($cotizaciones, 200);
     }
@@ -76,7 +77,7 @@ class CotizacionesController extends Controller
     {
         // VERIFICAR AUTORIZACIÓN por niveles de monto
         $validacion = $this->ordenCompraService->validarAutorizacionRequerida($request);
-        
+
         if ($validacion['requires_authorization']) {
             return response()->json($validacion, 403);
         }
@@ -87,7 +88,7 @@ class CotizacionesController extends Controller
 
         try {
             $cotizacion = $this->ordenCompraService->crearOActualizarOrden($request);
-            
+
             DB::commit();
             return Response()->json($cotizacion, 200);
         } catch (\Exception $e) {
@@ -165,7 +166,7 @@ class CotizacionesController extends Controller
             $compra->load('detalles.producto');
         }
 
-        $pdf = PDF::loadView('reportes.facturacion.orden-de-compra', compact('compra'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.orden-de-compra', compact('compra'));
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('orden-de-compra-' . $compra->id . '.pdf');
     }
@@ -206,7 +207,7 @@ class CotizacionesController extends Controller
     protected function handlePendingAuthorization($data, $authorization)
     {
         $resultado = $this->ordenCompraService->handlePendingAuthorization($data, $authorization);
-        
+
         if ($resultado['ok']) {
             return response()->json($resultado);
         } else {

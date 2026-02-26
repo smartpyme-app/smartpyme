@@ -178,7 +178,7 @@ class SalidasController extends Controller
         $salida = Salida::where('id', $id)->with('detalles')->firstOrFail();
         $empresa = Empresa::find($salida->id_empresa);
 
-        $reportes = \PDF::loadView('reportes.inventario.salida', compact('salida', 'empresa'));
+        $reportes = app('dompdf.wrapper')->loadView('reportes.inventario.salida', compact('salida', 'empresa'));
         return $reportes->stream();
 
     }

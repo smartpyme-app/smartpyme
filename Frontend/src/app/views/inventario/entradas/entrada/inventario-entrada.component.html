@@ -25,7 +25,7 @@
                 <input type="text" class="form-control" [(ngModel)]="entrada.concepto" name="concepto" placeholder="Concepto" required>
             </div>
         </div>
-                    
+
         <!-- Tabla -->
         <div class="row">
             <div class="col-md-12">
@@ -53,11 +53,24 @@
                                 @for (detalle of entrada?.detalles; track detalle.id_producto || $index) {
                                     <tr>
                                         <td>
-                                            <a tooltip="Eliminar" class="btn btn-default" (click)="eliminarDetalle(detalle)"><i class="fa fa-trash"></i>
+                                        <div class="d-flex gap-1">
+                                            <a tooltip="Eliminar" class="btn btn-default" (click)="eliminarDetalle(detalle)"><i class="fa fa-trash"></i></a>
+                                            <a *ngIf="detalle.inventario_por_lotes && isLotesActivo()"
+                                               tooltip="Seleccionar lote"
+                                               class="btn btn-sm"
+                                               [ngClass]="{'btn-warning': !detalle.lote_id, 'btn-success': detalle.lote_id}"
+                                               (click)="abrirModalLote(detalle)">
+                                                <i class="fa fa-box"></i>
                                             </a>
-                                        </td>
+                                        </div>
+                                    </td>
                                         <td class="text-center">{{ $index + 1 }}</td>
-                                        <td>{{ detalle.nombre_producto }}</td>
+                                        <td>
+                                          {{ detalle.nombre_producto }}
+                                          @if (detalle.lote) {
+                                            <span class="badge bg-info ms-2">{{ detalle.lote.numero_lote }}</span>
+                                          }
+                                        </td>
                                         <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.cantidad" class="form-control text-center"></td>
                                         <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.costo" class="form-control text-center"></td>
                                         <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
@@ -79,3 +92,115 @@
         </button>
     </div>
 </div>
+
+<!-- Modal para seleccionar/crear lote -->
+<ng-template #mlote>
+    <div class="modal-header">
+        <h4 class="modal-title">Gestión de Lote - {{ detalle.nombre_producto }}</h4>
+        <button type="button" class="btn-close" (click)="cerrarModalLote()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="loteOption" id="seleccionarLote"
+                           [checked]="!crearNuevoLote" (change)="cambiarModoLote(false)">
+                    <label class="btn btn-outline-primary" for="seleccionarLote">
+                        <i class="fa fa-list"></i> Seleccionar lote existente
+                    </label>
+
+                    <input type="radio" class="btn-check" name="loteOption" id="crearLote"
+                           [checked]="crearNuevoLote" (change)="cambiarModoLote(true)">
+                    <label class="btn btn-outline-primary" for="crearLote">
+                        <i class="fa fa-plus"></i> Crear nuevo lote
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seleccionar lote existente -->
+        <div *ngIf="!crearNuevoLote">
+            <h6 class="mb-3">Seleccionar lote existente</h6>
+            <div class="table-responsive" style="max-height: 300px;">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Stock</th>
+                            <th>Fabricación</th>
+                            <th>Vencimiento</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngIf="loading">
+                            <td colspan="5" class="text-center">Cargando...</td>
+                        </tr>
+                        <tr *ngIf="!loading && lotes.length == 0">
+                            <td colspan="5" class="text-center text-muted">
+                                <p class="mb-2">No hay lotes disponibles para este producto en esta bodega.</p>
+                                <small>Puede crear un nuevo lote usando la opción de arriba.</small>
+                            </td>
+                        </tr>
+                        <tr *ngFor="let lote of lotes">
+                            <td><strong>{{ lote.numero_lote || 'Sin número' }}</strong></td>
+                            <td>{{ lote.stock | number:'1.2' }}</td>
+                            <td>{{ lote.fecha_fabricacion ? (lote.fecha_fabricacion | date:'dd/MM/yyyy') : 'N/A' }}</td>
+                            <td>
+                                <span *ngIf="lote.fecha_vencimiento">
+                                    {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }}
+                                    <span *ngIf="isLoteVencido(lote)" class="badge bg-danger ms-1">Vencido</span>
+                                </span>
+                                <span *ngIf="!lote.fecha_vencimiento" class="text-muted">Sin vencimiento</span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" (click)="seleccionarLote(lote)">
+                                    <i class="fa fa-check"></i> Seleccionar
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Crear nuevo lote -->
+        <div *ngIf="crearNuevoLote">
+            <h6 class="mb-3">Crear nuevo lote</h6>
+            <form (ngSubmit)="crearLote()">
+                <div class="form-group mb-3">
+                    <label>Número de lote <span class="text-danger">*</span></label>
+                    <input type="text" [(ngModel)]="nuevoLote.numero_lote" class="form-control"
+                           name="numero_lote" placeholder="Ej: LOTE-001" required>
+                    <small class="text-muted">Identificador único del lote</small>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-6 mb-3">
+                        <label>Fecha de fabricación</label>
+                        <input type="date" [(ngModel)]="nuevoLote.fecha_fabricacion" class="form-control"
+                               name="fecha_fabricacion">
+                    </div>
+                    <div class="form-group col-md-6 mb-3">
+                        <label>Fecha de vencimiento</label>
+                        <input type="date" [(ngModel)]="nuevoLote.fecha_vencimiento" class="form-control"
+                               name="fecha_vencimiento">
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Observaciones</label>
+                    <textarea [(ngModel)]="nuevoLote.observaciones" class="form-control"
+                              name="observaciones" rows="2" placeholder="Notas adicionales sobre el lote"></textarea>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary" [disabled]="loading || !nuevoLote.numero_lote">
+                        <span *ngIf="!loading"><i class="fa fa-save"></i> Crear lote</span>
+                        <span *ngIf="loading">Creando...</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" (click)="cambiarModoLote(false)">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</ng-template>

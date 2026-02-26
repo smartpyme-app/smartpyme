@@ -47,15 +47,15 @@
         </div>
 
         <div class="form-group col-sm-4">
-            <label for="registro">* NRC:</label>
+            <label for="registro">* Registro tributario:</label>
             <input type="text" class="form-control" [(ngModel)]="proveedor.registro" name="registro" placeholder="xxxx-x"> 
         </div>
         <div class="form-group col-xs-6 col-sm-4">
-            <label for="nit">NIT:</label>
+            <label for="nit">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT:' : 'Identificación fiscal:' }}</label>
             <input type="text" class="form-control" [(ngModel)]="proveedor.nit" name="nit" [dropSpecialCharacters]="false" mask='0000-000000-000-0' placeholder="xxxx-xxxxxx-xxx-x">
         </div>
         <div class="form-group col-xs-6 col-sm-4">
-            <label for="nit">DUI:</label>
+            <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI:' : 'Número de identificación:' }}</label>
             <input type="text" class="form-control" [(ngModel)]="proveedor.dui" name="dui" [dropSpecialCharacters]="false" mask='00000000-0' placeholder="xxxxxxx-x">
         </div>
         <div class="form-group col-xs-6 col-sm-4">

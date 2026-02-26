@@ -11,7 +11,7 @@ use App\Http\Requests\Recibos\StoreReciboRequest;
 
 class RecibosController extends Controller
 {
-    
+
     public function store(StoreReciboRequest $request){
 
         $recibo = new Recibo();
@@ -35,8 +35,8 @@ class RecibosController extends Controller
 
         $venta = Venta::where('id', $recibo->id_venta)->first();
 
-        $pdf = PDF::loadView('reportes.recibo', compact('venta', 'recibo'));
-        $pdf->setPaper('US Letter', 'portrait');  
+        $pdf = app('dompdf.wrapper')->loadView('reportes.recibo', compact('venta', 'recibo'));
+        $pdf->setPaper('US Letter', 'portrait');
 
         return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');
     }

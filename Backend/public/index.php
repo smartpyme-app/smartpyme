@@ -1,5 +1,20 @@
 <?php
 
+// Configuración PHP para evitar errores de PCRE JIT
+ini_set('pcre.jit', '0');
+ini_set('pcre.backtrack_limit', '1000000');
+ini_set('pcre.recursion_limit', '1000000');
+
+// Manejar errores de PCRE JIT específicamente
+set_error_handler(function ($severity, $message, $file, $line) {
+    if (strpos($message, 'preg_replace(): Allocation of JIT memory failed') !== false ||
+        strpos($message, 'PCRE JIT will be disabled') !== false) {
+        // Silenciar estos errores específicos y continuar
+        return true;
+    }
+    return false; // Dejar que otros errores se manejen normalmente
+});
+
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 

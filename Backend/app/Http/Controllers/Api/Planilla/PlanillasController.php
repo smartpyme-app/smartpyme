@@ -15,7 +15,6 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use PDF;
 use App\Imports\PlanillasImport;
 use App\Mail\BoletaPagoMailable;
 use App\Models\Compras\Gastos\Categoria;
@@ -1199,10 +1198,10 @@ class PlanillasController extends Controller
         try {
             $planilla = Planilla::with(['detalles' => function($query) {
                     $query->where('estado', '!=', 0);
-                }, 'detalles.empleado', 'empresa'])
+                }, 'detalles.empleado', 'empresa.currency'])
                 ->findOrFail($id);
 
-            $pdf = PDF::loadView('pdf.planilla-detalle', [
+            $pdf = app('dompdf.wrapper')->loadView('pdf.planilla-detalle', [
                 'planilla' => $planilla,
                 'detalles' => $planilla->detalles,
                 'empresa' => $planilla->empresa
@@ -1421,7 +1420,7 @@ class PlanillasController extends Controller
                 }, 'detalles.empleado', 'empresa', 'sucursal'])
                 ->findOrFail($id);
 
-            $pdf = PDF::loadView('pdf.boletas-pago', [
+            $pdf = app('dompdf.wrapper')->loadView('pdf.boletas-pago', [
                 'planilla' => $planilla,
                 'empresa' => $planilla->empresa,
                 'sucursal' => $planilla->sucursal,
@@ -1532,7 +1531,7 @@ class PlanillasController extends Controller
                             'referencia' => $planilla->codigo,
                             'concepto' => "Salario neto - {$nombreEmpleado}",
                             'tipo' => 'Sueldos y Salarios',
-                            'estado' => 'Pagado',
+                            'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                             'forma_pago' => 'Transferencia',
                             'total' => $sueldoNeto,
                             'id_proveedor' => $proveedor->id,
@@ -1561,7 +1560,7 @@ class PlanillasController extends Controller
                     'referencia' => $planilla->codigo,
                     'concepto' => "Aporte patronal ISSS - Planilla {$planilla->codigo}",
                     'tipo' => 'ISSS Patronal',
-                    'estado' => 'Pagado',
+                    'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                     'forma_pago' => 'Transferencia',
                     'total' => $totalISSS_Patronal,
                     'id_proveedor' => $proveedor->id,
@@ -1588,7 +1587,7 @@ class PlanillasController extends Controller
                     'referencia' => $planilla->codigo,
                     'concepto' => "Aporte patronal AFP - Planilla {$planilla->codigo}",
                     'tipo' => 'AFP Patronal',
-                    'estado' => 'Pagado',
+                    'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                     'forma_pago' => 'Transferencia',
                     'total' => $totalAFP_Patronal,
                     'id_proveedor' => $proveedor->id,
@@ -1640,7 +1639,7 @@ class PlanillasController extends Controller
                 $detalle->otros_descuentos;
 
             // Generar el PDF
-            $pdf = PDF::loadView('pdf.boleta-individual', [
+            $pdf = app('dompdf.wrapper')->loadView('pdf.boleta-individual', [
                 'detalle' => $detalle,
                 'totalIngresos' => $totalIngresos,
                 'totalDeducciones' => $totalDeducciones,

@@ -85,7 +85,7 @@ class CuentasController extends Controller
         $cuenta->al = $al;
 
 
-        $pdf = PDF::loadView('reportes.Contabilidad.libro-de-bancos', compact('cuenta'));
+        $pdf = PDF::loadView('reportes.contabilidad.libro-de-bancos', compact('cuenta'));
         $pdf->setPaper('US Letter', 'portrait');
 
         return $pdf->stream($cuenta->nombre_banco . '-libro' . '.pdf');

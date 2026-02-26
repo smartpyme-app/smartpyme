@@ -47,10 +47,11 @@ class GenerarPlantillasCommand extends Command
         
         
         $encabezados = [
-            'nombre_comercial', 'nombre', 'NIT', 'NRC', 'cod_giro', 
-            'cod_departamento', 'cod_municipio', 'direccion', 'telefono', 
-            'correo', 'fecha', 'descripcion', 'tipo_item', 'forma_pago', 
-            'no_sujeta', 'exenta', 'gravada', 'subtotal', 'iva', 
+            'correlativo', 'estado_factura', 'tipo_documento_venta',
+            'nombre_comercial', 'nombre', 'nit', 'nrc', 'cod_giro',
+            'cod_departamento', 'cod_municipio', 'direccion', 'telefono',
+            'correo', 'fecha', 'descripcion', 'tipo_item', 'forma_pago',
+            'no_sujeta', 'exenta', 'gravada', 'subtotal', 'iva',
             'iva_retenido', 'total', 'condicion', 'fecha_pago'
         ];
         
@@ -83,18 +84,21 @@ class GenerarPlantillasCommand extends Command
         
        
         $encabezados = [
-            'nombre', 'tipo_documento', 'num_documento', 'cod_departamento', 'cod_municipio',
+            'correlativo', 'estado_factura', 'tipo_documento_venta',
+            'nombre', 'tipo_documento', 'num_documento',
             'direccion', 'telefono', 'correo', 'fecha', 'descripcion',
             'tipo_item', 'forma_pago', 'exenta', 'gravada', 'subtotal',
             'iva', 'iva_retenido', 'total', 'condicion', 'fecha_pago'
         ];
         
-       
+        
         $this->escribirEncabezados($sheet, $encabezados);
         
-       
+        // Datos de prueba (sin cod_departamento ni cod_municipio); Ticket = Factura consumidor final
         $ejemplos = [
-
+            [100, 'Pagada', 'Factura', 'Juan Perez', 'DUI', '05027470-7', 'Av. Principal 123, San Salvador', '2222-3333', 'ventas@esperanza.com', '2025-02-03', 'Producto A - Venta al por mayor', 'Producto', 'Tarjeta de crédito/débito', 0, 100, 100, 13, 0, 113, 'Contado', '2025-03-15'],
+            [1, 'Pagada', 'Ticket', 'Jose Perez', 'NIT', '05027470-8', 'Av. Principal 456, San Salvador', '2222-3334', 'ventas@esperanza.com', '2025-02-03', 'Producto B - Accesorio', 'Producto', 'Tarjeta de crédito/débito', 0, 100, 100, 13, 0, 113, 'Contado', '2025-03-15'],
+            [101, 'Pendiente', 'Factura', 'Rafael Perez', 'DUI', '05027470-9', 'Av. Principal 789, San Salvador', '2222-3335', 'ventas@esperanza.com', '2025-02-03', 'Servicio de entrega', 'Servicio', 'Tarjeta de crédito/débito', 0, 100, 100, 13, 0, 113, 'Contado', '2025-03-15'],
         ];
         
         $this->escribirEjemplos($sheet, $ejemplos, 2);
@@ -147,6 +151,8 @@ class GenerarPlantillasCommand extends Command
     protected function agregarValidaciones($sheet, $encabezados)
     {
         // Encontrar índice de las columnas que necesitan validación
+        $estadoFacturaIndex = array_search('estado_factura', $encabezados);
+        $tipoDocumentoVentaIndex = array_search('tipo_documento_venta', $encabezados);
         $tipoDocumentoIndex = array_search('tipo_documento', $encabezados);
         $tipoItemIndex = array_search('tipo_item', $encabezados);
         $formaPagoIndex = array_search('forma_pago', $encabezados);
@@ -155,12 +161,32 @@ class GenerarPlantillasCommand extends Command
         // Configurar la validación para 100 filas (ajustar según necesidad)
         $numFilas = 100;
         
-        // Agregar lista desplegable para tipo_documento si existe
+        // Agregar lista desplegable para estado_factura si existe
+        if ($estadoFacturaIndex !== false) {
+            $columna = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($estadoFacturaIndex + 1);
+            $this->agregarListaDesplegable(
+                $sheet,
+                $columna . '2:' . $columna . ($numFilas + 1),
+                '"Pagada,Pendiente,Anulada"'
+            );
+        }
+
+        // Agregar lista desplegable para tipo_documento_venta si existe
+        if ($tipoDocumentoVentaIndex !== false) {
+            $columna = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($tipoDocumentoVentaIndex + 1);
+            $this->agregarListaDesplegable(
+                $sheet,
+                $columna . '2:' . $columna . ($numFilas + 1),
+                '"Factura,Ticket,Crédito Fiscal,Factura de exportación"'
+            );
+        }
+
+        // Agregar lista desplegable para tipo_documento (cliente) si existe
         if ($tipoDocumentoIndex !== false) {
             $columna = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($tipoDocumentoIndex + 1);
             $this->agregarListaDesplegable(
-                $sheet, 
-                $columna . '2:' . $columna . ($numFilas + 1), 
+                $sheet,
+                $columna . '2:' . $columna . ($numFilas + 1),
                 '"DUI,NIT,Pasaporte,Carnet de residente,Otro"'
             );
         }
@@ -233,38 +259,44 @@ class GenerarPlantillasCommand extends Command
             ['A7', '- Utilice las listas desplegables para seleccionar valores en tipo de documento, tipo de ítem, forma de pago y condición.'],
             ['A9', '2. CAMPOS OBLIGATORIOS:'],
         ];
-        
+        $filas[] = ['A10', '- correlativo: Número de factura (opcional; si se omite se asigna automáticamente).'];
+        $filas[] = ['A11', '- estado_factura: Pagada, Pendiente o Anulada.'];
+        $filas[] = ['A12', '- tipo_documento_venta: Factura, Ticket (consumidor final) o Crédito Fiscal.'];
         // Campos obligatorios específicos para cada tipo
         if ($tipo == 'credito_fiscal') {
-            $filas[] = ['A10', '- nombre_comercial: Nombre comercial del cliente.'];
-            $filas[] = ['A11', '- nombre: Nombre legal del cliente.'];
-            $filas[] = ['A12', '- NIT: NIT del cliente (formato correcto).'];
-            $filas[] = ['A13', '- fecha: Fecha de la venta en formato YYYY-MM-DD.'];
-            $filas[] = ['A14', '- descripcion: Descripción del producto o servicio.'];
-            $filas[] = ['A15', '- total: Monto total de la venta.'];
+            $filas[] = ['A13', '- nombre_comercial: Nombre comercial del cliente.'];
+            $filas[] = ['A14', '- nombre: Nombre legal del cliente.'];
+            $filas[] = ['A15', '- nit: NIT del cliente (formato correcto).'];
+            $filas[] = ['A16', '- fecha: Fecha de la venta en formato YYYY-MM-DD.'];
+            $filas[] = ['A17', '- descripcion: Descripción del producto o servicio.'];
+            $filas[] = ['A18', '- total: Monto total de la venta.'];
         } else {
-            $filas[] = ['A10', '- nombre: Nombre del cliente (o "Consumidor Final").'];
-            $filas[] = ['A11', '- tipo_documento: Seleccione de la lista desplegable (DUI, NIT, Pasaporte, etc.)'];
-            $filas[] = ['A12', '- fecha: Fecha de la venta en formato YYYY-MM-DD.'];
-            $filas[] = ['A13', '- descripcion: Descripción del producto o servicio.'];
-            $filas[] = ['A14', '- total: Monto total de la venta.'];
+            $filas[] = ['A13', '- nombre: Nombre del cliente (o "Consumidor Final").'];
+            $filas[] = ['A14', '- tipo_documento: Seleccione de la lista desplegable (DUI, NIT, Pasaporte, etc.)'];
+            $filas[] = ['A15', '- fecha: Fecha de la venta en formato YYYY-MM-DD.'];
+            $filas[] = ['A16', '- descripcion: Descripción del producto o servicio.'];
+            $filas[] = ['A17', '- total: Monto total de la venta.'];
         }
         
        
-        $filas[] = ['A17', '3. CÓDIGOS DE DEPARTAMENTOS Y MUNICIPIOS:'];
-        $filas[] = ['A18', '- Los códigos de departamento deben corresponder a los registrados en el sistema (ej. 6 para San Salvador).'];
-        $filas[] = ['A19', '- Los códigos de municipio deben corresponder a los registrados en el sistema (ej. 24 para San Salvador).'];
-        
-        $filas[] = ['A21', '4. TIPOS DE ÍTEM:'];
-        $filas[] = ['A22', '- Producto: Para artículos físicos.'];
-        $filas[] = ['A23', '- Servicio: Para servicios prestados.'];
-        
-        $filas[] = ['A25', '5. FORMAS DE PAGO:'];
-        $filas[] = ['A26', '- Efectivo, Tarjeta de crédito/débito'];
-        
-        $filas[] = ['A28', '6. CONDICIÓN:'];
-        $filas[] = ['A29', '- Contado: Pago inmediato.'];
-        $filas[] = ['A30', '- Crédito: Pago diferido (requiere fecha_pago).'];
+        if ($tipo == 'credito_fiscal') {
+            $filas[] = ['A20', '3. CÓDIGOS DE DEPARTAMENTOS Y MUNICIPIOS (opcionales):'];
+            $filas[] = ['A21', '- Los códigos de departamento y municipio deben corresponder a los registrados en el sistema.'];
+        } else {
+            $filas[] = ['A20', '3. UBICACIÓN:'];
+            $filas[] = ['A21', '- No es necesario cod_departamento ni cod_municipio en esta plantilla.'];
+        }
+
+        $filas[] = ['A24', '4. TIPOS DE ÍTEM:'];
+        $filas[] = ['A25', '- Producto: Para artículos físicos.'];
+        $filas[] = ['A26', '- Servicio: Para servicios prestados.'];
+
+        $filas[] = ['A28', '5. FORMAS DE PAGO:'];
+        $filas[] = ['A29', '- Efectivo, Tarjeta de crédito/débito'];
+
+        $filas[] = ['A31', '6. CONDICIÓN:'];
+        $filas[] = ['A32', '- Contado: Pago inmediato.'];
+        $filas[] = ['A33', '- Crédito: Pago diferido (requiere fecha_pago).'];
         
         foreach ($filas as $fila) {
             $instrucciones->setCellValue($fila[0], $fila[1]);

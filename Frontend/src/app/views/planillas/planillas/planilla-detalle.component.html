@@ -28,7 +28,7 @@
         <div class="card-body">
           <h6 class="card-title">Total Ingresos</h6>
           <h3 class="mb-0">
-            ${{ planilla.total_salarios | number : "1.2-2" }}
+            {{ planilla.total_salarios | currency }}
           </h3>
         </div>
       </div>
@@ -38,7 +38,7 @@
         <div class="card-body">
           <h6 class="card-title">Total Deducciones</h6>
           <h3 class="mb-0">
-            ${{ planilla.total_deducciones | number : "1.2-2" }}
+            {{ planilla.total_deducciones | currency }}
           </h3>
         </div>
       </div>
@@ -47,7 +47,7 @@
       <div class="card bg-success text-white">
         <div class="card-body">
           <h6 class="card-title">Total Neto</h6>
-          <h3 class="mb-0">${{ planilla.total_neto | number : "1.2-2" }}</h3>
+          <h3 class="mb-0">{{ planilla.total_neto | currency }}</h3>
         </div>
       </div>
     </div>
@@ -178,31 +178,31 @@
             </td>
 
             <td class="text-end">
-              ${{ detalle.salario_base | number : "1.2-2" }}
+              {{ detalle.salario_base | currency }}
             </td>
 
             <td class="text-end">
-              ${{ detalle.salario_devengado | number : "1.2-2" }}
+              {{ detalle.salario_devengado | currency }}
             </td>
 
             <td class="text-end">
-              ${{ getIngresosAdicionales(detalle) | number : "1.2-2" }}
+              {{ getIngresosAdicionales(detalle) | currency }}
             </td>
 
             <td class="text-end">
-              ${{ detalle.total_ingresos | number : "1.2-2" }}
+              {{ detalle.total_ingresos | currency }}
             </td>
 
             <!-- Para El Salvador: columnas fijas -->
             @if (esElSalvador) {
               <td class="text-end">
-                ${{ detalle.isss_empleado | number : "1.2-2" }}
+                ${{ detalle.isss_empleado | currency }}
               </td>
               <td class="text-end">
-                ${{ detalle.afp_empleado | number : "1.2-2" }}
+                ${{ detalle.afp_empleado | currency }}
               </td>
               <td class="text-end">
-                ${{ detalle.renta | number : "1.2-2" }}
+                ${{ detalle.renta | currency }}
               </td>
             }
 
@@ -210,13 +210,13 @@
             @if (!esElSalvador) {
               @for (concepto of conceptosEmpleado; track concepto[0]) {
                 <td class="text-end">
-                  ${{ calcularConcepto(detalle, concepto[1]) | number : "1.2-2" }}
+                  {{ calcularConcepto(detalle, concepto[1]) | currency }}
                 </td>
               }
             }
 
             <td class="text-end">
-              ${{ detalle.sueldo_neto | number : "1.2-2" }}
+                {{ detalle.sueldo_neto | currency }}
             </td>
 
             <td class="text-center">
@@ -262,28 +262,28 @@
           <tr class="border-top">
             <th>Totales</th>
             <th class="text-end">
-              ${{ getTotalCampo('salario_base') | number : "1.2-2" }}
+              {{ getTotalCampo('salario_base') | currency }}
             </th>
             <th class="text-end">
-              ${{ getTotalCampo('salario_devengado') | number : "1.2-2" }}
+              {{ getTotalCampo('salario_devengado') | currency }}
             </th>
             <th class="text-end">
-              ${{ (planilla.bonificaciones_total + planilla.comisiones_total + planilla.otros_ingresos_total) | number : "1.2-2" }}
+              {{ (planilla.bonificaciones_total + planilla.comisiones_total + planilla.otros_ingresos_total) | currency }}
             </th>
             <th class="text-end">
-              ${{ getTotalCampoReal('total_ingresos') | number : '1.2-2' }}
+              {{ getTotalCampoReal('total_ingresos') | currency }}
             </th>
 
             <!-- Columnas fijas si es El Salvador -->
             @if (esElSalvador) {
               <th class="text-end">
-                ${{ getTotalCampoReal('isss_empleado') | number : '1.2-2' }}
+                ${{ getTotalCampoReal('isss_empleado') | currency }}
               </th>
               <th class="text-end">
-                ${{ getTotalCampoReal('afp_empleado') | number : '1.2-2' }}
+                ${{ getTotalCampoReal('afp_empleado') | currency }}
               </th>
               <th class="text-end">
-                ${{ getTotalCampoReal('renta') | number : '1.2-2' }}
+                ${{ getTotalCampoReal('renta') | currency }}
               </th>
             }
 
@@ -291,13 +291,13 @@
             @if (!esElSalvador) {
               @for (concepto of conceptosEmpleado; track concepto[0]) {
                 <th class="text-end">
-                  ${{ getTotalConcepto(concepto[0]) | number : '1.2-2' }}
+                {{ getTotalConcepto(concepto[0]) | currency }}
                 </th>
               }
             }
 
             <th class="text-end">
-              ${{ getTotalCampoReal('sueldo_neto') | number : "1.2-2" }}
+              {{ getTotalCampoReal('sueldo_neto') | currency }}
             </th>
             <th></th>
           </tr>
@@ -325,7 +325,7 @@
           <div class="card-body">
             <h6 class="card-title">Total ISSS Patronal</h6>
             <h3 class="mb-0">
-              ${{ descuentosPatronales.resumen?.total_isss_patronal | number : "1.2-2" }}
+              {{ descuentosPatronales.resumen?.total_isss_patronal | currency }}
             </h3>
             <small>7.5% del salario</small>
           </div>
@@ -336,7 +336,7 @@
           <div class="card-body">
             <h6 class="card-title">Total AFP Patronal</h6>
             <h3 class="mb-0">
-              ${{ descuentosPatronales.resumen?.total_afp_patronal | number : "1.2-2" }}
+              {{ descuentosPatronales.resumen?.total_afp_patronal | currency }}
             </h3>
             <small>8.75% del salario</small>
           </div>
@@ -347,7 +347,7 @@
           <div class="card-body">
             <h6 class="card-title">Total Descuentos Patronales</h6>
             <h3 class="mb-0">
-              ${{ getTotalDescuentosPatronales() | number : "1.2-2" }}
+                {{ getTotalDescuentosPatronales() | currency }}
             </h3>
             <small>ISSS + AFP Patronal</small>
           </div>
@@ -398,32 +398,32 @@
             </td>
 
             <td class="text-end">
-              ${{ detalle.salario_base | number : "1.2-2" }}
+              {{ detalle.salario_base | currency }}
             </td>
             <td class="text-end">
-              ${{ detalle.salario_devengado | number : "1.2-2" }}
+              {{ detalle.salario_devengado | currency }}
             </td>
 
             <!-- ✅ Aportes patronales para El Salvador -->
             @if (esElSalvador) {
-              <td class="text-end">$ {{ detalle.isss_patronal | number : '1.2-2' }}</td>
-              <td class="text-end">$ {{ detalle.afp_patronal | number : '1.2-2' }}</td>
+              <td class="text-end">{{ detalle.isss_patronal | currency }}</td>
+              <td class="text-end">{{ detalle.afp_patronal | currency }}</td>
             } @else {
               @for (concepto of conceptosPatronales; track concepto[0]) {
                 <td class="text-end">
-                  ${{ calcularConcepto(detalle, concepto[1]) | number : '1.2-2' }}
+                  ${{ calcularConcepto(detalle, concepto[1]) | currency }}
                 </td>
               }
             }
 
             <!-- Total aportes patronales -->
             <td class="text-end text-danger fw-bold">
-              ${{ getTotalAportesPatronales(detalle) | number : "1.2-2" }}
+              {{ getTotalAportesPatronales(detalle) | currency }}
             </td>
 
             <!-- Porcentaje sobre salario devengado -->
             <td class="text-end text-muted">
-              {{ (getTotalAportesPatronales(detalle) / detalle.salario_devengado * 100) | number : "1.2-2" }}%
+              {{ (getTotalAportesPatronales(detalle) / detalle.salario_devengado * 100) | number : '1.2-2' }}%
             </td>
             </tr>
           }

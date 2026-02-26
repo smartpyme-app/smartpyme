@@ -43,8 +43,31 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   public tipoAnterior = '';
   public catalogo:any = [];
   public contabilidadHabilitada: boolean = false;
+  public diasCreditoOpciones = [10, 15, 30, 45, 60];
 
   private cdr = inject(ChangeDetectorRef);
+
+  puedeEditarCreditoCliente(): boolean {
+    const tipo = this.apiService.auth_user()?.tipo || '';
+    return ['Administrador', 'Supervisor', 'Supervisor Limitado'].includes(tipo);
+  }
+
+  onHabilitaCreditoChange() {
+    if (this.cliente.habilita_credito && !this.cliente.dias_credito) {
+      const clasificacion = this.cliente.clasificacion?.toUpperCase();
+      if (clasificacion === 'A' || clasificacion === 'B') {
+        this.cliente.dias_credito = 30;
+      } else if (clasificacion === 'C') {
+        this.cliente.dias_credito = 15;
+      } else {
+        this.cliente.dias_credito = 30;
+      }
+    }
+    if (!this.cliente.habilita_credito) {
+      this.cliente.dias_credito = null;
+      this.cliente.limite_credito = null;
+    }
+  }
 
   constructor(
     public apiService: ApiService,
@@ -132,6 +155,9 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
         this.cliente.tipo = 'Persona';
         this.cliente.contactos = [];
         this.cliente.tipo_contribuyente = '';
+        this.cliente.habilita_credito = false;
+        this.cliente.dias_credito = null;
+        this.cliente.limite_credito = null;
         this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
         this.cliente.id_usuario = this.apiService.auth_user().id;
       }

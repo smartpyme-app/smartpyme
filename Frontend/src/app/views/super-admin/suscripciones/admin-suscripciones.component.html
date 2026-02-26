@@ -708,7 +708,7 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
-          <label class="form-label">NIT:</label>
+          <label class="form-label">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT:' : 'Identificación fiscal:' }}</label>
           <input
             type="text"
             class="form-control"
@@ -989,7 +989,7 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
-          <label class="form-label">NIT:</label>
+          <label class="form-label">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT:' : 'Identificación fiscal:' }}</label>
           <input
             type="text"
             class="form-control"
@@ -999,7 +999,7 @@
           />
           @if (nuevaSuscripcion.nit) {
             <small class="text-muted">
-              NIT de la empresa
+          {{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT' : 'Identificación fiscal' }} de la empresa
             </small>
           }
         </div>

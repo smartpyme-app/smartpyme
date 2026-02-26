@@ -24,11 +24,11 @@ export class ProveedorDetallesComponent extends BaseComponent implements OnInit 
     public loading = false;
     modalRef?: BsModalRef;
 
-	constructor( 
-	    protected apiService: ApiService, 
+	constructor(
+	    protected apiService: ApiService,
 	    protected alertService: AlertService,
-	    private route: ActivatedRoute, 
-	    private router: Router, 
+	    private route: ActivatedRoute,
+	    private router: Router,
 	    private modalService: BsModalService,
 	    private cdr: ChangeDetectorRef
 	) {

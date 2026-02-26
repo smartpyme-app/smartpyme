@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use App\Services\ShopifySyncCache;
+use App\Services\FidelizacionCliente\ConsumoPuntosService;
 
 class ShopifyController extends Controller
 {
@@ -615,26 +616,35 @@ class ShopifyController extends Controller
                 ], 200);
             }
 
-            // Verificar duplicados por webhook_id usando cache
+            // Verificar duplicados por webhook_id usando cache (opcional - si falla Redis/cache, continuamos)
             $webhookId = $request->header('X-Shopify-Webhook-Id');
             if ($webhookId) {
-                $cacheKey = "shopify_webhook_processed_{$webhookId}";
-                if (Cache::has($cacheKey)) {
-                    Log::warning("Webhook duplicado detectado por webhook_id", [
+                try {
+                    $cacheKey = "shopify_webhook_processed_{$webhookId}";
+                    if (Cache::has($cacheKey)) {
+                        Log::warning("Webhook duplicado detectado por webhook_id", [
+                            'shopify_order_id' => $request->id,
+                            'webhook_id' => $webhookId,
+                            'referencia_shopify' => $referenciaShopify
+                        ]);
+
+                        return response()->json([
+                            'status' => 'success',
+                            'mensaje' => 'Webhook ya procesado previamente',
+                            'duplicado' => true
+                        ], 200);
+                    }
+
+                    // Marcar webhook como procesado por 1 hora
+                    Cache::put($cacheKey, true, 3600);
+                } catch (\Throwable $e) {
+                    // Redis/cache no disponible (ej: MISCONF) - continuar sin cache
+                    // La verificación por referencia_shopify en DB previene duplicados
+                    Log::warning("Cache no disponible para verificación de webhook duplicado - continuando", [
+                        'error' => $e->getMessage(),
                         'shopify_order_id' => $request->id,
-                        'webhook_id' => $webhookId,
-                        'referencia_shopify' => $referenciaShopify
                     ]);
-
-                    return response()->json([
-                        'status' => 'success',
-                        'mensaje' => 'Webhook ya procesado previamente',
-                        'duplicado' => true
-                    ], 200);
                 }
-
-                // Marcar webhook como procesado por 1 hora
-                Cache::put($cacheKey, true, 3600);
             }
 
             DB::beginTransaction();
@@ -850,6 +860,20 @@ class ShopifyController extends Controller
                     'venta_id' => $venta->id,
                     'documento_id' => $venta->id_documento
                 ]);
+            }
+
+            // Procesar puntos de fidelización si la venta está pagada
+            if ($venta->estado == 'Pagada' && $venta->id_cliente) {
+                try {
+                    $consumoPuntosService = app(ConsumoPuntosService::class);
+                    $consumoPuntosService->procesarAcumulacionPuntos($venta);
+                } catch (\Exception $e) {
+                    Log::error('Error al procesar puntos de fidelización en Shopify', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // No se interrumpe la transacción por errores en puntos
+                }
             }
 
             DB::commit();
@@ -2028,26 +2052,34 @@ class ShopifyController extends Controller
                 ], 200);
             }
 
-            // Verificar duplicados por webhook_id usando cache
+            // Verificar duplicados por webhook_id usando cache (opcional - si falla Redis/cache, continuamos)
             $webhookId = $request->header('X-Shopify-Webhook-Id');
             if ($webhookId) {
-                $cacheKey = "shopify_webhook_processed_{$webhookId}";
-                if (Cache::has($cacheKey)) {
-                    Log::warning("Webhook duplicado detectado por webhook_id (Draft Order)", [
+                try {
+                    $cacheKey = "shopify_webhook_processed_{$webhookId}";
+                    if (Cache::has($cacheKey)) {
+                        Log::warning("Webhook duplicado detectado por webhook_id (Draft Order)", [
+                            'shopify_draft_order_id' => $request->id,
+                            'webhook_id' => $webhookId,
+                            'referencia_shopify' => $referenciaShopify
+                        ]);
+
+                        return response()->json([
+                            'status' => 'success',
+                            'mensaje' => 'Webhook ya procesado previamente',
+                            'duplicado' => true
+                        ], 200);
+                    }
+
+                    // Marcar webhook como procesado por 1 hora
+                    Cache::put($cacheKey, true, 3600);
+                } catch (\Throwable $e) {
+                    // Redis/cache no disponible (ej: MISCONF) - continuar sin cache
+                    Log::warning("Cache no disponible para verificación de webhook duplicado (Draft Order) - continuando", [
+                        'error' => $e->getMessage(),
                         'shopify_draft_order_id' => $request->id,
-                        'webhook_id' => $webhookId,
-                        'referencia_shopify' => $referenciaShopify
                     ]);
-
-                    return response()->json([
-                        'status' => 'success',
-                        'mensaje' => 'Webhook ya procesado previamente',
-                        'duplicado' => true
-                    ], 200);
                 }
-
-                // Marcar webhook como procesado por 1 hora
-                Cache::put($cacheKey, true, 3600);
             }
 
             DB::beginTransaction();

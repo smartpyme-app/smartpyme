@@ -1,101 +1,227 @@
-<div class="row page-titles mx-0 px-0 pb-2">
-    <div class="col-sm-6 p-md-0">
-        <h2 class="page-heading">Cuentas por cobrar <small class="text-muted p-2"> Listado</small></h2>
-    </div>
-    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
-            <li class="breadcrumb-item active"><a href="javascript:void(0)">Cuentas por cobrar</a></li>
-        </ol>
-    </div>
-</div>
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Cuentas por cobrar</h2>
+</section>
 
-<div class="card">
-    <div class="card-header p-2">
-        @if (cobros?.total) {
-            <span class="text-muted float-start p-2">{{ cobros?.total + ' registros' }}</span>
-        }
-
-        <form name="form" (ngSubmit)="search()" autocomplete="off">
-        <div class="input-group float-end w-50">
-            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
-            <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
-            <a tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></a>
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="cobros?.total">
+                Mostrando
+                <select name="paginate" class="form-select w-auto" (change)="filtrarCobros()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                de {{ cobros?.total + ' registros' }}
+            </span>
         </div>
-        </form>
 
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <button tooltip="Descargar Excel" (click)="descargarReporte()" [disabled]="downloading" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
+                <button tooltip="Descargar Excel por fecha de corte" (click)="openModal(mFechaCorte)" [disabled]="downloading" class="btn btn-default">
+                    <i class="fa fa-calendar"></i>
+                </button>
+                <form class="d-flex input-group flex-grow-1" name="form" (ngSubmit)="filtrarCobros()" autocomplete="off">
+                    <input type="search" name="buscador" class="form-control" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+                <button tooltip="Filtrar (F3)" (click)="openModal(mfilter)" class="btn btn-default tcla-F3">
+                    <img src="/assets/icons/filter.png" class="icon">
+                </button>
+                <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
+                    <i class="fa fa-refresh"></i>
+                </button>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
+
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2 flex-wrap">
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/clientes">Todos</button>
+            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/clientes/cuentas-cobrar">Cuentas por cobrar</button>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="table-responsive">
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Fecha</th>
+                        <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>Cliente</th>
-                        <th class="text-center">Ref</th>
-                        <th class="text-center">Estado</th>
-                        <th class="text-center">Tipo Documento</th>
-                        <th class="text-center">Metodo de pago</th>
-                        <th class="text-center">Total</th>
+                        <th class="d-none d-md-table-cell">Documento</th>
+                        <th class="d-none d-md-table-cell">Vendedor</th>
+                        <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Vencimiento</th>
+                        <th class="text-center">Estado cuenta</th>
+                        <th>Estado</th>
+                        <th (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @if (cobros?.total < 1 && !loading) {
-                        <tr>
-                            <td colspan="8" class="text-center">
-                                <span class="badge badge-primary">No tiene cobros registradas</span>
-                            </td>
-                        </tr>
-                    }
-                    @if (loading) {
-                        <tr>
-                            <td colspan="8" class="text-center">
-                                <span class="badge badge-primary">Cargando...</span>
-                            </td>
-                        </tr>
-                    }
+                    <tr>
+                        <td colspan="10" class="text-center" *ngIf="cobros?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene cobros registrados</span>
+                        </td>
+                        <td colspan="10" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
 
-                    @for (venta of cobros?.data; track venta.id) {
-                        <tr>
-                            <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
-                            <td><a routerLink="/cliente/{{venta.cliente_id}}">{{venta.nombre_cliente}}</a></td>
-                            <td class="text-center">{{venta.nota}}</td>
-                            <td class="text-center">
-                                <span class="badge click" [ngClass]="{'badge-warning' : venta?.estado == 'Pendiente', 'badge-success' : venta?.estado == 'Pagada'}" [popover]="popTemplate" [outsideClick]="true">
-                                    {{venta.estado}}
-                                </span>
-                                <ng-template #popTemplate>
-                                    <button class="btn btn-default btn-xs" (click)="setEstado(venta, 'Pagada')">Pagada</button>
-                                    <button class="btn btn-default btn-xs" (click)="setEstado(venta, 'Pendiente')">Pendiente</button>
-                                </ng-template>
-                            </td>
-                            <td class="text-center"> {{venta.tipo_documento }} #{{venta.correlativo }}</td>
-                            <td class="text-center">{{venta.metodo_pago}}</td>
-                            <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-center">
-                                <div class="btn-group" role="group">
-                                    @if (apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)) {
-                                        <a class="btn btn-default" (click)="delete(venta.id)" tooltip="Eliminar">
-                                            <i class="fa fa-trash"></i>
-                                        </a>
-                                    }
-                                    <a class="btn btn-default" routerLink="/venta/{{venta.id}}" tooltip="Ver detalle">
-                                        <i class="fa fa-arrow-right"></i>
+                    <tr *ngFor="let venta of cobros?.data">
+                        <td>{{ venta.fecha | date:'dd/MM/yyyy' }}</td>
+                        <td>
+                            <a *ngIf="venta.id_cliente" [routerLink]="['/cliente/editar', venta.id_cliente]" class="text-decoration-none text-dark">{{ venta.nombre_cliente | truncate:30 }}</a>
+                            <span *ngIf="!venta.id_cliente">{{ venta.nombre_cliente | truncate:30 }}</span>
+                        </td>
+                        <td class="d-none d-md-table-cell">{{ (venta.nombre_documento || venta.tipo_documento) }} #{{ venta.correlativo }}</td>
+                        <td class="d-none d-md-table-cell">{{ venta.nombre_vendedor || '-' }}</td>
+                        <td>{{ venta.fecha_pago | date:'dd/MM/yyyy' }}</td>
+                        <td class="text-center">
+                            <span *ngIf="venta.estado == 'Pendiente'" class="badge py-2 px-2 rounded d-inline-block" style="font-size: 0.8rem; min-width: 90px;" [ngClass]="getEstadoCuenta(venta).vigente ? 'bg-success text-white' : 'bg-danger text-white'">
+                                {{ getEstadoCuenta(venta).texto }}<br>
+                                <strong>{{ getEstadoCuenta(venta).dias }} días</strong>
+                            </span>
+                            <span *ngIf="venta.estado != 'Pendiente'" class="text-muted">-</span>
+                        </td>
+                        <td>
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning': venta?.estado == 'Pendiente', 'bg-success': venta?.estado == 'Pagada'}" [popover]="popTemplate" [outsideClick]="true">
+                                {{ venta.estado }}
+                            </span>
+                            <ng-template #popTemplate>
+                                <button class="btn btn-default btn-sm" (click)="setEstado(venta, 'Pagada')">Pagada</button>
+                                <button class="btn btn-default btn-sm" (click)="setEstado(venta, 'Pendiente')">Pendiente</button>
+                            </ng-template>
+                        </td>
+                        <td class="text-right">
+                            <span [popover]="popTotalTemplate" placement="left" triggers="mouseenter:mouseleave">
+                                {{ venta.total | currency:'USD':'symbol':'1.2' }}
+                            </span>
+                            <ng-template #popTotalTemplate>
+                                <table class="w-100 table table-sm mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <td>Total</td>
+                                            <td class="text-end">{{ venta.total | currency:'USD':'symbol':'1.2' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Abonos</td>
+                                            <td class="text-end">{{ (venta.abonos_sum_total || 0) | currency:'USD':'symbol':'1.2' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Devoluciones</td>
+                                            <td class="text-end">{{ (venta.devoluciones_sum_total || 0) | currency:'USD':'symbol':'1.2' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Saldo</strong></td>
+                                            <td class="text-end"><strong>{{ getSaldo(venta) | currency:'USD':'symbol':'1.2' }}</strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </ng-template>
+                        </td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a routerLink="/venta/{{ venta.id }}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-arrow-right"></i> Ver detalle
                                     </a>
-                                </div>  
-                            </td>
-                        </tr>
-                    }
+                                    <a *ngIf="venta.id_cliente" [routerLink]="['/cliente/editar', venta.id_cliente]" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-user"></i> Ver cliente
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
-    </div>
-    @if (cobros?.last_page > 1) {
-        <div class="card-footer">
-            <div class="d-flex justify-content-center">
-                <app-pagination [items]="cobros" (setPagination)="setPagination($event)"></app-pagination>
-            </div>
+
+        <div class="col-12" *ngIf="cobros?.last_page > 1">
+            <app-pagination [items]="cobros" (setPagination)="setPagination($event)"></app-pagination>
         </div>
-    }
-</div>
+    </div>
+</section>
+
+<ng-template #mfilter>
+    <div class="modal-header">
+        <div class="modal-title text-center">
+            <h2 class="text-center no-margin">Filtros</h2>
+        </div>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <form autocomplete="off" (ngSubmit)="filtrarCobros(); modalRef.hide()">
+            <app-notificaciones-container></app-notificaciones-container>
+            <div class="row">
+                <div class="form-group col-sm-6 mb-3">
+                    <label for="filtros.inicio">Fecha inicio:</label>
+                    <input type="date" class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio" />
+                </div>
+                <div class="form-group col-sm-6 mb-3">
+                    <label for="filtros.fin">Fecha fin:</label>
+                    <input type="date" class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin" />
+                </div>
+                <div class="form-group col-sm-12 mb-3">
+                    <label for="filtros.id_cliente">Cliente:</label>
+                    <ng-select name="filtros.id_cliente" [(ngModel)]="filtros.id_cliente" placeholder="Todos los clientes" class="form-select p-0" [clearable]="true">
+                        <ng-option [value]="''">Todos</ng-option>
+                        <ng-option *ngFor="let c of clientes" [value]="c.id">
+                            {{ c.tipo == 'Empresa' ? c.nombre_empresa : c.nombre_completo }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-sm-12 mb-3">
+                    <label for="filtros.id_vendedor">Vendedor:</label>
+                    <ng-select name="filtros.id_vendedor" [(ngModel)]="filtros.id_vendedor" placeholder="Todos los vendedores" class="form-select p-0" [clearable]="true">
+                        <ng-option [value]="''">Todos</ng-option>
+                        <ng-option *ngFor="let v of vendedores" [value]="v.id">{{ v.name }}</ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-sm-12 mb-3">
+                    <label for="filtros.id_sucursal">Sucursal:</label>
+                    <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
+                        <option value="">Todas</option>
+                        <option *ngFor="let s of sucursales" [value]="s.id">{{ s.nombre }}</option>
+                    </select>
+                </div>
+            </div>
+            <br>
+            <div class="d-grid">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+
+<ng-template #mFechaCorte>
+    <div class="modal-header">
+        <div class="modal-title text-center">
+            <h2 class="text-center no-margin">Reporte por fecha de corte</h2>
+        </div>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <p class="text-muted mb-3">Igual al reporte normal pero filtrado a una sola fecha. Muestra las cuentas por cobrar pendientes a esa fecha con la sumatoria total al final.</p>
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="form-group mb-3">
+            <label for="fechaCorte">Fecha de corte:</label>
+            <input type="date" class="form-control" name="fechaCorte" [(ngModel)]="fechaCorte" />
+        </div>
+        <div class="d-grid">
+            <button type="button" (click)="descargarReportePorFechaCorte()" [disabled]="downloading || !fechaCorte" class="btn btn-primary btn-block">
+                <span *ngIf="!downloading">Generar reporte</span>
+                <span *ngIf="downloading">Descargando...</span>
+            </button>
+        </div>
+    </div>
+</ng-template>

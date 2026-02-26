@@ -47,6 +47,9 @@ class DocumentoService
             case 'Crédito fiscal':
                 return $this->generarCreditoFiscal($venta, $empresa);
 
+            case 'Factura comercial':
+                return $this->generarFacturaComercial($venta, $empresa);
+
             default:
                 throw new \Exception('No hay un formato para este tipo de documento de venta.');
         }
@@ -190,6 +193,30 @@ class DocumentoService
         $pdf->setPaper($configuracionPapel['tipo'], $configuracionPapel['orientacion']);
 
         return $pdf->stream($empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
+    }
+
+    /**
+     * Generar factura comercial (formato JOZANO-LLC para empresa 729)
+     *
+     * @param Venta $venta
+     * @param Empresa $empresa
+     * @return mixed
+     */
+    public function generarFacturaComercial(Venta $venta, Empresa $empresa)
+    {
+        if ($empresa->id != 729) {
+            throw new \Exception('No hay un formato de factura comercial configurado para esta empresa.');
+        }
+
+        $cliente = Cliente::withoutGlobalScope('empresa')->findOrfail($venta->id_cliente);
+        $numeroALetras = $this->convertirNumeroALetras($venta->total);
+        $dolares = $numeroALetras['dolares'];
+        $centavos = $numeroALetras['centavos'];
+
+        $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.jozano-llc', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+        $pdf->setPaper('US Letter', 'portrait');
+
+        return $pdf->stream($empresa->nombre . '-factura-exportacion-' . $venta->correlativo . '.pdf');
     }
 
     /**

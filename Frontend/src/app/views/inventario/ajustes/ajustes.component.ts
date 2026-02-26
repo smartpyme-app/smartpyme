@@ -16,6 +16,7 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { BsModalService } from 'ngx-bootstrap/modal';
 
 @Component({
     selector: 'app-ajustes',
@@ -30,19 +31,23 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
     public ajuste:any = {};
     public downloading:boolean = false;
     public productos:any = [];
+
+    public override filtros:any = {};
     public bodegas:any = [];
     public usuarios:any = [];
     public producto:any = {};
+    public productoFiltro:any = {};
     public sucursal:any = {};
     private tieneShopify: boolean = false;
     public productosInput$ = new Subject<string>();
     public loadingProductos: boolean = false;
 
     constructor(
-        apiService: ApiService, 
+        apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private router: Router, 
+        private modalService: BsModalService,
+        private router: Router,
         private route: ActivatedRoute,
         private cdr: ChangeDetectorRef
     ){
@@ -67,7 +72,7 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
                 this.ajuste = {};
             }
         });
-        
+
         this.productosInput$.pipe(
             debounceTime(300),
             distinctUntilChanged(),
@@ -190,76 +195,154 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
         }
     }
 
-    public setProducto(){
-        if (!this.ajuste.id_producto) return;
+    public lotes: any[] = [];
+    public loadingLotes: boolean = false;
 
-        this.producto = this.productos.find((item:any) => item.id == this.ajuste.id_producto);
-        if (this.producto) {
-            this.ajuste.costo = this.producto.costo;
-            if (!this.producto.inventarios) {
-                this.loadProductoInventarios(this.producto.id);
-            }
+    public productoSelect(producto: any) {
+        this.producto = producto;
+        this.ajuste.id_producto = producto.id;
+        this.ajuste.costo = producto.costo;
+        this.ajuste.lote_id = null;
+        this.lotes = [];
+
+        // Si el producto tiene inventario por lotes, cargar los lotes
+        if (this.producto?.inventario_por_lotes && this.ajuste.id_bodega) {
+            this.cargarLotes();
         }
     }
 
-    private loadProductoInventarios(productoId: number) {
-        this.apiService.getAll(`productos/${productoId}/inventarios`)
-            .pipe(this.untilDestroyed())
-            .subscribe(inventarios => {
-            if (this.producto && this.producto.id == productoId) {
-                this.producto.inventarios = inventarios;
-                this.cdr.markForCheck();
-            }
-        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
+    public limpiarProducto() {
+        this.producto = {};
+        this.ajuste.id_producto = null;
+        this.ajuste.id_bodega = null;
+        this.ajuste.lote_id = null;
+        this.ajuste.stock_actual = null;
+        this.ajuste.stock_real = null;
+        this.ajuste.ajuste = null;
+        this.lotes = [];
+        this.sucursal = {};
     }
 
     public setBodega(){
         this.sucursal = this.producto?.inventarios.find((item:any) => item.id_bodega == this.ajuste.id_bodega);
-        this.ajuste.stock_actual = this.sucursal.stock;
+        console.log(this.sucursal);
+
+        // Si el producto tiene inventario por lotes, no establecer stock_actual todavía
+        // Se establecerá cuando se seleccione el lote
+        if (this.producto?.inventario_por_lotes && this.isLotesActivo()) {
+            this.ajuste.stock_actual = null;
+        } else {
+            // Para productos sin lotes, usar el stock del inventario tradicional
+            this.ajuste.stock_actual = this.sucursal?.stock || 0;
+        }
+
+        this.ajuste.lote_id = null;
+        this.lotes = [];
+        this.ajuste.stock_real = null;
+        this.ajuste.ajuste = null;
+
+        // Si el producto tiene inventario por lotes, cargar los lotes de la bodega
+        if (this.producto?.inventario_por_lotes && this.ajuste.id_bodega) {
+            this.cargarLotes();
+        }
+    }
+
+    public cargarLotes() {
+        if (!this.ajuste.id_producto || !this.ajuste.id_bodega) return;
+
+        this.loadingLotes = true;
+        this.apiService.getAll(`lotes/producto/${this.ajuste.id_producto}`, {
+            id_bodega: this.ajuste.id_bodega
+        }).subscribe(lotes => {
+            this.lotes = Array.isArray(lotes) ? lotes : [];
+            this.loadingLotes = false;
+        }, error => {
+            this.alertService.error(error);
+            this.loadingLotes = false;
+            this.lotes = [];
+        });
+    }
+
+    public setLote() {
+        // Cuando se selecciona un lote, establecer el stock_actual del lote
+        if (this.ajuste.lote_id) {
+            const loteSeleccionado = this.lotes.find((l: any) => l.id == this.ajuste.lote_id);
+            if (loteSeleccionado) {
+                this.ajuste.stock_actual = loteSeleccionado.stock || 0;
+                this.ajuste.stock_real = null;
+                this.ajuste.ajuste = null;
+            }
+        } else {
+            this.ajuste.stock_actual = null;
+            this.ajuste.stock_real = null;
+            this.ajuste.ajuste = null;
+        }
     }
 
     public calAjuste(){
-        this.ajuste.ajuste =  this.ajuste.stock_real - this.ajuste.stock_actual;
+        if (this.ajuste.stock_actual !== null && this.ajuste.stock_actual !== undefined &&
+            this.ajuste.stock_real !== null && this.ajuste.stock_real !== undefined) {
+            this.ajuste.ajuste = this.ajuste.stock_real - this.ajuste.stock_actual;
+        } else {
+            this.ajuste.ajuste = null;
+        }
     }
 
-    override openModal(template: TemplateRef<any>) {
-        this.ajuste = {
-            id_producto: '',
-            id_bodega: '',
-            id_usuario: this.apiService.auth_user().id,
-            id_empresa: this.apiService.auth_user().id_empresa
-        };
-
-        this.productos = [];
+    public override openModal(template: TemplateRef<any>) {
+        this.ajuste = {};
         this.producto = {};
+        this.sucursal = {};
+        this.lotes = [];
+        this.ajuste.id_producto = null;
+        this.ajuste.id_bodega = null;
+        this.ajuste.lote_id = null;
 
-        super.openModal(template);
+        this.ajuste.id_usuario = this.apiService.auth_user().id;
+        this.ajuste.id_empresa = this.apiService.auth_user().id_empresa;
+
+        this.alertService.modal = true;
+
+        this.modalRef = this.modalService.show(template);
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('productos/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(productos => {
-                this.productos = productos;
-                this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
-        this.apiService.getAll('usuarios/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(usuarios => {
-                this.usuarios = usuarios;
-                this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
-        this.openModal(template);
+        this.productoFiltro = {};
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+            this.usuarios = usuarios;
+        }, error => {this.alertService.error(error); });
+        this.modalRef = this.modalService.show(template);
     }
 
-    public override async onSubmit(item?: any): Promise<void> {
-        await super.onSubmit(item);
-        // El método base ya maneja el cierre del modal y recarga
+    public productoFiltroSelect(producto: any) {
+        this.productoFiltro = producto;
+        this.filtros.id_producto = producto.id;
+    }
+
+    public limpiarProductoFiltro() {
+        this.productoFiltro = {};
+        this.filtros.id_producto = null;
+    }
+
+    public override async onSubmit(_item?: any, _isStatusChange?: boolean): Promise<void> {
+        // Validar que si el producto tiene lotes, se haya seleccionado un lote
+        if (this.producto?.inventario_por_lotes && this.isLotesActivo() && !this.ajuste.lote_id) {
+            this.alertService.error('Debe seleccionar un lote para este producto.');
+            return;
+        }
+
+        this.saving = true;
+        this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
+            this.ajuste = {};
+            this.alertService.success('Ajuste guardado', 'El ajuste fue guardado exitosamente.');
+            this.modalRef?.hide();
+            this.loadAll();
+            this.saving = false;
+        }, error => {this.alertService.error(error); this.saving = false;});
     }
 
     public override delete(item: any | number): void {
         const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
+
         this.saving = true;
         this.apiService.delete('ajuste/', itemToDelete)
             .pipe(this.untilDestroyed())
@@ -319,6 +402,10 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
             return `${producto.nombre} ${producto.nombre_variante}`;
         }
         return producto.nombre;
+    }
+
+    public isLotesActivo(): boolean {
+        return this.apiService.isLotesActivo();
     }
 
 }

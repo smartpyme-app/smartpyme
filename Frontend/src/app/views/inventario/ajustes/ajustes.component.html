@@ -223,6 +223,27 @@
                         }
                     </ng-select>
                 </div>
+              <div class="form-group col-md-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && ajuste.id_bodega">
+                <label for="">Lote <span class="text-danger">*</span></label>
+                <ng-select name="lote_id" [(ngModel)]="ajuste.lote_id" (change)="setLote()" class="form-select p-0" [disabled]="loadingLotes" required>
+                  <ng-option value="">Seleccionar lote</ng-option>
+                  <ng-option *ngFor="let lote of lotes" [value]="lote.id">
+                    {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                    <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                            (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                        </span>
+                  </ng-option>
+                </ng-select>
+                <small class="text-muted" *ngIf="loadingLotes">Cargando lotes...</small>
+              </div>
+              <div class="form-group col-md-6" *ngIf="!producto?.inventario_por_lotes || !isLotesActivo()">
+                <label for="stock_actual">Stock actual:</label>
+                <input type="text" [disabled]="true" class="form-control text-center" [value]="(ajuste.stock_actual || 0) | number:'1.2'" name="stock_actual_display">
+              </div>
+              <div class="form-group col-md-6" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && ajuste.lote_id">
+                <label for="stock_actual">Stock actual del lote:</label>
+                <input type="text" [disabled]="true" class="form-control text-center" [value]="(ajuste.stock_actual || 0) | number:'1.2'" name="stock_actual_display">
+              </div>
                 <div class="form-group col-md-6">
                     <label for="stock_real">Cantidad en existencias:</label>
                     <input type="text" [disabled]="!ajuste.id_bodega"

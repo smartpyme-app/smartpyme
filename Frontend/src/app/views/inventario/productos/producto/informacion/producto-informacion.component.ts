@@ -29,7 +29,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, TagInputModule, NgSelectModule, CrearCategoriaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    
+
 })
 export class ProductoInformacionComponent extends BaseModalComponent implements OnInit {
   @ViewChild('modalAtributo') modalAtributo!: TemplateRef<any>;
@@ -245,7 +245,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
           // Invalidar cache de listas relacionadas
           this.cacheService.invalidatePattern('/productos');
           this.cacheService.invalidatePattern('/producto');
-          
+
           if (!isNew) this.producto = producto;
 
           // Navegación + alertas
@@ -346,6 +346,9 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   removeVariant(index: number): void {
     this.variants.splice(index, 1);
   }
+    public isLotesActivo(): boolean {
+        return this.apiService.isLotesActivo();
+    }
 
   addAttribute(event: any, tipo: string) {
     switch (tipo) {

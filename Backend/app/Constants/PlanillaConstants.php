@@ -216,6 +216,9 @@ class PlanillaConstants
     const AGUINALDO_BORRADOR = 1;
     const AGUINALDO_PAGADO = 2;
 
+    //Cuando se paga una planilla, se crea un gasto para cada empleado con el estado de 'Pagado'
+    const ESTADO_GASTO_PLANILLA_PAGADO = 'Pagado';
+
     // Arrays para usar en forms y selects
     public static function getTiposContrato()
     {

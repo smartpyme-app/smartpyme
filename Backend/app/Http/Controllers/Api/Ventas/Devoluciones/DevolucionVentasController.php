@@ -14,6 +14,7 @@ use Luecano\NumeroALetras\NumeroALetras;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Lote;
 use App\Models\Inventario\Paquete;
 use App\Models\Ventas\Devoluciones\DetalleCompuesto;
 use App\Exports\DevolucionesVentasExport;
@@ -123,8 +124,19 @@ class DevolucionVentasController extends Controller
 
                 $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
 
+                $empresa = Empresa::find($venta->id_empresa);
+                $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+
                 // Anular y regresar stock
                 if(($venta->enable != '0') && ($request['enable'] == '0')){
+                    // Si el producto tiene lotes y el detalle tiene lote_id, regresar stock al lote
+                    if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
+                        $lote = Lote::find($detalle->lote_id);
+                        if ($lote) {
+                            $lote->stock += $detalle->cantidad;
+                            $lote->save();
+                        }
+                    }
 
                     if ($inventario) {
                         $inventario->stock -= $detalle->cantidad;
@@ -134,20 +146,47 @@ class DevolucionVentasController extends Controller
 
                     // Inventario compuestos
                     foreach ($detalle->composiciones()->get() as $comp) {
+                        $productoCompuesto = Producto::find($comp->id_producto);
+                        $cantidadComp = $detalle->cantidad * $comp->cantidad;
+
+                        // Si el producto compuesto tiene lotes y lotes están activos, actualizar stock del lote
+                        if ($productoCompuesto && $productoCompuesto->inventario_por_lotes && $lotesActivo) {
+                            // Buscar lote del producto compuesto (si existe en el detalle compuesto)
+                            // Por ahora, buscamos el lote más antiguo con stock disponible
+                            $loteCompuesto = Lote::where('id_producto', $comp->id_producto)
+                                ->where('id_bodega', $venta->id_bodega)
+                                ->where('stock', '>', 0)
+                                ->orderBy('created_at', 'asc')
+                                ->first();
+
+                            if ($loteCompuesto) {
+                                $loteCompuesto->stock -= $cantidadComp;
+                                $loteCompuesto->save();
+                            }
+                        }
 
                         $inventario = Inventario::where('id_producto', $comp->id_producto)
                                     ->where('id_bodega', $venta->id_bodega)->first();
 
                         if ($inventario) {
-                            $inventario->stock -= $detalle->cantidad * $comp->cantidad;
+                            $inventario->stock -= $cantidadComp;
                             $inventario->save();
-                            $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
+                            $inventario->kardex($venta, $cantidadComp * -1);
                         }
                     }
 
                 }
                 // Cancelar anulación y descargar stock
                 if(($venta->enable == '0') && ($request['enable'] != '0')){
+                    // Si el producto tiene lotes y el detalle tiene lote_id, descontar del lote
+                    if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
+                        $lote = Lote::find($detalle->lote_id);
+                        if ($lote && $lote->stock >= $detalle->cantidad) {
+                            $lote->stock -= $detalle->cantidad;
+                            $lote->save();
+                        }
+                    }
+
                     // Aplicar stock
                     if ($inventario) {
                         $inventario->stock += $detalle->cantidad;
@@ -157,14 +196,32 @@ class DevolucionVentasController extends Controller
 
                     // Inventario compuestos
                     foreach ($detalle->composiciones()->get() as $comp) {
+                        $productoCompuesto = Producto::find($comp->id_producto);
+                        $cantidadComp = $detalle->cantidad * $comp->cantidad;
+
+                        // Si el producto compuesto tiene lotes y lotes están activos, actualizar stock del lote
+                        if ($productoCompuesto && $productoCompuesto->inventario_por_lotes && $lotesActivo) {
+                            // Buscar lote del producto compuesto (si existe en el detalle compuesto)
+                            // Por ahora, buscamos el lote más antiguo con stock disponible
+                            $loteCompuesto = Lote::where('id_producto', $comp->id_producto)
+                                ->where('id_bodega', $venta->id_bodega)
+                                ->where('stock', '>', 0)
+                                ->orderBy('created_at', 'asc')
+                                ->first();
+
+                            if ($loteCompuesto) {
+                                $loteCompuesto->stock += $cantidadComp;
+                                $loteCompuesto->save();
+                            }
+                        }
 
                         $inventario = Inventario::where('id_producto', $comp->id_producto)
                                     ->where('id_bodega', $venta->id_bodega)->first();
 
                         if ($inventario) {
-                            $inventario->stock += $detalle->cantidad * $comp->cantidad;
+                            $inventario->stock += $cantidadComp;
                             $inventario->save();
-                            $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad));
+                            $inventario->kardex($venta, $cantidadComp);
                         }
                     }
 
@@ -257,19 +314,118 @@ class DevolucionVentasController extends Controller
             $devolucion->fill($request->all());
             $devolucion->save();
 
-            // Procesar detalles (crear detalles, manejar composiciones, actualizar inventario, manejar paquetes)
-            $this->devolucionVentaService->procesarDetalles(
-                $devolucion,
-                $request->detalles,
-                $request->tipo,
-                $request->id_bodega
-            );
+            // $venta = Venta::findOrFail($request['id_venta']);
+            // $venta->estado = 'Anulada';
+            // $venta->save();
 
-            // Incrementar el correlativo
-            $this->devolucionVentaService->incrementarCorrelativo($devolucion);
+        // Guardamos los detalles
 
-            DB::commit();
-            return Response()->json($devolucion, 200);
+            foreach ($request->detalles as $det) {
+                $detalle = new Detalle;
+                $det['id_devolucion_venta'] = $devolucion->id;
+                $detalle->fill($det);
+                $detalle->save();
+
+                // Si es compuesto
+                if (isset($det['composiciones'])) {
+                    foreach ($det['composiciones'] as $item) {
+                        $cd = new DetalleCompuesto;
+                        $cd->id_producto = $item['id_producto'];
+                        $cd->cantidad   = $item['cantidad'];
+                        $cd->id_detalle = $detalle->id;
+                        $cd->save();
+
+                    }
+                }
+
+                // Solo afectar inventario si el tipo de nota de crédito lo requiere
+                if ($request->tipo !== 'descuento_ajuste') {
+                    $producto = Producto::find($det['id_producto']);
+
+                    $empresa = Empresa::find($devolucion->id_empresa);
+                    $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+
+                    // Si el producto tiene lotes y se especificó un lote, actualizar el stock del lote
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo && isset($det['lote_id']) && $det['lote_id']) {
+                        $lote = Lote::find($det['lote_id']);
+                        if ($lote) {
+                            // Verificar que el lote pertenezca al producto y bodega correctos
+                            if ($lote->id_producto == $det['id_producto'] && $lote->id_bodega == $request->id_bodega) {
+                                $lote->stock += $det['cantidad'];
+                                $lote->save();
+                            }
+                        }
+                    }
+
+                    // Actualizar inventario tradicional
+                    $inventario = Inventario::where('id_producto', $det['id_producto'])
+                                        ->where('id_bodega', $request->id_bodega)->first();
+
+                    if ($inventario) {
+                        $inventario->stock += $det['cantidad'];
+                        $inventario->save();
+                        $inventario->kardex($devolucion, $det['cantidad']);
+                    }
+
+                    // Inventario compuestos
+                    if (isset($det['composiciones'])) {
+                        foreach ($det['composiciones'] as $comp) {
+                            $productoCompuesto = Producto::find($comp['id_producto']);
+                            $cantidadComp = $det['cantidad'] * $comp['cantidad'];
+
+                            // Si el producto compuesto tiene lotes y lotes están activos, actualizar stock del lote
+                            if ($productoCompuesto && $productoCompuesto->inventario_por_lotes && $lotesActivo) {
+                                // Buscar lote del producto compuesto
+                                // Si viene especificado en la composición, usarlo; si no, buscar el más antiguo
+                                $loteCompuesto = null;
+                                if (isset($comp['lote_id']) && $comp['lote_id']) {
+                                    $loteCompuesto = Lote::find($comp['lote_id']);
+                                } else {
+                                    // Buscar el lote más antiguo con stock disponible
+                                    $loteCompuesto = Lote::where('id_producto', $comp['id_producto'])
+                                        ->where('id_bodega', $devolucion->id_bodega)
+                                        ->where('stock', '>', 0)
+                                        ->orderBy('created_at', 'asc')
+                                        ->first();
+                                }
+
+                                if ($loteCompuesto) {
+                                    $loteCompuesto->stock += $cantidadComp;
+                                    $loteCompuesto->save();
+                                }
+                            }
+
+                            $inventario = Inventario::where('id_producto', $comp['id_producto'])
+                                        ->where('id_bodega', $devolucion->id_bodega)->first();
+
+                            if ($inventario) {
+                                $inventario->stock += $cantidadComp;
+                                $inventario->save();
+                                $inventario->kardex($devolucion, $cantidadComp);
+                            }
+                        }
+                    }
+                }
+
+                // Si es paquete cambiar estado
+                $paquetes = Paquete::where('id_venta', $devolucion->id_venta)->get();
+                foreach ($paquetes as $paquete) {
+                    $paquete->estado = 'En bodega';
+                    $paquete->id_venta = NULL;
+                    $paquete->id_venta_detalle = NULL;
+                    $paquete->save();
+                }
+
+            }
+
+        // Incrementar el correlarivo
+        if ($devolucion->id_documento) {
+            Documento::where('id', $devolucion->id_documento)->increment('correlativo');
+        }
+
+        DB::commit();
+        return Response()->json($devolucion, 200);
+
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Error en facturacion (DevolucionVentasController): ' . $e->getMessage(), [
@@ -303,7 +459,7 @@ class DevolucionVentasController extends Controller
             $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
             $centavos = $formatter->toWords($n[1]);
 
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.NC-Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.NC-Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
             $pdf->setPaper('US Letter', 'portrait');
         }
         else if(Auth::user()->id_empresa == 250 && $venta->nombre_documento == "Nota de crédito"){//250  OK V2
@@ -319,7 +475,7 @@ class DevolucionVentasController extends Controller
             $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
             $centavos = $formatter->toWords($n[1]);
 
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.NC-Full-Solutions', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.NC-Full-Solutions', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
             $pdf->setPaper('Legal', 'portrait');
         }
         else if(Auth::user()->id_empresa == 128 && $venta->nombre_documento == "Nota de crédito"){//250  OK V2
@@ -335,10 +491,10 @@ class DevolucionVentasController extends Controller
             $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
             $centavos = $formatter->toWords($n[1]);
 
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.NC-Kiero', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.NC-Kiero', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
             $pdf->setPaper('Legal', 'portrait');
         }else{
-            $pdf = PDF::loadView('reportes.facturacion.nota-credito', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.nota-credito', compact('venta'));
             $pdf->setPaper('US Letter', 'portrait');
         }
 

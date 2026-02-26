@@ -5,6 +5,16 @@ namespace App\Http\Controllers\Api\Compras\Devoluciones;
 use App\Http\Controllers\Controller;
 use App\Services\Compras\DevolucionCompraService;
 use Illuminate\Http\Request;
+
+use App\Models\Compras\Devoluciones\Devolucion;
+use App\Models\Compras\Compra;
+use App\Models\Registros\Proveedor;
+use App\Models\Compras\Devoluciones\Detalle;
+use App\Models\Inventario\Producto;
+use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Lote;
+use App\Models\Inventario\Kardex;
+use Illuminate\Support\Facades\DB;
 use App\Exports\DevolucionesComprasExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Compras\Devoluciones\StoreDevolucionCompraRequest;
@@ -16,47 +26,191 @@ class DevolucionComprasController extends Controller
 
     public function __construct(DevolucionCompraService $devolucionService)
     {
-        $this->devolucionService = $devolucionService;
-    }
 
-    public function index(Request $request)
-    {
-        $devoluciones = $this->devolucionService->listarDevoluciones($request->all());
-        return Response()->json($devoluciones, 200);
-    }
+        $request->validate([
+            'fecha'             => 'required',
+            'enable'            => 'required',
+            'id_proveedor'      => 'required',
+            'id_usuario'        => 'required',
+            'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
+        ]);
 
-    public function read($id)
-    {
-        $devolucion = $this->devolucionService->obtenerDevolucion($id);
-        return Response()->json($devolucion, 200);
-    }
+        if($request->id)
+            $compra = Devolucion::findOrFail($request->id);
+        else
+            $compra = new Devolucion;
 
-    public function store(StoreDevolucionCompraRequest $request)
-    {
-        $devolucion = $this->devolucionService->crearOActualizarDevolucion($request->all());
-        return Response()->json($devolucion, 200);
+        // Solo ajustar stocks si el tipo de devolución afecta inventario
+        if ($request->tipo !== 'descuento_ajuste') {
+            // Ajustar stocks
+            foreach ($compra->detalles as $detalle) {
+
+                $producto = Producto::where('id', $detalle->id_producto)
+                                        ->with('composiciones')->firstOrFail();
+
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
+
+                $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
+                $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+
+                // Anular y regresar stock
+                if(($compra->enable != '0') && ($request['enable'] == '0')){
+                    // Si el producto tiene lotes y el detalle tiene lote_id, regresar stock al lote
+                    if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
+                        $lote = Lote::find($detalle->lote_id);
+                        if ($lote) {
+                            $lote->stock += $detalle->cantidad;
+                            $lote->save();
+                        }
+                    }
+
+                    if ($inventario) {
+                        $inventario->stock += $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($compra, $detalle->cantidad * -1);
+                    }
+
+                }
+                // Cancelar anulación y descargar stock
+                if(($compra->enable == '0') && ($request['enable'] != '0')){
+                    // Si el producto tiene lotes y el detalle tiene lote_id, descontar del lote
+                    if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
+                        $lote = Lote::find($detalle->lote_id);
+                        if ($lote && $lote->stock >= $detalle->cantidad) {
+                            $lote->stock -= $detalle->cantidad;
+                            $lote->save();
+                        }
+                    }
+
+                    // Aplicar stock
+                    if ($inventario) {
+                        $inventario->stock -= $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($compra, $detalle->cantidad);
+                    }
+
+                }
+            }
+        }
+
+        $compra->fill($request->all());
+        $compra->save();
+
+        return Response()->json($compra, 200);
+
     }
 
     public function delete($id)
     {
-        $devolucion = $this->devolucionService->eliminarDevolucion($id);
-        return Response()->json($devolucion, 201);
+        $compra = Devolucion::where('id', $id)->with('detalles')->firstOrFail();
+        foreach ($compra->detalles as $detalle) {
+            $detalle->delete();
+        }
+        $compra->delete();
+
+        return Response()->json($compra, 201);
     }
 
-    public function facturacion(FacturacionDevolucionCompraRequest $request)
-    {
+
+    public function facturacion(Request $request){
+        $request->validate([
+            'fecha'             => 'required',
+            'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
+            'id_proveedor'      => 'required',
+            'detalles'          => 'required',
+            'iva'               => 'required|numeric',
+            // 'subcosto'          => 'required|numeric',
+            'sub_total'          => 'required|numeric',
+            'total'             => 'required|numeric',
+            'observaciones'     => 'required|max:255',
+            'id_compra'         => 'required',
+            'id_usuario'        => 'required',
+            'id_bodega'        => 'required',
+            'id_empresa'        => 'required',
+        ],[
+            'detalles.required' => 'No hay detalles agregados'
+        ]);
+
+
+        DB::beginTransaction();
+
         try {
-            $devolucion = $this->devolucionService->procesarDevolucion($request->all());
-            return Response()->json($devolucion, 200);
+
+        // Compra
+            if($request->id)
+                $devolucion = Devolucion::findOrFail($request->id);
+            else
+                $devolucion = new Devolucion;
+
+            $devolucion->fill($request->all());
+            $devolucion->save();
+
+            // $compra = Compra::findOrFail($request['id_compra']);
+            // $compra->estado = 'Anulada';
+            // $compra->save();
+
+
+        // Detalles
+
+            foreach ($request->detalles as $det) {
+                $detalle = new Detalle;
+                $det['id_devolucion_compra'] = $devolucion->id;
+                $detalle->fill($det);
+                $detalle->save();
+
+                // Solo actualizar inventario si el tipo de devolución afecta inventario
+                if ($request->tipo !== 'descuento_ajuste') {
+                    $producto = Producto::find($det['id_producto']);
+
+                    $empresa = \App\Models\Admin\Empresa::find($devolucion->id_empresa);
+                    $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+
+                    // Si el producto tiene lotes y se especificó un lote, actualizar el stock del lote
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo && isset($det['lote_id']) && $det['lote_id']) {
+                        $lote = Lote::find($det['lote_id']);
+                        if ($lote) {
+                            // Verificar que el lote pertenezca al producto y bodega correctos
+                            if ($lote->id_producto == $det['id_producto'] && $lote->id_bodega == $request->id_bodega) {
+                                $lote->stock -= $det['cantidad'];
+                                $lote->save();
+                            }
+                        }
+                    }
+
+                    // Actualizar inventario tradicional
+                    $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $request->id_bodega)->first();
+
+                    if ($inventario) {
+                        $inventario->stock -= $det['cantidad'];
+                        $inventario->save();
+                        $inventario->kardex($devolucion, $det['cantidad']);
+                    }
+                }
+
+            }
+
+        DB::commit();
+        return Response()->json($devolucion, 200);
+
         } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
         }
+
+        return Response()->json($compra, 200);
+
     }
 
-    public function export(Request $request)
-    {
+    public function export(Request $request){
         $compras = new DevolucionesComprasExport();
         $compras->filter($request);
+
         return Excel::download($compras, 'compras.xlsx');
     }
+
+
+
 }

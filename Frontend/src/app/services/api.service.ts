@@ -5,7 +5,7 @@
  * - AuthService para autenticación
  * - PermissionService para permisos y roles
  * - UtilityService para utilidades
- * 
+ *
  * Este servicio se mantiene por compatibilidad hacia atrás y delega a los servicios específicos.
  */
 import { Injectable } from '@angular/core';
@@ -16,6 +16,8 @@ import { PermissionService } from '@services/permission.service';
 import { UtilityService } from '@services/utility.service';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
+import { ChatService } from '@services/chat/chat.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -42,7 +44,8 @@ export class ApiService {
     private authService: AuthService,
     private permissionService: PermissionService,
     private utilityService: UtilityService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private funcionalidadesService: FuncionalidadesService
   ) {}
 
   // ========== Métodos HTTP (delegados a HttpService) ==========
@@ -81,6 +84,9 @@ export class ApiService {
   delete(url: string, id: number): Observable<any> {
     return this.httpService.delete(url, id);
   }
+
+  // login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); this.funcionalidadesService.limpiarCache(); this.loadConstants(); } }) ); }
+  // register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data) {localStorage.setItem('SP_user_register', JSON.stringify(data)); } })); }
 
   paginate(url: string, filtros: any = {}): Observable<any> {
     return this.httpService.paginate(url, filtros);
@@ -295,5 +301,9 @@ export class ApiService {
 
   isVentas(): boolean {
     return this.permissionService.isVentas();
+  }
+
+  isLotesActivo(): boolean {
+    return this.auth_user()?.empresa?.custom_empresa?.configuraciones?.lotes_activo ?? false;
   }
 }

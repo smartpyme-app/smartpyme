@@ -101,13 +101,13 @@ class EmpresasController extends Controller
             // Si hay un error de SQL, puede ser que la columna no exista
             Log::error('Error SQL en EmpresasController@list: ' . $e->getMessage());
             Log::error('Código SQL: ' . $e->getCode());
-            
+
             // Intentar sin el filtro de activo
             try {
                 $empresas = Empresa::select('id', 'nombre')
                     ->orderBy('nombre')
                     ->get();
-                
+
                 return Response()->json($empresas, 200);
             } catch (\Exception $e2) {
                 Log::error('Error al cargar empresas sin filtro: ' . $e2->getMessage());
@@ -119,7 +119,7 @@ class EmpresasController extends Controller
         } catch (\Exception $e) {
             Log::error('Error en EmpresasController@list: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
-            
+
             return Response()->json([
                 'error' => 'Error al cargar las empresas',
                 'message' => $e->getMessage()
@@ -319,7 +319,7 @@ class EmpresasController extends Controller
     {
         try {
             $codPais = $this->mapearCodigoPais($empresa->pais ?? 'El Salvador');
-            
+
             EmpresaConfiguracionPlanilla::create([
                 'empresa_id' => $empresa->id,
                 'cod_pais' => $codPais,
@@ -327,7 +327,7 @@ class EmpresasController extends Controller
                 'activo' => true,
                 'fecha_vigencia_desde' => now(),
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error("Error creando configuración: {$e->getMessage()}");
         }
@@ -337,7 +337,7 @@ class EmpresasController extends Controller
     {
         $mapeo = [
             'El Salvador' => 'SV',
-            'Guatemala' => 'GT', 
+            'Guatemala' => 'GT',
             'Honduras' => 'HN',
             'Nicaragua' => 'NI',
             'Costa Rica' => 'CR',
@@ -591,7 +591,7 @@ class EmpresasController extends Controller
             $recibo->empresa = $empresa;
 
             // Generar el PDF
-            $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.recibo-suscripcion', compact('recibo'));
             $pdf->setPaper('US Letter', 'portrait');
 
             return $pdf->stream("recibo-plan-{$plan}.pdf");

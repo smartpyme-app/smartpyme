@@ -50,6 +50,28 @@
             </select>
         </div>
     </div>
+  <div class="row mb-3 align-items-end" *ngIf="puedeEditarCreditoCliente()">
+    <div class="form-group col-12 col-md-4 col-lg-4 without-label">
+      <div class="form-switch border rounded">
+        <label class="form-check-label" for="habilita_credito_info">Cliente con opción de crédito</label>
+        <input class="form-check-input" type="checkbox" id="habilita_credito_info"
+               [(ngModel)]="cliente.habilita_credito" role="switch" class="form-check-input float-end ng-untouched ng-pristine ng-valid" name="habilita_credito"
+               (change)="onHabilitaCreditoChange()">
+      </div>
+    </div>
+    <div class="form-group col-12 col-md-4 col-lg-4" *ngIf="cliente.habilita_credito">
+      <label for="dias_credito" class="form-label">Días de crédito</label>
+      <select class="form-select" name="dias_credito" [(ngModel)]="cliente.dias_credito">
+        <option [ngValue]="null">Seleccione aquí</option>
+        <option *ngFor="let d of diasCreditoOpciones" [value]="d">{{ d }} días</option>
+      </select>
+    </div>
+    <div class="form-group col-12 col-md-4 col-lg-4" *ngIf="cliente.habilita_credito">
+      <label for="limite_credito" class="form-label">Monto límite (opcional)</label>
+      <input type="number" step="0.01" min="0" class="form-control" placeholder="Ej: 5000.00"
+             name="limite_credito" [(ngModel)]="cliente.limite_credito">
+    </div>
+  </div>
     @if (cliente.tipo != 'Extranjero') {
     <div class="row">
         <div class="col-12" [ngClass]="{ 'order-1' :  cliente.tipo == 'Persona', 'order-2' :  cliente.tipo == 'Empresa' }">
@@ -443,15 +465,15 @@
             <div class="form-group col-6 col-lg-3">
                 <label for="tipo_documento">Tipo de documento</label>
                 <select class="form-select" placeholder="Escribe aquí" name="tipo_documento" [(ngModel)]="cliente.tipo_documento">
-                    <option value="13">DUI</option>
-                    <option value="36">NIT</option>
+                    <option value="13">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Documento de identidad' }}</option>
+                    <option value="36">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT' : 'Identificación fiscal' }}</option>
                     <option value="03">Pasaporte</option>
                     <option value="02">Carnet de residente</option>
                     <option value="37">Otro</option>
                 </select>
             </div>
             <div class="form-group col-6 col-lg-3">
-                <label for="dui">Número de Identificación</label>
+                <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</label>
                 <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui">
             </div>
             <div class="form-group col-6 col-lg-3">

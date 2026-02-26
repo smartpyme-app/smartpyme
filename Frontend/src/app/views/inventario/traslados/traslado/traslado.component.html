@@ -1,176 +1,240 @@
-<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
-    <h3 (click)="loadAll()">{{ traslado.id ? 'Editar ' : 'Crear ' }} Traslado</h3>
-    <button class="btn btn-light text-danger" routerLink="/traslados"><i class="fa fa-arrow-left"></i> Regresar</button>
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Traslado <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/traslados">Traslados</a></li>
+            <li class="breadcrumb-item"><a>Traslado</a></li>
+        </ol>
+    </div>
+</div>
+<div *ngIf="loading" class="row"> <p class="col-md-12 text-center text-muted mt-5">Cargando...</p> </div>
+<div *ngIf="bodegas.length && bodegas.length < 2" class="row">
+    <p class="col-md-12 text-center text-muted mt-5">No hay bodegas suficientes para realizar este proceso</p>
 </div>
 
-@if (bodegas.length && bodegas.length < 2) {
-    <div class="row">
-        <p class="col-md-12 text-center text-muted mt-5">No hay bodegas suficientes para realizar este proceso</p>
-    </div>
-}
+<div class="card mb-3" *ngIf="bodegas.length >= 2">
+    <div class="card-body">
+        <div class="row">
+            <div class="form-group col-md-2">
+                <label for="fecha">Fecha:</label>
+                <input type="date" class="form-control" [(ngModel)]="traslado.fecha" name="fecha">
+            </div>
+            <div class="form-group col-md-1">
+                <label for="fecha">Estado:</label><br>
+                <p class="badge badge-info">{{ traslado.estado }}</p>
+            </div>
+            <div class="form-group col-md-2">
+                <label for="traslado.origen_id">De:</label>
+                <select class="form-control form-select" (change)="setOrigen($event.target.value)" [(ngModel)]="traslado.origen_id" name="traslado.origen_id">
+                    <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label for="traslado.destino_id">Para:</label>
+                <select class="form-control form-select" (change)="setDestino($event.target.value)" [(ngModel)]="traslado.destino_id" name="traslado.destino_id">
+                    <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
+                </select>
+            </div>
 
-<section class="card border-0 p-3 mb-3">
-    <div class="row">
-        <div class="form-group col-md-2">
-            <label for="fecha">Fecha:</label>
-            <input type="date" class="form-control" [(ngModel)]="traslado.fecha" name="fecha">
-        </div>
-        <div class="form-group col-md-1">
-            <label for="fecha">Estado:</label><br>
-            <p class="badge bg-info">{{ traslado.estado }}</p>
-        </div>
-        <div class="form-group col-md-2">
-            <label for="traslado.id_bodega_de">De:</label>
-            <select class="form-control form-select" [(ngModel)]="traslado.id_bodega_de" name="traslado.id_bodega_de">
-                @for (bodega of bodegas; track bodega.id) {
-                    <option [value]="bodega.id">{{ bodega.nombre }}</option>
-                }
-            </select>
-        </div>
-        <div class="form-group col-md-2">
-            <label for="traslado.id_bodega">Para:</label>
-            <select class="form-control form-select" [(ngModel)]="traslado.id_bodega" name="traslado.id_bodega">
-                @for (bodega of bodegas; track bodega.id) {
-                    <option [value]="bodega.id">{{ bodega.nombre }}</option>
-                }
-            </select>
+            <div class="form-group col-md-5">
+                <label for="nota">Nota:</label>
+                <input type="text" class="form-control" [(ngModel)]="traslado.nota" name="nota" placeholder="Nota" required focus="true">
+            </div>
         </div>
 
-        <div class="form-group col-md-5">
-            <label for="concepto">Nota:</label>
-            <input type="text" class="form-control" [(ngModel)]="traslado.concepto" name="concepto" placeholder="Nota" required>
-        </div>
-    </div>
-</section>
-
-<section class="card border-0 p-3 mb-3">
-                    
-    <div class="d-flex justify-content-between mb-3">
-            <h6 class="mt-3">Productos</h6>
-            @if (traslado.estado == 'Pendiente') {
-                <button (click)="openModal(inventario)" class="btn btn-default tcla-F6" tooltip="Buscar y agregar productos">
-                    <i class="fa fa-list"></i>
-                </button>
-            }
-    </div>
-
-    <div class="row" style="min-height: 250px;">
-        <div class="col-md-12">
-            <table class="table table-borderless table-hover">
-                <thead>
-                    <tr>
-                        <th width="100" class="text-center">N°</th>
-                        <th>Producto</th>
-                        <th width="200" class="text-center">Cantidad</th>
-                        @if (traslado.estado == 'Pendiente') {
-                            <th width="100" class="text-center">Mas</th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (traslado?.detalles.length == 0) {
+        <!-- Tabla -->
+        <div class="row" style="min-height: 350px;">
+            <div class="col-md-12">
+                <table class="table table-borderless table-hover">
+                    <thead>
                         <tr>
-                            <td colspan="4" class="text-center">No hay productos agregados</td>
+                            <th class="text-center">N°</th>
+                            <th>Producto</th>
+                            <th class="text-center">Medida</th>
+                            <th class="text-center">Cantidad</th>
+                            <th class="text-center" *ngIf="traslado.estado == 'En Proceso'"><i class="fa fa-cog"></i></th>
                         </tr>
-                    }
-                    @for (detalle of traslado?.detalles; track detalle.id; let i = $index) {
-                        <tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor=" let de of traslado?.detalles, let i=index">
                             <td class="text-center">{{ i + 1 }}</td>
-                            <td>{{ detalle.nombre_producto }}</td>
-                            <td class="text-center">
-                                <input type="number" class="form-control" [(ngModel)]="detalle.cantidad">
+                            <td>{{ de.nombre_producto }}</td>
+                            <td class="text-center">{{ de.medida }}</td>
+                            <td class="text-center">{{ de.cantidad }}</td>
+                            <td style="width: 100px;" class="text-center" *ngIf="traslado.estado == 'En Proceso'">
+                                <a tooltip="Eliminar" class="btn btn-default" (click)="eliminarDetalle(de)"><i class="fa fa-trash"></i>
+                                </a>
+                                <a tooltip="Editar" class="btn btn-default" (click)="openModalDetalle(mdetalle, de)"><i class="fa fa-pencil-alt"></i>
+                                </a>
                             </td>
-                            @if (traslado.estado == 'Pendiente') {
-                                <td style="width: 100px;" class="text-center">
-                                    <a tooltip="Eliminar" class="btn btn-default" (click)="eliminarDetalle(detalle)"><i class="fa fa-trash"></i>
-                                    </a>
-                                </td>
-                            }
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+    <div class="card-footer">
+        <button *ngIf="traslado.estado == 'En Proceso'" (click)="openModal(inventario)" class="btn btn-danger tcla-F4" tooltip="Buscar y agregar productos">
+            <i class="fa fa-list-alt"></i> Producto <small>(F4)</small>
+        </button>
+        <button *ngIf="traslado.estado == 'En Proceso'" (click)="openModalStock(stock)" class="btn btn-success tcla-F6" tooltip="Agregar todos los productos e igualar el stock ideal">
+            <i class="fa fa-list-alt"></i> Generar <small>(F6)</small>
+        </button>
+        <a *ngIf="traslado.id" class="btn btn-default float-end tcla-F12 ml-2" href="{{ apiService.baseUrl + '/api/reporte/traslado/' + traslado.id + '?token=' + apiService.auth_token() }}" target="_blank" tooltip="Imprimir">
+            Imprimir (F12)
+        </a>
+        <button title="Aplica el cargo y descargo de los inventarios" *ngIf="traslado.estado == 'En Proceso'" (click)="onAprobar()" [disabled]="loading || traslado?.detalles?.length < 1" class="btn btn-primary float-end tcla-F10">
+            <span *ngIf="!loading">Guardar y Aplicar <small>(F10)</small></span>
+            <span *ngIf="loading">Aplicando...</span>
+        </button>
+        <button title="Guarda el traslado sin afectar los inventarios para poder editarlo e imprimirlo" *ngIf="traslado.estado == 'En Proceso'" (click)="onGenerar()" [disabled]="loading || traslado?.detalles?.length < 1" class="btn btn-primary float-end tcla-F9 mr-2">
+            <span *ngIf="!loading">Guardar <small>(F9)</small></span>
+            <span *ngIf="loading">Generando...</span>
+        </button>
+    </div>
+</div>
 
-</section>
-
-<section class="card border-0 p-3 mb-3">
-    <div class="row">
-        <div class="col-12">
-            <!-- <a *ngIf="traslado.id" class="btn btn-default float-end tcla-F12 ml-2" href="{{ apiService.baseUrl + '/api/reporte/traslado/' + traslado.id + '?token=' + apiService.auth_token() }}" target="_blank" tooltip="Imprimir">
-                Imprimir (F12)
-            </a> -->
-            <button title="Guarda el traslado sin afectar los inventarios para poder editarlo e imprimirlo" (click)="onGenerar()" [disabled]="saving || traslado?.detalles?.length < 1" class="btn btn-primary float-end tcla-F9">
-                @if (!saving) {
-                    <span>Guardar <small>(F9)</small></span>
-                }
-                @if (saving) {
-                    <span>Guardando...</span>
-                }
-            </button>
-            @if (traslado.id && traslado.estado == 'Pendiente') {
-                <button title="Aplica el cargo y descargo de los inventarios" (click)="onAprobar()" [disabled]="saving || traslado?.detalles?.length < 1" class="btn btn-primary float-end tcla-F10 me-2">
-                    @if (!saving) {
-                        <span>Autorizar <small>(F10)</small></span>
-                    }
-                    @if (saving) {
-                        <span>Aplicando...</span>
-                    }
+<ng-template #mdetalle>
+  <div class="modal-header">
+    <h3 class="modal-title text-center">Producto</h3>
+    <button type="button" class="close float-end" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="form" autocomplete="off" (ngSubmit)="editDetalle()">
+        <div class="form-group col-sm-12">
+            <label for="">Producto</label>
+            <app-buscador-productos (selectProducto)="productoSelect($event)"></app-buscador-productos>
+            <div *ngIf="producto?.id" class="mt-2">
+                <span class="badge bg-info">{{ producto.nombre }}</span>
+                <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProducto()">
+                    <i class="fa fa-times"></i> Limpiar
                 </button>
-            }
+            </div>
         </div>
-    </div>
-</section>
+
+        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.origen_id">
+            <label for="lote_id">Lote Origen <span class="text-danger">*</span></label>
+            <ng-select name="lote_id" [(ngModel)]="detalle.lote_id" (change)="setLoteOrigen()" class="form-select p-0" [disabled]="loadingLotes" (open)="cargarLotes()" required>
+                <ng-option value="">Seleccionar lote</ng-option>
+                <ng-option *ngFor="let lote of lotes" [value]="lote.id">
+                    {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                    <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                        (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                    </span>
+                </ng-option>
+            </ng-select>
+            <small class="text-muted" *ngIf="loadingLotes">Cargando lotes...</small>
+        </div>
+        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.destino_id">
+            <label for="lote_id_destino">Lote Destino <small class="text-muted">(Opcional)</small></label>
+            <ng-select name="lote_id_destino" [(ngModel)]="detalle.lote_id_destino" class="form-select p-0" [disabled]="loadingLotesDestino" (open)="cargarLotesDestino()">
+                <ng-option value="">Crear nuevo lote</ng-option>
+                <ng-option *ngFor="let lote of lotesDestino" [value]="lote.id">
+                    {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                    <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                        (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                    </span>
+                </ng-option>
+            </ng-select>
+            <small class="text-muted" *ngIf="loadingLotesDestino">Cargando lotes...</small>
+            <small class="text-muted d-block mt-1">Si no selecciona un lote, se creará uno nuevo con el mismo número del lote origen</small>
+        </div>
+        <div class="form-group col-sm-12">
+            <label for="cantidad">Cantidad:</label>
+            <input id="cantidad" type="number" min="1" class="form-control text-center" [(ngModel)]="detalle.cantidad" (change)="validarStockLote()" name="cantidad" focus="true">
+            <small class="text-danger" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && detalle.lote_id && detalle.cantidad && !stockLoteSuficiente()">
+                Stock insuficiente en el lote seleccionado
+            </small>
+        </div>
+
+        <div class="row text-center">
+            <div class="col-md-12">
+                <button type="submit" [disabled]="!detalle.cantidad || !detalle.producto_id || (producto?.inventario_por_lotes && isLotesActivo() && !detalle.lote_id)" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
 
 <ng-template #inventario>
   <div class="modal-header">
     <h3 class="modal-title text-center">Producto</h3>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button type="button" class="close float-end" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
   </div>
   <div class="modal-body">
-    <app-notificaciones-container></app-notificaciones-container>
-    <form #form="ngForm" name="form" class="row buscador" autocomplete="off" (ngSubmit)="agregarDetalle()">
-        <div class="form-group col-md-12">
+    <form #form="ngForm" name="form" class="buscador" autocomplete="off" (ngSubmit)="agregarDetalle()">
+        <div class="form-group col-sm-12">
             <label for="">Producto</label>
-            <ng-select name="id_producto" (change)="selectProducto()" [(ngModel)]="detalle.id_producto" class="form-select p-0">
-                <ng-option value="" selected>Todos</ng-option>
-                @for (producto of productos; track producto.id) {
-                    <ng-option [value]="producto.id">
-                        {{producto.nombre}}
-                    </ng-option>
-                }
+            <app-buscador-productos (selectProducto)="productoSelect($event)"></app-buscador-productos>
+            <div *ngIf="producto?.id" class="mt-2">
+                <span class="badge bg-info">{{ producto.nombre }}</span>
+                <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProducto()">
+                    <i class="fa fa-times"></i> Limpiar
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.origen_id">
+            <label for="lote_id">Lote Origen <span class="text-danger">*</span></label>
+            <ng-select name="lote_id" [(ngModel)]="detalle.lote_id" (change)="setLoteOrigen()" class="form-select p-0" [disabled]="loadingLotes" (open)="cargarLotes()" required>
+                <ng-option value="">Seleccionar lote</ng-option>
+                <ng-option *ngFor="let lote of lotes" [value]="lote.id">
+                    {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                    <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                        (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                    </span>
+                </ng-option>
             </ng-select>
+            <small class="text-muted" *ngIf="loadingLotes">Cargando lotes...</small>
         </div>
-
-        <div class="form-group col-md-12">
+        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.destino_id">
+            <label for="lote_id_destino">Lote Destino <small class="text-muted">(Opcional)</small></label>
+            <ng-select name="lote_id_destino" [(ngModel)]="detalle.lote_id_destino" class="form-select p-0" [disabled]="loadingLotesDestino" (open)="cargarLotesDestino()">
+                <ng-option value="">Crear nuevo lote</ng-option>
+                <ng-option *ngFor="let lote of lotesDestino" [value]="lote.id">
+                    {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                    <span *ngIf="lote.fecha_vencimiento" class="text-muted">
+                        (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
+                    </span>
+                </ng-option>
+            </ng-select>
+            <small class="text-muted" *ngIf="loadingLotesDestino">Cargando lotes...</small>
+            <small class="text-muted d-block mt-1">Si no selecciona un lote, se creará uno nuevo con el mismo número del lote origen</small>
+        </div>
+        <div class="form-group col-sm-12">
             <label for="cantidad">Cantidad:</label>
-            <input id="cantidad" type="number" min="1" class="form-control text-center" [(ngModel)]="detalle.cantidad" name="cantidad" required>
+            <input id="cantidad" type="number" min="1" class="form-control text-center" [(ngModel)]="detalle.cantidad" (change)="validarStockLote()" name="cantidad" required>
+            <small class="text-danger" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && detalle.lote_id && detalle.cantidad && !stockLoteSuficiente()">
+                Stock insuficiente en el lote seleccionado
+            </small>
         </div>
 
-        @if (detalle.id_producto) {
-            <div class="form-group col-md-6">
-                <label for="traslado">Stock luego del traslado {{ bodegaDe.nombre_bodega }}:</label>
-                <p>{{ (bodegaDe.stock * 1) - (detalle.cantidad ? detalle.cantidad * 1 : 0) }}</p>
+        <div class="row" *ngIf="producto.id && detalle.cantidad">
+            <div class="form-group col-md-4 text-center" *ngIf="traslado.origen_id">
+                <label for="precio">{{ getNombreBodegaOrigen() }}</label><br>
+                <p>{{ getStockOrigenDespues() | number:'1.2' }}</p>
             </div>
-        }
-        
-        @if (detalle.id_producto) {
-            <div class="form-group col-md-6">
-                <label for="traslado">Stock luego del traslado {{ bodegaPara.nombre_bodega }}:</label>
-                <p>{{ (bodegaPara.stock * 1) + (detalle.cantidad ? detalle.cantidad * 1 : 0) }}</p>
+            <div class="form-group col-md-4 text-center text-muted">
+                <i class="fa fa-random fa-2x"></i>
             </div>
-        }
+            <div class="form-group col-md-4 text-center" *ngIf="traslado.destino_id">
+                <label for="medida">{{ getNombreBodegaDestino() }}</label><br>
+                <p>{{ getStockDestinoDespues() | number:'1.2' }}</p>
+            </div>
+        </div>
 
-        <div class="d-grid mt-4">
-            <button [disabled]="!form.form.valid  || saving" class="btn btn-primary btn-block">
-                @if (!saving) {
-                    <span>Guardar</span>
-                }
-                @if (saving) {
-                    <span>Guardando...</span>
-                }
-            </button>
+        <div class="form-group col-sm-12">
+            <button type="submit" [disabled]="!form.form.valid || loading" class="btn btn-primary btn-block"> Agregar </button>
         </div>
     </form>
   </div>
@@ -198,38 +262,28 @@
                 </tr>
             </thead>
             <tbody>
-                @if (productos?.length < 1 && !loading) {
-                    <tr>
-                        <td colspan="6" class="text-center">
-                            <span class="label label-info">No tiene productos con stock bajo</span>
-                        </td>
-                    </tr>
-                }
-                @if (loading) {
-                    <tr>
-                        <td colspan="6" class="text-center">
-                            <span class="label label-info">Cargando...</span>
-                        </td>
-                    </tr>
-                }
-                @for (producto of productos; track producto.id_producto) {
-                    <tr>
-                        <td class="text-center">
-                            <a class="btn btn-danger btn-md" (click)="eliminarProducto(producto)"><i class="fa fa-trash"></i>
-                            </a>
-                        </td>
-                        <td>{{ producto.nombre_producto }}</td>
-                        <td>{{ producto.nombre_categoria }}</td>
-                        <td class="text-center">{{ producto.stock }}</td>
-                        <td class="text-center">{{ producto.stock_max }}</td>
-                        <td class="text-center">
-                            <input type="number" max="{{ producto.existencia }}" class="form-control" name="{{ 'producto[' + producto.id_producto + '].cantidad' }}" [(ngModel)]="producto.cantidad" style="text-align: center;">
-                            @if (!producto.disponible) {
-                                <span class="text-muted">No hay mas existencias</span>
-                            }
-                        </td>
-                    </tr>
-                }
+                <tr>
+                    <td colspan="6" class="text-center" *ngIf="productos?.length < 1 && !loading">
+                        <span class="label label-info">No tiene productos con stock bajo</span>
+                    </td>
+                    <td colspan="6" class="text-center" *ngIf="loading">
+                        <span class="label label-info">Cargando...</span>
+                    </td>
+                </tr>
+                <tr *ngFor=" let producto of productos">
+                    <td class="text-center">
+                        <a class="btn btn-danger btn-md" (click)="eliminarProducto(producto)"><i class="fa fa-trash"></i>
+                        </a>
+                    </td>
+                    <td>{{ producto.nombre_producto }}</td>
+                    <td>{{ producto.nombre_categoria }}</td>
+                    <td class="text-center">{{ producto.stock }}</td>
+                    <td class="text-center">{{ producto.stock_max }}</td>
+                    <td class="text-center">
+                        <input type="number" max="{{ producto.existencia }}" class="form-control" name="{{ 'producto[' + producto.producto_id + '].cantidad' }}" [(ngModel)]="producto.cantidad" style="text-align: center;">
+                        <span class="text-muted" *ngIf="!producto.disponible">No hay mas existencias</span>
+                    </td>
+                </tr>
             </tbody>
         </table>
         </div>

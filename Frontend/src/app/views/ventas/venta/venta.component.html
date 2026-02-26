@@ -148,6 +148,7 @@
                         }
                         <th width="100">Precio</th>
                         <th width="100">Descuento</th>
+                        <th *ngIf="usuario.empresa.cambiar_tipo_impuesto_venta" width="100">Tipo</th>
                         <th width="100" class="text-end">Total</th>
                     </tr>
                 </thead>
@@ -194,84 +195,85 @@
                             }
                             <td>{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
                             <td>{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
+                            <td>{{ (detalle.tipo_gravado || 'gravada') === 'gravada' ? 'Gravada' : ((detalle.tipo_gravado || '') === 'exenta' ? 'Exenta' : 'No sujeta') }}</td>
                             <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
                         </tr>
                     }
                     <tr>
-                        <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Sub Total:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Sub Total:</b></td>
                         <td class="text-end"><b>{{ venta?.referencia_shopify ? venta?.gravada : (venta?.sub_total + venta?.descuento) | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     @if (venta.referencia_shopify) {
                         <tr>
-                            <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end text-info"><b>Impuestos incluidos:</b></td>
+                            <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end text-info"><b>Impuestos incluidos:</b></td>
                             <td class="text-end text-info"><b>{{ venta?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
                         </tr>
                     }
                     <tr>
-                        <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Descuento:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Descuento:</b></td>
                         <td class="text-end"><b>{{ venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     @for (impuesto of venta?.impuestos; track impuesto.id || $index) {
                         <tr>
-                            <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end">{{ impuesto?.impuesto?.nombre }} </td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">{{ impuesto?.impuesto?.nombre }} </td>
                             <td class="text-end">{{ impuesto.monto | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
                     }
                     @if (venta?.iva_retenido > 0) {
                         <tr>
-                            <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Retención:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Retención:</b></td>
                             <td class="text-end"><b>{{ venta?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
                         </tr>
                     }
                     @if (venta?.renta_retenida > 0) {
                         <tr>
-                            <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Renta (10%)</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Renta (10%)</b></td>
                             <td class="text-end"><b>{{ venta?.renta_retenida | currency:'USD':'symbol':'1.2' }}</b></td>
                         </tr>
                     }
                     @if (venta?.exenta > 0) {
                         <tr>
-                            <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Ventas Exentas:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Ventas Exentas:</b></td>
                             <td class="text-end"><b>{{ venta?.exenta | currency:'USD':'symbol':'1.2' }}</b></td>
                         </tr>
                     }
                     @if (venta?.no_sujeta > 0) {
                         <tr>
-                            <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Ventas No Sujetas:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Ventas No Sujetas:</b></td>
                             <td class="text-end"><b>{{ venta?.no_sujeta | currency:'USD':'symbol':'1.2' }}</b></td>
                         </tr>
                     }
                     @if (venta.cuenta_a_terceros > 0) {
                         <tr>
-                            <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"> <b>Cuenta a terceros</b> </td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"> <b>Cuenta a terceros</b> </td>
                             <td class="text-end"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
                         </tr>
                     }
                     @if (venta.propina > 0) {
                         <tr>
-                            <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Propina:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Propina:</b></td>
                             <td class="text-end"><b>{{ venta.propina | currency:'USD':'symbol':'1.2' }}</b></td>
                         </tr>
                     }
                     <tr>
-                        <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Total:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Total:</b></td>
                         <td class="text-end"><b>{{ venta?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     @if (venta.propina > 0) {
                       <tr>
-                        <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Total + Propina:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Total + Propina:</b></td>
                         <td class="text-end"><b>{{ getTotalConPropina() | currency:'USD':'symbol':'1.2' }}</b></td>
                       </tr>
                     }
                     @if (venta?.abonos?.length > 0) {
                         <tr>
-                            <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Abonos:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Abonos:</b></td>
                             <td class="text-end"><b>{{ venta?.abonos | filter:'estado':'Confirmado' | sum:'total' | currency }}</b></td>
                         </tr>
                     }
                     @if (venta?.abonos?.length > 0) {
                         <tr>
-                            <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Saldo:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Saldo:</b></td>
                             <td class="text-end"><b>{{ venta.saldo | currency }}</b></td>
                         </tr>
                     }

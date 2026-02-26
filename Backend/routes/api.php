@@ -26,7 +26,6 @@ Route::get('/prueba', function () {
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
-
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
 require base_path('routes/modulos/n1co/suscripciones-n1co.php');
@@ -37,6 +36,10 @@ require base_path('routes/modulos/auth.php');
 Route::group(['middleware' => ['jwt.auth']], function () {
 
 	Route::get('constants', [ConstantsController::class, 'getAppConstants']);
+
+	// Ventas perdidas (reporte comparación sp_nova vs vps)
+	Route::get('ventas-perdidas', [App\Http\Controllers\VentasPerdidasController::class, 'index'])->name('ventas.perdidas');
+	Route::get('ventas-perdidas/excel', [App\Http\Controllers\VentasPerdidasController::class, 'excel'])->name('ventas.perdidas.excel');
 
 	Route::get('/suscripcion/get-alert',     [SuscripcionesController::class, 'getAlertSuscription']);
 	Route::get('/suscripcion/isvisible-alert', [SuscripcionesController::class, 'isVisibleAlertSuscription']);
@@ -52,6 +55,13 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/ventas/cotizaciones.php');
 	require base_path('routes/modulos/ventas/abonos.php');
 	require base_path('routes/modulos/ventas/clientes.php');
+
+	// Lealtad
+	require base_path('routes/modulos/fidelizacion.php');
+
+	// Cliente 360
+	require base_path('routes/modulos/cliente-360/cliente-360.php');
+	require base_path('routes/modulos/cliente-360/cliente-notas.php');
 
 	// Compras
     require base_path('routes/modulos/compras/compras.php');
@@ -76,6 +86,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
     require base_path('routes/modulos/inventario/paquetes.php');
     require base_path('routes/modulos/inventario/custom-fields.php');
     require base_path('routes/modulos/inventario/entradas-salidas.php');
+    require base_path('routes/modulos/inventario/lotes.php');
 
 	// Eventos
 	require base_path('routes/modulos/eventos/eventos.php');

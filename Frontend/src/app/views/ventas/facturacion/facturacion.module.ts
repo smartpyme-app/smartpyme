@@ -22,6 +22,7 @@ import { MetodosDePagoComponent } from './facturacion-tienda/metodos-de-pago/met
 import { CotizacionFormComponent } from './facturacion-tienda/cotizacion-form/cotizacion-form.component';
 import { ProductoSpecsComponent } from './facturacion-tienda/detalles/producto-specs.component';
 import { CotizacionComponent } from '../cotizaciones/cotizacion/cotizacion.component';
+import { PuntosClienteVentaComponent } from '../components/puntos-cliente-venta/puntos-cliente-venta.component';
 
 // V2 Components
 import { FacturacionV2Component } from './facturacion-tienda-v2/facturacion-v2.component';
@@ -58,6 +59,7 @@ import { TiendaVentaPaquetesV2Component } from './facturacion-tienda-v2/paquetes
     VentaDetallesV2Component,
     TiendaVentaBuscadorV2Component,
     TiendaVentaPaquetesV2Component,
+    PuntosClienteVentaComponent,
   ],
   exports: [
     FacturacionComponent,
@@ -68,6 +70,7 @@ import { TiendaVentaPaquetesV2Component } from './facturacion-tienda-v2/paquetes
     TiendaVentaCitasComponent,
     VentaDetallesComponent,
     MetodosDePagoComponent,
+    PuntosClienteVentaComponent,
     ProductoSpecsComponent,
     CotizacionComponent,
     // V2 Components

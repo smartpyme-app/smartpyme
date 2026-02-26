@@ -120,13 +120,13 @@
             </td>
             <td>{{ planilla.tipo_planilla | titlecase }}</td>
             <td class="text-end">
-              ${{ planilla.total_salarios | number : "1.2-2" }}
+              {{ planilla.total_salarios | currency }}
             </td>
             <td class="text-end">
-              ${{ planilla.total_deducciones | number : "1.2-2" }}
+              {{ planilla.total_deducciones | currency }}
             </td>
             <td class="text-end">
-              ${{ planilla.total_neto | number : "1.2-2" }}
+              {{ planilla.total_neto | currency }}
             </td>
             <td>
               <span

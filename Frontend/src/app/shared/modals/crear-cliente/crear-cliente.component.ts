@@ -16,7 +16,7 @@ import Swal from 'sweetalert2';
     templateUrl: './crear-cliente.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+
 })
 export class CrearClienteComponent extends BaseModalComponent implements OnInit {
 
@@ -40,7 +40,10 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     public tipoAnterior = '';
     public modalRefContacto: any;
 
-    constructor(
+  public diasCreditoOpciones = [10, 15, 30, 45, 60];
+
+
+  constructor(
         public apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
@@ -49,13 +52,35 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         super(modalManager, alertService);
     }
 
+    puedeEditarCreditoCliente(): boolean {
+        const tipo = this.apiService.auth_user()?.tipo || '';
+        return ['Administrador', 'Supervisor', 'Supervisor Limitado'].includes(tipo);
+    }
+
+    onHabilitaCreditoChange() {
+        if (this.cliente.habilita_credito && !this.cliente.dias_credito) {
+            const clasificacion = this.cliente.clasificacion?.toUpperCase();
+            if (clasificacion === 'A' || clasificacion === 'B') {
+                this.cliente.dias_credito = 30;
+            } else if (clasificacion === 'C') {
+                this.cliente.dias_credito = 15;
+            } else {
+                this.cliente.dias_credito = 30;
+            }
+        }
+        if (!this.cliente.habilita_credito) {
+            this.cliente.dias_credito = null;
+            this.cliente.limite_credito = null;
+        }
+    }
+
     ngOnInit() {
         this.paises = JSON.parse(localStorage.getItem('paises')!);
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.distritos = JSON.parse(localStorage.getItem('distritos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
-        
+
         // Cargar vendedores
         this.apiService.getAll('usuarios/list').subscribe(
             (usuarios) => {
@@ -87,6 +112,9 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
             this.cliente.tipo = 'Persona';
             this.cliente.contactos = [];
             this.cliente.tipo_contribuyente = '';
+            this.cliente.habilita_credito = false;
+            this.cliente.dias_credito = null;
+            this.cliente.limite_credito = null;
             this.cliente.id_usuario = this.apiService.auth_user().id;
             this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
         }
