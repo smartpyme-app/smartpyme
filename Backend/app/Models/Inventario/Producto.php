@@ -34,6 +34,9 @@ class Producto extends Model
         'inventario_por_lotes',
         'id_empresa',
         'woocommerce_id',
+        'last_woocommerce_sync',
+        'imported_from_woocommerce_csv',
+        'woocommerce_parent_id',
         'shopify_product_id',
         'shopify_variant_id',
         'shopify_inventory_item_id',
@@ -46,6 +49,8 @@ class Producto extends Model
         'enable' => 'string',
         'syncing_from_shopify' => 'boolean',
         'last_shopify_sync' => 'datetime',
+        'last_woocommerce_sync' => 'datetime',
+        'imported_from_woocommerce_csv' => 'boolean',
         'inventario_por_lotes' => 'boolean',
     ];
 
