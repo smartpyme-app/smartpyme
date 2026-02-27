@@ -91,11 +91,11 @@
                         <div class="input-group" *ngIf="detalle?.precios?.length < 2">
                             <!-- <span class="input-group-text">$</span> -->
                             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-                            <input type="number" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio_iva" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio_iva">
+                            <input type="number" step="0.000001" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio_iva" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio_iva">
                         </div>
                         <select [(ngModel)]="detalle.precio_iva" (change)="onPrecioSelectChange(detalle)" class="form-select" name="precio_iva" *ngIf="detalle?.precios?.length > 1">
                             <option [value]="precio.precio" *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
-                                {{ precio.precio | currency}}
+                                {{ precio.precio | currency:'USD':'symbol':'1.0-6'}}
                             </option>
                         </select>
                     </td>
@@ -131,7 +131,7 @@
                         </select>
                     </td>
                     <td style="width: 100px;" class="text-right">
-                        <div>{{ detalle.total_iva | currency}}</div>
+                        <div>{{ detalle.total_iva | currency:'USD':'symbol':'1.0-6'}}</div>
                     </td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
