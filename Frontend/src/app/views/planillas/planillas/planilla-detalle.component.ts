@@ -355,17 +355,26 @@ export class PlanillaDetalleComponent implements OnInit {
           return Number(detalle.total_ingresos) || 0;
         }
         return Number(detalle.salario_devengado) || 0;
-      case 'salario_gravable':
-        // Salario gravable = total_ingresos - IGSS - AFP (lógica básica)
+      case 'salario_gravable': {
         const totalIngresos = Number(detalle.total_ingresos) || 0;
         const igss = Number(detalle.isss_empleado) || 0;
         const afp = Number(detalle.afp_empleado) || 0;
-        return totalIngresos - igss - afp;
+        // Si abonos sin retención, la base gravable excluye abonos
+        const base = (this.detalleSeleccionado && detalle === this.detalleSeleccionado && detalle.abonos_sin_retencion !== false)
+          ? totalIngresos - (Number(detalle.abonos) || 0)
+          : totalIngresos;
+        return base - igss - afp;
+      }
       case 'valor_por_hora':
         return this.calcularValorHora();
       case 'total_ingresos':
-      default:
-        return Number(detalle.total_ingresos) || 0;
+      default: {
+        const total = Number(detalle.total_ingresos) || 0;
+        if (this.detalleSeleccionado && detalle === this.detalleSeleccionado && detalle.abonos_sin_retencion !== false) {
+          return total - (Number(detalle.abonos) || 0);
+        }
+        return total;
+      }
     }
   }
 
@@ -488,6 +497,12 @@ export class PlanillaDetalleComponent implements OnInit {
       return;
     }
     this.detalleSeleccionado = { ...detalle };
+    if (this.detalleSeleccionado.abonos === undefined || this.detalleSeleccionado.abonos === null) {
+      this.detalleSeleccionado.abonos = 0;
+    }
+    if (this.detalleSeleccionado.abonos_sin_retencion === undefined || this.detalleSeleccionado.abonos_sin_retencion === null) {
+      this.detalleSeleccionado.abonos_sin_retencion = true;
+    }
     this.listaHorasExtraES = [];
     if (this.esElSalvador) {
       const dhe = detalle.detalle_horas_extra;
@@ -613,6 +628,8 @@ export class PlanillaDetalleComponent implements OnInit {
       dias_laborados: this.detalleSeleccionado.dias_laborados || 30,
       prestamos: this.detalleSeleccionado.prestamos || 0,
       anticipos: this.detalleSeleccionado.anticipos || 0,
+      abonos: this.detalleSeleccionado.abonos || 0,
+      abonos_sin_retencion: this.detalleSeleccionado.abonos_sin_retencion !== false,
       otros_descuentos: this.detalleSeleccionado.otros_descuentos || 0,
       descuentos_judiciales:
         this.detalleSeleccionado.descuentos_judiciales || 0,
@@ -1158,6 +1175,8 @@ export class PlanillaDetalleComponent implements OnInit {
     const comisiones = Number(this.detalleSeleccionado.comisiones) || 0;
     const bonificaciones = Number(this.detalleSeleccionado.bonificaciones) || 0;
     const otrosIngresos = Number(this.detalleSeleccionado.otros_ingresos) || 0;
+    const abonos = Number(this.detalleSeleccionado.abonos) || 0;
+    const abonosSinRetencion = this.detalleSeleccionado.abonos_sin_retencion !== false;
 
     // Obtener tipo de contrato
     const tipoContrato = this.detalleSeleccionado.empleado?.tipo_contrato || 1;
@@ -1204,9 +1223,12 @@ export class PlanillaDetalleComponent implements OnInit {
     }
     this.detalleSeleccionado.monto_horas_extra = Number(montoHorasExtra.toFixed(2));
   
-    // Calcular total de ingresos
-    const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos;
+    // Calcular total de ingresos (incluye abonos)
+    const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos + abonos;
     this.detalleSeleccionado.total_ingresos = Number(totalIngresos.toFixed(2));
+
+    // Base para retenciones: si abonos son "sin retención", no entran en ISSS/AFP/Renta
+    const baseParaRetenciones = abonosSinRetencion ? totalIngresos - abonos : totalIngresos;
 
     // Calcular deducciones (ISSS, AFP, Renta)
     // Ambos tipos de contrato sin prestaciones (Por obra y Servicios Profesionales) no tienen ISSS/AFP
@@ -1229,9 +1251,9 @@ export class PlanillaDetalleComponent implements OnInit {
       isssPatronal = 0;
       afpPatronal = 0;
     } else {
-      // Para empleados regulares - verificar configuración del empleado
+      // Para empleados regulares - verificar configuración del empleado (base = base para retenciones)
       if (aplicarIsss) {
-        const baseISSSEmpleado = Math.min(totalIngresos, 1000.00);
+        const baseISSSEmpleado = Math.min(baseParaRetenciones, 1000.00);
         isssEmpleado = baseISSSEmpleado * 0.03;
         isssPatronal = baseISSSEmpleado * 0.075;
       } else {
@@ -1241,8 +1263,8 @@ export class PlanillaDetalleComponent implements OnInit {
       }
 
       if (aplicarAfp) {
-        afpEmpleado = totalIngresos * 0.0725;
-        afpPatronal = totalIngresos * 0.0875;
+        afpEmpleado = baseParaRetenciones * 0.0725;
+        afpPatronal = baseParaRetenciones * 0.0875;
       } else {
         // No aplicar AFP si está desactivado en la configuración
         afpEmpleado = 0;
@@ -1258,12 +1280,11 @@ export class PlanillaDetalleComponent implements OnInit {
     // Calcular renta
     let renta = 0;
     if (esContratoSinPrestaciones) {
-      // 10% fijo para contratos sin prestaciones (Por obra y Servicios Profesionales)
-      // Se calcula sobre el TOTAL de ingresos (salario + comisiones + bonos + otros)
-      renta = totalIngresos * 0.10;
+      // 10% fijo para contratos sin prestaciones; se calcula sobre la base para retenciones
+      renta = baseParaRetenciones * 0.10;
       this.detalleSeleccionado.renta = Number(renta.toFixed(2));
     } else {
-      // Usar tablas de renta para empleados regulares
+      // Usar tablas de renta para empleados regulares (actualizarRenta usa total_ingresos; ajustamos antes)
       this.actualizarRenta();
       renta = Number(this.detalleSeleccionado.renta) || 0;
     }
@@ -1343,10 +1364,14 @@ export class PlanillaDetalleComponent implements OnInit {
     if (!this.detalleSeleccionado) return;
 
     const totalIngresos = Number(this.detalleSeleccionado.total_ingresos) || 0;
+    const abonos = Number(this.detalleSeleccionado.abonos) || 0;
+    const abonosSinRetencion = this.detalleSeleccionado.abonos_sin_retencion !== false;
+    const baseParaRenta = abonosSinRetencion ? totalIngresos - abonos : totalIngresos;
+
     const isssEmpleado = Number(this.detalleSeleccionado.isss_empleado) || 0;
     const afpEmpleado = Number(this.detalleSeleccionado.afp_empleado) || 0;
 
-    const renta = this.calcularRenta2025(totalIngresos, isssEmpleado, afpEmpleado, this.planilla.tipo_planilla);
+    const renta = this.calcularRenta2025(baseParaRenta, isssEmpleado, afpEmpleado, this.planilla.tipo_planilla);
     this.detalleSeleccionado.renta = renta;
   }
 
