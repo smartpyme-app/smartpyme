@@ -19,7 +19,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Services\FidelizacionCliente\ConsumoPuntosService;
-use League\CommonMark\Block\Element\Document;
 
 class WooCommerceController extends Controller
 {
@@ -68,30 +67,46 @@ class WooCommerceController extends Controller
 
             $request->merge(['id_empresa' => $usuario->id_empresa, 'id_usuario' => $usuario->id, 'id_bodega' => $usuario->id_bodega, 'id_sucursal' => $usuario->id_sucursal, 'id_documento' => $documento->id, 'id_canal' => $empresa->woocommerce_canal_id]);
 
-            $clienteData = $this->transformer->transformarCliente($request->all());
+            $wooData = $request->all();
+            if (!isset($wooData['billing']) && !isset($wooData['billing_address'])) {
+                Log::warning('Webhook WooCommerce: payload sin billing ni billing_address', [
+                    'claves' => array_keys($wooData),
+                    'order_id' => $wooData['id'] ?? null
+                ]);
+            }
+
+            $clienteData = $this->transformer->transformarCliente($wooData);
             $cliente = Cliente::updateOrCreate(
                 ['correo' => $clienteData['correo'], 'id_empresa' => $usuario->id_empresa],
                 $clienteData
             );
 
             // 2. Crear Venta
-            $ventaData = $this->transformer->transformarVenta($request->all(), $cliente->id, $documento->id,$documento->correlativo);
+            $ventaData = $this->transformer->transformarVenta($wooData, $cliente->id, $documento->id, $documento->correlativo);
             $venta = Venta::create($ventaData);
 
-            foreach ($request->line_items as $item) {
+            $lineItems = $request->line_items ?? $request->input('line_items', []);
+            if (empty($lineItems)) {
+                throw new \Exception('El pedido no contiene productos (line_items vacío)');
+            }
+            foreach ($lineItems as $item) {
                 //$producto = Producto::where('codigo', $item['sku'])->where('id_empresa', $usuario->id_empresa)->first();
                 //primero buscar por woocommerce_id si no por sku
 
-                $producto = Producto::where('woocommerce_id', $item['id'])->where('id_empresa', $usuario->id_empresa)->first();
+                // variation_id cuando es variación, sino product_id (item['id'] puede ser el order_item_id)
+                $wooProductId = $item['variation_id'] ?? $item['product_id'] ?? $item['id'] ?? null;
+                $producto = $wooProductId
+                    ? Producto::where('woocommerce_id', $wooProductId)->where('id_empresa', $usuario->id_empresa)->first()
+                    : null;
 
                 if (!$producto) {
-                    $producto = Producto::where('codigo', $item['sku'])->where('id_empresa', $usuario->id_empresa)->first();
+                    $producto = Producto::where('codigo', $item['sku'] ?? '')->where('id_empresa', $usuario->id_empresa)->first();
                 }
 
                 if (!$producto) {
                     return response()->json([
                         'status' => 'error',
-                        'mensaje' => 'Producto no encontrado: ' . $item['sku']
+                        'mensaje' => 'Producto no encontrado: ' . ($item['sku'] ?? $item['name'] ?? 'SKU desconocido')
                     ], 500);
                     // throw new \Exception("Producto no encontrado: {$item['sku']}");
                     //crear el producto
