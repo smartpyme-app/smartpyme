@@ -19,6 +19,7 @@ use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
 
 use App\Imports\Productos;
+use App\Imports\WooCommerceProductosImport;
 use App\Exports\ProductosExport;
 use App\Imports\TrasladosImport;
 use App\Models\Inventario\Traslado;
@@ -554,6 +555,44 @@ class ProductosController extends Controller
         Excel::import($import, $request->file);
 
         return Response()->json($import->getRowCount(), 200);
+    }
+
+    public function importarWooCommerce(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls',
+        ], [
+            'file.required' => 'El archivo CSV de WooCommerce es obligatorio.',
+            'file.mimes' => 'El archivo debe ser CSV, TXT, XLSX o XLS.',
+        ]);
+
+        try {
+            $import = new WooCommerceProductosImport();
+            Excel::import($import, $request->file('file'));
+            $estadisticas = $import->getEstadisticas();
+
+            return response()->json([
+                'success' => true,
+                'mensaje' => sprintf(
+                    'Importación completada: %d creados, %d actualizados, %d omitidos.',
+                    $estadisticas['creados'],
+                    $estadisticas['actualizados'],
+                    $estadisticas['omitidos']
+                ),
+                'creados' => $estadisticas['creados'],
+                'actualizados' => $estadisticas['actualizados'],
+                'omitidos' => $estadisticas['omitidos'],
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error al importar productos desde WooCommerce: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al importar el archivo. Verifica que sea un CSV exportado desde WooCommerce.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function export(Request $request)
