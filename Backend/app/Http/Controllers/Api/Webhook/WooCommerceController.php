@@ -62,6 +62,31 @@ class WooCommerceController extends Controller
             //Buscar Ticket
             $documento = Documento::where('id_sucursal', $usuario->id_sucursal)->where('nombre', 'Ticket')->where('activo', true)->first();
         }
+
+        $wooOrderId = $request->input('id');
+        $referenciaWooCommerce = $wooOrderId ? 'WOOC-' . $wooOrderId : null;
+
+        if ($referenciaWooCommerce) {
+            $ventaExistente = Venta::withoutGlobalScope('empresa')
+                ->where('referencia_woocommerce', $referenciaWooCommerce)
+                ->where('id_empresa', $empresa->id)
+                ->first();
+
+            if ($ventaExistente) {
+                Log::info('Venta duplicada WooCommerce - orden ya procesada', [
+                    'woo_order_id' => $wooOrderId,
+                    'venta_id_existente' => $ventaExistente->id,
+                ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Orden ya procesada previamente',
+                    'venta_id' => $ventaExistente->id,
+                    'duplicado' => true
+                ], 200);
+            }
+        }
+
         try {
             DB::beginTransaction();
 
@@ -81,8 +106,9 @@ class WooCommerceController extends Controller
                 $clienteData
             );
 
-            // 2. Crear Venta
             $ventaData = $this->transformer->transformarVenta($wooData, $cliente->id, $documento->id, $documento->correlativo);
+            $ventaData['referencia_woocommerce'] = $referenciaWooCommerce;
+
             $venta = Venta::create($ventaData);
 
             $lineItems = $request->line_items ?? $request->input('line_items', []);

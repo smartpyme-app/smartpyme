@@ -87,6 +87,7 @@ class Venta extends Model {
         'puntos_canjeados',
         'descuento_puntos',
         'referencia_shopify',
+        'referencia_woocommerce',
         'fecha_anulacion',
         'tipo_anulacion',
         'motivo_anulacion',
