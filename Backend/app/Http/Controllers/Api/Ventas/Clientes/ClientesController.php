@@ -206,7 +206,7 @@ class ClientesController extends Controller
         }
 
         if ($this->puedeEditarCreditoCliente() && !empty($request->habilita_credito)) {
-            $rules['dias_credito'] = 'required|in:10,15,30,45,60';
+            $rules['dias_credito'] = 'required|in:3,8,10,15,30,45,60';
         }
 
         $request->validate($rules, [
@@ -269,7 +269,7 @@ class ClientesController extends Controller
         ];
 
         if ($this->puedeEditarCreditoCliente() && !empty($request->habilita_credito)) {
-            $rules['dias_credito'] = 'required|in:10,15,30,45,60';
+            $rules['dias_credito'] = 'required|in:3,8,10,15,30,45,60';
         }
 
         $request->validate($rules, [
