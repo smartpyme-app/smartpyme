@@ -85,15 +85,15 @@
                     @for (detalle of venta?.detalles; track detalle.id || $index) {
                         <tr>
                             <td>
-                                <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle" height="50px" width="50px"> 
+                                <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle" height="50px" width="50px">
                                 {{ detalle.nombre_producto }}
                             </td>
                             <td style="width: 150px;">
                                 <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="cantidad">
                             </td>
-                            <td style="width: 150px;"> {{ detalle.precio  | currency:'USD':'symbol':'1.2'}} </td>
-                            <td style="width: 150px;"> {{ detalle.descuento  | currency:'USD':'symbol':'1.2'}} </td>
-                            <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+                            <td style="width: 150px;"> {{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.precio | number:'1.0-6':'en-US'}} </td>
+                            <td style="width: 150px;"> {{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.descuento | number:'1.0-6':'en-US'}} </td>
+                            <td style="width: 100px;" class="text-right">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.total | number:'1.0-6':'en-US'}}</td>
                             <td style="width: 50px;" class="text-center">
                                 <div class="btn-group">
                                     <button class="btn btn-link" (click)="delete(detalle)">
@@ -195,7 +195,7 @@
             <button type="submit" (click)="onFacturar()" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F8" title="Procesar venta (F8)">
                 @if (!loading) {
                     <span>
-                        Procesar 
+                        Procesar
                         @if (venta.estado == 'Pre-venta') {
                             <span>cotización</span>
                         }

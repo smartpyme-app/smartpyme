@@ -1,65 +1,44 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
-import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseModalComponent } from '@shared/base/base-modal.component';
-import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
-import { LazyImageDirective } from '../../../directives/lazy-image.directive';
-import { BsModalRef } from 'ngx-bootstrap/modal';
-
-interface ImportResponse {
-    success: boolean;
-    message: string;
-    filas_procesadas?: number;
-    empresa_id?: number;
-    error?: string;
-    errores?: any[];
-    errores_adicionales?: string[];
-}
-
-interface ValidationError {
-    fila: number;
-    columna: string;
-    errores: string[];
-    valores: any;
-}
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
-    selector: 'app-importar-excel',
-    templateUrl: './importar-excel.component.html',
-    standalone: true,
-    imports: [CommonModule, FormsModule, NotificacionesContainerComponent, LazyImageDirective]
+  selector: 'app-importar-excel',
+  templateUrl: './importar-excel.component.html'
 })
-export class ImportarExcelComponent extends BaseModalComponent implements OnInit {
+export class ImportarExcelComponent implements OnInit {
 
-    @Input() tipo: string = 'button';
-    @Input() nombre: string = '';
+    @Input() tipo:string = 'button';
+    @Input() nombre:string = '';
     @Output() loadAll = new EventEmitter();
-
-    public override loading: boolean = false;
+    public loading:boolean = false;
     public file:any = {};
+    public plantillaUrl: string = '';
     public importResult: any = null;
     public showResults: boolean = false;
-    public validationErrors: ValidationError[] = [];
+    public validationErrors: string[] = [];
     public businessErrors: string[] = [];
-    private _plantillaUrl: string = '';
 
-    override modalRef!: BsModalRef;
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
+    /** URL de la plantilla con parámetro de versión para evitar caché del navegador */
+    get plantillaUrlConCache(): string {
+        return this.plantillaUrl ? `${this.plantillaUrl}?v=${Date.now()}` : '';
+    }
+
+    modalRef!: BsModalRef;
 
     constructor(
-        private apiService: ApiService,
-        protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
-    ) {
-        super(modalManager, alertService);
-    }
+        private apiService: ApiService, public alertService: AlertService,
+        private modalService: BsModalService
+    ) { }
 
     ngOnInit() {
         this.calcularPlantillaUrl();
-        this.resetState();
     }
 
     /**
@@ -68,17 +47,13 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
      * Retrocompatibilidad: Si no se puede determinar el país, usa plantilla de El Salvador
      */
     calcularPlantillaUrl(): void {
-        // Este método ahora calcula y guarda en la propiedad privada
-        // El getter la devuelve cuando se necesite
-        this._plantillaUrl = this.getPlantillaUrlCalculada();
-    }
-
-    private getPlantillaUrlCalculada(): string {
         const nombreArchivo = this.nombre.toLowerCase();
 
         // Manejo especial para ventas
         if (nombreArchivo === 'ventas') {
-            return '';
+            // Las ventas tienen múltiples plantillas, se manejan en el HTML
+            this.plantillaUrl = '';
+            return;
         }
 
         // Para clientes-personas y clientes-empresas, verificar país
@@ -89,7 +64,8 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
 
                 // Si no hay empresa, usar plantilla de El Salvador (retrocompatibilidad)
                 if (!empresa) {
-                    return `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
+                    this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
+                    return;
                 }
 
                 // Verificar si es El Salvador
@@ -123,66 +99,68 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
 
                 // Si es El Salvador, usar plantilla específica, sino usar general
                 const sufijo = esElSalvador ? '-format.xlsx' : '-format-general.xlsx';
-                return `${this.apiService.baseUrl}/docs/${nombreArchivo}${sufijo}`;
+                this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}${sufijo}`;
             } catch (error) {
                 // En caso de error, usar plantilla de El Salvador (retrocompatibilidad)
-                return `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
+                this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
             }
+        } else {
+            // Para otros tipos, usar formato estándar
+            this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
         }
-        
-        // Para otros tipos, usar formato estándar
-        return `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
     }
 
-  /**
-   * Obtiene la URL de la plantilla según el tipo y el país de la empresa
-   * Para clientes-personas y clientes-empresas, usa plantillas generales si no es El Salvador
-   * Retrocompatibilidad: Si no se puede determinar el país, usa plantilla de El Salvador
-   */
-  get plantillaUrl(): string {
-    // Si ya se calculó, retornar el valor
-    if (!this._plantillaUrl) {
-      this._plantillaUrl = this.getPlantillaUrlCalculada();
-    }
-    return this._plantillaUrl;
-  }
-
-    override openModal(template: TemplateRef<any>) {
+    openModal(template: TemplateRef<any>) {
         // Recalcular la URL de la plantilla cuando se abre el modal
         // para asegurarnos de que tenemos los datos más recientes de la empresa
         this.calcularPlantillaUrl();
         this.alertService.modal = true;
-        this.modalRef = this.modalManager.openModal(template);
+        this.modalRef = this.modalService.show(template);
     }
 
-    setFile(event: any) {
+    setFile(event:any){
         this.file.file = event.target.files[0];
-        this.resetState();
     }
 
-    onSubmit(event: any) {
-        if (!this.file.file) {
-            this.alertService.error('Por favor seleccione un archivo');
-            return;
-        }
+    // onSubmit(event:any) {
 
-        console.log('Iniciando importación:', this.file);
+    //     console.log(this.file);
 
-        let formData: FormData = new FormData();
+    //     let formData:FormData = new FormData();
+    //     for (var key in this.file) {
+    //         formData.append(key, this.file[key]);
+    //     }
+
+    //     console.log(formData);
+    //     this.loading = true;
+    //     this.apiService.store(this.nombre.toLowerCase() + '/importar', formData).subscribe(data => {
+    //         this.loading = false;
+    //         this.alertService.success('Importación exitosa', data + ' ' + this.nombre.replace('-', ' ') + ' agregados');
+    //         setTimeout(()=>{
+    //             this.modalRef.hide();
+    //             this.loadAll.emit();
+    //             this.alertService.modal = false;
+    //         }, 2000);
+    //     }, error => {this.alertService.error(error); this.loading = false;});
+    // }
+
+    onSubmit(event:any) {
+        console.log(this.file);
+
+        let formData:FormData = new FormData();
         for (var key in this.file) {
             formData.append(key, this.file[key]);
         }
 
+        console.log(formData);
         this.loading = true;
-        this.resetState();
 
-        this.apiService.store(this.nombre.toLowerCase() + '/importar', formData)
-          .pipe(this.untilDestroyed())
-          .subscribe(
-          (data: any) => {
-            this.loading = false;
+        this.apiService.store(this.nombre.toLowerCase() + '/importar', formData).subscribe(
+            (data: any) => {
+                this.loading = false;
 
-          if (this.nombre.toLowerCase() === 'ventas') {
+
+                if (this.nombre.toLowerCase() === 'ventas') {
 
                     if (data && typeof data === 'object' && data.message) {
                         this.alertService.success('Importación de ventas', data.message);
@@ -208,10 +186,9 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
                     // Manejo específico para importación de clientes
                     if (this.nombre.toLowerCase().includes('clientes')) {
                         if (data && typeof data === 'object' && data.message) {
-                            // Cerrar el modal primero para mostrar la alerta fuera (solo si existe)
-                            if (this.modalRef) {
-                                this.closeModal();
-                            }
+                            // Cerrar el modal primero para mostrar la alerta fuera
+                            this.modalRef.hide();
+                            this.alertService.modal = false;
 
                             // Mostrar mensaje con detalles de procesados y fallidos
                             let mensaje = data.message;
@@ -238,19 +215,13 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
                 // Solo cerrar modal y recargar si no es importación de clientes con mensaje detallado
                 if (!(this.nombre.toLowerCase().includes('clientes') && data && typeof data === 'object' && data.message)) {
                     setTimeout(() => {
-                        // Solo cerrar modal si existe (modo button/text)
-                        if (this.modalRef) {
-                            this.closeModal();
-                        }
+                        this.modalRef.hide();
                         this.loadAll.emit();
+                        this.alertService.modal = false;
                     }, 1000);
                 } else {
                     // Para clientes con mensaje detallado, solo recargar datos
                     setTimeout(() => {
-                        // Solo cerrar modal si existe (modo button/text)
-                        if (this.modalRef) {
-                            this.closeModal();
-                        }
                         this.loadAll.emit();
                     }, 500);
                 }
@@ -278,8 +249,9 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
     this.businessErrors = [];
   }
 
-    public override closeModal() {
-        super.closeModal();
+    public closeModal() {
+        this.modalRef?.hide();
+        this.alertService.modal = false;
         this.resetState();
     }
 
@@ -287,8 +259,8 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
         const url = `${this.nombre.toLowerCase()}/plantilla`;
         this.apiService.download(url)
           .pipe(this.untilDestroyed())
-          .subscribe(
-            (response: Blob) => {
+          .subscribe({
+            next: (response) => {
                 const blob = new Blob([response], {
                     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 });
@@ -301,10 +273,10 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(urlDownload);
             },
-            (error) => {
+            error: () => {
                 this.alertService.error('Error al descargar la plantilla');
             }
-        );
+          });
     }
 
     public tryAgain() {

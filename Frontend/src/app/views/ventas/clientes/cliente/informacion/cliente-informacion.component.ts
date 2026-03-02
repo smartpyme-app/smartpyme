@@ -43,7 +43,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   public tipoAnterior = '';
   public catalogo:any = [];
   public contabilidadHabilitada: boolean = false;
-  public diasCreditoOpciones = [10, 15, 30, 45, 60];
+  public diasCreditoOpciones = [3, 8, 10, 15, 30, 45, 60];
 
   private cdr = inject(ChangeDetectorRef);
 

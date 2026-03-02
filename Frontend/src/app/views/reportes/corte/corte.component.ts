@@ -21,6 +21,7 @@ export class CorteComponent implements OnInit {
     public indicadores:any = {};
     public sucursales:any = [];
     public usuarios:any = [];
+    public canales:any = [];
     public filtros:any = {};
 
     private destroyRef = inject(DestroyRef);
@@ -38,6 +39,7 @@ export class CorteComponent implements OnInit {
             this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
             this.filtros.id_usuario = this.apiService.auth_user().id;
         }
+        this.filtros.id_canal = '';
         this.filtros.fecha = this.apiService.date();
 
         this.apiService.getAll('sucursales/list')
@@ -63,6 +65,9 @@ export class CorteComponent implements OnInit {
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error);});
 
+        this.apiService.getAll('canales/list').subscribe(canales => {
+            this.canales = canales;
+        }, error => {this.alertService.error(error);});
 
         this.filtrar();
         

@@ -29,7 +29,7 @@
                     <td>{{ devolucion.observaciones }}</td>
                 </tr>
             </table>
-        </div>    
+        </div>
     </div>
 
 </div>
@@ -79,10 +79,10 @@
                                 </div>
                             </td>
                             <td class="text-end">{{ detalle.cantidad }}</td>
-                            <td class="text-end">{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
-                        </tr>
+                            <td class="text-end">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.precio | number:'1.0-6':'en-US' }}</td>
+                            <td class="text-end">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.descuento | number:'1.0-6':'en-US' }}</td>
+                            <td class="text-end">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.total | number:'1.0-6':'en-US' }}</td>
+                    </tr>
                     }
                     <tr>
                         <td colspan="4" class="text-end"></td>
@@ -163,7 +163,7 @@
                         <td>{{ devolucion?.venta.nombre_documento }} #{{ devolucion?.venta.correlativo }}</td>
                     </tr>
                 </table>
-            </div>    
+            </div>
         </div>
     </section>
 }

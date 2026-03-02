@@ -995,6 +995,13 @@
                                   </button>
                                 }
 
+                              <button tooltip="Importar productos desde CSV de WooCommerce"
+                                      (click)="openImportarWooCommerceCsv(importarWooCommerceCsvModal)" class="btn btn-light me-2"
+                                      *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                <i class="fa fa-file-csv me-2"></i>
+                                Importar desde CSV
+                              </button>
+
                                 @if (empresa.is_current_user_connected_to_woocommerce) {
                                   <button class="btn btn-light text-danger me-2"
                                           type="button"
@@ -1255,6 +1262,33 @@
                 <i class="fa fa-spinner fa-spin me-1"></i> Iniciando proceso...
               </span>
             }
+        </button>
+    </div>
+</ng-template>
+
+<ng-template #importarWooCommerceCsvModal>
+    <div class="modal-header">
+        <h5 class="modal-title">Importar productos desde CSV de WooCommerce</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <p class="text-muted mb-3">
+            Exporte sus productos desde WooCommerce (Productos → Exportar) y cargue aquí el archivo CSV
+            para importarlos al sistema. Los productos existentes se actualizarán; los nuevos se crearán.
+        </p>
+        <input type="file" class="form-control mb-3" #fileInputWooCommerce
+            accept=".csv,.txt,.xlsx,.xls" (change)="setFileWooCommerceCsv($event)">
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
+        <button type="button" class="btn btn-primary" [disabled]="!archivoWooCommerceCsv || importandoWooCommerceCsv"
+            (click)="importarWooCommerceCsv()">
+            <span *ngIf="!importandoWooCommerceCsv">
+                <i class="fa fa-upload me-1"></i> Importar
+            </span>
+            <span *ngIf="importandoWooCommerceCsv">
+                <i class="fa fa-spinner fa-spin me-1"></i> Importando...
+            </span>
         </button>
     </div>
 </ng-template>

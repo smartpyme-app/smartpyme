@@ -36,6 +36,7 @@ class Indicador extends Model
         'fin',
         'id_sucursal',
         'id_usuario',
+        'id_canal',
     ];
 
     public function sucursal(){
@@ -56,6 +57,9 @@ class Indicador extends Model
                             ->when($this->id_usuario, function($q){
                                 $q->where('id_usuario', $this->id_usuario);
                             })
+                            ->when($this->id_canal, function($q){
+                                $q->where('id_canal', $this->id_canal);
+                            })
                             ->where('cotizacion', 0)
                             ->whereBetween('fecha', [$this->inicio, $this->fin]);
                         })
@@ -68,6 +72,9 @@ class Indicador extends Model
                         ->when($this->id_usuario, function($q){
                             $q->where('id_usuario', $this->id_usuario);
                         })
+                        ->when($this->id_canal, function($q){
+                            $q->where('id_canal', $this->id_canal);
+                        })
                         ->where('cotizacion', 0)
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
@@ -78,6 +85,9 @@ class Indicador extends Model
                         })
                         ->when($this->id_usuario, function($q){
                             $q->where('id_usuario', $this->id_usuario);
+                        })
+                        ->when($this->id_canal, function($q){
+                            $q->where('id_canal', $this->id_canal);
                         })
                         ->where('cotizacion', 0)
                         ->where('estado', 'Pagada')
@@ -90,6 +100,9 @@ class Indicador extends Model
                         })
                         ->when($this->id_usuario, function($q){
                             $q->where('id_usuario', $this->id_usuario);
+                        })
+                        ->when($this->id_canal, function($q){
+                            $q->where('id_canal', $this->id_canal);
                         })
                         ->where('cotizacion', 0)
                         ->where('estado', 'Anulada')
@@ -104,6 +117,9 @@ class Indicador extends Model
                             })
                             ->when($this->id_usuario, function($q){
                                 $q->where('id_usuario', $this->id_usuario);
+                            })
+                            ->when($this->id_canal, function($q){
+                                $q->where('id_canal', $this->id_canal);
                             });
                         })
                         ->with('venta')
@@ -117,6 +133,9 @@ class Indicador extends Model
                         ->when($this->id_usuario, function($q){
                             $q->where('id_usuario', $this->id_usuario);
                         })
+                        ->when($this->id_canal, function($q){
+                            $q->where('id_canal', $this->id_canal);
+                        })
                         ->where('estado', 'Pendiente')
                         ->where('cotizacion', 0)
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
@@ -125,9 +144,16 @@ class Indicador extends Model
         $this->abonos = Abono::where('estado', 'Confirmado')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->whereHas('venta', function($q){
-                            $q->when($this->id_sucursal, function($q){
+                            $q->where('id_empresa', $this->id_empresa)
+                            ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
-                            })->where('id_empresa', $this->id_empresa);
+                            })
+                            ->when($this->id_usuario, function($q){
+                                $q->where('id_usuario', $this->id_usuario);
+                            })
+                            ->when($this->id_canal, function($q){
+                                $q->where('id_canal', $this->id_canal);
+                            });
                         })->get();
 
         $this->compras = Compra::where('id_empresa', $this->id_empresa)

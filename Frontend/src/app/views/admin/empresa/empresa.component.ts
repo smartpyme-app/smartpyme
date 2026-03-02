@@ -39,6 +39,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public estadisticasPruebas: any = null;
     public documentosBase: any[] = [];
     public tipoSeleccionado: string = '';
+    public archivoWooCommerceCsv: File | null = null;
+    public importandoWooCommerceCsv: boolean = false;
     public cantidadFaltante: number = 1;
     public documentoBaseSeleccionado: any = null;
     public procesando: boolean = false;
@@ -936,6 +938,40 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             }
         });
     }
+    public openImportarWooCommerceCsv(template: TemplateRef<any>) {
+        this.archivoWooCommerceCsv = null;
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public setFileWooCommerceCsv(event: Event) {
+        const input = event.target as HTMLInputElement;
+        if (input.files && input.files.length > 0) {
+            this.archivoWooCommerceCsv = input.files[0];
+        } else {
+            this.archivoWooCommerceCsv = null;
+        }
+    }
+
+    public importarWooCommerceCsv() {
+        if (!this.archivoWooCommerceCsv) return;
+        this.importandoWooCommerceCsv = true;
+        const formData = new FormData();
+        formData.append('file', this.archivoWooCommerceCsv);
+        this.apiService.store('productos/importar-woocommerce', formData).subscribe(
+            (response: any) => {
+                this.importandoWooCommerceCsv = false;
+                this.modalRef.hide();
+                this.archivoWooCommerceCsv = null;
+                const msg = response.mensaje || `Importación completada: ${response.creados || 0} creados, ${response.actualizados || 0} actualizados.`;
+                this.alertService.success('Importación WooCommerce', msg);
+            },
+            (error) => {
+                this.importandoWooCommerceCsv = false;
+                this.alertService.error(error);
+            }
+        );
+    }
+
     //descargarWooCommerce
     public descargarWooCommerce() {
         console.log('descargarWooCommerce');

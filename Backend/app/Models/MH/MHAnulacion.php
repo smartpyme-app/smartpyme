@@ -55,6 +55,14 @@ class MHAnulacion extends Model
             $telefono = $DTE['sujetoExcluido']['telefono'];
         }
 
+        if ($DTE['identificacion']['tipoDte'] == '11') {
+            $tipo_documento = $DTE['receptor']['tipoDocumento'];
+            $num_documento = $DTE['receptor']['numDocumento'];
+            $nombre = $DTE['receptor']['nombre'];
+            $correo = $DTE['receptor']['correo'];
+            $telefono = $DTE['receptor']['telefono'];
+        }
+
         if (isset($DTE['receptor']) && (($DTE['identificacion']['tipoDte'] == '03') || $DTE['identificacion']['tipoDte'] == '05') || $DTE['identificacion']['tipoDte'] == '06') {
             $tipo_documento = '36';
             $num_documento = $DTE['receptor']['nit'];

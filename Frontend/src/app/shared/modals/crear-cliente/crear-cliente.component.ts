@@ -40,7 +40,7 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     public tipoAnterior = '';
     public modalRefContacto: any;
 
-  public diasCreditoOpciones = [10, 15, 30, 45, 60];
+    public diasCreditoOpciones = [3, 8, 10, 15, 30, 45, 60];
 
 
   constructor(

@@ -21,7 +21,7 @@
                 Libro de IVA PDF
             </button>
           </li>
-          <li>
+          <li *ngIf="isElSalvador">
             <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
                 <img appLazyImage="/assets/icons/download.png" class="icon me-2">
                 Anexo CSV
@@ -33,7 +33,7 @@
                 Libro de Percepcion 1% Excel
             </button>
           </li>
-          <li>
+          <li *ngIf="isElSalvador">
             <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexoPercepcion()">
                 <img appLazyImage="/assets/icons/download.png" class="icon me-2">
                 Anexo de Percepcion 1% CSV

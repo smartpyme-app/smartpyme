@@ -511,12 +511,18 @@ class EmpleadosController extends Controller
                 $detalle->salario_devengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
             }
 
-            // ✅ CALCULAR TOTAL DE INGRESOS PRIMERO (antes de calcular deducciones)
+            // ✅ CALCULAR TOTAL DE INGRESOS PRIMERO (incluye abonos)
             $detalle->total_ingresos = round($detalle->salario_devengado +
                 $detalle->monto_horas_extra +
                 $detalle->comisiones +
                 $detalle->bonificaciones +
-                $detalle->otros_ingresos, 2);
+                $detalle->otros_ingresos +
+                ($detalle->abonos ?? 0), 2);
+
+            $abonosSinRetencion = $detalle->abonos_sin_retencion !== false;
+            $baseParaRetenciones = $abonosSinRetencion
+                ? $detalle->total_ingresos - ($detalle->abonos ?? 0)
+                : $detalle->total_ingresos;
 
             // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO Y CONFIGURACIÓN DEL EMPLEADO
             if ($esContratoSinPrestaciones) {
@@ -531,31 +537,28 @@ class EmpleadosController extends Controller
                 $aplicarAfp = $configDescuentos['aplicar_afp'] ?? true; // Por defecto true
                 $aplicarIsss = $configDescuentos['aplicar_isss'] ?? true; // Por defecto true
 
-                // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales (usar total_ingresos)
-                // Verificar configuración antes de calcular
+                // EMPLEADOS ASALARIADOS: base para retenciones (excluye abonos si abonos_sin_retencion)
                 if ($aplicarIsss) {
-                    $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
+                    $baseISSSEmpleado = min($baseParaRetenciones, 1000);
                     $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
                     $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
                 } else {
-                    // No aplicar ISSS si está desactivado en la configuración
                     $detalle->isss_empleado = 0;
                     $detalle->isss_patronal = 0;
                 }
 
                 if ($aplicarAfp) {
-                    $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
-                    $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+                    $detalle->afp_empleado = round($baseParaRetenciones * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
+                    $detalle->afp_patronal = round($baseParaRetenciones * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
                 } else {
-                    // No aplicar AFP si está desactivado en la configuración
                     $detalle->afp_empleado = 0;
                     $detalle->afp_patronal = 0;
                 }
             }
 
-            // ✅ CALCULAR RENTA CON TIPO DE CONTRATO (usar total_ingresos)
+            // ✅ CALCULAR RENTA CON TIPO DE CONTRATO (base para retenciones)
             $salarioGravado = RentaHelper::calcularSalarioGravado(
-                $detalle->total_ingresos,
+                $baseParaRetenciones,
                 $detalle->isss_empleado,
                 $detalle->afp_empleado,
                 $planilla->tipo_planilla,

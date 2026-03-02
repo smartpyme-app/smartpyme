@@ -109,6 +109,7 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::post('/productos/habilitar-lotes-masivo', [ProductosController::class, 'habilitarLotesMasivo']);
 
     Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
+    Route::post('/productos/importar-woocommerce',        [ProductosController::class, 'importarWooCommerce']);
     //productos/exportar/woocommerce
     Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
     //productos/exportar-shopify

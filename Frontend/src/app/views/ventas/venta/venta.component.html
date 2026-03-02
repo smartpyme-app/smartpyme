@@ -193,10 +193,10 @@
                                     {{ getCustomFieldValue(detalle, field.id) }}
                                 </td>
                             }
-                            <td>{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
-                            <td>{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
+                            <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.precio | number:'1.0-6':'en-US' }}</td>
+                            <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.descuento | number:'1.0-6':'en-US' }}</td>
                             <td>{{ (detalle.tipo_gravado || 'gravada') === 'gravada' ? 'Gravada' : ((detalle.tipo_gravado || '') === 'exenta' ? 'Exenta' : 'No sujeta') }}</td>
-                            <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                            <td class="text-end">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.total | number:'1.0-6':'en-US' }}</td>
                         </tr>
                     }
                     <tr>

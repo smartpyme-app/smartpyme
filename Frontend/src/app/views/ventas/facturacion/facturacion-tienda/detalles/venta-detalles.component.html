@@ -120,7 +120,7 @@
                           <select [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-select" name="precio">
                             @for (precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null; track precio.precio || precio.id || $index) {
                               <option [value]="precio.precio">
-                                {{ precio.precio | currency}}
+                                {{ precio.precio | currency:'USD':'symbol':'1.0-6'}}
                               </option>
                             }
                           </select>
@@ -157,7 +157,7 @@
                             <option value="no_sujeta">No sujeta</option>
                         </select>
                     </td>
-                    <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}</td>
+                    <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.0-6'}}</td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
                             <button class="btn btn-light" (click)="delete(detalle)">

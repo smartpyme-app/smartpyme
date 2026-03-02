@@ -78,7 +78,7 @@
             </tr>
 
             @for (venta of ventas; track venta.id || $index) {
-                <tr class="animated fadeIn"> 
+                <tr class="animated fadeIn">
                     <!-- <td class="text-center">
                         @if (filtro.inicio == filtro.fin) {
                             <span>
@@ -87,7 +87,7 @@
                         }
                         @if (filtro.inicio != filtro.fin) {
                             <span>
-                                {{filtro.inicio | date:'dd-MM-yyyy'}} - 
+                                {{filtro.inicio | date:'dd-MM-yyyy'}} -
                                 {{filtro.fin | date:'dd-MM-yyyy'}}
                             </span>
                         }
@@ -106,11 +106,11 @@
 
             @if (ventas?.length > 0 && !loading) {
                 <tr>
-                    <td colspan="4" class="text-center"><b>Total</b></td>                                
+                    <td colspan="4" class="text-center"><b>Total</b></td>
                     <td class="text-center"><b>{{ ventas | sum:'cantidad' | number:'1.0'}}</b></td>
                     <td class="text-center"><b>{{ ventas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
                     <td class="text-center"><b>{{ ventas | sum:'costo' | currency:'USD':'symbol':'1.2' }}</b></td>
-                    <td class="text-center"><b>{{ ventas | sum:'utilidad' | currency:'USD':'symbol':'1.2' }}</b></td>                                
+                    <td class="text-center"><b>{{ ventas | sum:'utilidad' | currency:'USD':'symbol':'1.2' }}</b></td>
                     <td class="text-center"><b>{{ ventas | avg:'margen' | number:'1.2'}} %</b></td>
                 </tr>
             }
@@ -173,7 +173,7 @@
                 </select>
             </div>
         </div>
-        
+
         <br><br>
         <div class="row text-center">
             <div class="col-xs-12">

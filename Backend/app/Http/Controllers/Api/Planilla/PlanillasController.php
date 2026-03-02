@@ -803,6 +803,8 @@ class PlanillasController extends Controller
                 'comisiones' => 'nullable|numeric|min:0',
             'bonificaciones' => 'nullable|numeric|min:0',
             'otros_ingresos' => 'nullable|numeric|min:0',
+            'abonos' => 'nullable|numeric|min:0',
+            'abonos_sin_retencion' => 'nullable|boolean',
             'dias_laborados' => 'nullable|numeric|min:0|max:31',
             'prestamos' => 'nullable|numeric|min:0',
             'anticipos' => 'nullable|numeric|min:0',
@@ -847,6 +849,8 @@ class PlanillasController extends Controller
             $detalle->comisiones = $request->comisiones ?? 0;
             $detalle->bonificaciones = $request->bonificaciones ?? 0;
             $detalle->otros_ingresos = $request->otros_ingresos ?? 0;
+            $detalle->abonos = $request->abonos ?? 0;
+            $detalle->abonos_sin_retencion = $request->boolean('abonos_sin_retencion', true);
             $detalle->prestamos = $request->prestamos ?? 0;
             $detalle->anticipos = $request->anticipos ?? 0;
             $detalle->otros_descuentos = $request->otros_descuentos ?? 0;
@@ -933,7 +937,14 @@ class PlanillasController extends Controller
                 $detalle->monto_horas_extra +
                 $detalle->comisiones +
                 $detalle->bonificaciones +
-                $detalle->otros_ingresos, 2);
+                $detalle->otros_ingresos +
+                ($detalle->abonos ?? 0), 2);
+
+            // Base para retenciones: si abonos son "sin retención", no entran en ISSS/AFP/Renta
+            $abonosSinRetencion = $detalle->abonos_sin_retencion !== false;
+            $baseParaRetenciones = $abonosSinRetencion
+                ? $detalle->total_ingresos - ($detalle->abonos ?? 0)
+                : $detalle->total_ingresos;
 
             // ✅ OBTENER TIPO DE CONTRATO DEL EMPLEADO
             $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
@@ -953,10 +964,9 @@ class PlanillasController extends Controller
                 $aplicarAfp = $configDescuentos['aplicar_afp'] ?? true; // Por defecto true
                 $aplicarIsss = $configDescuentos['aplicar_isss'] ?? true; // Por defecto true
 
-                // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
-                // Verificar configuración antes de calcular
+                // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales (base = base para retenciones)
                 if ($aplicarIsss) {
-                    $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
+                    $baseISSSEmpleado = min($baseParaRetenciones, 1000);
                     $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
                     $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
                 } else {
@@ -966,8 +976,8 @@ class PlanillasController extends Controller
                 }
 
                 if ($aplicarAfp) {
-                    $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
-                    $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+                    $detalle->afp_empleado = round($baseParaRetenciones * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
+                    $detalle->afp_patronal = round($baseParaRetenciones * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
                 } else {
                     // No aplicar AFP si está desactivado en la configuración
                     $detalle->afp_empleado = 0;
@@ -975,9 +985,9 @@ class PlanillasController extends Controller
                 }
             }
 
-            // ✅ CALCULAR RENTA CON TIPO DE CONTRATO
+            // ✅ CALCULAR RENTA CON TIPO DE CONTRATO (base = base para retenciones)
             $salarioGravado = RentaHelper::calcularSalarioGravado(
-                $detalle->total_ingresos,
+                $baseParaRetenciones,
                 $detalle->isss_empleado,
                 $detalle->afp_empleado,
                 $planilla->tipo_planilla,
@@ -2391,6 +2401,22 @@ class PlanillasController extends Controller
             $detalle = PlanillaDetalle::findOrFail($detalleId);
             $planilla = $detalle->planilla;
 
+            // Validar datos de entrada
+            $request->validate([
+                'salario_devengado' => 'sometimes|numeric|min:0',
+                'horas_extra' => 'sometimes|numeric|min:0',
+                'monto_horas_extra' => 'sometimes|numeric|min:0',
+                'comisiones' => 'sometimes|numeric|min:0',
+                'bonificaciones' => 'sometimes|numeric|min:0',
+                'otros_ingresos' => 'sometimes|numeric|min:0',
+                'abonos' => 'sometimes|numeric|min:0',
+                'abonos_sin_retencion' => 'sometimes|boolean',
+                'prestamos' => 'sometimes|numeric|min:0',
+                'anticipos' => 'sometimes|numeric|min:0',
+                'otros_descuentos' => 'sometimes|numeric|min:0',
+                'descuentos_judiciales' => 'sometimes|numeric|min:0',
+            ]);
+
             // Preparar datos del empleado con valores actualizados
             $datosEmpleado = [
                 'salario_base' => $detalle->salario_base,
@@ -2401,6 +2427,8 @@ class PlanillasController extends Controller
                 'comisiones' => $request->input('comisiones', $detalle->comisiones),
                 'bonificaciones' => $request->input('bonificaciones', $detalle->bonificaciones),
                 'otros_ingresos' => $request->input('otros_ingresos', $detalle->otros_ingresos),
+                'abonos' => $request->input('abonos', $detalle->abonos ?? 0),
+                'abonos_sin_retencion' => $request->boolean('abonos_sin_retencion', $detalle->abonos_sin_retencion ?? true),
                 'prestamos' => $request->input('prestamos', $detalle->prestamos),
                 'anticipos' => $request->input('anticipos', $detalle->anticipos),
                 'otros_descuentos' => $request->input('otros_descuentos', $detalle->otros_descuentos),
@@ -2415,7 +2443,9 @@ class PlanillasController extends Controller
                 $planilla->tipo_planilla
             );
 
-            // Actualizar detalle con nuevos valores
+            $totalIngresos = ($resultados['totales']['total_ingresos'] ?? 0) + ($datosEmpleado['abonos'] ?? 0);
+
+            // Actualizar detalle con nuevos valores (total_ingresos debe incluir abonos)
             $detalle->update([
                 'salario_devengado' => $datosEmpleado['salario_devengado'],
                 'horas_extra' => $datosEmpleado['horas_extra'],
@@ -2423,20 +2453,22 @@ class PlanillasController extends Controller
                 'comisiones' => $datosEmpleado['comisiones'],
                 'bonificaciones' => $datosEmpleado['bonificaciones'],
                 'otros_ingresos' => $datosEmpleado['otros_ingresos'],
+                'abonos' => $datosEmpleado['abonos'],
+                'abonos_sin_retencion' => $datosEmpleado['abonos_sin_retencion'],
                 'prestamos' => $datosEmpleado['prestamos'],
                 'anticipos' => $datosEmpleado['anticipos'],
                 'otros_descuentos' => $datosEmpleado['otros_descuentos'],
                 'descuentos_judiciales' => $datosEmpleado['descuentos_judiciales'],
 
-                // Valores calculados
+                // Valores calculados (total_ingresos incluye abonos)
                 'isss_empleado' => $resultados['isss_empleado'] ?? 0,
                 'afp_empleado' => $resultados['afp_empleado'] ?? 0,
                 'renta' => $resultados['renta'] ?? 0,
                 'isss_patronal' => $resultados['isss_patronal'] ?? 0,
                 'afp_patronal' => $resultados['afp_patronal'] ?? 0,
-                'total_ingresos' => $resultados['totales']['total_ingresos'] ?? 0,
+                'total_ingresos' => round($totalIngresos, 2),
                 'total_descuentos' => $resultados['totales']['total_deducciones'] ?? 0,
-                'sueldo_neto' => $resultados['totales']['sueldo_neto'] ?? 0,
+                'sueldo_neto' => round($totalIngresos - ($resultados['totales']['total_deducciones'] ?? 0), 2),
             ]);
 
             // Actualizar totales de la planilla
