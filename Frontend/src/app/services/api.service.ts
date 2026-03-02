@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
-import { map, catchError, retry, timeout } from 'rxjs/operators';
-import { Observable, throwError } from 'rxjs';
+import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
+import { Observable, throwError, from } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
 import { ChatService } from '@services/chat/chat.service';
@@ -49,7 +49,28 @@ export class ApiService {
     register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data) {localStorage.setItem('SP_user_register', JSON.stringify(data)); } })); }
 
     export(url:string, filtros: any): Observable<Blob> {
-        return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros });
+        return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros }).pipe(
+            timeout(120000),
+            catchError((error) => {
+                if (error.error instanceof Blob && error.error.type?.includes('application/json')) {
+                    return from<string>(error.error.text()).pipe(
+                        switchMap((text: string) => {
+                            try {
+                                const errJson = JSON.parse(text);
+                                return throwError(() => ({
+                                    ...error,
+                                    status: error.status,
+                                    error: { message: errJson.error || errJson.message || text }
+                                }));
+                            } catch (_) {
+                                return throwError(() => ({ ...error, error: { message: text } }));
+                            }
+                        })
+                    );
+                }
+                return throwError(() => error);
+            })
+        );
     }
 
     exportWithUrl(url: string, filtros: any): Observable<any> {
