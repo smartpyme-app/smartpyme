@@ -33,7 +33,7 @@ export class CrearClienteComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
-    public diasCreditoOpciones = [10, 15, 30, 45, 60];
+    public diasCreditoOpciones = [3, 8, 10, 15, 30, 45, 60];
 
     constructor( 
         public apiService: ApiService, 

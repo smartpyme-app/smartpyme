@@ -28,7 +28,7 @@ export class ClienteInformacionComponent implements OnInit {
   public loading_contacto = false;
   public esNuevo = false;
   public tipoAnterior = '';
-  public diasCreditoOpciones = [10, 15, 30, 45, 60];
+  public diasCreditoOpciones = [3, 8, 10, 15, 30, 45, 60];
 
   modalRef?: BsModalRef;
 
