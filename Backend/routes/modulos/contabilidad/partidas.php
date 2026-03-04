@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\Ventas\GenerarDocumentosController; //aplicado como
     Route::post('/partidas/abrir', [PartidasController::class, 'abrirPartida']);
 
     Route::get('/partidas/descargar/{id}',  [PartidasController::class, 'generarPDF']);
+    Route::get('/partidas/descargar-excel/{id}',  [PartidasController::class, 'generarExcel']);
 
     Route::post('/partidas/reordenar-correlativos', [PartidasController::class, 'reordenarCorrelativos']);
 
