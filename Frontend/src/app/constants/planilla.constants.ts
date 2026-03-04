@@ -9,26 +9,48 @@ export class PlanillaConstants {
         return constants ? JSON.parse(constants).planilla.original : null;
     }
 
-    // ==================== ESTADOS BÁSICOS ====================
+    // ==================== ESTADOS BÁSICOS (fallback según backend PlanillaConstants.php) ====================
     static get ESTADOS() {
         return this.constants?.ESTADOS || {};
     }
 
     static get ESTADOS_EMPLEADO() {
-        return this.constants?.ESTADOS_EMPLEADO || {};
+        return this.constants?.ESTADOS_EMPLEADO || {
+            INACTIVO: 0,
+            ACTIVO: 1,
+            VACACIONES: 2,
+            INCAPACIDAD: 3,
+            SUSPENDIDO: 4
+        };
     }
 
     static get ESTADOS_PLANILLA() {
-        return this.constants?.ESTADOS_PLANILLA || {};
+        return this.constants?.ESTADOS_PLANILLA || {
+            INACTIVA: 0,
+            ACTIVA: 1,
+            BORRADOR: 2,
+            PENDIENTE: 3,
+            APROBADA: 4,
+            PAGADA: 5,
+            ANULADA: 6
+        };
     }
 
-    // ==================== TIPOS ====================
+    // ==================== TIPOS (fallback según backend PlanillaConstants.php) ====================
     static get TIPOS_CONTRATO() {
-        return this.constants?.TIPOS_CONTRATO || {};
+        return this.constants?.TIPOS_CONTRATO || {
+            PERMANENTE: 1,
+            TEMPORAL: 2,
+            POR_OBRA: 3,
+            SERVICIOS_PROFESIONALES: 4
+        };
     }
 
     static get TIPOS_JORNADA() {
-        return this.constants?.TIPOS_JORNADA || {};
+        return this.constants?.TIPOS_JORNADA || {
+            TIEMPO_COMPLETO: 1,
+            MEDIO_TIEMPO: 2
+        };
     }
 
     static get TIPO_DOCUMENTO() {
@@ -62,14 +84,76 @@ export class PlanillaConstants {
         return this.constants?.DEDUCCION_EMPLEADOS_ASALARIADOS || 1600.00;
     }
 
-    // ==================== LISTAS Y MAPEOS ====================
+    // ==================== LISTAS Y MAPEOS (fallback para selects y mapeos) ====================
+    static readonly LISTAS_ESTADOS_EMPLEADO_FALLBACK: Record<number, string> = {
+        0: 'Inactivo',
+        1: 'Activo',
+        2: 'En vacaciones',
+        3: 'Incapacitado',
+        4: 'Suspendido'
+    };
+
+    static readonly LISTAS_ESTADOS_PLANILLA_FALLBACK: Record<number, string> = {
+        0: 'Inactiva',
+        1: 'Activa',
+        2: 'Borrador',
+        3: 'Pendiente',
+        4: 'Aprobada',
+        5: 'Pagada',
+        6: 'Anulada'
+    };
+
+    static readonly LISTAS_TIPOS_CONTRATO_FALLBACK: Record<number, string> = {
+        1: 'Permanente',
+        2: 'Temporal',
+        3: 'Por obra',
+        4: 'Servicios profesionales'
+    };
+
+    static readonly LISTAS_TIPOS_JORNADA_FALLBACK: Record<number, string> = {
+        1: 'Tiempo completo',
+        2: 'Medio tiempo'
+    };
+
     static get LISTAS() {
-        return this.constants?.LISTAS || {};
+        const listas = this.constants?.LISTAS || {};
+        return {
+            ...listas,
+            ESTADOS_EMPLEADO: listas.ESTADOS_EMPLEADO || this.LISTAS_ESTADOS_EMPLEADO_FALLBACK,
+            ESTADOS_PLANILLA: listas.ESTADOS_PLANILLA || this.LISTAS_ESTADOS_PLANILLA_FALLBACK,
+            TIPOS_CONTRATO: listas.TIPOS_CONTRATO || this.LISTAS_TIPOS_CONTRATO_FALLBACK,
+            TIPOS_JORNADA: listas.TIPOS_JORNADA || this.LISTAS_TIPOS_JORNADA_FALLBACK
+        };
     }
 
     // ==================== MÉTODOS PARA OBTENER NOMBRES ====================
-    static getNombreEstadoEmpleado(estado: number): string {
-        return this.LISTAS.ESTADOS_EMPLEADO?.[estado] || 'Desconocido';
+    static readonly ESTADOS_EMPLEADO_FALLBACK: Record<number, string> = {
+        0: 'Inactivo',
+        1: 'Activo',
+        2: 'En vacaciones',
+        3: 'Incapacitado',
+        4: 'Suspendido'
+    };
+
+    static readonly ESTADOS_PLANILLA_FALLBACK: Record<number, string> = {
+        0: 'Inactiva',
+        1: 'Activa',
+        2: 'Borrador',
+        3: 'Pendiente',
+        4: 'Aprobada',
+        5: 'Pagada',
+        6: 'Anulada'
+    };
+
+    static getNombreEstadoEmpleado(estado: number | string): string {
+        const key = typeof estado === 'string' ? parseInt(estado, 10) : estado;
+        const nombre = this.LISTAS?.ESTADOS_EMPLEADO?.[key] ?? this.ESTADOS_EMPLEADO_FALLBACK[key];
+        return nombre ?? 'Desconocido';
+    }
+
+    static getNombreEstadoPlanilla(estado: number | string): string {
+        const key = typeof estado === 'string' ? parseInt(estado, 10) : estado;
+        return this.LISTAS?.ESTADOS_PLANILLA?.[key] ?? this.ESTADOS_PLANILLA_FALLBACK[key] ?? 'Desconocido';
     }
 
     static getNombreTipoContrato(id: number): string {

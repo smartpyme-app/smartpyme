@@ -297,25 +297,8 @@ export class PlanillasComponent implements OnInit {
     });
   }
 
-  public getEstadoPlanilla(estado: Number): string {
-    switch (estado) {
-      case PlanillaConstants.ESTADOS_PLANILLA.INACTIVA:
-        return 'Inactiva';
-      case PlanillaConstants.ESTADOS_PLANILLA.ACTIVA:
-        return 'Activa';
-      case PlanillaConstants.ESTADOS_PLANILLA.BORRADOR:
-        return 'Borrador';
-      case PlanillaConstants.ESTADOS_PLANILLA.APROBADA:
-        return 'Aprobada';
-      case PlanillaConstants.ESTADOS_PLANILLA.PENDIENTE:
-        return 'Pendiente';
-      case PlanillaConstants.ESTADOS_PLANILLA.PAGADA:
-        return 'Pagada';
-      case PlanillaConstants.ESTADOS_PLANILLA.ANULADA:
-        return 'Anulada';
-      default:
-        return 'Desconocido';
-    }
+  public getEstadoPlanilla(estado: number | string): string {
+    return PlanillaConstants.getNombreEstadoPlanilla(typeof estado === 'string' ? parseInt(estado, 10) : estado);
   }
 
   public getEstadoClass(estado: Number): string {

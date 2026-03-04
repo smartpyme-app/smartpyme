@@ -164,16 +164,17 @@ export class EmpleadosComponent implements OnInit {
     this.modalRef = this.modalService.show(template);
   }
 
-  public getEstadoClass(estado: number): string {
-    if (estado === PlanillaConstants.ESTADOS_EMPLEADO.ACTIVO) return 'bg-success';
-    if (estado === PlanillaConstants.ESTADOS_EMPLEADO.INACTIVO) return 'bg-danger';
-    if (estado === PlanillaConstants.ESTADOS_EMPLEADO.VACACIONES) return 'bg-info';
-    if (estado === PlanillaConstants.ESTADOS_EMPLEADO.INCAPACIDAD) return 'bg-warning';
-    if (estado === PlanillaConstants.ESTADOS_EMPLEADO.SUSPENDIDO) return 'bg-secondary';
-    return '';
+  public getEstadoClass(estado: number | string): string {
+    const e = typeof estado === 'string' ? parseInt(estado, 10) : estado;
+    if (e === PlanillaConstants.ESTADOS_EMPLEADO.ACTIVO) return 'bg-success';
+    if (e === PlanillaConstants.ESTADOS_EMPLEADO.INACTIVO) return 'bg-danger';
+    if (e === PlanillaConstants.ESTADOS_EMPLEADO.VACACIONES) return 'bg-info';
+    if (e === PlanillaConstants.ESTADOS_EMPLEADO.INCAPACIDAD) return 'bg-warning';
+    if (e === PlanillaConstants.ESTADOS_EMPLEADO.SUSPENDIDO) return 'bg-secondary';
+    return 'bg-secondary';
   }
 
-  public getNombreEstadoEmpleado(estado: number): string {
+  public getNombreEstadoEmpleado(estado: number | string): string {
     return PlanillaConstants.getNombreEstadoEmpleado(estado);
   }
 

@@ -4,6 +4,13 @@ import { Routes, RouterModule, NoPreloading } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
 import { SubscriptionGuard } from './guards/SuscriptionGuard.guard';
 
+import { LoginComponent } from './auth/login/login.component';
+import { RegisterComponent } from './auth/register/register.component';
+import { PagoComponent } from './auth/register/pago/pago.component';
+import { ForgetComponent } from './auth/forget/forget.component';
+import { LockComponent } from './auth/lock/lock.component';
+import { NotFoundComponent } from './shared/404/not-found.component';
+
 export const GUARD_TYPES = {
   ADMIN: 'admin',
   CITAS: 'citas',
@@ -11,34 +18,14 @@ export const GUARD_TYPES = {
 } as const;
 
 export const routes: Routes = [
-    { 
-      path: 'login', 
-      loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent), 
-      title: 'Inicio de sesión' 
-    },
-    { 
-      path: 'registro', 
-      loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent), 
-      title: 'Registro' 
-    },
-    { 
-      path: 'pago', 
-      loadComponent: () => import('./auth/register/pago/pago.component').then(m => m.PagoComponent), 
-      title: 'Pago' 
-    },
+    { path: 'login', component: LoginComponent, title: 'Inicio de sesión' },
+    { path: 'registro', component: RegisterComponent, title: 'Registro' },
+    { path: 'pago', component: PagoComponent, title: 'Pago' },
+    { path: 'restablecer-cuenta', component: ForgetComponent, title: 'Restablecer contraseña' },
+    { path: 'lock', component: LockComponent },
     // pago-exitoso y pago-exitoso-paywall: módulos no existen en este branch, redirigir a pago
     { path: 'pago-exitoso', redirectTo: 'pago', pathMatch: 'full' },
     { path: 'pago-exitoso-paywall', redirectTo: 'pago', pathMatch: 'full' },
-    { 
-      path: 'restablecer-cuenta', 
-      loadComponent: () => import('./auth/forget/forget.component').then(m => m.ForgetComponent), 
-      title: 'Restablecer contraseña' 
-    },
-    { 
-      path: 'lock', 
-      loadComponent: () => import('./auth/lock/lock.component').then(m => m.LockComponent) 
-    },
-
     // Paywall: módulo no existe en este branch, redirigir a login
     { path: 'paywall', redirectTo: 'login', pathMatch: 'full' },
 
@@ -113,7 +100,7 @@ export const routes: Routes = [
   // Not Found
   {
     path: '**',
-    loadComponent: () => import('./shared/404/not-found.component').then(m => m.NotFoundComponent),
+    component: NotFoundComponent,
   },
 ];
 

@@ -720,25 +720,8 @@ export class PlanillaDetalleComponent implements OnInit {
     }
   }
 
-  public getEstadoPlanilla(estado: number): string {
-    switch (estado) {
-      case 0:
-        return 'Inactiva';
-      case 1:
-        return 'Activa';
-      case 2:
-        return 'Borrador';
-      case 3:
-        return 'Pendiente';
-      case 4:
-        return 'Aprobada';
-      case 5:
-        return 'Pagada';
-      case 6:
-        return 'Anulada';
-      default:
-        return 'Desconocido';
-    }
+  public getEstadoPlanilla(estado: number | string): string {
+    return PlanillaConstants.getNombreEstadoPlanilla(typeof estado === 'string' ? parseInt(estado, 10) : estado);
   }
 
   public getEstadoClass(estado: number): string {

@@ -22,6 +22,7 @@ import { VerBoletasComponent } from './planillas/ver-boletas.component';
 import { ConfiguracionPlanillaComponent } from '@views/planillas/configuracion-planilla/configuracion-planilla.component';
 import { AguinaldosComponent } from './aguinaldos/aguinaldos.component';
 import { AguinaldoDetalleComponent } from './aguinaldos/aguinaldo-detalle.component';
+import { VerHistorialButtonComponent } from './empleados/shared/ver-historial-button.component';
 import { ReactiveFormsModule } from '@angular/forms';
 
 @NgModule({
@@ -51,7 +52,8 @@ import { ReactiveFormsModule } from '@angular/forms';
     VerBoletasComponent,
     ConfiguracionPlanillaComponent,
     AguinaldosComponent,
-    AguinaldoDetalleComponent
+    AguinaldoDetalleComponent,
+    VerHistorialButtonComponent
   ],
   exports: [
     PlanillasComponent,
