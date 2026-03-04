@@ -60,10 +60,19 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	// Empleados
 		require base_path('routes/modulos/empleados/empleados.php');
-		require base_path('routes/modulos/empleados/planillas.php');
+		// require base_path('routes/modulos/empleados/planillas.php'); // Reemplazado por módulo planilla
 		require base_path('routes/modulos/empleados/comisiones.php');
 		require base_path('routes/modulos/empleados/asistencias.php');
         require base_path('routes/modulos/empleados/metas.php');
+
+	// Planillas (módulo completo)
+		require base_path('routes/modulos/planilla/empleados.php');
+		require base_path('routes/modulos/planilla/planillas.php');
+		require base_path('routes/modulos/planilla/aguinaldos.php');
+		require base_path('routes/modulos/planilla/configuraciones.php');
+		require base_path('routes/modulos/planilla/cargos.php');
+		require base_path('routes/modulos/planilla/departamentos-planilla.php');
+		require base_path('routes/modulos/planilla/historialcontratos.php');
 
 	// Contabilidad
 		require base_path('routes/modulos/contabilidad/api.php');

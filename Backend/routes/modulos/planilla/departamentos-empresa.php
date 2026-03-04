@@ -1,7 +1,6 @@
 <?php 
 
 use App\Http\Controllers\Api\Planilla\DepartamentosEmpresaController;
-use App\Http\Controllers\AreasEmpresaController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'departamentosEmpresa', 'middleware' => ['auth:api']], function () {

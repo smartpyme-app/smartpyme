@@ -23,6 +23,8 @@ use App\Services\Contabilidad\CierreMesService;
 use App\Services\Contabilidad\SimulacionCierreService;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\Contabilidad\PartidaExcelExport;
 
 class PartidasController extends Controller
 {
@@ -1612,6 +1614,17 @@ class PartidasController extends Controller
         ]);
 
         return $pdf->stream('partida-'. $partida->id . '-' . $partida->correlativo . '.pdf');
+    }
+
+    /**
+     * Genera y descarga la partida en formato Excel
+     */
+    public function generarExcel($id)
+    {
+        $partida = Partida::with('detalles')->where('id', $id)->firstOrFail();
+        $filename = 'partida-' . $partida->id . '-' . ($partida->correlativo ?? 'sin-correlativo') . '.xlsx';
+
+        return Excel::download(new PartidaExcelExport($partida), $filename);
     }
 
     public function delete($id)

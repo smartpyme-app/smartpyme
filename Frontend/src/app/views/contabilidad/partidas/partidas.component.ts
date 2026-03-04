@@ -549,6 +549,25 @@ export class PartidasComponent implements OnInit {
     );
   }
 
+  public descargarPartidaExcel(partida: any) {
+    this.apiService.download(`partidas/descargar-excel/${partida.id}`).subscribe({
+      next: (response: Blob) => {
+        const blob = new Blob([response], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `partida-${partida.id}-${partida.correlativo || 'sin-correlativo'}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error: any) => {
+        this.alertService.error('Error al descargar la partida en Excel');
+      }
+    });
+  }
+
   public reordenarTodosLosCorrelativos() {
     Swal.fire({
       title: '¿Estás seguro?',

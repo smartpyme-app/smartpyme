@@ -21,6 +21,7 @@ export class SidebarComponent implements OnInit {
     public finanzasIsCollapsed:boolean = true;
     public contabilidadIsCollapsed:boolean = true;
     public bancosIsCollapsed:boolean = true;
+    public planillaIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
@@ -78,6 +79,11 @@ export class SidebarComponent implements OnInit {
             localStorage.setItem('bancosIsCollapsed', this.bancosIsCollapsed.toString());
         }else{
             this.bancosIsCollapsed = JSON.parse(localStorage.getItem('bancosIsCollapsed')!);
+        }
+        if (!localStorage.getItem('planillaIsCollapsed')) {
+            localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
+        }else{
+            this.planillaIsCollapsed = JSON.parse(localStorage.getItem('planillaIsCollapsed')!);
         }
         
         this.usuario = this.apiService.auth_user();
@@ -198,6 +204,15 @@ export class SidebarComponent implements OnInit {
         this.toggleSidebarMenu();
     }
 
+    togglePlanilla() {
+        if(this.planillaIsCollapsed){
+            this.closeAll();
+        }
+        this.planillaIsCollapsed = !this.planillaIsCollapsed;
+        localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
 
     toggleSidebarMenu() {
         if (this.sidebarCollapsed) {
@@ -223,6 +238,8 @@ export class SidebarComponent implements OnInit {
         localStorage.setItem('contabilidadIsCollapsed', this.contabilidadIsCollapsed.toString());
         this.bancosIsCollapsed = true;
         localStorage.setItem('bancosIsCollapsed', this.bancosIsCollapsed.toString());
+        this.planillaIsCollapsed = true;
+        localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
     }
 
     public onSubmit(){
@@ -243,6 +260,10 @@ export class SidebarComponent implements OnInit {
 
     canShowOption(permission: string): boolean {
         return this.apiService.hasPermission(permission);
+    }
+
+    trackByItem(index: number, item: any): any {
+        return item?.id ?? item?.url ?? index;
     }
 
     loadModules() {
