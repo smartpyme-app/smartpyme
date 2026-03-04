@@ -11,6 +11,7 @@ import {VerBoletasComponent} from './planillas/ver-boletas.component';
 import { ConfiguracionPlanillaComponent } from './configuracion-planilla/configuracion-planilla.component';
 import { AguinaldosComponent } from './aguinaldos/aguinaldos.component';
 import { AguinaldoDetalleComponent } from './aguinaldos/aguinaldo-detalle.component';
+import { PrestamosComponent } from './prestamos/prestamos.component';
 
 const routes: Routes = [
   {
@@ -34,7 +35,8 @@ const routes: Routes = [
       {path: 'boletas/:id', component: VerBoletasComponent},
       {path: 'configuracion-planilla', component: ConfiguracionPlanillaComponent},
       {path: 'aguinaldos', component: AguinaldosComponent},
-      {path: 'aguinaldo/detalle/:id', component: AguinaldoDetalleComponent}
+      {path: 'aguinaldo/detalle/:id', component: AguinaldoDetalleComponent},
+      {path: 'prestamos', component: PrestamosComponent}
     ],
   },
 ];

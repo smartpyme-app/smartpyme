@@ -57,6 +57,13 @@ export class PlanillaDetalleComponent implements OnInit {
 
   modalRef!: BsModalRef;
   detalleSeleccionado: any = null;
+  prestamosActivosEmpleado: any[] = [];
+  abonosPrestamosAsignados: { id_prestamo: number; monto: number }[] = [];
+  /** Selector: préstamo y monto elegidos para agregar a la lista de abonos */
+  prestamoSeleccionadoParaAbono: any = null;
+  montoSeleccionadoParaAbono: number | null = null;
+  /** Accordion: Préstamos en descuentos colapsado por defecto para no ensuciar la interfaz */
+  prestamosDescuentoCollapsed = true;
 
   constructor(
     private route: ActivatedRoute,
@@ -536,6 +543,35 @@ export class PlanillaDetalleComponent implements OnInit {
     }
     this.calcularTotales();
 
+    const idEmpleado = detalle.id_empleado ?? detalle.empleado?.id;
+    this.prestamosActivosEmpleado = [];
+    this.prestamoSeleccionadoParaAbono = null;
+    this.montoSeleccionadoParaAbono = null;
+    // Cargar abonos ya asignados solo si el detalle tiene monto en préstamos (evita inconsistencia 0 vs abonos)
+    const montoPrestamosDetalle = Number(detalle.prestamos) || 0;
+    const abonosDelDetalle = montoPrestamosDetalle > 0
+      ? (detalle.abonos_prestamo ?? detalle.abonosPrestamo ?? [])
+      : [];
+    this.abonosPrestamosAsignados = Array.isArray(abonosDelDetalle)
+      ? abonosDelDetalle.map((m: any) => ({
+          id_prestamo: m.id_prestamo,
+          monto: Number(m.monto) || 0,
+        }))
+      : [];
+    if (idEmpleado) {
+      this.apiService
+        .getAll(`planillas/prestamos/empleado/${idEmpleado}/prestamos-activos`, {})
+        .subscribe({
+          next: (data: any) => {
+            const lista = Array.isArray(data) ? data : (data?.data ?? []);
+            this.prestamosActivosEmpleado = lista;
+          },
+          error: () => {
+            this.prestamosActivosEmpleado = [];
+          },
+        });
+    }
+
     setTimeout(() => {
       const element = document.querySelector('.card-header');
       element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -545,6 +581,64 @@ export class PlanillaDetalleComponent implements OnInit {
   public cancelarEdicion() {
     this.detalleSeleccionado = null;
     this.listaHorasExtraES = [];
+    this.prestamosActivosEmpleado = [];
+    this.abonosPrestamosAsignados = [];
+    this.prestamoSeleccionadoParaAbono = null;
+    this.montoSeleccionadoParaAbono = null;
+  }
+
+  /** Préstamos que aún no están en la lista de abonos (para el dropdown) */
+  get prestamosDisponiblesParaSeleccionar(): any[] {
+    const idsAsignados = this.abonosPrestamosAsignados.map((a) => a.id_prestamo);
+    return (this.prestamosActivosEmpleado || []).filter((p) => !idsAsignados.includes(p.id));
+  }
+
+  getLabelPrestamo(idPrestamo: number): string {
+    const p = (this.prestamosActivosEmpleado || []).find((x) => x.id === idPrestamo);
+    if (!p) return `Préstamo #${idPrestamo}`;
+    return `Préstamo #${p.numero_prestamo} — Saldo: ${p.saldo_actual ?? 0}`;
+  }
+
+  /** Al cambiar el monto a descontar: si queda en 0, vaciar la lista de abonos para mantener consistencia. */
+  onPrestamosMontoChange(): void {
+    this.recalcularSueldoNeto();
+    const monto = Number(this.detalleSeleccionado?.prestamos) || 0;
+    if (monto <= 0 && this.abonosPrestamosAsignados.length > 0) {
+      this.abonosPrestamosAsignados = [];
+    }
+  }
+
+  agregarAbonoPrestamo(): void {
+    if (!this.prestamoSeleccionadoParaAbono || (this.montoSeleccionadoParaAbono ?? 0) <= 0) return;
+    const monto = Number(this.montoSeleccionadoParaAbono);
+    const id = this.prestamoSeleccionadoParaAbono.id;
+    const existente = this.abonosPrestamosAsignados.find((a) => a.id_prestamo === id);
+    if (existente) {
+      existente.monto = monto;
+    } else {
+      this.abonosPrestamosAsignados.push({ id_prestamo: id, monto });
+    }
+    this.prestamoSeleccionadoParaAbono = null;
+    this.montoSeleccionadoParaAbono = null;
+  }
+
+  quitarAbonoPrestamo(idPrestamo: number): void {
+    this.abonosPrestamosAsignados = this.abonosPrestamosAsignados.filter((a) => a.id_prestamo !== idPrestamo);
+    if (this.detalleSeleccionado) {
+      this.detalleSeleccionado.prestamos = this.sumaAbonosPrestamos();
+      this.recalcularSueldoNeto();
+    }
+  }
+
+  sumaAbonosPrestamos(): number {
+    return this.abonosPrestamosAsignados.reduce((s, a) => s + (Number(a.monto) || 0), 0);
+  }
+
+  /** Si hay monto en préstamos y la suma de abonos no coincide, mostrar advertencia */
+  mostrarAdvertenciaSumaAbonosPrestamos(): boolean {
+    const montoPrestamos = Number(this.detalleSeleccionado?.prestamos) || 0;
+    if (montoPrestamos <= 0) return false;
+    return Math.abs(this.sumaAbonosPrestamos() - montoPrestamos) > 0.02;
   }
 
   getEstadoDetalle(estado: number) {
@@ -657,6 +751,22 @@ export class PlanillaDetalleComponent implements OnInit {
       detalle_otras_deducciones:
         this.detalleSeleccionado.detalle_otras_deducciones || '',
     };
+    const abonosConMonto = this.abonosPrestamosAsignados.filter((a) => (Number(a.monto) || 0) > 0);
+    if (abonosConMonto.length > 0) {
+      const sumaAbonos = this.sumaAbonosPrestamos();
+      const montoPrestamos = Number(this.detalleSeleccionado.prestamos) || 0;
+      if (Math.abs(sumaAbonos - montoPrestamos) > 0.02) {
+        this.alertService.error(
+          'La suma de los abonos asignados (' + sumaAbonos.toFixed(2) + ') debe coincidir con el monto en Préstamos (' + montoPrestamos.toFixed(2) + ').'
+        );
+        this.saving = false;
+        return;
+      }
+      datosActualizados.abonos_prestamos = abonosConMonto.map((a) => ({
+        id_prestamo: a.id_prestamo,
+        monto: Number(a.monto),
+      }));
+    }
     if (this.esElSalvador) {
       const dhe = this.listaHorasExtraES?.length
         ? this.getDetalleHorasExtraDesdeLista()
