@@ -92,7 +92,16 @@
                 <span class="input-group-text">%</span>
             </div>
         </div>
-        <div *ngIf="usuario.empresa.iva > 0" class="form-group col-md-4 col-lg-2">
+        <div class="form-group col-md-4 col-lg-2">
+            <label for="porcentaje_impuesto">Impuesto</label>
+            <ng-select class="form-select p-0" [(ngModel)]="producto.porcentaje_impuesto" name="porcentaje_impuesto" (change)="calPrecioFinal()">
+                <ng-option [value]="0">Sin impuesto (0%)</ng-option>
+                <ng-option *ngFor="let impuesto of impuestos" [value]="impuesto.porcentaje">
+                    {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-4 col-lg-2">
             <label class="fw-bold" for="precio_final">Precio con IVA:</label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
@@ -100,8 +109,8 @@
                 <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">
             </div>
         </div>
-
-<!--         <div class="row" *ngIf="producto.id">
+        
+        <!--         <div class="row" *ngIf="producto.id">
             <h6 class="my-3 font-weight-bold">Costo</h6>
             <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
                 <label for="costo_anterior">Costo anterior</label>

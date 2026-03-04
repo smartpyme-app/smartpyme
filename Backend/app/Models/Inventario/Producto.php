@@ -27,6 +27,7 @@ class Producto extends Model
         'costo_anterior',
         'costo_promedio',
         'id_categoria',
+        'porcentaje_impuesto',
         'marca',
         'etiquetas',
         'tipo',

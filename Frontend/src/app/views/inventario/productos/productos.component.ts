@@ -138,6 +138,12 @@ export class ProductosComponent implements OnInit {
         }, error => { this.alertService.error(error); this.loading = false; });
     }
 
+    public getPorcentajeProducto(producto: any): number {
+        const empresa = this.apiService.auth_user()?.empresa;
+        const pct = producto?.porcentaje_impuesto ?? empresa?.iva;
+        return pct != null && pct !== '' ? Number(pct) : 0;
+    }
+
     public setEstado(producto: any) {
         this.apiService.store('producto', producto).subscribe(producto => {
             this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
