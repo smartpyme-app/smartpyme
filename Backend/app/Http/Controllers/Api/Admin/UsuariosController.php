@@ -44,7 +44,23 @@ class UsuariosController extends Controller
 
     public function index(Request $request)
     {
-        $usuarios = $this->usuarioService->listarUsuarios($request->all());
+
+        $usuarios = Usuario::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+            ->with('sucursal', 'bodega')
+            ->when($request->estado !== null, function ($q) use ($request) {
+                $q->where('enable', !!$request->estado);
+            })
+            ->when($request->id_sucursal, function ($q) use ($request) {
+                $q->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                return $query->where('name', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('email', 'like', "%" . $request->buscador . "%");
+            })
+            // ->orderBy('enable', 'desc')
+            ->orderBy($request->orden, $request->direccion)
+            ->paginate($request->paginate);
+
         return Response()->json($usuarios, 200);
     }
 
@@ -269,7 +285,4 @@ class UsuariosController extends Controller
         $user = $this->usuarioService->actualizarAvatar($request->id, $request->file('file'));
         return Response()->json($user, 200);
     }
-
-
-
 }

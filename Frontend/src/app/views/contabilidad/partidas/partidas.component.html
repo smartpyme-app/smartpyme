@@ -183,7 +183,11 @@
                   }
                   <a (click)="imprimirPartida(partida)"
                      class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-print"></i>Imprimir/Descargar
+                    <i class="fa fa-fw fa-print"></i>Imprimir
+                  </a>
+                  <a (click)="descargarPartidaExcel(partida)"
+                     class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa fa-fw fa-file-excel"></i>Descargar
                   </a>
                   <!-- <a *ngIf="partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEdit()" (click)="setEstado(partida, 'Anulada')" -->
                   @if (partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEditTest('contabilidad.partidas.editar')) {

@@ -80,7 +80,7 @@
                     <th>Nombre</th>
                     <th>Correo</th>
                     <th>Tipo</th>
-                    <th>Sucursal</th>
+                    <th>Sucursal/Bodega</th>
                     <th>Activo</th>
                     <th>Último inicio de sesión</th>
                     @if (apiService.canEditTest('organizacion.usuarios.editar')) {
@@ -109,7 +109,9 @@
                     <td>{{usuario.name}}</td>
                     <td>{{usuario.email}}</td>
                     <td>{{getRolName(usuario.rol_id)}}</td>
-                    <td>{{usuario.sucursal.nombre}}</td>
+                    <td>{{usuario.sucursal?.nombre}}
+                        <small class="text-muted"> <br>{{usuario.bodega?.nombre ?? 'Sin bodega'}}</small>
+                    </td>
                     <td>
                         <select name="enable" class="form-select w-auto border-0" (change)="setEstado(usuario)" [(ngModel)]="usuario.enable" [ngClass]="{'bg-light-danger' : usuario?.enable == '0', 'bg-light-success' : usuario?.enable == '1'}">
                             <option value="1">Activo</option>

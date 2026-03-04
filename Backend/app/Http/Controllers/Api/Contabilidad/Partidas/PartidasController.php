@@ -26,6 +26,8 @@ use App\Services\Contabilidad\Partidas\PartidaIngresosService;
 use App\Services\Contabilidad\Partidas\PartidaEgresosService;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\Contabilidad\PartidaExcelExport;
 use App\Http\Requests\Contabilidad\Partidas\StorePartidaRequest;
 use App\Http\Requests\Contabilidad\Partidas\ReordenarCorrelativosRequest;
 use App\Http\Requests\Contabilidad\Partidas\GenerarIngresosRequest;
@@ -815,6 +817,17 @@ class PartidasController extends Controller
         ]);
 
         return $pdf->stream('partida-'. $partida->id . '-' . $partida->correlativo . '.pdf');
+    }
+
+    /**
+     * Genera y descarga la partida en formato Excel
+     */
+    public function generarExcel($id)
+    {
+        $partida = Partida::with('detalles')->where('id', $id)->firstOrFail();
+        $filename = 'partida-' . $partida->id . '-' . ($partida->correlativo ?? 'sin-correlativo') . '.xlsx';
+
+        return Excel::download(new PartidaExcelExport($partida), $filename);
     }
 
     public function delete($id)

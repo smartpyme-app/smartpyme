@@ -95,6 +95,11 @@ class User extends Authenticatable implements JWTSubject
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
     }
 
+    public function bodega()
+    {
+        return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega');
+    }
+
     public function accesos()
     {
         return $this->hasMany('App\Models\Admin\Acceso', 'id_usuario');
