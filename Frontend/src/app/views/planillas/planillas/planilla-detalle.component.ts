@@ -599,12 +599,16 @@ export class PlanillaDetalleComponent implements OnInit {
     return `Préstamo #${p.numero_prestamo} — Saldo: ${p.saldo_actual ?? 0}`;
   }
 
-  /** Al cambiar el monto a descontar: si queda en 0, vaciar la lista de abonos para mantener consistencia. */
+  /** Al cambiar el monto a descontar: si queda en 0 o es menor que la suma actual, vaciar la lista y resetear el selector para que el desplegable vuelva a mostrar todos los préstamos. */
   onPrestamosMontoChange(): void {
     this.recalcularSueldoNeto();
     const monto = Number(this.detalleSeleccionado?.prestamos) || 0;
-    if (monto <= 0 && this.abonosPrestamosAsignados.length > 0) {
+    const suma = this.sumaAbonosPrestamos();
+    const debeLimpiar = this.abonosPrestamosAsignados.length > 0 && (monto <= 0 || monto < suma);
+    if (debeLimpiar) {
       this.abonosPrestamosAsignados = [];
+      this.prestamoSeleccionadoParaAbono = null;
+      this.montoSeleccionadoParaAbono = null;
     }
   }
 

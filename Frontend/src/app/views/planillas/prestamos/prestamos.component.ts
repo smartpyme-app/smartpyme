@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
@@ -8,6 +9,7 @@ import { ApiService } from '@services/api.service';
 })
 export class PrestamosComponent implements OnInit {
   tabActivo: 'listado' | 'estado-cuenta' | 'crear' | 'abono' = 'listado';
+  modalRef!: BsModalRef;
 
   // Estado de cuenta
   empleados: any[] = [];
@@ -19,7 +21,7 @@ export class PrestamosComponent implements OnInit {
   // Listado préstamos (para pestaña o filtros)
   prestamos: any = { data: [], total: 0 };
   loadingPrestamos = false;
-  filtros: any = { id_empleado: '', estado: '', paginate: 15 };
+  filtros: any = { id_empleado: null, estado: '', paginate: 10 };
 
   // Crear préstamo
   formPrestamo: any = {
@@ -45,8 +47,25 @@ export class PrestamosComponent implements OnInit {
 
   constructor(
     public apiService: ApiService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private modalService: BsModalService
   ) {}
+
+  openFilter(template: TemplateRef<any>) {
+    this.modalRef = this.modalService.show(template);
+  }
+
+  aplicarFiltros() {
+    this.cargarPrestamos();
+    this.modalRef?.hide();
+  }
+
+  limpiarFiltros() {
+    this.filtros.id_empleado = null;
+    this.filtros.estado = '';
+    this.filtros.paginate = 10;
+    this.cargarPrestamos();
+  }
 
   ngOnInit() {
     this.cargarEmpleados();

@@ -39,47 +39,26 @@
           (change)="cargarPrestamos()"
           [(ngModel)]="filtros.paginate"
         >
-          <option value="10">10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
         </select>
         de {{ prestamos?.total + " registros" }}
       </span>
     </div>
     <div class="col-md-6 mb-3">
       <div class="d-flex gap-2 justify-content-end">
-        <select
-          class="form-select w-auto"
-          [(ngModel)]="filtros.estado"
-          (change)="cargarPrestamos()"
+        <button
+          type="button"
+          class="btn btn-default"
+          tooltip="Filtrar"
+          (click)="openFilter(mfilter)"
         >
-          <option value="">Todos los estados</option>
-          <option value="activo">Activo</option>
-          <option value="liquidado">Liquidado</option>
-          <option value="cancelado">Cancelado</option>
-        </select>
-        <ng-select
-          class="w-auto"
-          [items]="empleados"
-          bindLabel="nombres"
-          bindValue="id"
-          [(ngModel)]="filtros.id_empleado"
-          (change)="cargarPrestamos()"
-          placeholder="Todos los empleados"
-          [clearable]="true"
-          appendTo="body"
-          style="min-width: 180px;"
-        >
-          <ng-template ng-label-tmp let-item="item">
-            {{ item?.nombres }} {{ item?.apellidos }}
-          </ng-template>
-          <ng-template ng-option-tmp let-item="item">
-            {{ item?.nombres }} {{ item?.apellidos }}
-          </ng-template>
-        </ng-select>
-        <button type="button" class="btn btn-default" tooltip="Recargar" (click)="cargarPrestamos()">
           <img src="/assets/icons/filter.png" class="icon" alt="" />
+        </button>
+        <button type="button" class="btn btn-default" tooltip="Limpiar filtros" (click)="limpiarFiltros()">
+          <i class="fa fa-refresh"></i>
         </button>
       </div>
     </div>
@@ -358,3 +337,68 @@
     <i class="fa fa-arrow-left me-1"></i> Volver al listado
   </button>
 </div>
+
+<!-- Modal de filtros -->
+<ng-template #mfilter>
+  <div class="modal-header">
+    <h5 class="modal-title">Filtrar Préstamos</h5>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Cerrar"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="aplicarFiltros()">
+      <div class="mb-3">
+        <label class="form-label">Estado</label>
+        <select
+          class="form-select"
+          [(ngModel)]="filtros.estado"
+          name="filtro_estado"
+        >
+          <option value="">Todos los estados</option>
+          <option value="activo">Activo</option>
+          <option value="liquidado">Liquidado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Empleado</label>
+        <ng-select
+          class="w-100"
+          [items]="empleados"
+          bindLabel="nombres"
+          bindValue="id"
+          [(ngModel)]="filtros.id_empleado"
+          placeholder="Todos los empleados"
+          [clearable]="true"
+          name="filtro_id_empleado"
+        >
+          <ng-template ng-label-tmp let-item="item">
+            {{ item?.nombres }} {{ item?.apellidos }}
+          </ng-template>
+          <ng-template ng-option-tmp let-item="item">
+            {{ item?.nombres }} {{ item?.apellidos }}
+          </ng-template>
+        </ng-select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Mostrar por página</label>
+        <select
+          class="form-select"
+          [(ngModel)]="filtros.paginate"
+          name="filtro_paginate"
+        >
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+      </div>
+      <div class="d-flex gap-2 justify-content-end mt-3">
+        <button type="button" class="btn btn-light" (click)="modalRef.hide()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="loadingPrestamos">
+          <span *ngIf="!loadingPrestamos">Filtrar</span>
+          <span *ngIf="loadingPrestamos">Filtrando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

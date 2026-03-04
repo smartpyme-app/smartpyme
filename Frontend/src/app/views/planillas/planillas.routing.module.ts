@@ -17,26 +17,29 @@ const routes: Routes = [
   {
     path: 'planilla',
     component: LayoutComponent,
+    title: 'Planillas',
     children: [
-      {path: '', component: PlanillasComponent},
-      {path: 'empleados', component: EmpleadosComponent},
-      {path: 'empleado/crear', component: AdministrarEmpleadoComponent},
+      {path: '', component: PlanillasComponent, title: 'Planillas'},
+      {path: 'empleados', component: EmpleadosComponent, title: 'Empleados'},
+      {path: 'empleado/crear', component: AdministrarEmpleadoComponent, title: 'Empleado'},
       {
         path: 'empleado/editar/:id',
         component: AdministrarEmpleadoComponent,
+        title: 'Empleado',
       },
-      {path: 'detalle/:id', component: PlanillaDetalleComponent},
+      {path: 'detalle/:id', component: PlanillaDetalleComponent, title: 'Planilla'},
 
-      {path: 'planilla/:id/boletas', component: BoletaPagoComponent},
+      {path: 'planilla/:id/boletas', component: BoletaPagoComponent, title: 'Boletas'},
       {
         path: 'planilla/:id/boleta/:detalleId',
         component: BoletaPagoComponent,
+        title: 'Boleta',
       },
-      {path: 'boletas/:id', component: VerBoletasComponent},
-      {path: 'configuracion-planilla', component: ConfiguracionPlanillaComponent},
-      {path: 'aguinaldos', component: AguinaldosComponent},
-      {path: 'aguinaldo/detalle/:id', component: AguinaldoDetalleComponent},
-      {path: 'prestamos', component: PrestamosComponent}
+      {path: 'boletas/:id', component: VerBoletasComponent, title: 'Boletas'},
+      {path: 'configuracion-planilla', component: ConfiguracionPlanillaComponent, title: 'Configuración de planilla'},
+      {path: 'aguinaldos', component: AguinaldosComponent, title: 'Aguinaldos'},
+      {path: 'aguinaldo/detalle/:id', component: AguinaldoDetalleComponent, title: 'Aguinaldo'},
+      {path: 'prestamos', component: PrestamosComponent, title: 'Préstamos'}
     ],
   },
 ];
