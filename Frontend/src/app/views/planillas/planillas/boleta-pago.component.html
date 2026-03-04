@@ -1,0 +1,137 @@
+<section class="bg-white p-4 rounded mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="mb-0">Boleta de Pago</h4>
+      <div class="btn-group">
+        <button class="btn btn-primary" (click)="generarPDF()">
+          <i class="fa fa-file-pdf me-2"></i>Generar PDF
+        </button>
+        <button class="btn btn-success" (click)="enviarPorEmail()">
+          <i class="fa fa-envelope me-2"></i>Enviar por Email
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <!-- Header de la boleta -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <h5>{{planillaDetalle?.empleado?.empresa?.nombre}}</h5>
+            <p class="mb-1">Identificación fiscal: {{planillaDetalle?.empleado?.empresa?.nit}}</p>
+            <p class="mb-1">Dirección: {{planillaDetalle?.empleado?.empresa?.direccion}}</p>
+          </div>
+          <div class="col-md-6 text-end">
+            <h6>Período de Pago</h6>
+            <p class="mb-1">Del: {{planillaDetalle?.planilla?.fecha_inicio | date:'dd/MM/yyyy'}}</p>
+            <p>Al: {{planillaDetalle?.planilla?.fecha_fin | date:'dd/MM/yyyy'}}</p>
+          </div>
+        </div>
+
+        <!-- Información del empleado -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <h6>Información del Empleado</h6>
+            <p class="mb-1">Nombre: {{planillaDetalle?.empleado?.nombres}} {{planillaDetalle?.empleado?.apellidos}}</p>
+            <p class="mb-1">Cargo: {{planillaDetalle?.empleado?.cargo?.nombre}}</p>
+            <p class="mb-1">Departamento: {{planillaDetalle?.empleado?.departamento?.nombre}}</p>
+          </div>
+          <div class="col-md-6">
+            <p class="mb-1">Número de identificación: {{planillaDetalle?.empleado?.dui}}</p>
+            <p class="mb-1">Identificación fiscal: {{planillaDetalle?.empleado?.nit}}</p>
+            <p class="mb-1">Código: {{planillaDetalle?.empleado?.codigo}}</p>
+          </div>
+        </div>
+
+        <!-- Desglose de ingresos -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <h6>Ingresos</h6>
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <td>Salario Base</td>
+                  <td class="text-end">{{planillaDetalle?.salario_base | currency}}</td>
+                </tr>
+                <tr>
+                  <td>Horas Extra</td>
+                  <td class="text-end">{{planillaDetalle?.monto_horas_extra | currency}}</td>
+                </tr>
+                <tr>
+                  <td>Comisiones</td>
+                  <td class="text-end">{{planillaDetalle?.comisiones | currency}}</td>
+                </tr>
+                <tr>
+                  <td>Bonificaciones</td>
+                  <td class="text-end">{{planillaDetalle?.bonificaciones | currency}}</td>
+                </tr>
+                <tr>
+                  <td>Otros Ingresos</td>
+                  <td class="text-end">{{planillaDetalle?.otros_ingresos | currency}}</td>
+                </tr>
+                <tr class="table-primary">
+                  <th>Total Ingresos</th>
+                  <th class="text-end">{{planillaDetalle?.total_ingresos | currency}}</th>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Desglose de deducciones -->
+          <div class="col-md-6">
+            <h6>Deducciones</h6>
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <td>ISSS (3%)</td>
+                  <td class="text-end">{{planillaDetalle?.isss_empleado | currency}}</td>
+                </tr>
+                <tr>
+                  <td>AFP (7.25%)</td>
+                  <td class="text-end">{{planillaDetalle?.afp_empleado | currency}}</td>
+                </tr>
+                <tr>
+                  <td>ISR</td>
+                  <td class="text-end">{{planillaDetalle?.renta | currency}}</td>
+                </tr>
+                <tr>
+                  <td>Préstamos</td>
+                  <td class="text-end">{{planillaDetalle?.prestamos | currency}}</td>
+                </tr>
+                <tr>
+                  <td>Otros Descuentos</td>
+                  <td class="text-end">{{planillaDetalle?.otros_descuentos | currency}}</td>
+                </tr>
+                <tr class="table-danger">
+                  <th>Total Deducciones</th>
+                  <th class="text-end">{{planillaDetalle?.total_descuentos | currency}}</th>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Sueldo neto -->
+        <div class="row">
+          <div class="col-12">
+            <div class="alert alert-success">
+              <h5 class="mb-0">Sueldo Neto a Recibir: ${{planillaDetalle?.sueldo_neto | number:'1.2-2'}}</h5>
+            </div>
+          </div>
+        </div>
+
+        <!-- Firmas -->
+        <div class="row mt-5">
+          <div class="col-md-6 text-center">
+            <div class="border-top border-dark" style="width: 200px; margin: 0 auto;">
+              <p class="mt-2 mb-0">Firma del Empleado</p>
+            </div>
+          </div>
+          <div class="col-md-6 text-center">
+            <div class="border-top border-dark" style="width: 200px; margin: 0 auto;">
+              <p class="mt-2 mb-0">Firma de RRHH</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>

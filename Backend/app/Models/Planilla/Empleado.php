@@ -3,7 +3,6 @@
 namespace App\Models\Planilla;
 
 use App\Constants\PlanillaConstants;
-use App\Models\Compras\Gastos\AreaEmpresa;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,10 +30,16 @@ class Empleado extends Model
         'nit',
         'isss',
         'afp',
+        'configuracion_descuentos',
         'fecha_nacimiento',
         'direccion',
         'telefono',
         'email',
+        'banco',
+        'tipo_cuenta',
+        'numero_cuenta',
+        'titular_cuenta',
+        'forma_pago',
         'salario_base',
         'tipo_contrato',
         'tipo_jornada',
@@ -45,9 +50,29 @@ class Empleado extends Model
         'id_departamento',
         'id_cargo',
         'id_sucursal',
-        'id_empresa'
+        'id_empresa',
     ];
 
+    protected $casts = [
+        'configuracion_descuentos' => 'array',
+    ];
+
+    /**
+     * Boot del modelo - Establece valores por defecto
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($empleado) {
+            if (is_null($empleado->configuracion_descuentos)) {
+                $empleado->configuracion_descuentos = [
+                    'aplicar_afp' => true,
+                    'aplicar_isss' => true
+                ];
+            }
+        });
+    }
 
     // Relaciones
     public function sucursal()
@@ -78,11 +103,6 @@ class Empleado extends Model
     public function empresa()
     {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
-    }
-
-    public function area()
-    {
-        return $this->belongsTo(AreaEmpresa::class, 'id_area');
     }
 
     // Accessors
@@ -116,4 +136,54 @@ class Empleado extends Model
     {
         return Carbon::parse($this->fecha_ingreso)->diffInYears(Carbon::now());
     }
+
+    public function getTipoContratoNombreAttribute()
+    {
+        switch ($this->tipo_contrato) {
+            case 1: return 'Permanente';
+            case 2: return 'Temporal';
+            case 3: return 'Por obra';
+            case 4: return 'Servicios Profesionales';
+            default: return 'Desconocido';
+        }
+    }
+
+    public function esServiciosProfesionales()
+    {
+        return $this->tipo_contrato == 4;
+    }
+
+    /**
+     * Verifica si se debe aplicar descuento de AFP
+     * 
+     * @return bool
+     */
+    public function aplicarAfp()
+    {
+        $config = $this->configuracion_descuentos ?? [];
+        return isset($config['aplicar_afp']) ? (bool) $config['aplicar_afp'] : true;
+    }
+
+    /**
+     * Verifica si se debe aplicar descuento de ISSS
+     * 
+     * @return bool
+     */
+    public function aplicarIsss()
+    {
+        $config = $this->configuracion_descuentos ?? [];
+        return isset($config['aplicar_isss']) ? (bool) $config['aplicar_isss'] : true;
+    }
+
+    /**
+     * Establece la configuración de descuentos
+     */
+    public function setConfiguracionDescuentos($aplicarAfp = true, $aplicarIsss = true)
+    {
+        $this->configuracion_descuentos = [
+            'aplicar_afp' => $aplicarAfp,
+            'aplicar_isss' => $aplicarIsss,
+        ];
+    }
+
 }

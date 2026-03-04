@@ -131,6 +131,39 @@ export class ApiService {
     });
   }
 
+  /** Descarga un archivo desde la API (blob) */
+  download(url: string): Observable<Blob> {
+    return this.http
+      .get(`${this.apiUrl}${url}`, {
+        responseType: 'blob',
+        headers: new HttpHeaders({
+          Authorization: 'Bearer ' + this.auth_token(),
+        }),
+      })
+      .pipe(
+        map((response) => new Blob([response])),
+        catchError((error) => {
+          console.error('Error al descargar el archivo:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /** Guarda un Blob como archivo descargado en el navegador */
+  downloadFile(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  /** Genera y descarga las boletas de pago de una planilla (PDF) */
+  generatePayrollSlips(planillaId: number): Observable<Blob> {
+    return this.download(`planillas/${planillaId}/boletas`);
+  }
+
   exportAcumulado(url: string, filtros: any): Observable<Blob> {
     console.log('Enviando filtros:', filtros);
     return this.http.post(this.apiUrl + url, filtros, {

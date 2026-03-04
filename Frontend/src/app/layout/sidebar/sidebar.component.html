@@ -122,6 +122,19 @@
                   </ul>
                 </div>
             </li>
+            <li class="mb-1" *ngIf="apiService.validateRole('admin', true) || apiService.validateRole('super_admin', true) || apiService.hasPermission('planilla.ver')">
+                <button (click)="togglePlanilla()" tooltip="Planilla" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!planillaIsCollapsed" aria-controls="collapsePlanilla">
+                    <img src="/assets/icons/clipboard.png" class="icon me-2">Planilla
+                </button>
+                <div [collapse]="planillaIsCollapsed" [isAnimated]="true">
+                    <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Planillas</a></li>
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/empleados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Empleados</a></li>
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/aguinaldos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/award.png" class="icon me-2">Aguinaldos</a></li>
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/configuracion-planilla']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración</a></li>
+                    </ul>
+                </div>
+            </li>
             <li class="mb-1" *ngIf="apiService.hasPermission('contabilidad.ver')">
                 <button (click)="toggleContabilidad()" tooltip="Contabilidad" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!contabilidadIsCollapsed" aria-controls="collapseBasic">
                     <img src="/assets/icons/edit.png" class="icon me-2">Contabilidad
