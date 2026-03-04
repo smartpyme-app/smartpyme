@@ -10,22 +10,25 @@ use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
-use App\Exports\Contabilidad\LibroContribuyentesExport;
-use App\Exports\Contabilidad\AnexoContribuyentesExport;
-use App\Exports\Contabilidad\LibroConsumidoresExport;
-use App\Exports\Contabilidad\AnexoConsumidoresExport;
-use App\Exports\Contabilidad\LibroAnuladosExport;
-use App\Exports\Contabilidad\AnexoAnuladosExport;
-use App\Exports\Contabilidad\LibroSujetosExcluidosExport;
-use App\Exports\Contabilidad\AnexoSujetosExcluidosExport;
-use App\Exports\Contabilidad\LibroComprasExport;
-use App\Exports\Contabilidad\AnexoComprasExport;
-use App\Exports\Contabilidad\GlobalDttesExport;
-use App\Exports\Contabilidad\NotasCreditoDebitoExport;
-use App\Exports\Contabilidad\LibroRetencion1Export;
-use App\Exports\Contabilidad\AnexoRetencion1Export;
-use App\Exports\Contabilidad\LibroPercepcion1Export;
-use App\Exports\Contabilidad\AnexoPercepcion1Export;
+use App\Exports\Contabilidad\ElSalvador\LibroContribuyentesExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoContribuyentesExport;
+use App\Exports\Contabilidad\ElSalvador\LibroConsumidoresExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoConsumidoresExport;
+use App\Exports\Contabilidad\ElSalvador\LibroAnuladosExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoAnuladosExport;
+use App\Exports\Contabilidad\ElSalvador\LibroSujetosExcluidosExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoSujetosExcluidosExport;
+use App\Exports\Contabilidad\ElSalvador\LibroComprasExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoComprasExport;
+use App\Exports\Contabilidad\ElSalvador\GlobalDttesExport;
+use App\Exports\Contabilidad\ElSalvador\NotasCreditoDebitoExport;
+use App\Exports\Contabilidad\ElSalvador\LibroRetencion1Export;
+use App\Exports\Contabilidad\ElSalvador\AnexoRetencion1Export;
+use App\Exports\Contabilidad\ElSalvador\LibroPercepcion1Export;
+use App\Exports\Contabilidad\ElSalvador\AnexoPercepcion1Export;
+use App\Exports\Contabilidad\Honduras\LibroVentasExport;
+use App\Exports\Contabilidad\Honduras\LibroComprasExport as HondurasLibroComprasExport;
+use App\Exports\Contabilidad\Honduras\LibroRetencionesExport;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
@@ -41,6 +44,37 @@ class LibrosIVAController extends Controller
     private function obtenerEmpresa(): ?Empresa
     {
         return Auth::user()->empresa()->first();
+    }
+
+    /**
+     * Obtiene el país de la empresa (para resolver formato de libros IVA por país).
+     */
+    private function obtenerPaisEmpresa(): string
+    {
+        $empresa = $this->obtenerEmpresa();
+        return trim((string) ($empresa->pais ?? $empresa->cod_pais ?? ''));
+    }
+
+    /**
+     * Carpeta de vistas/export por país: el_salvador | honduras
+     */
+    private function paisVista(): string
+    {
+        $pais = $this->obtenerPaisEmpresa();
+        if (stripos($pais, 'Honduras') !== false) {
+            return 'honduras';
+        }
+        return 'el_salvador'; // El Salvador por defecto
+    }
+
+    /**
+     * Respuesta cuando el endpoint no está disponible para el país de la empresa.
+     */
+    private function endpointNoDisponiblePais(): JsonResponse
+    {
+        return response()->json([
+            'message' => 'Este reporte no está disponible para el país configurado en la empresa.',
+        ], 404);
     }
 
     /**
@@ -316,8 +350,17 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
+            if ($this->paisVista() === 'honduras') {
+                $libroventas = $this->buildLibroVentasHonduras($request);
+                $pdf = app('dompdf.wrapper')->loadView(
+                    'reportes.contabilidad.honduras.libro-ventas',
+                    ['libroventas' => $libroventas, 'request' => $request]
+                );
+                $pdf->setPaper('Legal', 'landscape');
+                return $pdf->stream('libro-ventas-honduras.pdf');
+            }
             $pdf = app('dompdf.wrapper')->loadView(
-                'reportes.contabilidad.libro-consumidores',
+                'reportes.contabilidad.el_salvador.libro-consumidores',
                 [
                     'libroconsumidores' => $libroconsumidores,
                     'request' => $request,
@@ -325,39 +368,172 @@ class LibrosIVAController extends Controller
                 ]
             );
             $pdf->setPaper('Legal', 'landscape');
-
             return $pdf->stream('libro-consumidores.pdf');
         }
 
+        if ($this->paisVista() === 'honduras') {
+            return response()->json($this->buildLibroVentasHonduras($request), 200);
+        }
         return response()->json($libroconsumidores, 200);
+    }
+
+    /**
+     * Datos para Libro de Ventas Honduras (PDF/JSON). Misma estructura que el export.
+     */
+    private function buildLibroVentasHonduras(Request $request): array
+    {
+        $ventas = Venta::with(['cliente', 'documento'])
+            ->where('estado', '!=', 'Anulada')
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->orderBy('fecha')->orderBy('correlativo')
+            ->get();
+
+        $devoluciones = DevolucionVenta::with(['cliente', 'venta'])
+            ->where('enable', true)
+            ->whereHas('venta', fn($q) => $q->where('estado', '!=', 'Anulada'))
+            ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
+
+        $filas = $ventas->map(function ($v) {
+            $docNombre = trim(optional($v->documento)->nombre ?? $v->nombre_documento ?? '');
+            $esExportacion = stripos($docNombre, 'exportación') !== false;
+            return [
+                'fecha' => $v->fecha,
+                'num_orden_exenta' => $v->num_orden_exento ?? '',
+                'documento_dua_exportacion' => $esExportacion ? trim((string) $v->correlativo) : '',
+                'documento_fyduca' => '',
+                'nota_credito_numero' => '',
+                'fecha_factura_relacionada' => '',
+                'numero_factura_relacionada' => '',
+                'cliente' => $v->nombre_cliente,
+                'rtn' => optional($v->cliente)->nit ?? optional($v->cliente)->ncr ?? '',
+                'descripcion' => $docNombre,
+                'no_factura' => trim((string) $v->correlativo),
+                'importe_exenta' => $v->iva == 0 && !$esExportacion ? (float) $v->sub_total : 0,
+                'importe_gravada' => $v->iva > 0 ? (float) $v->sub_total : 0,
+                'importe_exonerada' => (float) ($v->no_sujeta ?? 0),
+                'impuesto_ventas' => (float) $v->iva,
+                'importe_exportacion' => $esExportacion ? (float) $v->total : 0,
+            ];
+        });
+
+        $devolData = $devoluciones->map(function ($d) {
+            $ventaOriginal = $d->venta;
+            return [
+                'fecha' => $d->fecha,
+                'num_orden_exenta' => '',
+                'documento_dua_exportacion' => '',
+                'documento_fyduca' => '',
+                'nota_credito_numero' => trim((string) $d->correlativo),
+                'fecha_factura_relacionada' => $ventaOriginal ? $ventaOriginal->fecha : '',
+                'numero_factura_relacionada' => $ventaOriginal ? trim((string) $ventaOriginal->correlativo) : '',
+                'cliente' => $d->nombre_cliente,
+                'rtn' => optional($d->cliente)->nit ?? optional($d->cliente)->ncr ?? '',
+                'descripcion' => 'Nota de crédito',
+                'no_factura' => trim((string) $d->correlativo),
+                'importe_exenta' => $d->exenta > 0 ? -1 * (float) $d->exenta : 0,
+                'importe_gravada' => $d->sub_total > 0 ? -1 * (float) $d->sub_total : 0,
+                'importe_exonerada' => 0,
+                'impuesto_ventas' => $d->iva > 0 ? -1 * (float) $d->iva : 0,
+                'importe_exportacion' => 0,
+            ];
+        });
+
+        return $filas->merge($devolData)->sortBy('fecha')->values()->all();
+    }
+
+    /**
+     * Datos para Libro de Compras Honduras (PDF/JSON). Misma estructura que el export.
+     */
+    private function buildLibroComprasHonduras(Request $request): array
+    {
+        $compras = Compra::with(['proveedor'])
+            ->where('estado', '!=', 'Anulada')
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
+
+        $gastos = Gasto::with(['proveedor'])
+            ->where('estado', '!=', 'Cancelado')
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
+
+        $devoluciones = DevolucionCompra::with(['proveedor'])
+            ->where('enable', true)
+            ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
+
+        $filas = $compras->map(fn($r) => $this->filaLibroComprasHonduras($r, 1));
+        $filasGastos = $gastos->map(fn($r) => $this->filaLibroComprasHonduras($r, 1));
+        $filasDev = $devoluciones->map(fn($r) => $this->filaLibroComprasHonduras($r, -1));
+
+        return $filas->merge($filasGastos)->merge($filasDev)->sortBy('fecha_documento')->values()->all();
+    }
+
+    private function filaLibroComprasHonduras($r, int $mult): array
+    {
+        $proveedor = $r->proveedor ?? $r->proveedor()->first();
+        $rtn = $proveedor ? ($proveedor->nit ?? $proveedor->ncr ?? '') : '';
+        $tipo = $r->tipo_documento ?? '';
+        $esImportacion = stripos($tipo, 'Importación') !== false;
+        $esSujetoExcluido = $tipo === 'Sujeto excluido';
+
+        return [
+            'fecha_documento' => $r->fecha,
+            'fecha_contabilizacion' => isset($r->created_at) ? $r->created_at : $r->fecha,
+            'documento_dua_importacion' => $esImportacion ? ($r->referencia ?? '') : '',
+            'documento_fyduca' => '',
+            'proveedor' => $r->nombre_proveedor ?? '',
+            'rtn_proveedor' => $rtn,
+            'descripcion_compra' => $tipo,
+            'no_factura_compra' => $r->referencia ?? '',
+            'importe_exenta' => $esSujetoExcluido ? (float) $r->total * $mult : ($r->iva == 0 ? (float) $r->sub_total * $mult : 0),
+            'importe_gravada' => !$esSujetoExcluido ? (float) $r->sub_total * $mult : 0,
+            'impuesto_ventas' => !$esSujetoExcluido ? (float) $r->iva * $mult : 0,
+            'importe_importacion' => $esImportacion ? (float) $r->total * $mult : 0,
+        ];
     }
 
     public function consumidoresLibroExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            $export = new LibroVentasExport();
+            $export->filter($request);
+            return Excel::download($export, 'LibroVentasHonduras.xlsx');
+        }
         if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
             return $alerta;
         }
-
         $consumidores = new LibroConsumidoresExport();
         $consumidores->filter($request);
-
         return Excel::download($consumidores, 'LibroConsumidoresExport.xlsx');
     }
 
     public function consumidoresAnexoExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
             return $alerta;
         }
-
         $consumidores = new AnexoConsumidoresExport();
         $consumidores->filter($request);
-
         return Excel::download($consumidores, 'AnexoConsumidoresExport.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function contribuyentes(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
 
         $ventas = Venta::with(['cliente', 'documento'])
             ->where('estado', '!=', 'Anulada')
@@ -477,7 +653,7 @@ class LibrosIVAController extends Controller
 
         if ($formato === 'pdf') {
             $pdf = app('dompdf.wrapper')->loadView(
-                'reportes.contabilidad.libro-contribuyentes',
+                'reportes.contabilidad.el_salvador.libro-contribuyentes',
                 [
                     'librocontribuyentes' => $librocontribuyentes,
                     'request' => $request,
@@ -485,19 +661,19 @@ class LibrosIVAController extends Controller
                 ]
             );
             $pdf->setPaper('Legal', 'landscape');
-
             return $pdf->stream('libro-contribuyentes.pdf');
         }
-
         return response()->json($librocontribuyentes, 200);
     }
 
     public function contribuyentesLibroExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         if ($alerta = $this->validarVentasPendientes($request, ['Crédito fiscal'])) {
             return $alerta;
         }
-
         $contribuyentes = new LibroContribuyentesExport();
         $contribuyentes->filter($request);
 
@@ -506,10 +682,12 @@ class LibrosIVAController extends Controller
 
     public function contribuyentesAnexoExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         if ($alerta = $this->validarVentasPendientes($request, ['Crédito fiscal'])) {
             return $alerta;
         }
-
         $contribuyentes = new AnexoContribuyentesExport();
         $contribuyentes->filter($request);
 
@@ -519,7 +697,9 @@ class LibrosIVAController extends Controller
 
     public function anulados(Request $request)
     {
-
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         $ventas = Venta::with(['cliente', 'documento'])
             ->where('estado', 'Anulada')
             ->when($request->id_sucursal, function ($query) use ($request) {
@@ -561,10 +741,12 @@ class LibrosIVAController extends Controller
 
     public function anuladosLibroExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación', 'Crédito fiscal'])) {
             return $alerta;
         }
-
         $anulados = new LibroAnuladosExport();
         $anulados->filter($request);
 
@@ -573,10 +755,12 @@ class LibrosIVAController extends Controller
 
     public function anuladosAnexoExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación', 'Crédito fiscal'])) {
             return $alerta;
         }
-
         $anulados = new AnexoAnuladosExport();
         $anulados->filter($request);
 
@@ -761,47 +945,56 @@ class LibrosIVAController extends Controller
             ->values()
             ->all();
 
+        if ($this->paisVista() === 'honduras') {
+            $librocompras = $this->buildLibroComprasHonduras($request);
+        }
+
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
+            $vista = $this->paisVista() === 'honduras'
+                ? 'reportes.contabilidad.honduras.libro-compras'
+                : 'reportes.contabilidad.el_salvador.libro-compras';
+            $pdf = app('dompdf.wrapper')->loadView($vista, compact('librocompras', 'request'));
             $pdf->setPaper('US Letter', 'landscape');
-
             return $pdf->stream('libro-compras.pdf');
         }
-
-
         return response()->json($librocompras, 200);
     }
 
-
     public function comprasLibroExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            $compras = new HondurasLibroComprasExport();
+            $compras->filter($request);
+            return Excel::download($compras, 'LibroComprasHonduras.xlsx');
+        }
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
         }
-
         $compras = new LibroComprasExport();
         $compras->filter($request);
-
         return Excel::download($compras, 'LibroComprasExport.xlsx');
     }
 
     public function comprasAnexoExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
         }
-
         $compras = new AnexoComprasExport();
         $compras->filter($request);
-
         return Excel::download($compras, 'AnexoComprasExport.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function comprasSujetosExcluidos(Request $request)
     {
-
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         // Obtener las compras
         $compras = Compra::with(['proveedor'])
             ->where('estado', '!=', 'Anulada')
@@ -891,10 +1084,12 @@ class LibrosIVAController extends Controller
 
     public function comprasSujetosExcluidosLibroExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
         }
-
         $compras = new LibroSujetosExcluidosExport();
         $compras->filter($request);
 
@@ -903,10 +1098,12 @@ class LibrosIVAController extends Controller
 
     public function comprasSujetosExcluidosAnexoExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
         }
-
         $compras = new AnexoSujetosExcluidosExport();
         $compras->filter($request);
 
@@ -915,12 +1112,13 @@ class LibrosIVAController extends Controller
 
     public function GlobalDttesExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         try {
-            
             while (ob_get_level() > 0) {
                 ob_end_clean();
             }
-            
             $dttes = new GlobalDttesExport();
             $dttes->filter($request);
             
@@ -970,11 +1168,13 @@ class LibrosIVAController extends Controller
     // Descarga un ZIP con los JSON de notas de crédito y débito para declaración.
     public function notasCreditoDebitoExport(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         try {
             while (ob_get_level() > 0) {
                 ob_end_clean();
             }
-
             $export = new NotasCreditoDebitoExport();
             $export->filter($request);
             $result = $export->generateZip();
@@ -1011,23 +1211,27 @@ class LibrosIVAController extends Controller
 
     public function libroRetencion1Export(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            $retencion = new LibroRetencionesExport();
+            $retencion->filter($request);
+            return Excel::download($retencion, 'LibroRetencionesHonduras.xlsx');
+        }
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
         }
-
         $retencion = new LibroRetencion1Export();
         $retencion->filter($request);
-
         return Excel::download($retencion, 'LibroRetencion1.xlsx');
     }
 
-
     public function libroPercepcion1Export(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
         }
-
         $percepcion = new LibroPercepcion1Export();
         $percepcion->filter($request);
 
@@ -1036,22 +1240,25 @@ class LibrosIVAController extends Controller
 
     public function anexoRetencion1Export(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
         }
-
         $retencion = new AnexoRetencion1Export();
         $retencion->filter($request);
-
         return Excel::download($retencion, 'AnexoRetencion1.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function anexoPercepcion1Export(Request $request)
     {
+        if ($this->paisVista() === 'honduras') {
+            return $this->endpointNoDisponiblePais();
+        }
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
         }
-
         $percepcion = new AnexoPercepcion1Export();
         $percepcion->filter($request);
 

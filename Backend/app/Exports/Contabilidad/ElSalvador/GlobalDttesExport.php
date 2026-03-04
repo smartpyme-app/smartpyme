@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exports\Contabilidad;
+namespace App\Exports\Contabilidad\ElSalvador;
 
 use App\Models\Ventas\Venta;
 use Illuminate\Support\Facades\Auth;

@@ -6,39 +6,13 @@
     <title>Libro Contribuyentes</title>
 
     <style>
-        body{
-            font-family: Arial, sans-serif;
-            font-size: 10px;
-        }
-
-        h1, h2{
-            margin: 5px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        thead th {
-            padding: 3px;
-            text-align: left;
-            border: 1px solid #dee2e6;
-        }
-
-        tbody td {
-            padding: 3px;
-            text-align: left;
-            border: 1px solid #dee2e6;
-        }
-        td, th {
-            vertical-align: middle;
-        }
-
+        body{ font-family: Arial, sans-serif; font-size: 10px; }
+        h1, h2{ margin: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        thead th, tbody td { padding: 3px; text-align: left; border: 1px solid #dee2e6; }
+        td, th { vertical-align: middle; }
         .text-center{text-align: center; }
         .text-right{text-align: right; }
-
     </style>
 </head>
 <body>
@@ -113,7 +87,7 @@
                     <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesContribuyentes['total'], 2) }}</b></td>
                 </tr>
             @endif
-        </tbody>  
+        </tbody>
     </table>
 
 </body>

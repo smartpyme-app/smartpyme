@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Exports\Contabilidad;
+namespace App\Exports\Contabilidad\ElSalvador;
 
-use App\Models\Ventas\Venta;
+use App\Models\Compras\Compra;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
 
-class AnexoRetencion1Export implements FromCollection, WithMapping, WithCustomCsvSettings
+class AnexoPercepcion1Export implements FromCollection, WithMapping, WithCustomCsvSettings
 {
 
     public $request;
@@ -23,48 +23,51 @@ class AnexoRetencion1Export implements FromCollection, WithMapping, WithCustomCs
     {
         $request = $this->request;
         
-        $ventas = Venta::with(['cliente', 'documento'])
+        $compras = Compra::with(['proveedor'])
                         ->where('estado', '!=', 'Anulada')
-                        ->where('iva_retenido', '>', 0)
+                        ->where('percepcion', '>', 0)
                         ->when($request->id_sucursal, function ($query) use ($request) {
                             return $query->where('id_sucursal', $request->id_sucursal);
                         })
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')
-                        ->orderByDesc('correlativo')
                         ->get();
-        return $ventas;
+        return $compras;
         
     }
 
-    public function map($venta): array{
+    public function map($compra): array{
         setlocale(LC_NUMERIC, 'C');
-        $cliente = optional($venta->cliente);
+        $documento = $compra->documento;
+        $proveedor = optional($compra->proveedor);
 
         $tipo = '03'; //CCF
 
-        if ($venta->tipo_documento == 'Nota de crédito') {
+        if ($compra->tipo_documento == 'Nota de crédito') {
             $tipo = '05';
         }
 
-        if ($venta->tipo_documento == 'Nota de débito') {
+        if ($compra->tipo_documento == 'Nota de débito') {
             $tipo = '06';
         }
 
-        if ($venta->tipo_documento == 'Declaración de mercancía') {
+        if ($compra->tipo_documento == 'Declaración de mercancía') {
             $tipo = '12';
         }
 
+        // Si tiene sello_mh (DTE) usar ese en serie; si no, como estaba
+        $serie = $compra->sello_mh ? $compra->sello_mh : ($compra->serie ?? $compra->num_serie ?? '');
+
         return [
-            $venta->cliente->nit ?? '', //A nit agente
-            \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'), // B fecha
+            $compra->proveedor->nit ?? '', //A nit agente
+            \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'), // B fecha
             $tipo, // C Tipo
-            $venta->dte['sello'] ?? '', // D serie o sello
-            str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion']) ?? '', // E numero de documento o codigo de generacion
-            number_format($venta->sub_total, 2, '.', ''), // F monto sujeto
-            number_format($venta->percepcion, 2, '.', ''), // G monto percepcion
-            $venta->cliente->dui ?? '', // H Dui agente
+            $serie, // D serie o sello
+            str_replace('-', '', $compra->referencia), // E numero de documento o codigo de generacion
+            number_format($compra->sub_total, 2, '.', ''), // F monto sujeto
+            number_format($compra->percepcion, 2, '.', ''), // G monto percepcion
+            $compra->proveedor->dui ?? '', // H Dui agente
             8, // numero anexo
         ];
     }

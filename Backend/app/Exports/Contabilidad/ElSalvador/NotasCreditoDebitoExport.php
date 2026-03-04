@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exports\Contabilidad;
+namespace App\Exports\Contabilidad\ElSalvador;
 
 use App\Models\Ventas\Devoluciones\Devolucion;
 use Illuminate\Http\Request;

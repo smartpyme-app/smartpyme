@@ -95,7 +95,7 @@
                     <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesConsumidores['ventas_a_cuenta_de_terceros'], 2) }}</b></td>
                 </tr>
             @endif
-        </tbody>  
+        </tbody>
     </table>
 
 </body>

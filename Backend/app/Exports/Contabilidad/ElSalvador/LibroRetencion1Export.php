@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Exports\Contabilidad;
+namespace App\Exports\Contabilidad\ElSalvador;
 
-use App\Models\Compras\Compra;
+use App\Models\Ventas\Venta;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Auth;
 
-class LibroPercepcion1Export implements FromCollection, WithMapping, WithHeadings, WithEvents
+class LibroRetencion1Export implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
     public $request;
     private $index = 1;
@@ -28,7 +28,7 @@ class LibroPercepcion1Export implements FromCollection, WithMapping, WithHeading
             BeforeSheet::class => function (BeforeSheet $event) {
                 $event->sheet->insertNewRowBefore(1, 4);
 
-                $event->sheet->setCellValue('A1', 'PERCEPCIÓN DE IVA 1% EFECTUADA AL DECLARANTE');
+                $event->sheet->setCellValue('A1', 'RETENCIÓN DE IVA 1% EFECTUADA AL DECLARANTE');
                 $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
                 $event->sheet->setCellValue('A3', 'NRC: ' . Auth::user()->empresa()->pluck('ncr')->first());
                 $event->sheet->setCellValue('E3', 'Folio N°:');
@@ -47,7 +47,7 @@ class LibroPercepcion1Export implements FromCollection, WithMapping, WithHeading
             'SERIE DE DOCUMENTO',
             'NÚMERO DE DOCUMENTO',
             'MONTO SUJETO',
-            'MONTO DE LA PERCEPCIÓN 1%',
+            'MONTO DE LA RETENCIÓN 1%',
             'DUI DEL AGENTE',
             'NÚMERO DEL ANEXO ',
         ];
@@ -57,38 +57,36 @@ class LibroPercepcion1Export implements FromCollection, WithMapping, WithHeading
     {
         $request = $this->request;
         
-        $compras = Compra::with(['proveedor'])
+        $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
-                        ->where('percepcion', '>', 0)
+                        ->where('iva_retenido', '>', 0)
                         ->when($request->id_sucursal, function ($query) use ($request) {
                             return $query->where('id_sucursal', $request->id_sucursal);
                         })
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')
+                        ->orderByDesc('correlativo')
                         ->get();
-        return $compras;
+        return $ventas;
         
     }
 
-    public function map($compra): array{
+    public function map($venta): array{
 
-        $documento = $compra->documento;
-        $proveedor = optional($compra->proveedor);
-
-        // Si tiene sello_mh (DTE) usar ese en serie; si no, como estaba
-        $serie = $compra->sello_mh ? $compra->sello_mh : ($compra->serie ?? $compra->num_serie ?? '');
+        $documento = $venta->documento;
+        $cliente = optional($venta->cliente);
 
         return [
-            $compra->proveedor->nit ?? '',
-            $compra->fecha,
-            $compra->tipo_documento,
-            $serie,
-            $compra->referencia,
-            $compra->sub_total,
-            $compra->percepcion,
-            $compra->proveedor->dui ?? '',
-            8,
+            $venta->cliente->nit ?? '',
+            $venta->fecha,
+            $venta->nombre_documento,
+            $venta->serie,
+            $venta->correlativo,
+            $venta->sub_total,
+            $venta->iva_retenido,
+            $venta->cliente->dui ?? '',
+            7,
         ];
     }
 }
