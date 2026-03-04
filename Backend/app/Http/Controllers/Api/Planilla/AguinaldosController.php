@@ -571,9 +571,10 @@ class AguinaldosController extends Controller
 
             // Obtener detalles ordenados
             $detalles = $aguinaldo->aguinaldoDetalles()
-                ->with('empleado')
-                ->orderBy('empleado.apellidos')
-                ->orderBy('empleado.nombres')
+                ->join('empleados', 'aguinaldo_detalles.id_empleado', '=', 'empleados.id')
+                ->select('aguinaldo_detalles.*')
+                ->orderBy('empleados.apellidos')
+                ->orderBy('empleados.nombres')
                 ->get();
 
             // TODO: Crear vista PDF similar a planilla-detalle

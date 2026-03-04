@@ -1728,15 +1728,15 @@ class PlanillasController extends Controller
         } elseif ($baseImponible <= PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) {
             return round((($baseImponible - PlanillaConstants::RENTA_MINIMA) *
                 PlanillaConstants::PORCENTAJE_PRIMER_TRAMO) +
-                PlanillaConstants::IMPUESTO_PRIMER_TRAMO, 2);
+                PlanillaConstants::IMPUESTO_SEGUNDO_TRAMO, 2);
         } elseif ($baseImponible <= PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) {
             return round((($baseImponible - PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) *
                 PlanillaConstants::PORCENTAJE_SEGUNDO_TRAMO) +
-                PlanillaConstants::IMPUESTO_SEGUNDO_TRAMO, 2);
+                PlanillaConstants::IMPUESTO_TERCER_TRAMO, 2);
         } else {
             return round((($baseImponible - PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) *
                 PlanillaConstants::PORCENTAJE_TERCER_TRAMO) +
-                PlanillaConstants::IMPUESTO_TERCER_TRAMO, 2);
+                PlanillaConstants::IMPUESTO_CUARTO_TRAMO, 2);
         }
     }
 
