@@ -693,6 +693,7 @@ export class FacturacionComponent implements OnInit {
         });
       }
     } else {
+      this.venta.iva = (0).toFixed(2);
       this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
     }
 
