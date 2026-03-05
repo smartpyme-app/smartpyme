@@ -11,6 +11,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Planilla\Planilla;
 use App\Models\Planilla\PlanillaDetalle;
 use App\Models\Planilla\Empleado;
+use App\Models\Planilla\PrestamoEmpleado;
+use App\Models\Planilla\PrestamoMovimiento;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -96,7 +98,7 @@ class PlanillasController extends Controller
                     'empleados.codigo',
                     'empleados.dui'
                 )
-                ->with(['empleado']);
+                ->with(['empleado', 'abonosPrestamo']);
 
             // Aplicar filtros
             if ($request->has('buscador')) {
@@ -929,7 +931,10 @@ class PlanillasController extends Controller
             'otros_descuentos' => 'nullable|numeric|min:0',
             'descuentos_judiciales' => 'nullable|numeric|min:0',
             'detalle_otras_deducciones' => 'nullable|string',
-            'salario_base' => 'nullable|numeric|min:0' // ✅ Permitir editar salario_base para contratos por obra
+            'salario_base' => 'nullable|numeric|min:0', // ✅ Permitir editar salario_base para contratos por obra
+            'abonos_prestamos' => 'nullable|array',
+            'abonos_prestamos.*.id_prestamo' => 'required_with:abonos_prestamos|integer|exists:prestamos_empleados,id',
+            'abonos_prestamos.*.monto' => 'required_with:abonos_prestamos|numeric|min:0',
         ]);
 
         try {
@@ -1133,10 +1138,72 @@ class PlanillasController extends Controller
             // Guardar cambios
             $detalle->save();
 
+            // Abonos a préstamos desde descuento de planilla: SIEMPRE revertir los anteriores de este detalle
+            // (así, si el usuario quitó el monto o la asignación, el préstamo vuelve a tener saldo y deja de estar liquidado)
+            $idEmpresa = auth()->user()->id_empresa;
+            $movimientosPrevios = PrestamoMovimiento::where('id_planilla_detalle', $detalle->id)
+                ->where('tipo', PrestamoMovimiento::TIPO_ABONO_PLANILLA)
+                ->get();
+            foreach ($movimientosPrevios as $mov) {
+                $prest = PrestamoEmpleado::where('id', $mov->id_prestamo)->where('id_empresa', $idEmpresa)->first();
+                if ($prest) {
+                    $prest->saldo_actual = round((float) $prest->saldo_actual + (float) $mov->monto, 2);
+                    $prest->estado = PrestamoEmpleado::ESTADO_ACTIVO;
+                    $prest->save();
+                }
+                $mov->delete();
+            }
+
+            // Si hay nueva asignación (abonos_prestamos), validar y crear los movimientos
+            $montoPrestamos = (float) ($request->prestamos ?? 0);
+            $abonosPrestamos = $request->input('abonos_prestamos', []);
+            if (is_array($abonosPrestamos) && count($abonosPrestamos) > 0 && $montoPrestamos > 0) {
+                $sumaAbonos = round(array_sum(array_column($abonosPrestamos, 'monto')), 2);
+                if (abs($sumaAbonos - $montoPrestamos) > 0.02) {
+                    DB::rollBack();
+                    return response()->json([
+                        'error' => 'La suma de los abonos a préstamos (' . number_format($sumaAbonos, 2) . ') debe coincidir con el monto total en Préstamos (' . number_format($montoPrestamos, 2) . ').',
+                    ], 422);
+                }
+                $descripcionPlanilla = 'Descuento en planilla ' . ($planilla->tipo_planilla ?? '') . ' ' . optional($planilla->fecha_inicio)->format('d/m/Y') . ' - ' . optional($planilla->fecha_fin)->format('d/m/Y');
+                $fechaAbono = $planilla->fecha_fin ?? now();
+                foreach ($abonosPrestamos as $item) {
+                    $idPrestamo = (int) ($item['id_prestamo'] ?? 0);
+                    $monto = (float) ($item['monto'] ?? 0);
+                    if ($idPrestamo <= 0 || $monto <= 0) {
+                        continue;
+                    }
+                    $prestamo = PrestamoEmpleado::where('id', $idPrestamo)->where('id_empresa', $idEmpresa)->first();
+                    if (!$prestamo || $prestamo->id_empleado != $detalle->id_empleado) {
+                        continue;
+                    }
+                    $saldoActual = (float) $prestamo->saldo_actual;
+                    if ($monto > $saldoActual) {
+                        $monto = $saldoActual;
+                    }
+                    $nuevoSaldo = round($saldoActual - $monto, 2);
+                    PrestamoMovimiento::create([
+                        'id_prestamo' => $prestamo->id,
+                        'tipo' => PrestamoMovimiento::TIPO_ABONO_PLANILLA,
+                        'monto' => $monto,
+                        'saldo_despues' => $nuevoSaldo,
+                        'descripcion' => $descripcionPlanilla,
+                        'fecha' => $fechaAbono,
+                        'id_planilla_detalle' => $detalle->id,
+                    ]);
+                    $prestamo->saldo_actual = $nuevoSaldo;
+                    $prestamo->estado = $nuevoSaldo <= 0 ? PrestamoEmpleado::ESTADO_LIQUIDADO : PrestamoEmpleado::ESTADO_ACTIVO;
+                    $prestamo->save();
+                }
+            }
+
             // Actualizar totales de la planilla
             $this->updatePayrollTotals($planilla->id);
 
             DB::commit();
+
+            // Incluir relación abonosPrestamo para que el frontend muestre los abonos al reabrir el detalle
+            $detalle->load('abonosPrestamo');
 
             return response()->json([
                 'message' => 'Detalle actualizado exitosamente con nuevas tablas 2025',

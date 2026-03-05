@@ -139,7 +139,7 @@
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                         <td class="text-right">{{ producto.precio | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-right">{{ (producto.precio * 1) + (producto.precio *
-                            (apiService.auth_user().empresa.iva / 100) ) | currency:'USD':'symbol':'1.2' }}</td>
+                            (getPorcentajeProducto(producto) / 100) ) | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
                             <!-- Si tiene lotes activados, mostrar stock de lotes -->
                             <div *ngIf="producto.inventario_por_lotes">
@@ -213,14 +213,16 @@
                                             <thead>
                                                 <tr>
                                                     <th>Bodega</th>
-                                                    <th>Sucursal</th>
                                                     <th class="text-right">Stock</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr *ngFor="let inventario of producto?.inventarios">
-                                                    <td class="text-nowrap">{{ inventario.nombre_bodega}}</td>
-                                                    <td class="text-nowrap">{{ inventario.nombre_sucursal}}</td>
+                                                    <td class="text-nowrap">
+                                                        {{ inventario.nombre_bodega}}
+                                                        <br>
+                                                        <small class="text-muted">{{ inventario.nombre_sucursal}}</small>
+                                                    </td>
                                                     <td class="text-right">{{ inventario.stock }}</td>
                                                 </tr>
                                             </tbody>

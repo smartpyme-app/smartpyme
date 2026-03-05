@@ -19,7 +19,7 @@ const routes: Routes = [
     path: '',
     component: LayoutComponent,
     children: [
-        { path: 'presupuestos', component: PresupuestosComponent },
+        { path: 'presupuestos', component: PresupuestosComponent, title: 'Presupuestos'},
 
         { path: 'presupuesto/crear', component: PresupuestoComponent, title: 'Presupuesto'},
         { path: 'presupuesto/editar/:id', component: PresupuestoComponent, title: 'Presupuesto'},
@@ -34,7 +34,7 @@ const routes: Routes = [
 
     ]
   }
-];
+]; 
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],

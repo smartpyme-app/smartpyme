@@ -5,7 +5,7 @@
     </div>
     <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
       <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
-        <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1"> 
+        <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1">
         <span id="producto_nombre" class="col-7 ps-1">
             <!-- <small>Nombre:</small> <br> -->
             {{ getNombreCompleto(producto) }} <br>
@@ -27,7 +27,7 @@
         <span class="col-2 text-end">
             <!-- <small>Precio:</small> <br> -->
             <!-- En v2, mostrar el precio con IVA incluido -->
-            <span class="badge bg-info p-1">{{ getPrecioConIva(producto.precio) | currency:'USD':'symbol':'1.0-6'}}</span>
+            <span class="badge bg-info p-1">{{ getPrecioConIva(producto) | currency:'USD':'symbol':'1.2'}}</span>
         </span>
       </a>
     </ul>

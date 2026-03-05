@@ -28,6 +28,7 @@ class Detalle extends Model {
         'id_venta',
         'id_vendedor',
         'iva',
+        'porcentaje_impuesto',
     );
 
     protected $appends = ['nombre_producto', 'img', 'codigo', 'marca'];
