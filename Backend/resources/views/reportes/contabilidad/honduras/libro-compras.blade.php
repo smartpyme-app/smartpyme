@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Libro de Compras - Honduras</title>
+    <title>Libro de Compras</title>
     <style>
         body{ font-family: Arial, sans-serif; font-size: 9px; }
         h1, h2{ margin: 5px; }
@@ -17,7 +17,7 @@
 <body>
     @php $empresa = Auth::user()->empresa()->with('currency')->first(); $simbolo = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : 'L'; @endphp
 
-    <h1 class="text-center">LIBRO DE COMPRAS - HONDURAS</h1>
+    <h1 class="text-center">LIBRO DE COMPRAS</h1>
     <h2 class="text-center">{{ Auth::user()->empresa()->pluck('nombre')->first() }}</h2>
     <p><b>Período:</b> {{ ucfirst(Carbon\Carbon::parse($request->inicio)->translatedFormat('F')) }} {{ Carbon\Carbon::parse($request->inicio)->format('Y') }}</p>
 
@@ -41,8 +41,8 @@
         <tbody>
             @foreach ($librocompras ?? [] as $row)
                 <tr>
-                    <td>{{ \Carbon\Carbon::parse($row['fecha_documento'])->format('d/m/Y') }}</td>
-                    <td>{{ \Carbon\Carbon::parse($row['fecha_contabilizacion'])->format('d/m/Y') }}</td>
+                    <td>{{ isset($row['fecha_documento']) && $row['fecha_documento'] ? \Carbon\Carbon::parse($row['fecha_documento'])->format('d/m/Y') : '' }}</td>
+                    <td>{{ isset($row['fecha_contabilizacion']) && $row['fecha_contabilizacion'] ? \Carbon\Carbon::parse($row['fecha_contabilizacion'])->format('d/m/Y') : '' }}</td>
                     <td>{{ $row['documento_dua_importacion'] ?? '' }}</td>
                     <td>{{ $row['documento_fyduca'] ?? '' }}</td>
                     <td>{{ $row['proveedor'] ?? '' }}</td>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comprobante de Retención - Honduras</title>
+    <title>Comprobante de Retención</title>
     <style>
         body{ font-family: Arial, sans-serif; font-size: 9px; }
         h1, h2{ margin: 5px; }
@@ -17,7 +17,7 @@
 <body>
     @php $empresa = Auth::user()->empresa()->with('currency')->first(); $simbolo = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : 'L'; @endphp
 
-    <h1 class="text-center">COMPROBANTE DE RETENCIÓN - HONDURAS</h1>
+    <h1 class="text-center">COMPROBANTE DE RETENCIÓN</h1>
     <h2 class="text-center">{{ Auth::user()->empresa()->pluck('nombre')->first() }}</h2>
     <p><b>Período:</b> {{ ucfirst(Carbon\Carbon::parse($request->inicio)->translatedFormat('F')) }} {{ Carbon\Carbon::parse($request->inicio)->format('Y') }}</p>
 
@@ -37,12 +37,12 @@
         <tbody>
             @foreach ($libroretenciones ?? [] as $row)
                 <tr>
-                    <td>{{ \Carbon\Carbon::parse($row['fecha_comprobante'])->format('d/m/Y') }}</td>
+                    <td>{{ isset($row['fecha_comprobante']) && $row['fecha_comprobante'] ? \Carbon\Carbon::parse($row['fecha_comprobante'])->format('d/m/Y') : '' }}</td>
                     <td>{{ $row['numero_comprobante'] ?? '' }}</td>
-                    <td>{{ \Carbon\Carbon::parse($row['fecha_factura'])->format('d/m/Y') }}</td>
+                    <td>{{ isset($row['fecha_factura']) && $row['fecha_factura'] ? \Carbon\Carbon::parse($row['fecha_factura'])->format('d/m/Y') : '' }}</td>
                     <td>{{ $row['factura_relacionada'] ?? '' }}</td>
-                    <td>{{ $row['agente_retenedor'] ?? '' }}</td>
-                    <td>{{ $row['rtn'] ?? '' }}</td>
+                    <td>{{ $row['nombre_agente_retenedor'] ?? '' }}</td>
+                    <td>{{ $row['registro_tributario_nacional'] ?? '' }}</td>
                     <td class="text-right">{{ $simbolo }}{{ number_format($row['importe_base_retencion'] ?? 0, 2) }}</td>
                     <td class="text-right">{{ $simbolo }}{{ number_format($row['impuesto_retenido'] ?? 0, 2) }}</td>
                 </tr>

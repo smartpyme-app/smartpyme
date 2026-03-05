@@ -416,12 +416,14 @@ class LibrosIVAController extends Controller
                 'importe_gravada' => $v->iva > 0 ? (float) $v->sub_total : 0,
                 'importe_exonerada' => (float) ($v->no_sujeta ?? 0),
                 'impuesto_ventas' => (float) $v->iva,
+                'total' => (float) $v->total,
                 'importe_exportacion' => $esExportacion ? (float) $v->total : 0,
             ];
         });
 
         $devolData = $devoluciones->map(function ($d) {
             $ventaOriginal = $d->venta;
+            $totalDevolucion = (float) ($d->total ?? ($d->sub_total + $d->iva));
             return [
                 'fecha' => $d->fecha,
                 'num_orden_exenta' => '',
@@ -438,6 +440,7 @@ class LibrosIVAController extends Controller
                 'importe_gravada' => $d->sub_total > 0 ? -1 * (float) $d->sub_total : 0,
                 'importe_exonerada' => 0,
                 'impuesto_ventas' => $d->iva > 0 ? -1 * (float) $d->iva : 0,
+                'total' => -1 * $totalDevolucion,
                 'importe_exportacion' => 0,
             ];
         });
@@ -1207,6 +1210,72 @@ class LibrosIVAController extends Controller
             return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
                 ->header('Content-Type', 'text/plain');
         }
+    }
+
+    /**
+     * Listado de retenciones (comprobantes) para vista general / previsualización.
+     * Misma estructura que el Excel de Honduras (LibroRetencionesExport).
+     */
+    public function retencionesList(Request $request): JsonResponse
+    {
+        if ($this->paisVista() === 'el_salvador') {
+            return response()->json([], 200);
+        }
+        $request->validate([
+            'inicio' => 'required|date',
+            'fin'    => 'required|date|after_or_equal:inicio',
+        ]);
+        $ventas = Venta::with(['cliente'])
+            ->where('estado', '!=', 'Anulada')
+            ->where('iva_retenido', '>', 0)
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->orderBy('fecha')->orderBy('correlativo')
+            ->get()
+            ->map(fn($v) => (object) ['registro' => $v, 'origen' => 'venta']);
+        $compras = Compra::with(['proveedor'])
+            ->where('estado', '!=', 'Anulada')
+            ->where('percepcion', '>', 0)
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->orderBy('fecha')
+            ->get()
+            ->map(fn($c) => (object) ['registro' => $c, 'origen' => 'compra']);
+        $items = $ventas->merge($compras)->sortBy(fn($x) => $x->registro->fecha)->values();
+        $filas = $items->map(function ($item) {
+            $r = $item->registro;
+            $esVenta = $item->origen === 'venta';
+            if ($esVenta) {
+                $fecha = $r->fecha;
+                $numComprobante = trim((string) ($r->numero_control ?? $r->correlativo ?? ''));
+                $numFactura = trim((string) $r->correlativo);
+                $agenteRetenedor = $r->nombre_cliente ?? '';
+                $rtn = optional($r->cliente)->nit ?? optional($r->cliente)->ncr ?? '';
+                $baseRetencion = (float) $r->sub_total;
+                $impuestoRetenido = (float) $r->iva_retenido;
+            } else {
+                $fecha = $r->fecha;
+                $numComprobante = $r->referencia ?? '';
+                $numFactura = $r->referencia ?? '';
+                $agenteRetenedor = $r->nombre_proveedor ?? '';
+                $rtn = optional($r->proveedor)->nit ?? optional($r->proveedor)->ncr ?? '';
+                $baseRetencion = (float) $r->sub_total;
+                $impuestoRetenido = (float) $r->percepcion;
+            }
+            return [
+                'fecha_comprobante'         => Carbon::parse($fecha)->format('Y-m-d'),
+                'numero_comprobante'       => $numComprobante,
+                'fecha_factura'             => Carbon::parse($fecha)->format('Y-m-d'),
+                'factura_relacionada'       => $numFactura,
+                'nombre_agente_retenedor'   => $agenteRetenedor,
+                'registro_tributario_nacional' => $rtn,
+                'importe_base_retencion'    => round($baseRetencion, 2),
+                'impuesto_retenido'        => round($impuestoRetenido, 2),
+            ];
+        })->values()->all();
+        return response()->json($filas, 200);
     }
 
     public function libroRetencion1Export(Request $request)

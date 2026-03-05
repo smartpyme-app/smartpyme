@@ -1,6 +1,5 @@
 <section class="bg-white p-4 rounded mb-3">
-  <h2 class="mb-0">Libros de IVA</h2>
-  <p class="text-muted small mb-0">Ventas, compras y retenciones según formato de su país.</p>
+  <h2 class="mb-0">Libros fiscales</h2>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
@@ -12,17 +11,17 @@
       <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'compras'}" (click)="activoSeccion = 'compras'; loadAll()">
         Compras
       </button>
-      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'retenciones'}" (click)="activoSeccion = 'retenciones'">
+      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'retenciones'}" (click)="activoSeccion = 'retenciones'; loadAll()">
         Retenciones
       </button>
     </div>
     <div class="ms-auto d-flex gap-2 align-items-center">
       <ng-container>
-        <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="onFiltroChange()">
+        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="onFiltroChange()">
           <option value="">Todas las sucursales</option>
           <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
         </select>
-        <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="filtros.mes" name="mes" (change)="onFiltroChange()">
+        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.mes" name="mes" (change)="onFiltroChange()">
           <option [value]="1">Enero</option>
           <option [value]="2">Febrero</option>
           <option [value]="3">Marzo</option>
@@ -36,105 +35,171 @@
           <option [value]="11">Noviembre</option>
           <option [value]="12">Diciembre</option>
         </select>
-        <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="filtros.anio" name="anio" (change)="onFiltroChange()">
+        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.anio" name="anio" (change)="onFiltroChange()">
           <option *ngFor="let year of years" [value]="year">{{ year }}</option>
         </select>
       </ng-container>
-      <div class="dropdown" *ngIf="activoSeccion === 'ventas' || activoSeccion === 'compras'">
-        <button class="btn btn-default btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" [disabled]="downloading">
+      <div class="dropdown" *ngIf="activoSeccion === 'ventas' || activoSeccion === 'compras' || activoSeccion === 'retenciones'">
+        <button class="btn btn-default dropdown-toggle" type="button" data-bs-toggle="dropdown" [disabled]="downloading">
           Descargas
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           <li *ngIf="activoSeccion === 'ventas'">
-            <button class="dropdown-item" (click)="descargarVentasExcel()">Libro de ventas (Excel)</button>
-            <button class="dropdown-item" (click)="descargarVentasPDF()">Libro de ventas (PDF)</button>
+            <button class="dropdown-item" (click)="descargarVentasExcel()">Libro fiscal - Ventas (Excel)</button>
+            <button class="dropdown-item" (click)="descargarVentasPDF()">Libro fiscal - Ventas (PDF)</button>
           </li>
           <li *ngIf="activoSeccion === 'compras'">
-            <button class="dropdown-item" (click)="descargarComprasExcel()">Libro de compras (Excel)</button>
-            <button class="dropdown-item" (click)="descargarComprasPDF()">Libro de compras (PDF)</button>
+            <button class="dropdown-item" (click)="descargarComprasExcel()">Libro fiscal - Compras (Excel)</button>
+            <button class="dropdown-item" (click)="descargarComprasPDF()">Libro fiscal - Compras (PDF)</button>
+          </li>
+          <li *ngIf="activoSeccion === 'retenciones'">
+            <button class="dropdown-item" (click)="descargarRetencionesExcel()">Libro fiscal - Retenciones (Excel)</button>
           </li>
         </ul>
       </div>
-      <button *ngIf="activoSeccion === 'retenciones'" class="btn btn-primary btn-sm" [disabled]="downloading" (click)="descargarRetencionesExcel()">
-        Descargar libro de retenciones (Excel)
-      </button>
     </div>
   </div>
 
   <!-- Sección Ventas -->
   <div *ngIf="activoSeccion === 'ventas'">
-    <div class="table-responsive">
-      <table class="table table-bordered table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Cliente</th>
-            <th>RTN</th>
-            <th>No. Factura</th>
-            <th class="text-end">Importe Exenta</th>
-            <th class="text-end">Importe Gravada</th>
-            <th class="text-end">Impuesto Ventas</th>
-            <th class="text-end">Total</th>
-            <th class="text-end">Exportación</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="(ventas?.length ?? 0) === 0 && !loading"><td colspan="9" class="text-center">No hay registros</td></tr>
-          <tr *ngIf="loading"><td colspan="9" class="text-center">Cargando...</td></tr>
-          <tr *ngFor="let row of ventas; let i = index">
-            <td>{{ row.fecha | date:'dd/MM/yyyy' }}</td>
-            <td>{{ row.cliente }}</td>
-            <td>{{ row.rtn }}</td>
-            <td>{{ row.no_factura }}</td>
-            <td class="text-end">{{ row.importe_exenta | number:'1.2-2' }}</td>
-            <td class="text-end">{{ row.importe_gravada | number:'1.2-2' }}</td>
-            <td class="text-end">{{ row.impuesto_ventas | number:'1.2-2' }}</td>
-            <td class="text-end">{{ (row.total ?? 0) | number:'1.2-2' }}</td>
-            <td class="text-end">{{ (row.importe_exportacion ?? 0) | number:'1.2-2' }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="row">
+      <div class="col-12">
+        <div class="table-responsive bg-white">
+          <table class="table table-bordered table-hover mr-top" id="tablaVentas">
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>RTN del Cliente</th>
+                <th>Descripción</th>
+                <th>No. de Factura que respalda la venta</th>
+                <th class="text-end">Importe Venta Exenta</th>
+                <th class="text-end">Importe Venta Gravada</th>
+                <th class="text-end">Importe Venta Exonerada</th>
+                <th class="text-end">Impuesto Sobre Ventas</th>
+                <th class="text-end">Importe Exportación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="9" class="text-center" *ngIf="(ventas?.length ?? 0) === 0 && !loading">
+                  <span class="badge bg-primary">No tiene registros</span>
+                </td>
+                <td colspan="9" class="text-center" *ngIf="loading">
+                  <span class="badge bg-primary">Cargando...</span>
+                </td>
+              </tr>
+              <tr class="animated fadeIn" *ngFor="let row of ventas; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ row.rtn }}</td>
+                <td>{{ row.descripcion }}</td>
+                <td>{{ row.no_factura }}</td>
+                <td class="text-end">{{ row.importe_exenta | currency }}</td>
+                <td class="text-end">{{ row.importe_gravada | currency }}</td>
+                <td class="text-end">{{ (row.importe_exonerada ?? 0) | currency }}</td>
+                <td class="text-end">{{ row.impuesto_ventas | currency }}</td>
+                <td class="text-end">{{ (row.importe_exportacion ?? 0) | currency }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Sección Compras -->
   <div *ngIf="activoSeccion === 'compras'">
-    <div class="table-responsive">
-      <table class="table table-bordered table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Fecha documento</th>
-            <th>Proveedor</th>
-            <th>RTN proveedor</th>
-            <th>No. Factura</th>
-            <th class="text-end">Importe exenta</th>
-            <th class="text-end">Importe gravada</th>
-            <th class="text-end">Impuesto ventas</th>
-            <th class="text-end">Importe importación</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="(compras?.length ?? 0) === 0 && !loading"><td colspan="8" class="text-center">No hay registros</td></tr>
-          <tr *ngIf="loading"><td colspan="8" class="text-center">Cargando...</td></tr>
-          <tr *ngFor="let row of compras">
-            <td>{{ row.fecha_documento | date:'dd/MM/yyyy' }}</td>
-            <td>{{ row.proveedor }}</td>
-            <td>{{ row.rtn_proveedor }}</td>
-            <td>{{ row.no_factura_compra }}</td>
-            <td class="text-end">{{ row.importe_exenta | number:'1.2-2' }}</td>
-            <td class="text-end">{{ row.importe_gravada | number:'1.2-2' }}</td>
-            <td class="text-end">{{ row.impuesto_ventas | number:'1.2-2' }}</td>
-            <td class="text-end">{{ (row.importe_importacion ?? 0) | number:'1.2-2' }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="row">
+      <div class="col-12">
+        <div class="table-responsive bg-white">
+          <table class="table table-bordered table-hover mr-top" id="tablaCompras">
+            <thead>
+              <tr>
+                <th>Fecha de Documento</th>
+                <th>Fecha de Contabilización</th>
+                <th>Documento / DUA Importación</th>
+                <th>Documento de adquisiciones FYDUCA</th>
+                <th>Proveedor</th>
+                <th>Registro Tributario Nacional del proveedor</th>
+                <th>Descripción de la compra</th>
+                <th>No. de Factura de la compra</th>
+                <th class="text-end">Importe Compra Exenta</th>
+                <th class="text-end">Importe Compra Gravada</th>
+                <th class="text-end">Impuesto Sobre Ventas</th>
+                <th class="text-end">Importe Importación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="12" class="text-center" *ngIf="(compras?.length ?? 0) === 0 && !loading">
+                  <span class="badge bg-primary">No tiene registros</span>
+                </td>
+                <td colspan="12" class="text-center" *ngIf="loading">
+                  <span class="badge bg-primary">Cargando...</span>
+                </td>
+              </tr>
+              <tr class="animated fadeIn" *ngFor="let row of compras">
+                <td>{{ row.fecha_documento | date:'dd/MM/yyyy' }}</td>
+                <td>{{ row.fecha_contabilizacion | date:'dd/MM/yyyy' }}</td>
+                <td>{{ row.documento_dua_importacion }}</td>
+                <td>{{ row.documento_fyduca }}</td>
+                <td>{{ row.proveedor }}</td>
+                <td>{{ row.rtn_proveedor }}</td>
+                <td>{{ row.descripcion_compra }}</td>
+                <td>{{ row.no_factura_compra }}</td>
+                <td class="text-end">{{ row.importe_exenta | currency }}</td>
+                <td class="text-end">{{ row.importe_gravada | currency }}</td>
+                <td class="text-end">{{ row.impuesto_ventas | currency }}</td>
+                <td class="text-end">{{ (row.importe_importacion ?? 0) | currency }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Sección Retenciones -->
-  <div *ngIf="activoSeccion === 'retenciones'" class="py-4">
-    <p class="text-muted mb-3">Descargue el libro de retenciones (comprobantes de retención) en Excel para el período seleccionado.</p>
-    <p class="small text-muted mb-0">Use los filtros de mes y año arriba y haga clic en «Descargar libro de retenciones» cuando esté en la pestaña Ventas o Compras para aplicar el mismo período.</p>
+  <div *ngIf="activoSeccion === 'retenciones'">
+    <div class="row">
+      <div class="col-12">
+        <div class="table-responsive bg-white">
+          <table class="table table-bordered table-hover mr-top" id="tablaRetenciones">
+            <thead>
+              <tr>
+                <th>Fecha de Comprobante de Retención</th>
+                <th>Número de Comprobante de Retención</th>
+                <th>Fecha de Factura</th>
+                <th>Factura relacionada con Comprobante</th>
+                <th>Nombre del Agente Retenedor</th>
+                <th>Registro Tributario Nacional</th>
+                <th class="text-end">Importe Base de Retención</th>
+                <th class="text-end">Impuesto Retenido</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="8" class="text-center" *ngIf="(retenciones?.length ?? 0) === 0 && !loading">
+                  <span class="badge bg-primary">No tiene registros</span>
+                </td>
+                <td colspan="8" class="text-center" *ngIf="loading">
+                  <span class="badge bg-primary">Cargando...</span>
+                </td>
+              </tr>
+              <tr class="animated fadeIn" *ngFor="let row of retenciones">
+                <td>{{ row.fecha_comprobante | date:'dd/MM/yyyy' }}</td>
+                <td>{{ row.numero_comprobante }}</td>
+                <td>{{ row.fecha_factura | date:'dd/MM/yyyy' }}</td>
+                <td>{{ row.factura_relacionada }}</td>
+                <td>{{ row.nombre_agente_retenedor }}</td>
+                <td>{{ row.registro_tributario_nacional }}</td>
+                <td class="text-end">{{ row.importe_base_retencion | currency }}</td>
+                <td class="text-end">{{ row.impuesto_retenido | currency }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

@@ -32,7 +32,7 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
         return [
             BeforeSheet::class => function (BeforeSheet $event) {
                 $event->sheet->insertNewRowBefore(1, 4);
-                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS - HONDURAS');
+                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS');
                 $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
                 $event->sheet->setCellValue('A4', 'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F')) . ' - Año: ' . Carbon::parse($this->request->inicio)->format('Y'));
             },

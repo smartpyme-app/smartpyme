@@ -16,6 +16,7 @@ export class LibroIvaGeneralComponent implements OnInit {
   activoSeccion: 'ventas' | 'compras' | 'retenciones' = 'ventas';
   ventas: any[] = [];
   compras: any[] = [];
+  retenciones: any[] = [];
   years: number[] = [];
   sucursales: any[] = [];
   loading = false;
@@ -67,6 +68,11 @@ export class LibroIvaGeneralComponent implements OnInit {
     } else if (this.activoSeccion === 'compras') {
       this.apiService.getAll('libro-iva/compras', this.filtros).subscribe(
         (data) => { this.compras = data || []; this.loading = false; },
+        (error) => { this.alertService.error(error); this.loading = false; }
+      );
+    } else if (this.activoSeccion === 'retenciones') {
+      this.apiService.getAll('libro-iva/retenciones', this.filtros).subscribe(
+        (data) => { this.retenciones = data || []; this.loading = false; },
         (error) => { this.alertService.error(error); this.loading = false; }
       );
     } else {

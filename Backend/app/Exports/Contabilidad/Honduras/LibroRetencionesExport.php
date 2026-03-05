@@ -31,7 +31,7 @@ class LibroRetencionesExport implements FromCollection, WithMapping, WithHeading
         return [
             BeforeSheet::class => function (BeforeSheet $event) {
                 $event->sheet->insertNewRowBefore(1, 4);
-                $event->sheet->setCellValue('A1', 'COMPROBANTE DE RETENCIÓN - HONDURAS');
+                $event->sheet->setCellValue('A1', 'COMPROBANTE DE RETENCIÓN');
                 $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
                 $event->sheet->setCellValue('A4', 'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F')) . ' - Año: ' . Carbon::parse($this->request->inicio)->format('Y'));
             },
