@@ -121,6 +121,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
 
 
+    /** Ruta de Libros de IVA según país: El Salvador tiene vista completa; otros países vista general (ventas, compras, retenciones). */
+    get libroIvaRoute(): string[] {
+        const pais = this.apiService.auth_user()?.empresa?.pais ?? '';
+        return pais === 'El Salvador' ? ['/libro-iva/contribuyentes'] : ['/libro-iva/general'];
+    }
+
     toggleSidebar() {
         this.sidebarCollapsed = !this.sidebarCollapsed;
         localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());

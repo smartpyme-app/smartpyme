@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -22,10 +23,15 @@ export class ContribuyentesComponent implements OnInit {
 
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService
+        private modalService: BsModalService, private router: Router
     ) { }
 
-    ngOnInit() {   
+    ngOnInit() {
+        const pais = this.apiService.auth_user()?.empresa?.pais ?? '';
+        if (pais !== 'El Salvador') {
+            this.router.navigate(['/libro-iva/general']);
+            return;
+        }
         const currentYear = new Date().getFullYear(); // Obtener el año actual
         const currentMonth = new Date().getMonth() + 1;
         // Crear un array con el año actual y los 10 años anteriores
