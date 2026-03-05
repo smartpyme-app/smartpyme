@@ -704,75 +704,74 @@ export class FacturacionV2Component implements OnInit {
       ? (this.apiService.auth_user()?.empresa?.iva || 0)
       : 0;
 
-    // El sub_total es la suma de los totales de los detalles (sin IVA)
-    this.venta.sub_total = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'total')
-    ).toFixed(4);
+    // Redondear a 2 decimales para evitar diferencias de 1 centavo entre subtotal, IVA y total
+    const rawSubTotal = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'));
+    this.venta.sub_total = (Math.round(rawSubTotal * 100) / 100).toFixed(2);
 
-    this.venta.exenta = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'exenta')
-    ).toFixed(4);
-    this.venta.no_sujeta = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'no_sujeta')
-    ).toFixed(4);
-    
-    // La gravada es el sub_total sin IVA
-    this.venta.gravada = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'gravada')
-    ).toFixed(4);
-    
-    this.venta.cuenta_a_terceros = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros')
-    ).toFixed(4);
+    const rawExenta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'));
+    this.venta.exenta = (Math.round(rawExenta * 100) / 100).toFixed(2);
+    const rawNoSujeta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'));
+    this.venta.no_sujeta = (Math.round(rawNoSujeta * 100) / 100).toFixed(2);
+    const rawGravada = parseFloat(this.sumPipe.transform(this.venta.detalles, 'gravada'));
+    this.venta.gravada = (Math.round(rawGravada * 100) / 100).toFixed(2);
+    const rawCuentaTerceros = parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'));
+    this.venta.cuenta_a_terceros = (Math.round(rawCuentaTerceros * 100) / 100).toFixed(2);
 
+    const subTotalNum = parseFloat(this.venta.sub_total);
     this.venta.iva_percibido = this.venta.percepcion
-      ? this.venta.sub_total * 0.01
+      ? Math.round(subTotalNum * 0.01 * 100) / 100
       : 0;
     this.venta.iva_retenido = this.venta.retencion
-      ? this.venta.sub_total * 0.01
+      ? Math.round(subTotalNum * 0.01 * 100) / 100
       : 0;
     this.venta.renta_retenida = this.venta.renta
-      ? this.venta.sub_total * 0.10
+      ? Math.round(subTotalNum * 0.10 * 100) / 100
       : 0;
 
     // Calcular propina basada en el porcentaje de la empresa y el subtotal
     const propinaPorcentaje = parseFloat(this.apiService.auth_user().empresa.propina_porcentaje) || 0;
     this.venta.propina = this.venta.cobrar_propina
-      ? parseFloat((this.venta.sub_total * (propinaPorcentaje / 100)).toFixed(4))
+      ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA solo sobre el monto gravado (exento y no sujeta no llevan IVA)
-    if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-      this.venta.impuestos.forEach((impuesto: any) => {
-        impuesto.monto = parseFloat(this.venta.gravada || 0) * (impuesto.porcentaje / 100);
-      });
-      this.venta.iva = parseFloat(
-        this.sumPipe.transform(this.venta.impuestos, 'monto')
-      ).toFixed(4);
+    // IVA de la venta = suma del IVA de los detalles (diferencia total_iva - total por línea), así siempre cuadra
+    const sumaIvaDetalles = parseFloat(this.sumPipe.transform(this.venta.detalles, 'iva')) || 0;
+    this.venta.iva = (Math.round(sumaIvaDetalles * 100) / 100).toFixed(2);
+    if (this.venta.cobrar_impuestos && this.venta.impuestos.length > 0) {
+      const ivaVenta = parseFloat(this.venta.iva);
+      const totalPct = this.venta.impuestos.reduce((s: number, i: any) => s + (parseFloat(i.porcentaje) || 0), 0);
+      if (totalPct > 0) {
+        this.venta.impuestos.forEach((impuesto: any, idx: number) => {
+          const pct = parseFloat(impuesto.porcentaje) || 0;
+          if (idx < this.venta.impuestos.length - 1) {
+            impuesto.monto = Math.round(ivaVenta * (pct / totalPct) * 100) / 100;
+          } else {
+            impuesto.monto = Math.round((ivaVenta - this.venta.impuestos.slice(0, -1).reduce((s: number, i: any) => s + (i.monto || 0), 0)) * 100) / 100;
+          }
+        });
+      } else {
+        this.venta.impuestos.forEach((impuesto: any, idx: number) => {
+          impuesto.monto = idx === 0 ? parseFloat(this.venta.iva) : 0;
+        });
+      }
     } else {
-      this.venta.impuestos.forEach((impuesto: any) => {
-        impuesto.monto = 0;
-      });
-      this.venta.iva = 0;
+      this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
     }
 
-    this.venta.descuento = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'descuento')
-    ).toFixed(4);
-    this.venta.total_costo = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'total_costo')
-    ).toFixed(4);
-    
-    // El total NO incluye la propina (la propina se muestra por separado en "Total + Propina")
-    // sub_total ya es la suma de totales por línea (gravada + exenta + no_sujeta), no sumar exenta/no_sujeta de nuevo
-    this.venta.total = (
+    const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
+    this.venta.descuento = (Math.round(rawDescuento * 100) / 100).toFixed(2);
+    const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
+    this.venta.total_costo = (Math.round(rawTotalCosto * 100) / 100).toFixed(4);
+
+    // El total NO incluye la propina; calcular con 2 decimales para que cuadre con subtotal + IVA
+    const totalNum =
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
       parseFloat(this.venta.cuenta_a_terceros) +
-      parseFloat(this.venta.iva_percibido) -
-      parseFloat(this.venta.iva_retenido) -
-      parseFloat(this.venta.renta_retenida)
-    ).toFixed(4);
+      parseFloat(String(this.venta.iva_percibido)) -
+      parseFloat(String(this.venta.iva_retenido)) -
+      parseFloat(String(this.venta.renta_retenida));
+    this.venta.total = (Math.round(totalNum * 100) / 100).toFixed(2);
 
 
     // Asignar tipoOperacion según los detalles
