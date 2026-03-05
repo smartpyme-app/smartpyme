@@ -6,48 +6,14 @@
     <title>Libro Compras</title>
 
     <style>
-        body{
-            font-family: Arial, sans-serif;
-            font-size: 10px;
-        }
-
-        h1, h2{
-            margin: 5px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        thead th {
-            padding: 3px;
-            text-align: left;
-            border: 1px solid #dee2e6;
-        }
-
-        tbody td {
-            padding: 3px;
-            text-align: left;
-            border: 1px solid #dee2e6;
-        }
-
-        tfoot td {
-            padding: 3px;
-            text-align: left;
-            border: 1px solid #dee2e6;
-            background-color: #f8f9fa;
-            font-weight: bold;
-        }
-
-        td, th {
-            vertical-align: middle;
-        }
-
+        body{ font-family: Arial, sans-serif; font-size: 10px; }
+        h1, h2{ margin: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        thead th, tbody td { padding: 3px; text-align: left; border: 1px solid #dee2e6; }
+        tfoot td { padding: 3px; text-align: left; border: 1px solid #dee2e6; background-color: #f8f9fa; font-weight: bold; }
+        td, th { vertical-align: middle; }
         .text-center{text-align: center; }
         .text-right{text-align: right; }
-
     </style>
 </head>
 <body>

@@ -19,6 +19,7 @@ import { ContribuyentesComponent } from '@views/contabilidad/libro-iva/contribuy
 import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-compras.component';
 import { LibroAnuladosComponent } from '@views/contabilidad/libro-anulados/libro-anulados.component';
 import { LibroComprasSujetosExcluidosComponent } from '@views/contabilidad/libro-compras-sujetos-excluidos/libro-compras-sujetos-excluidos.component';
+import { LibroIvaGeneralComponent } from '@views/contabilidad/libro-iva/libro-iva-general/libro-iva-general.component';
 
 @NgModule({
   imports: [
@@ -42,7 +43,8 @@ import { LibroComprasSujetosExcluidosComponent } from '@views/contabilidad/libro
     ContribuyentesComponent,
     LibroComprasComponent,
     LibroAnuladosComponent,
-    LibroComprasSujetosExcluidosComponent
+    LibroComprasSujetosExcluidosComponent,
+    LibroIvaGeneralComponent
   ],
   exports: [
     PresupuestosComponent,
@@ -52,7 +54,8 @@ import { LibroComprasSujetosExcluidosComponent } from '@views/contabilidad/libro
     ContribuyentesComponent,
     LibroComprasComponent,
     LibroAnuladosComponent,
-    LibroComprasSujetosExcluidosComponent
+    LibroComprasSujetosExcluidosComponent,
+    LibroIvaGeneralComponent
   ]
 })
 export class ContabilidadModule { }

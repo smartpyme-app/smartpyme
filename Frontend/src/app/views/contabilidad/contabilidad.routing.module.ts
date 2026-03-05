@@ -8,6 +8,7 @@ import { ContribuyentesComponent } from '@views/contabilidad/libro-iva/contribuy
 import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-compras.component';
 import { LibroAnuladosComponent } from '@views/contabilidad/libro-anulados/libro-anulados.component';
 import { LibroComprasSujetosExcluidosComponent } from '@views/contabilidad/libro-compras-sujetos-excluidos/libro-compras-sujetos-excluidos.component';
+import { LibroIvaGeneralComponent } from '@views/contabilidad/libro-iva/libro-iva-general/libro-iva-general.component';
 
 import { PresupuestosComponent } from '@views/contabilidad/presupuestos/presupuestos.component';
 import { PresupuestoComponent } from '@views/contabilidad/presupuestos/presupuesto/presupuesto.component';
@@ -24,13 +25,13 @@ const routes: Routes = [
         { path: 'presupuesto/editar/:id', component: PresupuestoComponent, title: 'Presupuesto'},
         { path: 'presupuesto/detalles/:id', component: PresupuestoDetallesComponent, title: 'Presupuesto'},
 
-        { path: 'libro-iva/contribuyentes', component: ContribuyentesComponent,
-          title: 'Contribuyentes'},
-        { path: 'libro-iva/consumidor-final', component: ConsumidorFinalComponent,
-          title: 'Consumidor final'},
-        { path: 'libro-compras', component: LibroComprasComponent, title: 'Libro de compras'},
-        { path: 'libro-anulados', component: LibroAnuladosComponent, title: 'Libro de anulados'},
-        { path: 'libro-compras-sujetos-excluidos', component: LibroComprasSujetosExcluidosComponent, title: 'Libro de compras sujetos excluidos'}
+        { path: 'libro-iva/contribuyentes', component: ContribuyentesComponent },
+        { path: 'libro-iva/consumidor-final', component: ConsumidorFinalComponent },
+        { path: 'libro-iva/general', component: LibroIvaGeneralComponent },
+        { path: 'libro-compras', component: LibroComprasComponent },
+        { path: 'libro-anulados', component: LibroAnuladosComponent },
+        { path: 'libro-compras-sujetos-excluidos', component: LibroComprasSujetosExcluidosComponent },
+
     ]
   }
 ]; 

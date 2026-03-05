@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exports\Contabilidad;
+namespace App\Exports\Contabilidad\ElSalvador;
 
 use App\Models\Ventas\Venta;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -39,7 +39,6 @@ use App\Models\Admin\Empresa;
     private function filtrarVentasPorFacturacionElectronica($ventas)
     {
         if ($this->tieneFacturacionElectronica()) {
-            // Con facturación electrónica: solo ventas con sello_mh
             $ventasSinSello = $ventas->filter(function ($venta) {
                 return empty($venta->sello_mh);
             });
@@ -54,14 +53,10 @@ use App\Models\Admin\Empresa;
                 return empty($venta->sello_mh);
             });
         } else {
-            // Sin facturación electrónica: todas las ventas
             return $ventas;
         }
     }
 
-    /**
-     * Obtiene el código de generación o correlativo según facturación electrónica
-     */
     private function obtenerCodigoGeneracion($venta): string
     {
         if ($this->tieneFacturacionElectronica() && $venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
@@ -103,8 +98,8 @@ use App\Models\Admin\Empresa;
 
     public function collection()
     {
-        $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
+        $request = $this->request;
+
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
                         ->whereHas('documento', function ($q) {
@@ -118,18 +113,16 @@ use App\Models\Admin\Empresa;
                         ->where('cotizacion', 0)
                         ->get();
 
-        // Filtrar ventas según facturación electrónica
         $ventasFiltradas = $this->filtrarVentasPorFacturacionElectronica($ventas);
 
         $filas = $this->generarFilas($ventasFiltradas);
 
         return $filas;
-        
     }
 
     public function map($fila): array{
         $fila = is_array($fila) ? $fila : (array) $fila;
-        
+
         if (!empty($fila['es_total'])) {
             return [
                 '',
@@ -172,7 +165,6 @@ use App\Models\Admin\Empresa;
                     return $this->obtenerCodigoGeneracion($venta);
                 });
 
-                // Primero identificar exportaciones (sin importar el IVA)
                 $exportaciones = $ventasDia->sum(function ($venta) {
                     $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
                     return strtolower($documentoNombre) === 'factura de exportación'
@@ -180,10 +172,8 @@ use App\Models\Admin\Empresa;
                         : 0;
                 });
 
-                // Luego clasificar las ventas restantes (excluyendo exportaciones)
                 $ventasExentas = $ventasDia->sum(function ($venta) {
                     $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
-                    // Excluir exportaciones
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
@@ -192,7 +182,6 @@ use App\Models\Admin\Empresa;
 
                 $ventasGravadas = $ventasDia->sum(function ($venta) {
                     $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
-                    // Excluir exportaciones
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }

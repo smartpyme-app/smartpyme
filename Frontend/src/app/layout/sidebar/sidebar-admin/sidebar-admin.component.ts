@@ -30,6 +30,12 @@ export class SidebarAdminComponent implements OnInit {
 
     searchControl = new FormControl();
 
+    /** Ruta de Libros de IVA según país: El Salvador vista completa; otros países vista general. */
+    get libroIvaRoute(): string[] {
+        const pais = this.apiService.auth_user()?.empresa?.pais ?? '';
+        return pais === 'El Salvador' ? ['/libro-iva/contribuyentes'] : ['/libro-iva/general'];
+    }
+
     constructor(public apiService: ApiService, public alertService: AlertService) {}
 
     ngOnInit() {
