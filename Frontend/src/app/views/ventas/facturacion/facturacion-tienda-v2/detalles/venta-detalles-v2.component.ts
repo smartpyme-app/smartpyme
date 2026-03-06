@@ -77,7 +77,7 @@ export class VentaDetallesV2Component implements OnInit {
         return this.apiService.auth_user()?.empresa?.iva || 0;
     }
 
-    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle */
+    /** Aplica gravada/exenta/no_sujeta según tipo_gravado. IVA por línea = diferencia (total_iva - total) para que cuadre. */
     private aplicarTipoGravado(detalle: any) {
         const total = parseFloat(detalle.total) || 0;
         detalle.gravada = 0;
@@ -88,15 +88,19 @@ export class VentaDetallesV2Component implements OnInit {
             detalle.gravada = total;
             if (this.venta.cobrar_impuestos && this.obtenerPorcentajeIvaTotal() > 0) {
                 detalle.total_iva = (total * (1 + this.obtenerPorcentajeIvaTotal() / 100)).toFixed(4);
+                detalle.iva = Math.round((parseFloat(detalle.total_iva) - total) * 100) / 100;
             } else {
                 detalle.total_iva = detalle.total;
+                detalle.iva = 0;
             }
         } else if (tipo === 'exenta') {
             detalle.exenta = total;
             detalle.total_iva = detalle.total;
+            detalle.iva = 0;
         } else {
             detalle.no_sujeta = total;
             detalle.total_iva = detalle.total;
+            detalle.iva = 0;
         }
     }
 
