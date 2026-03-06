@@ -643,45 +643,42 @@ export class FacturacionComponent implements OnInit {
       this.venta.impuestos = [];
     }
 
-    this.venta.sub_total = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'total')
-    ).toFixed(4);
+    // Redondear a 2 decimales para evitar diferencias de 1 centavo entre subtotal, IVA y total
+    const rawSubTotal = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'));
+    this.venta.sub_total = (Math.round(rawSubTotal * 100) / 100).toFixed(2);
 
-    this.venta.exenta = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'exenta')
-    ).toFixed(4);
-    this.venta.no_sujeta = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'no_sujeta')
-    ).toFixed(4);
-    this.venta.gravada = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'gravada')
-    ).toFixed(4);
-    this.venta.cuenta_a_terceros = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros')
-    ).toFixed(4);
+    const rawExenta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'));
+    this.venta.exenta = (Math.round(rawExenta * 100) / 100).toFixed(2);
+    const rawNoSujeta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'));
+    this.venta.no_sujeta = (Math.round(rawNoSujeta * 100) / 100).toFixed(2);
+    const rawGravada = parseFloat(this.sumPipe.transform(this.venta.detalles, 'gravada'));
+    this.venta.gravada = (Math.round(rawGravada * 100) / 100).toFixed(2);
+    const rawCuentaTerceros = parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'));
+    this.venta.cuenta_a_terceros = (Math.round(rawCuentaTerceros * 100) / 100).toFixed(2);
 
+    const subTotalNum = parseFloat(this.venta.sub_total);
     this.venta.iva_percibido = this.venta.percepcion
-      ? this.venta.sub_total * 0.01
+      ? Math.round(subTotalNum * 0.01 * 100) / 100
       : 0;
     this.venta.iva_retenido = this.venta.retencion
-      ? this.venta.sub_total * 0.01
+      ? Math.round(subTotalNum * 0.01 * 100) / 100
       : 0;
     this.venta.renta_retenida = this.venta.renta
-      ? this.venta.sub_total * 0.10
+      ? Math.round(subTotalNum * 0.10 * 100) / 100
       : 0;
 
     // Calcular propina basada en el porcentaje de la empresa y el subtotal
     const propinaPorcentaje = parseFloat(this.apiService.auth_user().empresa.propina_porcentaje) || 0;
     this.venta.propina = this.venta.cobrar_propina
-      ? parseFloat((this.venta.sub_total * (propinaPorcentaje / 100)).toFixed(4))
+      ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
     // IVA por tasa: cada impuesto recibe solo el IVA de los detalles con ese porcentaje
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
     const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
     const porcentajesImpuestos = (this.venta.impuestos || []).map((i: any) => Number(i.porcentaje));
-    this.venta.impuestos.forEach((impuesto: any) => {
-      if (this.venta.cobrar_impuestos) {
+    if (this.venta.cobrar_impuestos) {
+      this.venta.impuestos.forEach((impuesto: any) => {
         const pctImp = Number(impuesto.porcentaje);
         const monto = this.venta.detalles
           .filter((d: any) => {
@@ -696,53 +693,53 @@ export class FacturacionComponent implements OnInit {
             return sum + ivaLinea;
           }, 0);
         impuesto.monto = parseFloat(Number(monto).toFixed(4));
-      } else {
-        impuesto.monto = 0;
+      });
+      // Detalles cuyo % no coincide con ningún impuesto: asignar su IVA al impuesto de la empresa o al primero
+      if (this.venta.detalles.length && this.venta.impuestos.length) {
+        const ivaSinAsignar = this.venta.detalles
+          .filter((d: any) => {
+            const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+              ? Number(d.porcentaje_impuesto) : empresaIva;
+            return !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalle));
+          })
+          .reduce((sum: number, d: any) => {
+            const gravada = parseFloat(d.gravada || 0);
+            const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+              ? Number(d.porcentaje_impuesto) : empresaIva;
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+              ? parseFloat(d.iva) : gravada * (pct / 100);
+            return sum + ivaLinea;
+          }, 0);
+        if (ivaSinAsignar > 0) {
+          const impuestoDestino = this.venta.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
+            || this.venta.impuestos[0];
+          impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
+        }
       }
-    });
-    // Detalles cuyo % no coincide con ningún impuesto: asignar su IVA al impuesto de la empresa o al primero
-    if (this.venta.cobrar_impuestos && this.venta.detalles.length && this.venta.impuestos.length) {
-      const ivaSinAsignar = this.venta.detalles
-        .filter((d: any) => {
-          const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-            ? Number(d.porcentaje_impuesto) : empresaIva;
-          return !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalle));
-        })
-        .reduce((sum: number, d: any) => {
-          const gravada = parseFloat(d.gravada || 0);
-          const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-            ? Number(d.porcentaje_impuesto) : empresaIva;
-          const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
-            ? parseFloat(d.iva) : gravada * (pct / 100);
-          return sum + ivaLinea;
-        }, 0);
-      if (ivaSinAsignar > 0) {
-        const impuestoDestino = this.venta.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
-          || this.venta.impuestos[0];
-        impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
-      }
+      this.venta.iva = parseFloat(
+        this.sumPipe.transform(this.venta.impuestos, 'monto')
+      ).toFixed(4);
+    } else {
+      this.venta.iva = (0).toFixed(2);
+      this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
     }
 
-    this.venta.iva = parseFloat(
-      this.sumPipe.transform(this.venta.impuestos, 'monto')
-    ).toFixed(4);
-    this.venta.descuento = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'descuento')
-    ).toFixed(4);
-    this.venta.total_costo = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'total_costo')
-    ).toFixed(4);
-    // El total NO incluye la propina (la propina se muestra por separado en "Total + Propina")
-    // sub_total ya es la suma de totales por línea (gravada + exenta + no_sujeta), no sumar exenta/no_sujeta de nuevo
-    this.venta.total = (
+    const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
+    this.venta.descuento = (Math.round(rawDescuento * 100) / 100).toFixed(2);
+    const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
+    this.venta.total_costo = (Math.round(rawTotalCosto * 100) / 100).toFixed(4);
+
+    // El total NO incluye la propina; calcular con 2 decimales para que cuadre con subtotal + IVA
+    const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
+    const totalNum =
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
       parseFloat(this.venta.cuenta_a_terceros) +
-      parseFloat(this.venta.iva_percibido) -
-      parseFloat(this.venta.iva_retenido) -
-      parseFloat(this.venta.renta_retenida) -
-      (this.venta.descuento_puntos || 0)
-    ).toFixed(4);
+      parseFloat(String(this.venta.iva_percibido)) -
+      parseFloat(String(this.venta.iva_retenido)) -
+      parseFloat(String(this.venta.renta_retenida)) -
+      descuentoPuntos;
+    this.venta.total = (Math.round(totalNum * 100) / 100).toFixed(2);
 
 
     // Asignar tipoOperacion según los detalles

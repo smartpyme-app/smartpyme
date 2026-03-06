@@ -848,16 +848,6 @@ class VentasController extends Controller
                 }
             }
 
-            // Recalcular totales de la venta desde los detalles guardados (subtotal, descuento, gravada, exenta, no_sujeta)
-            $venta->load('detalles');
-            $venta->sub_total = round($venta->detalles->sum('total'), 4);
-            $venta->descuento = round($venta->detalles->sum('descuento'), 4);
-            $venta->gravada = round($venta->detalles->sum('gravada'), 4);
-            $venta->exenta = round($venta->detalles->sum('exenta'), 4);
-            $venta->no_sujeta = round($venta->detalles->sum('no_sujeta'), 4);
-            $venta->total_costo = round($venta->detalles->sum('total_costo'), 4);
-            $venta->save();
-
             // Evento
             if ($request->id_evento) {
                 $evento = Evento::findOrfail($request->id_evento);

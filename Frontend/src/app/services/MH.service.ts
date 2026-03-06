@@ -171,7 +171,7 @@ export class MHService {
                             venta.dte.sello = dte.selloRecibido;
                             venta.dte.selloRecibido = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
-                            venta.tipo_dte = dte.tipoDte;
+                            venta.tipo_dte = venta.dte?.identificacion?.tipoDte ?? dte.tipo_dte ?? dte.tipoDte;
                             venta.numero_control = dte.numeroControl;
                             venta.codigo_generacion = dte.codigoGeneracion;
                             // venta.estado = 'Emitido';
@@ -216,7 +216,7 @@ export class MHService {
                             venta.dte.sello = dte.selloRecibido;
                             venta.dte.selloRecibido = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
-                            venta.tipo_dte = dte.tipo_dte;
+                            venta.tipo_dte = venta.dte?.identificacion?.tipoDte ?? dte.tipo_dte ?? dte.tipoDte;
                             venta.numero_control = dte.numero_control;
                             // venta.estado = 'Emitido';
                             this.apiService.store('devolucion/venta', venta).subscribe(data => {
@@ -260,7 +260,7 @@ export class MHService {
                             gasto.dte.sello = dte.selloRecibido;
                             gasto.dte.selloRecibido = dte.selloRecibido;
                             gasto.sello_mh = dte.selloRecibido;
-                            gasto.tipo_dte = dte.tipo_dte;
+                            gasto.tipo_dte = gasto.dte?.identificacion?.tipoDte ?? dte.tipo_dte ?? dte.tipoDte;
                             gasto.numero_control = dte.numero_control;
                             // gasto.estado = 'Emitido';
                             this.apiService.store('gasto', gasto).subscribe(data => {
@@ -304,7 +304,7 @@ export class MHService {
                             compra.dte.sello = dte.selloRecibido;
                             compra.dte.selloRecibido = dte.selloRecibido;
                             compra.sello_mh = dte.selloRecibido;
-                            compra.tipo_dte = dte.tipo_dte;
+                            compra.tipo_dte = compra.dte?.identificacion?.tipoDte ?? dte.tipo_dte ?? dte.tipoDte;
                             compra.numero_control = dte.numero_control;
                             // compra.estado = 'Emitido';
                             this.apiService.store('compra', compra).subscribe(data => {

@@ -344,33 +344,29 @@ class ComprasController extends Controller
                         $lote->stock += $det['cantidad'];
                         $lote->save();
                         
-                        // También actualizar el inventario tradicional para mantener consistencia
-                        $inventario = Inventario::where('id_producto', $det['id_producto'])
-                            ->where('id_bodega', $compra->id_bodega)
-                            ->lockForUpdate()
-                            ->first();
-
-                        if ($inventario) {
-                            $inventario->stock += $det['cantidad'];
-                            $inventario->save();
-                            $inventario->kardex($compra, $det['cantidad']);
-                        }
+                        // Crear inventario si no existe; actualizar el tradicional para mantener consistencia
+                        $inventario = Inventario::firstOrCreate(
+                            [
+                                'id_producto' => $det['id_producto'],
+                                'id_bodega' => $compra->id_bodega,
+                            ],
+                            ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                        );
+                        $inventario->stock += $det['cantidad'];
+                        $inventario->save();
+                        $inventario->kardex($compra, $det['cantidad']);
                     } else {
-                        // Actualizar inventario tradicional (sin lotes)
-                        $inventario = Inventario::where('id_producto', $det['id_producto'])
-                            ->where('id_bodega', $compra->id_bodega)
-                            ->lockForUpdate() // Bloquear fila para evitar condiciones de carrera
-                            ->first();
-
-                        if ($inventario) {
-                            // Actualizar stock de forma atómica
-                            $inventario->stock += $det['cantidad'];
-                            $inventario->save();
-                            
-                            // Registrar kardex
-                            // Si falla el kardex, la transacción hará rollback automáticamente
-                            $inventario->kardex($compra, $det['cantidad']);
-                        }
+                        // Crear inventario si no existe; actualizar inventario tradicional (sin lotes)
+                        $inventario = Inventario::firstOrCreate(
+                            [
+                                'id_producto' => $det['id_producto'],
+                                'id_bodega' => $compra->id_bodega,
+                            ],
+                            ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                        );
+                        $inventario->stock += $det['cantidad'];
+                        $inventario->save();
+                        $inventario->kardex($compra, $det['cantidad']);
                     }
 
                 }

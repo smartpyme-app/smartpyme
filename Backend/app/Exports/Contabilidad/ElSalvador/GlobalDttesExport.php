@@ -46,6 +46,9 @@ class GlobalDttesExport
             ->where('estado', '!=', 'Anulada')
             ->where('cotizacion', 0)
             ->where('tipo_dte', $request->typeDTE)
+            ->when($request->filled('id_sucursal'), function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
             ->when($request->has('inicio') && $request->has('fin'), function ($query) use ($request) {
                 return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
             })
