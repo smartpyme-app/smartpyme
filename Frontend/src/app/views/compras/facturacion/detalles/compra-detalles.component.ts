@@ -44,9 +44,22 @@ export class CompraDetallesComponent implements OnInit {
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
-    public updateTotal(detalle:any){
-        detalle.total  = (parseFloat((detalle.cantidad ?? 0)) * parseFloat((detalle.costo ?? 0)) - parseFloat((detalle.descuento ?? 0))).toFixed(2);
+    public updateTotal(detalle: any) {
+        const cantidad = parseFloat(detalle.cantidad ?? 0);
+        const costo = parseFloat(detalle.costo ?? 0);
+        const descuento = parseFloat(detalle.descuento ?? 0);
+        detalle.total = (cantidad * costo - descuento).toFixed(2);
+        const totalLinea = parseFloat(detalle.total) || 0;
+        const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+        const pctDetalle = (detalle.porcentaje_impuesto != null && detalle.porcentaje_impuesto !== '')
+            ? Number(detalle.porcentaje_impuesto) : empresaIva;
+        if (this.compra.cobrar_impuestos && totalLinea > 0) {
+            detalle.iva = parseFloat((totalLinea * (pctDetalle / 100)).toFixed(4));
+        } else {
+            detalle.iva = 0;
+        }
         this.update.emit(this.compra);
+        this.sumTotal.emit();
     }
 
     public modalSupervisor(detalle:any){
@@ -83,18 +96,19 @@ export class CompraDetallesComponent implements OnInit {
 
     agregarDetalleFinal() {
         this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
-        this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.costo) - parseFloat(this.detalle.descuento)).toFixed(2);
-        
+        this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.costo) - parseFloat(this.detalle.descuento ?? 0)).toFixed(2);
+        this.updateTotal(this.detalle);
+
         // Verificar si el producto ya existe en los detalles
-        let detalleExistente = this.compra.detalles.find((x:any) => x.id_producto == this.detalle.id_producto);
-        if(!detalleExistente) {
+        let detalleExistente = this.compra.detalles.find((x: any) => x.id_producto == this.detalle.id_producto);
+        if (!detalleExistente) {
             this.compra.detalles.push(this.detalle);
         }
 
         this.update.emit(this.compra);
         this.detalle = {};
-        if (this.modalRef) { 
-            this.modalRef.hide() 
+        if (this.modalRef) {
+            this.modalRef.hide();
         }
     }
 
