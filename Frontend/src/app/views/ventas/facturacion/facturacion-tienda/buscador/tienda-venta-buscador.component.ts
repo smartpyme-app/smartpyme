@@ -145,6 +145,7 @@ export class TiendaVentaBuscadorComponent implements OnInit {
         this.detalle.descripcion    = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
+        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
         this.detalle.precios        = producto.precios;
         this.detalle.precios.unshift({
                 'precio' : this.detalle.precio

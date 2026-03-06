@@ -75,9 +75,9 @@
                 <label class="fw-medium">Costo</label>
                 <p>{{ (producto.costo ?? producto.costo_promedio) | currency:'USD':'symbol':'1.2' }}</p>
             </div>
-            <div class="form-group col-lg-4" *ngIf="producto.tipo != 'Materia prima' && apiService.auth_user()?.empresa?.iva > 0">
+            <div class="form-group col-lg-4" *ngIf="producto.tipo != 'Materia prima' && (producto.porcentaje_impuesto != null || apiService.auth_user()?.empresa?.iva > 0)">
                 <label class="fw-medium">Precio con IVA</label>
-                <p>{{ (producto.precio_final || (producto.precio * (1 + (apiService.auth_user()?.empresa?.iva || 0) / 100))) | currency:'USD':'symbol':'1.2' }}</p>
+                <p>{{ (producto.precio_final || (producto.precio * (1 + ((producto.porcentaje_impuesto ?? apiService.auth_user()?.empresa?.iva ?? 0) / 100)))) | currency:'USD':'symbol':'1.2' }}</p>
             </div>
         </div>
     </div>

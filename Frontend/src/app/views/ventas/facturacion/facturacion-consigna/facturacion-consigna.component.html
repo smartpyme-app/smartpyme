@@ -117,11 +117,8 @@
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngFor="let impuesto of venta?.impuestos">
-                        <td class="text-right"> {{ impuesto.nombre }} </td>
-                        <td style="width: 150px;" class="text-right">
-                            <span *ngIf="!impuesto?.monto">%{{ impuesto.porcentaje }}</span>
-                            <span *ngIf="impuesto?.monto > 0" tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje }}</span>
-                        </td>
+                        <td class="text-right"> {{ impuesto.nombre }} <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small> </td>
+                        <td style="width: 150px;" class="text-right"> {{ (impuesto.monto ?? 0) | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>

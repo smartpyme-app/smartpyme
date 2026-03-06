@@ -299,40 +299,86 @@ export class FacturacionCompraComponent implements OnInit {
     }
 
     public sumTotal() {
-        // Asegurar que impuestos existe y es un array
+        // Asegurar que detalles e impuestos existen
+        if (!this.compra.detalles || !Array.isArray(this.compra.detalles)) {
+            this.compra.detalles = [];
+        }
         if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos)) {
             this.compra.impuestos = [];
         }
 
         this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
-        this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0; 
+        this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0;
         this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
-        this.compra.renta_retenida = this.compra.renta ? this.compra.sub_total * 0.10 : 0; 
+        this.compra.renta_retenida = this.compra.renta ? this.compra.sub_total * 0.10 : 0;
 
-        // Calcular impuestos usando la lista de impuestos (igual que en ventas)
+        // IVA por tasa: cada impuesto recibe solo el IVA de los detalles con ese porcentaje (igual que en ventas)
+        const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+        const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
+        const porcentajesImpuestos = (this.compra.impuestos || []).map((i: any) => Number(i.porcentaje));
+
         this.compra.impuestos.forEach((impuesto: any) => {
             if (this.compra.cobrar_impuestos) {
-                impuesto.monto = this.compra.sub_total * (impuesto.porcentaje / 100);
+                const pctImp = Number(impuesto.porcentaje);
+                const monto = this.compra.detalles
+                    .filter((d: any) => {
+                        const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+                            ? Number(d.porcentaje_impuesto) : empresaIva;
+                        return pctIgual(pctImp, pctDetalle);
+                    })
+                    .reduce((sum: number, d: any) => {
+                        const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+                            ? parseFloat(d.iva) : parseFloat(d.total || 0) * (pctImp / 100);
+                        return sum + ivaLinea;
+                    }, 0);
+                impuesto.monto = parseFloat(Number(monto).toFixed(4));
             } else {
                 impuesto.monto = 0;
             }
         });
 
+        // Detalles cuyo % no coincide con ningún impuesto: asignar su IVA al impuesto de la empresa o al primero
+        if (this.compra.cobrar_impuestos && this.compra.detalles.length && this.compra.impuestos.length) {
+            const ivaSinAsignar = this.compra.detalles
+                .filter((d: any) => {
+                    const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+                        ? Number(d.porcentaje_impuesto) : empresaIva;
+                    return !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalle));
+                })
+                .reduce((sum: number, d: any) => {
+                    const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+                        ? parseFloat(d.iva) : parseFloat(d.total || 0) * (((d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '') ? Number(d.porcentaje_impuesto) : empresaIva) / 100);
+                    return sum + ivaLinea;
+                }, 0);
+            if (ivaSinAsignar > 0) {
+                const impuestoDestino = this.compra.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
+                    || this.compra.impuestos[0];
+                impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
+            }
+        }
+
         this.compra.iva = parseFloat(
             this.sumPipe.transform(this.compra.impuestos, 'monto')
         ).toFixed(2);
+
+        // Asegurar que cada detalle tenga iva calculado (para persistir y coincidir con impuestos por tasa)
+        if (this.compra.cobrar_impuestos && this.compra.detalles.length) {
+            this.compra.detalles.forEach((d: any) => {
+                const totalLinea = parseFloat(d.total || 0);
+                const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '') ? Number(d.porcentaje_impuesto) : empresaIva;
+                d.iva = parseFloat((totalLinea * (pct / 100)).toFixed(4));
+            });
+        }
 
         this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
         this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);
         this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.percepcion) - parseFloat(this.compra.iva_retenido) - parseFloat(this.compra.renta_retenida)).toFixed(2);
 
-        // Asignar tipoOperacion según los detalles
         if (this.compra.cobrar_impuestos) {
-          this.compra.tipo_operacion = 'Gravada'; // Aplica IVA
+            this.compra.tipo_operacion = 'Gravada';
         } else {
-          this.compra.tipo_operacion = 'No Gravada'; // No aplica IVA
+            this.compra.tipo_operacion = 'No Gravada';
         }
-
     }
 
     // proveedor

@@ -734,26 +734,52 @@ export class FacturacionV2Component implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA de la venta = suma del IVA de los detalles (diferencia total_iva - total por línea), así siempre cuadra
-    const sumaIvaDetalles = parseFloat(this.sumPipe.transform(this.venta.detalles, 'iva')) || 0;
-    this.venta.iva = (Math.round(sumaIvaDetalles * 100) / 100).toFixed(2);
-    if (this.venta.cobrar_impuestos && this.venta.impuestos.length > 0) {
-      const ivaVenta = parseFloat(this.venta.iva);
-      const totalPct = this.venta.impuestos.reduce((s: number, i: any) => s + (parseFloat(i.porcentaje) || 0), 0);
-      if (totalPct > 0) {
-        this.venta.impuestos.forEach((impuesto: any, idx: number) => {
-          const pct = parseFloat(impuesto.porcentaje) || 0;
-          if (idx < this.venta.impuestos.length - 1) {
-            impuesto.monto = Math.round(ivaVenta * (pct / totalPct) * 100) / 100;
-          } else {
-            impuesto.monto = Math.round((ivaVenta - this.venta.impuestos.slice(0, -1).reduce((s: number, i: any) => s + (i.monto || 0), 0)) * 100) / 100;
-          }
-        });
-      } else {
-        this.venta.impuestos.forEach((impuesto: any, idx: number) => {
-          impuesto.monto = idx === 0 ? parseFloat(this.venta.iva) : 0;
-        });
+    // IVA por tasa: cada impuesto recibe solo el IVA de los detalles con ese porcentaje
+    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
+    const porcentajesImpuestos = (this.venta.impuestos || []).map((i: any) => Number(i.porcentaje));
+    if (this.venta.cobrar_impuestos) {
+      this.venta.impuestos.forEach((impuesto: any) => {
+        const pctImp = Number(impuesto.porcentaje);
+        const monto = this.venta.detalles
+          .filter((d: any) => {
+            const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+              ? Number(d.porcentaje_impuesto) : empresaIva;
+            return pctIgual(pctImp, pctDetalle);
+          })
+          .reduce((sum: number, d: any) => {
+            const gravada = parseFloat(d.gravada || 0);
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+              ? parseFloat(d.iva) : gravada * (pctImp / 100);
+            return sum + ivaLinea;
+          }, 0);
+        impuesto.monto = parseFloat(Number(monto).toFixed(4));
+      });
+      // Detalles cuyo % no coincide con ningún impuesto: asignar al impuesto empresa o al primero
+      if (this.venta.detalles.length && this.venta.impuestos.length) {
+        const ivaSinAsignar = this.venta.detalles
+          .filter((d: any) => {
+            const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+              ? Number(d.porcentaje_impuesto) : empresaIva;
+            return !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalle));
+          })
+          .reduce((sum: number, d: any) => {
+            const gravada = parseFloat(d.gravada || 0);
+            const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+              ? Number(d.porcentaje_impuesto) : empresaIva;
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+              ? parseFloat(d.iva) : gravada * (pct / 100);
+            return sum + ivaLinea;
+          }, 0);
+        if (ivaSinAsignar > 0) {
+          const impuestoDestino = this.venta.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
+            || this.venta.impuestos[0];
+          impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
+        }
       }
+      this.venta.iva = parseFloat(
+        this.sumPipe.transform(this.venta.impuestos, 'monto')
+      ).toFixed(4);
     } else {
       this.venta.iva = (0).toFixed(2);
       this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
