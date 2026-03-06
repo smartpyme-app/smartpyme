@@ -16,6 +16,7 @@ class Detalle extends Model {
         'no_sujeta',
         'exenta',
         'iva',
+        'porcentaje_impuesto',
         'subtotal',
         'total',
         'id_compra'
