@@ -18,21 +18,22 @@ const routes: Routes = [
     path: '',
     component: LayoutComponent,
     children: [
-        { path: 'presupuestos', component: PresupuestosComponent },
+        { path: 'presupuestos', component: PresupuestosComponent, title: 'Presupuestos'},
 
         { path: 'presupuesto/crear', component: PresupuestoComponent, title: 'Presupuesto'},
         { path: 'presupuesto/editar/:id', component: PresupuestoComponent, title: 'Presupuesto'},
         { path: 'presupuesto/detalles/:id', component: PresupuestoDetallesComponent, title: 'Presupuesto'},
 
-        { path: 'libro-iva/contribuyentes', component: ContribuyentesComponent },
-        { path: 'libro-iva/consumidor-final', component: ConsumidorFinalComponent },
-        { path: 'libro-compras', component: LibroComprasComponent },
-        { path: 'libro-anulados', component: LibroAnuladosComponent },
-        { path: 'libro-compras-sujetos-excluidos', component: LibroComprasSujetosExcluidosComponent },
-
+        { path: 'libro-iva/contribuyentes', component: ContribuyentesComponent,
+          title: 'Contribuyentes'},
+        { path: 'libro-iva/consumidor-final', component: ConsumidorFinalComponent,
+          title: 'Consumidor final'},
+        { path: 'libro-compras', component: LibroComprasComponent, title: 'Libro de compras'},
+        { path: 'libro-anulados', component: LibroAnuladosComponent, title: 'Libro de anulados'},
+        { path: 'libro-compras-sujetos-excluidos', component: LibroComprasSujetosExcluidosComponent, title: 'Libro de compras sujetos excluidos'}
     ]
   }
-];
+]; 
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
