@@ -176,7 +176,9 @@ export class FacturacionComponent implements OnInit {
       (impuestos) => {
         // Filtrar solo los impuestos que aplican a ventas
         this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
-        if (!this.venta.impuestos || this.venta.iva == 0) {
+        // Al editar cotización/venta no sobrescribir impuestos para no volver a agregarlos
+        const esEdicion = !!this.route.snapshot.paramMap.get('id');
+        if (!esEdicion && (!this.venta.impuestos || this.venta.iva == 0)) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
         }

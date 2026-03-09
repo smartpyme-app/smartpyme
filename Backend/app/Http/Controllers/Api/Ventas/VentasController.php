@@ -869,12 +869,15 @@ class VentasController extends Controller
                 }
             }
 
-            // Impuestos
+            // Impuestos: al editar eliminar los actuales para no duplicar; luego crear/actualizar según request
             if ($request->impuestos) {
+                if ($request->id) {
+                    Impuesto::where('id_venta', $venta->id)->delete();
+                }
                 foreach ($request->impuestos as $impuesto) {
                     $venta_impuesto = new Impuesto();
-                    $venta_impuesto->id_impuesto = $impuesto['id'];
-                    $venta_impuesto->monto = $impuesto['monto'];
+                    $venta_impuesto->id_impuesto = $impuesto['id_impuesto'] ?? $impuesto['id'];
+                    $venta_impuesto->monto = $impuesto['monto'] ?? 0;
                     $venta_impuesto->id_venta = $venta->id;
                     $venta_impuesto->save();
                 }
