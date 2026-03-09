@@ -17,7 +17,8 @@ class AsignarImpuestoProductosEmpresa extends Command
         $idsEmpresa = DB::table('productos')
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
             ->where(function ($q) {
-                $q->whereNull('porcentaje_impuesto')->orWhere('porcentaje_impuesto', '');
+                $q->whereNull('porcentaje_impuesto')
+                    ->orWhere('porcentaje_impuesto', 0);
             })
             ->whereNull('deleted_at')
             ->distinct()
@@ -40,7 +41,8 @@ class AsignarImpuestoProductosEmpresa extends Command
                 ->where('id_empresa', $idEmpresa)
                 ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
                 ->where(function ($q) {
-                    $q->whereNull('porcentaje_impuesto')->orWhere('porcentaje_impuesto', '');
+                    $q->whereNull('porcentaje_impuesto')
+                        ->orWhere('porcentaje_impuesto', 0);
                 })
                 ->whereNull('deleted_at')
                 ->update(['porcentaje_impuesto' => $iva]);
