@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Registros\Cliente;
+use App\Models\Ventas\Clientes\Cliente as ClienteVenta;
 use App\Models\Ventas\Venta as Cotizacion;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Detalle;
@@ -55,12 +56,7 @@ class CotizacionesController extends Controller
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                        ->when($request->buscador, function($query) use ($request){
-                        return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
-                        })
+                        ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscadorCotizaciones($query, (string) $request->buscador))
                     ->where('cotizacion', 1)
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
@@ -68,6 +64,43 @@ class CotizacionesController extends Controller
 
         return Response()->json($ordenes, 200);
 
+    }
+
+    /**
+     * Aplica el filtro de búsqueda por cliente (FULLTEXT: nombre, apellido, ncr, nit, nombre_empresa),
+     * correlativo (LIKE), y ventas (FULLTEXT: num_orden, observaciones, forma_pago, estado, numero_control).
+     */
+    private function aplicarFiltroBuscadorCotizaciones($query, string $termino)
+    {
+        $termino = trim(preg_replace('/\s+/', ' ', $termino));
+        if ($termino === '') {
+            return $query;
+        }
+
+        $buscador = '%' . $termino . '%';
+        $palabras = array_values(array_filter(explode(' ', $termino), fn ($p) => $p !== ''));
+
+        $matchClientes = count($palabras) > 1
+            ? implode(' ', array_map(fn ($p) => '+' . preg_replace('/[+\-<>()~*"]/', '', $p), $palabras))
+            : $termino;
+        $clienteIds = ClienteVenta::query()
+            ->whereRaw(
+                'MATCH(clientes.nombre, clientes.apellido, clientes.nombre_empresa, clientes.nit, clientes.ncr) AGAINST(? IN ' . (count($palabras) > 1 ? 'BOOLEAN' : 'NATURAL LANGUAGE') . ' MODE)',
+                [$matchClientes]
+            )
+            ->limit(5000)
+            ->pluck('id');
+
+        return $query->where(function ($q) use ($buscador, $clienteIds, $termino) {
+            if ($clienteIds->isNotEmpty()) {
+                $q->whereIn('id_cliente', $clienteIds);
+            }
+            $q->orWhere('correlativo', 'like', $buscador)
+                ->orWhereRaw(
+                    'MATCH(ventas.num_orden, ventas.observaciones, ventas.forma_pago, ventas.estado, ventas.numero_control) AGAINST(? IN NATURAL LANGUAGE MODE)',
+                    [$termino]
+                );
+        });
     }
 
     public function read($id) {

@@ -322,6 +322,11 @@ export class VentasComponent implements OnInit, OnDestroy {
   }
 
   public filtrarVentas() {
+    // Al buscar por texto, volver siempre a la primera página
+    if (this.filtros.buscador?.toString().trim()) {
+      this.filtros.page = 1;
+    }
+
     // Limpiar valores vacíos antes de navegar
     const queryParams: any = {};
     Object.keys(this.filtros).forEach(key => {
