@@ -53,8 +53,16 @@ class AjustarIvaDetallesVentas2026 extends Command
         $this->info('Detalles a procesar: ' . $detalles->count());
 
         $idVentas = $detalles->pluck('id_venta')->unique()->values();
-        $ventasEmpresa = Venta::whereIn('id', $idVentas)->pluck('id_empresa', 'id');
-        $empresasIva = Empresa::whereIn('id', $ventasEmpresa->values()->unique()->filter())->pluck('iva', 'id');
+        $chunkSize = 2000; // Evitar "Prepared statement contains too many placeholders" en MySQL
+        $ventasEmpresa = collect();
+        foreach ($idVentas->chunk($chunkSize) as $chunk) {
+            $ventasEmpresa = $ventasEmpresa->merge(Venta::whereIn('id', $chunk)->pluck('id_empresa', 'id'));
+        }
+        $idEmpresas = $ventasEmpresa->values()->unique()->filter()->values();
+        $empresasIva = collect();
+        foreach ($idEmpresas->chunk($chunkSize) as $chunk) {
+            $empresasIva = $empresasIva->merge(Empresa::whereIn('id', $chunk)->pluck('iva', 'id'));
+        }
 
         $actualizados = 0;
         $errores = 0;
