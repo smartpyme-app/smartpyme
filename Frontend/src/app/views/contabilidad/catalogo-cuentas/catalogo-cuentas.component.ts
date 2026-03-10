@@ -55,6 +55,7 @@ export class CatalogoCuentasComponent implements OnInit {
 
     public filtrarCuentas(){
         this.loading = true;
+        this.filtros.page = 1; // Al filtrar/buscar volver a la primera página
         this.apiService.getAll('catalogo/cuentas', this.filtros).subscribe(cuentas => {
             this.cuentas = cuentas;
             this.loading = false;

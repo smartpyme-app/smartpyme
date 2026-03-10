@@ -16,10 +16,21 @@ class CuentasController extends Controller
     public function index(Request $request) {
         $perPage = $request->get('paginate', 10); // Número de cuentas por página
         $page = $request->get('page', 1);
+        $buscador = trim($request->get('buscador', ''));
 
         // Obtener todas las cuentas y construir jerarquía completa
         $todasLasCuentas = Cuenta::orderBy('codigo')->get();
         $cuentasJerarquicas = $this->ordenarJerarquicamente($todasLasCuentas);
+
+        // Filtrar por buscador (código o nombre) si hay término de búsqueda
+        if ($buscador !== '') {
+            $buscadorLower = mb_strtolower($buscador);
+            $cuentasJerarquicas = array_values(array_filter($cuentasJerarquicas, function ($cuenta) use ($buscadorLower) {
+                $codigo = mb_strtolower($cuenta->codigo ?? '');
+                $nombre = mb_strtolower($cuenta->nombre ?? '');
+                return (str_contains($codigo, $buscadorLower) || str_contains($nombre, $buscadorLower));
+            }));
+        }
 
         // Paginar el resultado jerárquico final
         $total = count($cuentasJerarquicas);
