@@ -33,9 +33,10 @@ class ImpuestosService
      *
      * @param float $precioConImpuesto
      * @param int $empresaId
+     * @param bool $redondear Si true (default), redondea a 2 decimales. Si false, retorna el float con todos sus decimales.
      * @return float
      */
-    public function calcularPrecioSinImpuesto($precioConImpuesto, $empresaId)
+    public function calcularPrecioSinImpuesto($precioConImpuesto, $empresaId, $redondear = true)
     {
         $precioConImpuesto = floatval($precioConImpuesto);
 
@@ -59,8 +60,9 @@ class ImpuestosService
         $factorSinImpuesto = 1 / (1 + ($porcentajeIva / 100));
         $precioSinImpuesto = $precioConImpuesto * $factorSinImpuesto;
 
-        // Redondear a 2 decimales
-        $precioSinImpuesto = round($precioSinImpuesto, 2);
+        if ($redondear) {
+            $precioSinImpuesto = round($precioSinImpuesto, 2);
+        }
 
         Log::debug('Precio calculado sin impuesto', [
             'precio_con_impuesto' => $precioConImpuesto,
