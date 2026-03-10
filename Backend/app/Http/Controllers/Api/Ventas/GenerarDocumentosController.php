@@ -255,8 +255,12 @@ class GenerarDocumentosController extends Controller
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 700 ){ //700
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Vilorio-Ohle', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            elseif(Auth::user()->id_empresa == 716 ){ //716 Accesorios Honduras
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Accesorios-Honduras', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 700 ){ //700 Lilian Ohle
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Lilian-Ohle', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 315 ){ //315
