@@ -325,9 +325,6 @@ class VentasController extends Controller
         // Ajustar stocks
         foreach ($venta->detalles as $detalle) {
 
-            $producto = Producto::where('id', $detalle->id_producto)
-                ->with('composiciones')->firstOrFail();
-
             $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
 
             // Anular venta y regresar stock
