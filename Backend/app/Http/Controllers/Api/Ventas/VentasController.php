@@ -126,22 +126,7 @@ class VentasController extends Controller
                 return $query->whereNotNull('sello_mh');
             })
             ->where('cotizacion', 0)
-            ->when($request->buscador, function ($query) use ($request) {
-                $buscador = '%' . $request->buscador . '%';
-                return $query->where(function ($q) use ($buscador) {
-                    $q->whereHas('cliente', function ($qCliente) use ($buscador) {
-                        $qCliente->where('nombre', 'like', $buscador)
-                            ->orWhere('nombre_empresa', 'like', $buscador)
-                            ->orWhere('ncr', 'like', $buscador)
-                            ->orWhere('nit', 'like', $buscador);
-                    })
-                        ->orWhere('correlativo', 'like', $buscador)
-                        ->orWhere('num_orden', 'like', $buscador)
-                        ->orWhere('estado', 'like', $buscador)
-                        ->orWhere('observaciones', 'like', $buscador)
-                        ->orWhere('forma_pago', 'like', $buscador);
-                });
-            })
+            ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscador($query, (string) $request->buscador))
             ->with(['cliente', 'usuario', 'vendedor', 'sucursal', 'canal', 'documento', 'proyecto'])
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
@@ -156,7 +141,54 @@ class VentasController extends Controller
         return Response()->json($ventas, 200);
     }
 
+    /**
+     * Aplica el filtro de búsqueda por cliente (nombre, apellido, ncr, nit, etc.),
+     * correlativo, num_orden, estado, observaciones y forma_pago.
+     */
+    private function aplicarFiltroBuscador($query, string $termino)
+    {
+        $termino = trim(preg_replace('/\s+/', ' ', $termino));
+        if ($termino === '') {
+            return $query;
+        }
 
+        $buscador = '%' . $termino . '%';
+        $palabras = array_values(array_filter(explode(' ', $termino), fn ($p) => $p !== ''));
+
+        $nombreCompleto = "CONCAT(IFNULL(TRIM(clientes.nombre),''), ' ', IFNULL(TRIM(clientes.apellido),''))";
+        $clienteIds = Cliente::query()
+            ->where(function ($q) use ($buscador, $palabras, $nombreCompleto) {
+                $q->where('clientes.nombre', 'like', $buscador)
+                    ->orWhere('clientes.apellido', 'like', $buscador)
+                    ->orWhere('clientes.nombre_empresa', 'like', $buscador)
+                    ->orWhere('clientes.ncr', 'like', $buscador)
+                    ->orWhere('clientes.nit', 'like', $buscador)
+                    ->orWhereRaw("{$nombreCompleto} LIKE ?", [$buscador])
+                    ->orWhereRaw("CONCAT(IFNULL(TRIM(clientes.apellido),''), ' ', IFNULL(TRIM(clientes.nombre),'')) LIKE ?", [$buscador]);
+                if (count($palabras) > 1) {
+                    $condiciones = [];
+                    $bindings = [];
+                    foreach ($palabras as $palabra) {
+                        $condiciones[] = "{$nombreCompleto} LIKE ?";
+                        $bindings[] = '%' . $palabra . '%';
+                    }
+                    $q->orWhereRaw('(' . implode(' AND ', $condiciones) . ')', $bindings);
+                }
+            })
+            ->limit(50)
+            ->pluck('id');
+
+        return $query->where(function ($q) use ($buscador, $clienteIds) {
+            if ($clienteIds->isNotEmpty()) {
+                $q->whereIn('id_cliente', $clienteIds);
+            }
+            $q->orWhere('correlativo', 'like', $buscador)
+                ->orWhere('num_orden', 'like', $buscador)
+                ->orWhere('estado', 'like', $buscador)
+                ->orWhere('observaciones', 'like', $buscador)
+                ->orWhere('forma_pago', 'like', $buscador);
+        });
+    }
 
     public function read($id)
     {

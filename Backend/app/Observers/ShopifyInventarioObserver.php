@@ -86,10 +86,8 @@ class ShopifyInventarioObserver
             'stock_nuevo' => $inventario->stock
         ]);
 
-        if ($this->cache->isLocked($inventario->id_producto)) {
-            Log::debug("Sync Shopify omitido: producto bloqueado", ['producto_id' => $inventario->id_producto]);
-            return;
-        }
+        // No usar isLocked aquí: el lock se pone al procesar products/update desde Shopify
+        // y bloquearía enviar ajustes desde SmartPyme a Shopify durante 2 min.
 
         $bodega = Bodega::find($inventario->id_bodega);
         if (!$bodega) {
