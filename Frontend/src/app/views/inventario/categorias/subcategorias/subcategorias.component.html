@@ -122,7 +122,7 @@
             <div class="form-group col-12">
                 <label>Comisión </label>
                 <div class="input-group">
-                    <span *ngIf="subcategoria.tipo_comision == 'Monto Fijo'" class="input-group-text">$</span>
+                    <span *ngIf="subcategoria.tipo_comision == 'Monto Fijo'" class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                     <input type="number" class="form-control" [(ngModel)]="subcategoria.comision" name="comision">
                     <span *ngIf="subcategoria.tipo_comision == 'Porcentaje'" class="input-group-text">%</span>
                 </div>

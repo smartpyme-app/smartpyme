@@ -33,35 +33,35 @@
         <div class="form-group col-sm-3">
             <label for="costo">Costo:</label>
             <div class="input-group">
-                <span class="input-group-addon">$</span>
+                <span class="input-group-addon">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                 <input type="number" min="1" class="form-control" [(ngModel)]="detalle.costo" name="costo" (change)="calcularImpuestos()">
             </div>
         </div>
         <div class="form-group col-sm-3">
             <label for="descuento">Descuento:</label>
             <div class="input-group">
-                <span class="input-group-addon">$</span>
+                <span class="input-group-addon">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                 <input type="number" min="1" class="form-control" [(ngModel)]="detalle.descuento" name="descuento" placeholder="%" (change)="calcularImpuestos()">
             </div>
         </div>
         <div class="form-group col-sm-3">
             <label for="precio">Precio:</label>
             <div class="input-group">
-                <span class="input-group-addon">$</span>
+                <span class="input-group-addon">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                 <input type="number" min="1" class="form-control" [(ngModel)]="detalle.precio" name="precio">
             </div>
         </div>
         <div class="form-group col-sm-3">
             <label for="otros">Otros:</label>
             <div class="input-group">
-                <span class="input-group-addon">$</span>
+                <span class="input-group-addon">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                 <input type="number" min="1" class="form-control" [(ngModel)]="detalle.otros" name="otros" (change)="calcularImpuestos()">
             </div>
         </div>
         <div class="form-group col-sm-3">
-            <label for="iva">IVA:</label>
+            <label for="iva">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'IVA:' : 'Impuesto:' }}</label>
             <div class="input-group">
-                <span class="input-group-addon">$</span>
+                <span class="input-group-addon">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                 <input type="number" min="1" class="form-control" [(ngModel)]="detalle.iva" name="iva">
             </div>
         </div>

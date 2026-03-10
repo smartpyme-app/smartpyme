@@ -333,6 +333,7 @@ export class FacturacionComponent implements OnInit {
             this.venta = venta;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+            this.sumTotal();
           },
           (error) => {
             this.alertService.error(error);
@@ -1277,11 +1278,15 @@ export class FacturacionComponent implements OnInit {
   }
 
 
-  /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura minúsculas para que el select coincida. */
+  /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura gravada/exenta/no_sujeta para que el IVA cuadre. */
   private normalizarDetallesTipoGravado(venta: any) {
     if (!venta?.detalles?.length) return;
     const tiposValidos = ['gravada', 'exenta', 'no_sujeta'];
     venta.detalles.forEach((d: any) => {
+      if (d.sub_total == null || d.sub_total === undefined) {
+        d.sub_total = Number((parseFloat(d.cantidad) * parseFloat(d.precio)).toFixed(4));
+      }
+      const totalLinea = parseFloat(d.total) ?? (parseFloat(d.sub_total) - parseFloat(d.descuento || 0));
       if (!d.tipo_gravado) {
         const ex = parseFloat(d.exenta) || 0;
         const no = parseFloat(d.no_sujeta) || 0;
@@ -1289,9 +1294,9 @@ export class FacturacionComponent implements OnInit {
       }
       const tipo = String(d.tipo_gravado).toLowerCase();
       d.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
-      if (d.sub_total == null || d.sub_total === undefined) {
-        d.sub_total = Number((parseFloat(d.cantidad) * parseFloat(d.precio)).toFixed(4));
-      }
+      d.gravada = (d.tipo_gravado === 'gravada') ? totalLinea : 0;
+      d.exenta = (d.tipo_gravado === 'exenta') ? totalLinea : 0;
+      d.no_sujeta = (d.tipo_gravado === 'no_sujeta') ? totalLinea : 0;
     });
   }
 

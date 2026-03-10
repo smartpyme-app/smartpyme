@@ -239,7 +239,7 @@
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="total">Pago de plan</label>
                     <div class="input-group">
-                        <span class="input-group-text">$</span>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" [(ngModel)]="empresa.total" name="total" placeholder="Escriba aquí">
                     </div>
                 </div>
