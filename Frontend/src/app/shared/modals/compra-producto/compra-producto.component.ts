@@ -23,7 +23,7 @@ export class CompraProductoComponent implements OnInit {
 
 
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
+	    public apiService: ApiService, private alertService: AlertService,
 	    private modalService: BsModalService
 	) { }
 
