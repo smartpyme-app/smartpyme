@@ -142,8 +142,8 @@ class VentasController extends Controller
     }
 
     /**
-     * Aplica el filtro de búsqueda por cliente (nombre, apellido, ncr, nit, etc.),
-     * correlativo, num_orden, estado, observaciones y forma_pago.
+     * Aplica el filtro de búsqueda por cliente (FULLTEXT: nombre, apellido, ncr, nit, nombre_empresa),
+     * correlativo (LIKE), y ventas (FULLTEXT: num_orden, observaciones, forma_pago, estado, numero_control).
      */
     private function aplicarFiltroBuscador($query, string $termino)
     {
@@ -155,38 +155,26 @@ class VentasController extends Controller
         $buscador = '%' . $termino . '%';
         $palabras = array_values(array_filter(explode(' ', $termino), fn ($p) => $p !== ''));
 
-        $nombreCompleto = "CONCAT(IFNULL(TRIM(clientes.nombre),''), ' ', IFNULL(TRIM(clientes.apellido),''))";
+        $matchClientes = count($palabras) > 1
+            ? implode(' ', array_map(fn ($p) => '+' . preg_replace('/[+\-<>()~*"]/', '', $p), $palabras))
+            : $termino;
         $clienteIds = Cliente::query()
-            ->where(function ($q) use ($buscador, $palabras, $nombreCompleto) {
-                $q->where('clientes.nombre', 'like', $buscador)
-                    ->orWhere('clientes.apellido', 'like', $buscador)
-                    ->orWhere('clientes.nombre_empresa', 'like', $buscador)
-                    ->orWhere('clientes.ncr', 'like', $buscador)
-                    ->orWhere('clientes.nit', 'like', $buscador)
-                    ->orWhereRaw("{$nombreCompleto} LIKE ?", [$buscador])
-                    ->orWhereRaw("CONCAT(IFNULL(TRIM(clientes.apellido),''), ' ', IFNULL(TRIM(clientes.nombre),'')) LIKE ?", [$buscador]);
-                if (count($palabras) > 1) {
-                    $condiciones = [];
-                    $bindings = [];
-                    foreach ($palabras as $palabra) {
-                        $condiciones[] = "{$nombreCompleto} LIKE ?";
-                        $bindings[] = '%' . $palabra . '%';
-                    }
-                    $q->orWhereRaw('(' . implode(' AND ', $condiciones) . ')', $bindings);
-                }
-            })
-            ->limit(50)
+            ->whereRaw(
+                'MATCH(clientes.nombre, clientes.apellido, clientes.nombre_empresa, clientes.nit, clientes.ncr) AGAINST(? IN ' . (count($palabras) > 1 ? 'BOOLEAN' : 'NATURAL LANGUAGE') . ' MODE)',
+                [$matchClientes]
+            )
+            ->limit(5000)
             ->pluck('id');
 
-        return $query->where(function ($q) use ($buscador, $clienteIds) {
+        return $query->where(function ($q) use ($buscador, $clienteIds, $termino) {
             if ($clienteIds->isNotEmpty()) {
                 $q->whereIn('id_cliente', $clienteIds);
             }
             $q->orWhere('correlativo', 'like', $buscador)
-                ->orWhere('num_orden', 'like', $buscador)
-                ->orWhere('estado', 'like', $buscador)
-                ->orWhere('observaciones', 'like', $buscador)
-                ->orWhere('forma_pago', 'like', $buscador);
+                ->orWhereRaw(
+                    'MATCH(ventas.num_orden, ventas.observaciones, ventas.forma_pago, ventas.estado, ventas.numero_control) AGAINST(? IN NATURAL LANGUAGE MODE)',
+                    [$termino]
+                );
         });
     }
 
