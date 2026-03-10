@@ -159,25 +159,42 @@ class ShopifyTransformer
             $empresaId
         );
 
-        // Calcular impuesto total basado en nuestros cálculos exactos
+        // Calcular impuesto total usando la misma lógica que transformarDetallesVenta:
+        // IVA = TotalLineaConIVA - round(TotalLineaConIVA/1.13, 2)
         $impuestoProductos = 0;
         $impuestoEnvio = 0;
 
-        // Calcular impuesto de productos
         foreach ($shopifyData['line_items'] ?? [] as $item) {
             $precioConImpuesto = floatval($item['price'] ?? 0);
             $cantidad = floatval($item['quantity'] ?? 0);
-            $precioSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
-            $impuestoPorUnidad = $precioConImpuesto - $precioSinImpuesto;
-            $impuestoProductos += $impuestoPorUnidad * $cantidad;
+            $descuentoTotal = 0;
+            foreach ($item['discount_allocations'] ?? [] as $discountAllocation) {
+                $descuentoTotal += floatval($discountAllocation['amount'] ?? 0);
+            }
+            $totalLineaConIVA = ($precioConImpuesto * $cantidad) - $descuentoTotal;
+            if ($totalLineaConIVA > 0 && $empresaId) {
+                $porcentajeIva = $this->impuestosService->obtenerPorcentajeImpuesto($empresaId);
+                if ($porcentajeIva > 0) {
+                    $subtotalLinea = round(
+                        $this->impuestosService->calcularPrecioSinImpuesto($totalLineaConIVA, $empresaId, false),
+                        2
+                    );
+                    $impuestoProductos += $totalLineaConIVA - $subtotalLinea;
+                }
+            }
         }
 
-        // Calcular impuesto de envíos
         foreach ($shippingLines as $shipping) {
             $precioConImpuesto = floatval($shipping['discounted_price'] ?? $shipping['price'] ?? 0);
-            if ($precioConImpuesto > 0) {
-                $precioSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
-                $impuestoEnvio += $precioConImpuesto - $precioSinImpuesto;
+            if ($precioConImpuesto > 0 && $empresaId) {
+                $porcentajeIva = $this->impuestosService->obtenerPorcentajeImpuesto($empresaId);
+                if ($porcentajeIva > 0) {
+                    $subtotalEnvio = round(
+                        $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId, false),
+                        2
+                    );
+                    $impuestoEnvio += $precioConImpuesto - $subtotalEnvio;
+                }
             }
         }
 
@@ -271,89 +288,84 @@ class ShopifyTransformer
 
     public function transformarDetallesVenta($lineItem, $ventaId, $empresaId = null, $taxesIncluded = false)
     {
-        // Calcular precio sin impuesto y impuesto por línea de producto
+        // Precio unitario con IVA (sin redondear preventivamente)
         $precioConImpuesto = floatval($lineItem['price']);
+        $cantidad = floatval($lineItem['quantity'] ?? 1);
 
-        // Procesar descuentos personalizados desde discount_allocations
+        // Procesar descuentos desde discount_allocations
         $descuentoTotal = 0;
         $discountAllocations = $lineItem['discount_allocations'] ?? [];
-        
         foreach ($discountAllocations as $discountAllocation) {
             $descuentoTotal += floatval($discountAllocation['amount'] ?? 0);
         }
 
-        // Calcular el precio original antes del descuento
-        // El precio en Shopify ya viene con el descuento aplicado, así que necesitamos calcular el precio original
-        $precioOriginalConImpuesto = $precioConImpuesto;
-        $cantidad = floatval($lineItem['quantity'] ?? 1);
-        
-        // Si hay descuento, el precio original sería: precio_actual + (descuento_total / cantidad)
-        if ($descuentoTotal > 0 && $cantidad > 0) {
-            $descuentoPorUnidad = $descuentoTotal / $cantidad;
-            $precioOriginalConImpuesto = $precioConImpuesto + $descuentoPorUnidad;
-        }
+        // REGLA DE ORO: Calcular sobre el Total de la Línea (monto pagado), no sobre precio unitario
+        // Total de la Línea con IVA = PrecioUnitarioConIVA × Cantidad - Descuento
+        $totalLineaConIVA = ($precioConImpuesto * $cantidad) - $descuentoTotal;
 
-        // Si se proporciona empresaId, usar el servicio de impuestos, sino usar el método antiguo
-        if ($empresaId) {
-            $precioSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
-            $precioOriginalSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioOriginalConImpuesto, $empresaId);
-        } else {
-            // Fallback al método antiguo si no se proporciona empresaId
-            $precioSinImpuesto = $this->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
-            $precioOriginalSinImpuesto = $this->calcularPrecioSinImpuesto($precioOriginalConImpuesto, $empresaId);
-        }
-
-        // Calcular descuento sin impuesto
-        // IMPORTANTE: Cuando taxes_included es true, Shopify ya proporciona el descuento SIN impuesto incluido
-        // Cuando taxes_included es false, el descuento viene CON impuesto incluido y debemos convertirlo
+        // Calcular descuento sin impuesto (para el campo descuento del retorno)
         $descuentoTotalSinImpuesto = 0;
         if ($descuentoTotal > 0) {
             if ($taxesIncluded) {
-                // El descuento ya viene sin impuesto, usarlo directamente
                 $descuentoTotalSinImpuesto = $descuentoTotal;
             } else {
-                // El descuento viene con impuesto, calcular el descuento sin impuesto
-                if ($empresaId) {
-                    $descuentoTotalSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($descuentoTotal, $empresaId);
-                } else {
-                    $descuentoTotalSinImpuesto = $this->calcularPrecioSinImpuesto($descuentoTotal, $empresaId);
-                }
+                $descuentoTotalSinImpuesto = $empresaId
+                    ? $this->impuestosService->calcularPrecioSinImpuesto($descuentoTotal, $empresaId)
+                    : $this->calcularPrecioSinImpuesto($descuentoTotal, $empresaId);
             }
         }
 
-        $impuestoPorUnidad = $precioConImpuesto - $precioSinImpuesto;
+        // Desglose: Subtotal = round(TotalLineaConIVA / 1.13, 2), IVA = TotalLineaConIVA - Subtotal
+        $subtotalLinea = 0.0;
+        $ivaLinea = 0.0;
 
-        // Calcular totales
-        $totalConImpuesto = $cantidad * $precioConImpuesto;
-        $totalSinImpuesto = $cantidad * $precioSinImpuesto;
-        $totalImpuesto = $cantidad * $impuestoPorUnidad;
+        if ($empresaId && $totalLineaConIVA > 0) {
+            $porcentajeIva = $this->impuestosService->obtenerPorcentajeImpuesto($empresaId);
+            if ($porcentajeIva > 0) {
+                // Subtotal: dividir el total entre (1 + IVA%) y redondear SOLO al resultado final
+                $subtotalLinea = round(
+                    $this->impuestosService->calcularPrecioSinImpuesto($totalLineaConIVA, $empresaId, false),
+                    2
+                );
+                $ivaLinea = $totalLineaConIVA - $subtotalLinea;
+            } else {
+                $subtotalLinea = round($totalLineaConIVA, 2);
+            }
+        } else {
+            // Fallback sin empresaId: usar factor 1.13 hardcodeado
+            $subtotalLinea = round($totalLineaConIVA / 1.13, 2);
+            $ivaLinea = $totalLineaConIVA - $subtotalLinea;
+        }
 
-        Log::info("Procesando descuento personalizado en línea de item", [
+        // Precio unitario sin IVA derivado del subtotal (evita error de precisión)
+        $precioSinImpuesto = $cantidad > 0 ? $subtotalLinea / $cantidad : 0;
+
+        Log::info("Procesando línea de item (cálculo sobre total de línea)", [
             'line_item_title' => $lineItem['title'] ?? 'N/A',
             'precio_con_impuesto' => $precioConImpuesto,
-            'precio_original_con_impuesto' => $precioOriginalConImpuesto,
-            'descuento_total' => $descuentoTotal,
-            'descuento_total_sin_impuesto' => $descuentoTotalSinImpuesto,
             'cantidad' => $cantidad,
-            'taxes_included' => $taxesIncluded,
-            'discount_allocations_count' => count($discountAllocations)
+            'descuento_total' => $descuentoTotal,
+            'total_linea_con_iva' => $totalLineaConIVA,
+            'subtotal_linea' => $subtotalLinea,
+            'iva_linea' => $ivaLinea,
+            'verificacion' => $subtotalLinea + $ivaLinea,
         ]);
 
         return [
             'cantidad' => $lineItem['quantity'],
             'costo' => 0,
-            'precio' => $precioSinImpuesto, // Precio sin impuesto para SmartPyme (después del descuento)
-            'precio_sin_iva' => $precioSinImpuesto, // Precio sin IVA por unidad (después del descuento)
-            'precio_con_iva' => $precioConImpuesto, // Precio con IVA por unidad (después del descuento)
-            'total' => $totalSinImpuesto, // Total sin impuesto (después del descuento)
+            'precio' => $precioSinImpuesto,
+            'precio_sin_iva' => $precioSinImpuesto,
+            'precio_con_iva' => $precioConImpuesto,
+            'total' => $subtotalLinea,
             'total_costo' => 0,
-            'descuento' => $descuentoTotalSinImpuesto, // Descuento sin impuesto aplicado a esta línea
+            'descuento' => $descuentoTotalSinImpuesto,
             'no_sujeta' => 0,
             'exenta' => 0,
             'cuenta_a_terceros' => 0,
-            'subtotal' => $totalSinImpuesto, // Subtotal sin impuesto (después del descuento)
-            'gravada' => $totalSinImpuesto, // Gravada sin impuesto (después del descuento)
-            'iva' => $totalImpuesto, // Impuesto calculado por línea
+            'subtotal' => $subtotalLinea,
+            'gravada' => $subtotalLinea,
+            'iva' => $ivaLinea,
             'descripcion' => $lineItem['title'],
             'id_producto' => null,
             'id_venta' => $ventaId
@@ -667,35 +679,70 @@ class ShopifyTransformer
         return $tituloLimpio;
     }
 
+    /**
+     * Calcula el subtotal sin impuesto sumando los subtotales de línea ya redondeados.
+     * Usa la misma lógica que transformarDetallesVenta: TotalLineaConIVA / 1.13 redondeado por línea.
+     * Garantiza que el encabezado de la venta coincida con la suma de sus detalles.
+     */
     private function calcularSubtotalSinImpuesto($lineItems, $shippingLines = [], $empresaId = null)
     {
         $subtotalSinImpuesto = 0;
 
-        // Calcular subtotal de productos
+        // Calcular subtotal de productos: TotalLineaConIVA por línea, luego round(.../1.13, 2)
         foreach ($lineItems as $item) {
             $precioConImpuesto = floatval($item['price'] ?? 0);
             $cantidad = floatval($item['quantity'] ?? 0);
-            $precioSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
-            $subtotalSinImpuesto += $precioSinImpuesto * $cantidad;
+
+            // Descuentos de la línea
+            $descuentoTotal = 0;
+            foreach ($item['discount_allocations'] ?? [] as $discountAllocation) {
+                $descuentoTotal += floatval($discountAllocation['amount'] ?? 0);
+            }
+
+            $totalLineaConIVA = ($precioConImpuesto * $cantidad) - $descuentoTotal;
+
+            if ($empresaId && $totalLineaConIVA > 0) {
+                $porcentajeIva = $this->impuestosService->obtenerPorcentajeImpuesto($empresaId);
+                if ($porcentajeIva > 0) {
+                    $subtotalLinea = round(
+                        $this->impuestosService->calcularPrecioSinImpuesto($totalLineaConIVA, $empresaId, false),
+                        2
+                    );
+                } else {
+                    $subtotalLinea = round($totalLineaConIVA, 2);
+                }
+            } else {
+                $subtotalLinea = round($totalLineaConIVA / 1.13, 2);
+            }
+            $subtotalSinImpuesto += $subtotalLinea;
         }
 
-        // Calcular subtotal de envíos (siempre sin impuesto)
+        // Calcular subtotal de envíos (TotalEnvioConIVA / 1.13 redondeado)
         foreach ($shippingLines as $shipping) {
-            // Usar el precio con descuento si está disponible, sino el precio original
             $precioConImpuesto = floatval($shipping['discounted_price'] ?? $shipping['price'] ?? 0);
             if ($precioConImpuesto > 0) {
-                // Siempre calcular el precio sin impuesto para el subtotal
-                $precioSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
-                $subtotalSinImpuesto += $precioSinImpuesto;
+                if ($empresaId) {
+                    $porcentajeIva = $this->impuestosService->obtenerPorcentajeImpuesto($empresaId);
+                    if ($porcentajeIva > 0) {
+                        $subtotalEnvio = round(
+                            $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId, false),
+                            2
+                        );
+                    } else {
+                        $subtotalEnvio = round($precioConImpuesto, 2);
+                    }
+                } else {
+                    $subtotalEnvio = round($precioConImpuesto / 1.13, 2);
+                }
+                $subtotalSinImpuesto += $subtotalEnvio;
             }
         }
 
-        Log::info("Subtotal sin impuesto calculado", [
+        Log::info("Subtotal sin impuesto calculado (suma de subtotales de línea redondeados)", [
             'subtotal_sin_impuesto' => $subtotalSinImpuesto,
             'line_items_count' => count($lineItems),
             'shipping_lines_count' => count($shippingLines),
             'empresa_id' => $empresaId,
-            'porcentaje_impuesto' => $this->impuestosService->obtenerPorcentajeImpuesto($empresaId)
         ]);
 
         return round($subtotalSinImpuesto, 2);
