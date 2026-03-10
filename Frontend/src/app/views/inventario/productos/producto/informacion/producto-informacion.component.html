@@ -26,6 +26,10 @@
                 </ng-option>
             </ng-select>
         </div>
+        <div class="form-group col-md-12 col-lg-4" *ngIf="isComponenteQuimicoHabilitado()">
+            <label for="componente_quimico">Componente químico</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.componente_quimico" name="componente_quimico" placeholder="Escribe aquí">
+        </div>
 
         <h6 class="my-3 font-weight-bold">Organización</h6>
         <div class="form-group col-md-6 col-lg-3">

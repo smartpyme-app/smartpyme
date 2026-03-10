@@ -117,6 +117,10 @@ export class CrearProductoComponent implements OnInit {
         return this.apiService.isLotesActivo();
     }
 
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
+    }
+
     public barcode() {
         var ventana = window.open(
             this.apiService.baseUrl + "/api/barcode/" + this.producto.codigo + "?token=" + this.apiService.auth_token(),

@@ -81,6 +81,13 @@ export class BuscadorProductosComponent implements OnInit {
     }
 
     /**
+     * Verifica si el componente químico está habilitado en la empresa
+     */
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
+    }
+
+    /**
      * Verifica si Shopify está activo en la empresa
      */
     public isShopifyActive(): boolean {

@@ -32,6 +32,10 @@ export class CompraProductoComponent implements OnInit {
     public tieneShopify: boolean = false;
     public descripcionesExpandidas: { [key: number]: boolean } = {};
 
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
+    }
+
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe,

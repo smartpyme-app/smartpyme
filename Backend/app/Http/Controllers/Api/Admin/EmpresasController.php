@@ -772,14 +772,14 @@ class EmpresasController extends Controller
         $validatedConfig = [];
         $allowedConfigs = [
             'ticket_en_pdf',
-            // Agregar más configuraciones válidas aquí
+            'componente_quimico_activo',
         ];
 
         foreach ($configuraciones as $config => $value) {
             // Solo permitir configuraciones válidas
             if (in_array($config, $allowedConfigs)) {
-                // Para ticket_en_pdf debe ser boolean
-                if ($config === 'ticket_en_pdf') {
+                // Para configuraciones booleanas
+                if (in_array($config, ['ticket_en_pdf', 'componente_quimico_activo'])) {
                     $validatedConfig[$config] = (bool) $value;
                 } else {
                     $validatedConfig[$config] = $value;
@@ -800,7 +800,7 @@ class EmpresasController extends Controller
 
         $empresa = Auth::user()->empresa;
 
-        if ($request->input('section') === 'configuraciones' && $request->input('key') === 'ticket_en_pdf') {
+        if ($request->input('section') === 'configuraciones' && in_array($request->input('key'), ['ticket_en_pdf', 'componente_quimico_activo'])) {
             $request->validate([
                 'value' => 'boolean'
             ]);

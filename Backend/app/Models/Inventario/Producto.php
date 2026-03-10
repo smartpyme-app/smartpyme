@@ -28,6 +28,7 @@ class Producto extends Model
         'costo_promedio',
         'id_categoria',
         'marca',
+        'componente_quimico',
         'etiquetas',
         'tipo',
         'enable',
