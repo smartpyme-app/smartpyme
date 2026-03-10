@@ -1141,7 +1141,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 mostrar_campos_contables: true, // Mostrar tipo de operación y tipo de ingreso
                 lotes_activo: false, // Activar/desactivar módulo de lotes
                 lotes_metodologia: 'FIFO', // Manual, FIFO, LIFO, FEFO
-                lotes_dias_anticipacion: 30 // Días para alerta de vencimiento
+                lotes_dias_anticipacion: 30, // Días para alerta de vencimiento
+                componente_quimico_activo: false // Habilitar campo componente químico en productos
             },
             campos_personalizados: {}
         };
@@ -1344,6 +1345,28 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.alertService.success(
                 'Configuración actualizada',
                 `Días de anticipación actualizados a ${dias} días`
+            );
+        });
+    }
+
+    // Métodos para componente químico
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.getCustomConfig('configuraciones', 'componente_quimico_activo', false);
+    }
+
+    public toggleComponenteQuimicoActivo() {
+        const currentValue = this.isComponenteQuimicoHabilitado();
+        this.updateComponenteQuimicoActivo(!currentValue);
+    }
+
+    public updateComponenteQuimicoActivo(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'componente_quimico_activo', activo);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Campo componente químico ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
             );
         });
     }

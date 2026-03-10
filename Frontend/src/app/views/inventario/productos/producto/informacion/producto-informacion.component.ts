@@ -143,4 +143,8 @@ export class ProductoInformacionComponent implements OnInit {
         return this.apiService.isLotesActivo();
     }
 
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
+    }
+
 }

@@ -212,6 +212,13 @@ export class TiendaVentaBuscadorComponent implements OnInit {
     }
 
     /**
+     * Verifica si el componente químico está habilitado en la empresa
+     */
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
+    }
+
+    /**
      * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
      */
     getNombreCompleto(producto: any): string {
