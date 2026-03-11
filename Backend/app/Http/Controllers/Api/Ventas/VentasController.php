@@ -959,6 +959,7 @@ class VentasController extends Controller
             }
 
             DB::commit();
+            $venta->refresh();
             return Response()->json($venta, 200);
         } catch (\Exception $e) {
             DB::rollback();

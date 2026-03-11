@@ -1135,6 +1135,10 @@ export class FacturacionV2Component implements OnInit {
 
     this.apiService.store('facturacion', this.venta).subscribe(
       (venta) => {
+        // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
+        // para que en un siguiente guardado se envíe el mismo correlativo.
+        Object.assign(this.venta, venta);
+
         // Si es cotización
         if (this.facturarCotizacion) {
           this.apiService
@@ -1162,9 +1166,6 @@ export class FacturacionV2Component implements OnInit {
           this.apiService.auth_user().empresa.impresion_en_facturacion
         ) {
           if (this.apiService.auth_user().empresa.facturacion_electronica) {
-            // Actualizar this.venta con los datos del backend, especialmente el correlativo correcto
-            this.venta.id = venta.id;
-            this.venta.correlativo = venta.correlativo;
             this.emitirDTE();
           } else {
             window.open(
