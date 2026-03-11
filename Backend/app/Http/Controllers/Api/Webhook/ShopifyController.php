@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use App\Services\ShopifySyncCache;
+use App\Services\FidelizacionCliente\ConsumoPuntosService;
 
 class ShopifyController extends Controller
 {
@@ -150,6 +151,10 @@ class ShopifyController extends Controller
                         'status' => 'ignored',
                         'mensaje' => 'Draft orders no se procesan - solo órdenes pagadas'
                     ], 200);
+
+                case 'inventory_levels/update':
+                    Log::info("Procesando ajuste de inventario desde Shopify");
+                    return $this->procesarInventarioActualizadoShopify($request, $empresa, $usuario);
 
                 default:
                     Log::warning("Tipo de webhook no manejado: {$webhookTopic}");
@@ -278,6 +283,60 @@ class ShopifyController extends Controller
         return $this->buscarCategoria($categoriaData['nombre'], $empresaId);
     }
 
+    /**
+     * Procesa el webhook inventory_levels/update de Shopify (ajuste de cantidad desde Shopify).
+     * Actualiza el inventario en SmartPyme y registra en kardex "Actualización de producto desde Shopify" con entrada/salida.
+     */
+    private function procesarInventarioActualizadoShopify(Request $request, $empresa, $usuario)
+    {
+        $inventoryItemId = $request->input('inventory_item_id');
+        $available = (int) $request->input('available', 0);
+
+        if (empty($inventoryItemId)) {
+            Log::warning('Webhook inventory_levels/update sin inventory_item_id');
+            return response()->json(['status' => 'ignored', 'message' => 'Missing inventory_item_id'], 200);
+        }
+
+        $producto = Producto::withoutGlobalScope('empresa')
+            ->where('id_empresa', $empresa->id)
+            ->where('shopify_inventory_item_id', $inventoryItemId)
+            ->first();
+
+        if (!$producto) {
+            Log::info('Webhook inventory_levels/update: producto no encontrado por shopify_inventory_item_id', [
+                'inventory_item_id' => $inventoryItemId,
+            ]);
+            return response()->json(['status' => 'ignored', 'message' => 'Product not linked'], 200);
+        }
+
+        $inventario = Inventario::where('id_producto', $producto->id)
+            ->where('id_bodega', $usuario->id_bodega)
+            ->first();
+
+        $stockAnterior = $inventario ? (int) $inventario->stock : 0;
+
+        $this->actualizarInventario(
+            $producto->id,
+            $available,
+            $usuario->id_bodega,
+            $usuario->id,
+            ['origen' => 'shopify', 'stock_anterior' => $stockAnterior]
+        );
+
+        if ($inventario) {
+            $this->cache->saveInventorySnapshot($inventario->fresh(), $producto->id);
+        }
+
+        Log::info('Inventario actualizado desde Shopify', [
+            'producto_id' => $producto->id,
+            'inventory_item_id' => $inventoryItemId,
+            'stock_anterior' => $stockAnterior,
+            'available' => $available,
+        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'Inventario actualizado'], 200);
+    }
+
     private function actualizarProductoExistente($producto, $productoData, $usuario)
     {
         $stockActual = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)
@@ -298,7 +357,10 @@ class ShopifyController extends Controller
         $producto->update($productoData);
 
         if ($stockActual != $stockNuevo) {
-            $this->actualizarInventario($producto->id, $stockNuevo, $usuario->id_bodega, $idUsuario);
+            $this->actualizarInventario($producto->id, $stockNuevo, $usuario->id_bodega, $idUsuario, [
+                'origen' => 'shopify',
+                'stock_anterior' => $stockActual,
+            ]);
 
             $inventario = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)
                 ->where('id_bodega', $usuario->id_bodega)
@@ -603,26 +665,35 @@ class ShopifyController extends Controller
                 ], 200);
             }
 
-            // Verificar duplicados por webhook_id usando cache
+            // Verificar duplicados por webhook_id usando cache (opcional - si falla Redis/cache, continuamos)
             $webhookId = $request->header('X-Shopify-Webhook-Id');
             if ($webhookId) {
-                $cacheKey = "shopify_webhook_processed_{$webhookId}";
-                if (Cache::has($cacheKey)) {
-                    Log::warning("Webhook duplicado detectado por webhook_id", [
+                try {
+                    $cacheKey = "shopify_webhook_processed_{$webhookId}";
+                    if (Cache::has($cacheKey)) {
+                        Log::warning("Webhook duplicado detectado por webhook_id", [
+                            'shopify_order_id' => $request->id,
+                            'webhook_id' => $webhookId,
+                            'referencia_shopify' => $referenciaShopify
+                        ]);
+
+                        return response()->json([
+                            'status' => 'success',
+                            'mensaje' => 'Webhook ya procesado previamente',
+                            'duplicado' => true
+                        ], 200);
+                    }
+
+                    // Marcar webhook como procesado por 1 hora
+                    Cache::put($cacheKey, true, 3600);
+                } catch (\Throwable $e) {
+                    // Redis/cache no disponible (ej: MISCONF) - continuar sin cache
+                    // La verificación por referencia_shopify en DB previene duplicados
+                    Log::warning("Cache no disponible para verificación de webhook duplicado - continuando", [
+                        'error' => $e->getMessage(),
                         'shopify_order_id' => $request->id,
-                        'webhook_id' => $webhookId,
-                        'referencia_shopify' => $referenciaShopify
                     ]);
-
-                    return response()->json([
-                        'status' => 'success',
-                        'mensaje' => 'Webhook ya procesado previamente',
-                        'duplicado' => true
-                    ], 200);
                 }
-
-                // Marcar webhook como procesado por 1 hora
-                Cache::put($cacheKey, true, 3600);
             }
 
             DB::beginTransaction();
@@ -840,6 +911,20 @@ class ShopifyController extends Controller
                 ]);
             }
 
+            // Procesar puntos de fidelización si la venta está pagada
+            if ($venta->estado == 'Pagada' && $venta->id_cliente) {
+                try {
+                    $consumoPuntosService = app(ConsumoPuntosService::class);
+                    $consumoPuntosService->procesarAcumulacionPuntos($venta);
+                } catch (\Exception $e) {
+                    Log::error('Error al procesar puntos de fidelización en Shopify', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // No se interrumpe la transacción por errores en puntos
+                }
+            }
+
             DB::commit();
 
             $mensaje = $debeCrearCotizacion 
@@ -919,8 +1004,19 @@ class ShopifyController extends Controller
     }
 
     //actualizar inventario
-    private function actualizarInventario($productoId, $cantidad, $bodegaId, $usuarioId)
+    private function actualizarInventario($productoId, $cantidad, $bodegaId, $usuarioId, $opciones = [])
     {
+        $esDesdeShopify = !empty($opciones['origen']) && $opciones['origen'] === 'shopify';
+        $productoParaFlag = null;
+
+        if ($esDesdeShopify) {
+            $productoParaFlag = Producto::find($productoId);
+            if ($productoParaFlag) {
+                $productoParaFlag->syncing_from_shopify = true;
+                $productoParaFlag->save();
+            }
+        }
+
         try {
             Log::info('Iniciando actualización de inventario', [
                 'producto_id' => $productoId,
@@ -934,9 +1030,10 @@ class ShopifyController extends Controller
                 ->first();
 
             if ($inventario) {
+                $stockAnterior = $inventario->stock;
                 Log::info('Inventario existente encontrado, actualizando stock', [
                     'inventario_id' => $inventario->id,
-                    'stock_anterior' => $inventario->stock,
+                    'stock_anterior' => $stockAnterior,
                     'stock_nuevo' => $cantidad
                 ]);
 
@@ -945,7 +1042,18 @@ class ShopifyController extends Controller
                 ]);
                 $producto = Producto::find($productoId);
 
-                if ($inventario->stock > 0) {
+                $esDesdeShopify = !empty($opciones['origen']) && $opciones['origen'] === 'shopify';
+                $stockAnteriorOp = $opciones['stock_anterior'] ?? $stockAnterior;
+
+                if ($esDesdeShopify && $producto) {
+                    $delta = $cantidad - $stockAnteriorOp;
+                    if ($delta != 0) {
+                        $inventario->kardex($producto, $delta, $producto->precio, $producto->costo, null, [
+                            'origen' => 'shopify',
+                            'id_usuario' => $usuarioId,
+                        ]);
+                    }
+                } elseif ($inventario->stock > 0 && $producto) {
                     $producto->id_usuario = $usuarioId;
                     $inventario->kardex($producto, 0, $producto->precio, $producto->costo);
                 }
@@ -964,12 +1072,28 @@ class ShopifyController extends Controller
                     'stock_maximo' => 0,
                 ]);
 
+                $esDesdeShopify = !empty($opciones['origen']) && $opciones['origen'] === 'shopify';
+                if ($esDesdeShopify && $cantidad != 0) {
+                    $producto = Producto::find($productoId);
+                    if ($producto) {
+                        $inventario->kardex($producto, $cantidad, $producto->precio, $producto->costo, null, [
+                            'origen' => 'shopify',
+                            'id_usuario' => $usuarioId,
+                        ]);
+                    }
+                }
+
                 Log::info('Inventario creado exitosamente', [
                     'inventario_id' => $inventario->id,
                     'producto_id' => $productoId,
                     'bodega_id' => $bodegaId,
                     'stock' => $cantidad
                 ]);
+            }
+
+            if ($productoParaFlag) {
+                $productoParaFlag->syncing_from_shopify = false;
+                $productoParaFlag->save();
             }
 
             return [
@@ -979,6 +1103,10 @@ class ShopifyController extends Controller
                 'updated_at' => now()
             ];
         } catch (\Exception $e) {
+            if ($productoParaFlag) {
+                $productoParaFlag->syncing_from_shopify = false;
+                $productoParaFlag->save();
+            }
             Log::error('Error en actualizarInventario', [
                 'producto_id' => $productoId,
                 'bodega_id' => $bodegaId,
@@ -2386,26 +2514,34 @@ class ShopifyController extends Controller
                 ], 200);
             }
 
-            // Verificar duplicados por webhook_id usando cache
+            // Verificar duplicados por webhook_id usando cache (opcional - si falla Redis/cache, continuamos)
             $webhookId = $request->header('X-Shopify-Webhook-Id');
             if ($webhookId) {
-                $cacheKey = "shopify_webhook_processed_{$webhookId}";
-                if (Cache::has($cacheKey)) {
-                    Log::warning("Webhook duplicado detectado por webhook_id (Draft Order)", [
+                try {
+                    $cacheKey = "shopify_webhook_processed_{$webhookId}";
+                    if (Cache::has($cacheKey)) {
+                        Log::warning("Webhook duplicado detectado por webhook_id (Draft Order)", [
+                            'shopify_draft_order_id' => $request->id,
+                            'webhook_id' => $webhookId,
+                            'referencia_shopify' => $referenciaShopify
+                        ]);
+
+                        return response()->json([
+                            'status' => 'success',
+                            'mensaje' => 'Webhook ya procesado previamente',
+                            'duplicado' => true
+                        ], 200);
+                    }
+
+                    // Marcar webhook como procesado por 1 hora
+                    Cache::put($cacheKey, true, 3600);
+                } catch (\Throwable $e) {
+                    // Redis/cache no disponible (ej: MISCONF) - continuar sin cache
+                    Log::warning("Cache no disponible para verificación de webhook duplicado (Draft Order) - continuando", [
+                        'error' => $e->getMessage(),
                         'shopify_draft_order_id' => $request->id,
-                        'webhook_id' => $webhookId,
-                        'referencia_shopify' => $referenciaShopify
                     ]);
-
-                    return response()->json([
-                        'status' => 'success',
-                        'mensaje' => 'Webhook ya procesado previamente',
-                        'duplicado' => true
-                    ], 200);
                 }
-
-                // Marcar webhook como procesado por 1 hora
-                Cache::put($cacheKey, true, 3600);
             }
 
             DB::beginTransaction();

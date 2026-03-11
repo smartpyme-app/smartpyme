@@ -3,6 +3,10 @@
 namespace App\Models\Admin;
 
 use App\Models\Currency;
+use App\Models\FidelizacionClientes\ConsumoPuntos;
+use App\Models\FidelizacionClientes\PuntosCliente;
+use App\Models\FidelizacionClientes\TipoClienteEmpresa;
+use App\Models\FidelizacionClientes\TransaccionPuntos;
 use App\Models\Planilla\CargoEmpresa;
 use App\Models\Planilla\DepartamentoEmpresa;
 use App\Models\Suscripcion;
@@ -237,6 +241,72 @@ class Empresa extends Model
         return $this->hasOne('App\Models\Licencias\Licencia', 'id_empresa');
     }
 
+    public function licenciaEmpresa()
+    {
+        return $this->hasOne('App\Models\Licencias\Empresa', 'id_empresa');
+    }
+
+    public function empresasHijas()
+    {
+        if ($this->licencia) {
+            return $this->licencia->empresas()->where('id_empresa', '!=', $this->id);
+        }
+        return collect();
+    }
+
+    public function esEmpresaPadre()
+    {
+        $tieneLicencia = $this->licencia()->exists();
+        return $tieneLicencia;
+    }
+
+    public function esEmpresaHija()
+    {
+        $esHija = $this->licenciaEmpresa()->exists();
+        return $esHija;
+    }
+
+    public function getEmpresaPadre()
+    {
+        if ($this->esEmpresaHija()) {
+            $licenciaEmpresa = $this->licenciaEmpresa;
+            if ($licenciaEmpresa && $licenciaEmpresa->licencia) {
+                return $licenciaEmpresa->licencia->empresa;
+            }
+        }
+        return $this;
+    }
+
+    public function getEmpresasLicencia()
+    {
+        // Priorizar empresa padre sobre empresa hija si es ambas
+        if ($this->esEmpresaPadre()) {
+            $licencia = $this->licencia;
+            if ($licencia) {
+                // Incluir la empresa padre + todas las empresas hijas
+                $empresasHijas = $licencia->empresas->pluck('empresa');
+                $resultado = $empresasHijas->prepend($this); // Agregar la empresa padre al inicio
+                
+                return $resultado;
+            }
+        } elseif ($this->esEmpresaHija()) {
+            $empresaPadre = $this->getEmpresaPadre();
+            if ($empresaPadre && $empresaPadre->licencia) {
+                // Incluir la empresa padre + todas las empresas hijas
+                $empresasHijas = $empresaPadre->licencia->empresas->pluck('empresa');
+                $resultado = $empresasHijas->prepend($empresaPadre); // Agregar la empresa padre al inicio
+
+                return $resultado;
+            }
+        }
+        return collect([$this]);
+    }
+
+    public function getEmpresasLicenciaIds()
+    {
+        return $this->getEmpresasLicencia()->pluck('id')->toArray();
+    }
+
     public function dashboards()
     {
         return $this->hasMany('App\Models\Admin\Dashboard', 'id_empresa');
@@ -447,6 +517,32 @@ class Empresa extends Model
         return $this->belongsTo('App\Models\Admin\Canal', 'woocommerce_canal_id');
     }
 
+    public function tiposClienteEmpresa()
+    {
+        return $this->hasMany(TipoClienteEmpresa::class, 'id_empresa');
+    }
+
+    public function tipoClienteDefault()
+    {
+        return $this->hasOne(TipoClienteEmpresa::class, 'id_empresa')
+                    ->where('is_default', true);
+    }
+
+    public function puntosCliente()
+    {
+        return $this->hasMany(PuntosCliente::class, 'id_empresa');
+    }
+
+    public function transaccionesPuntos()
+    {
+        return $this->hasMany(TransaccionPuntos::class, 'id_empresa');
+    }
+
+    public function consumosPuntos()
+    {
+        return $this->hasMany(ConsumoPuntos::class, 'id_empresa');
+    }
+
     public function getCurrencySymbolAttribute()
     {
         return $this->currency ? $this->currency->currency_symbol : null;
@@ -590,6 +686,14 @@ class Empresa extends Model
     }
 
     /**
+     * Verificar si el campo componente químico está habilitado para la empresa
+     */
+    public function isComponenteQuimicoHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'componente_quimico_activo', false);
+    }
+
+    /**
      * Obtener la metodología de lotes (FIFO, LIFO, FEFO, Manual)
      */
     public function getLotesMetodologia(): string
@@ -603,6 +707,31 @@ class Empresa extends Model
     public function isColumnEnabled($columnName)
     {
         return $this->getCustomConfigValue('columnas', $columnName, false);
+    }
+
+    /**
+     * Obtener el tipo de cliente por defecto para la empresa
+     * 
+     * @return TipoClienteEmpresa|null
+     */
+    // public function getTipoClienteDefault()
+    // {
+    //     return $this->tipoClienteDefault;
+    // }
+
+    /**
+     * Verificar si la empresa tiene habilitado el módulo de fidelización
+     * 
+     * @return bool
+     */
+    public function tieneFidelizacionHabilitada()
+    {
+        return $this->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
+                    ->whereHas('funcionalidad', function($query) {
+                        $query->where('slug', 'fidelizacion-clientes');
+                    })
+                    ->where('activo', true)
+                    ->exists();
     }
 
     /**

@@ -46,7 +46,7 @@ export class VentaDetallesComponent implements OnInit {
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
-    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle */
+    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle. IVA por línea = diferencia que hace cuadrar (2 decimales). Respeta cobrar_impuestos. */
     private aplicarTipoGravado(detalle: any) {
         const total = parseFloat(detalle.total) || 0;
         detalle.gravada = 0;
@@ -55,15 +55,16 @@ export class VentaDetallesComponent implements OnInit {
         const tipo = (detalle.tipo_gravado || 'gravada').toLowerCase();
         if (tipo === 'gravada') {
             detalle.gravada = total;
-            if (detalle.iva !== undefined && detalle.iva !== null) {
-                detalle.iva = parseFloat((total * (this.apiService.auth_user().empresa.iva / 100)).toFixed(4));
-            }
+            const pct = (detalle.porcentaje_impuesto != null && detalle.porcentaje_impuesto !== '')
+                ? Number(detalle.porcentaje_impuesto)
+                : (this.apiService.auth_user().empresa?.iva ?? 0);
+            detalle.iva = parseFloat((total * (pct / 100)).toFixed(4));
         } else if (tipo === 'exenta') {
             detalle.exenta = total;
-            if (detalle.iva !== undefined && detalle.iva !== null) { detalle.iva = 0; }
+            detalle.iva = 0;
         } else {
             detalle.no_sujeta = total;
-            if (detalle.iva !== undefined && detalle.iva !== null) { detalle.iva = 0; }
+            detalle.iva = 0;
         }
     }
 

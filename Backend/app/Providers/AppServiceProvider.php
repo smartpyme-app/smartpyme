@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
+use App\Models\Ventas\Venta;
 use App\Observers\InventarioObserver;
 use App\Observers\ProductoObserver;
 use App\Observers\ShopifyInventarioObserver;

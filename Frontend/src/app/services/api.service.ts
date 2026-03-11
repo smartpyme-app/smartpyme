@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
-import { map, catchError, retry, timeout } from 'rxjs/operators';
-import { Observable, throwError } from 'rxjs';
+import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
+import { Observable, throwError, from } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
 import { ChatService } from '@services/chat/chat.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 import * as moment from 'moment';
 declare let $:any;
@@ -17,7 +18,7 @@ export class ApiService {
     public baseUrl: string = environment.API_URL;
     public apiUrl =  this.baseUrl + '/api/';
 
-    constructor(private http: HttpClient, private alertService: AlertService) { }
+    constructor(private http: HttpClient, private alertService: AlertService, private funcionalidadesService: FuncionalidadesService) { }
 
     getToUrl(url:string) {return this.http.get<any>(url).pipe(retry(0), catchError(this.handleError) )}
 
@@ -44,11 +45,32 @@ export class ApiService {
     paginate(url:string, filtros:any = {}) {return this.http.get<any>(url, { params: filtros }).pipe(retry(0), catchError(this.handleError) )}
 
     upload (url: string, formData: any) {let headers = new HttpHeaders(); headers.append('Accept', 'application/json'); headers.append('Authorization','Bearer ' + JSON.parse(localStorage.getItem('SP_token')!) ); let options = {headers}; return this.http.post(this.apiUrl + url, formData, options).pipe(retry(0), catchError(this.handleError)) }
-    login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user));   this.loadConstants(); } }) ); }
+    login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); this.funcionalidadesService.limpiarCache(); this.loadConstants(); } }) ); }
     register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data) {localStorage.setItem('SP_user_register', JSON.stringify(data)); } })); }
 
     export(url:string, filtros: any): Observable<Blob> {
-        return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros });
+        return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros }).pipe(
+            timeout(120000),
+            catchError((error) => {
+                if (error.error instanceof Blob && error.error.type?.includes('application/json')) {
+                    return from<string>(error.error.text()).pipe(
+                        switchMap((text: string) => {
+                            try {
+                                const errJson = JSON.parse(text);
+                                return throwError(() => ({
+                                    ...error,
+                                    status: error.status,
+                                    error: { message: errJson.error || errJson.message || text }
+                                }));
+                            } catch (_) {
+                                return throwError(() => ({ ...error, error: { message: text } }));
+                            }
+                        })
+                    );
+                }
+                return throwError(() => error);
+            })
+        );
     }
 
     exportWithUrl(url: string, filtros: any): Observable<any> {
@@ -88,6 +110,7 @@ export class ApiService {
             this.store('logout', data).subscribe(ivas => {
             }, error => {this.alertService.error(error); });
         }
+        this.funcionalidadesService.limpiarCache();
         localStorage.clear();
     }
 
@@ -134,6 +157,18 @@ export class ApiService {
             ? JSON.parse(empresa.custom_empresa)
             : empresa.custom_empresa;
         return customConfig?.configuraciones?.lotes_activo === true;
+    }
+
+    /** Indica si el campo componente químico está habilitado para la empresa del usuario actual */
+    isComponenteQuimicoHabilitado(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.componente_quimico_activo === true;
     }
 
     auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }

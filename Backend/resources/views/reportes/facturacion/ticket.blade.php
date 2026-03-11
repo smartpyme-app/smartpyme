@@ -61,10 +61,10 @@
             <p>{{ $empresa->direccion }}</p>
         @endif
         @if($empresa->ncr)
-            <p><b>NCR:</b> {{ $empresa->ncr }} </p>
+            <p><b>@if($empresa->pais == 'El Salvador')NCR:@else Registro tributario:@endif</b> {{ $empresa->ncr }} </p>
         @endif
         @if($empresa->nit)
-            <p><b>NIT:</b> {{ $empresa->nit }}</p>
+            <p><b>@if($empresa->pais == 'El Salvador')NIT:@else Identificación fiscal:@endif</b> {{ $empresa->nit }}</p>
         @endif
         @if($empresa->giro)
             <p><b>GIRO:</b> {{ $empresa->giro }}</p>
@@ -121,8 +121,8 @@
                         {{ $venta->descripcion_impresion }}
                     </td>
                     <td class="text-center">1</td>
-                    <td class="text-right">${{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
-                    <td class="text-right">${{ number_format($venta->sub_total + $venta->iva, 2) }}G</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->sub_total + $venta->iva, 2) }}G</td>
                 </tr>
             @else
                 @foreach($venta->detalles as $detalle)
@@ -213,11 +213,11 @@
                 <td>________________________</td>
             </tr>
             <tr>
-                <td width="100px">NIT:</td>
+                <td width="100px">@if($empresa->pais == 'El Salvador')NIT:@else Identificación fiscal:@endif</td>
                 <td>________________________</td>
             </tr>
             <tr>
-                <td width="100px">DUI:</td>
+                <td width="100px">@if($empresa->pais == 'El Salvador')DUI:@else Número de identificación:@endif</td>
                 <td>________________________</td>
             </tr>
             <tr>

@@ -113,17 +113,13 @@
                             placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
-                        <label for="nit" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NIT</label>
-                        <label for="nit" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Identificación
-                            Fiscal</label>
+                        <label for="nit">Identificación fiscal</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit"
                             placeholder="Escriba aquí" [dropSpecialCharacters]="false"
                             mask='{{apiService.auth_user().empresa.validador_nit}}'>
                     </div>
                     <div class="form-group col-md-6 col-lg-3">
-                        <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NCR</label>
-                        <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Registro
-                            Tributario</label>
+                        <label for="ncr">Registro tributario</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr"
                             placeholder="Escriba aquí">
                     </div>
@@ -635,6 +631,24 @@
                     </div>
 
                     <hr>
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Campos de producto</h4>
+                        <div class="form-group col-md-12 col-xl-6 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="componente_quimico_activo">Habilitar componente químico</label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="componente_quimico_activo"
+                                    [checked]="isComponenteQuimicoHabilitado()"
+                                    (change)="toggleComponenteQuimicoActivo()"
+                                    name="componente_quimico_activo">
+                            </div>
+                            <small class="text-muted">
+                                Muestra el campo componente químico en productos y lo incluye en las búsquedas.
+                            </small>
+                        </div>
+                    </div>
+
+                    <hr>
                     <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
                     <div class="form-group col-md-6">
                         <label for="valor_inventario">Valor de inventario:</label>
@@ -960,6 +974,13 @@
                                     Descargar productos
                                 </button>
 
+                                <button tooltip="Importar productos desde CSV de WooCommerce"
+                                    (click)="openImportarWooCommerceCsv(importarWooCommerceCsvModal)" class="btn btn-light me-2"
+                                    *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                    <i class="fa fa-file-csv me-2"></i>
+                                    Importar desde CSV
+                                </button>
+
                                 <button class="btn btn-light text-danger me-2" type="button"
                                     *ngIf="empresa.is_current_user_connected_to_woocommerce"
                                     (click)="disconnectWooCommerce()">
@@ -1182,6 +1203,33 @@
             </span>
             <span *ngIf="procesando">
                 <i class="fa fa-spinner fa-spin me-1"></i> Iniciando proceso...
+            </span>
+        </button>
+    </div>
+</ng-template>
+
+<ng-template #importarWooCommerceCsvModal>
+    <div class="modal-header">
+        <h5 class="modal-title">Importar productos desde CSV de WooCommerce</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <p class="text-muted mb-3">
+            Exporte sus productos desde WooCommerce (Productos → Exportar) y cargue aquí el archivo CSV
+            para importarlos al sistema. Los productos existentes se actualizarán; los nuevos se crearán.
+        </p>
+        <input type="file" class="form-control mb-3" #fileInputWooCommerce
+            accept=".csv,.txt,.xlsx,.xls" (change)="setFileWooCommerceCsv($event)">
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
+        <button type="button" class="btn btn-primary" [disabled]="!archivoWooCommerceCsv || importandoWooCommerceCsv"
+            (click)="importarWooCommerceCsv()">
+            <span *ngIf="!importandoWooCommerceCsv">
+                <i class="fa fa-upload me-1"></i> Importar
+            </span>
+            <span *ngIf="importandoWooCommerceCsv">
+                <i class="fa fa-spinner fa-spin me-1"></i> Importando...
             </span>
         </button>
     </div>

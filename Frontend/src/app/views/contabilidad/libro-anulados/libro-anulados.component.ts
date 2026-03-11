@@ -49,6 +49,11 @@ export class LibroAnuladosComponent implements OnInit {
         this.loadAll();
     }
 
+    /** Solo para El Salvador: opciones de descarga ZIP y CSV (declaración MH) */
+    get isElSalvador(): boolean {
+        return this.apiService.auth_user()?.empresa?.pais === 'El Salvador';
+    }
+
     public loadAll() {
         this.loading = true;
         this.apiService.getAll('libro-iva/anulados', this.filtros).subscribe(ivas => { 

@@ -45,7 +45,7 @@
             <tbody>
                 <tr>
                     <td>
-                        <h1>{{ $compra->empresa()->pluck('nombre')->first() }}</h1>
+                        <h3>{{ $compra->empresa()->pluck('nombre')->first() }}</h3>
                         <p>
                             {{ $compra->empresa()->pluck('municipio')->first() }}
                             {{ $compra->empresa()->pluck('departamento')->first() }}
@@ -81,8 +81,13 @@
                     <td>
                         
                         @if ($compra->empresa()->pluck('id')->first() != 420)
-                            <p>NCR:{{ $compra->proveedor()->pluck('ncr')->first() }}</p>
-                            <p>DUI:{{ $compra->proveedor()->pluck('dui')->first() }}</p>
+                            @if($compra->empresa()->pluck('pais')->first() == 'El Salvador')
+                                <p>NCR:{{ $compra->proveedor()->pluck('ncr')->first() }}</p>
+                                <p>DUI:{{ $compra->proveedor()->pluck('dui')->first() }}</p>
+                            @else
+                                <p>Registro tributario:{{ $compra->proveedor()->pluck('ncr')->first() }}</p>
+                                <p>Número de identificación:{{ $compra->proveedor()->pluck('dui')->first() }}</p>
+                            @endif
                             <p>Teléfono:{{ $compra->proveedor()->pluck('telefono')->first() }}</p>
                         @else
                             <p>RTN:{{ $compra->proveedor()->pluck('ncr')->first() }}</p>

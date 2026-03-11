@@ -17,6 +17,11 @@ export class ImportarExcelComponent implements OnInit {
     public file:any = {};
     public plantillaUrl: string = '';
 
+    /** URL de la plantilla con parámetro de versión para evitar caché del navegador */
+    get plantillaUrlConCache(): string {
+        return this.plantillaUrl ? `${this.plantillaUrl}?v=${Date.now()}` : '';
+    }
+
     modalRef!: BsModalRef;
 
     constructor( 

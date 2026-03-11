@@ -19,6 +19,7 @@ use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
 
 use App\Imports\Productos;
+use App\Imports\WooCommerceProductosImport;
 use App\Exports\ProductosExport;
 use App\Imports\TrasladosImport;
 use App\Models\Inventario\Traslado;
@@ -62,21 +63,19 @@ class ProductosController extends Controller
             ->when($request->id_categoria, function ($query) use ($request) {
                 return $query->where('id_categoria', $request->id_categoria);
             })
-            ->when($request->buscador, function ($query) use ($request) {
-                //                return $query->where(function ($subQuery) use ($request) {
-                //                    $subQuery->where('nombre', 'like', '%' . $request->buscador . '%')
-                //                            ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
-                //                            ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
-                //                            ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
-                //                            ->orWhere('marca', 'like', "%" . $request->buscador . "%")
-                //                            ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
-                //                });
-                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('codigo', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('barcode', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('etiquetas', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('marca', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('descripcion', 'like', "%" . $request->buscador . "%");
+            ->when($request->buscador, function ($query) use ($request, $empresa) {
+                $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+                return $query->where(function ($q) use ($request, $incluirComponenteQuimico) {
+                    $q->where('nombre', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
+                        ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
+                        ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
+                        ->orWhere('marca', 'like', "%" . $request->buscador . "%")
+                        ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
+                    if ($incluirComponenteQuimico) {
+                        $q->orWhere('componente_quimico', 'like', '%' . $request->buscador . '%');
+                    }
+                });
             })
             ->when($request->sin_stock, function ($query) use ($request) {
                 return $query->whereHas('inventarios', function ($q) {
@@ -139,11 +138,17 @@ class ProductosController extends Controller
             return response()->json([], 200);
         }
 
+        $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
+        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+
         $query = Producto::query()
             ->where('enable', true)
             ->whereIn('tipo', $tipos)
-            ->where(function ($q) use ($term) {
+            ->where(function ($q) use ($term, $incluirComponenteQuimico) {
                 $q->where('nombre', 'LIKE', "%{$term}%");
+                if ($incluirComponenteQuimico) {
+                    $q->orWhere('componente_quimico', 'LIKE', "%{$term}%");
+                }
             })
             ->orderByRaw("
                 CASE 
@@ -166,12 +171,18 @@ class ProductosController extends Controller
 
     public function search($txt)
     {
+        $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
+        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+
         $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
-            ->where(function ($q) use ($txt) {
+            ->where(function ($q) use ($txt, $incluirComponenteQuimico) {
                 $q->where('nombre', 'like', "%$txt%")
                     ->orWhere('barcode', 'like', "%$txt%")
                     ->orWhere('codigo', 'like', "%$txt%")
                     ->orWhere('etiquetas', 'like', "%$txt%");
+                if ($incluirComponenteQuimico) {
+                    $q->orWhere('componente_quimico', 'like', "%$txt%");
+                }
             })
             ->take(15)
             ->get();
@@ -182,15 +193,19 @@ class ProductosController extends Controller
     public function searchByQuery(Request $request)
     {
         $query = $request->query('query');
+        $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
+        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
 
         $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
-            ->where(function ($q) use ($query) {
+            ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                 $q->where('nombre', 'like', "%$query%")
                     ->orWhere('barcode', 'like', "%$query%")
                     ->orWhere('codigo', 'like', "%$query%")
                     ->orWhere('etiquetas', 'like', "%$query%");
+                if ($incluirComponenteQuimico) {
+                    $q->orWhere('componente_quimico', 'like', "%$query%");
+                }
             })
-            //->whereIn('tipo', ['Producto', 'Compuesto'])
             ->take(15)
             ->get();
 
@@ -201,9 +216,10 @@ class ProductosController extends Controller
     {
         $query = $request->query('query');
         $id_bodega = $request->query('id_bodega');
+        $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
+        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
 
         if ($id_bodega) {
-            // Si se especifica bodega, filtrar productos que tengan inventario en esa bodega
             $productos = Producto::where('enable', true)
                 ->with(['inventarios' => function ($q) use ($id_bodega) {
                     $q->where('id_bodega', $id_bodega);
@@ -212,22 +228,27 @@ class ProductosController extends Controller
                 ->whereHas('inventarios', function ($q) use ($id_bodega) {
                     $q->where('id_bodega', $id_bodega);
                 })
-                ->where(function ($q) use ($query) {
+                ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
                         ->orWhere('barcode', 'like', "%$query%")
                         ->orWhere('codigo', 'like', "%$query%")
                         ->orWhere('etiquetas', 'like', "%$query%");
+                    if ($incluirComponenteQuimico) {
+                        $q->orWhere('componente_quimico', 'like', "%$query%");
+                    }
                 })
                 ->take(15)
                 ->get();
         } else {
-            // Si no se especifica bodega, usar la búsqueda normal
             $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
-                ->where(function ($q) use ($query) {
+                ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
                         ->orWhere('barcode', 'like', "%$query%")
                         ->orWhere('codigo', 'like', "%$query%")
                         ->orWhere('etiquetas', 'like', "%$query%");
+                    if ($incluirComponenteQuimico) {
+                        $q->orWhere('componente_quimico', 'like', "%$query%");
+                    }
                 })
                 ->take(15)
                 ->get();
@@ -554,6 +575,44 @@ class ProductosController extends Controller
         Excel::import($import, $request->file);
 
         return Response()->json($import->getRowCount(), 200);
+    }
+
+    public function importarWooCommerce(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls',
+        ], [
+            'file.required' => 'El archivo CSV de WooCommerce es obligatorio.',
+            'file.mimes' => 'El archivo debe ser CSV, TXT, XLSX o XLS.',
+        ]);
+
+        try {
+            $import = new WooCommerceProductosImport();
+            Excel::import($import, $request->file('file'));
+            $estadisticas = $import->getEstadisticas();
+
+            return response()->json([
+                'success' => true,
+                'mensaje' => sprintf(
+                    'Importación completada: %d creados, %d actualizados, %d omitidos.',
+                    $estadisticas['creados'],
+                    $estadisticas['actualizados'],
+                    $estadisticas['omitidos']
+                ),
+                'creados' => $estadisticas['creados'],
+                'actualizados' => $estadisticas['actualizados'],
+                'omitidos' => $estadisticas['omitidos'],
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error al importar productos desde WooCommerce: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al importar el archivo. Verifica que sea un CSV exportado desde WooCommerce.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function export(Request $request)
@@ -1022,17 +1081,23 @@ class ProductosController extends Controller
         $termino = $request->termino;
         $limite = $request->limite ?? 15;
 
+        $empresa = Empresa::find($request->id_empresa);
+        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+
         $productos = Producto::where('enable', true)
             ->where('id_empresa', $request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
             ->with(['inventarios', 'precios'])
-            ->where(function ($q) use ($termino) {
+            ->where(function ($q) use ($termino, $incluirComponenteQuimico) {
                 $q->where('nombre', 'like', "%$termino%")
                     ->orWhere('codigo', 'like', "%$termino%")
                     ->orWhere('barcode', 'like', "%$termino%")
                     ->orWhere('etiquetas', 'like', "%$termino%")
                     ->orWhere('marca', 'like', "%$termino%")
                     ->orWhere('descripcion', 'like', "%$termino%");
+                if ($incluirComponenteQuimico) {
+                    $q->orWhere('componente_quimico', 'like', "%$termino%");
+                }
             })
             ->orderBy('nombre', 'asc')
             ->take($limite)
@@ -1076,11 +1141,19 @@ class ProductosController extends Controller
 
         $limite = $request->limite ?? 5;
 
+        $empresa = Empresa::find($request->id_empresa);
+        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+
         $productos = Producto::where('enable', true)
             ->where('id_empresa', $request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
             ->with(['inventarios', 'precios'])
-            ->where('nombre', 'like', "%{$request->nombre}%")
+            ->where(function ($q) use ($request, $incluirComponenteQuimico) {
+                $q->where('nombre', 'like', "%{$request->nombre}%");
+                if ($incluirComponenteQuimico) {
+                    $q->orWhere('componente_quimico', 'like', "%{$request->nombre}%");
+                }
+            })
             ->orderBy('nombre', 'asc')
             ->take($limite)
             ->get();
@@ -1104,29 +1177,38 @@ class ProductosController extends Controller
         $termino = $request->termino;
         $palabras = $request->palabras ?? [];
 
+        $empresa = Empresa::find($request->id_empresa);
+        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+
         $query = Producto::where('enable', true)
             ->where('id_empresa', $request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
             ->with(['inventarios', 'lotes', 'precios']);
 
         // Búsqueda principal por término completo
-        $query->where(function ($q) use ($termino) {
+        $query->where(function ($q) use ($termino, $incluirComponenteQuimico) {
             $q->where('nombre', 'like', "%$termino%")
                 ->orWhere('codigo', 'like', "%$termino%")
                 ->orWhere('barcode', 'like', "%$termino%")
                 ->orWhere('etiquetas', 'like', "%$termino%")
                 ->orWhere('marca', 'like', "%$termino%")
                 ->orWhere('descripcion', 'like', "%$termino%");
+            if ($incluirComponenteQuimico) {
+                $q->orWhere('componente_quimico', 'like', "%$termino%");
+            }
         });
 
         // Si hay palabras específicas, buscar también por ellas
         if (!empty($palabras)) {
-            $query->orWhere(function ($q) use ($palabras) {
+            $query->orWhere(function ($q) use ($palabras, $incluirComponenteQuimico) {
                 foreach ($palabras as $palabra) {
                     if (strlen($palabra) > 2) {
                         $q->orWhere('nombre', 'like', "%$palabra%")
                             ->orWhere('descripcion', 'like', "%$palabra%")
                             ->orWhere('etiquetas', 'like', "%$palabra%");
+                        if ($incluirComponenteQuimico) {
+                            $q->orWhere('componente_quimico', 'like', "%$palabra%");
+                        }
                     }
                 }
             });

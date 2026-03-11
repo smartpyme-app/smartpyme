@@ -4,8 +4,9 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { FuncionalidadesService } from '@services/functionalities.service';
 import { MHService } from '@services/MH.service';
+import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
@@ -44,11 +45,31 @@ export class FacturacionComponent implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  // Información de puntos canjeados
+  public puntosCanjeados: number = 0;
+  public descuentoPuntos: number = 0;
+
+  // Propiedades para el botón de puntos
+  public puntosCliente: number = 0;
+  public loadingPuntos: boolean = false;
+
+  // Propiedades para el modal de puntos
+  public loadingModalPuntos: boolean = false;
+  public puntosInfoModal: PuntosDisponiblesInfo | null = null;
+  public configuracionModal: ConfiguracionCliente | null = null;
+  public puntosProximosAExpirarModal: any[] = [];
+  public usarPuntosModal: boolean = false;
+  public puntosACanjearModal: number = 0;
+
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
+  modalPuntosRef!: BsModalRef;
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
+
+  @ViewChild('modalPuntos')
+  public modalPuntosTemplate!: TemplateRef<any>;
 
   @ViewChild('mcredito')
   public creditoTemplate!: TemplateRef<any>;
@@ -61,6 +82,7 @@ export class FacturacionComponent implements OnInit {
     private sumPipe: SumPipe,
     private route: ActivatedRoute,
     private router: Router,
+    private fidelizacionService: FidelizacionService,
     private funcionalidadesService: FuncionalidadesService
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
@@ -154,7 +176,9 @@ export class FacturacionComponent implements OnInit {
       (impuestos) => {
         // Filtrar solo los impuestos que aplican a ventas
         this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
-        if (!this.venta.impuestos || this.venta.iva == 0) {
+        // Al editar cotización/venta no sobrescribir impuestos para no volver a agregarlos
+        const esEdicion = !!this.route.snapshot.paramMap.get('id');
+        if (!esEdicion && (!this.venta.impuestos || this.venta.iva == 0)) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
         }
@@ -220,7 +244,7 @@ export class FacturacionComponent implements OnInit {
           } else {
             this.documentos = this.documentos.filter(
               (doc: any) =>
-                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Ticket' || doc.nombre === 'Recibo' || doc.nombre === 'Sujeto excluido'
+                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Factura comercial' || doc.nombre === 'Ticket' || doc.nombre === 'Recibo' || doc.nombre === 'Sujeto excluido'
             );
           }
         }
@@ -239,12 +263,13 @@ export class FacturacionComponent implements OnInit {
     this.venta.tipo = 'Interna';
     this.venta.estado = 'Pagada';
     this.venta.condicion = 'Contado';
-    
+
     // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
     if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
       this.venta.credito = false;
       this.venta.consigna = false;
     }
+
     this.venta.tipo_operacion = 'Gravada';
     this.venta.tipo_renta = null;
     this.venta.detalle_banco = '';
@@ -308,6 +333,7 @@ export class FacturacionComponent implements OnInit {
             this.venta = venta;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+            this.sumTotal();
           },
           (error) => {
             this.alertService.error(error);
@@ -410,15 +436,16 @@ export class FacturacionComponent implements OnInit {
     if (this.route.snapshot.queryParamMap.get('facturar_orden_compra')!) {
       this.apiService.read('orden-de-compra/solicitud/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).subscribe((ordenCompra) => {
         this.venta.num_orden = ordenCompra.id;
-        
+
         this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit)).subscribe((empresa) => {
           if(empresa.length > 0){
             this.setCliente(empresa[0]);
             console.log(empresa);
-            
+
             // Solo procesar productos si el cliente existe
             this.procesarProductosOrdenCompra(ordenCompra.detalles);
           }else{
+            const labelDoc = this.apiService.auth_user()?.empresa?.pais === 'El Salvador' ? 'DUI o NIT' : 'Número de identificación o Identificación fiscal';
             Swal.fire({
               title: 'Cliente no encontrado',
               html: `
@@ -427,7 +454,7 @@ export class FacturacionComponent implements OnInit {
                   <p>Debe crear el cliente con los siguientes datos:</p>
                   <ul class="list-unstyled mt-3">
                     <li><strong>Nombre:</strong> ${ordenCompra.empresa.nombre || 'No disponible'}</li>
-                    <li><strong>DUI o NIT:</strong> ${ordenCompra.empresa.dui || ordenCompra.empresa.nit || 'No disponible'}</li>
+                    <li><strong>${labelDoc}:</strong> ${ordenCompra.empresa.dui || ordenCompra.empresa.nit || 'No disponible'}</li>
                   </ul>
                 </div>
               `,
@@ -458,6 +485,7 @@ export class FacturacionComponent implements OnInit {
           detalle.id_producto = producto.id;
           detalle.precio = parseFloat(producto.precio);
           detalle.costo = parseFloat(producto.costo);
+          detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
           detalle.gravada = detalle.total;
           detalle.id_vendedor = this.venta.id_vendedor;
           detalle.exenta = 0;
@@ -530,6 +558,7 @@ export class FacturacionComponent implements OnInit {
                     detalle.img = producto.img;
                     detalle.precio = parseFloat(producto.precio);
                     detalle.costo = parseFloat(producto.costo);
+                    detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
                     if (producto.inventarios.length > 0) {
                       producto.inventarios = producto.inventarios.filter(
                         (item: any) =>
@@ -617,67 +646,101 @@ export class FacturacionComponent implements OnInit {
       this.venta.impuestos = [];
     }
 
-    this.venta.sub_total = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'total')
-    ).toFixed(4);
+    // Redondear a 2 decimales para evitar diferencias de 1 centavo entre subtotal, IVA y total
+    const rawSubTotal = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'));
+    this.venta.sub_total = (Math.round(rawSubTotal * 100) / 100).toFixed(2);
 
-    this.venta.exenta = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'exenta')
-    ).toFixed(4);
-    this.venta.no_sujeta = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'no_sujeta')
-    ).toFixed(4);
-    this.venta.gravada = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'gravada')
-    ).toFixed(4);
-    this.venta.cuenta_a_terceros = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros')
-    ).toFixed(4);
+    const rawExenta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'));
+    this.venta.exenta = (Math.round(rawExenta * 100) / 100).toFixed(2);
+    const rawNoSujeta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'));
+    this.venta.no_sujeta = (Math.round(rawNoSujeta * 100) / 100).toFixed(2);
+    const rawGravada = parseFloat(this.sumPipe.transform(this.venta.detalles, 'gravada'));
+    this.venta.gravada = (Math.round(rawGravada * 100) / 100).toFixed(2);
+    const rawCuentaTerceros = parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'));
+    this.venta.cuenta_a_terceros = (Math.round(rawCuentaTerceros * 100) / 100).toFixed(2);
 
+    const subTotalNum = parseFloat(this.venta.sub_total);
     this.venta.iva_percibido = this.venta.percepcion
-      ? this.venta.sub_total * 0.01
+      ? Math.round(subTotalNum * 0.01 * 100) / 100
       : 0;
     this.venta.iva_retenido = this.venta.retencion
-      ? this.venta.sub_total * 0.01
+      ? Math.round(subTotalNum * 0.01 * 100) / 100
       : 0;
     this.venta.renta_retenida = this.venta.renta
-      ? this.venta.sub_total * 0.10
+      ? Math.round(subTotalNum * 0.10 * 100) / 100
       : 0;
 
     // Calcular propina basada en el porcentaje de la empresa y el subtotal
     const propinaPorcentaje = parseFloat(this.apiService.auth_user().empresa.propina_porcentaje) || 0;
     this.venta.propina = this.venta.cobrar_propina
-      ? parseFloat((this.venta.sub_total * (propinaPorcentaje / 100)).toFixed(4))
+      ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA solo sobre el monto gravado (exento y no sujeta no llevan IVA)
-    this.venta.impuestos.forEach((impuesto: any) => {
-      if (this.venta.cobrar_impuestos) {
-        impuesto.monto = parseFloat(this.venta.gravada || 0) * (impuesto.porcentaje / 100);
-      } else {
-        impuesto.monto = 0;
+    // IVA por tasa: cada impuesto recibe solo el IVA de los detalles con ese porcentaje
+    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
+    const porcentajesImpuestos = (this.venta.impuestos || []).map((i: any) => Number(i.porcentaje));
+    if (this.venta.cobrar_impuestos) {
+      this.venta.impuestos.forEach((impuesto: any) => {
+        const pctImp = Number(impuesto.porcentaje);
+        const monto = this.venta.detalles
+          .filter((d: any) => {
+            const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+              ? Number(d.porcentaje_impuesto) : empresaIva;
+            return pctIgual(pctImp, pctDetalle);
+          })
+          .reduce((sum: number, d: any) => {
+            const gravada = parseFloat(d.gravada || 0);
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+              ? parseFloat(d.iva) : gravada * (pctImp / 100);
+            return sum + ivaLinea;
+          }, 0);
+        impuesto.monto = parseFloat(Number(monto).toFixed(4));
+      });
+      // Detalles cuyo % no coincide con ningún impuesto: asignar su IVA al impuesto de la empresa o al primero
+      if (this.venta.detalles.length && this.venta.impuestos.length) {
+        const ivaSinAsignar = this.venta.detalles
+          .filter((d: any) => {
+            const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+              ? Number(d.porcentaje_impuesto) : empresaIva;
+            return !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalle));
+          })
+          .reduce((sum: number, d: any) => {
+            const gravada = parseFloat(d.gravada || 0);
+            const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+              ? Number(d.porcentaje_impuesto) : empresaIva;
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+              ? parseFloat(d.iva) : gravada * (pct / 100);
+            return sum + ivaLinea;
+          }, 0);
+        if (ivaSinAsignar > 0) {
+          const impuestoDestino = this.venta.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
+            || this.venta.impuestos[0];
+          impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
+        }
       }
-    });
+      this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto')) || 0).toFixed(2);
+    } else {
+      this.venta.iva = (0).toFixed(2);
+      this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
+    }
 
-    this.venta.iva = parseFloat(
-      this.sumPipe.transform(this.venta.impuestos, 'monto')
-    ).toFixed(4);
-    this.venta.descuento = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'descuento')
-    ).toFixed(4);
-    this.venta.total_costo = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'total_costo')
-    ).toFixed(4);
-    // El total NO incluye la propina (la propina se muestra por separado en "Total + Propina")
-    // sub_total ya es la suma de totales por línea (gravada + exenta + no_sujeta), no sumar exenta/no_sujeta de nuevo
-    this.venta.total = (
+    const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
+    this.venta.descuento = (Math.round(rawDescuento * 100) / 100).toFixed(2);
+    const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
+    this.venta.total_costo = (Math.round(rawTotalCosto * 100) / 100).toFixed(4);
+
+    // El total NO incluye la propina; calcular con 2 decimales para que cuadre con subtotal + IVA
+    const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
+    const totalNum =
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
       parseFloat(this.venta.cuenta_a_terceros) +
-      parseFloat(this.venta.iva_percibido) -
-      parseFloat(this.venta.iva_retenido) -
-      parseFloat(this.venta.renta_retenida)
-    ).toFixed(4);
+      parseFloat(String(this.venta.iva_percibido)) -
+      parseFloat(String(this.venta.iva_retenido)) -
+      parseFloat(String(this.venta.renta_retenida)) -
+      descuentoPuntos;
+    this.venta.total = (Math.round(totalNum * 100) / 100).toFixed(2);
 
 
     // Asignar tipoOperacion según los detalles
@@ -707,14 +770,45 @@ export class FacturacionComponent implements OnInit {
                 this.venta.retencion = 1;
                 this.sumTotal();
             }
-            
+            // Resetear puntos cuando cambia el cliente
+            this.resetearPuntos();
+            // Cargar puntos del cliente
+            this.cargarPuntosCliente();
+
             // Asignar vendedor si el cliente tiene uno asignado
             if(cliente.id_vendedor) {
                 this.venta.id_vendedor = cliente.id_vendedor;
             }
-            
+
+            // Si el cliente tiene crédito habilitado, aplicar venta al crédito automáticamente
+            if (cliente.habilita_credito && cliente.dias_credito) {
+                this.venta.credito = true;
+                this.venta.estado = 'Pendiente';
+                this.venta.condicion = 'Crédito';
+                const fechaVenta = this.venta.fecha || this.apiService.date();
+                this.venta.fecha_pago = moment(fechaVenta).add(cliente.dias_credito, 'days').format('YYYY-MM-DD');
+            }
+
+            // Obtener saldo pendiente si el cliente tiene límite de crédito
+            if (cliente.limite_credito) {
+                this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 };
+                this.apiService.getAll('cliente/' + cliente.id + '/saldo-pendiente').subscribe(
+                    (res: any) => {
+                        this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: res.saldo_pendiente ?? 0 };
+                    },
+                    () => { this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 }; }
+                );
+            } else {
+                this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
+            }
+
             // Limpiar mensaje de validación al cambiar cliente
             this.mensajeValidacionFecha = '';
+        } else {
+            this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
+            // Si no hay cliente, resetear puntos
+            this.puntosCliente = 0;
+            this.resetearPuntos();
         }
         console.log(cliente);
     }
@@ -734,7 +828,6 @@ export class FacturacionComponent implements OnInit {
             this.alertService.error('Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.');
             return;
         }
-
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
             this.venta.condicion = 'Crédito';
@@ -760,9 +853,9 @@ export class FacturacionComponent implements OnInit {
         const hoy = moment();
         const fechaSeleccionada = moment(fechaPago);
         const diasDiferencia = fechaSeleccionada.diff(hoy, 'days');
-        
+
         let diasMaximos = 30; // Por defecto 30 días (clasificación C)
-        
+
         switch (this.venta.cliente.clasificacion.toUpperCase()) {
             case 'A':
                 diasMaximos = 90;
@@ -777,7 +870,7 @@ export class FacturacionComponent implements OnInit {
                 diasMaximos = 30;
                 break;
         }
-        
+
         return diasDiferencia <= diasMaximos;
     }
 
@@ -791,7 +884,7 @@ export class FacturacionComponent implements OnInit {
 
         let diasMaximos = 30;
         let clasificacion = 'C';
-        
+
         switch (this.venta.cliente.clasificacion.toUpperCase()) {
             case 'A':
                 diasMaximos = 90;
@@ -806,7 +899,7 @@ export class FacturacionComponent implements OnInit {
                 clasificacion = 'C';
                 break;
         }
-        
+
         return `Clientes de clasificación ${clasificacion} no puede exceder ${diasMaximos} días.`;
     }
 
@@ -815,15 +908,15 @@ export class FacturacionComponent implements OnInit {
      */
     public validarFechaPago() {
         this.mensajeValidacionFecha = ''; // Limpiar mensaje anterior
-        
+
         if (this.venta.credito && this.venta.fecha_pago) {
             if (!this.validarFechaPagoPorClasificacion(this.venta.fecha_pago)) {
                 this.mensajeValidacionFecha = this.obtenerMensajeValidacionFecha();
-                
+
                 // Revertir a la fecha anterior o establecer una fecha válida
                 const hoy = moment();
                 let diasMaximos = 30;
-                
+
                 if (this.venta.cliente?.clasificacion) {
                     switch (this.venta.cliente.clasificacion.toUpperCase()) {
                         case 'A':
@@ -837,7 +930,7 @@ export class FacturacionComponent implements OnInit {
                             break;
                     }
                 }
-                
+
                 // Establecer la fecha máxima permitida
                 this.venta.fecha_pago = hoy.add(diasMaximos, 'days').format('YYYY-MM-DD');
             }
@@ -865,7 +958,7 @@ export class FacturacionComponent implements OnInit {
                 item.total = null;
             });
         }
-        
+
         // Limpiar banco y mensaje de error al cambiar método de pago
         if (!this.requiereBanco()) {
             this.venta.detalle_banco = '';
@@ -906,6 +999,13 @@ export class FacturacionComponent implements OnInit {
                 }
             );
         }
+        if (this.venta.nombre_documento == 'Factura comercial') {
+            this.venta.cobrar_impuestos = false;
+            this.sumTotal();
+        }else{
+            this.venta.cobrar_impuestos = true;
+            this.sumTotal();
+        }
     }
 
     setIncoterm() {
@@ -925,7 +1025,7 @@ export class FacturacionComponent implements OnInit {
   public onFacturar() {
     // Validar que si el método de pago requiere banco, este esté seleccionado
     this.mensajeErrorBanco = '';
-    
+
     if (this.venta.cotizacion != 1 && this.requiereBanco() && !this.venta.detalle_banco) {
       this.mensajeErrorBanco = 'Debe seleccionar un banco para este método de pago.';
       this.alertService.error('Debe seleccionar un banco para este método de pago.');
@@ -951,8 +1051,8 @@ export class FacturacionComponent implements OnInit {
    * Verifica si el método de pago requiere selección de banco
    */
   public requiereBanco(): boolean {
-    return this.venta.forma_pago && 
-           this.venta.forma_pago !== 'Efectivo' && 
+    return this.venta.forma_pago &&
+           this.venta.forma_pago !== 'Efectivo' &&
            this.venta.forma_pago !== 'Wompi';
   }
 
@@ -971,6 +1071,12 @@ export class FacturacionComponent implements OnInit {
         ? this.venta.efectivo
         : this.venta.total;
       this.venta.cambio = 0;
+    }
+
+    // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
+    if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
+      this.venta.credito = false;
+      this.venta.consigna = false;
     }
 
     this.apiService.store('facturacion', this.venta).subscribe(
@@ -1172,11 +1278,15 @@ export class FacturacionComponent implements OnInit {
   }
 
 
-  /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura minúsculas para que el select coincida. */
+  /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura gravada/exenta/no_sujeta para que el IVA cuadre. */
   private normalizarDetallesTipoGravado(venta: any) {
     if (!venta?.detalles?.length) return;
     const tiposValidos = ['gravada', 'exenta', 'no_sujeta'];
     venta.detalles.forEach((d: any) => {
+      if (d.sub_total == null || d.sub_total === undefined) {
+        d.sub_total = Number((parseFloat(d.cantidad) * parseFloat(d.precio)).toFixed(4));
+      }
+      const totalLinea = parseFloat(d.total) ?? (parseFloat(d.sub_total) - parseFloat(d.descuento || 0));
       if (!d.tipo_gravado) {
         const ex = parseFloat(d.exenta) || 0;
         const no = parseFloat(d.no_sujeta) || 0;
@@ -1184,28 +1294,381 @@ export class FacturacionComponent implements OnInit {
       }
       const tipo = String(d.tipo_gravado).toLowerCase();
       d.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
-      if (d.sub_total == null || d.sub_total === undefined) {
-        d.sub_total = Number((parseFloat(d.cantidad) * parseFloat(d.precio)).toFixed(4));
-      }
+      d.gravada = (d.tipo_gravado === 'gravada') ? totalLinea : 0;
+      d.exenta = (d.tipo_gravado === 'exenta') ? totalLinea : 0;
+      d.no_sujeta = (d.tipo_gravado === 'no_sujeta') ? totalLinea : 0;
     });
   }
 
-  public verificarAccesoPropina() {
-    this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
-        (acceso) => {
-            this.tieneAccesoPropina = acceso;
-        },
-        (error) => {
-            console.error('Error al verificar acceso a propina:', error);
-            this.tieneAccesoPropina = false;
-        }
-    );
-}
+  /**
+   * Manejar canje de puntos desde el componente hijo
+   */
+  public onPuntosCanjeados(datos: {puntos: number, descuento: number}): void {
+    this.puntosCanjeados = datos.puntos;
+    this.descuentoPuntos = datos.descuento;
 
-public getTotalConPropina(): number {
-    const total = parseFloat(this.venta?.total || 0);
-    const propina = parseFloat(this.venta?.propina || 0);
-    return total + propina;
-}
+    // Actualizar campos de la venta
+    this.venta.puntos_canjeados = this.puntosCanjeados;
+    this.venta.descuento_puntos = this.descuentoPuntos;
+
+    // Recalcular totales
+    this.sumTotal();
+
+    console.log('Puntos canjeados:', {
+      puntos: this.puntosCanjeados,
+      descuento: this.descuentoPuntos
+    });
+  }
+
+  /**
+   * Resetear información de puntos
+   */
+  private resetearPuntos(): void {
+    this.puntosCanjeados = 0;
+    this.descuentoPuntos = 0;
+    this.venta.puntos_canjeados = 0;
+    this.venta.descuento_puntos = 0;
+  }
+
+  /**
+   * Obtener ID de empresa
+   */
+  public getEmpresaId(): number {
+    return this.apiService.auth_user().empresa.id;
+  }
+
+  // ==================== MÉTODOS PARA MODAL DE PUNTOS ====================
+
+  /**
+   * Cargar puntos del cliente para mostrar en el botón
+   */
+  private cargarPuntosCliente(): void {
+    if (!this.venta.cliente || !this.venta.cliente.id) {
+      this.puntosCliente = 0;
+      return;
+    }
+
+    this.loadingPuntos = true;
+    this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.puntosCliente = response.data.puntos_disponibles;
+          } else {
+            this.puntosCliente = 0;
+          }
+          this.loadingPuntos = false;
+        },
+        error: (error) => {
+          console.error('Error al cargar puntos del cliente:', error);
+          this.puntosCliente = 0;
+          this.loadingPuntos = false;
+        }
+      });
+  }
+
+  /**
+   * Abrir modal de puntos
+   */
+  public abrirModalPuntos(): void {
+    if (!this.venta.cliente || !this.venta.cliente.id) {
+      return;
+    }
+
+    this.modalPuntosRef = this.modalService.show(this.modalPuntosTemplate, {
+      class: 'modal-lg'
+    });
+
+    this.cargarDatosModal();
+  }
+
+  /**
+   * Cerrar modal de puntos
+   */
+  public cerrarModalPuntos(): void {
+    if (this.modalPuntosRef) {
+      this.modalPuntosRef.hide();
+    }
+  }
+
+  /**
+   * Cargar datos completos para el modal
+   */
+  private cargarDatosModal(): void {
+    this.loadingModalPuntos = true;
+    this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.puntosInfoModal = response.data;
+            this.configuracionModal = response.data.configuracion || null;
+            this.calcularPuntosProximosAExpirarModal();
+
+            // Si ya hay puntos aplicados, cargar los valores actuales
+            if (this.puntosCanjeados > 0) {
+              this.usarPuntosModal = true;
+              this.puntosACanjearModal = this.puntosCanjeados;
+            } else {
+              this.usarPuntosModal = false;
+              this.puntosACanjearModal = 0;
+            }
+          } else {
+            this.puntosInfoModal = null;
+            this.configuracionModal = null;
+          }
+          this.loadingModalPuntos = false;
+        },
+        error: (error) => {
+          console.error('Error al cargar datos del modal:', error);
+          this.puntosInfoModal = null;
+          this.configuracionModal = null;
+          this.loadingModalPuntos = false;
+        }
+      });
+  }
+
+  /**
+   * Calcular puntos próximos a expirar para el modal
+   */
+  private calcularPuntosProximosAExpirarModal(): void {
+    if (!this.puntosInfoModal || !this.puntosInfoModal.ganancias_detalle) {
+      this.puntosProximosAExpirarModal = [];
+      return;
+    }
+
+    this.puntosProximosAExpirarModal = this.puntosInfoModal.ganancias_detalle
+      .filter(ganancia => ganancia.puntos_disponibles > 0 && ganancia.dias_para_expirar <= 30)
+      .sort((a, b) => a.dias_para_expirar - b.dias_para_expirar)
+      .slice(0, 5);
+  }
+
+  /**
+   * Toggle usar puntos en modal
+   */
+  public onToggleUsarPuntosModal(): void {
+    if (!this.usarPuntosModal) {
+      this.puntosACanjearModal = 0;
+    } else {
+      // Establecer el mínimo por defecto
+      const minimo = this.configuracionModal?.minimo_canje || 1;
+      this.puntosACanjearModal = minimo;
+    }
+  }
+
+  /**
+   * Cambiar puntos a canjear en modal
+   */
+  public onCambiarPuntosModal(): void {
+    if (!this.puntosInfoModal || !this.configuracionModal) return;
+
+    // Validaciones básicas
+    if (this.puntosACanjearModal < 0) {
+      this.puntosACanjearModal = 0;
+    }
+
+    const minimo = this.configuracionModal.minimo_canje || 1;
+    const maximo = this.getMaximoCanje();
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles;
+
+    // Validar y corregir si excede puntos disponibles
+    if (this.puntosACanjearModal > puntosDisponibles) {
+      this.puntosACanjearModal = puntosDisponibles;
+      this.alertService.warning('Puntos insuficientes',
+        `Solo tienes ${puntosDisponibles} puntos disponibles`);
+    }
+
+    // Validar y corregir si excede el máximo permitido
+    if (this.puntosACanjearModal > maximo) {
+      this.puntosACanjearModal = maximo;
+      this.alertService.warning('Límite excedido',
+        `El máximo de canje para ${this.configuracionModal.tipo_cliente} es ${maximo} puntos`);
+    }
+
+    // Solo mostrar advertencia del mínimo, no corregir automáticamente
+    if (this.puntosACanjearModal > 0 && this.puntosACanjearModal < minimo) {
+      this.alertService.warning('Cantidad inválida',
+        `El mínimo de canje para ${this.configuracionModal.tipo_cliente} es ${minimo} puntos`);
+    }
+  }
+
+  /**
+   * Usar todos los puntos disponibles en modal
+   */
+  public usarTodosPuntosModal(): void {
+    if (!this.puntosInfoModal || !this.configuracionModal) return;
+
+    this.puntosACanjearModal = this.getMaximoCanje();
+    this.usarPuntosModal = true;
+  }
+
+  /**
+   * Calcular descuento total en modal
+   */
+  public getDescuentoTotalModal(): number {
+    if (!this.configuracionModal) return 0;
+    return this.puntosACanjearModal * (this.configuracionModal.valor_punto || 0.01);
+  }
+
+  /**
+   * Aplicar canje desde modal
+   */
+  public aplicarCanjeModal(): void {
+    if (!this.usarPuntosModal || this.puntosACanjearModal <= 0) {
+      return;
+    }
+
+    // Validar que tenemos la información necesaria
+    if (!this.puntosInfoModal || !this.configuracionModal) {
+      this.alertService.error('No se pudo cargar la información de puntos');
+      return;
+    }
+
+    // Validaciones de reglas de negocio
+    const minimo = this.configuracionModal.minimo_canje || 1;
+    const maximo = this.getMaximoCanje();
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles;
+
+    // Validar mínimo de canje
+    if (this.puntosACanjearModal < minimo) {
+      this.alertService.warning('Cantidad inválida',
+        `El mínimo de canje para ${this.configuracionModal.tipo_cliente} es ${minimo} puntos`);
+      return;
+    }
+
+    // Validar máximo de canje
+    if (this.puntosACanjearModal > maximo) {
+      this.alertService.warning('Límite excedido',
+        `El máximo de canje para ${this.configuracionModal.tipo_cliente} es ${maximo} puntos`);
+      return;
+    }
+
+    // Validar puntos disponibles
+    if (this.puntosACanjearModal > puntosDisponibles) {
+      this.alertService.warning('Puntos insuficientes',
+        `Solo tienes ${puntosDisponibles} puntos disponibles`);
+      return;
+    }
+
+    // Aplicar los valores a la venta
+    this.puntosCanjeados = this.puntosACanjearModal;
+    this.descuentoPuntos = this.getDescuentoTotalModal();
+    this.venta.puntos_canjeados = this.puntosCanjeados;
+    this.venta.descuento_puntos = this.descuentoPuntos;
+
+    // Recalcular total
+    this.sumTotal();
+
+    // Actualizar botón de puntos
+    this.puntosCliente = (this.puntosInfoModal?.puntos_disponibles || 0) - this.puntosCanjeados;
+
+    // Mostrar mensaje de éxito
+    this.alertService.success('¡Descuento aplicado!',
+      `Se aplicó un descuento de $${this.descuentoPuntos.toFixed(2)} por ${this.puntosCanjeados} puntos`);
+
+    // Mantener el modal abierto para permitir ajustes
+  }
+
+  /**
+   * Obtener clase CSS para días de expiración
+   */
+  public getDiasExpiracionClass(dias: number): string {
+    if (dias <= 3) return 'text-danger fw-bold';
+    if (dias <= 7) return 'text-warning fw-bold';
+    if (dias <= 30) return 'text-info';
+    return 'text-muted';
+  }
+
+  /**
+   * Quitar descuento por puntos
+   */
+  public quitarDescuentoPuntos(): void {
+    // Resetear valores
+    this.puntosCanjeados = 0;
+    this.descuentoPuntos = 0;
+    this.venta.puntos_canjeados = 0;
+    this.venta.descuento_puntos = 0;
+
+    // Resetear modal
+    this.usarPuntosModal = false;
+    this.puntosACanjearModal = 0;
+
+    // Recalcular total
+    this.sumTotal();
+
+    // Actualizar botón de puntos (recargar puntos disponibles)
+    this.cargarPuntosCliente();
+
+    // Mostrar mensaje
+    this.alertService.success('Descuento removido', 'El descuento por puntos ha sido eliminado');
+
+    // Cerrar modal
+    this.cerrarModalPuntos();
+  }
+
+  /**
+   * Obtener máximo de canje permitido
+   */
+  public getMaximoCanje(): number {
+    if (!this.configuracionModal || !this.puntosInfoModal) {
+      return 0;
+    }
+
+    const maximoConfiguracion = this.configuracionModal.maximo_canje || 1000;
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles || 0;
+
+    return Math.min(maximoConfiguracion, puntosDisponibles);
+  }
+
+  /**
+   * Obtener valor del punto formateado
+   */
+  public getValorPunto(): string {
+    const valor = this.configuracionModal?.valor_punto || 0.01;
+    return `$${Number(valor).toFixed(3)}`;
+  }
+
+  /**
+   * Verificar si el canje es válido para habilitar el botón
+   */
+  public isCanjeValido(): boolean {
+    if (!this.usarPuntosModal || !this.puntosInfoModal || !this.configuracionModal) {
+      return false;
+    }
+
+    const minimo = this.configuracionModal.minimo_canje || 1;
+    const maximo = this.getMaximoCanje();
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles;
+
+    return this.puntosACanjearModal >= minimo &&
+           this.puntosACanjearModal <= maximo &&
+           this.puntosACanjearModal <= puntosDisponibles &&
+           this.puntosACanjearModal > 0;
+  }
+
+  /**
+   * Formatear números
+   */
+  public formatNumber(value: number): string {
+    return value?.toLocaleString() || '0';
+  }
+
+
+    public verificarAccesoPropina() {
+        this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
+            (acceso) => {
+                this.tieneAccesoPropina = acceso;
+            },
+            (error) => {
+                console.error('Error al verificar acceso a propina:', error);
+                this.tieneAccesoPropina = false;
+            }
+        );
+    }
+
+    public getTotalConPropina(): number {
+        const total = parseFloat(this.venta?.total || 0);
+        const propina = parseFloat(this.venta?.propina || 0);
+        return total + propina;
+    }
 
 }

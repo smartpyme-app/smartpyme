@@ -15,7 +15,7 @@
                 Libro de sujetos excluidos
             </button>
           </li>
-          <li>
+          <li *ngIf="isElSalvador">
             <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
                 <img src="/assets/icons/download.png" class="icon me-2"> 
                 Anexo

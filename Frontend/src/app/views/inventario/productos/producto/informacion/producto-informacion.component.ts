@@ -18,6 +18,7 @@ export class ProductoInformacionComponent implements OnInit {
     public categoria:any = {};
     public bodegas:any = [];
     public medidas:any = [];
+    public impuestos: any[] = [];
     public loading = false;
     public guardar = false;
 
@@ -34,6 +35,10 @@ export class ProductoInformacionComponent implements OnInit {
         this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
+
+        this.apiService.getAll('impuestos').subscribe(impuestos => {
+            this.impuestos = (impuestos || []).filter((i: any) => i.aplica_ventas);
+        }, () => { this.impuestos = []; });
 
         this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
 
@@ -60,18 +65,25 @@ export class ProductoInformacionComponent implements OnInit {
         this.producto.costo = this.producto.costo_promedio;
     }
 
+    /** Porcentaje de impuesto: del producto o de la empresa. */
+    public getPorcentajeProducto(): number {
+        const p = this.producto?.porcentaje_impuesto;
+        if (p != null && p !== '') return Number(p);
+        return Number(this.usuario?.empresa?.iva ?? 0);
+    }
+
     public calPrecioBase(){
-        if(this.usuario.empresa.iva > 0){
-            this.producto.impuesto = this.usuario.empresa.iva / 100;
-            this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(4);
-        }
+        const pct = this.getPorcentajeProducto();
+        if (pct <= 0) return;
+        this.producto.impuesto = pct / 100;
+        this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(4);
     }
 
     public calPrecioFinal(){
-        if(this.usuario.empresa.iva > 0){
-            this.producto.impuesto = this.usuario.empresa.iva / 100;
-            this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
-        }
+        const pct = this.getPorcentajeProducto();
+        if (pct <= 0) return;
+        this.producto.impuesto = pct / 100;
+        this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
     }
 
 
@@ -129,6 +141,10 @@ export class ProductoInformacionComponent implements OnInit {
 
     public isLotesActivo(): boolean {
         return this.apiService.isLotesActivo();
+    }
+
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
     }
 
 }

@@ -8,15 +8,21 @@
             <button tooltip="Descargar" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
             <input type="date" name="fecha" (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
             <ng-select [(ngModel)]="filtros.id_usuario" (change)="filtrar()" (clear)="onUsuarioClear()" [clearable]="filtros.id_usuario !== ''" class="form-select  p-0" name="filtros.id_usuario">
-                <ng-option value="">Usuario</ng-option>
+                <ng-option value="">Todos los usuarios</ng-option>
                 <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
                     {{ usuario.name }}
                 </ng-option>
             </ng-select>
-            <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default ">
+            <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select">
                 <option value="" *ngIf="usuario.tipo != 'Ventas' && usuario.tipo != 'Ventas Limitado'">Todas las sucursal</option>
                 <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
+                </option>
+            </select>
+            <select name="id_canal" (change)="filtrar()" [(ngModel)]="filtros.id_canal" class="form-select">
+                <option value="">Todos los canales</option>
+                <option *ngFor="let canal of canales" [value]="canal.id">
+                    {{ canal.nombre }}
                 </option>
             </select>
         </div>
@@ -26,7 +32,7 @@
 <section class="d-flex justify-content-between gap-2">
     <div class="card p-3">
         <h3 class="text-center text-success">
-            {{ (indicadores.totalVentas ? indicadores.totalVentas : 0) | currency }}
+            {{ (indicadores.totalVentas ? (indicadores.totalVentas + indicadores.totalPropina) : 0) | currency }}
         </h3>
         <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
     </div>
@@ -77,6 +83,11 @@
                         <td>Ventas del día</td>
                         <td class="text-right">{{ indicadores.cantidadVentasPagadas }}</td>
                         <td class="text-right">{{ indicadores.totalVentasPagadas | currency}}</td>
+                    </tr>
+                    <tr *ngIf="(indicadores.totalPropina || 0) > 0">
+                        <td>Propina</td>
+                        <td class="text-right">{{ indicadores.cantidadPropina }}</td>
+                        <td class="text-right">{{ indicadores.totalPropina | currency}}</td>
                     </tr>
                     <tr>
                         <td>Ventas al crédito</td>

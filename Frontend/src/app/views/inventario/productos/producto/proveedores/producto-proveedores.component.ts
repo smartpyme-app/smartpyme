@@ -19,7 +19,7 @@ export class ProductoProveedoresComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  
+    constructor(public apiService: ApiService, private alertService: AlertService,  
         private route: ActivatedRoute, private router: Router,
         private modalService: BsModalService
     ){ }

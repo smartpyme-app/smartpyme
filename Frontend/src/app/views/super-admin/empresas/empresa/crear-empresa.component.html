@@ -45,11 +45,11 @@
                     <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion" placeholder="Escriba aquí">
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="nit">NIT</label>
+                    <label for="nit">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT' : 'Identificación fiscal' }}</label>
                     <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" mask='0000-000000-000-0'>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="ncr">NCR</label>
+                    <label for="ncr">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NCR' : 'Registro tributario' }}</label>
                     <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí">
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
@@ -239,7 +239,7 @@
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="total">Pago de plan</label>
                     <div class="input-group">
-                        <span class="input-group-text">$</span>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" [(ngModel)]="empresa.total" name="total" placeholder="Escriba aquí">
                     </div>
                 </div>

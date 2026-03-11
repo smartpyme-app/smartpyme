@@ -57,7 +57,7 @@
                 <tr>
                     <th>Nombre</th>
                     <th>Tipo</th>
-                    <th>Sucursal</th>
+                    <th>Sucursal/Bodega</th>
                     <th>Activo</th>
                     <th>Último inicio de sesión</th>
                     <th *ngIf="apiService.canEdit()" class="text-center"><i class="fa fa-cog"></i></th>
@@ -76,7 +76,9 @@
                 <tr *ngFor=" let usuario of usuarios.data">
                     <td>{{usuario.name}}</td>
                     <td>{{usuario.tipo}}</td>
-                    <td>{{usuario.sucursal?.nombre}}</td>
+                    <td>{{usuario.sucursal?.nombre}}
+                        <small class="text-muted"> <br>{{usuario.bodega?.nombre ?? 'Sin bodega'}}</small>
+                    </td>
                     <td>
                         <select name="enable" class="form-select w-auto border-0" (change)="setEstado(usuario)" [(ngModel)]="usuario.enable" [ngClass]="{'bg-light-danger' : usuario?.enable == '0', 'bg-light-success' : usuario?.enable == '1'}">
                             <option value="1">Activo</option>

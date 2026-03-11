@@ -86,7 +86,7 @@
                   <!-- Documentos -->
                   <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Documentos</h6>
                   <div class="form-group col-md-3">
-                    <label for="dui">DUI:</label>
+                    <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI:' : 'Número de identificación:' }}</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.dui"
@@ -99,7 +99,7 @@
                     />
                   </div>
                   <div class="form-group col-md-3">
-                    <label for="nit">NIT:</label>
+                    <label for="nit">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT:' : 'Identificación fiscal:' }}</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.nit"
@@ -204,7 +204,7 @@
                   <div class="form-group col-md-4">
                     <label for="salario_base">Salario Base:</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input
                         type="number"
                         step="0.01"
@@ -869,7 +869,7 @@
         <!-- <div class="form-group col-12 mb-3">
           <label for="salario_base">Salario Base:</label>
           <div class="input-group">
-            <span class="input-group-text">$</span>
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
             <input
               type="number"
               step="0.01"
@@ -927,8 +927,8 @@
           <option value="2">Despido</option>
           <option value="3">Terminación de contrato</option>
           <option value="4">Alta</option>
-          <option value="5">DUI</option>
-          <option value="6">NIT</option>
+          <option value="5">Número de identificación</option>
+          <option value="6">Identificación fiscal</option>
           <option value="7">ISSS</option>
           <option value="8">AFP</option>
           <option value="9">Título</option>

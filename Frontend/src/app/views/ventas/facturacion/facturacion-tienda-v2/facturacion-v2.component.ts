@@ -154,7 +154,9 @@ export class FacturacionV2Component implements OnInit {
       (impuestos) => {
         // Filtrar solo los impuestos que aplican a ventas
         this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
-        if (!this.venta.impuestos || this.venta.iva == 0) {
+        // Al editar cotización/venta no sobrescribir impuestos para no volver a agregarlos
+        const esEdicion = !!this.route.snapshot.paramMap.get('id');
+        if (!esEdicion && (!this.venta.impuestos || this.venta.iva == 0)) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
         }
@@ -220,7 +222,7 @@ export class FacturacionV2Component implements OnInit {
           } else {
             this.documentos = this.documentos.filter(
               (doc: any) =>
-                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Ticket' || doc.nombre === 'Recibo' || doc.nombre === 'Sujeto excluido'
+                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Factura comercial' || doc.nombre === 'Ticket' || doc.nombre === 'Recibo' || doc.nombre === 'Sujeto excluido'
             );
           }
         }
@@ -239,12 +241,13 @@ export class FacturacionV2Component implements OnInit {
     this.venta.tipo = 'Interna';
     this.venta.estado = 'Pagada';
     this.venta.condicion = 'Contado';
-    
+
     // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
     if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
       this.venta.credito = false;
       this.venta.consigna = false;
     }
+
     this.venta.tipo_operacion = 'Gravada';
     this.venta.tipo_renta = null;
     this.venta.detalle_banco = '';
@@ -308,6 +311,7 @@ export class FacturacionV2Component implements OnInit {
             this.venta = venta;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+            this.sumTotal();
           },
           (error) => {
             this.alertService.error(error);
@@ -467,6 +471,7 @@ export class FacturacionV2Component implements OnInit {
             // Solo procesar productos si el cliente existe
             this.procesarProductosOrdenCompra(ordenCompra.detalles);
           }else{
+            const labelDoc = this.apiService.auth_user()?.empresa?.pais === 'El Salvador' ? 'DUI o NIT' : 'Número de identificación o Identificación fiscal';
             Swal.fire({
               title: 'Cliente no encontrado',
               html: `
@@ -475,7 +480,7 @@ export class FacturacionV2Component implements OnInit {
                   <p>Debe crear el cliente con los siguientes datos:</p>
                   <ul class="list-unstyled mt-3">
                     <li><strong>Nombre:</strong> ${ordenCompra.empresa.nombre || 'No disponible'}</li>
-                    <li><strong>DUI o NIT:</strong> ${ordenCompra.empresa.dui || ordenCompra.empresa.nit || 'No disponible'}</li>
+                    <li><strong>${labelDoc}:</strong> ${ordenCompra.empresa.dui || ordenCompra.empresa.nit || 'No disponible'}</li>
                   </ul>
                 </div>
               `,
@@ -702,75 +707,101 @@ export class FacturacionV2Component implements OnInit {
       ? (this.apiService.auth_user()?.empresa?.iva || 0)
       : 0;
 
-    // El sub_total es la suma de los totales de los detalles (sin IVA)
-    this.venta.sub_total = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'total')
-    ).toFixed(4);
+    // Redondear a 2 decimales para evitar diferencias de 1 centavo entre subtotal, IVA y total
+    const rawSubTotal = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'));
+    this.venta.sub_total = (Math.round(rawSubTotal * 100) / 100).toFixed(2);
 
-    this.venta.exenta = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'exenta')
-    ).toFixed(4);
-    this.venta.no_sujeta = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'no_sujeta')
-    ).toFixed(4);
-    
-    // La gravada es el sub_total sin IVA
-    this.venta.gravada = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'gravada')
-    ).toFixed(4);
-    
-    this.venta.cuenta_a_terceros = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros')
-    ).toFixed(4);
+    const rawExenta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'));
+    this.venta.exenta = (Math.round(rawExenta * 100) / 100).toFixed(2);
+    const rawNoSujeta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'));
+    this.venta.no_sujeta = (Math.round(rawNoSujeta * 100) / 100).toFixed(2);
+    const rawGravada = parseFloat(this.sumPipe.transform(this.venta.detalles, 'gravada'));
+    this.venta.gravada = (Math.round(rawGravada * 100) / 100).toFixed(2);
+    const rawCuentaTerceros = parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'));
+    this.venta.cuenta_a_terceros = (Math.round(rawCuentaTerceros * 100) / 100).toFixed(2);
 
+    const subTotalNum = parseFloat(this.venta.sub_total);
     this.venta.iva_percibido = this.venta.percepcion
-      ? this.venta.sub_total * 0.01
+      ? Math.round(subTotalNum * 0.01 * 100) / 100
       : 0;
     this.venta.iva_retenido = this.venta.retencion
-      ? this.venta.sub_total * 0.01
+      ? Math.round(subTotalNum * 0.01 * 100) / 100
       : 0;
     this.venta.renta_retenida = this.venta.renta
-      ? this.venta.sub_total * 0.10
+      ? Math.round(subTotalNum * 0.10 * 100) / 100
       : 0;
 
     // Calcular propina basada en el porcentaje de la empresa y el subtotal
     const propinaPorcentaje = parseFloat(this.apiService.auth_user().empresa.propina_porcentaje) || 0;
     this.venta.propina = this.venta.cobrar_propina
-      ? parseFloat((this.venta.sub_total * (propinaPorcentaje / 100)).toFixed(4))
+      ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA solo sobre el monto gravado (exento y no sujeta no llevan IVA)
-    if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
+    // IVA por tasa: cada impuesto recibe solo el IVA de los detalles con ese porcentaje
+    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
+    const porcentajesImpuestos = (this.venta.impuestos || []).map((i: any) => Number(i.porcentaje));
+    if (this.venta.cobrar_impuestos) {
       this.venta.impuestos.forEach((impuesto: any) => {
-        impuesto.monto = parseFloat(this.venta.gravada || 0) * (impuesto.porcentaje / 100);
+        const pctImp = Number(impuesto.porcentaje);
+        const monto = this.venta.detalles
+          .filter((d: any) => {
+            const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+              ? Number(d.porcentaje_impuesto) : empresaIva;
+            return pctIgual(pctImp, pctDetalle);
+          })
+          .reduce((sum: number, d: any) => {
+            const gravada = parseFloat(d.gravada || 0);
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+              ? parseFloat(d.iva) : gravada * (pctImp / 100);
+            return sum + ivaLinea;
+          }, 0);
+        impuesto.monto = parseFloat(Number(monto).toFixed(4));
       });
+      // Detalles cuyo % no coincide con ningún impuesto: asignar al impuesto empresa o al primero
+      if (this.venta.detalles.length && this.venta.impuestos.length) {
+        const ivaSinAsignar = this.venta.detalles
+          .filter((d: any) => {
+            const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+              ? Number(d.porcentaje_impuesto) : empresaIva;
+            return !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalle));
+          })
+          .reduce((sum: number, d: any) => {
+            const gravada = parseFloat(d.gravada || 0);
+            const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+              ? Number(d.porcentaje_impuesto) : empresaIva;
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+              ? parseFloat(d.iva) : gravada * (pct / 100);
+            return sum + ivaLinea;
+          }, 0);
+        if (ivaSinAsignar > 0) {
+          const impuestoDestino = this.venta.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
+            || this.venta.impuestos[0];
+          impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
+        }
+      }
       this.venta.iva = parseFloat(
         this.sumPipe.transform(this.venta.impuestos, 'monto')
       ).toFixed(4);
     } else {
-      this.venta.impuestos.forEach((impuesto: any) => {
-        impuesto.monto = 0;
-      });
-      this.venta.iva = 0;
+      this.venta.iva = (0).toFixed(2);
+      this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
     }
 
-    this.venta.descuento = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'descuento')
-    ).toFixed(4);
-    this.venta.total_costo = parseFloat(
-      this.sumPipe.transform(this.venta.detalles, 'total_costo')
-    ).toFixed(4);
-    
-    // El total NO incluye la propina (la propina se muestra por separado en "Total + Propina")
-    // sub_total ya es la suma de totales por línea (gravada + exenta + no_sujeta), no sumar exenta/no_sujeta de nuevo
-    this.venta.total = (
+    const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
+    this.venta.descuento = (Math.round(rawDescuento * 100) / 100).toFixed(2);
+    const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
+    this.venta.total_costo = (Math.round(rawTotalCosto * 100) / 100).toFixed(4);
+
+    // El total NO incluye la propina; calcular con 2 decimales para que cuadre con subtotal + IVA
+    const totalNum =
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
       parseFloat(this.venta.cuenta_a_terceros) +
-      parseFloat(this.venta.iva_percibido) -
-      parseFloat(this.venta.iva_retenido) -
-      parseFloat(this.venta.renta_retenida)
-    ).toFixed(4);
+      parseFloat(String(this.venta.iva_percibido)) -
+      parseFloat(String(this.venta.iva_retenido)) -
+      parseFloat(String(this.venta.renta_retenida));
+    this.venta.total = (Math.round(totalNum * 100) / 100).toFixed(2);
 
 
     // Asignar tipoOperacion según los detalles
@@ -806,8 +837,32 @@ export class FacturacionV2Component implements OnInit {
                 this.venta.id_vendedor = cliente.id_vendedor;
             }
             
+            // Si el cliente tiene crédito habilitado, aplicar venta al crédito automáticamente
+            if (cliente.habilita_credito && cliente.dias_credito) {
+                this.venta.credito = true;
+                this.venta.estado = 'Pendiente';
+                this.venta.condicion = 'Crédito';
+                const fechaVenta = this.venta.fecha || this.apiService.date();
+                this.venta.fecha_pago = moment(fechaVenta).add(cliente.dias_credito, 'days').format('YYYY-MM-DD');
+            }
+
+            // Obtener saldo pendiente si el cliente tiene límite de crédito
+            if (cliente.limite_credito) {
+                this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 };
+                this.apiService.getAll('cliente/' + cliente.id + '/saldo-pendiente').subscribe(
+                    (res: any) => {
+                        this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: res.saldo_pendiente ?? 0 };
+                    },
+                    () => { this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 }; }
+                );
+            } else {
+                this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
+            }
+            
             // Limpiar mensaje de validación al cambiar cliente
             this.mensajeValidacionFecha = '';
+        } else {
+            this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
         }
         console.log(cliente);
     }
@@ -827,7 +882,6 @@ export class FacturacionV2Component implements OnInit {
             this.alertService.error('Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.');
             return;
         }
-
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
             this.venta.condicion = 'Crédito';
@@ -999,6 +1053,13 @@ export class FacturacionV2Component implements OnInit {
                 }
             );
         }
+        if (this.venta.nombre_documento == 'Factura comercial') {
+            this.venta.cobrar_impuestos = false;
+            this.sumTotal();
+        }else{
+            this.venta.cobrar_impuestos = true;
+            this.sumTotal();
+        }
     }
 
     setIncoterm() {
@@ -1064,6 +1125,12 @@ export class FacturacionV2Component implements OnInit {
         ? this.venta.efectivo
         : this.venta.total;
       this.venta.cambio = 0;
+    }
+
+    // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
+    if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
+      this.venta.credito = false;
+      this.venta.consigna = false;
     }
 
     this.apiService.store('facturacion', this.venta).subscribe(
@@ -1265,11 +1332,16 @@ export class FacturacionV2Component implements OnInit {
   }
 
 
-  /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura minúsculas para que el select coincida. */
+  /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura gravada/exenta/no_sujeta para que el IVA cuadre. */
   private normalizarDetallesTipoGravado(venta: any) {
     if (!venta?.detalles?.length) return;
     const tiposValidos = ['gravada', 'exenta', 'no_sujeta'];
     venta.detalles.forEach((d: any) => {
+      if (d.sub_total == null || d.sub_total === undefined) {
+        const precio = parseFloat(d.precio) || 0;
+        d.sub_total = Number((parseFloat(d.cantidad) * precio).toFixed(4));
+      }
+      const totalLinea = parseFloat(d.total) ?? (parseFloat(d.sub_total) - parseFloat(d.descuento || 0));
       if (!d.tipo_gravado) {
         const ex = parseFloat(d.exenta) || 0;
         const no = parseFloat(d.no_sujeta) || 0;
@@ -1277,10 +1349,9 @@ export class FacturacionV2Component implements OnInit {
       }
       const tipo = String(d.tipo_gravado).toLowerCase();
       d.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
-      if (d.sub_total == null || d.sub_total === undefined) {
-        const precio = parseFloat(d.precio) || 0;
-        d.sub_total = Number((parseFloat(d.cantidad) * precio).toFixed(4));
-      }
+      d.gravada = (d.tipo_gravado === 'gravada') ? totalLinea : 0;
+      d.exenta = (d.tipo_gravado === 'exenta') ? totalLinea : 0;
+      d.no_sujeta = (d.tipo_gravado === 'no_sujeta') ? totalLinea : 0;
     });
   }
 

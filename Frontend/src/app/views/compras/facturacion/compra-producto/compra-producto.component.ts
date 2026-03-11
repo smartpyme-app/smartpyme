@@ -32,6 +32,10 @@ export class CompraProductoComponent implements OnInit {
     public tieneShopify: boolean = false;
     public descripcionesExpandidas: { [key: number]: boolean } = {};
 
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
+    }
+
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe,
@@ -154,6 +158,7 @@ export class CompraProductoComponent implements OnInit {
         producto.descuento      = 0;
         producto.inventario_por_lotes = producto.inventario_por_lotes || false;
         producto.lote_id = null;
+        producto.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
         
         console.log('Producto creado:', producto);
         
@@ -175,6 +180,7 @@ export class CompraProductoComponent implements OnInit {
         this.detalle.descuento      = 0;
         this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
         this.detalle.lote_id = null;
+        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
         this.onSubmit();
     }
 

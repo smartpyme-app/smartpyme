@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use League\CommonMark\Block\Element\Document;
+use App\Services\FidelizacionCliente\ConsumoPuntosService;
 
 class WooCommerceController extends Controller
 {
@@ -62,35 +62,77 @@ class WooCommerceController extends Controller
             //Buscar Ticket
             $documento = Documento::where('id_sucursal', $usuario->id_sucursal)->where('nombre', 'Ticket')->where('activo', true)->first();
         }
+
+        $wooOrderId = $request->input('id');
+        $referenciaWooCommerce = $wooOrderId ? 'WOOC-' . $wooOrderId : null;
+
+        if ($referenciaWooCommerce) {
+            $ventaExistente = Venta::withoutGlobalScope('empresa')
+                ->where('referencia_woocommerce', $referenciaWooCommerce)
+                ->where('id_empresa', $empresa->id)
+                ->first();
+
+            if ($ventaExistente) {
+                Log::info('Venta duplicada WooCommerce - orden ya procesada', [
+                    'woo_order_id' => $wooOrderId,
+                    'venta_id_existente' => $ventaExistente->id,
+                ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Orden ya procesada previamente',
+                    'venta_id' => $ventaExistente->id,
+                    'duplicado' => true
+                ], 200);
+            }
+        }
+
         try {
             DB::beginTransaction();
 
             $request->merge(['id_empresa' => $usuario->id_empresa, 'id_usuario' => $usuario->id, 'id_bodega' => $usuario->id_bodega, 'id_sucursal' => $usuario->id_sucursal, 'id_documento' => $documento->id, 'id_canal' => $empresa->woocommerce_canal_id]);
 
-            $clienteData = $this->transformer->transformarCliente($request->all());
+            $wooData = $request->all();
+            if (!isset($wooData['billing']) && !isset($wooData['billing_address'])) {
+                Log::warning('Webhook WooCommerce: payload sin billing ni billing_address', [
+                    'claves' => array_keys($wooData),
+                    'order_id' => $wooData['id'] ?? null
+                ]);
+            }
+
+            $clienteData = $this->transformer->transformarCliente($wooData);
             $cliente = Cliente::updateOrCreate(
                 ['correo' => $clienteData['correo'], 'id_empresa' => $usuario->id_empresa],
                 $clienteData
             );
 
-            // 2. Crear Venta
-            $ventaData = $this->transformer->transformarVenta($request->all(), $cliente->id, $documento->id,$documento->correlativo);
+            $ventaData = $this->transformer->transformarVenta($wooData, $cliente->id, $documento->id, $documento->correlativo);
+            $ventaData['referencia_woocommerce'] = $referenciaWooCommerce;
+
             $venta = Venta::create($ventaData);
 
-            foreach ($request->line_items as $item) {
+            $lineItems = $request->line_items ?? $request->input('line_items', []);
+            if (empty($lineItems)) {
+                throw new \Exception('El pedido no contiene productos (line_items vacío)');
+            }
+            foreach ($lineItems as $item) {
                 //$producto = Producto::where('codigo', $item['sku'])->where('id_empresa', $usuario->id_empresa)->first();
                 //primero buscar por woocommerce_id si no por sku
 
-                $producto = Producto::where('woocommerce_id', $item['id'])->where('id_empresa', $usuario->id_empresa)->first();
+                // variation_id cuando es variación, sino product_id (item['id'] puede ser el order_item_id)
+                $wooProductId = $item['variation_id'] ?? $item['product_id'] ?? $item['id'] ?? null;
+                $producto = $wooProductId
+                    ? Producto::where('woocommerce_id', $wooProductId)->where('id_empresa', $usuario->id_empresa)->first()
+                    : null;
 
                 if (!$producto) {
-                    $producto = Producto::where('codigo', $item['sku'])->where('id_empresa', $usuario->id_empresa)->first();
+                    $producto = Producto::where('codigo', $item['sku'] ?? '')->where('id_empresa', $usuario->id_empresa)->first();
                 }
 
                 if (!$producto) {
                     return response()->json([
                         'status' => 'error',
-                        'mensaje' => 'Producto no encontrado: ' . $item['sku']
+                        'mensaje' => 'Producto no encontrado: ' . ($item['sku'] ?? $item['name'] ?? 'SKU desconocido')
                     ], 500);
                     // throw new \Exception("Producto no encontrado: {$item['sku']}");
                     //crear el producto
@@ -128,6 +170,20 @@ class WooCommerceController extends Controller
 
             $documento = Documento::findOrfail($venta->id_documento);
             $documento->increment('correlativo');
+
+            // Procesar puntos de fidelización si la venta está pagada
+            if ($venta->estado == 'Pagada' && $venta->id_cliente) {
+                try {
+                    $consumoPuntosService = app(ConsumoPuntosService::class);
+                    $consumoPuntosService->procesarAcumulacionPuntos($venta);
+                } catch (\Exception $e) {
+                    Log::error('Error al procesar puntos de fidelización en WooCommerce', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // No se interrumpe la transacción por errores en puntos
+                }
+            }
 
             DB::commit();
 

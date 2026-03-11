@@ -14,22 +14,29 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Kardex;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
+use App\Exports\CuentasPagarExport;
 use App\Exports\RentabilidadSucursalExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use Barryvdh\DomPDF\Facade as PDF;
 use Auth;
+use App\Services\ShopifyStockService;
+use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class ComprasController extends Controller
 {
     
 
     public function index(Request $request) {
-       
-        $compras = Compra::when($request->inicio, function($query) use ($request){
+        $excludeFromList = ['dte_invalidacion'];
+        $columns = array_diff(Schema::getColumnListing('compras'), $excludeFromList);
+
+        $compras = Compra::select($columns)
+            ->when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                         })
                         ->when($request->recurrente !== null, function($q) use ($request){
@@ -80,6 +87,7 @@ class ComprasController extends Controller
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
+                        ->with(['proveedor', 'usuario', 'sucursal', 'proyecto', 'empresa'])
                         ->withSum(['abonos' => function ($query) {
                             $query->where('estado', 'Confirmado');
                         }], 'total')
@@ -90,20 +98,27 @@ class ComprasController extends Controller
                         ->orderBy('id', 'desc')
                         ->paginate($request->paginate);
 
-        foreach ($compras as $compra) {
-            $compra->saldo = $compra->saldo;
-        }
-
         return Response()->json($compras, 200);
            
     }
 
     public function read($id) {
+        $compra = Compra::where('id', $id)
+            ->with('detalles', 'proveedor', 'abonos', 'devoluciones')
+            ->withSum(['abonos' => function ($query) {
+                $query->where('estado', 'Confirmado');
+            }], 'total')
+            ->withSum(['devoluciones' => function ($query) {
+                $query->where('enable', 1);
+            }], 'total')
+            ->first();
 
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'abonos', 'devoluciones')->first();
-        $compra->saldo = $compra->saldo;
+        if (!$compra) {
+            return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
+        }
+
+        $compra->saldo = round($compra->total - ($compra->abonos_sum_total ?? 0) - ($compra->devoluciones_sum_total ?? 0), 2);
         return Response()->json($compra, 200);
- 
     }
 
     public function search($txt) {
@@ -332,33 +347,29 @@ class ComprasController extends Controller
                         $lote->stock += $det['cantidad'];
                         $lote->save();
                         
-                        // También actualizar el inventario tradicional para mantener consistencia
-                        $inventario = Inventario::where('id_producto', $det['id_producto'])
-                            ->where('id_bodega', $compra->id_bodega)
-                            ->lockForUpdate()
-                            ->first();
-
-                        if ($inventario) {
-                            $inventario->stock += $det['cantidad'];
-                            $inventario->save();
-                            $inventario->kardex($compra, $det['cantidad']);
-                        }
+                        // Crear inventario si no existe; actualizar el tradicional para mantener consistencia
+                        $inventario = Inventario::firstOrCreate(
+                            [
+                                'id_producto' => $det['id_producto'],
+                                'id_bodega' => $compra->id_bodega,
+                            ],
+                            ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                        );
+                        $inventario->stock += $det['cantidad'];
+                        $inventario->save();
+                        $inventario->kardex($compra, $det['cantidad']);
                     } else {
-                        // Actualizar inventario tradicional (sin lotes)
-                        $inventario = Inventario::where('id_producto', $det['id_producto'])
-                            ->where('id_bodega', $compra->id_bodega)
-                            ->lockForUpdate() // Bloquear fila para evitar condiciones de carrera
-                            ->first();
-
-                        if ($inventario) {
-                            // Actualizar stock de forma atómica
-                            $inventario->stock += $det['cantidad'];
-                            $inventario->save();
-                            
-                            // Registrar kardex
-                            // Si falla el kardex, la transacción hará rollback automáticamente
-                            $inventario->kardex($compra, $det['cantidad']);
-                        }
+                        // Crear inventario si no existe; actualizar inventario tradicional (sin lotes)
+                        $inventario = Inventario::firstOrCreate(
+                            [
+                                'id_producto' => $det['id_producto'],
+                                'id_bodega' => $compra->id_bodega,
+                            ],
+                            ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                        );
+                        $inventario->stock += $det['cantidad'];
+                        $inventario->save();
+                        $inventario->kardex($compra, $det['cantidad']);
                     }
 
                 }
@@ -381,6 +392,13 @@ class ComprasController extends Controller
         }
 
         DB::commit();
+
+        // Sincronizar stock a Shopify solo cuando se registra una compra (no cotización).
+        // No depende de shopify_sync_bidirectional: las compras siempre suben stock en Shopify si está conectado.
+        if ($request->cotizacion == 0) {
+            $this->sincronizarStockCompraConShopify($compra);
+        }
+
         return Response()->json($compra, 200);
 
         } catch (\Exception $e) {
@@ -391,6 +409,50 @@ class ComprasController extends Controller
             return Response()->json(['error' => $e->getMessage()], 400);
         }
 
+    }
+
+    /**
+     * Envía el aumento de stock a Shopify para los productos de la compra.
+     * Solo cuando se realiza una compra; no depende de shopify_sync_bidirectional.
+     * Requiere: empresa con Shopify conectado y usuario con misma bodega.
+     */
+    private function sincronizarStockCompraConShopify(Compra $compra)
+    {
+        try {
+            $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
+            if (!$empresa || $empresa->shopify_status !== 'connected' || empty($empresa->shopify_store_url) || empty($empresa->shopify_consumer_secret)) {
+                return;
+            }
+
+            $usuario = User::where('id_empresa', $compra->id_empresa)
+                ->where('id_bodega', $compra->id_bodega)
+                ->where('shopify_status', 'connected')
+                ->first();
+
+            if (!$usuario) {
+                return;
+            }
+
+            $productoIds = $compra->detalles()->pluck('id_producto')->unique()->values()->all();
+            $shopifyStock = app(ShopifyStockService::class);
+
+            foreach ($productoIds as $idProducto) {
+                try {
+                    $shopifyStock->actualizarSoloStockEnShopify($idProducto, $usuario->id);
+                } catch (\Exception $e) {
+                    Log::warning('Error sincronizando stock de compra con Shopify', [
+                        'compra_id' => $compra->id,
+                        'producto_id' => $idProducto,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Error en sincronización de compra con Shopify', [
+                'compra_id' => $compra->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function facturacionConsigna(Request $request){
@@ -551,12 +613,65 @@ class ComprasController extends Controller
 
     }
 
-    public function cxp() {
-       
-        $pagos = Compra::where('estado', 'Pendiente')->orderBy('fecha','desc')->paginate(10);
+    public function cxp(Request $request)
+    {
+        $paginate = $request->paginate ?? 10;
+        $orden = $request->orden ?? 'fecha';
+        $direccion = $request->direccion ?? 'desc';
+
+        $pagos = Compra::where('estado', 'Pendiente')
+            ->when($request->inicio, function ($query) use ($request) {
+                return $query->where('fecha', '>=', $request->inicio);
+            })
+            ->when($request->fin, function ($query) use ($request) {
+                return $query->where('fecha', '<=', $request->fin);
+            })
+            ->when($request->id_proveedor, function ($query) use ($request) {
+                return $query->where('id_proveedor', $request->id_proveedor);
+            })
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                $buscador = '%' . $request->buscador . '%';
+                return $query->where(function ($q) use ($buscador) {
+                    $q->whereHas('proveedor', function ($qProveedor) use ($buscador) {
+                        $qProveedor->where('nombre', 'like', $buscador)
+                            ->orWhere('nombre_empresa', 'like', $buscador)
+                            ->orWhere('ncr', 'like', $buscador)
+                            ->orWhere('nit', 'like', $buscador);
+                    })
+                        ->orWhere('referencia', 'like', $buscador)
+                        ->orWhere('estado', 'like', $buscador)
+                        ->orWhere('observaciones', 'like', $buscador);
+                });
+            })
+            ->where('cotizacion', 0)
+            ->withSum(['abonos' => function ($query) {
+                $query->where('estado', 'Confirmado');
+            }], 'total')
+            ->withSum(['devoluciones' => function ($query) {
+                $query->where('enable', 1);
+            }], 'total')
+            ->orderBy($orden, $direccion)
+            ->orderBy('id', 'desc')
+            ->paginate($paginate);
 
         return Response()->json($pagos, 200);
+    }
 
+    public function cxpExport(Request $request)
+    {
+        try {
+            ini_set('memory_limit', '256M');
+            set_time_limit(120);
+            $export = new CuentasPagarExport();
+            $export->filter($request);
+            return Excel::download($export, 'cuentas-por-pagar.xlsx');
+        } catch (\Throwable $e) {
+            Log::error('CXP Export error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Error al generar el reporte: ' . $e->getMessage()], 500);
+        }
     }
 
     public function cxpBuscar($txt) {
@@ -763,7 +878,7 @@ class ComprasController extends Controller
     public function generarDoc($id){
         $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
 
-        $pdf = PDF::loadView('reportes.facturacion.compra', compact('compra'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.compra', compact('compra'));
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('compra-' . $compra->id . '.pdf');
 

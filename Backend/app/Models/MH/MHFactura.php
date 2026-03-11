@@ -332,24 +332,28 @@ class MHFactura extends Model
 
             if ($detalle->cuenta_a_terceros > 0) {
 
+                $precioUni = round(floatval($detalle->precio), 4);
+                $cantidad = round(floatval($detalle->cantidad), 2);
+                $montoDescu = round(floatval($detalle->descuento), 2);
+                $ventaItem = round($precioUni * $cantidad - $montoDescu, 2);
                 $detalles->push([
                     "numItem" => count($detalles) + 1,
                     "tipoItem" => $detalle->tipo_item,
                     "numeroDocumento" => NULL,
-                    "cantidad" => floatval(number_format($detalle->cantidad,2, '.', '')),
+                    "cantidad" => floatval(number_format($cantidad, 2, '.', '')),
                     "codigo" => $detalle->codigo,
                     "codTributo" => $detalle->codTributo,
                     "uniMedida" => $detalle->cod_medida,
                     "descripcion" => $detalle->nombre_producto,
-                    "precioUni" => floatval(number_format($detalle->precio,4, '.', '')),
-                    "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
-                    "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
-                    "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
-                    "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
+                    "precioUni" => floatval(number_format($precioUni, 4, '.', '')),
+                    "montoDescu" => floatval(number_format($montoDescu, 2, '.', '')),
+                    "ventaNoSuj" => floatval(number_format($detalle->no_sujeta > 0 ? $ventaItem : 0, 2, '.', '')),
+                    "ventaExenta" => floatval(number_format($detalle->exenta > 0 ? $ventaItem : 0, 2, '.', '')),
+                    "ventaGravada" => floatval(number_format($detalle->gravada > 0 ? $ventaItem : 0, 2, '.', '')),
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format($detalle->iva, 2, '.', ''))
+                    "ivaItem" => floatval(number_format(round($ventaItem * 0.13 / 1.13, 2), 2, '.', ''))
                   ]);
 
                 $detalles->push([
@@ -372,24 +376,28 @@ class MHFactura extends Model
                     "ivaItem" => 0
                   ]);
             }else{
+                $precioUni = round(floatval($detalle->precio), 4);
+                $cantidad = round(floatval($detalle->cantidad), 2);
+                $montoDescu = round(floatval($detalle->descuento), 2);
+                $ventaItem = round($precioUni * $cantidad - $montoDescu, 2);
                 $detalles->push([
                     "numItem" => count($detalles) + 1,
                     "tipoItem" => $detalle->tipo_item,
                     "numeroDocumento" => NULL,
-                    "cantidad" => floatval(number_format($detalle->cantidad,2, '.', '')),
+                    "cantidad" => floatval(number_format($cantidad, 2, '.', '')),
                     "codigo" => $detalle->codigo,
                     "codTributo" => $detalle->codTributo,
                     "uniMedida" => $detalle->cod_medida,
                     "descripcion" => $detalle->nombre_producto,
-                    "precioUni" => floatval(number_format($detalle->precio,4, '.', '')),
-                    "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
-                    "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
-                    "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
-                    "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
+                    "precioUni" => floatval(number_format($precioUni, 4, '.', '')),
+                    "montoDescu" => floatval(number_format($montoDescu, 2, '.', '')),
+                    "ventaNoSuj" => floatval(number_format($detalle->no_sujeta > 0 ? $ventaItem : 0, 2, '.', '')),
+                    "ventaExenta" => floatval(number_format($detalle->exenta > 0 ? $ventaItem : 0, 2, '.', '')),
+                    "ventaGravada" => floatval(number_format($detalle->gravada > 0 ? $ventaItem : 0, 2, '.', '')),
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format($detalle->iva, 2, '.', ''))
+                    "ivaItem" => floatval(number_format($detalle->gravada > 0 ? round($ventaItem * 0.13 / 1.13, 2) : 0, 2, '.', ''))
                   ]);
             }
         }

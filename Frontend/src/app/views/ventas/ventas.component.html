@@ -27,7 +27,7 @@
                     class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarVentas()" autocomplete="off">
                     <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar"
-                        [(ngModel)]="filtros.buscador">
+                        [(ngModel)]="filtros.buscador" (input)="onBuscadorInput()">
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img
                         src="/assets/icons/filter.png" class="icon"> </button>
@@ -183,7 +183,7 @@
                                         </tr>
                                         <tr>
                                             <td>Saldo</td>
-                                            <td class="text-end">{{ venta.saldo | currency}}
+                                            <td class="text-end">{{ getSaldo(venta) | currency}}
                                             </td>
                                         </tr>
                                     </tbody>
@@ -381,28 +381,28 @@
         <app-notificaciones-container></app-notificaciones-container>
         <form name="form" (ngSubmit)="onSubmit()">
             <div class="row">
-                <div class="form-group col-md-6">
+                <div class="form-group col-md-4">
                     <label for="fecha">Fecha:</label>
                     <input type="date" [(ngModel)]="venta.fecha" name="fecha" class="form-control">
                 </div>
-                <div class="form-group col-md-6">
+                <div class="form-group col-md-4">
                     <label for="forma_pago">Método de pago:</label>
                     <select name="forma_pago" [(ngModel)]="venta.forma_pago" class="form-select">
                         <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
                     </select>
                 </div>
-                <div class="form-group col-md-6">
+                <div class="form-group col-md-4">
                     <label for="id_documento">Documento:</label>
                     <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
                         <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}
                         </option>
                     </select>
                 </div>
-                <div class="form-group col-md-6">
+                <div class="form-group col-md-4">
                     <label for="correlativo">Correlativo:</label>
                     <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo">
                 </div>
-                <div class="form-group col-md-6">
+                <div class="form-group col-md-4">
                     <label for="estado">Estado:</label>
                     <select name="estado" [(ngModel)]="venta.estado" class="form-select">
                         <option value="">Estado</option>
@@ -412,18 +412,18 @@
                         <option value="Pagada">Pagada</option>
                     </select>
                 </div>
-                <div class="form-group col-md-6" *ngIf="apiService.isAdmin()">
+                <div class="form-group col-md-4" *ngIf="apiService.isAdmin()">
                     <label for="condicion">Condición de pago:</label>
                     <select name="condicion" [(ngModel)]="venta.condicion" (change)="onCondicionChange()" class="form-select">
                         <option value="Contado">Contado</option>
                         <option value="Crédito">Crédito</option>
                     </select>
                 </div>
-                <div class="form-group col-md-6" *ngIf="apiService.isAdmin() && venta.condicion == 'Crédito'">
+                <div class="form-group col-md-4" *ngIf="apiService.isAdmin() && venta.condicion == 'Crédito'">
                     <label for="fecha_pago">Fecha de pago:</label>
                     <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
                 </div>
-                <div class="form-group col-sm-6">
+                <div class="form-group col-md-4">
                     <label for="venta.id_canal">Canal:</label>
                     <select [(ngModel)]="venta.id_canal" class="form-control form-select" name="venta.id_canal">
                         <option value="">Todos</option>
@@ -432,7 +432,7 @@
                         </option>
                     </select>
                 </div>
-                <div class="form-group col-md-6">
+                <div class="form-group col-md-4">
                     <label for="id_usuario">Usuario:</label>
                     <ng-select [(ngModel)]="venta.id_usuario" class="form-select p-0" name="id_usuario">
                         <ng-option value="">Todos</ng-option>
@@ -441,7 +441,7 @@
                         </ng-option>
                     </ng-select>
                 </div>
-                <div class="form-group col-md-6">
+                <div class="form-group col-md-4">
                     <label for="id_vendedor">Vendedor:</label>
                     <ng-select [(ngModel)]="venta.id_vendedor" class="form-select p-0" name="id_vendedor" [clearable]="true">
                         <ng-option [value]="null">Todos</ng-option>
@@ -450,25 +450,25 @@
                         </ng-option>
                     </ng-select>
                 </div>
-                <!-- <div class="form-group col-md-6" *ngIf="venta.estado == 'Pendiente'">
+                <!-- <div class="form-group col-md-4" *ngIf="venta.estado == 'Pendiente'">
                 <label for="fecha_pago">Fecha de pago:</label>
                 <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
             </div> -->
-                <div class="form-group col-md-6">
+                <div class="form-group col-md-4">
                     <label for="num_cotizacion">Núm Cotización:</label>
                     <input type="number" class="form-control" [(ngModel)]="venta.num_cotizacion" name="num_cotizacion">
                 </div>
-                <div class="form-group col-md-6" *ngIf="apiService.auth_user().empresa.pais == 'Honduras'">
+                <div class="form-group col-md-4" *ngIf="apiService.auth_user().empresa.pais == 'Honduras'">
                     <label for="num_orden">Número de orden:</label><br>
                     <input type="text" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden"
                         id="num_orden">
                 </div>
-                <div class="form-group col-md-6" *ngIf="apiService.auth_user().empresa.pais == 'Honduras'">
+                <div class="form-group col-md-4" *ngIf="apiService.auth_user().empresa.pais == 'Honduras'">
                     <label for="num_orden_exento">Número de orden exento:</label><br>
                     <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento"
                         id="num_orden_exento">
                 </div>
-                <div class="form-group col-sm-6">
+                <div class="form-group col-md-4">
                     <label for="tipo_operacion">Tipo de operación:</label>
                     <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">
                         <option [ngValue]="null">Seleccione aquí</option>
@@ -478,7 +478,7 @@
                         <option value="Mixta">Mixta</option>
                     </select>
                 </div>
-                <div class="form-group col-sm-6">
+                <div class="form-group col-md-4">
                     <label for="filtro.tipo_renta">Tipo de ingreso:</label>
                     <select name="tipo_renta" class="form-select" [(ngModel)]="venta.tipo_renta">
                         <option [ngValue]="null">Seleccione aquí</option>
@@ -500,7 +500,7 @@
                         <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
                     </select>
                 </div>
-                <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
+                <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-4">
                     <label for="id_proyecto">Proyecto:</label>
                     <ng-select [(ngModel)]="venta.id_proyecto" class="form-select p-0" name="id_proyecto">
                         <ng-option value="">Todos</ng-option>
@@ -509,7 +509,7 @@
                         </ng-option>
                     </ng-select>
                 </div>
-                <div class="form-group col-md-6 col-lg-6" *ngIf="isColumnEnabled('columna_proyecto')">
+                <div class="form-group col-md-4" *ngIf="isColumnEnabled('columna_proyecto')">
                     <label for="num_identificacion">Número identificación:</label>
                     <input type="text" [(ngModel)]="venta.num_identificacion" name="num_identificacion"
                         class="form-control" id="num_identificacion" placeholder="Número de identificación">

@@ -198,7 +198,22 @@ class WooCommerceStockService
     private function actualizarProductoExistente($client, $producto, $productData)
     {
         try {
-            $client->put("products/{$producto->woocommerce_id}", $productData);
+            if (!empty($producto->woocommerce_parent_id)) {
+                $endpoint = "products/{$producto->woocommerce_parent_id}/variations/{$producto->woocommerce_id}";
+                $variationData = array_filter([
+                    'sku' => $productData['sku'] ?? null,
+                    'regular_price' => $productData['regular_price'] ?? null,
+                    'price' => $productData['price'] ?? null,
+                    'manage_stock' => $productData['manage_stock'] ?? true,
+                    'stock_quantity' => $productData['stock_quantity'] ?? 0,
+                    'stock_status' => $productData['stock_status'] ?? 'outofstock',
+                ], fn($v) => $v !== null);
+                $client->put($endpoint, $variationData);
+            } else {
+                $client->put("products/{$producto->woocommerce_id}", $productData);
+            }
+            $producto->last_woocommerce_sync = now();
+            $producto->saveQuietly();
             return true;
         } catch (\Exception $e) {
             Log::warning("Error actualizando producto por ID en WooCommerce: " . $e->getMessage());

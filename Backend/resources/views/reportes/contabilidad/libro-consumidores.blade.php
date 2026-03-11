@@ -42,6 +42,7 @@
     </style>
 </head>
 <body>
+    @php $empresa = Auth::user()->empresa()->with('currency')->first(); $simbolo_moneda = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : '$'; @endphp
 
     <h1 class="text-center">LIBRO DE VENTAS A CONSUMIDORES</h1>
     <h2 class="text-center">{{ Auth::user()->empresa()->pluck('nombre')->first() }}</h2>
@@ -77,21 +78,21 @@
                     <td>{{ Carbon\Carbon::parse($venta['fecha'])->format('d/m/Y') }}</td>
                     <td>{{ $venta['correlativo_inicial'] }}</td>
                     <td>{{ $venta['correlativo_final'] }}</td>
-                    <td class="text-right">${{ number_format($venta['ventas_exentas'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['ventas_internas_gravadas'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['exportaciones'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['total_ventas_diarias_propias'], 2) }}</td>
-                    <td class="text-right">${{ number_format($venta['ventas_a_cuenta_de_terceros'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['ventas_exentas'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['ventas_internas_gravadas'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['exportaciones'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['total_ventas_diarias_propias'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta['ventas_a_cuenta_de_terceros'], 2) }}</td>
                 </tr>
             @endforeach
             @if(isset($totalesConsumidores))
                 <tr>
                     <td colspan="4" class="text-center"><b>Totales</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesConsumidores['ventas_exentas'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesConsumidores['ventas_internas_gravadas'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesConsumidores['exportaciones'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesConsumidores['total_ventas_diarias_propias'], 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($totalesConsumidores['ventas_a_cuenta_de_terceros'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesConsumidores['ventas_exentas'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesConsumidores['ventas_internas_gravadas'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesConsumidores['exportaciones'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesConsumidores['total_ventas_diarias_propias'], 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo_moneda }}{{ number_format($totalesConsumidores['ventas_a_cuenta_de_terceros'], 2) }}</b></td>
                 </tr>
             @endif
         </tbody>  

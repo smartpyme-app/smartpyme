@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PipesModule } from '@pipes/pipes.module';
 import { ModalModule } from 'ngx-bootstrap/modal';
+import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { FocusModule } from 'angular2-focus';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -22,6 +23,7 @@ import { VerBoletasComponent } from './planillas/ver-boletas.component';
 import { ConfiguracionPlanillaComponent } from '@views/planillas/configuracion-planilla/configuracion-planilla.component';
 import { AguinaldosComponent } from './aguinaldos/aguinaldos.component';
 import { AguinaldoDetalleComponent } from './aguinaldos/aguinaldo-detalle.component';
+import { PrestamosComponent } from './prestamos/prestamos.component';
 import { ReactiveFormsModule } from '@angular/forms';
 
 
@@ -41,6 +43,7 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     PopoverModule.forRoot(),
     FocusModule.forRoot(),
     ModalModule.forRoot(),
+    CollapseModule.forRoot(),
     TooltipModule.forRoot(),
     ProgressbarModule.forRoot(),
     PdfViewerModule,
@@ -55,7 +58,8 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     VerBoletasComponent,
     ConfiguracionPlanillaComponent,
     AguinaldosComponent,
-    AguinaldoDetalleComponent
+    AguinaldoDetalleComponent,
+    PrestamosComponent
   ],
   exports: [
     PlanillasComponent,
@@ -66,7 +70,8 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     VerBoletasComponent,
     ConfiguracionPlanillaComponent,
     AguinaldosComponent,
-    AguinaldoDetalleComponent
+    AguinaldoDetalleComponent,
+    PrestamosComponent
   ]
 })
 export class PlanillasModule { }

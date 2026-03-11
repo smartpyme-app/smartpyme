@@ -75,6 +75,13 @@ class AuthJWTController extends Controller
         $acceso->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
+        
+        // Agregar información sobre el tipo de empresa (padre/hija)
+        if ($user->empresa) {
+            $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
+            $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+        }
+        
         $suscripcion = $user->empresa->suscripcion()
             //Esto nos rompio las pelotas >:(
             // ->whereNotIn('estado', [
@@ -467,7 +474,7 @@ class AuthJWTController extends Controller
 
         $transaccion = Empresa::findOrfail(Crypt::decrypt($transaccion));
 
-        $pdf = PDF::loadView('documentos.ticket-suscription', compact('transaccion'));
+        $pdf = app('dompdf.wrapper')->loadView('documentos.ticket-suscription', compact('transaccion'));
         $pdf->setPaper([0, 0, 365.669, 566.929133858]);
 
         return $pdf->download($transaccion->descripcion . '-' . $transaccion->id . '.pdf');
@@ -959,6 +966,13 @@ class AuthJWTController extends Controller
         $user->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
+        
+        // Agregar información sobre el tipo de empresa (padre/hija)
+        if ($user->empresa) {
+            $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
+            $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+        }
+        
         $suscripcion = $user->empresa->suscripcion()
             ->whereNotIn('estado', [
                 config('constants.ESTADO_SUSCRIPCION_INACTIVO'),

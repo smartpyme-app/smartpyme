@@ -35,7 +35,7 @@
                             <i class="fa fa-search text-muted"></i>
                         </div>
                         <input type="search" name="buscador" class="form-control pull-right border-start-0"
-                            placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                            [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar'" [(ngModel)]="filtros.buscador">
                     </div>
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"><img
@@ -94,10 +94,11 @@
                         <th (click)="setOrden('codigo')"
                             [ngClass]="{'sorted-asc': filtros.orden == 'codigo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'codigo' && filtros.direccion == 'desc'}"
                             class="click d-none d-md-table-cell">Código</th>
+                        <th class="d-none d-md-table-cell" *ngIf="isComponenteQuimicoHabilitado()">Componente químico</th>
                         <th (click)="setOrden('precio')"
                             [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}"
-                            class="click text-right">Precio sin IVA</th>
-                        <th class="text-right">Precio con IVA</th>
+                            class="click text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</th>
+                        <th class="text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA' : 'Precio con Impuesto' }}</th>
                         <th (click)="setOrden('stock')"
                             [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}"
                             class="click text-center">Stock</th>
@@ -106,10 +107,10 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="productos?.total < 1 && !loading">
+                        <td [attr.colspan]="isComponenteQuimicoHabilitado() ? 9 : 8" class="text-center" *ngIf="productos?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene productos registrados</span>
                         </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
+                        <td [attr.colspan]="isComponenteQuimicoHabilitado() ? 9 : 8" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -137,9 +138,10 @@
                         </td>
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
+                        <td class="d-none d-md-table-cell" *ngIf="isComponenteQuimicoHabilitado()">{{ producto.componente_quimico || '-' }}</td>
                         <td class="text-right">{{ producto.precio | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-right">{{ (producto.precio * 1) + (producto.precio *
-                            (apiService.auth_user().empresa.iva / 100) ) | currency:'USD':'symbol':'1.2' }}</td>
+                            (getPorcentajeProducto(producto) / 100) ) | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
                             <!-- Si tiene lotes activados, mostrar stock de lotes -->
                             <div *ngIf="producto.inventario_por_lotes">
@@ -213,14 +215,16 @@
                                             <thead>
                                                 <tr>
                                                     <th>Bodega</th>
-                                                    <th>Sucursal</th>
                                                     <th class="text-right">Stock</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr *ngFor="let inventario of producto?.inventarios">
-                                                    <td class="text-nowrap">{{ inventario.nombre_bodega}}</td>
-                                                    <td class="text-nowrap">{{ inventario.nombre_sucursal}}</td>
+                                                    <td class="text-nowrap">
+                                                        {{ inventario.nombre_bodega}}
+                                                        <br>
+                                                        <small class="text-muted">{{ inventario.nombre_sucursal}}</small>
+                                                    </td>
                                                     <td class="text-right">{{ inventario.stock }}</td>
                                                 </tr>
                                             </tbody>
@@ -249,16 +253,10 @@
                                         class="btn text-start border-0">
                                         <img src="/assets/icons/file-text.png" class="icon me-2">Kardex
                                     </button>
-                                    <!-- <button type="button" class="btn text-start border-0">
-                                        <img  src="/assets/icons/tool.png" class="icon me-2">Ajustar
+                                    <button type="button" routerLink="/detalle-producto/{{producto.id}}"
+                                    class="btn text-start border-0 text-black">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalle
                                     </button>
-                                    <button type="button" class="btn text-start border-0">
-                                        <img  src="/assets/icons/corner-up-right.png" class="icon me-2">Trasladar
-                                    </button> -->
-
-                                    <!-- <button type="button" (click)="delete(producto.id)" class="btn text-start text-danger">
-                                        <img  src="/assets/icons/trash-2.png" class="icon me-2">Eliminar
-                                    </button> -->
                                 </div>
                             </ng-template>
                         </td>

@@ -21,13 +21,13 @@ use App\Exports\Contabilidad\AnexoSujetosExcluidosExport;
 use App\Exports\Contabilidad\LibroComprasExport;
 use App\Exports\Contabilidad\AnexoComprasExport;
 use App\Exports\Contabilidad\GlobalDttesExport;
+use App\Exports\Contabilidad\NotasCreditoDebitoExport;
 use App\Exports\Contabilidad\LibroRetencion1Export;
 use App\Exports\Contabilidad\AnexoRetencion1Export;
 use App\Exports\Contabilidad\LibroPercepcion1Export;
 use App\Exports\Contabilidad\AnexoPercepcion1Export;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
-use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -316,7 +316,7 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView(
+            $pdf = app('dompdf.wrapper')->loadView(
                 'reportes.contabilidad.libro-consumidores',
                 [
                     'libroconsumidores' => $libroconsumidores,
@@ -476,7 +476,7 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView(
+            $pdf = app('dompdf.wrapper')->loadView(
                 'reportes.contabilidad.libro-contribuyentes',
                 [
                     'librocontribuyentes' => $librocontribuyentes,
@@ -764,7 +764,7 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
             $pdf->setPaper('US Letter', 'landscape');
 
             return $pdf->stream('libro-compras.pdf');
@@ -966,7 +966,49 @@ class LibrosIVAController extends Controller
                 ->header('Content-Type', 'text/plain');
         }
     }
-    
+
+    // Descarga un ZIP con los JSON de notas de crédito y débito para declaración.
+    public function notasCreditoDebitoExport(Request $request)
+    {
+        try {
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            $export = new NotasCreditoDebitoExport();
+            $export->filter($request);
+            $result = $export->generateZip();
+
+            if (!$result['success']) {
+                Log::error('Error al generar ZIP notas: ' . $result['message']);
+                return response($result['message'], 400)
+                    ->header('Content-Type', 'text/plain');
+            }
+
+            $filePath = storage_path('app/' . $result['path']);
+            if (!file_exists($filePath)) {
+                Log::error('Archivo ZIP no encontrado: ' . $filePath);
+                return response('Archivo no encontrado', 404)
+                    ->header('Content-Type', 'text/plain');
+            }
+
+            $fileContent = file_get_contents($filePath);
+            @unlink($filePath);
+
+            return response($fileContent, 200)
+                ->header('Content-Type', 'application/zip')
+                ->header('Content-Disposition', 'attachment; filename="' . $result['filename'] . '"')
+                ->header('Content-Length', strlen($fileContent))
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
+        } catch (\Exception $e) {
+            Log::error('Excepción al exportar notas crédito/débito: ' . $e->getMessage());
+            return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
+                ->header('Content-Type', 'text/plain');
+        }
+    }
+
     public function libroRetencion1Export(Request $request)
     {
         if ($alerta = $this->validarVentasPendientes($request)) {

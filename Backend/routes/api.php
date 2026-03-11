@@ -26,6 +26,10 @@ Route::get('/prueba', function () {
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
+// Ventas perdidas (reporte comparación sp_nova vs vps)
+Route::get('ventas-perdidas', [App\Http\Controllers\VentasPerdidasController::class, 'index'])->name('ventas.perdidas');
+Route::get('ventas-perdidas/excel', [App\Http\Controllers\VentasPerdidasController::class, 'excel'])->name('ventas.perdidas.excel');
+
 
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
@@ -52,6 +56,13 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/ventas/cotizaciones.php');
 	require base_path('routes/modulos/ventas/abonos.php');
 	require base_path('routes/modulos/ventas/clientes.php');
+
+	// Lealtad
+	require base_path('routes/modulos/fidelizacion.php');
+
+	// Cliente 360
+	require base_path('routes/modulos/cliente-360/cliente-360.php');
+	require base_path('routes/modulos/cliente-360/cliente-notas.php');
 
 	// Compras
 	require base_path('routes/modulos/compras/compras.php');
@@ -129,6 +140,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	require base_path('routes/modulos/planilla/empleados.php');
 	require base_path('routes/modulos/planilla/planillas.php');
+	require base_path('routes/modulos/planilla/prestamos.php');
 	require base_path('routes/modulos/planilla/aguinaldos.php');
 	require base_path('routes/modulos/planilla/configuraciones.php');
 	require base_path('routes/modulos/planilla/cargos.php');

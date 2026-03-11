@@ -5,7 +5,6 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use PDF;
 
 class BoletaPagoMailable extends Mailable
 {
@@ -42,7 +41,7 @@ class BoletaPagoMailable extends Mailable
             $this->detalle->otros_descuentos;
 
         // Generar PDF
-        $pdf = PDF::loadView('pdf.boleta-individual', [
+        $pdf = app('dompdf.wrapper')->loadView('pdf.boleta-individual', [
             'detalle' => $this->detalle,
             'totalIngresos' => $totalIngresos,
             'totalDeducciones' => $totalDeducciones,

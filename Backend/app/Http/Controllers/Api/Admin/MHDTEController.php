@@ -27,7 +27,7 @@ use App\Models\Ventas\Venta;
 use App\Models\Compras\Compra;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Compras\Gastos\Gasto;
-use Barryvdh\DomPDF\Facade as PDF;
+// Usamos app('dompdf.wrapper') en lugar de Facade para evitar errores de clase no encontrada en producción
 
 class MHDTEController extends Controller
 {
@@ -340,41 +340,41 @@ class MHDTEController extends Controller
         // Si esta anulado
         if ($registro->dte_invalidacion) {
             $DTE = $registro->dte_invalidacion;
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             return $pdf->stream($DTE['identificacion']['codigoGeneracion'] . '.pdf');
         }
 
         if ($DTE['identificacion']['tipoDte'] == '01') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-Factura', compact('registro', 'DTE'));
         }
         if ($DTE['identificacion']['tipoDte'] == '14') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-Factura', compact('registro', 'DTE'));
         }
         if ($DTE['identificacion']['tipoDte'] == '03') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
 
         }
         if ($DTE['identificacion']['tipoDte'] == '11') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
 
         }
         if ($DTE['identificacion']['tipoDte'] == '05') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
 
         }
         if ($DTE['identificacion']['tipoDte'] == '06') {
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Nota-Debito', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Debito', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
 
@@ -459,7 +459,7 @@ class MHDTEController extends Controller
             $DTE = $registro->dte_invalidacion;
             $nombre = $DTE['documento']['nombre'];
 
-            $pdf = PDF::loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
             $pdfContent = $pdf->output();
 
             if ($correo) {
@@ -481,22 +481,22 @@ class MHDTEController extends Controller
         }
         
         if ($DTE['identificacion']['tipoDte'] == '01') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
+           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
         }
         elseif ($DTE['identificacion']['tipoDte'] == '11') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
+           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
 
         }
         elseif ($DTE['identificacion']['tipoDte'] == '05') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
+           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
 
         }
         elseif ($DTE['identificacion']['tipoDte'] == '14') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
+           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
 
         }
         elseif ($DTE['identificacion']['tipoDte'] == '03') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
+           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
 
         }
 

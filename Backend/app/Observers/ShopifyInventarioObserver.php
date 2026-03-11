@@ -22,41 +22,48 @@ class ShopifyInventarioObserver
     }
 
 
-    // SINCRONIZACIÓN INVERSA DESHABILITADA: Solo sincronización unidireccional (Shopify -> SmartPyme)
+    /**
+     * Cuando el inventario cambia en SmartPyme (ajuste, compra, etc.), envía el nuevo stock a Shopify
+     * si la empresa tiene Shopify conectado.
+     */
     public function updated(Inventario $inventario)
     {
+        $bodega = Bodega::find($inventario->id_bodega);
+        if (!$bodega) {
+            return;
+        }
 
-
-        $empresa = Empresa::where('id', $inventario->id_empresa)->first();
+        $empresa = Empresa::find($bodega->id_empresa);
         if (!$empresa) {
             return;
         }
 
-        // Si es bidireccional, sincroniza Shopify -> SmartPyme y SmartPyme -> Shopify
-        if ($empresa->shopify_sync_bidirectional) {
-            Log::info("Sincronización inversa habilitada para actualizaciones de inventario - SmartPyme -> Shopify ", [
-                'inventario_id' => $inventario->id,
-                'producto_id' => $inventario->id_producto,
-                'stock' => $inventario->stock,
-                'motivo' => 'Sincronización unidireccional configurada'
-            ]);
+        // Si la empresa tiene Shopify conectado, sincronizar SmartPyme -> Shopify (ajustes, compras, etc.)
+        if ($empresa->shopify_status === 'connected'
+            && !empty($empresa->shopify_store_url)
+            && !empty($empresa->shopify_consumer_secret)) {
             $this->syncBidirectional($inventario);
         }
 
-        // Si no es bidireccional, no hacer nada\
-        // Log::info("Sincronización inversa deshabilitada para actualizaciones de inventario - solo Shopify -> SmartPyme", [
-        //     'inventario_id' => $inventario->id,
-        //     'producto_id' => $inventario->id_producto,
-        //     'stock' => $inventario->stock,
-        //     'motivo' => 'Sincronización unidireccional configurada'
-        // ]);
-        return;
+        // Lógica anterior: solo sincronizaba si shopify_sync_bidirectional estaba activo (comentado)
+        // if ($empresa->shopify_sync_bidirectional) {
+        //     Log::info("Sincronización inversa habilitada para actualizaciones de inventario - SmartPyme -> Shopify ", [
+        //         'inventario_id' => $inventario->id,
+        //         'producto_id' => $inventario->id_producto,
+        //         'stock' => $inventario->stock,
+        //         'motivo' => 'Sincronización unidireccional configurada'
+        //     ]);
+        //     $this->syncBidirectional($inventario);
+        // }
+        // Si no es bidireccional, no hacer nada
+        // Log::info("Sincronización inversa deshabilitada para actualizaciones de inventario - solo Shopify -> SmartPyme", [...]);
     }
 
     // Para actualizacion de stock doble direccional (SmartPyme -> Shopify)
     public function syncBidirectional(Inventario $inventario)
     {
-        if (!$inventario->isDirty('stock')) {
+        // wasChanged: en evento "updated" el modelo ya fue guardado; isDirty sería false
+        if (!$inventario->wasChanged('stock')) {
             return;
         }
 
@@ -79,12 +86,14 @@ class ShopifyInventarioObserver
             'stock_nuevo' => $inventario->stock
         ]);
 
-        if ($this->cache->isLocked($inventario->id_producto)) {
-            return;
-        }
+        // No usar isLocked aquí: el lock se pone al procesar products/update desde Shopify
+        // y bloquearía enviar ajustes desde SmartPyme a Shopify durante 2 min.
 
         $bodega = Bodega::find($inventario->id_bodega);
-        if (!$bodega) return;
+        if (!$bodega) {
+            Log::debug("Sync Shopify omitido: bodega no encontrada", ['id_bodega' => $inventario->id_bodega]);
+            return;
+        }
 
         // Verificar si la empresa tiene Shopify habilitado antes de intentar sincronizar
         $empresaBase = Empresa::find($bodega->id_empresa);
@@ -122,10 +131,16 @@ class ShopifyInventarioObserver
         }
 
         $usuario = User::where('id_empresa', $empresa->id)
+            ->where('id_bodega', $inventario->id_bodega)
             ->where('shopify_status', 'connected')
             ->first();
 
-        if (!$usuario || $inventario->id_bodega != $usuario->id_bodega) {
+        if (!$usuario) {
+            Log::warning("Sync Shopify omitido: no hay usuario con Shopify conectado en esta bodega", [
+                'producto_id' => $inventario->id_producto,
+                'id_bodega' => $inventario->id_bodega,
+                'id_empresa' => $empresa->id,
+            ]);
             return;
         }
 
@@ -138,6 +153,10 @@ class ShopifyInventarioObserver
         ]);
 
         if (!$this->cache->hasInventoryChanged($inventario, $inventario->id_producto)) {
+            Log::debug("Sync Shopify omitido: cache indica que el inventario no cambió", [
+                'producto_id' => $inventario->id_producto,
+                'stock' => $inventario->stock,
+            ]);
             return;
         }
         $success = $this->stockService->actualizarSoloStockEnShopify(

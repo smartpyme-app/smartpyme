@@ -91,18 +91,18 @@
                         <div class="input-group" *ngIf="detalle?.precios?.length < 2">
                             <!-- <span class="input-group-text">$</span> -->
                             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-                            <input type="number" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio">
+                            <input type="number" step="0.000001" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio">
                         </div>
                         <select [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-select" name="precio" *ngIf="detalle?.precios?.length > 1">
                             <option [value]="precio.precio" *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
-                                {{ precio.precio | currency}}
+                                {{ precio.precio | currency:'USD':'symbol':'1.0-6'}}
                             </option>
                         </select>
                     </td>
                     <td style="width: 150px;">
                         <div *ngIf="detalle.descuento_is_monto">
                             <div class="input-group">
-                                <span tooltip="Cambiar a descuento en porcentaje" tooltipPosition="top" class="input-group-text click" style="cursor: pointer;" (click)="detalle.descuento_is_monto = false; detalle.descuento = 0; detalle.descuento_monto = 0; updateTotal(detalle)">$</span>
+                                <span tooltip="Cambiar a descuento en porcentaje" tooltipPosition="top" class="input-group-text click" style="cursor: pointer;" (click)="detalle.descuento_is_monto = false; detalle.descuento = 0; detalle.descuento_monto = 0; updateTotal(detalle)">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                                 <input 
                                     type="number" 
                                     [(ngModel)]="detalle.descuento_monto" 
@@ -130,7 +130,7 @@
                             <option value="no_sujeta">No sujeta</option>
                         </select>
                     </td>
-                    <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}</td>
+                    <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.0-6'}}</td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
                             <button class="btn btn-light" (click)="delete(detalle)">

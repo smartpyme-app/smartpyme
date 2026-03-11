@@ -33,7 +33,7 @@ class Inventario extends Model {
         return $this->bodega()->first() ? $this->bodega()->first()->nombre_sucursal : null;
     }
 
-    public function kardex($modelo, $cantidad, $precio = NULL, $costo = NULL){
+    public function kardex($modelo, $cantidad, $precio = NULL, $costo = NULL, $fecha = null, $opciones = []){
 
         $clase = get_class($modelo);
 
@@ -115,11 +115,16 @@ class Inventario extends Model {
                 $clase = 'Devolución Compra Anulada';
             }
         }else if ($clase == 'App\Models\Inventario\Producto') {
-            // Es una actualización de producto
-            $clase = 'Actualización de producto';
-            // No es entrada ni salida, por lo que ambos valores serían NULL
-            $entradaCantidad = null;
-            $salidaCantidad = null;
+            // Actualización de producto: desde Shopify mostramos texto y cantidades; desde SmartPyme solo texto
+            if (!empty($opciones['origen']) && $opciones['origen'] === 'shopify' && $cantidad != 0) {
+                $clase = 'Actualización de producto desde Shopify';
+                $entradaCantidad = $cantidad > 0 ? $cantidad : null;
+                $salidaCantidad = $cantidad < 0 ? abs($cantidad) : null;
+            } else {
+                $clase = 'Actualización de producto';
+                $entradaCantidad = null;
+                $salidaCantidad = null;
+            }
         }
         else if ($clase == 'App\Models\Inventario\Entradas\Entrada') {
             if ($cantidad > 0) {
@@ -171,8 +176,12 @@ class Inventario extends Model {
         // Calcular el stock total según si el producto usa lotes o no
         $totalCantidad = $this->calcularStockParaKardex($producto, $modelo, $clase);
 
+        $fechaKardex = $fecha ? (is_string($fecha) ? $fecha : $fecha->format('Y-m-d')) : date('Y-m-d');
+
+        $idUsuario = $opciones['id_usuario'] ?? $modelo->id_usuario ?? null;
+
         Kardex::create([
-            'fecha'             => date('Y-m-d'),
+            'fecha'             => $fechaKardex,
             'id_producto'       => $this->id_producto,
             'id_inventario'     => $this->id_bodega,
             'detalle'           => $clase,
@@ -185,7 +194,7 @@ class Inventario extends Model {
             'salida_valor'      => $salidaCantidad ? $salidaCantidad * $precio : null,
             'total_cantidad'    => $totalCantidad,
             'total_valor'       => $totalCantidad * $costo,
-            'id_usuario'        => $modelo->id_usuario,
+            'id_usuario'        => $idUsuario,
         ]);
     }
 

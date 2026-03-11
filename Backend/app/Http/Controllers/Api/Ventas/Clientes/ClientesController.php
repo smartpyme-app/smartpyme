@@ -28,18 +28,29 @@ class ClientesController extends Controller
 
     public function index(Request $request)
     {
-
-        $clientes = Cliente::with('contactos')->where('id', '!=', 1)->withSum('ventas', 'total')
+        // Optimización: Remover withSum que es muy lento y usar lazy loading si es necesario
+        $clientes = Cliente::select([
+                'id', 'nombre', 'apellido', 'nombre_empresa', 'tipo', 'tipo_contribuyente',
+                'nit', 'dui', 'ncr', 'giro', 'telefono', 'correo', 'direccion',
+                'red_social', 'enable', 'fecha_cumpleanos', 'created_at', 'updated_at'
+            ])
+            ->with(['contactos' => function($query) {
+                $query->select('id', 'id_cliente', 'nombre', 'telefono', 'correo', 'estado');
+            }])
+            ->where('id', '!=', 1)
             ->when($request->buscador, function ($query) use ($request) {
-                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('apellido', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('nombre_empresa', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('nit', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('giro', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('telefono', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('red_social', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('ncr', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('dui', 'like',  '%' . $request->buscador . '%');
+                $searchTerm = '%' . $request->buscador . '%';
+                return $query->where(function($q) use ($searchTerm) {
+                    $q->where('nombre', 'like', $searchTerm)
+                      ->orWhere('apellido', 'like', $searchTerm)
+                      ->orWhere('nombre_empresa', 'like', $searchTerm)
+                      ->orWhere('nit', 'like', $searchTerm)
+                      ->orWhere('giro', 'like', $searchTerm)
+                      ->orWhere('telefono', 'like', $searchTerm)
+                      ->orWhere('red_social', 'like', $searchTerm)
+                      ->orWhere('ncr', 'like', $searchTerm)
+                      ->orWhere('dui', 'like', $searchTerm);
+                });
             })
             ->when($request->nombre, function ($q) use ($request) {
                 $q->where('nombre', $request->nombre);
@@ -62,14 +73,17 @@ class ClientesController extends Controller
             ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
             ->paginate($request->paginate);
 
+        // Si necesitas el total de ventas, puedes agregarlo como un endpoint separado
+        // o calcularlo solo cuando sea necesario para clientes específicos
+
         return Response()->json($clientes, 200);
     }
 
     public function list()
     {
-
-        $clientes = Cliente::orderBy('nombre', 'asc')
+        $clientes = Cliente::select(['id', 'nombre', 'apellido', 'nombre_empresa', 'tipo'])
             ->where('enable', true)
+            ->orderBy('nombre', 'asc')
             ->get();
 
         return Response()->json($clientes, 200);
@@ -79,12 +93,13 @@ class ClientesController extends Controller
     {
         $term = $request->get('q', ''); // Término de búsqueda
         $limit = $request->get('limit', 50); // Límite de resultados (default 50)
-        
+
         if (strlen($term) < 2) {
             return response()->json([], 200);
         }
-        
-        $clientes = Cliente::where('enable', true)
+
+        $clientes = Cliente::select(['id', 'nombre', 'apellido', 'nombre_empresa', 'tipo', 'correo', 'telefono'])
+            ->where('enable', true)
             ->where(function ($query) use ($term) {
                 $query->where('nombre', 'LIKE', "%{$term}%")
                 ->orWhere('nombre_empresa', 'LIKE', "%{$term}%")
@@ -93,7 +108,7 @@ class ClientesController extends Controller
                 ->orWhereRaw("CONCAT(nombre, ' ', apellido) LIKE ?", ["%{$term}%"]);
             })
             ->orderByRaw("
-                CASE 
+                CASE
                     WHEN nombre LIKE '{$term}%' THEN 1
                     WHEN nombre_empresa LIKE '{$term}%' THEN 2
                     WHEN CONCAT(nombre, ' ', apellido) LIKE '{$term}%' THEN 3
@@ -103,7 +118,7 @@ class ClientesController extends Controller
             ->orderBy('nombre', 'asc')
             ->limit($limit)
             ->get();
-        
+
         return response()->json($clientes, 200);
     }
 
@@ -135,10 +150,42 @@ class ClientesController extends Controller
 
     public function read($id)
     {
-
         $cliente = Cliente::with('contactos')->findOrFail($id);
 
         return Response()->json($cliente, 200);
+    }
+
+    /**
+     * Obtener el total de ventas de un cliente específico
+     */
+    public function totalVentas($id)
+    {
+        $totalVentas = Cliente::where('id', $id)
+            ->withSum('ventas', 'total')
+            ->first()
+            ->ventas_sum_total ?? 0;
+
+        return Response()->json(['total_ventas' => $totalVentas], 200);
+    }
+
+    public function saldoPendiente($id)
+    {
+        $ventasPendientes = \App\Models\Ventas\Venta::where('id_cliente', $id)
+            ->where('estado', 'Pendiente')
+            ->where(function ($q) {
+                $q->where('cotizacion', 0)->orWhereNull('cotizacion');
+            })
+            ->withSum(['abonos' => fn ($q) => $q->where('estado', 'Confirmado')], 'total')
+            ->withSum(['devoluciones' => fn ($q) => $q->where('enable', 1)], 'total')
+            ->get();
+
+        $saldoPendiente = $ventasPendientes->sum(function ($v) {
+            $abonos = $v->abonos_sum_total ?? 0;
+            $devoluciones = $v->devoluciones_sum_total ?? 0;
+            return round($v->total - $abonos - $devoluciones, 2);
+        });
+
+        return response()->json(['saldo_pendiente' => $saldoPendiente], 200);
     }
 
     public function store(Request $request)
@@ -158,9 +205,14 @@ class ClientesController extends Controller
             $rules['id_usuario'] = 'sometimes';
         }
 
+        if ($this->puedeEditarCreditoCliente() && !empty($request->habilita_credito)) {
+            $rules['dias_credito'] = 'required|in:3,8,10,15,30,45,60';
+        }
+
         $request->validate($rules, [
             'nombre.required_if' => 'El campo nombre es obligatorio.',
-            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.'
+            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
+            'dias_credito.required' => 'Los días de crédito son obligatorios cuando el cliente tiene crédito habilitado.',
         ]);
 
         if ($request->id)
@@ -168,7 +220,14 @@ class ClientesController extends Controller
         else
             $cliente = new Cliente;
 
-        $cliente->fill($request->except('contactos'));
+        $data = $request->except('contactos');
+
+        // Solo Admin y Supervisores pueden modificar campos de crédito
+        if (!$this->puedeEditarCreditoCliente()) {
+            unset($data['habilita_credito'], $data['dias_credito'], $data['limite_credito']);
+        }
+
+        $cliente->fill($data);
         $cliente->save();
 
 
@@ -201,35 +260,46 @@ class ClientesController extends Controller
     public function update(Request $request)
     {
         $cliente = Cliente::findOrFail($request->id);
-        
+
         $rules = [
             'nombre'         => 'required_if:tipo,"Persona"',
             'apellido'       => 'required_if:tipo,"Persona"',
             'nombre_empresa' => 'required_if:tipo,"Empresa"',
             'id_empresa'     => 'required|numeric|exists:empresas,id',
         ];
-        
+
+        if ($this->puedeEditarCreditoCliente() && !empty($request->habilita_credito)) {
+            $rules['dias_credito'] = 'required|in:3,8,10,15,30,45,60';
+        }
+
         $request->validate($rules, [
             'nombre.required_if' => 'El campo nombre es obligatorio.',
             'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
             'id_empresa.required' => 'El campo empresa es obligatorio.',
             'id_empresa.exists' => 'La empresa seleccionada no es válida.',
+            'dias_credito.required' => 'Los días de crédito son obligatorios cuando el cliente tiene crédito habilitado.',
         ]);
-        
-        $cliente->fill($request->except('contactos'));
+
+        $data = $request->except('contactos');
+
+        if (!$this->puedeEditarCreditoCliente()) {
+            unset($data['habilita_credito'], $data['dias_credito'], $data['limite_credito']);
+        }
+
+        $cliente->fill($data);
         $cliente->save();
-        
+
         if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
             ContactoCliente::where('id_cliente', $cliente->id)->delete();
-            
+
             // Crear nuevos contactos
             foreach ($request->contactos as $contactoData) {
                 // Validar que al menos tenga nombre o correo
-                if (empty($contactoData['nombre']) && empty($contactoData['name']) && 
+                if (empty($contactoData['nombre']) && empty($contactoData['name']) &&
                     empty($contactoData['correo']) && empty($contactoData['email'])) {
                     continue; // Saltar contactos vacíos
                 }
-                
+
                 ContactoCliente::create([
                     'id_cliente' => $cliente->id,
                     'nombre' => $contactoData['nombre'] ?? $contactoData['name'] ?? null,
@@ -244,10 +314,10 @@ class ClientesController extends Controller
                 ]);
             }
         }
-        
+
         // Retornar el cliente actualizado con sus contactos
         $cliente = Cliente::with('contactos')->findOrFail($cliente->id);
-        
+
         return Response()->json($cliente, 200);
     }
 
@@ -359,7 +429,7 @@ class ClientesController extends Controller
         $cliente = Cliente::where('id', $id)->with('empresa')->firstOrFail();
         $cliente->ventas = $cliente->ventas()->where('estado', 'Pendiente')->get();
         // return $cliente;
-        $reportes = \PDF::loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
+        $reportes = app('dompdf.wrapper')->loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
         return $reportes->stream();
     }
 
@@ -412,7 +482,7 @@ class ClientesController extends Controller
             if ($clientesProcesados > 0 && count($errores) > 0) {
                 $mensajeExito = "✅ Se procesaron correctamente {$clientesProcesados} clientes.";
                 $mensajeFalla = "❌ No se pudieron procesar " . count($errores) . " clientes debido a errores.";
-                
+
                 // Separar errores por tipo para mejor análisis
                 $erroresDuiDuplicado = array_filter($errores, function($error) {
                     return strpos($error, 'Ya existe un cliente con el DUI') !== false;
@@ -517,5 +587,17 @@ class ClientesController extends Controller
 
 
         return Response()->json($cliente, 200);
+    }
+
+    /**
+     * Solo Administrador, Supervisor y Supervisor Limitado pueden editar crédito del cliente.
+     */
+    private function puedeEditarCreditoCliente(): bool
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+        $tipo = Auth::user()->tipo ?? '';
+        return in_array($tipo, ['Administrador', 'Supervisor', 'Supervisor Limitado'], true);
     }
 }

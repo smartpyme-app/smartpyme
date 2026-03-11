@@ -43,6 +43,7 @@ class WooCommerceExportService
             'total' => count($productos),
             'creados' => 0,
             'actualizados' => 0,
+            'omitidos' => 0,
             'errores' => 0,
             'detalles' => []
         ];
@@ -52,11 +53,24 @@ class WooCommerceExportService
                 $stock = $stocks[$producto->id] ?? 0;
                 $productData = $this->prepararDatosProducto($producto, $stock, $client);
 
+                $esImportadoWooCommerce = !empty($producto->imported_from_woocommerce_csv);
+
                 // Intentar actualizar primero si tenemos woocommerce_id
                 if (!empty($producto->woocommerce_id)) {
                     if ($this->actualizarProductoExistente($client, $producto, $productData, $resultados)) {
                         continue;
                     }
+                }
+
+                // Productos importados desde CSV de WooCommerce: NUNCA crear, solo actualizar
+                if ($esImportadoWooCommerce) {
+                    Log::info("Producto importado de WooCommerce sin woocommerce_id o actualización fallida - omitido", [
+                        'producto_id' => $producto->id,
+                        'nombre' => $producto->nombre,
+                        'woocommerce_id' => $producto->woocommerce_id
+                    ]);
+                    $resultados['omitidos'] = ($resultados['omitidos'] ?? 0) + 1;
+                    continue;
                 }
 
                 // Buscar por SKU solo si no se pudo actualizar por ID
@@ -78,13 +92,44 @@ class WooCommerceExportService
     private function actualizarProductoExistente($client, $producto, $productData, &$resultados)
     {
         try {
-            $client->put("products/{$producto->woocommerce_id}", $productData);
+            // Variaciones usan endpoint distinto: products/{parent_id}/variations/{variation_id}
+            if (!empty($producto->woocommerce_parent_id)) {
+                $endpoint = "products/{$producto->woocommerce_parent_id}/variations/{$producto->woocommerce_id}";
+                $productDataVariation = $this->prepararDatosVariacion($productData);
+                $client->put($endpoint, $productDataVariation);
+            } else {
+                $client->put("products/{$producto->woocommerce_id}", $productData);
+            }
+
+            $producto->last_woocommerce_sync = now();
+            $producto->saveQuietly();
+
             $this->registrarExito($resultados, $producto, 'actualizado', $producto->woocommerce_id);
             return true;
         } catch (\Exception $e) {
-            Log::warning("Error actualizando producto por ID en WooCommerce: " . $e->getMessage());
+            Log::warning("Error actualizando producto por ID en WooCommerce: " . $e->getMessage(), [
+                'producto_id' => $producto->id,
+                'woocommerce_id' => $producto->woocommerce_id,
+                'woocommerce_parent_id' => $producto->woocommerce_parent_id ?? null
+            ]);
             return false;
         }
+    }
+
+    /**
+     * Adapta datos de producto al formato de variación para la API de WooCommerce.
+     * Las variaciones solo permiten actualizar precio, stock, sku, etc.
+     */
+    private function prepararDatosVariacion(array $productData)
+    {
+        return array_filter([
+            'sku' => $productData['sku'] ?? null,
+            'regular_price' => $productData['regular_price'] ?? null,
+            'price' => $productData['price'] ?? null,
+            'manage_stock' => $productData['manage_stock'] ?? true,
+            'stock_quantity' => $productData['stock_quantity'] ?? 0,
+            'stock_status' => $productData['stock_status'] ?? 'outofstock',
+        ], fn($v) => $v !== null);
     }
 
     private function actualizarProductoPorSku($client, $producto, $existente, $productData, &$resultados)

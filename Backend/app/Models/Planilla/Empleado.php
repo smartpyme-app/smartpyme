@@ -105,6 +105,11 @@ class Empleado extends Model
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
+    public function prestamos()
+    {
+        return $this->hasMany(PrestamoEmpleado::class, 'id_empleado');
+    }
+
     // Accessors
     public function getNombreCompletoAttribute()
     {

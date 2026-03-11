@@ -7,7 +7,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 
 @Component({
     selector: 'app-ventas',
@@ -15,6 +15,7 @@ import { takeUntil } from 'rxjs/operators';
 })
 export class VentasComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private searchSubject$ = new Subject<void>();
   public ventas: any = {};
   public venta: any = {};
   public loading: boolean = false;
@@ -107,11 +108,11 @@ export class VentasComponent implements OnInit, OnDestroy {
     return takeUntil(this.destroy$);
   }
 
-  protected openModal(template: TemplateRef<any>, item?: any) {
+  protected openModal(template: TemplateRef<any>, item?: any, config?: { class?: string }) {
     if (item) {
       this.venta = item;
     }
-    this.modalRef = this.modalService.show(template);
+    this.modalRef = this.modalService.show(template, config || {});
   }
 
   protected closeModal() {
@@ -124,6 +125,11 @@ export class VentasComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.verificarAccesoContabilidad();
+
+    this.searchSubject$.pipe(
+      debounceTime(400),
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.filtrarVentas());
 
     this.route.queryParams.subscribe(params => {
       this.filtros = {
@@ -311,7 +317,16 @@ export class VentasComponent implements OnInit, OnDestroy {
     }
 
 
+  public onBuscadorInput() {
+    this.searchSubject$.next();
+  }
+
   public filtrarVentas() {
+    // Al buscar por texto, volver siempre a la primera página
+    if (this.filtros.buscador?.toString().trim()) {
+      this.filtros.page = 1;
+    }
+
     // Limpiar valores vacíos antes de navegar
     const queryParams: any = {};
     Object.keys(this.filtros).forEach(key => {
@@ -409,14 +424,24 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   public openModalEdit(template: TemplateRef<any>, venta: any) {
     // Cargar los datos completos de la venta antes de abrir el modal
-    this.loading = true;
+    // this.loading = true;
     this.apiService.read('venta/', venta.id)
       .pipe(this.untilDestroyed())
       .subscribe({
         next: (ventaCompleta: any) => {
           this.loading = false;
 
-          // Cargar datos auxiliares
+          // Crear una copia profunda del objeto para evitar que los cambios se reflejen inmediatamente en el listado
+          const ventaCopia = JSON.parse(JSON.stringify(ventaCompleta));
+          if (!ventaCopia.condicion) {
+            ventaCopia.condicion = ventaCopia.estado === 'Pendiente' ? 'Crédito' : 'Contado';
+          }
+
+          const abrirModalCuandoListo = () => {
+            this.openModal(template, ventaCopia, { class: 'modal-xl' });
+          };
+
+          // Cargar datos auxiliares (en paralelo cuando aplique)
           if (!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos) {
             this.apiService.getAll('proyectos/list')
               .pipe(this.untilDestroyed())
@@ -439,19 +464,6 @@ export class VentasComponent implements OnInit, OnDestroy {
                   this.documentos = this.documentos.filter(
                     (x: any) => x.id_sucursal == ventaCompleta.id_sucursal
                   );
-                },
-                error: (error) => {
-                  this.alertService.error(error);
-                }
-              });
-          }
-
-          if (!this.formaPagos.length) {
-            this.apiService.getAll('formas-de-pago/list')
-              .pipe(this.untilDestroyed())
-              .subscribe({
-                next: (formaPagos) => {
-                  this.formaPagos = formaPagos;
                 },
                 error: (error) => {
                   this.alertService.error(error);
@@ -485,17 +497,23 @@ export class VentasComponent implements OnInit, OnDestroy {
               });
           }
 
-          // Crear una copia profunda del objeto para evitar que los cambios se reflejen inmediatamente en el listado
-          const ventaCopia = JSON.parse(JSON.stringify(ventaCompleta));
-          
-          // Inicializar el campo condicion si no existe
-          if (!ventaCopia.condicion) {
-            // Si el estado es Pendiente, probablemente es Crédito, de lo contrario Contado
-            ventaCopia.condicion = ventaCopia.estado === 'Pendiente' ? 'Crédito' : 'Contado';
+          // Métodos de pago: usar el mismo endpoint que en facturación (formas-de-pago/list) y esperar a que carguen antes de abrir el modal
+          if (!this.formaPagos.length) {
+            this.apiService.getAll('formas-de-pago/list')
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (formaPagos) => {
+                  this.formaPagos = formaPagos;
+                  abrirModalCuandoListo();
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                  abrirModalCuandoListo();
+                }
+              });
+          } else {
+            abrirModalCuandoListo();
           }
-          
-          // Abrir el modal pasando la copia como parámetro
-          this.openModal(template, ventaCopia);
         },
         error: (error) => {
           this.alertService.error(error);
@@ -1249,6 +1267,13 @@ export class VentasComponent implements OnInit, OnDestroy {
     const total = parseFloat(venta?.total || 0);
     const propina = parseFloat(venta?.propina || 0);
     return total + propina;
+  }
+
+  public getSaldo(venta: any): number {
+    const total = parseFloat(venta?.total || 0);
+    const abonos = parseFloat(venta?.abonos_sum_total || 0);
+    const devoluciones = parseFloat(venta?.devoluciones_sum_total || 0);
+    return Math.round((total - abonos - devoluciones) * 100) / 100;
   }
 
   public seleccionarReporte(reporte: string) {
