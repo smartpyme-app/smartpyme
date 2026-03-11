@@ -129,7 +129,82 @@
     </div>
     <div class="bg-white rounded p-3 mb-3">
         <h6>Detalle de facturación</h6>
-        <div class="row">
+        <div class="form-group col-md-12 mb-3">
+            <div class="form-switch bg-light-info rounded p-2">
+                <label for="varios_items">Varios ítems (factura con múltiples conceptos)</label>
+                <input class="form-check-input float-end" type="checkbox" role="switch"
+                       id="varios_items" [(ngModel)]="varios_items" name="varios_items"
+                       (change)="toggleVariosItems()">
+            </div>
+        </div>
+
+        <!-- Modo varios ítems -->
+        <div *ngIf="varios_items" class="mb-3">
+            <div class="detalle-item border rounded p-3 mb-3 bg-light" *ngFor="let d of detalles; let i = index">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-medium text-muted">Ítem {{ i + 1 }}</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeDetalle(i)" [disabled]="detalles.length <= 1" title="Eliminar"><i class="fa fa-trash"></i></button>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-12 col-lg-6">
+                        <label>Concepto:</label>
+                        <input type="text" class="form-control" [(ngModel)]="d.concepto" [name]="'det_concepto_'+i" placeholder="Escriba aquí">
+                    </div>
+                    <div class="form-group col-md-6 col-lg-3">
+                        <label>Categoría:</label>
+                        <select class="form-select" [(ngModel)]="d.tipo" [name]="'det_tipo_'+i">
+                            <option *ngFor="let t of TIPOS_CATEGORIA" [value]="t">{{ t }}</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3 col-lg-2">
+                        <label>Cantidad:</label>
+                        <input type="number" step="0.01" class="form-control" [(ngModel)]="d.cantidad" (change)="recalcularDesdePrecio(i)" [name]="'det_cant_'+i">
+                    </div>
+                    <div class="form-group col-md-3 col-lg-2">
+                        <label>Precio unit.:</label>
+                        <input type="number" step="0.01" class="form-control" [(ngModel)]="d.precio_unitario" (change)="recalcularDesdePrecio(i)" [name]="'det_precio_'+i">
+                    </div>
+                    <div class="form-group col-md-4 col-lg-2">
+                        <label>Sub total:</label>
+                        <input type="number" step="0.01" class="form-control" [(ngModel)]="d.sub_total" (change)="recalcularDetalleLinea(i)" [name]="'det_sub_'+i">
+                    </div>
+                    <div class="form-group col-md-4 col-lg-2">
+                        <label>IVA:</label>
+                        <input type="number" step="0.01" class="form-control" [(ngModel)]="d.iva" [name]="'det_iva_'+i" readonly>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-2">
+                        <label class="fw-medium">Total:</label>
+                        <input type="number" step="0.01" class="form-control" [(ngModel)]="d.total" [name]="'det_total_'+i" readonly>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-3">
+                        <label>Tipo de operación:</label>
+                        <select class="form-select" [(ngModel)]="d.tipo_gravado" (change)="recalcularDetalleLinea(i)" [name]="'det_tipo_gravado_'+i">
+                            <option value="gravada">Gravada</option>
+                            <option value="exenta">Exenta</option>
+                            <option value="no_sujeta">No sujeta</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-3">
+                        <label class="d-block mb-1">Aplica</label>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" [(ngModel)]="d.aplica_renta" (change)="recalcularDetalleLinea(i)" [name]="'det_aplica_renta_'+i" id="det_renta_{{i}}">
+                            <label class="form-check-label" for="det_renta_{{i}}">Renta</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <button type="button" class="btn btn-default" (click)="addDetalle()"><i class="fa fa-plus"></i> Agregar ítem</button>
+                <div class="text-end">
+                    <span class="text-muted me-3">Sub total: <strong>{{ gasto.sub_total | number:'1.2-2' }}</strong></span>
+                    <span class="text-muted me-3">IVA: <strong>{{ gasto.iva | number:'1.2-2' }}</strong></span>
+                    <span class="fw-bold">Total: {{ gasto.total | number:'1.2-2' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modo un solo gasto -->
+        <div *ngIf="!varios_items" class="row">
             <div class="form-group col-md-12">
                 <label for="">Concepto:</label>
                 <input type="text" class="form-control" name="concepto" [(ngModel)]="gasto.concepto" placeholder="Escriba aquí" />
@@ -154,6 +229,9 @@
                 <label for="" class="fw-medium">Total:</label>
                 <input type='number' class="form-control" name="total" (change)="setSubTotal()" [(ngModel)]="gasto.total"/>
             </div>
+        </div>
+
+        <div class="row">
             <div class="form-group col-md-4 col-lg-3">
                 <label for="forma_pago">Forma de pago:</label>
                 <select name="forma_pago" [(ngModel)]="gasto.forma_pago" class="form-select" id="forma_pago">
@@ -183,25 +261,25 @@
                   <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="gasto.recurrente" name="recurrente">
                 </div>
             </div>
-            <div class="form-group col-md-4 col-lg-3 without-label ">
+            <div class="form-group col-md-4 col-lg-3 without-label " *ngIf="!varios_items">
                 <div class="form-switch bg-light-info rounded">
                   <label for="impuesto">IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.impuesto" name="impuesto">
                 </div>
             </div>
-            <div class="form-group col-md-4 col-lg-3 without-label ">
+            <div class="form-group col-md-4 col-lg-3 without-label " *ngIf="!varios_items">
                 <div class="form-switch bg-light-info rounded">
-                  <label for="impuesto">Renta (10%)</label>
+                  <label for="renta">Renta (10%)</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.renta" name="renta">
                 </div>
             </div>
-            <div class="form-group col-md-6 col-lg-3 without-label">
+            <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!varios_items">
                 <div class="form-switch bg-light-info rounded">
                   <label for="percepcion">Percepción</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.percepcion" name="gasto.percepcion">
                 </div>
             </div>
-            <div class="form-group col-md-4 col-lg-3 without-label">
+            <div class="form-group col-md-4 col-lg-3 without-label" *ngIf="!varios_items">
                 <div class="form-switch bg-light-info rounded">
                     <label for="switch_otros_impuestos">Otros impuestos</label>
                     <input class="form-check-input float-end" 
@@ -214,7 +292,7 @@
                 </div>
             </div>
 
-            <div class="form-group col-md-8 col-lg-8" *ngIf="mostrar_otros_impuestos">
+            <div class="form-group col-md-8 col-lg-8" *ngIf="!varios_items && mostrar_otros_impuestos">
                 <label for="">Selecciona los impuestos aplicables</label>
                 <div class="input-group flex-nowrap">
                     <ng-select 
@@ -240,7 +318,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row" *ngIf="gasto.impuestos_valores && gasto.impuestos_valores.length > 0">
+            <div class="row" *ngIf="!varios_items && gasto.impuestos_valores && gasto.impuestos_valores.length > 0">
                 <div class="form-group col-md-4 col-lg-4" *ngFor="let impuestoValor of gasto.impuestos_valores">
                     <label for="">{{ impuestoValor.nombre }}:</label>
                     <input 
@@ -252,7 +330,7 @@
                         (change)="onImpuestoValorChange()"/>
                 </div>
             </div>
-            <div class="form-group col-6 col-lg-2">
+            <div class="form-group col-6 col-lg-2" *ngIf="!varios_items">
                 <label for="tipo_operacion">Tipo de operación:</label>
                 <select name="tipo_operacion" class="form-select" [(ngModel)]="gasto.tipo_operacion">
                     <option [ngValue]="null">Seleccione aquí</option>
