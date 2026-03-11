@@ -140,7 +140,7 @@ class MHNotaDebito extends Model
               "direccion" => [
                 "departamento" => $this->devolucion->cliente->cod_departamento,
                 "municipio" => $this->devolucion->cliente->cod_departamento,
-                "complemento" => $this->devolucion->cliente->direccion ? $this->devolucion->cliente->direccion : $this->devolucion->cliente->empresa_direccion,
+                "complemento" => $this->devolucion->cliente->empresa_direccion ?? $this->devolucion->cliente->direccion,
               ],
               "telefono" => $this->devolucion->cliente->telefono,
               "correo" => $this->devolucion->cliente->correo
