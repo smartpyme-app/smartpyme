@@ -50,7 +50,7 @@
         <h1>{{ $empresa->nombre }}</h1>
         @if ($venta->sucursal()->first())
             <h3>{{ $venta->sucursal()->pluck('nombre')->first() }}</h3>
-        @else
+        @endif
         <p>{{ $empresa->sector }}</p>
         <p>{{ $empresa->nombre_propietario }}</p>
 
