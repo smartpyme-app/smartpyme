@@ -65,9 +65,9 @@
                         <td>{{presupuesto.titulo }}</td>
                         <td>{{presupuesto.fecha_inicio | date:'dd/MM/yyyy'}}</td>
                         <td>{{presupuesto.fecha_fin | date:'dd/MM/yyyy'}}</td>
-                        <td class="text-right">{{presupuesto.ingresos | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-right">{{presupuesto.egresos | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-right">{{presupuesto.utilidad | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-right">{{presupuesto.ingresos | currency}}</td>
+                        <td class="text-right">{{presupuesto.egresos | currency}}</td>
+                        <td class="text-right">{{presupuesto.utilidad | currency}}</td>
                         <td class="text-right">
                             <span class="badge bg-success" *ngIf="presupuesto.enable == 1">Activo</span>
                             <span class="badge bg-danger" *ngIf="presupuesto.enable == 0">Anulado</span>

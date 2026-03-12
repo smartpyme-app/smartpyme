@@ -36,10 +36,10 @@
                     <td>{{ producto.nombre }}</td>
                     <td class="text-center">
                         <span *ngIf="producto.precio_oferta">
-                            {{ producto.precio_oferta | currency:'USD':'symbol':'2.2'  }} <span style="text-decoration: line-through">{{ producto.precio | currency:'USD':'symbol':'2.2'  }}</span>
+                            {{ producto.precio_oferta | currency  }} <span style="text-decoration: line-through">{{ producto.precio | currency  }}</span>
                         </span>
                         <span *ngIf="!producto.precio_oferta">
-                            {{ producto.precio | currency:'USD':'symbol':'2.2'  }}
+                            {{ producto.precio | currency  }}
                         </span>
                     </td>
                     <td class="text-center">

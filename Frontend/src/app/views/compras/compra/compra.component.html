@@ -86,39 +86,39 @@
                             {{ detalle.nombre_producto }}
                         </td>
                         <td>{{ detalle.cantidad }}</td>
-                        <td>{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
-                        <td>{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td>{{ detalle.costo | currency }}</td>
+                        <td>{{ detalle.descuento | currency }}</td>
+                        <td class="text-end">{{ detalle.total | currency }}</td>
                     </tr>
                     <tr>
                         <td colspan="2" class="text-end"></td>
                         <td colspan="2" class="text-end"><b>Sub Total:</b></td>
-                        <td class="text-end"><b>{{ compra?.sub_total + compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ compra?.sub_total + compra?.descuento | currency }}</b></td>
                     </tr>
                     <tr>
                         <td colspan="2" class="text-end"></td>
                         <td colspan="2" class="text-end"><b>Descuento:</b></td>
-                        <td class="text-end"><b>{{ compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ compra?.descuento | currency }}</b></td>
                     </tr>
                     <tr>
                         <td colspan="2" class="text-end"></td>
                         <td colspan="2" class="text-end"><b>IVA</b></td>
-                        <td class="text-end"><b>{{ compra?.iva | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td class="text-end"><b>{{ compra?.iva | currency}}</b> </td>
                     </tr>
                     <tr *ngIf="compra?.percepcion > 0">
                         <td colspan="2" class="text-end"></td>
                         <td colspan="2" class="text-end"><b>Percepción (1%)</b></td>
-                        <td class="text-end"><b>{{ compra?.percepcion | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ compra?.percepcion | currency }}</b></td>
                     </tr>
                     <tr *ngIf="compra?.renta_retenida > 0">
                         <td colspan="2" class="text-end"></td>
                         <td colspan="2" class="text-end"><b>Renta retenida</b></td>
-                        <td class="text-end"><b>{{ compra?.renta_retenida | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td class="text-end"><b>{{ compra?.renta_retenida | currency}}</b> </td>
                     </tr>
                     <tr>
                         <td colspan="2" class="text-end"></td>
                         <td colspan="2" class="text-end"><b>Total:</b></td>
-                        <td class="text-end"><b>{{ compra?.total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ compra?.total | currency }}</b></td>
                     </tr>
                 </tbody>
             </table>
@@ -173,7 +173,7 @@
                                 <option value="Confirmado">Confirmado</option>
                             </select>
                         </td>
-                        <td class="text-end">{{ abono.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ abono.total | currency }}</td>
                        <!--  <td class="text-center">
                             <a (click)="imprimirRecibo(abono)" class="btn btn-light">
                                 <i class="fa fa-fw fa-print"></i>

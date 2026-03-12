@@ -107,8 +107,8 @@
                         </td>
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
-                        <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-right">{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-right">{{ producto.precio  | currency }}</td>
+                        <td class="text-right">{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency }}</td>
                         <td class="text-center">
                             <div class="click" tooltip="Realizar ajuste de stock" *ngIf="filtros.id_bodega" (click)="openModalAjuste(majuste, producto)">
                                 {{ producto.inventarios | sum:'stock' }}

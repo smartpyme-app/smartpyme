@@ -117,7 +117,7 @@
               <td style="width: 150px;">
                 <input type="number" value="{{detalle.descuento}}" class="form-control" name="descuento" disabled>
               </td>
-              <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+              <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}</td>
               <td style="width: 50px;" class="text-center">
                 <div class="btn-group">
                 </div>
@@ -142,37 +142,37 @@
           <tbody>
             <tr>
               <td class="text-right"><b>Sub Total</b> </td>
-              <td style="width: 150px;" class="text-right"> {{ impuestos.sub_total | currency:'USD':'symbol':'1.2'}}
+              <td style="width: 150px;" class="text-right"> {{ impuestos.sub_total | currency}}
               </td>
               <td style="width: 50px;"></td>
             </tr>
             <tr>
               <td class="text-right"><b>Descuentos</b> </td>
-              <td style="width: 150px;" class="text-right"> {{ impuestos.descuento | currency:'USD':'symbol':'1.2'}}
+              <td style="width: 150px;" class="text-right"> {{ impuestos.descuento | currency}}
               </td>
               <td style="width: 50px;"></td>
             </tr>
             <tr>
               <td class="text-right"> <b>Impuestos</b></td>
-              <td style="width: 150px;" class="text-right"> {{ impuestos.iva | currency:'USD':'symbol':'1.2'}} </td>
+              <td style="width: 150px;" class="text-right"> {{ impuestos.iva | currency}} </td>
               <td style="width: 50px;"></td>
             </tr>
             <tr>
               <td class="text-right"> <b>Percepción (1%)</b></td>
-              <td style="width: 150px;" class="text-right"> {{ impuestos.percepcion | currency:'USD':'symbol':'1.2'}}
+              <td style="width: 150px;" class="text-right"> {{ impuestos.percepcion | currency}}
               </td>
               <td style="width: 50px;"></td>
             </tr>
             <tr *ngIf="impuestos.tipo_documento == 'Sujeto excluido'">
               <td class="text-right"> <b>Ret. Renta (10%)</b></td>
               <td style="width: 150px;" class="text-right"> {{ impuestos.renta_retenida |
-                currency:'USD':'symbol':'1.2'}}
+                currency}}
               </td>
               <td style="width: 50px;"></td>
             </tr>
             <tr>
               <td class="text-right"> <b>Total</b> </td>
-              <td style="width: 150px;" class="text-right"><b> {{ impuestos.total | currency:'USD':'symbol':'1.2'}}</b>
+              <td style="width: 150px;" class="text-right"><b> {{ impuestos.total | currency}}</b>
               </td>
               <td style="width: 50px;"></td>
             </tr>

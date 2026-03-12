@@ -82,7 +82,7 @@
                         <td>
                             <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">{{ compra.estado }}</span>
                         </td>
-                        <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-right">{{compra.total | currency}}</td>
                         <td class="text-center">
                             <div class="d-flex gap-2 justify-content-center">
                                 <a routerLink="/compra/crear" tooltip="Generar compra" [queryParams]="{ recurrente:1, id_compra: compra.id }" class="btn btn-default">

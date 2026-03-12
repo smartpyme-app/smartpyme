@@ -53,17 +53,17 @@
                     
                     <td class="text-center">{{venta.fecha | date:'dd-MM-yyyy'}}</td>
                     <td class="text-center">{{venta.cantidad}}</td>
-                    <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
-                    <td class="text-center">{{venta.costo | currency:'USD':'symbol':'1.2'}}</td>
-                    <td class="text-center">{{venta.utilidad | currency:'USD':'symbol':'1.2'}}</td>
+                    <td class="text-center">{{venta.total | currency}}</td>
+                    <td class="text-center">{{venta.costo | currency}}</td>
+                    <td class="text-center">{{venta.utilidad | currency}}</td>
                 </tr>
 
                 <tr *ngIf="ventas?.length > 0 && !loading">
                     <td class="text-center"><b>Total</b></td>                                
                     <td class="text-center"><b>{{ ventas | sum:'cantidad'}}</b></td>
-                    <td class="text-center"><b>{{ ventas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
-                    <td class="text-center"><b>{{ ventas | sum:'costo' | currency:'USD':'symbol':'1.2' }}</b></td>
-                    <td class="text-center"><b>{{ ventas | sum:'utilidad' | currency:'USD':'symbol':'1.2' }}</b></td>
+                    <td class="text-center"><b>{{ ventas | sum:'total' | currency }}</b></td>
+                    <td class="text-center"><b>{{ ventas | sum:'costo' | currency }}</b></td>
+                    <td class="text-center"><b>{{ ventas | sum:'utilidad' | currency }}</b></td>
                 </tr>
             </tbody>
         </table>

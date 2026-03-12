@@ -74,7 +74,7 @@
                                 Plazo: {{ compra.plazo }} días
                             </ng-template>
                         </td>
-                        <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-right">{{compra.total | currency}}</td>
                         <td class="text-center">
                             <div class="btn-group" role="group">
                                 <a class="btn btn-default" (click)="delete(compra.id)" tooltip="Eliminar">
@@ -115,7 +115,7 @@
                         <td class="text-center">{{proveedor.nit}}</td>
                         <td>{{proveedor.registro}}</td>
                         <td class="text-center">{{proveedor.num_pagos_pendientes}}</td>
-                        <td class="text-center">{{proveedor.pago_pendiente | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">{{proveedor.pago_pendiente | currency}}</td>
                         <td class="text-center">
                             <div class="btn-group" role="group">
                                 <a class="btn btn-default" routerLink="/proveedor/{{ proveedor.id }}" [queryParams]="{ estado : 'Pendiente' }" tooltip="Pagar">

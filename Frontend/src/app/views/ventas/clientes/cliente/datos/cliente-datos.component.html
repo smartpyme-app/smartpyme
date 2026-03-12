@@ -15,8 +15,8 @@
                         <div class="row justify-content-between">
                             <div class="col py-4">
                                 <h5 class="text-success mb-3"><i class="fa fa-money-bill-trend-up"></i> Ventas</h5>
-                                <h3 class="text-success">{{ (dash?.total_ventas_pagadas ? dash?.total_ventas_pagadas : 0) | currency:'USD':'symbol':'1.2' }}</h3>
-                                <p>Pendientes:<span class="float-end">{{ (dash?.total_ventas_pendientes ? dash?.total_ventas_pendientes : 0) | currency:'USD':'symbol':'1.2' }}</span></p>
+                                <h3 class="text-success">{{ (dash?.total_ventas_pagadas ? dash?.total_ventas_pagadas : 0) | currency }}</h3>
+                                <p>Pendientes:<span class="float-end">{{ (dash?.total_ventas_pendientes ? dash?.total_ventas_pendientes : 0) | currency }}</span></p>
                             </div>
                         </div>
                     </div>
@@ -28,8 +28,8 @@
                         <div class="row justify-content-between">
                             <div class="col py-4">
                                 <h5 class="text-warning mb-3"><i class="fa fa-screwdriver-wrench"></i> Fletes</h5>
-                                <h3 class="text-warning">{{ (dash?.total_fletes_pagados ? dash?.total_fletes_pagados : 0) | currency:'USD':'symbol':'1.2' }}</h3>
-                                <p>Pendientes:<span class="float-end">{{ (dash?.total_fletes_pendientes ? dash?.total_fletes_pendientes : 0) | currency:'USD':'symbol':'1.2' }}</span></p>
+                                <h3 class="text-warning">{{ (dash?.total_fletes_pagados ? dash?.total_fletes_pagados : 0) | currency }}</h3>
+                                <p>Pendientes:<span class="float-end">{{ (dash?.total_fletes_pendientes ? dash?.total_fletes_pendientes : 0) | currency }}</span></p>
                             </div>
                         </div>
                     </div>
@@ -41,8 +41,8 @@
                         <div class="row justify-content-between">
                             <div class="col py-4">
                                 <h5 class="text-primary mb-3"><i class="fa fa-sack-dollar"></i> Balance</h5>
-                                <h3 class="text-primary">{{ (dash?.total_balance ? dash?.total_balance : 0) | currency:'USD':'symbol':'1.2' }}</h3>
-                                <!-- <p class="">Utilidad: <span class="float-end">{{ (dash?.total_utilidad ? dash?.total_utilidad : 0) | currency:'USD':'symbol':'1.2' }}</span></p> -->
+                                <h3 class="text-primary">{{ (dash?.total_balance ? dash?.total_balance : 0) | currency }}</h3>
+                                <!-- <p class="">Utilidad: <span class="float-end">{{ (dash?.total_utilidad ? dash?.total_utilidad : 0) | currency }}</span></p> -->
                             </div>
                         </div>
                     </div>

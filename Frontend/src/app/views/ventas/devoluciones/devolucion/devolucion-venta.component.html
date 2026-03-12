@@ -64,49 +64,49 @@
                             </ul>
                         </div>
                         <td class="text-end">{{ detalle.cantidad }}</td>
-                        <td class="text-end">{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-end">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ detalle.precio | currency }}</td>
+                        <td class="text-end">{{ detalle.descuento | currency }}</td>
+                        <td class="text-end">{{ detalle.total | currency }}</td>
                     </tr>
                     <tr>
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Sub Total:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.sub_total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.sub_total | currency }}</b></td>
                     </tr>
                     <tr>
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>IVA:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.iva | currency }}</b></td>
                     </tr>
                     <tr *ngIf="devolucion?.descuento > 0">
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Descuento:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.descuento | currency }}</b></td>
                     </tr>
                     <tr *ngIf="devolucion?.iva_retenido > 0">
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Retención:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.iva_retenido | currency }}</b></td>
                     </tr>
                     <tr *ngIf="devolucion?.exenta > 0">
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Ventas Exentas:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.exenta | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.exenta | currency }}</b></td>
                     </tr>
                     <tr *ngIf="devolucion?.no_sujeta > 0">
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Ventas No Sujetas:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.no_sujeta | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.no_sujeta | currency }}</b></td>
                     </tr>
                     <tr *ngIf="devolucion.cuenta_a_terceros > 0">
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"> <b>Cuenta a terceros</b> </td>
-                        <td class="text-end"><b> {{ devolucion.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td class="text-end"><b> {{ devolucion.cuenta_a_terceros | currency}}</b> </td>
                     </tr>
                     <tr>
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Total:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.total | currency }}</b></td>
                     </tr>
                 </tbody>
             </table>

@@ -37,7 +37,7 @@
                         {{venta.estado}}
                     </span>
                 </td>
-                <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                <td class="text-center">{{venta.total | currency}}</td>
                 <td class="text-center">
                     <div class="btn-group" role="group">
                         <a class="btn btn-default" routerLink="/venta/{{venta.id}}" tooltip="Ver">

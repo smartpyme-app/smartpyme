@@ -83,7 +83,7 @@
                                 <option value="Pendiente">Pendiente</option>
                             </select>
                         </td>
-                        <td class="text-end">{{gasto.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-end">{{gasto.total | currency}}</td>
                         <td class="text-center">
                             <div class="d-flex gap-2 justify-content-center">
                                 <a routerLink="/gasto/crear" tooltip="Generar gasto" [queryParams]="{ recurrente:1, id_gasto: gasto.id }" class="btn btn-default">

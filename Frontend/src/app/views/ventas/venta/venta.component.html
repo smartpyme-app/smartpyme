@@ -148,41 +148,41 @@
                             [hidden]="!hasCustomField(field.id)">
                             {{ getCustomFieldValue(detalle, field.id) }}
                         </td>
-                        <td>{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
-                        <td>{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td>{{ detalle.precio | currency }}</td>
+                        <td>{{ detalle.descuento | currency }}</td>
+                        <td class="text-end">{{ detalle.total | currency }}</td>
                     </tr>
                     <tr>
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Sub Total:</b></td>
-                        <td class="text-end"><b>{{ venta?.sub_total + venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ venta?.sub_total + venta?.descuento | currency }}</b></td>
                     </tr>
                     <tr>
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Descuento:</b></td>
-                        <td class="text-end"><b>{{ venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ venta?.descuento | currency }}</b></td>
                     </tr>
                     <tr *ngFor="let impuesto of venta?.impuestos">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end">{{ impuesto?.impuesto?.nombre }} </td>
-                        <td class="text-end">{{ impuesto.monto | currency:'USD':'symbol':'1.2'}} </td>
+                        <td class="text-end">{{ impuesto.monto | currency}} </td>
                     </tr>
                     <tr *ngIf="venta?.iva_retenido > 0">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Retención:</b></td>
-                        <td class="text-end"><b>{{ venta?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ venta?.iva_retenido | currency }}</b></td>
                     </tr>
                     <tr *ngIf="venta?.exenta > 0">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Ventas Exentas:</b></td>
-                        <td class="text-end"><b>{{ venta?.exenta | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ venta?.exenta | currency }}</b></td>
                     </tr>
                     <tr *ngIf="venta?.no_sujeta > 0">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Ventas No Sujetas:</b></td>
-                        <td class="text-end"><b>{{ venta?.no_sujeta | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ venta?.no_sujeta | currency }}</b></td>
                     </tr>
                     <tr *ngIf="venta.cuenta_a_terceros > 0">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"> <b>Cuenta a terceros</b> </td>
-                        <td class="text-end"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td class="text-end"><b> {{ venta.cuenta_a_terceros | currency}}</b> </td>
                     </tr>
                     <tr>
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Total:</b></td>
-                        <td class="text-end"><b>{{ venta?.total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ venta?.total | currency }}</b></td>
                     </tr>
                     <tr *ngIf="venta?.abonos?.length > 0">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Abonos:</b></td>
@@ -190,7 +190,7 @@
                     </tr>
                     <tr *ngIf="venta.propina > 0">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Propina:</b></td>
-                        <td class="text-end"><b>{{ venta.propina | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ venta.propina | currency }}</b></td>
                     </tr>
                     <tr *ngIf="venta?.abonos?.length > 0">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Saldo:</b></td>
@@ -316,7 +316,7 @@
                                 <option value="Confirmado">Confirmado</option>
                             </select>
                         </td>
-                        <td class="text-end">{{ abono.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ abono.total | currency }}</td>
                         <td class="text-center">
                             <a (click)="imprimirRecibo(abono)" class="btn btn-light">
                                 <i class="fa fa-fw fa-print"></i>
@@ -381,7 +381,7 @@
                                 </span>
                             </span>
                         </td>
-                        <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-right">{{venta.total | currency}}</td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>

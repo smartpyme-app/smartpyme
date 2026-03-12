@@ -142,7 +142,7 @@
             <td style="width: 150px;">
               <input type="number" value="{{detalle.descuento}}" class="form-control" name="descuento" disabled>
             </td>
-            <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+            <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}</td>
             <td style="width: 50px;" class="text-center">
               <div class="btn-group">
                 <!-- <button class="btn btn-link" (click)="delete(detalle)">
@@ -169,33 +169,33 @@
         <tbody>
           <tr>
             <td class="text-right"><b>Sub Total</b> </td>
-            <td style="width: 150px;" class="text-right"> {{ compra.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+            <td style="width: 150px;" class="text-right"> {{ compra.sub_total | currency}} </td>
             <td style="width: 50px;"></td>
           </tr>
           <tr>
             <td class="text-right"><b>Descuentos</b> </td>
-            <td style="width: 150px;" class="text-right"> {{ compra.descuento | currency:'USD':'symbol':'1.2'}} </td>
+            <td style="width: 150px;" class="text-right"> {{ compra.descuento | currency}} </td>
             <td style="width: 50px;"></td>
           </tr>
           <tr>
             <td class="text-right"> <b>Impuestos</b></td>
-            <td style="width: 150px;" class="text-right"> {{ compra.iva | currency:'USD':'symbol':'1.2'}} </td>
+            <td style="width: 150px;" class="text-right"> {{ compra.iva | currency}} </td>
             <td style="width: 50px;"></td>
           </tr>
           <tr>
             <td class="text-right"> <b>Percepción (1%)</b></td>
-            <td style="width: 150px;" class="text-right"> {{ compra.percepcion | currency:'USD':'symbol':'1.2'}} </td>
+            <td style="width: 150px;" class="text-right"> {{ compra.percepcion | currency}} </td>
             <td style="width: 50px;"></td>
           </tr>
           <tr *ngIf="compra.tipo_documento == 'Sujeto excluido'">
             <td class="text-right"> <b>Ret. Renta (10%)</b></td>
-            <td style="width: 150px;" class="text-right"> {{ compra.renta_retenida | currency:'USD':'symbol':'1.2'}}
+            <td style="width: 150px;" class="text-right"> {{ compra.renta_retenida | currency}}
             </td>
             <td style="width: 50px;"></td>
           </tr>
           <tr>
             <td class="text-right"> <b>Total</b> </td>
-            <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+            <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency}}</b> </td>
             <td style="width: 50px;"></td>
           </tr>
         </tbody>
@@ -457,7 +457,7 @@
                   <input type="text" [(ngModel)]="detalle.landed" class="form-control" name="landed" readonly>
                 </td>
                 <!-- COSTO UNITARIO  -->
-                <td style="width: 70px;" class="text-right">{{ detalle.costo_calc | currency:'USD':'symbol':'1.2'}}</td>
+                <td style="width: 70px;" class="text-right">{{ detalle.costo_calc | currency}}</td>
 
               </tr>
             <tr *ngIf="compra?.detalles?.length > 1">
@@ -517,15 +517,15 @@
   <div class="modal-body">
     <form name="facturacion" autocomplete="off" (ngSubmit)="onFacturar()">
       <div class="row text-center">
-        <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ compra.total | currency:'USD':'symbol':'1.2'
+        <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ compra.total | currency
             }}</span></h4>
         <h4 class="col-md-6">Vuelto: <span class="badge badge-info" *ngIf="compra.recibido">{{ compra.recibido -
-            compra.total | currency:'USD':'symbol':'1.2' }}</span> <span class="badge badge-info"
+            compra.total | currency }}</span> <span class="badge badge-info"
             *ngIf="!compra.recibido">$0.00</span></h4>
         <div class="form-group text-center col-md-12 my-3">
           <label for="recibido">Recibido:</label>
           <input type="number" name="recibido" [(ngModel)]="compra.recibido"
-            placeholder="{{ compra.total | currency:'USD':'symbol':'1.2' }}" class="form-control text-center">
+            placeholder="{{ compra.total | currency }}" class="form-control text-center">
         </div>
 
         <div class="form-group col-md-12 mb-3" *ngIf="!compra.nota">

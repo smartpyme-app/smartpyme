@@ -3,7 +3,7 @@
         <h5 class="col-12 pb-2 mb-2">Historial de ventas:</h5>
         <span class="text-muted float-start p-2" *ngIf="ventas?.total">
             {{ ventas?.total + ' registros' }}
-            <span *ngIf="filtrado">{{ ventas?.data | sum:'total' | currency:'USD':'symbol':'1.2'  }}</span>
+            <span *ngIf="filtrado">{{ ventas?.data | sum:'total' | currency  }}</span>
         </span>
 
         <form name="form" autocomplete="off" (ngSubmit)="onFiltrar()">
@@ -87,7 +87,7 @@
                             </ng-template>
                         </td>
 
-                        <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-right">{{venta.total | currency}}</td>
                         <td class="text-center">
                             <div class="btn-group" role="group">
                                 <a *ngIf="apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)"  class="btn btn-default" (click)="delete(venta.id)" tooltip="Eliminar">

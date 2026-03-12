@@ -231,7 +231,7 @@
                              <div class="col-md-3">
                  <div class="border-end">
                    <div class="display-6 text-primary fw-bold">
-                     {{ resultadoSimulacion.balance_proyectado.total_debe | currency:'USD':'symbol':'1.2-2' }}
+                     {{ resultadoSimulacion.balance_proyectado.total_debe | currency }}
                    </div>
                    <div class="text-muted">Total Debe</div>
                  </div>
@@ -239,7 +239,7 @@
                <div class="col-md-3">
                  <div class="border-end">
                    <div class="display-6 text-info fw-bold">
-                     {{ resultadoSimulacion.balance_proyectado.total_haber | currency:'USD':'symbol':'1.2-2' }}
+                     {{ resultadoSimulacion.balance_proyectado.total_haber | currency }}
                    </div>
                    <div class="text-muted">Total Haber</div>
                  </div>
@@ -252,7 +252,7 @@
                          'text-warning': !resultadoSimulacion.balance_proyectado.cuadra && resultadoSimulacion.balance_proyectado.cuadra_con_tolerancia,
                          'text-danger': !resultadoSimulacion.balance_proyectado.cuadra_con_tolerancia
                        }">
-                    {{ resultadoSimulacion.balance_proyectado.diferencia | currency:'USD':'symbol':'1.2-2' }}
+                    {{ resultadoSimulacion.balance_proyectado.diferencia | currency }}
                   </div>
                   <div class="text-muted">
                     Diferencia
@@ -454,10 +454,10 @@
             [ngClass]="{'table-success': cuenta.saldo_final > 0, 'table-light': cuenta.saldo_final === 0}">
           <td>{{ cuenta.codigo }}</td>
           <td>{{ cuenta.nombre }}</td>
-          <td class="text-end">{{ cuenta.saldo_inicial | currency:'USD':'symbol':'1.2-2' }}</td>
-          <td class="text-end">{{ cuenta.debe | currency:'USD':'symbol':'1.2-2' }}</td>
-          <td class="text-end">{{ cuenta.haber | currency:'USD':'symbol':'1.2-2' }}</td>
-          <td class="text-end fw-bold">{{ cuenta.saldo_final | currency:'USD':'symbol':'1.2-2' }}</td>
+          <td class="text-end">{{ cuenta.saldo_inicial | currency }}</td>
+          <td class="text-end">{{ cuenta.debe | currency }}</td>
+          <td class="text-end">{{ cuenta.haber | currency }}</td>
+          <td class="text-end fw-bold">{{ cuenta.saldo_final | currency }}</td>
         </tr>
       </tbody>
       <tfoot>
@@ -468,15 +468,15 @@
             <strong>TOTALES MOVIMIENTOS</strong>
             <small class="text-muted ms-2">(Lo que debe cuadrar)</small>
           </th>
-          <th class="text-end fw-bold fs-6">{{ balanceComprobacion.totales?.debe | currency:'USD':'symbol':'1.2-2' }}</th>
-          <th class="text-end fw-bold fs-6">{{ balanceComprobacion.totales?.haber | currency:'USD':'symbol':'1.2-2' }}</th>
+          <th class="text-end fw-bold fs-6">{{ balanceComprobacion.totales?.debe | currency }}</th>
+          <th class="text-end fw-bold fs-6">{{ balanceComprobacion.totales?.haber | currency }}</th>
           <th class="text-end fw-bold fs-6"
               [ngClass]="{
                 'text-success': balanceComprobacion.totales?.cuadra_movimientos,
                 'text-warning': !balanceComprobacion.totales?.cuadra_movimientos && balanceComprobacion.totales?.cuadra_movimientos_con_tolerancia,
                 'text-danger': !balanceComprobacion.totales?.cuadra_movimientos_con_tolerancia
               }">
-            {{ balanceComprobacion.totales?.diferencia_movimientos | currency:'USD':'symbol':'1.2-2' }}
+            {{ balanceComprobacion.totales?.diferencia_movimientos | currency }}
             <i class="fa ms-1"
                [ngClass]="{
                  'fa-check-circle': balanceComprobacion.totales?.cuadra_movimientos,
@@ -493,10 +493,10 @@
             <small>Totales por Naturaleza</small>
             <small class="text-muted ms-2">(Solo informativo)</small>
           </th>
-          <th class="text-end text-muted">{{ balanceComprobacion.totales?.deudor | currency:'USD':'symbol':'1.2-2' }}</th>
-          <th class="text-end text-muted">{{ balanceComprobacion.totales?.acreedor | currency:'USD':'symbol':'1.2-2' }}</th>
+          <th class="text-end text-muted">{{ balanceComprobacion.totales?.deudor | currency }}</th>
+          <th class="text-end text-muted">{{ balanceComprobacion.totales?.acreedor | currency }}</th>
           <th class="text-end text-muted">
-            {{ balanceComprobacion.totales?.diferencia | currency:'USD':'symbol':'1.2-2' }}
+            {{ balanceComprobacion.totales?.diferencia | currency }}
             <i class="fa fa-info-circle ms-1 text-muted"
                title="Esta diferencia es normal y no indica error"></i>
           </th>

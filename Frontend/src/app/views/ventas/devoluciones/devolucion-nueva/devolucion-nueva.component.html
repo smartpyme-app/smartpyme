@@ -59,35 +59,35 @@
                     <tbody>
                         <tr>
                             <td class="text-right"> Sub Total: </td>
-                            <td width="70px" class="text-right"> {{ devolucion.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+                            <td width="70px" class="text-right"> {{ devolucion.sub_total | currency}} </td>
                         </tr>
                         <tr>
                             <td class="text-right"> IVA: </td>
-                            <td width="70px" class="text-right"> {{ devolucion.iva | currency:'USD':'symbol':'1.2'}} </td>
+                            <td width="70px" class="text-right"> {{ devolucion.iva | currency}} </td>
                         </tr>
                        <tr *ngIf="devolucion.retencion">
                            <td class="text-right"> <b>Retención (1%)</b></td>
-                           <td style="width: 150px;" class="text-right"> {{ devolucion.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
+                           <td style="width: 150px;" class="text-right"> {{ devolucion.iva_retenido | currency}} </td>
                            <td style="width: 50px;"></td>
                        </tr>
                        <tr *ngIf="devolucion.exenta > 0">
                            <td class="text-right"> <b>Ventas Exentas</b> </td>
-                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.exenta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.exenta | currency}}</b> </td>
                            <td style="width: 50px;"></td>
                        </tr>
                        <tr *ngIf="devolucion.no_sujeta > 0">
                            <td class="text-right"> <b>Ventas No Sujetas</b> </td>
-                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.no_sujeta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.no_sujeta | currency}}</b> </td>
                            <td style="width: 50px;"></td>
                        </tr>
                        <tr *ngIf="devolucion.cuenta_a_terceros > 0">
                            <td class="text-right"> <b>Cuenta a terceros</b> </td>
-                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.cuenta_a_terceros | currency}}</b> </td>
                            <td style="width: 50px;"></td>
                        </tr>
                         <tr>
                             <td class="text-right"> <b>Total:</b> </td>
-                            <td width="70px" class="text-right"><b> {{ devolucion.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                            <td width="70px" class="text-right"><b> {{ devolucion.total | currency}}</b> </td>
                         </tr>
                     </tbody>
                 </table>

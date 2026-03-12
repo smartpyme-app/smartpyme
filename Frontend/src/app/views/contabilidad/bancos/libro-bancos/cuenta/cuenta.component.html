@@ -79,7 +79,7 @@
                             <td>
                                 <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
                             </td>
-                            <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-right">{{venta.total | currency}}</td>
                         </tr>
                     </tbody>
                     <tfoot>
@@ -141,7 +141,7 @@
                             <td>
                                 <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">{{ compra.estado }}</span>
                             </td>
-                            <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-right">{{compra.total | currency}}</td>
                         </tr>
                     </tbody>
                     <tfoot>
@@ -209,7 +209,7 @@
                                     {{gasto.estado}}
                                 </span>
                             </td>
-                            <td class="text-end">{{gasto.total | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{gasto.total | currency}}</td>
 
                         </tr>
                     </tbody>
@@ -272,7 +272,7 @@
                             <td>
                                 <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
                             </td>
-                            <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-right">{{venta.total | currency}}</td>
                         </tr>
                     </tbody>
                     <tfoot>

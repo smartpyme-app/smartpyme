@@ -63,8 +63,8 @@ class AuthJWTController extends Controller
         $acceso->fecha = $user->ultimo_login;
         $acceso->save();
 
-        // Cargar datos adicionales
-        $user->load('empresa.licencia');
+        // Cargar datos adicionales (incluyendo currency para símbolo de moneda por país)
+        $user->load(['empresa.licencia', 'empresa.currency']);
 
         // Cargar permisos
         $rolePermissions = $user->getPermissionsViaRoles()->pluck('name');

@@ -111,7 +111,7 @@
                   </td>
                   <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                   <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
-                  <td class="text-right">{{ producto.precio | currency:'USD':'symbol':'1.2' }}</td>
+                  <td class="text-right">{{ producto.precio | currency }}</td>
                   <td class="text-center">
                     <div *ngIf="filtros.id_bodega">
                       {{ producto.inventarios | filter:'id_bodega':filtros.id_bodega | sum:'stock' }}

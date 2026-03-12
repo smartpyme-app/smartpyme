@@ -215,13 +215,13 @@
                
                 <tr>
                     <td>{{ producto.precio | currency }}</td>
-                    <td>{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
+                    <td>{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency }}</td>
                     <td>Todos</td>
                 </tr>
 
                 <tr class="animated fadeIn" *ngFor=" let precio of producto?.precios">
                     <td>{{ precio.precio | currency }}</td>
-                    <td>{{ (precio.precio * 1) + (precio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
+                    <td>{{ (precio.precio * 1) + (precio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency }}</td>
                     <td>
                         <div class="d-flex gap-2 flex-wrap">
                             <span class="badge bg-default text-dark" *ngFor=" let usuario of precio.usuarios">

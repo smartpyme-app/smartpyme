@@ -94,7 +94,7 @@
                                 </span>
                             </span>
                         </td>
-                        <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-right">{{venta.total | currency}}</td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
@@ -214,7 +214,7 @@
                 <label for="id_venta">Seleccionar venta para realizar una devolución</label>
                 <ng-select name="id_venta" [(ngModel)]="id_venta" class="form-select p-0">
                     <ng-option [value]="venta.id" *ngFor="let venta of ventasList">
-                        {{ venta.fecha | date:'dd/MM/yyyy' }} {{ venta.nombre_cliente }} {{ venta.total | currency:'USD':'symbol':'1.2'}} {{ venta.nombre_documento }} # {{ venta.correlativo }}
+                        {{ venta.fecha | date:'dd/MM/yyyy' }} {{ venta.nombre_cliente }} {{ venta.total | currency}} {{ venta.nombre_documento }} # {{ venta.correlativo }}
                     </ng-option>
                 </ng-select>
             </div>

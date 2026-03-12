@@ -53,18 +53,18 @@
                     
                     <td class="text-center">{{compra.fecha | date:'dd-MM-yyyy'}}</td>
                     <td class="text-center">{{compra.cantidad}}</td>
-                    <td class="text-center">{{compra.subtotal | currency:'USD':'symbol':'1.2'}}</td>
-                    <td class="text-center">{{compra.iva | currency:'USD':'symbol':'1.2'}}</td>
-                    <td class="text-center">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+                    <td class="text-center">{{compra.subtotal | currency}}</td>
+                    <td class="text-center">{{compra.iva | currency}}</td>
+                    <td class="text-center">{{compra.total | currency}}</td>
                 </tr>
 
                 <tr *ngIf="compras?.length > 0 && !loading">
                     <td class="text-center"><b>Total</b></td>                                
                     <td class="text-center"><b>{{ compras | sum:'cantidad'}}</b></td>
-                    <td class="text-center"><b>{{ compras | sum:'subtotal' | currency:'USD':'symbol':'1.2' }}</b></td>
-                    <td class="text-center"><b>{{ compras | sum:'iva' | currency:'USD':'symbol':'1.2' }}</b></td>
-                    <td class="text-center"><b>{{ compras | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
-                    <td class="text-center"><b>{{ compras | sum:'utilidad' | currency:'USD':'symbol':'1.2' }}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'subtotal' | currency }}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'iva' | currency }}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'total' | currency }}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'utilidad' | currency }}</b></td>
                 </tr>
             </tbody>
         </table>

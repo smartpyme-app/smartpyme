@@ -256,6 +256,22 @@ export class ApiService {
   auth_user() {
     return JSON.parse(localStorage.getItem('SP_auth_user')!);
   }
+
+  getCurrencySymbol(): string {
+    try {
+      const empresa = this.auth_user()?.empresa;
+      const symbol = empresa?.currency_symbol || empresa?.currency?.currency_symbol;
+      if (symbol) return symbol;
+      const moneda = empresa?.moneda || 'USD';
+      const symbols: Record<string, string> = {
+        USD: '$', HNL: 'L', GTQ: 'Q', NIO: 'C$', CRC: '₡',
+        PAB: 'B/.', BZD: '$', SVC: '₡', EUR: '€',
+      };
+      return symbols[moneda] ?? '$';
+    } catch {
+      return '$';
+    }
+  }
   register_user() {
     return JSON.parse(localStorage.getItem('SP_user_register')!);
   }

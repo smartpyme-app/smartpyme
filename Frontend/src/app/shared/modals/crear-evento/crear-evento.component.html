@@ -141,13 +141,13 @@
                 class="form-control">
             </td>
             <!-- <td class="text-end">
-              {{ det.costo | currency:'USD':'symbol':'1.2'}}
+              {{ det.costo | currency}}
             </td> -->
             <td class="text-end">
-              {{ det.precio | currency:'USD':'symbol':'1.2'}}
+              {{ det.precio | currency}}
             </td>
             <td class="text-end">
-              {{ (det.cantidad||0) * det.precio | currency:'USD':'symbol':'1.2'}}
+              {{ (det.cantidad||0) * det.precio | currency}}
             </td>
             <td><button class="btn" (click)="eliminarDetalle(i)">
                 <i class="fa-regular fa-trash-can text-danger"></i>

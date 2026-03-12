@@ -132,11 +132,11 @@
   <div class="modal-body">
     <form name="facturacion" autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row text-center">
-            <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ facturacion.total | currency:'USD':'symbol':'1.2' }}</span></h4>
-            <h4 class="col-md-6">Vuelto: <span class="badge badge-info" *ngIf="facturacion.recibido">{{ facturacion.recibido - facturacion.total | currency:'USD':'symbol':'1.2' }}</span> <span class="badge badge-info" *ngIf="!facturacion.recibido">$0.00</span></h4>
+            <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ facturacion.total | currency }}</span></h4>
+            <h4 class="col-md-6">Vuelto: <span class="badge badge-info" *ngIf="facturacion.recibido">{{ facturacion.recibido - facturacion.total | currency }}</span> <span class="badge badge-info" *ngIf="!facturacion.recibido">$0.00</span></h4>
             <div class="form-group text-center col-md-12 my-3">
                 <label for="recibido">Recibido:</label>
-                <input type="number" name="recibido" [(ngModel)]="facturacion.recibido" placeholder="{{ facturacion.total | currency:'USD':'symbol':'1.2' }}" class="form-control text-center">
+                <input type="number" name="recibido" [(ngModel)]="facturacion.recibido" placeholder="{{ facturacion.total | currency }}" class="form-control text-center">
             </div>
 
             <div class="form-group col-md-12 mb-3" *ngIf="!facturacion.nota">

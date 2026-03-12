@@ -74,7 +74,7 @@
                                         {{ orden.estado }}
                                     </span>
                                 </td>
-                                <td class="text-center d-none d-md-table-cell">{{ orden.total  | currency:'USD':'symbol':'2.2' }}</td>
+                                <td class="text-center d-none d-md-table-cell">{{ orden.total  | currency }}</td>
                                 <td class="text-center">
                                     <div role="group" class="btn-group">
                                         <a tooltip="Pre imprimir ticket" class="btn btn-default" (click)="imprimirDoc(orden)">
