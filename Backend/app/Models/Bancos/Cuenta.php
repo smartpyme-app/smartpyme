@@ -1,20 +1,27 @@
 <?php
 
-namespace App\Models\Admin;
+namespace App\Models\Bancos;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 
-class FormaDePago extends Model {
+class Cuenta extends Model
+{
+    use HasFactory;
 
-    protected $table = 'formas_pago';
-    protected $fillable = array(
-        'nombre',
-        'orden',
+    protected $table = 'cuentas_bancarias';
+
+    protected $fillable = [
+        'numero',
+        'nombre_banco',
+        'tipo',
+        'correlativo_cheques',
+        'saldo',
+        'id_cuenta_contable',
         'id_empresa',
-        'id_banco',
-    );
+    ];
 
     protected static function boot()
     {
@@ -31,11 +38,4 @@ class FormaDePago extends Model {
     {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
-
-    public function banco()
-    {
-        return $this->belongsTo('App\Models\Bancos\Cuenta', 'id_banco');
-    }
-
-
 }

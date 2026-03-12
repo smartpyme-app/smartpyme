@@ -89,6 +89,7 @@
                 </button>
                 <div [collapse]="finanzasIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li *ngIf="apiService.isModuloBancos()" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/home.png" class="icon me-2">Bancos</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
