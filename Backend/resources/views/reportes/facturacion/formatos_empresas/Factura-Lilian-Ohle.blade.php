@@ -228,7 +228,7 @@
                 </tr>
             </tbody>
         </table>
-
+<!-- 
         <table id="op">
             <thead>
                 <tr>
@@ -250,8 +250,8 @@
                     <td>{{ $venta->condicion }}</td> 
                 </tr>
             </tbody>
-        </table>
-        <br>
+        </table> -->
+        <!-- <br> -->
         <?php
             $iva = $venta->empresa()->pluck('iva')->first() / 100;
             $ivaEmpresa = (float) ($venta->empresa()->pluck('iva')->first() ?? 18);
