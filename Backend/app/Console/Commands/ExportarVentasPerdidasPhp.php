@@ -8,8 +8,9 @@ use Illuminate\Console\Command;
 class ExportarVentasPerdidasPhp extends Command
 {
     protected $signature = 'ventas:exportar-recuperar
-                            {--fecha-inicio=2026-02-11 : Fecha inicio (Y-m-d)}
-                            {--fecha-fin=2026-02-12 : Fecha fin (Y-m-d)}
+                            {--fecha-inicio= : Fecha inicio (Y-m-d)}
+                            {--fecha-fin= : Fecha fin (Y-m-d)}
+                            {--id-empresa= : Filtrar solo por esta empresa (opcional)}
                             {--ruta=datos/recuperar : Carpeta donde guardar los archivos}';
 
     protected $description = 'Exporta ventas/clientes/detalles perdidos a arrays PHP para importar en producción';
@@ -18,7 +19,13 @@ class ExportarVentasPerdidasPhp extends Command
     {
         $fechaInicio = $this->option('fecha-inicio');
         $fechaFin = $this->option('fecha-fin');
+        $idEmpresa = $this->option('id-empresa') ? (int) $this->option('id-empresa') : null;
         $rutaBase = base_path(ltrim($this->option('ruta'), '/'));
+
+        if (empty($fechaInicio) || empty($fechaFin)) {
+            $this->error('Debes especificar --fecha-inicio y --fecha-fin');
+            return 1;
+        }
 
         if (!is_dir($rutaBase)) {
             if (!mkdir($rutaBase, 0755, true)) {
@@ -27,12 +34,20 @@ class ExportarVentasPerdidasPhp extends Command
             }
         }
 
-        $this->info("Exportando ventas perdidas entre {$fechaInicio} y {$fechaFin}...");
+        $msg = "Exportando ventas perdidas entre {$fechaInicio} y {$fechaFin}";
+        if ($idEmpresa) {
+            $msg .= " (empresa {$idEmpresa})";
+        }
+        $this->info($msg . '...');
 
-        $service = new RecuperarVentasPerdidasService($fechaInicio, $fechaFin);
+        $service = new RecuperarVentasPerdidasService($fechaInicio, $fechaFin, $idEmpresa);
         $datos = $service->getDatosParaExportar();
 
-        $nombreArchivo = "ventas_perdidas_{$fechaInicio}_{$fechaFin}.php";
+        $nombreArchivo = "ventas_perdidas_{$fechaInicio}_{$fechaFin}";
+        if ($idEmpresa) {
+            $nombreArchivo .= "_empresa_{$idEmpresa}";
+        }
+        $nombreArchivo .= ".php";
         $rutaArchivo = $rutaBase . '/' . $nombreArchivo;
 
         $contenido = $this->generarContenidoPhp($datos);
