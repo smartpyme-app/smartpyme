@@ -121,12 +121,24 @@ export class FacturacionCompraComponent implements OnInit {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
-            this.bancos = bancos;
-        }, error => {this.alertService.error(error);});
+        if (this.apiService.isModuloBancos()) {
+            this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+                this.bancos = bancos;
+            }, error => {this.alertService.error(error);});
+        } else {
+            this.apiService.getAll('bancos/list').subscribe(bancos => {
+                this.bancos = bancos;
+            }, error => {this.alertService.error(error);});
+        }
 
         this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
             this.formaPagos = formaPagos;
+            if (this.apiService.isModuloBancos() && this.compra.forma_pago && this.compra.forma_pago !== 'Efectivo') {
+                const formaPagoSeleccionada = formaPagos.find((fp: any) => fp.nombre === this.compra.forma_pago);
+                if (formaPagoSeleccionada?.banco?.nombre_banco && !this.compra.detalle_banco) {
+                    this.compra.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+                }
+            }
         }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('impuestos').subscribe(impuestos => {
@@ -416,6 +428,19 @@ export class FacturacionCompraComponent implements OnInit {
             this.compra.estado = 'Consigna';
         }else{
             this.setCredito();
+        }
+    }
+
+    public cambioMetodoDePago() {
+        if (this.apiService.isModuloBancos() && this.compra.forma_pago && this.compra.forma_pago !== 'Efectivo') {
+            const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.compra.forma_pago);
+            if (formaPagoSeleccionada?.banco?.nombre_banco) {
+                this.compra.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+            } else {
+                this.compra.detalle_banco = '';
+            }
+        } else if (this.compra.forma_pago === 'Efectivo') {
+            this.compra.detalle_banco = '';
         }
     }
 

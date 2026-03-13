@@ -67,22 +67,29 @@ export class GastoComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('bancos/list').subscribe(
-      (bancos) => {
-        this.bancos = bancos;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    if (this.apiService.isModuloBancos()) {
+      this.apiService.getAll('banco/cuentas/list').subscribe(
+        (bancos) => { this.bancos = bancos; },
+        (error) => { this.alertService.error(error); }
+      );
+    } else {
+      this.apiService.getAll('bancos/list').subscribe(
+        (bancos) => { this.bancos = bancos; },
+        (error) => { this.alertService.error(error); }
+      );
+    }
 
     this.apiService.getAll('formas-de-pago/list').subscribe(
       (formaspago) => {
         this.formaspago = formaspago;
+        if (this.apiService.isModuloBancos() && this.gasto.forma_pago && this.gasto.forma_pago !== 'Efectivo' && this.gasto.forma_pago !== 'Wompi') {
+          const formaPagoSeleccionada = formaspago.find((fp: any) => fp.nombre === this.gasto.forma_pago);
+          if (formaPagoSeleccionada?.banco?.nombre_banco && !this.gasto.detalle_banco) {
+            this.gasto.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+          }
+        }
       },
-      (error) => {
-        this.alertService.error(error);
-      }
+      (error) => { this.alertService.error(error); }
     );
 
     this.apiService.getAll('gastos/categorias').subscribe(
@@ -362,6 +369,19 @@ export class GastoComponent implements OnInit {
       this.gasto.fecha_pago = moment()
         .add(this.gasto.condicion.split(' ')[0], 'days')
         .format('YYYY-MM-DD');
+    }
+  }
+
+  public cambioMetodoDePago() {
+    if (this.apiService.isModuloBancos() && this.gasto.forma_pago && this.gasto.forma_pago !== 'Efectivo' && this.gasto.forma_pago !== 'Wompi') {
+      const formaPagoSeleccionada = this.formaspago.find((fp: any) => fp.nombre === this.gasto.forma_pago);
+      if (formaPagoSeleccionada?.banco?.nombre_banco) {
+        this.gasto.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+      } else {
+        this.gasto.detalle_banco = '';
+      }
+    } else if (this.gasto.forma_pago === 'Efectivo' || this.gasto.forma_pago === 'Wompi') {
+      this.gasto.detalle_banco = '';
     }
   }
 

@@ -1,0 +1,71 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Cuentas bancarias</h2>
+    <button routerLink="/bancos/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted" *ngIf="cuentas?.total">
+                Mostrando {{ cuentas?.to }} de {{ cuentas?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCuentas()" autocomplete="off">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 d-flex gap-2 mb-3">
+        <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cuentas']">Cuentas</button>
+    </div>
+
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Nombre de banco</th>
+                        <th>Número de cuenta</th>
+                        <th>Tipo</th>
+                        <th class="text-end">Saldo</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" class="text-center" *ngIf="cuentas?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene cuentas bancarias registradas</span>
+                        </td>
+                        <td colspan="5" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngFor="let cuenta of cuentas?.data">
+                        <td>{{ cuenta.nombre_banco }}</td>
+                        <td>{{ cuenta.numero }}</td>
+                        <td>{{ cuenta.tipo }}</td>
+                        <td class="text-end">{{ cuenta.saldo | currency }}</td>
+                        <td class="text-center">
+                            <a class="btn btn-light me-1" routerLink="/bancos/cuenta/{{ cuenta.id }}" tooltip="Ver y editar">
+                                <i class="fa fa-pencil-alt"></i>
+                            </a>
+                            <button type="button" class="btn btn-light text-danger" (click)="delete(cuenta)" tooltip="Eliminar">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="cuentas?.last_page > 1">
+            <app-pagination [items]="cuentas" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>

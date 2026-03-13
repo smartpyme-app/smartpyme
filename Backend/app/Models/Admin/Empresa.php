@@ -694,6 +694,14 @@ class Empresa extends Model
     }
 
     /**
+     * Verificar si el módulo de bancos está activo para la empresa
+     */
+    public function isModuloBancos(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'modulo_bancos', false);
+    }
+
+    /**
      * Obtener la metodología de lotes (FIFO, LIFO, FEFO, Manual)
      */
     public function getLotesMetodologia(): string
