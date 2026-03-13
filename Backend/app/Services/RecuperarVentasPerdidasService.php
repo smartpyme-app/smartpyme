@@ -8,11 +8,13 @@ class RecuperarVentasPerdidasService
 {
     protected $fechaInicio;
     protected $fechaFin;
+    protected $idEmpresa;
 
-    public function __construct(string $fechaInicio, string $fechaFin)
+    public function __construct(string $fechaInicio, string $fechaFin, ?int $idEmpresa = null)
     {
         $this->fechaInicio = $fechaInicio;
         $this->fechaFin = $fechaFin;
+        $this->idEmpresa = $idEmpresa;
     }
 
     /**
@@ -21,14 +23,16 @@ class RecuperarVentasPerdidasService
      */
     public function getVentasPerdidas(): array
     {
-        $ventasNova = DB::connection('mysql_sp_nova')
+        $query = DB::connection('mysql_sp_nova')
             ->table('ventas')
             ->whereBetween('fecha', [$this->fechaInicio, $this->fechaFin])
-            ->where('cotizacion', 0)
-            ->where(function ($q) {
-                $q->where('estado', '!=', 'Anulada')->orWhereNull('estado');
-            })
-            ->get();
+            ->where('cotizacion', 0);
+
+        if ($this->idEmpresa !== null) {
+            $query->where('id_empresa', $this->idEmpresa);
+        }
+
+        $ventasNova = $query->get();
 
         $ventasPerdidas = [];
         foreach ($ventasNova as $venta) {
