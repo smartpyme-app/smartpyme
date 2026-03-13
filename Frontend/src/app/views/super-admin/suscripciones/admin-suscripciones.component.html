@@ -610,7 +610,7 @@
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto:</label>
           <div class="input-group">
-            <span class="input-group-text">$</span>
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
             <input
               type="number"
               class="form-control"
@@ -627,7 +627,7 @@
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto Mensual:</label>
           <div class="input-group">
-            <span class="input-group-text">$</span>
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
             <input
               type="number"
               class="form-control"
@@ -645,7 +645,7 @@
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto Anual:</label>
           <div class="input-group">
-            <span class="input-group-text">$</span>
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
             <input
               type="number"
               class="form-control"
@@ -885,7 +885,7 @@
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto:</label>
           <div class="input-group">
-            <span class="input-group-text">$</span>
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
             <input
               type="number"
               class="form-control"
@@ -907,7 +907,7 @@
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto Mensual:</label>
           <div class="input-group">
-            <span class="input-group-text">$</span>
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
             <input
               type="number"
               class="form-control"
@@ -925,7 +925,7 @@
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto Anual:</label>
           <div class="input-group">
-            <span class="input-group-text">$</span>
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
             <input
               type="number"
               class="form-control"

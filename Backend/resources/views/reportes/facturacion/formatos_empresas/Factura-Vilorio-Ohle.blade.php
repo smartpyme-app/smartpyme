@@ -78,7 +78,32 @@
             </tbody>
         </table>
 
-        @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
+        <?php
+            $iva = $venta->empresa()->pluck('iva')->first() / 100;
+            $ivaEmpresa = (float) ($venta->empresa()->pluck('iva')->first() ?? 18);
+            $iva_15 = 0;
+            $iva_18 = 0;
+            $gravada_15 = 0;
+            $gravada_18 = 0;
+            foreach ($venta->detalles as $det) {
+                $porc = $det->porcentaje_impuesto !== null && $det->porcentaje_impuesto !== '' ? (float) $det->porcentaje_impuesto : $ivaEmpresa;
+                if ($porc == 15 || (abs($porc - 15) < 0.01)) {
+                    $iva_15 += (float) ($det->iva ?? 0);
+                    $gravada_15 += (float) ($det->gravada ?? $det->sub_total ?? 0);
+                } elseif ($porc == 18 || (abs($porc - 18) < 0.01)) {
+                    $iva_18 += (float) ($det->iva ?? 0);
+                    $gravada_18 += (float) ($det->gravada ?? $det->sub_total ?? 0);
+                } else {
+                    if ($porc < 17) {
+                        $iva_15 += (float) ($det->iva ?? 0);
+                        $gravada_15 += (float) ($det->gravada ?? $det->sub_total ?? 0);
+                    } else {
+                        $iva_18 += (float) ($det->iva ?? 0);
+                        $gravada_18 += (float) ($det->gravada ?? $det->sub_total ?? 0);
+                    }
+                }
+            }
+        ?>
         
         <table id="productos">
             <thead style="display: table-row-group;">
@@ -117,22 +142,22 @@
                 <tr>
                     <td style="border-bottom: none; border-top: none;" colspan="4">No. de registro de la SAG:</td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Gravado 15%:</td> 
-                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($venta->sub_total, 2) }}</td>
+                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($gravada_15, 2) }}</td>
                 </tr>
                 <tr>
                     <td style="border-bottom: none; border-top: none;" colspan="4"></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Gravado 18%:</td>
-                    <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
+                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($gravada_18, 2) }}</td>
                 </tr>
                 <tr>
                     <td style="border-bottom: none; border-top: none;" colspan="4"></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">ISV 15%:</td>
-                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($venta->iva, 2) }}</td>
+                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($iva_15, 2) }}</td>
                 </tr>
                 <tr>
                     <td style="border-bottom: none; border-top: none;" colspan="4"></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">ISV 18%:</td>
-                    <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
+                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($iva_18, 2) }}</td>
                 </tr>
                 <tr>
                     <td style="border-bottom: none; border-top: none;" colspan="4">_____________________________   &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp;    ______________________________</td>

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Ventas\Cotizaciones;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
+use App\Models\Registros\Cliente;
+use App\Models\Ventas\Clientes\Cliente as ClienteVenta;
 use App\Models\Ventas\Venta as Cotizacion;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Detalle;
@@ -13,7 +15,6 @@ use Carbon\Carbon;
 use JWTAuth;
 use App\Exports\CotizacionesExport;
 use App\Models\CotizacionVenta;
-use App\Models\Ventas\Clientes\Cliente;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
@@ -25,58 +26,88 @@ use App\Http\Requests\Ventas\Cotizaciones\FacturacionCotizacionRequest;
 class CotizacionesController extends Controller
 {
 
-    public function index(Request $request)
-    {
-        $ordenes = Cotizacion::when($request->inicio, function ($query) use ($request) {
-            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
-        })
-            ->when($request->id_sucursal, function ($query) use ($request) {
-                return $query->where('id_sucursal', $request->id_sucursal);
-            })
-            ->when($request->id_usuario, function ($query) use ($request) {
-                return $query->where('id_usuario', $request->id_usuario);
-            })
-            ->when($request->id_cliente, function ($query) use ($request) {
-                return $query->where('id_cliente', $request->id_cliente);
-            })
-            ->when($request->forma_pago, function ($query) use ($request) {
-                return $query->where('forma_pago', $request->forma_pago);
-            })
-            ->when($request->id_canal, function ($query) use ($request) {
-                return $query->where('id_canal', $request->id_canal);
-            })
-            ->when($request->id_documento, function ($query) use ($request) {
-                return $query->where('id_documento', $request->id_documento);
-            })
-            ->when($request->id_proyecto, function ($query) use ($request) {
-                return $query->where('id_proyecto', $request->id_proyecto);
-            })
-            ->when($request->estado, function ($query) use ($request) {
-                return $query->where('estado', $request->estado);
-            })
-            ->when($request->metodo_pago, function ($query) use ($request) {
-                return $query->where('metodo_pago', $request->metodo_pago);
-            })
-            ->when($request->tipo_documento, function ($query) use ($request) {
-                return $query->where('tipo_documento', $request->tipo_documento);
-            })
-            ->when($request->buscador, function ($query) use ($request) {
-                return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('estado', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
-            })
-            ->where('cotizacion', 1)
-            ->orderBy($request->orden, $request->direccion)
-            ->orderBy('id', 'desc')
-            ->paginate($request->paginate);
+    public function index(Request $request) {
+
+        $ordenes = Cotizacion::when($request->inicio, function($query) use ($request){
+                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                        })
+                        ->when($request->id_sucursal, function($query) use ($request){
+                            return $query->where('id_sucursal', $request->id_sucursal);
+                        })
+                        ->when($request->id_usuario, function($query) use ($request){
+                            return $query->where('id_usuario', $request->id_usuario);
+                        })
+                        ->when($request->id_cliente, function($query) use ($request){
+                            return $query->where('id_cliente', $request->id_cliente);
+                        })
+                        ->when($request->forma_pago, function($query) use ($request){
+                            return $query->where('forma_pago', $request->forma_pago);
+                        })
+                        ->when($request->id_canal, function($query) use ($request){
+                            return $query->where('id_canal', $request->id_canal);
+                        })
+                        ->when($request->id_documento, function($query) use ($request){
+                            return $query->where('id_documento', $request->id_documento);
+                        })
+                        ->when($request->id_proyecto, function($query) use ($request){
+                            return $query->where('id_proyecto', $request->id_proyecto);
+                        })
+                        ->when($request->estado, function($query) use ($request){
+                            return $query->where('estado', $request->estado);
+                        })
+                        ->when($request->metodo_pago, function($query) use ($request){
+                            return $query->where('metodo_pago', $request->metodo_pago);
+                        })
+                        ->when($request->tipo_documento, function($query) use ($request){
+                            return $query->where('tipo_documento', $request->tipo_documento);
+                        })
+                        ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscadorCotizaciones($query, (string) $request->buscador))
+                    ->where('cotizacion', 1)
+                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy('id', 'desc')
+                    ->paginate($request->paginate);
 
         return Response()->json($ordenes, 200);
     }
 
-    public function read($id)
+    /**
+     * Aplica el filtro de búsqueda por cliente (FULLTEXT: nombre, apellido, ncr, nit, nombre_empresa),
+     * correlativo (LIKE), y ventas (FULLTEXT: num_orden, observaciones, forma_pago, estado, numero_control).
+     */
+    private function aplicarFiltroBuscadorCotizaciones($query, string $termino)
     {
-        Log::info('Leyendo cotización con id: ' . $id);
+        $termino = trim(preg_replace('/\s+/', ' ', $termino));
+        if ($termino === '') {
+            return $query;
+        }
+
+        $buscador = '%' . $termino . '%';
+        $palabras = array_values(array_filter(explode(' ', $termino), fn ($p) => $p !== ''));
+
+        $matchClientes = count($palabras) > 1
+            ? implode(' ', array_map(fn ($p) => '+' . preg_replace('/[+\-<>()~*"]/', '', $p), $palabras))
+            : $termino;
+        $clienteIds = ClienteVenta::query()
+            ->whereRaw(
+                'MATCH(clientes.nombre, clientes.apellido, clientes.nombre_empresa, clientes.nit, clientes.ncr) AGAINST(? IN ' . (count($palabras) > 1 ? 'BOOLEAN' : 'NATURAL LANGUAGE') . ' MODE)',
+                [$matchClientes]
+            )
+            ->limit(5000)
+            ->pluck('id');
+
+        return $query->where(function ($q) use ($buscador, $clienteIds, $termino) {
+            if ($clienteIds->isNotEmpty()) {
+                $q->whereIn('id_cliente', $clienteIds);
+            }
+            $q->orWhere('correlativo', 'like', $buscador)
+                ->orWhereRaw(
+                    'MATCH(ventas.num_orden, ventas.observaciones, ventas.forma_pago, ventas.estado, ventas.numero_control) AGAINST(? IN NATURAL LANGUAGE MODE)',
+                    [$termino]
+                );
+        });
+    }
+
+    public function read($id) {
 
         $orden = CotizacionVenta::where('id', $id)->with('cliente', 'detalles.producto','detalles.customFields.customFieldValue', 'detalles.customFields.customField', 'vendedor', 'empresa', 'documento', 'usuario')->firstOrFail();
         // $orden->saldo = $orden->saldo;

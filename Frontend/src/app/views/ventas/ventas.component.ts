@@ -1,6 +1,7 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
@@ -26,7 +27,7 @@ import { debounceTime, takeUntil } from 'rxjs/operators';
     selector: 'app-ventas',
     templateUrl: './ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
@@ -157,11 +158,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
   // No sobrescribir untilDestroyed, usar la propiedad de la clase base
 
-  public override openModal(template: TemplateRef<any>, item?: any) {
+  public override openModal(template: TemplateRef<any>, item?: any, config?: { class?: string }) {
     if (item) {
       this.venta = item;
     }
-    this.modalRef = this.modalService.show(template);
+    this.modalRef = this.modalService.show(template, config || {});
   }
 
   public override closeModal() {
@@ -379,6 +380,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   }
 
   public filtrarVentas() {
+    // Al buscar por texto, volver siempre a la primera página
+    if (this.filtros.buscador?.toString().trim()) {
+      this.filtros.page = 1;
+    }
+
     // Limpiar valores vacíos antes de navegar
     const queryParams: any = {};
     Object.keys(this.filtros).forEach(key => {
@@ -466,14 +472,24 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
   public openModalEdit(template: TemplateRef<any>, venta: any) {
     // Cargar los datos completos de la venta antes de abrir el modal
-    this.loading = true;
+    // this.loading = true;
     this.apiService.read('venta/', venta.id)
       .pipe(this.untilDestroyed())
       .subscribe({
         next: (ventaCompleta) => {
           this.loading = false;
 
-          // Cargar datos auxiliares
+          // Crear una copia profunda del objeto para evitar que los cambios se reflejen inmediatamente en el listado
+          const ventaCopia = JSON.parse(JSON.stringify(ventaCompleta));
+          if (!ventaCopia.condicion) {
+            ventaCopia.condicion = ventaCopia.estado === 'Pendiente' ? 'Crédito' : 'Contado';
+          }
+
+          const abrirModalCuandoListo = () => {
+            this.openModal(template, ventaCopia, { class: 'modal-xl' });
+          };
+
+          // Cargar datos auxiliares (en paralelo cuando aplique)
           if (!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos) {
             this.sharedDataService.getProyectos()
               .pipe(this.untilDestroyed())
@@ -498,21 +514,6 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
                   this.documentos = this.documentos.filter(
                     (x: any) => x.id_sucursal == (ventaCompleta as any).id_sucursal
                   );
-                  this.cdr.markForCheck();
-                },
-                error: (error) => {
-                  this.alertService.error(error);
-                  this.cdr.markForCheck();
-                }
-              });
-          }
-
-          if (!this.formaPagos.length) {
-            this.sharedDataService.getFormasDePago()
-              .pipe(this.untilDestroyed())
-              .subscribe({
-                next: (formaPagos) => {
-                  this.formaPagos = formaPagos;
                   this.cdr.markForCheck();
                 },
                 error: (error) => {
@@ -552,17 +553,23 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
               });
           }
 
-          // Crear una copia profunda del objeto para evitar que los cambios se reflejen inmediatamente en el listado
-          const ventaCopia = JSON.parse(JSON.stringify(ventaCompleta));
-
-          // Inicializar el campo condicion si no existe
-          if (!ventaCopia.condicion) {
-            // Si el estado es Pendiente, probablemente es Crédito, de lo contrario Contado
-            ventaCopia.condicion = ventaCopia.estado === 'Pendiente' ? 'Crédito' : 'Contado';
+          // Métodos de pago: usar el mismo endpoint que en facturación (formas-de-pago/list) y esperar a que carguen antes de abrir el modal
+          if (!this.formaPagos.length) {
+            this.apiService.getAll('formas-de-pago/list')
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (formaPagos) => {
+                  this.formaPagos = formaPagos;
+                  abrirModalCuandoListo();
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                  abrirModalCuandoListo();
+                }
+              });
+          } else {
+            abrirModalCuandoListo();
           }
-
-          // Abrir el modal pasando la copia como parámetro
-          this.openModal(template, ventaCopia);
         },
         error: (error) => {
           this.alertService.error(error);

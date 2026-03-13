@@ -16,7 +16,7 @@ import { BaseModalComponent } from '../../base/base-modal.component';
     templateUrl: './compra-producto.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+
 })
 export class CompraProductoComponent extends BaseModalComponent implements OnInit {
 
@@ -27,7 +27,7 @@ export class CompraProductoComponent extends BaseModalComponent implements OnIni
 	public detalle: any = {};
     public searching:boolean = false;
 
-	constructor( 
+	constructor(
 	    private apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService

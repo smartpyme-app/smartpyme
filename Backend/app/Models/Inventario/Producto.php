@@ -28,7 +28,9 @@ class Producto extends Model
         'costo_promedio',
         'id_categoria',
         'id_subcategoria',
+        'porcentaje_impuesto',
         'marca',
+        'componente_quimico',
         'etiquetas',
         'tipo',
         'enable',
@@ -141,7 +143,7 @@ class Producto extends Model
             $lotesConVencimiento = $this->lotes->filter(function ($lote) {
                 return $lote->fecha_vencimiento !== null && $lote->stock > 0;
             });
-            
+
             if ($lotesConVencimiento->isEmpty()) {
                 return null;
             }

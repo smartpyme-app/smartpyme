@@ -31,33 +31,33 @@ export class ProductoComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-	constructor( 
+	constructor(
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
 	    private cdr: ChangeDetectorRef
 	) {	}
 
 	ngOnInit() {
-	    
+
 		this.route.params
 		  .pipe(this.untilDestroyed())
 		  .subscribe((params:any) => {
 	      	if (params.id) {
 		        this.loading = true;
-		        this.apiService.read('producto/', params.id)
-		          .pipe(this.untilDestroyed())
-		          .subscribe(producto => {
-		        this.producto = producto;
-                this.producto.impuesto = this.apiService.auth_user().empresa.iva / 100;
+		        this.apiService.read('producto/', params.id).subscribe(producto => {
+		            this.producto = producto;
+                const pct = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '') ? Number(producto.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
+                this.producto.impuesto = Number(pct) / 100;
                 this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
-	            this.loading = false;
-	            this.cdr.markForCheck();
+                this.loading = false;
+                this.cdr.markForCheck();
 		    },error => {this.alertService.error(error);this.loading = false; this.cdr.markForCheck();});
 	      	} else {
 				this.producto = {};
 				this.producto.tipo = 'Producto';
 				this.producto.medida = 'Unidad';
 				this.producto.id_empresa = this.apiService.auth_user().id_empresa;
+				this.producto.porcentaje_impuesto = this.apiService.auth_user().empresa.iva ?? null;
 
 				if (this.route.snapshot.queryParamMap.get('tipo')!) {
 				    this.producto.tipo = this.route.snapshot.queryParamMap.get('tipo')!;
@@ -73,6 +73,6 @@ export class ProductoComponent implements OnInit {
 
 	}
 
-	
+
 
 }

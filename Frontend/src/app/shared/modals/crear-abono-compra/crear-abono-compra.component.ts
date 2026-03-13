@@ -15,14 +15,14 @@ import { BaseComponent } from '@shared/base/base.component';
     templateUrl: './crear-abono-compra.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NotificacionesContainerComponent],
-    
+
 })
 export class CrearAbonoCompraComponent extends BaseComponent implements OnInit {
 
 	@Input() compra: any = {};
 	@Output() update = new EventEmitter();
 	public formaPagos: any = [];
-    // public bancos: any = [];
+    public bancos: any = [];
     public abono: any = {};
  	public loading = false;
     public saving = false;
@@ -30,9 +30,9 @@ export class CrearAbonoCompraComponent extends BaseComponent implements OnInit {
 	modalRef!: BsModalRef;
 
    constructor(
-        protected apiService: ApiService, 
-        protected alertService: AlertService,  
-    	private route: ActivatedRoute, 
+        protected apiService: ApiService,
+        protected alertService: AlertService,
+    	private route: ActivatedRoute,
         private router: Router,
     	private modalService: BsModalService
     ) {
@@ -53,7 +53,7 @@ export class CrearAbonoCompraComponent extends BaseComponent implements OnInit {
 
         this.apiService.getAll('formas-de-pago/list')
             .pipe(this.untilDestroyed())
-            .subscribe(formaPagos => { 
+            .subscribe(formaPagos => {
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
@@ -67,7 +67,7 @@ export class CrearAbonoCompraComponent extends BaseComponent implements OnInit {
         this.abono.total = total;
         document.getElementById('total')!.focus();
     }
-	
+
 	public onSubmit() {
         this.saving = true;
 

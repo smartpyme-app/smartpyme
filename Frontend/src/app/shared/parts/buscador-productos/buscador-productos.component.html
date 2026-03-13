@@ -1,39 +1,31 @@
 <form class="w-100 d-flex input-group buscador" name="form" autocomplete="off">
   <div class="input-group">
       <span class="input-group-text bg-white border-right-0"><i class="fa fa-search"></i></span>
-      <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" placeholder="Buscar por nombre o código">
+      <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar por nombre o código'">
   </div>
-  @if (searchControl.value?.length > 0) {
-    <ul class="list-group opciones" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; max-height: 300px; overflow-y: auto;">
-      @for (producto of productos; track producto.id || $index) {
-        <a href="javascript:void(0);" class="list-group-item d-flex" (click)="onProductoClick(producto)">
-          <img style="width: 45px; height: 45px;" [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" class="rounded-circle img-fluid col-1"> 
-          <span id="producto_nombre" class="col-7 ps-1">
-              <!-- <small>Nombre:</small> <br> -->
-              @if (isShopifyActive() && producto.nombre_variante) {
-                <span>
-                  {{ producto.nombre }} ({{ producto.nombre_variante }})
-                </span>
-              } @else {
-                <span>
-                  {{ producto.nombre }}
-                </span>
-              }
-              <br>
-              <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span> <span class="ms-3 badge bg-light text-muted">{{ producto.tipo }}</span></small>
+  <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; max-height: 300px; overflow-y: auto;">
+    <a href="javascript:void(0);" class="list-group-item d-flex" (click)="onProductoClick(producto)" *ngFor=" let producto of productos">
+      <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1">
+      <span id="producto_nombre" class="col-7 ps-1">
+          <!-- <small>Nombre:</small> <br> -->
+          <span *ngIf="isShopifyActive() && producto.nombre_variante; else nombreNormal">
+              {{ producto.nombre }} ({{ producto.nombre_variante }})
           </span>
-          <span class="col-2 text-center" id="stock">
-              <!-- <small>Stock:</small> <br> -->
-              @if (producto.tipo != 'Servicio') {
-                <span>{{ producto.inventarios | sum:'stock' }} <small>en stock</small></span>
-              }
-          </span>
-          <span class="col-2 text-end">
-              <!-- <small>Precio:</small> <br> -->
-              <span class="badge bg-info p-1">{{ producto.precio | currency}}</span>
-          </span>
-        </a>
-      }
-    </ul>
-  }
+          <ng-template #nombreNormal>
+              {{ producto.nombre }}
+          </ng-template>
+          <br>
+          <small *ngIf="isComponenteQuimicoHabilitado() && producto.componente_quimico" class="text-muted d-block">Comp. químico: {{ producto.componente_quimico }}</small>
+          <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span> <span class="ms-3 badge bg-light text-muted">{{ producto.tipo }}</span></small>
+      </span>
+      <span class="col-2 text-center" id="stock">
+          <!-- <small>Stock:</small> <br> -->
+          <span *ngIf="producto.tipo != 'Servicio'">{{ producto.inventarios | sum:'stock' }} <small>en stock</small></span>
+      </span>
+      <span class="col-2 text-end">
+          <!-- <small>Precio:</small> <br> -->
+          <span class="badge bg-info p-1">{{ producto.precio | currency}}</span>
+      </span>
+    </a>
+  </ul>
 </form>

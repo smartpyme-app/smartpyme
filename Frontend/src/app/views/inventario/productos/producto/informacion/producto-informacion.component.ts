@@ -42,6 +42,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   public categoria: any = {};
   public bodegas: any = [];
   public medidas: any = [];
+  public impuestos: any[] = [];
   public override loading = false;
   public guardar = false;
   public variants: Array<{ nombre: string; cantidad: number }> = [];
@@ -97,7 +98,11 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       }
     );
 
-    this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
+        this.apiService.getAll('impuestos').subscribe(impuestos => {
+            this.impuestos = (impuestos || []).filter((i: any) => i.aplica_ventas);
+        }, () => { this.impuestos = []; });
+
+        this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
 
     this.apiService.getAll('proveedores/list')
       .pipe(this.untilDestroyed())
@@ -194,32 +199,27 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
         this.producto.costo = this.producto.costo_promedio;
     }
 
-    // public calPrecioBase(){
-    //     if(this.usuario.empresa.iva > 0){
-    //         this.producto.impuesto = this.usuario.empresa.iva / 100;
-    //         this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(4);
-    //     }
-    // }
-
-    public calPrecioBase() {
-      if (this.usuario?.empresa?.iva > 0) {
-        this.producto.impuesto = this.usuario.empresa.iva / 100;
-        this.producto.precio = (
-          this.producto.precio_final /
-          (1 + this.producto.impuesto * 1)
-        ).toFixed(4);
-      }
+    /** Porcentaje de impuesto: del producto o de la empresa. */
+    public getPorcentajeProducto(): number {
+        const p = this.producto?.porcentaje_impuesto;
+        if (p != null && p !== '') return Number(p);
+        return Number(this.usuario?.empresa?.iva ?? 0);
     }
 
-  public calPrecioFinal() {
-    if (this.usuario?.empresa?.iva > 0) {
-      this.producto.impuesto = this.usuario.empresa.iva / 100;
-      this.producto.precio_final = (
-        this.producto.precio * 1 +
-        this.producto.precio * this.producto.impuesto
-      ).toFixed(2);
+    public calPrecioBase(){
+        const pct = this.getPorcentajeProducto();
+        if (pct <= 0) return;
+        this.producto.impuesto = pct / 100;
+        this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(4);
     }
-  }
+
+    public calPrecioFinal(){
+        const pct = this.getPorcentajeProducto();
+        if (pct <= 0) return;
+        this.producto.impuesto = pct / 100;
+        this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
+    }
+
 
   public onSubmit() {
     this.guardar = true;
@@ -469,4 +469,9 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       }
     );
   }
+
+  public isComponenteQuimicoHabilitado(): boolean {
+    return this.apiService.isComponenteQuimicoHabilitado();
+  }
+
 }

@@ -63,8 +63,8 @@ class Kardex extends Model {
             $detalle = \App\Models\Inventario\Ajuste::find($this->referencia);
             $info = 'Ajuste';
         }
-        if ($this->detalle == 'Actualización de producto') {
-            $info = 'Actualización de producto';
+        if ($this->detalle == 'Actualización de producto' || $this->detalle == 'Actualización de producto desde Shopify') {
+            $info = $this->detalle;
         }
         if ($this->detalle == 'Otra Entrada' || $this->detalle == 'Otra Entrada Anulada') {
             $info = 'Entrada #' . $this->referencia;
@@ -95,7 +95,7 @@ class Kardex extends Model {
         if (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
             return 'ajuste';
         }
-        if ($this->detalle == 'Actualización de producto') {
+        if ($this->detalle == 'Actualización de producto' || $this->detalle == 'Actualización de producto desde Shopify') {
             return 'producto';
         }
         if ($this->detalle == 'Otra Entrada' || $this->detalle == 'Otra Entrada Anulada') {

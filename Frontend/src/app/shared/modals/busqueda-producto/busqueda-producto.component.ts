@@ -7,13 +7,12 @@ import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
 import { ModalManagerService } from '../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
-import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-busqueda-producto',
     templateUrl: './busqueda-producto.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, LazyImageDirective]
+    imports: [CommonModule, FormsModule, RouterModule]
 })
 export class BusquedaProductoComponent extends BaseModalComponent implements OnInit {
 
@@ -22,8 +21,8 @@ export class BusquedaProductoComponent extends BaseModalComponent implements OnI
     public override loading = false;
     public buscador:any = '';
     @Output() productoSelect = new EventEmitter();
-    
-    constructor( 
+
+    constructor(
         public apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService
@@ -33,6 +32,10 @@ export class BusquedaProductoComponent extends BaseModalComponent implements OnI
 
     ngOnInit() {
     }
+
+  public isComponenteQuimicoHabilitado(): boolean {
+    return this.apiService.isComponenteQuimicoHabilitado();
+  }
 
     override openModal(template: TemplateRef<any>) {
         this.loading = true;

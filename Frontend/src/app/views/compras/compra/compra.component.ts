@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -18,7 +19,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     selector: 'app-compra',
     templateUrl: './compra.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, CrearAbonoCompraComponent, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, CrearAbonoCompraComponent, LazyImageDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CompraComponent extends BaseComponent implements OnInit {

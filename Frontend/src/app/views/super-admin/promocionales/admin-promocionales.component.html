@@ -331,7 +331,7 @@
           <label class="form-label">Descuento: <span class="text-danger">*</span></label>
           <div class="input-group">
             <span class="input-group-text" *ngIf="promocional.tipo === 'porcentaje'">%</span>
-            <span class="input-group-text" *ngIf="promocional.tipo === 'monto_fijo'">$</span>
+            <span class="input-group-text" *ngIf="promocional.tipo === 'monto_fijo'">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
             <input
               type="number"
               class="form-control"

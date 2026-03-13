@@ -277,74 +277,47 @@
                             </button>
                         </td>
                     </tr>
-                    <tr>
+                    <!-- <tr>
                         <td class="text-right"> <b>Impuestos</b></td>
                         <td style="width: 150px;" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}}
                         </td>
                         <td style="width: 50px;"></td>
+                    </tr> -->
+                    <tr *ngFor="let impuesto of venta?.impuestos">
+                        <td class="text-right"> {{ impuesto.nombre }} <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small> </td>
+                        <td style="width: 150px;" class="text-right"> {{ (impuesto.monto ?? 0) | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
                     </tr>
-                    @for (impuesto of venta?.impuestos; track impuesto.id || $index) {
-                        <tr>
-                            <td class="text-right"> {{ impuesto.nombre }} </td>
-                            <td style="width: 150px;" class="text-right">
-                                @if (!impuesto?.monto) {
-                                    <span>%{{ impuesto.porcentaje }}</span>
-                                }
-                                @if (impuesto?.monto > 0) {
-                                    <span tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje
-                                    }}</span>
-                                }
-                            </td>
-                            <td style="width: 50px;"></td>
-                        </tr>
-                    }
-                    @if (venta.retencion) {
-                        <tr>
-                            <td class="text-right"> <b>Retención (1%)</b></td>
-                            <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido |
-                                currency:'USD':'symbol':'1.2'}} </td>
-                            <td style="width: 50px;"></td>
-                        </tr>
-                    }
-                    @if (venta.renta) {
-                        <tr>
-                            <td class="text-right"> <b>Renta (10%)</b></td>
-                            <td style="width: 150px;" class="text-right"> {{ venta.renta_retenida |
-                                currency:'USD':'symbol':'1.2'}} </td>
-                            <td style="width: 50px;"></td>
-                        </tr>
-                    }
-                    @if (venta.exenta > 0) {
-                        <tr>
-                            <td class="text-right"> <b>Ventas Exentas</b> </td>
-                            <td style="width: 150px;" class="text-right"><b> {{ venta.exenta |
-                                    currency:'USD':'symbol':'1.2'}}</b> </td>
-                            <td style="width: 50px;"></td>
-                        </tr>
-                    }
-                    @if (venta.no_sujeta > 0) {
-                        <tr>
-                            <td class="text-right"> <b>Ventas No Sujetas</b> </td>
-                            <td style="width: 150px;" class="text-right"><b> {{ venta.no_sujeta |
-                                    currency:'USD':'symbol':'1.2'}}</b> </td>
-                            <td style="width: 50px;"></td>
-                        </tr>
-                    }
-                    @if (venta.cuenta_a_terceros > 0) {
-                        <tr>
-                            <td class="text-right"> <b>Cuenta a terceros</b> </td>
-                            <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros |
-                                    currency:'USD':'symbol':'1.2'}}</b> </td>
-                            <td style="width: 50px;"></td>
-                        </tr>
-                    }
-                    @if (tieneAccesoPropina && venta.cobrar_propina) {
-                        <tr>
+                    <tr *ngIf="venta.retencion">
+                        <td class="text-right"> <b>Retención (1%)</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.renta">
+                        <td class="text-right"> <b>Renta (10%)</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.renta_retenida | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.exenta > 0">
+                        <td class="text-right"> <b>Ventas Exentas</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.exenta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.no_sujeta > 0">
+                        <td class="text-right"> <b>Ventas No Sujetas</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.no_sujeta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.cuenta_a_terceros > 0">
+                        <td class="text-right"> <b>Cuenta a terceros</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="tieneAccesoPropina && venta.cobrar_propina">
                         <td class="text-right"> <b>Propina ({{ apiService.auth_user().empresa.propina_porcentaje | number:'1.0-2' }}%)</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.propina | currency:'USD':'symbol':'1.2'}}</b> </td>
                         <td style="width: 50px;"></td>
-                        </tr>
-                    }
+                    </tr>
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.total |

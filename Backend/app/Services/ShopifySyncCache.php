@@ -84,8 +84,9 @@ class ShopifySyncCache
             return true;
         }
         
-        $current = ['stock' => $inventario->stock];
-        $changed = $cached !== $current;
+        $cachedStock = (float) ($cached['stock'] ?? 0);
+        $currentStock = (float) $inventario->stock;
+        $changed = $cachedStock != $currentStock;
         
         Log::info("Verificación cambio inventario", [
             'producto_id' => $productoId,

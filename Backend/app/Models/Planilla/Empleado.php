@@ -106,6 +106,11 @@ class Empleado extends Model
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
+    public function prestamos()
+    {
+        return $this->hasMany(PrestamoEmpleado::class, 'id_empleado');
+    }
+
     public function area()
     {
         return $this->belongsTo(AreaEmpresa::class, 'id_area');
@@ -161,7 +166,7 @@ class Empleado extends Model
 
     /**
      * Verifica si se debe aplicar descuento de AFP
-     * 
+     *
      * @return bool
      */
     public function aplicarAfp()
@@ -172,7 +177,7 @@ class Empleado extends Model
 
     /**
      * Verifica si se debe aplicar descuento de ISSS
-     * 
+     *
      * @return bool
      */
     public function aplicarIsss()

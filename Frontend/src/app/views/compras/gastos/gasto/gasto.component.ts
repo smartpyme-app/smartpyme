@@ -1,5 +1,6 @@
 import { Component, OnInit,TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -26,7 +27,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     selector: 'app-gasto',
     templateUrl: './gasto.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CrearAreaEmpresaComponent, CrearImpuestoComponent, CrearDepartamentoComponent, CrearAbonoGastoComponent, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CrearAreaEmpresaComponent, CrearImpuestoComponent, CrearDepartamentoComponent, CrearAbonoGastoComponent, LazyImageDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GastoComponent implements OnInit {

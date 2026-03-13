@@ -84,36 +84,52 @@ export class VentaDetallesV2Component implements OnInit {
     }
 
     /**
-     * Obtiene el porcentaje de IVA de la empresa
+     * Obtiene el porcentaje de IVA de la empresa (para casos sin detalle)
      */
     private obtenerPorcentajeIvaTotal(): number {
         if (!this.venta.cobrar_impuestos) {
             return 0;
         }
-        // En v2, usar el IVA de la empresa directamente
         return this.apiService.auth_user()?.empresa?.iva || 0;
     }
 
-    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle */
+    /**
+     * Obtiene el porcentaje de IVA para un detalle: del producto si tiene, si no el de la empresa.
+     */
+    private obtenerPorcentajeIvaDetalle(detalle: any): number {
+        if (!this.venta.cobrar_impuestos) {
+            return 0;
+        }
+        const pct = (detalle?.porcentaje_impuesto != null && detalle?.porcentaje_impuesto !== '')
+            ? Number(detalle.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
+        return Number(pct) || 0;
+    }
+
+    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle. Usa el % del producto. */
     private aplicarTipoGravado(detalle: any) {
         const total = parseFloat(detalle.total) || 0;
         detalle.gravada = 0;
         detalle.exenta = 0;
         detalle.no_sujeta = 0;
         const tipo = (detalle.tipo_gravado || 'gravada').toLowerCase();
+        const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
         if (tipo === 'gravada') {
             detalle.gravada = total;
-            if (this.venta.cobrar_impuestos && this.obtenerPorcentajeIvaTotal() > 0) {
-                detalle.total_iva = (total * (1 + this.obtenerPorcentajeIvaTotal() / 100)).toFixed(4);
+            if (pctDetalle > 0) {
+                detalle.total_iva = (total * (1 + pctDetalle / 100)).toFixed(4);
+                detalle.iva = parseFloat((total * (pctDetalle / 100)).toFixed(4));
             } else {
                 detalle.total_iva = detalle.total;
+                detalle.iva = 0;
             }
         } else if (tipo === 'exenta') {
             detalle.exenta = total;
             detalle.total_iva = detalle.total;
+            detalle.iva = 0;
         } else {
             detalle.no_sujeta = total;
             detalle.total_iva = detalle.total;
+            detalle.iva = 0;
         }
     }
 
@@ -133,10 +149,9 @@ export class VentaDetallesV2Component implements OnInit {
             if (precioSeleccionado && precioSeleccionado.precio_sin_iva) {
                 detalle.precio = parseFloat(precioSeleccionado.precio_sin_iva).toFixed(4);
             } else {
-                // Si no tiene precio_sin_iva, calcularlo
-                const porcentajeIvaTotal = this.obtenerPorcentajeIvaTotal();
-                if (porcentajeIvaTotal > 0) {
-                    detalle.precio = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal).toFixed(4);
+                const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
+                if (pctDetalle > 0) {
+                    detalle.precio = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), pctDetalle).toFixed(4);
                 } else {
                     detalle.precio = detalle.precio_iva;
                 }
@@ -150,28 +165,26 @@ export class VentaDetallesV2Component implements OnInit {
             detalle.cantidad = 0;
         }
 
-        // Obtener porcentaje de IVA una sola vez
-        const porcentajeIvaTotal = this.obtenerPorcentajeIvaTotal();
+        // Porcentaje del detalle (producto) o empresa
+        const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
 
         // Asegurar que precio_iva existe (para compatibilidad con datos existentes)
         if (!detalle.precio_iva) {
-            if (porcentajeIvaTotal > 0) {
-                detalle.precio_iva = (parseFloat(detalle.precio) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+            if (pctDetalle > 0) {
+                detalle.precio_iva = (parseFloat(detalle.precio) * (1 + pctDetalle / 100)).toFixed(4);
             } else {
                 detalle.precio_iva = detalle.precio;
             }
         }
 
         // Si se editó precio_iva manualmente, recalcular precio sin IVA
-        if (detalle.precio_iva && porcentajeIvaTotal > 0) {
-            // Verificar si el precio sin IVA actual no corresponde al precio con IVA
-            const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal);
+        if (detalle.precio_iva && pctDetalle > 0) {
+            const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), pctDetalle);
             const diferencia = Math.abs(parseFloat(detalle.precio) - precioSinIvaCalculado);
-            // Si hay diferencia significativa (más de 0.01), actualizar precio sin IVA
             if (diferencia > 0.01) {
                 detalle.precio = precioSinIvaCalculado.toFixed(4);
             }
-        } else if (porcentajeIvaTotal === 0) {
+        } else if (pctDetalle === 0) {
             detalle.precio = detalle.precio_iva;
         }
 
@@ -327,17 +340,16 @@ export class VentaDetallesV2Component implements OnInit {
                 this.detalle.cuenta_a_terceros = 0;
             }
 
-            // Asegurar que precio_iva existe (para compatibilidad con datos existentes)
+            // Asegurar que precio_iva existe (para compatibilidad con datos existentes). Usar % del producto.
             if (!this.detalle.precio_iva) {
-                const porcentajeIvaTotal = this.obtenerPorcentajeIvaTotal();
-                if (porcentajeIvaTotal > 0) {
-                    this.detalle.precio_iva = (parseFloat(this.detalle.precio) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+                const pctDet = this.obtenerPorcentajeIvaDetalle(this.detalle);
+                if (pctDet > 0) {
+                    this.detalle.precio_iva = (parseFloat(this.detalle.precio) * (1 + pctDet / 100)).toFixed(4);
                 } else {
                     this.detalle.precio_iva = this.detalle.precio;
                 }
             }
 
-            const porcentajeIvaTotal = this.obtenerPorcentajeIvaTotal();
             const precioSinIva = parseFloat(this.detalle.precio || 0);
             this.detalle.sub_total = Number((parseFloat(this.detalle.cantidad) * precioSinIva).toFixed(4));
             if(!this.detalle.total || detalle){

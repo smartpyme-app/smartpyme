@@ -206,6 +206,7 @@
                               <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/clipboard.png" class="icon me-2">Planillas</a></li>
                           }
                         <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/aguinaldos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/gift.png" class="icon me-2">Aguinaldos</a></li>
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/prestamos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Préstamos</a></li>
                           @if (!apiService.hasPermission('planilla.configuracion.ver')) {
                               <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/configuracion-planilla']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Configuración Planillas</a></li>
                           }
@@ -283,7 +284,7 @@
             @if (apiService.hasPermission('ayuda.ver')) {
                 <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ayuda']" tooltip="Ayuda" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img appLazyImage="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
             }
-            <!-- <li *ngIf="apiService.auth_user().tipo != 'Contador'" class="mb-1" tourAnchor="tour.configuracion" id="tour.configuracion">
+            <li *ngIf="apiService.auth_user().tipo != 'Contador'" class="mb-1" tourAnchor="tour.configuracion" id="tour.configuracion">
                 <button (click)="togglePreferencias()" tooltip="Configuraciones" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
                         <img appLazyImage="/assets/icons/sliders.png" class="icon me-2">Configuraciones
                 </button>
@@ -300,7 +301,7 @@
                 <a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-warning">
                     <img appLazyImage="/assets/icons/log-out-stroke.png" class="icon me-2">Cerrar Sesión
                 </a>
-            </li> -->
+            </li>
         </ul>
     </div>
 </div>

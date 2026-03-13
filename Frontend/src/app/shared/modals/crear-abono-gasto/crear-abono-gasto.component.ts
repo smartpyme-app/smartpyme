@@ -29,9 +29,9 @@ export class CrearAbonoGastoComponent extends BaseComponent implements OnInit {
 	modalRef!: BsModalRef;
 
    constructor(
-        protected apiService: ApiService, 
-        protected alertService: AlertService,  
-    	private route: ActivatedRoute, 
+        protected apiService: ApiService,
+        protected alertService: AlertService,
+    	private route: ActivatedRoute,
         private router: Router,
     	private modalService: BsModalService
     ) {
@@ -52,7 +52,7 @@ export class CrearAbonoGastoComponent extends BaseComponent implements OnInit {
 
         this.apiService.getAll('formas-de-pago/list')
             .pipe(this.untilDestroyed())
-            .subscribe(formaPagos => { 
+            .subscribe(formaPagos => {
                 this.formaPagos = formaPagos;
             }, error => {this.alertService.error(error); });
 
@@ -67,7 +67,7 @@ export class CrearAbonoGastoComponent extends BaseComponent implements OnInit {
         this.abono.total = total;
         document.getElementById('total')!.focus();
     }
-	
+
 	public onSubmit() {
         this.saving = true;
 

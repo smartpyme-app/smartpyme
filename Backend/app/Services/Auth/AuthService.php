@@ -290,7 +290,7 @@ class AuthService
      */
     public function cargarDatosUsuario(User $user): User
     {
-        $user->empresa = $user->empresa()->with('licencia')->first();
+        $user->empresa = $user->empresa()->with(['licencia', 'currency'])->first();
         
         $suscripcion = $user->empresa->suscripcion()
             ->whereNotIn('estado', [

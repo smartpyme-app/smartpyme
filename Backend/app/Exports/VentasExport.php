@@ -3,22 +3,27 @@
 namespace App\Exports;
 
 use App\Models\Ventas\Venta;
-use Illuminate\Support\Facades\Auth;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Illuminate\Http\Request;
 
-class VentasExport implements FromCollection, WithHeadings, WithMapping
+class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkReading
 {
-    /**
-     * @return \Illuminate\Support\Collection
-     */
     public $request;
 
     public function filter(Request $request)
     {
         $this->request = $request;
+    }
+
+    /**
+     * Procesar en lotes para reducir uso de memoria (evita ->get() que carga todo).
+     */
+    public function chunkSize(): int
+    {
+        return 500;
     }
 
     public function headings(): array
@@ -54,13 +59,26 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
         ];
     }
 
-    public function collection()
+    /**
+     * Retorna el query (sin ->get()). WithChunkReading ejecuta en lotes.
+     * Eager loading evita N+1 en map().
+     */
+    public function query()
     {
         $request = $this->request;
+        if (!$request) {
+            return Venta::query()->whereRaw('1 = 0');
+        }
 
-        $ventas = Venta::when($request->inicio, function ($query) use ($request) {
-            return $query->where('fecha', '>=', $request->inicio);
-        })
+        $columnasOrdenPermitidas = ['id', 'fecha', 'correlativo', 'total', 'estado', 'created_at', 'num_identificacion', 'id_proyecto', 'fecha_pago', 'sub_total', 'iva', 'descuento'];
+        $orden = in_array($request->orden ?? '', $columnasOrdenPermitidas) ? $request->orden : 'fecha';
+        $direccion = in_array(strtolower($request->direccion ?? ''), ['asc', 'desc']) ? strtolower($request->direccion) : 'desc';
+
+        return Venta::query()
+            ->with(['cliente', 'usuario', 'vendedor', 'sucursal.empresa', 'documento', 'canal', 'proyecto'])
+            ->when($request->inicio, function ($query) use ($request) {
+                return $query->where('fecha', '>=', $request->inicio);
+            })
             ->when($request->fin, function ($query) use ($request) {
                 return $query->where('fecha', '<=', $request->fin);
             })
@@ -143,23 +161,27 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
                         ->orWhere('forma_pago', 'like', $buscador);
                 });
             })
-            ->withAccessorRelations()
-            ->orderBy($request->orden, $request->direccion)
-            ->orderBy('id', 'desc')
-            ->get();
-
-        return $ventas;
+            ->orderBy($orden, $direccion)
+            ->orderBy('id', 'desc');
     }
 
+    /**
+     * Usa relaciones eager-loaded (sin queries adicionales).
+     * Compatible con PHP 7.4 (sin el operador ?->).
+     */
     public function map($row): array
     {
-        $fields = [
+        $cliente = $row->relationLoaded('cliente') ? $row->cliente : null;
+        $sucursal = $row->relationLoaded('sucursal') ? $row->sucursal : null;
+        $empresa = ($sucursal && $sucursal->relationLoaded('empresa')) ? $sucursal->empresa : null;
+
+        return [
             $row->fecha,
             $row->nombre_cliente,
-            $row->cliente()->pluck('telefono')->first(),
-            $row->cliente()->pluck('dui')->first(),
-            $row->cliente()->pluck('nit')->first(),
-            $row->cliente()->pluck('direccion')->first(),
+            $cliente ? $cliente->telefono : '',
+            $cliente ? $cliente->dui : '',
+            $cliente ? $cliente->nit : '',
+            $cliente ? $cliente->direccion : '',
             $row->nombre_documento,
             $row->nombre_proyecto,
             $row->num_identificacion,
@@ -169,7 +191,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             $row->estado,
             $row->nombre_canal,
             $row->estado == 'Anulada' ? '0.0' : round($row->total_costo, 2),
-            round($row->cuenta_a_terceros, 2),
+            round($row->cuenta_a_terceros ?? 0, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->sub_total, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->descuento, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->iva, 2),
@@ -177,12 +199,10 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             $row->estado == 'Anulada' ? '0.0' : round($row->sub_total - $row->descuento, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->total, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->propina ?? 0, 2),
-            $row->sucursal()->first()->empresa()->pluck('nombre')->first(),
+            $empresa ? $empresa->nombre : '',
             $row->observaciones,
             $row->nombre_usuario,
             $row->nombre_vendedor,
-
         ];
-        return $fields;
     }
 }

@@ -9,7 +9,8 @@
  * Este servicio se mantiene por compatibilidad hacia atrás y delega a los servicios específicos.
  */
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, throwError, from } from 'rxjs';
+import { map, catchError, timeout, switchMap } from 'rxjs/operators';
 import { HttpService } from '@services/http.service';
 import { AuthService } from '@services/auth.service';
 import { PermissionService } from '@services/permission.service';
@@ -97,7 +98,28 @@ export class ApiService {
   }
 
   export(url: string, filtros: any): Observable<Blob> {
-    return this.httpService.export(url, filtros);
+    return this.httpService.export(url, filtros).pipe(
+      timeout(120000),
+      catchError((error) => {
+        if (error.error instanceof Blob && error.error.type?.includes('application/json')) {
+          return from<string>(error.error.text()).pipe(
+            switchMap((text: string) => {
+              try {
+                const errJson = JSON.parse(text);
+                return throwError(() => ({
+                  ...error,
+                  status: error.status,
+                  error: { message: errJson.error || errJson.message || text }
+                }));
+              } catch (_) {
+                return throwError(() => ({ ...error, error: { message: text } }));
+              }
+            })
+          );
+        }
+        return throwError(() => error);
+      })
+    );
   }
 
   exportWithUrl(url: string, filtros: any): Observable<any> {
@@ -305,5 +327,17 @@ export class ApiService {
 
   isLotesActivo(): boolean {
     return this.auth_user()?.empresa?.custom_empresa?.configuraciones?.lotes_activo ?? false;
+  }
+
+  /** Indica si el campo componente químico está habilitado para la empresa del usuario actual */
+  isComponenteQuimicoHabilitado(): boolean {
+    const empresa = this.auth_user()?.empresa;
+    if (!empresa || !empresa.custom_empresa) {
+      return false;
+    }
+    const customConfig = typeof empresa.custom_empresa === 'string'
+      ? JSON.parse(empresa.custom_empresa)
+      : empresa.custom_empresa;
+    return customConfig?.configuraciones?.componente_quimico_activo === true;
   }
 }

@@ -61,6 +61,12 @@ class PlanillaDetalle extends Model
         return $this->belongsTo(Empleado::class, 'id_empleado');
     }
 
+    public function abonosPrestamo()
+    {
+        return $this->hasMany(PrestamoMovimiento::class, 'id_planilla_detalle')
+            ->where('tipo', PrestamoMovimiento::TIPO_ABONO_PLANILLA);
+    }
+
     // Métodos de cálculo
     public function calcularSalarioDevengado()
     {

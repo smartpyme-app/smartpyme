@@ -12,7 +12,7 @@
     </button>
   </div>
   <div class="modal-body pt-0"  style="max-height: 400px; overflow-y: auto;">
-        <input type="text" placeholder="Buscar..." class="form-control" [(ngModel)]="buscador">
+        <input type="text" [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre o componente químico' : 'Buscar...'" class="form-control" [(ngModel)]="buscador">
         <table class="table table-bordered table-hover">
             <thead>
                 <tr>
@@ -23,41 +23,32 @@
                 </tr>
             </thead>
             <tbody class="mt-4">
-                @if (productos?.length < 1 && !loading) {
-                    <tr>
-                        <td colspan="8" class="text-center">
-                            <span class="label label-info">No tiene productos registrados</span>
-                        </td>
-                    </tr>
-                }
-                @if (loading) {
-                    <tr>
-                        <td colspan="8" class="text-center">
-                            <span class="label label-info">Cargando...</span>
-                        </td>
-                    </tr>
-                }
-                @for (producto of productos | filter:'nombre':buscador; track producto.id) {
-                    <tr>
-                        <td><img [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" width="50px"></td>
-                        <td>{{ producto.nombre }}</td>
-                        <td class="text-center">
-                            @if (producto.precio_oferta) {
-                                <span>
-                                    {{ producto.precio_oferta | currency:'USD':'symbol':'2.2'  }} <span style="text-decoration: line-through">{{ producto.precio | currency:'USD':'symbol':'2.2'  }}</span>
-                                </span>
-                            }
-                            @if (!producto.precio_oferta) {
-                                <span>
-                                    {{ producto.precio | currency:'USD':'symbol':'2.2'  }}
-                                </span>
-                            }
-                        </td>
-                        <td class="text-center">
-                            <input type="radio" name="productos[]" (click)="select(producto)">
-                        </td>
-                    </tr>
-                }
+                <tr>
+                    <td colspan="8" class="text-center" *ngIf="productos?.length < 1 && !loading">
+                        <span class="label label-info">No tiene productos registrados</span>
+                    </td>
+                    <td colspan="8" class="text-center" *ngIf="loading">
+                        <span class="label label-info">Cargando...</span>
+                    </td>
+                </tr>
+                <tr *ngFor="let producto of productos | filter:(isComponenteQuimicoHabilitado() ? ['nombre', 'componente_quimico'] : ['nombre']):buscador">
+                    <td><img src="{{ apiService.baseUrl + '/img/' + producto.img }}" width="50px"></td>
+                    <td>
+                        {{ producto.nombre }}
+                        <small *ngIf="isComponenteQuimicoHabilitado() && producto.componente_quimico" class="text-muted d-block">Comp. químico: {{ producto.componente_quimico }}</small>
+                    </td>
+                    <td class="text-center">
+                        <span *ngIf="producto.precio_oferta">
+                            {{ producto.precio_oferta | currency:'USD':'symbol':'2.2'  }} <span style="text-decoration: line-through">{{ producto.precio | currency:'USD':'symbol':'2.2'  }}</span>
+                        </span>
+                        <span *ngIf="!producto.precio_oferta">
+                            {{ producto.precio | currency:'USD':'symbol':'2.2'  }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <input type="radio" name="productos[]" (click)="select(producto)">
+                    </td>
+                </tr>
             </tbody>
         </table>
   </div>

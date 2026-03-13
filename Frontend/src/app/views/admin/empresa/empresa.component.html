@@ -645,6 +645,24 @@
                     </div>
 
                     <hr>
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Campos de producto</h4>
+                        <div class="form-group col-md-12 col-xl-6 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="componente_quimico_activo">Habilitar componente químico</label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="componente_quimico_activo"
+                                    [checked]="isComponenteQuimicoHabilitado()"
+                                    (change)="toggleComponenteQuimicoActivo()"
+                                    name="componente_quimico_activo">
+                            </div>
+                            <small class="text-muted">
+                                Muestra el campo componente químico en productos y lo incluye en las búsquedas.
+                            </small>
+                        </div>
+                    </div>
+
+                    <hr>
                     <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
                     <div class="form-group col-md-6">
                         <label for="valor_inventario">Valor de inventario:</label>

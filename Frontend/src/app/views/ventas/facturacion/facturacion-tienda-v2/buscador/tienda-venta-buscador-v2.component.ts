@@ -1,5 +1,6 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { of } from 'rxjs';
@@ -139,11 +140,14 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
     }
 
     /**
-     * Calcula el precio con IVA incluido
+     * Calcula el precio con IVA incluido usando el % del producto si tiene, si no el de la empresa.
      */
-    public getPrecioConIva(precio: number): number {
-        const iva = this.apiService.auth_user()?.empresa?.iva || 0;
-        return precio * (1 + iva / 100);
+    public getPrecioConIva(producto: any): number {
+        if (!producto) return 0;
+        const precio = parseFloat(producto.precio) || 0;
+        const pct = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '')
+            ? Number(producto.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
+        return precio * (1 + pct / 100);
     }
 
     selectProducto(producto:any){
@@ -152,10 +156,12 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
         this.detalle.descripcion    = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
         
-        // En v2, el precio se muestra con IVA pero se guarda sin IVA
-        const iva = this.apiService.auth_user()?.empresa?.iva || 0;
+        // En v2, el precio se muestra con IVA pero se guarda sin IVA. Usar % del producto si tiene.
+        const pctImpuesto = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '')
+            ? Number(producto.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
+        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
         const precioSinIva = parseFloat(producto.precio);
-        const precioConIva = precioSinIva * (1 + iva / 100);
+        const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
         
         // precio_iva: precio con IVA (para cálculos y visualización)
         this.detalle.precio_iva     = precioConIva.toFixed(4);
@@ -165,10 +171,10 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
         // Guardar también el precio base para referencia
         this.detalle.precio_base    = precioSinIva;
         
-        // Actualizar precios con IVA incluido para el selector
+        // Actualizar precios con IVA incluido para el selector (con % del producto)
         this.detalle.precios        = producto.precios ? producto.precios.map((p: any) => ({
             ...p,
-            precio: (parseFloat(p.precio) * (1 + iva / 100)).toFixed(4),
+            precio: (parseFloat(p.precio) * (1 + pctImpuesto / 100)).toFixed(4),
             precio_sin_iva: parseFloat(p.precio)
         })) : [];
         
@@ -241,6 +247,13 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
         if(this.modalRef){
             this.modalRef.hide();
         }
+    }
+
+    /**
+     * Verifica si el componente químico está habilitado en la empresa
+     */
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
     }
 
     /**

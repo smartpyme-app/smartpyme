@@ -141,6 +141,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         this.detalle.descripcion = producto.nombre;
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
+        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
         this.detalle.precios        = producto.precios;
         this.detalle.precios.unshift({
                 'precio' : this.detalle.precio
@@ -175,6 +176,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
             this.detalle.descripcion = producto.nombre;
             this.detalle.img            = producto.img;
             this.detalle.precio         = parseFloat(producto.precio);
+            this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
             this.detalle.precios        = producto.precios;
             this.detalle.precios.unshift({
                     'precio' : this.detalle.precio

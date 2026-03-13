@@ -87,17 +87,24 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
         this.cdr.markForCheck();
     }
 
+    /** Porcentaje de impuesto: del producto o de la empresa. */
+    public getPorcentajeProducto(): number {
+        const p = this.producto?.porcentaje_impuesto;
+        if (p != null && p !== '') return Number(p);
+        return Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    }
+
     public calPrecioBase(){
-        let iva = this.apiService.auth_user().empresa.iva;
-        if(iva > 0){
+        const iva = this.getPorcentajeProducto();
+        if (iva > 0) {
             this.precio.impuesto = iva / 100;
             this.precio.precio = (this.precio.precio_final / (1 + (this.precio.impuesto * 1))).toFixed(4);
         }
     }
 
     public calPrecioFinal(){
-        let iva = this.apiService.auth_user().empresa.iva;
-        if(iva > 0){
+        const iva = this.getPorcentajeProducto();
+        if (iva > 0) {
             this.precio.impuesto = iva / 100;
             this.precio.precio_final = ((this.precio.precio * 1) + (this.precio.precio * this.precio.impuesto)).toFixed(2);
         }

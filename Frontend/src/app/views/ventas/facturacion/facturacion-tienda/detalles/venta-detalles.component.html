@@ -129,7 +129,7 @@
                     <td style="width: 150px;">
                         <div *ngIf="detalle.descuento_is_monto">
                             <div class="input-group">
-                                <span tooltip="Cambiar a descuento en porcentaje" tooltipPosition="top" class="input-group-text click" style="cursor: pointer;" (click)="detalle.descuento_is_monto = false; detalle.descuento = 0; detalle.descuento_monto = 0; updateTotal(detalle)">$</span>
+                                <span tooltip="Cambiar a descuento en porcentaje" tooltipPosition="top" class="input-group-text click" style="cursor: pointer;" (click)="detalle.descuento_is_monto = false; detalle.descuento = 0; detalle.descuento_monto = 0; updateTotal(detalle)">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                                 <input
                                     type="number"
                                     [(ngModel)]="detalle.descuento_monto"

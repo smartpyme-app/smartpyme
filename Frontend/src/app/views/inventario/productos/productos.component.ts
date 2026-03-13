@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -21,7 +22,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     selector: 'app-productos',
     templateUrl: './productos.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, NotificacionesContainerComponent, DescargarInventarioComponent, SumPipe, PopoverModule, TooltipModule, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, NotificacionesContainerComponent, DescargarInventarioComponent, SumPipe, PopoverModule, TooltipModule, LazyImageDirective],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductosComponent extends BaseCrudComponent<any> implements OnInit {
@@ -199,6 +200,12 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
                 this.closeModal();
                 this.cdr.markForCheck();
             }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
+    }
+
+    public getPorcentajeProducto(producto: any): number {
+        const empresa = this.apiService.auth_user()?.empresa;
+        const pct = producto?.porcentaje_impuesto ?? empresa?.iva;
+        return pct != null && pct !== '' ? Number(pct) : 0;
     }
 
     public setEstado(producto: any) {
@@ -433,6 +440,13 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             this.loading = false;
             this.cdr.markForCheck();
         });
+    }
+
+    /**
+     * Verifica si el componente químico está habilitado en la empresa
+     */
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
     }
 
     /**

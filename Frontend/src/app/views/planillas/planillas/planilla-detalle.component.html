@@ -524,7 +524,7 @@
                       </span>
                     </label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number"
                         class="form-control"
                         [(ngModel)]="detalleSeleccionado.salario_base"
@@ -621,7 +621,7 @@
                       </span>
                     </label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.salario_devengado"
                         name="salario_devengado" disabled />
                     </div>
@@ -713,7 +713,7 @@
                   <div class="mb-3">
                     <label>Comisiones:</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.comisiones"
                         name="comisiones"
@@ -727,7 +727,7 @@
                   <div class="mb-3">
                     <label>Bonificaciones:</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.bonificaciones"
                         name="bonificaciones"
@@ -741,7 +741,7 @@
                   <div class="mb-3">
                     <label>Otros Ingresos:</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.otros_ingresos"
                         name="otros_ingresos"
@@ -765,12 +765,12 @@
                       </select>
                     </label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" 
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                      <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.abonos"
-                        name="abonos" 
-                        (input)="calcularTotalesUnificado()" 
-                        (change)="calcularTotalesUnificado()" 
+                        name="abonos"
+                        (input)="calcularTotalesUnificado()"
+                        (change)="calcularTotalesUnificado()"
                         [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                         min="0"
                         step="0.01"
@@ -805,7 +805,7 @@
                     <div class="mb-3">
                       <label>ISSS (3%):</label>
                       <div class="input-group">
-                        <span class="input-group-text">$</span>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.isss_empleado"
                           name="isss_empleado" [disabled]="true"
                           [placeholder]="(detalleSeleccionado?.empleado?.tipo_contrato === 4 ||
@@ -834,7 +834,7 @@
                     <div class="mb-3">
                       <label>AFP (7.25%):</label>
                       <div class="input-group">
-                        <span class="input-group-text">$</span>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.afp_empleado"
                           name="afp_empleado" [disabled]="true"
                           [placeholder]="(detalleSeleccionado?.empleado?.tipo_contrato === 4 ||
@@ -870,7 +870,7 @@
                         }
                       </label>
                       <div class="input-group">
-                        <span class="input-group-text">$</span>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.renta" name="renta"
                           [disabled]="true" />
                       </div>
@@ -893,7 +893,7 @@
                       <div class="mb-3">
                       <label>{{ concepto[1].nombre }}:</label>
                       <div class="input-group">
-                        <span class="input-group-text">$</span>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input
                           type="number"
                           class="form-control"
@@ -909,27 +909,129 @@
                   }
 
                   <!-- 🟡 Préstamos y Anticipos (siempre aplican) -->
-                  <div class="mb-3">
-                    <label>Préstamos:</label>
-                    <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      <input type="number" class="form-control"
-                        [(ngModel)]="detalleSeleccionado.prestamos"
-                        name="prestamos"
-                        (input)="recalcularSueldoNeto()"
-                        (change)="recalcularSueldoNeto()"
-                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
-                      />
+                  <div class="mb-3 accordion" id="accordionPrestamosDescuento">
+                    <div class="accordion-item border rounded">
+                      <h2 class="accordion-header">
+                        <button
+                          class="accordion-button"
+                          [class.collapsed]="prestamosDescuentoCollapsed"
+                          type="button"
+                          [attr.aria-expanded]="!prestamosDescuentoCollapsed"
+                          aria-controls="collapsePrestamosDescuento"
+                          (click)="prestamosDescuentoCollapsed = !prestamosDescuentoCollapsed"
+                        >
+                          <i class="fa fa-hand-holding-usd me-2 text-primary"></i>
+                          Préstamos en descuentos
+                          <span class="ms-2 small fw-normal text-muted" *ngIf="(detalleSeleccionado.prestamos || 0) > 0">
+                            — {{ detalleSeleccionado.prestamos | currency }}
+  </span>
+</button>
+</h2>
+<div
+id="collapsePrestamosDescuento"
+class="accordion-collapse"
+[collapse]="prestamosDescuentoCollapsed"
+[isAnimated]="true"
+>
+<div class="accordion-body p-3 bg-light">
+  <p class="small text-muted mb-3">
+    Descuento por préstamos que se deduce de la planilla. Opcionalmente puede <strong>relacionar este descuento con uno o más préstamos</strong> del empleado para que quede registrado como abono en el estado de cuenta del préstamo.
+  </p>
+  <div class="mb-3">
+    <label class="form-label">Monto a descontar (Préstamos)</label>
+    <div class="input-group">
+      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                              <input type="number" class="form-control"
+                                [(ngModel)]="detalleSeleccionado.prestamos"
+                                name="prestamos"
+                                (ngModelChange)="onPrestamosMontoChange()"
+                                [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
+                              />
+                            </div>
+                            <small class="text-muted">No afecta el cálculo de ISSS, AFP o Renta</small>
+                          </div>
+
+                          <!-- Seleccionar qué préstamo(s) abonar: se muestra si hay préstamos activos O si ya hay abonos asignados (p. ej. liquidados) para poder quitarlos -->
+                          <div *ngIf="(prestamosActivosEmpleado?.length || abonosPrestamosAsignados?.length) && planilla.estado === 2" class="mt-3 pt-3 border-top">
+                            <label class="form-label fw-semibold">Seleccionar préstamo(s) a abonar con este descuento</label>
+                            <p class="small text-muted mb-2">
+                              Elija el préstamo y el monto a abonar; puede agregar varios. La suma debe coincidir con el monto a descontar arriba. Si ya liquidó deudas, puede quitar asignaciones y el monto a descontar se ajustará.
+                            </p>
+                            <div class="row g-2 align-items-end mb-3" *ngIf="prestamosDisponiblesParaSeleccionar?.length">
+                              <div class="col-md-5">
+                                <label class="form-label small">Préstamo</label>
+                                <select
+                                  name="prestamoSeleccionadoParaAbono"
+                                  class="form-select"
+                                  [(ngModel)]="prestamoSeleccionadoParaAbono"
+                                >
+                                  <option [ngValue]="null">Seleccionar préstamo a pagar</option>
+                                  <option *ngFor="let p of prestamosDisponiblesParaSeleccionar" [ngValue]="p">
+                                    Préstamo #{{ p.numero_prestamo }} — Saldo: {{ p.saldo_actual | currency }}
+  </option>
+</select>
+</div>
+<div class="col-md-3">
+<label class="form-label small">Monto ($)</label>
+<input
+  type="number"
+  class="form-control"
+  step="0.01"
+  min="0"
+  name="montoSeleccionadoParaAbono"
+  [(ngModel)]="montoSeleccionadoParaAbono"
+  placeholder="0.00"
+/>
+</div>
+<div class="col-md-4">
+<button
+  type="button"
+  class="btn btn-outline-primary btn-sm"
+  (click)="agregarAbonoPrestamo()"
+  [disabled]="!prestamoSeleccionadoParaAbono || (montoSeleccionadoParaAbono ?? 0) <= 0"
+>
+  <i class="fa fa-plus me-1"></i> Agregar a la lista
+</button>
+</div>
+</div>
+<div class="table-responsive" *ngIf="abonosPrestamosAsignados.length > 0">
+<table class="table table-sm table-bordered mb-0">
+<thead class="table-light">
+  <tr>
+    <th>Préstamo seleccionado</th>
+    <th class="text-end" style="width: 120px;">Monto abono</th>
+    <th class="text-center" style="width: 80px;">Quitar</th>
+  </tr>
+</thead>
+<tbody>
+  <tr *ngFor="let item of abonosPrestamosAsignados">
+    <td>{{ getLabelPrestamo(item.id_prestamo) }}</td>
+                                    <td class="text-end">{{ item.monto | number:'1.2-2' }}</td>
+                                    <td class="text-center">
+                                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="quitarAbonoPrestamo(item.id_prestamo)" title="Quitar">
+                                        <i class="fa fa-times"></i>
+                                      </button>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                            <small class="text-warning d-block mt-2" *ngIf="mostrarAdvertenciaSumaAbonosPrestamos()">
+                              <i class="fa fa-exclamation-triangle me-1"></i> La suma de abonos ({{ sumaAbonosPrestamos() | number:'1.2-2' }}) debe ser igual al monto a descontar ({{ detalleSeleccionado.prestamos | number:'1.2-2' }}).
+                            </small>
+                          </div>
+                          <div *ngIf="prestamosActivosEmpleado?.length === 0 && (detalleSeleccionado.prestamos || 0) > 0 && planilla.estado === 2" class="small text-muted mt-2">
+                            Este empleado no tiene préstamos activos. El monto se descontará igual; para registrar abonos a préstamos, cree préstamos en Planilla → Préstamos.
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <small class="text-muted">
-                      No afecta el cálculo de ISSS, AFP o Renta
-                    </small>
                   </div>
 
                   <div class="mb-3">
                     <label>Anticipos:</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.anticipos"
                         name="anticipos"

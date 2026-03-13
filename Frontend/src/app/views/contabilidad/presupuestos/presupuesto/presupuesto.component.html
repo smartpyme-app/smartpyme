@@ -38,28 +38,28 @@
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="ingresos">Ingresos totales estimados</label>
                     <div class="input-group">
-                        <div class="input-group-text">$</div>
+                        <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                         <input type="number" class="form-control" (change)="calUtilidad()" (keyup)="calUtilidad()" placeholder="Escribe aquí" name="ingresos" [(ngModel)]="presupuesto.ingresos">
                     </div>
                 </div>
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="egresos">Gastos totales estimados</label>
                     <div class="input-group">
-                        <div class="input-group-text">$</div>
+                        <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                         <input type="number" class="form-control" (change)="calUtilidad()" (keyup)="calUtilidad()" placeholder="Escribe aquí" name="egresos" [(ngModel)]="presupuesto.egresos">
                     </div>
                 </div>  
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="egresos">Compras totales estimados</label>
                     <div class="input-group">
-                        <div class="input-group-text">$</div>
+                        <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                         <input type="number" class="form-control" (change)="calUtilidad()" (keyup)="calUtilidad()" placeholder="Escribe aquí" name="compras" [(ngModel)]="presupuesto.compras">
                     </div>
                 </div>                
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="utilidad">Utilidad esperada</label>
                     <div class="input-group">
-                        <div class="input-group-text">$</div>
+                        <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                         <input type="number" class="form-control" placeholder="Escribe aquí" name="utilidad" disabled [(ngModel)]="presupuesto.utilidad">
                     </div>
                 </div>             
@@ -84,105 +84,105 @@
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Alquiler:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="alquiler" [(ngModel)]="presupuesto.alquiler">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Gastos varios:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="varios" [(ngModel)]="presupuesto.varios">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Mantenimiento:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="mantenimiento" [(ngModel)]="presupuesto.mantenimiento">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Marketing:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="marketing" [(ngModel)]="presupuesto.marketing">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Materia prima:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="materia_prima" [(ngModel)]="presupuesto.materia_prima">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Comisiones:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="comisiones" [(ngModel)]="presupuesto.comisiones">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Planilla:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="planilla" [(ngModel)]="presupuesto.planilla">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Servicios:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="servicios" [(ngModel)]="presupuesto.servicios">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Combustible:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="combustible" [(ngModel)]="presupuesto.combustible">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Prestamos:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="prestamos" [(ngModel)]="presupuesto.prestamos">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Publicidad:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="publicidad" [(ngModel)]="presupuesto.publicidad">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Costo de venta:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="costo_de_venta" [(ngModel)]="presupuesto.costo_de_venta">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Insumos:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="insumos" [(ngModel)]="presupuesto.insumos">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Impuestos:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="impuestos" [(ngModel)]="presupuesto.impuestos">
                         </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Gastos Administrativos:</label>
                         <div class="input-group">
-                            <div class="input-group-text">$</div>
+                            <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="gastos_administrativos" [(ngModel)]="presupuesto.gastos_administrativos">
                         </div>
                     </div>

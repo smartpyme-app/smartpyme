@@ -126,11 +126,24 @@ class InventariosController extends Controller
 
     }
 
-    public function export(ExportInventarioRequest $request){
-        $inventario = new InventarioAFechaExport();
-        $inventario->filter($request);
+    public function export(Request $request){
+       $request->validate([
+           'id_empresa' => 'required|numeric',
+           'fecha'      => 'required|date',
+       ]);
 
-        return Excel::download($inventario, 'inventario.xlsx');
+        try {
+            $inventario = new InventarioAFechaExport();
+            $inventario->filter($request);
+
+            return Excel::download($inventario, 'inventario.xlsx');
+        } catch (\Throwable $e) {
+            \Log::error('Error al exportar inventario: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+            ]);
+            throw $e;
+        }
     }
 
 

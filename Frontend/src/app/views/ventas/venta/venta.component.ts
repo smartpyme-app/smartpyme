@@ -1,11 +1,13 @@
-import { Component, OnInit,TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
 
@@ -18,7 +20,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     selector: 'app-venta',
     templateUrl: './venta.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, CrearAbonoVentaComponent, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, CrearAbonoVentaComponent, LazyImageDirective, TooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })

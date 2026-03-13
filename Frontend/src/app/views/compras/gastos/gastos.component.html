@@ -125,7 +125,7 @@
                         <td>{{gasto.tipo_documento}} #{{gasto.referencia}}</td>
                         <td>{{gasto.forma_pago}}</td>
                         <td>
-                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado' || gasto.estado == 'Anulada', 'bg-warning' : gasto.estado == 'Pendiente',
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado', 'bg-warning' : gasto.estado == 'Pendiente', 'bg-danger' : gasto.estado == 'Anulada',
                             'bg-success' : gasto.estado == 'Confirmado', 'bg-info' : gasto.estado == 'Pagado'}">
                                 {{ gasto.estado }}
                                 @if (apiService.auth_user().empresa.facturacion_electronica && gasto.sello_mh) {

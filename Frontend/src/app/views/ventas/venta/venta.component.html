@@ -23,7 +23,7 @@
             <h6 class="col-12"> Información </h6>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Fecha</label>
-                <p>{{ venta.fecha | date:'dd/MM/yyyy'}} {{ venta.created_at | date:'hh:mm a'}}</p>
+                <p tooltip="{{ venta.created_at | date:'dd/MM/yyyy hh:mm a'}}">{{ venta.fecha | date:'dd/MM/yyyy'}} {{ venta.created_at | date:'hh:mm a'}}</p>
             </div>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Estado</label>
@@ -215,7 +215,7 @@
                     </tr>
                     @for (impuesto of venta?.impuestos; track impuesto.id || $index) {
                         <tr>
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">{{ impuesto?.impuesto?.nombre }} </td>
+                            <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">{{ impuesto?.impuesto?.nombre }} <small class="text-muted">({{ impuesto?.impuesto?.porcentaje | number:'1.0-2' }}%)</small> </td>
                             <td class="text-end">{{ impuesto.monto | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
                     }
@@ -284,7 +284,7 @@
 </div>
 
 
-@if (venta.dte) {
+@if (venta.codigo_generacion) {
     <div class="card border-0">
         <div class="card-body">
             <div class="row">

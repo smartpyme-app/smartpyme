@@ -40,6 +40,10 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
     public tieneShopify: boolean = false;
     public descripcionesExpandidas: { [key: number]: boolean } = {};
 
+  public isComponenteQuimicoHabilitado(): boolean {
+    return this.apiService.isComponenteQuimicoHabilitado();
+  }
+
     constructor(
         protected override apiService: ApiService,
         protected override alertService: AlertService,
@@ -207,6 +211,7 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
         producto.descuento      = 0;
         producto.inventario_por_lotes = producto.inventario_por_lotes || false;
         producto.lote_id = null;
+        producto.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
 
         console.log('Producto creado:', producto);
 
@@ -228,6 +233,7 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
         this.detalle.descuento      = 0;
         this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
         this.detalle.lote_id = null;
+        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
         this.onSubmit();
     }
 

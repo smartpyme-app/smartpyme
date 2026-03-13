@@ -67,7 +67,7 @@
         <div class="form-group col-md-12">
             <label>Pago:</label>
             <div class="input-group">
-                <div class="input-group-text">$</div>
+                <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                 <input type="number" class="form-control" id="total" [(ngModel)]="abono.total" name="total">
             </div>
         </div>

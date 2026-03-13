@@ -9,13 +9,12 @@ import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
-import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-buscador-productos',
     templateUrl: './buscador-productos.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule, LazyImageDirective],
+    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BuscadorProductosComponent implements OnInit {
@@ -92,6 +91,13 @@ export class BuscadorProductosComponent implements OnInit {
 
     onProductoClick(producto:any){
         this.productoSelect(producto);
+    }
+
+    /**
+     * Verifica si el componente químico está habilitado en la empresa
+     */
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
     }
 
     /**

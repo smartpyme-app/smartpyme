@@ -139,6 +139,7 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
                     detalle.img            = producto.img;
                     detalle.precio         = parseFloat(producto.precio);
                     detalle.costo          = parseFloat(producto.costo);
+                    detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
                     if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
                         producto.inventarios   = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
                         detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
