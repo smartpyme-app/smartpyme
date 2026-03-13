@@ -356,7 +356,7 @@
                     <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($venta->total, 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="4" style="border-top: 1px solid black;">Escribir en Letras el Total a Pagar</td>
+                    <td colspan="5" style="border-top: 1px solid black;">Escribir en Letras el Total a Pagar</td>
                     <td style="padding: 0 3px 0 0; text-align: right;">TOTAL A PAGAR:</td>
                     <td style="border: 1px solid black; text-align: left;"><span style="float: left;"> </span></td>
                 </tr>
