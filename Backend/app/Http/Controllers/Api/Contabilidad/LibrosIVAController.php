@@ -777,10 +777,6 @@ class LibrosIVAController extends Controller
 
     public function comprasLibroExport(Request $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
-            return $alerta;
-        }
-
         $compras = new LibroComprasExport();
         $compras->filter($request);
 
@@ -789,10 +785,6 @@ class LibrosIVAController extends Controller
 
     public function comprasAnexoExport(Request $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
-            return $alerta;
-        }
-
         $compras = new AnexoComprasExport();
         $compras->filter($request);
 
@@ -891,10 +883,6 @@ class LibrosIVAController extends Controller
 
     public function comprasSujetosExcluidosLibroExport(Request $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
-            return $alerta;
-        }
-
         $compras = new LibroSujetosExcluidosExport();
         $compras->filter($request);
 
@@ -903,10 +891,6 @@ class LibrosIVAController extends Controller
 
     public function comprasSujetosExcluidosAnexoExport(Request $request)
     {
-        if ($alerta = $this->validarVentasPendientes($request)) {
-            return $alerta;
-        }
-
         $compras = new AnexoSujetosExcluidosExport();
         $compras->filter($request);
 
