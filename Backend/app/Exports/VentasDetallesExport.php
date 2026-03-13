@@ -162,10 +162,21 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
            $iva = 0;
            if ($venta && $venta->iva > 0 && !$esFacturaExportacion) {
                // Usar el IVA del detalle si está disponible y es mayor a 0
-               // El IVA del detalle puede ser null o 0, por eso verificamos explícitamente
                $ivaDetalle = $row->iva ?? 0;
                if ($ivaDetalle > 0) {
                    $iva = $ivaDetalle;
+               } else {
+                   // Fallback: si el detalle no tiene iva guardado (ventas antiguas, MH, importación),
+                   // distribuir proporcionalmente el IVA de la venta. Usar gravada para respetar exentos.
+                   $gravadaVenta = $venta->gravada ?? 0;
+                   $gravadaDetalle = $row->gravada ?? 0;
+                   $subTotalVenta = $venta->sub_total ?? 0;
+                   if ($gravadaVenta > 0 && $gravadaDetalle > 0) {
+                       $iva = ($gravadaDetalle / $gravadaVenta) * $venta->iva;
+                   } elseif ($subTotalVenta > 0 && $row->total > 0) {
+                       // Si no hay gravada, usar proporción por total (ventas sin desglose gravada/exenta)
+                       $iva = ($row->total / $subTotalVenta) * $venta->iva;
+                   }
                }
            }
            

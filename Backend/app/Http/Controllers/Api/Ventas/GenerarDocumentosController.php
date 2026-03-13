@@ -115,6 +115,28 @@ class GenerarDocumentosController extends Controller
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
 
+            // Empresa 716: Factura se imprime con formato ticket
+            if (Auth::user()->id_empresa == 716) {
+                if (
+                    isset($empresa->custom_empresa['configuraciones']) &&
+                    isset($empresa->custom_empresa['configuraciones']['ticket_en_pdf']) &&
+                    $empresa->custom_empresa['configuraciones']['ticket_en_pdf'] == true
+                ) {
+                    $venta->pdf = true;
+                    $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
+                    $alto_base = 220;
+                    $alto_por_producto = 7;
+                    $total_lineas = $venta->detalles()->count();
+                    $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto);
+                    $alto_total_pt = $alto_total_mm * 2.83465;
+                    $ancho_pt = 80 * 2.83465;
+                    $pdf->setPaper([0, 0, $ancho_pt, $alto_total_pt]);
+                    return $pdf->stream('factura-ticket.pdf');
+                }
+                $venta->pdf = false;
+                return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
+            }
+
             $formatter = new NumeroALetras();
             $n = explode(".", number_format($venta->total,2));
 
@@ -253,10 +275,6 @@ class GenerarDocumentosController extends Controller
             }
             elseif(Auth::user()->id_empresa == 420 ){ //420
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
-            }
-            elseif(Auth::user()->id_empresa == 716 ){ //716 Accesorios Honduras
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Accesorios-Honduras', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 700 ){ //700 Lilian Ohle

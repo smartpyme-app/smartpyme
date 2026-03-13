@@ -48,9 +48,9 @@
 {{--            <img src="{{ asset('img/'.$empresa->logo) }}" alt="Logo">--}}
 {{--        @endif--}}
         @if ($venta->sucursal()->first())
-            <h3>{{ $venta->sucursal()->pluck('nombre')->first() }}</h3>
+            <p>{{ $venta->sucursal()->pluck('nombre')->first() }}</p>
         @else
-            <h3>{{ $empresa->nombre }}</h3>
+            <p>{{ $empresa->nombre }}</p>
         @endif
         <p>{{ $empresa->sector }}</p>
         <p>{{ $empresa->nombre_propietario }}</p>

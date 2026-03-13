@@ -144,22 +144,29 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('bancos/list').subscribe(
-      (bancos) => {
-        this.bancos = bancos;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    if (this.apiService.isModuloBancos()) {
+      this.apiService.getAll('banco/cuentas/list').subscribe(
+        (bancos) => { this.bancos = bancos; },
+        (error) => { this.alertService.error(error); }
+      );
+    } else {
+      this.apiService.getAll('bancos/list').subscribe(
+        (bancos) => { this.bancos = bancos; },
+        (error) => { this.alertService.error(error); }
+      );
+    }
 
     this.apiService.getAll('formas-de-pago/list').subscribe(
       (formaPagos) => {
         this.formaPagos = formaPagos;
+        if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
+          const formaPagoSeleccionada = formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+          if (formaPagoSeleccionada?.banco?.nombre_banco && !this.venta.detalle_banco) {
+            this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+          }
+        }
       },
-      (error) => {
-        this.alertService.error(error);
-      }
+      (error) => { this.alertService.error(error); }
     );
 
     this.apiService.getAll('canales/list').subscribe(
@@ -959,12 +966,18 @@ export class FacturacionComponent implements OnInit {
             });
         }
 
-        // Limpiar banco y mensaje de error al cambiar método de pago
-        if (!this.requiereBanco()) {
+        // Si módulo bancos: asignar banco por defecto del método de pago
+        if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
+            const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+            if (formaPagoSeleccionada?.banco?.nombre_banco) {
+                this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+            } else {
+                this.venta.detalle_banco = '';
+            }
+        } else if (!this.requiereBanco()) {
             this.venta.detalle_banco = '';
             this.mensajeErrorBanco = '';
         }
-        console.log(this.venta);
     }
 
     public setDocumento(id_documento: any) {
@@ -1053,7 +1066,8 @@ export class FacturacionComponent implements OnInit {
   public requiereBanco(): boolean {
     return this.venta.forma_pago &&
            this.venta.forma_pago !== 'Efectivo' &&
-           this.venta.forma_pago !== 'Wompi';
+           this.venta.forma_pago !== 'Wompi' &&
+           this.venta.forma_pago !== 'Multiple';
   }
 
   // Guardar venta
@@ -1081,6 +1095,10 @@ export class FacturacionComponent implements OnInit {
 
     this.apiService.store('facturacion', this.venta).subscribe(
       (venta) => {
+        // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
+        // para que en un siguiente guardado se envíe el mismo correlativo.
+        Object.assign(this.venta, venta);
+
         // Si es cotización
         if (this.facturarCotizacion) {
           this.apiService
@@ -1108,9 +1126,6 @@ export class FacturacionComponent implements OnInit {
           this.apiService.auth_user().empresa.impresion_en_facturacion
         ) {
           if (this.apiService.auth_user().empresa.facturacion_electronica) {
-            // Actualizar this.venta con los datos del backend, especialmente el correlativo correcto
-            this.venta.id = venta.id;
-            this.venta.correlativo = venta.correlativo;
             this.emitirDTE();
           } else {
             window.open(
