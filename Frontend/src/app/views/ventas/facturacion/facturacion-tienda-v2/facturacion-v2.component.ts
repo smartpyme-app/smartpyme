@@ -854,7 +854,9 @@ export class FacturacionV2Component implements OnInit {
             }
 
             // Obtener saldo pendiente si el cliente tiene límite de crédito
-            if (cliente.limite_credito) {
+            // Obtener saldo pendiente: siempre si pref "estado de cuenta en facturación" activa, o solo si tiene límite de crédito
+            const cargarSaldo = this.apiService.isEstadoCuentaEnFacturacionHabilitado() || cliente.limite_credito;
+            if (cargarSaldo) {
                 this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 };
                 this.apiService.getAll('cliente/' + cliente.id + '/saldo-pendiente').subscribe(
                     (res: any) => {
@@ -872,6 +874,15 @@ export class FacturacionV2Component implements OnInit {
             this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
         }
         console.log(cliente);
+    }
+
+    /**
+     * Abrir PDF del estado de cuenta del cliente en nueva pestaña
+     */
+    public abrirEstadoCuentaPdf(): void {
+        if (!this.venta?.cliente?.id) return;
+        const url = `${this.apiService.baseUrl}/api/cliente/estado-de-cuenta/${this.venta.cliente.id}?token=${this.apiService.auth_token()}`;
+        window.open(url, '_blank');
     }
 
     // Proyecto
