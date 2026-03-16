@@ -2165,10 +2165,18 @@ class ShopifyController extends Controller
             if ($detalleExistente) {
                 // Actualizar el detalle existente si el precio cambió
                 $precioNuevo = floatval($shippingLine['discounted_price'] ?? $shippingLine['price'] ?? 0);
-                $precioSinIVA = $this->impuestosService->calcularPrecioSinImpuesto($precioNuevo, $venta->id_empresa);
-                $ivaNuevo = $precioNuevo - $precioSinIVA;
-                
-                if (abs($detalleExistente->precio_sin_iva - $precioSinIVA) > 0.01) {
+                $tieneIva = !empty($shippingLine['tax_lines']);
+                $precioSinIVA = $tieneIva
+                    ? $this->impuestosService->calcularPrecioSinImpuesto($precioNuevo, $venta->id_empresa)
+                    : $precioNuevo; // exento: precio completo sin desglosar IVA
+
+                $ivaNuevo = $tieneIva ? ($precioNuevo - $precioSinIVA) : 0.0;
+
+                $totalNuevo = $tieneIva ? $precioSinIVA : $precioNuevo;
+                $gravadaNueva = $tieneIva ? $precioSinIVA : 0.0;
+                $exentaNueva = $tieneIva ? 0.0 : $precioNuevo;
+
+                if (abs($detalleExistente->precio_con_iva - $precioNuevo) > 0.01) {
                     Log::info("Actualizando precio de envío existente", [
                         'detalle_id' => $detalleExistente->id,
                         'titulo_envio' => $title,
@@ -2176,13 +2184,14 @@ class ShopifyController extends Controller
                         'precio_nuevo' => $precioSinIVA,
                         'venta_id' => $venta->id
                     ]);
-                    
+
                     $detalleExistente->update([
                         'precio_sin_iva' => $precioSinIVA,
                         'precio_con_iva' => $precioNuevo,
-                        'total' => $precioSinIVA,
-                        'gravada' => $precioSinIVA,
-                        'iva' => $ivaNuevo
+                        'total'          => $totalNuevo,
+                        'gravada'        => $gravadaNueva,
+                        'exenta'         => $exentaNueva,
+                        'iva'            => $ivaNuevo,
                     ]);
                 }
                 
@@ -2227,30 +2236,35 @@ class ShopifyController extends Controller
     private function recalcularTotalesVenta($venta)
     {
         $subtotal = 0;
-        $iva = 0;
-        $gravada = 0;
-        
+        $iva      = 0;
+        $gravada  = 0;
+        $exenta   = 0;
+
         foreach ($venta->detalles as $detalle) {
             $subtotal += round($detalle->cantidad * $detalle->precio, 2);
-            $iva += round($detalle->iva, 2);
-            $gravada += round($detalle->gravada, 2);
+            $iva      += round($detalle->iva, 2);
+            $gravada  += round($detalle->gravada, 2);
+            $exenta   += round($detalle->exenta ?? 0, 2);
         }
-        
-        $total = round($gravada + $iva, 2);
-        
+
+        $total = round($gravada + $iva + $exenta, 2); // total correcto incluyendo exentos
+
         $venta->update([
             'sub_total' => round($subtotal, 2),
-            'iva' => round($iva, 2),
-            'gravada' => round($gravada, 2),
-            'total' => $total
+            'iva'       => round($iva, 2),
+            'gravada'   => round($gravada, 2),
+            'exenta'    => round($exenta, 2),
+            'total'     => $total,
+            'monto_pago'=> $total,
         ]);
-        
+
         Log::info("Totales de venta recalculados", [
             'venta_id' => $venta->id,
             'referencia_shopify' => $venta->referencia_shopify,
             'subtotal' => round($subtotal, 2),
             'iva' => round($iva, 2),
             'gravada' => round($gravada, 2),
+            'exenta' => round($exenta, 2),
             'total' => $total,
             'es_venta_shopify' => !empty($venta->referencia_shopify)
         ]);

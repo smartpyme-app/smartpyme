@@ -69,6 +69,8 @@ class ShippingService
         $originalPrice = floatval($shippingLine['price'] ?? 0);
         $discount = $originalPrice - $price;
 
+        $tieneIva = !empty($shippingLine['tax_lines']);
+
         // Si el precio final es 0, no procesar (envío gratis)
         if ($price <= 0) {
             Log::info("Envío gratis detectado, no se crea detalle", [
@@ -86,11 +88,12 @@ class ShippingService
             'discounted_price' => $price,
             'discount' => $discount,
             'venta_id' => $ventaId,
-            'empresa_id' => $empresaId
+            'empresa_id' => $empresaId,
+            'tiene_iva' => $tieneIva
         ]);
 
         // Buscar o crear el producto de envío dinámicamente
-        $productoEnvio = $this->buscarOCrearProductoEnvio($title, $price, $empresaId, $usuarioId, $sucursalId);
+        $productoEnvio = $this->buscarOCrearProductoEnvio($title, $price, $empresaId, $usuarioId, $sucursalId, $tieneIva);
 
         if (!$productoEnvio) {
             Log::error("No se pudo crear/encontrar producto de envío", [
@@ -100,16 +103,23 @@ class ShippingService
             return null;
         }
 
-        // Calcular precios originales y con descuento usando el servicio de impuestos
-        $precioOriginalConIVA = $originalPrice; // Precio original con IVA
-        $precioOriginalSinIVA = $this->impuestosService->calcularPrecioSinImpuesto($precioOriginalConIVA, $empresaId);
-        $ivaOriginal = $precioOriginalConIVA - $precioOriginalSinIVA;
+        // Calcular precios originales y con descuento según si el envío tiene IVA o es exento
+        $precioOriginalConIVA = $originalPrice;
+        $precioConDescuentoConIVA = $price;
 
-        $precioConDescuentoConIVA = $price; // Precio con descuento con IVA
-        $precioConDescuentoSinIVA = $this->impuestosService->calcularPrecioSinImpuesto($precioConDescuentoConIVA, $empresaId);
-        $ivaConDescuento = $precioConDescuentoConIVA - $precioConDescuentoSinIVA;
+        if ($tieneIva) {
+            $precioOriginalSinIVA          = $this->impuestosService->calcularPrecioSinImpuesto($precioOriginalConIVA, $empresaId);
+            $precioConDescuentoSinIVA      = $this->impuestosService->calcularPrecioSinImpuesto($precioConDescuentoConIVA, $empresaId);
+            $ivaOriginal                   = $precioOriginalConIVA - $precioOriginalSinIVA;
+            $ivaConDescuento               = $precioConDescuentoConIVA - $precioConDescuentoSinIVA;
+        } else {
+            // Exento: el precio completo va a exenta, sin desglosar IVA
+            $precioOriginalSinIVA          = $precioOriginalConIVA;
+            $precioConDescuentoSinIVA      = $precioConDescuentoConIVA;
+            $ivaOriginal                   = 0.0;
+            $ivaConDescuento               = 0.0;
+        }
 
-        // Calcular descuento sin IVA
         $descuentoSinIVA = $precioOriginalSinIVA - $precioConDescuentoSinIVA;
 
         // Crear el detalle de venta para el envío
@@ -118,16 +128,16 @@ class ShippingService
             'id_producto' => $productoEnvio->id,
             'descripcion' => $title, // Usar el título exacto de Shopify
             'cantidad' => 1,
-            'precio' => $precioOriginalSinIVA, // Precio original sin IVA
-            'precio_sin_iva' => $precioConDescuentoSinIVA, // Precio sin IVA (con descuento aplicado)
-            'precio_con_iva' => $precioConDescuentoConIVA, // Precio con IVA (con descuento aplicado)
+            'precio' => $precioOriginalSinIVA,
+            'precio_sin_iva' => $precioConDescuentoSinIVA,
+            'precio_con_iva' => $precioConDescuentoConIVA,
             'costo' => 0, // Los envíos no tienen costo
-            'descuento' => $descuentoSinIVA, // Descuento sin IVA
-            'total' => $precioConDescuentoSinIVA, // Total con descuento sin IVA
-            'no_sujeta' => 0,
-            'exenta' => 0,
-            'gravada' => $precioConDescuentoSinIVA, // Monto gravado con descuento sin IVA
-            'iva' => $ivaConDescuento, // IVA con descuento
+            'descuento' => $descuentoSinIVA,
+            'total'         => $tieneIva ? $precioConDescuentoSinIVA : $precioConDescuentoConIVA,
+            'gravada'       => $tieneIva ? $precioConDescuentoSinIVA : 0.0,
+            'exenta'        => $tieneIva ? 0.0 : $precioConDescuentoConIVA,
+            'iva'           => $ivaConDescuento,
+            'no_sujeta'     => 0,
             'id_vendedor' => $usuarioId
         ]);
 
@@ -142,7 +152,8 @@ class ShippingService
             'descuento_sin_iva' => $descuentoSinIVA,
             'descuento_con_iva' => $discount,
             'iva_original' => $ivaOriginal,
-            'iva_con_descuento' => $ivaConDescuento
+            'iva_con_descuento' => $ivaConDescuento,
+            'tiene_iva' => $tieneIva
         ]);
 
         return $detalleEnvio;
@@ -152,14 +163,20 @@ class ShippingService
      * Busca o crea el producto de envío de forma dinámica
      *
      * @param string $title Título del envío desde Shopify
-     * @param float $price Precio del envío (con IVA)
+     * @param float $price Precio del envío (con IVA si gravado, completo si exento)
      * @param int $empresaId ID de la empresa
      * @param int $usuarioId ID del usuario
      * @param int $sucursalId ID de la sucursal
+     * @param bool $tieneIva Si el envío tiene IVA (tax_lines) o es exento
      * @return Producto|null Producto de envío
      */
-    private function buscarOCrearProductoEnvio(string $title, float $price, int $empresaId, int $usuarioId, int $sucursalId): ?Producto
+    private function buscarOCrearProductoEnvio(string $title, float $price, int $empresaId, int $usuarioId, int $sucursalId, bool $tieneIva = true): ?Producto
     {
+        // Precio del producto: si es exento, el precio completo; si es gravado, sin IVA
+        $precioProducto = $tieneIva
+            ? $this->impuestosService->calcularPrecioSinImpuesto($price, $empresaId)
+            : $price;
+
         // Buscar producto existente por nombre exacto en la categoría "envios"
         $producto = Producto::where('nombre', $title)
             ->where('id_empresa', $empresaId)
@@ -178,13 +195,12 @@ class ShippingService
             ]);
 
             // Actualizar el precio del producto si es diferente (opcional)
-            $precioSinIVA = $this->impuestosService->calcularPrecioSinImpuesto($price, $empresaId);
-            if (abs($producto->precio - $precioSinIVA) > 0.01) {
-                $producto->update(['precio' => $precioSinIVA]);
+            if (abs($producto->precio - $precioProducto) > 0.01) {
+                $producto->update(['precio' => $precioProducto]);
                 Log::info("Precio de producto de envío actualizado", [
                     'producto_id' => $producto->id,
                     'precio_anterior' => $producto->precio,
-                    'precio_nuevo' => $precioSinIVA
+                    'precio_nuevo' => $precioProducto
                 ]);
             }
 
@@ -195,7 +211,8 @@ class ShippingService
         Log::info("Producto de envío no encontrado, creando nuevo", [
             'nombre' => $title,
             'empresa_id' => $empresaId,
-            'precio_con_iva' => $price
+            'precio_con_iva' => $price,
+            'tiene_iva' => $tieneIva
         ]);
 
         // Obtener o crear la categoría "envios"
@@ -210,16 +227,13 @@ class ShippingService
             ]
         );
 
-        // Calcular precio sin IVA
-        $precioSinIVA = $this->impuestosService->calcularPrecioSinImpuesto($price, $empresaId);
-
         // Crear el producto de envío
         $producto = Producto::create([
             'nombre' => $title,
             'descripcion' => 'Servicio de envío desde Shopify: ' . $title,
             'codigo' => 'ENVIO-' . strtoupper(substr(md5($title), 0, 8)),
             'tipo' => 'Servicio',
-            'precio' => $precioSinIVA,
+            'precio' => $precioProducto,
             'costo' => 0,
             'id_categoria' => $categoria->id,
             'id_empresa' => $empresaId,
@@ -232,8 +246,8 @@ class ShippingService
         Log::info("Producto de envío creado automáticamente", [
             'producto_id' => $producto->id,
             'nombre' => $producto->nombre,
-            'precio_sin_iva' => $precioSinIVA,
-            'precio_con_iva' => $price,
+            'precio' => $precioProducto,
+            'precio_shopify' => $price,
             'categoria_id' => $categoria->id
         ]);
 
