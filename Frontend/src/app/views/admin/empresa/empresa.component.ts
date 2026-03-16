@@ -1143,7 +1143,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 lotes_metodologia: 'FIFO', // Manual, FIFO, LIFO, FEFO
                 lotes_dias_anticipacion: 30, // Días para alerta de vencimiento
                 componente_quimico_activo: false, // Habilitar campo componente químico en productos
-                modulo_bancos: false // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
+                modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
+                estado_cuenta_en_facturacion: false // Mostrar estado de cuenta del cliente al facturar
             },
             campos_personalizados: {}
         };
@@ -1370,6 +1371,32 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 `Módulo de bancos ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
             );
             // Actualizar auth_user en localStorage para que el sidebar refleje el cambio sin recargar
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    // Métodos para estado de cuenta en facturación
+    public isEstadoCuentaEnFacturacionHabilitado(): boolean {
+        return this.getCustomConfig('configuraciones', 'estado_cuenta_en_facturacion', false);
+    }
+
+    public toggleEstadoCuentaEnFacturacion() {
+        const currentValue = this.isEstadoCuentaEnFacturacionHabilitado();
+        this.updateEstadoCuentaEnFacturacion(!currentValue);
+    }
+
+    public updateEstadoCuentaEnFacturacion(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'estado_cuenta_en_facturacion', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Estado de cuenta en facturación ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
             const authUser = this.apiService.auth_user();
             if (authUser?.empresa?.id === this.empresa?.id) {
                 authUser.empresa.custom_empresa = this.empresa.custom_empresa;

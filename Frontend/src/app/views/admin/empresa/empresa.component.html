@@ -584,6 +584,20 @@
                                 name="modulo_bancos">
                         </div>
                     </div>
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Muestra el saldo pendiente del cliente al seleccionarlo en facturación.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="estado_cuenta_en_facturacion">Habilitar estado de cuenta en facturación</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="estado_cuenta_en_facturacion"
+                                [checked]="isEstadoCuentaEnFacturacionHabilitado()"
+                                (change)="toggleEstadoCuentaEnFacturacion()"
+                                name="estado_cuenta_en_facturacion">
+                        </div>
+                        <small class="text-muted">
+                            Útil para consultar el saldo de cobro pendiente antes de facturar.
+                        </small>
+                    </div>
                     <hr>
                     <div class="row">
                         <h4 class="mb-0 fw-bold">Configuraciones de Lotes</h4>
