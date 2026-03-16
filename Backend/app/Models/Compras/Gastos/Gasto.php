@@ -167,4 +167,17 @@ class Gasto extends Model
     {
         return $this->hasMany('App\Models\Compras\Gastos\Abono', 'id_gasto');
     }
+
+    public function detalles()
+    {
+        return $this->hasMany('App\Models\Compras\Gastos\DetalleEgreso', 'id_egreso')->orderBy('numero_item');
+    }
+
+    /**
+     * Indica si el egreso tiene detalles (modelo unificado) o es registro legacy
+     */
+    public function getTieneDetallesAttribute(): bool
+    {
+        return $this->detalles()->exists();
+    }
 }
