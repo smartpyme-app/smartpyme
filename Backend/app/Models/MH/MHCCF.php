@@ -175,10 +175,6 @@ class MHCCF extends Model
             if ($this->venta->iva){ 
                 $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->venta->iva, 2, '.', ''))]);
             }
-            $this->venta->gravada = $this->venta->sub_total;
-        }else{
-            $this->venta->gravada = 0;
-            $this->venta->exenta = $this->venta->sub_total;
         }
 
         return 
@@ -239,13 +235,6 @@ class MHCCF extends Model
                 $this->venta->tipo_item = 2;
             }else{
                 $this->venta->tipo_item = 1;
-            }
-
-            if ($this->venta->iva > 0) {
-                $this->venta->gravada = $this->venta->sub_total;
-            }else{
-                $this->venta->gravada = 0;
-                $this->venta->exenta = $this->venta->sub_total;
             }
 
             $tributos = NULL;
