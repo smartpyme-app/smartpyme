@@ -224,9 +224,6 @@ class ComprasController extends Controller
         // Ajustar stocks
         foreach ($compra->detalles as $detalle) {
 
-            $producto = Producto::where('id', $detalle->id_producto)
-                ->with('composiciones')->firstOrFail();
-
             // Bloquear fila para evitar condiciones de carrera
             $inventario = Inventario::where('id_producto', $detalle->id_producto)
                 ->where('id_bodega', $compra->id_bodega)
