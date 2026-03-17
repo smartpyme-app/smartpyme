@@ -17,7 +17,7 @@ export class KardexComponent implements OnInit {
 	public filtros:any = {};
 	public loading:boolean = false;
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  private route: ActivatedRoute, private router: Router){ }
+    constructor(public apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute, private router: Router) {}
 
 	ngOnInit() {
         this.filtros.inicio = this.apiService.date();
