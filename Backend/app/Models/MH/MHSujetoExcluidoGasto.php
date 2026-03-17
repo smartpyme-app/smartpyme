@@ -199,7 +199,7 @@ class MHSujetoExcluidoGasto extends Model
                 $precioUni = $esGravada
                     ? floatval($detalle->sub_total) + floatval($detalle->iva)
                     : floatval($detalle->sub_total);
-                $compra = floatval($detalle->total);
+                $compra = floatval($detalle->sub_total + $detalle->iva);
                 $descuento = 0;
                 $detalles->push([
                     "numItem" => $index + 1,
