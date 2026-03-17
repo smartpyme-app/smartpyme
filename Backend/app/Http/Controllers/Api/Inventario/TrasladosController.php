@@ -20,6 +20,14 @@ class TrasladosController extends Controller
 {   
 
 
+    public function read($id) {
+        $traslado = Traslado::where('id', $id)
+            ->with(['producto', 'origen', 'destino', 'empresa', 'usuario', 'lote', 'loteDestino'])
+            ->firstOrFail();
+
+        return Response()->json($traslado, 200);
+    }
+
     public function index(Request $request) {
        
         $traslados = Traslado::when($request->fin, function($query) use ($request){
