@@ -135,16 +135,16 @@ class KardexController extends Controller
     {
         $user = Auth::user();
         $empresa = $user->empresa ?? Empresa::find($user->id_empresa ?? null);
-        $tipoKardex = $empresa ? $empresa->getTipoKardex() : 'general';
+        $usarKardexFarmacia = $empresa && $empresa->isLotesActivo();
 
-        if ($tipoKardex === 'farmacia') {
+        if ($usarKardexFarmacia) {
             $kardex = new KardexFarmaciasExport();
         } else {
             $kardex = new KardexExport();
         }
         $kardex->filter($request);
 
-        $nombreArchivo = $tipoKardex === 'farmacia' ? 'kardex-farmacia.xlsx' : 'kardex.xlsx';
+        $nombreArchivo = $usarKardexFarmacia ? 'kardex-farmacia.xlsx' : 'kardex.xlsx';
         return Excel::download($kardex, $nombreArchivo);
     }
 

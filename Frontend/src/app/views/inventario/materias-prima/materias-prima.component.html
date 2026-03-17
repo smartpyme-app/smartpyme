@@ -109,7 +109,7 @@
                                     <a routerLink="/materia-prima/editar/{{producto.id}}" class="btn">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a [routerLink]="apiService.getTipoKardex() === 'farmacia' ? ['/kardex-farmacias', producto.id] : ['/kardex', producto.id]" class="btn">
+                                    <a [routerLink]="apiService.isLotesActivo() ? ['/kardex-farmacias', producto.id] : ['/kardex', producto.id]" class="btn">
                                         <i class="fa fa-fw fa-right-left"></i> Kardex
                                     </a>
                                     <a routerLink="/devolucion-venta/nueva" class="btn">
