@@ -84,6 +84,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   };
   public customField: boolean = false;
   public tieneAccesoPropina: boolean = false;
+  public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
   public contabilidadHabilitada: boolean = false;
@@ -143,6 +144,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.verificarAccesoContabilidad();
     this.loadData();
     this.verificarAccesoPropina();
+    this.verificarFidelizacionHabilitada();
   }
 
   verificarAccesoContabilidad() {
@@ -956,8 +958,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             }
             // Resetear puntos cuando cambia el cliente
             this.resetearPuntos();
-            // Cargar puntos del cliente
-            this.cargarPuntosCliente();
+            // Cargar puntos del cliente (solo si la empresa tiene fidelización habilitada)
+            if (this.tieneFidelizacionHabilitada) {
+                this.cargarPuntosCliente();
+            }
 
             // Asignar vendedor si el cliente tiene uno asignado
             if(cliente.id_vendedor) {
@@ -973,8 +977,9 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                 this.venta.fecha_pago = moment(fechaVenta).add(cliente.dias_credito, 'days').format('YYYY-MM-DD');
             }
 
-            // Obtener saldo pendiente si el cliente tiene límite de crédito
-            if (cliente.limite_credito) {
+            // Obtener saldo pendiente: siempre si pref "estado de cuenta en facturación" activa, o solo si tiene límite de crédito
+            const cargarSaldo = this.apiService.isEstadoCuentaEnFacturacionHabilitado() || cliente.limite_credito;
+            if (cargarSaldo) {
                 this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 };
                 this.apiService.getAll('cliente/' + cliente.id + '/saldo-pendiente').subscribe(
                     (res: any) => {
@@ -1276,7 +1281,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public requiereBanco(): boolean {
     return this.venta.forma_pago &&
            this.venta.forma_pago !== 'Efectivo' &&
-           this.venta.forma_pago !== 'Wompi';
+           this.venta.forma_pago !== 'Wompi' &&
+           this.venta.forma_pago !== 'Multiple';
   }
 
   // Guardar venta
@@ -1637,6 +1643,15 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     return this.apiService.auth_user().empresa.id;
   }
 
+  /**
+   * Abrir PDF del estado de cuenta del cliente en nueva pestaña
+   */
+  public abrirEstadoCuentaPdf(): void {
+    if (!this.venta?.cliente?.id) return;
+    const url = `${this.apiService.baseUrl}/api/cliente/estado-de-cuenta/${this.venta.cliente.id}?token=${this.apiService.auth_token()}`;
+    window.open(url, '_blank');
+  }
+
   // ==================== MÉTODOS PARA MODAL DE PUNTOS ====================
 
   /**
@@ -1951,6 +1966,18 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public formatNumber(value: number): string {
     return value?.toLocaleString() || '0';
   }
+
+  private verificarFidelizacionHabilitada() {
+        this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneFidelizacionHabilitada = tieneAcceso;
+            },
+            error: (error) => {
+                console.error('Error al verificar acceso a fidelización:', error);
+                this.tieneFidelizacionHabilitada = false;
+            }
+        });
+    }
 
     public getTotalConPropina(): number {
         const total = parseFloat(this.venta?.total || 0);

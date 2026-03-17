@@ -15,23 +15,22 @@
                 }
             </select>
         </div>
-        <!-- @if (abono.forma_pago != 'Efectivo') {
-            <div class="form-group col-md-12">
-                <label for="detalle_banco">Banco</label>
-                <select name="detalle_banco" [(ngModel)]="abono.detalle_banco" class="form-select">
-                    <option value="">Seleccione aquí</option>
-                    @for (banco of bancos; track banco.id) {
-                        <option [value]="banco.nombre_banco">{{ banco.nombre_banco }}</option>
-                    }
-                </select>
-            </div>
-        } -->
-        @if (abono.forma_pago != 'Efectivo') {
-            <div class="form-group col-md-12">
-                <label for="referencia">Referencia:</label>
-                <input type="text" class="form-control" [(ngModel)]="abono.referencia" name="referencia">
-            </div>
-        }
+        <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo' && abono.forma_pago != 'Wompi'">
+            <label for="detalle_banco">Banco</label>
+            <select name="detalle_banco" [(ngModel)]="abono.detalle_banco" class="form-select">
+                <option value="">Seleccione aquí</option>
+                <ng-container *ngIf="apiService.isModuloBancos()">
+                    <option [value]="banco.nombre_banco" *ngFor="let banco of bancos">{{ banco.nombre_banco }} - {{ banco.numero }}</option>
+                </ng-container>
+                <ng-container *ngIf="!apiService.isModuloBancos()">
+                    <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+                </ng-container>
+            </select>
+        </div>
+        <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo' && abono.forma_pago != 'Wompi'">
+            <label for="referencia">Referencia:</label>
+            <input type="text" class="form-control" [(ngModel)]="abono.referencia" name="referencia">
+        </div>
         <div class="form-group col-md-12">
             <table class="table table-bordered">
                 <tbody>

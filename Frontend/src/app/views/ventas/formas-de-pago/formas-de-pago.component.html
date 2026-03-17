@@ -34,7 +34,7 @@
 
                         @for (forma_pago of formas_pago; track forma_pago.id) {
                             <tr class="animated fadeIn">
-                            
+
                             <td>{{forma_pago.nombre }} </td>
                             <td>{{forma_pago.banco?.nombre_banco }} </td>
                             <td class="text-center">
@@ -45,7 +45,7 @@
                                     <a class="btn btn-default" (click)="openModal(mdetalle, forma_pago)" tooltip="Editar">
                                         <i class="fa fa-pencil-alt"></i>
                                     </a>
-                                </div>  
+                                </div>
                             </td>
 
                         </tr>
@@ -121,7 +121,7 @@
                             <label for="">API Secret</label>
                             <input type="text" name="wompi_secret" [(ngModel)]="empresa.wompi_secret" class="form-control" required>
                         </div>
-                    
+
                         <div class="form-group col-md-12">
                             <button type="submit" [disabled]="saving" (click)="onSubmitWompi()" class="btn btn-primary float-end">
                                 @if (!saving) {
@@ -240,7 +240,7 @@
                     <label for="">API Secret</label>
                     <input type="text" name="wompi_secret" [(ngModel)]="empresa.wompi_secret" class="form-control" required>
                 </div>
-            
+
                 <div class="form-group col-md-12">
                     <button type="submit" [disabled]="saving" (click)="onSubmitWompi()" class="btn btn-primary float-end">
                         <span *ngIf="!saving">Probar conexión</span>
@@ -249,7 +249,7 @@
                 </div>
             </div>
         </div>
-        
+
     </div>
     <div class="col-md-6">
         <app-bancos></app-bancos>

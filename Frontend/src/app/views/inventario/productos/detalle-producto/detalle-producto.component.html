@@ -69,15 +69,15 @@
             <h6 class="col-12">Precio y costo</h6>
             <div class="form-group col-lg-4" *ngIf="producto.tipo != 'Materia prima'">
                 <label class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</label>
-                <p>{{ producto.precio | currency:'USD':'symbol':'1.2' }}</p>
+                <p>{{ producto.precio | currency }}</p>
             </div>
             <div class="form-group col-lg-4" *ngIf="producto.tipo != 'Servicio' && producto.tipo != 'Materia prima'">
                 <label class="fw-medium">Costo</label>
-                <p>{{ (producto.costo ?? producto.costo_promedio) | currency:'USD':'symbol':'1.2' }}</p>
+                <p>{{ (producto.costo ?? producto.costo_promedio) | currency }}</p>
             </div>
             <div class="form-group col-lg-4" *ngIf="producto.tipo != 'Materia prima' && (producto.porcentaje_impuesto != null || apiService.auth_user()?.empresa?.iva > 0)">
                 <label class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA' : 'Precio con Impuesto' }}</label>
-                <p>{{ (producto.precio_final || (producto.precio * (1 + ((producto.porcentaje_impuesto ?? apiService.auth_user()?.empresa?.iva ?? 0) / 100)))) | currency:'USD':'symbol':'1.2' }}</p>
+                <p>{{ (producto.precio_final || (producto.precio * (1 + ((producto.porcentaje_impuesto ?? apiService.auth_user()?.empresa?.iva ?? 0) / 100)))) | currency }}</p>
             </div>
         </div>
     </div>

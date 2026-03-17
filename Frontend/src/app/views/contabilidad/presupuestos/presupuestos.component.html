@@ -75,9 +75,9 @@
                             <td>{{presupuesto.titulo }}</td>
                             <td>{{presupuesto.fecha_inicio | date:'dd/MM/yyyy'}}</td>
                             <td>{{presupuesto.fecha_fin | date:'dd/MM/yyyy'}}</td>
-                            <td class="text-right">{{presupuesto.ingresos | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-right">{{presupuesto.egresos | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-right">{{presupuesto.utilidad | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-right">{{presupuesto.ingresos | currency}}</td>
+                            <td class="text-right">{{presupuesto.egresos | currency}}</td>
+                            <td class="text-right">{{presupuesto.utilidad | currency}}</td>
                             <td class="text-right">
                                 @if (presupuesto.enable == 1) {
                                     <span class="badge bg-success">Activo</span>

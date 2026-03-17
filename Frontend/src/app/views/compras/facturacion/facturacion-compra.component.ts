@@ -559,6 +559,19 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         }
     }
 
+    public cambioMetodoDePago() {
+        if (this.apiService.isModuloBancos() && this.compra.forma_pago && this.compra.forma_pago !== 'Efectivo') {
+            const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.compra.forma_pago);
+            if (formaPagoSeleccionada?.banco?.nombre_banco) {
+                this.compra.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+            } else {
+                this.compra.detalle_banco = '';
+            }
+        } else if (this.compra.forma_pago === 'Efectivo') {
+            this.compra.detalle_banco = '';
+        }
+    }
+
     public setBodega(){
         this.compra.id_sucursal = this.bodegas.find((item:any) => item.id == this.compra.id_bodega).id_sucursal;
     }

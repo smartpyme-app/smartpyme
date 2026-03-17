@@ -117,13 +117,13 @@
                         </td>
                         <td>{{ detalle.cantidad }}</td>
                         @if (!apiService.isSupervisorLimitado()) {
-                          <td>{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
+                          <td>{{ detalle.costo | currency }}</td>
                         }
                         @if (!apiService.isSupervisorLimitado()) {
-                          <td>{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
+                          <td>{{ detalle.descuento | currency }}</td>
                         }
                         @if (!apiService.isSupervisorLimitado()) {
-                          <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                          <td class="text-end">{{ detalle.total | currency }}</td>
                         }
                       </tr>
                     }
@@ -131,21 +131,21 @@
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Sub Total:</b></td>
                         @if (!apiService.isSupervisorLimitado()) {
-                          <td class="text-end"><b>{{ compra?.sub_total + compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                          <td class="text-end"><b>{{ compra?.sub_total + compra?.descuento | currency }}</b></td>
                         }
                     </tr>
                     <tr>
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Descuento:</b></td>
                         @if (!apiService.isSupervisorLimitado()) {
-                          <td class="text-end"><b>{{ compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                          <td class="text-end"><b>{{ compra?.descuento | currency }}</b></td>
                         }
                     </tr>
                     <tr>
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>IVA</b></td>
                         @if (!apiService.isSupervisorLimitado()) {
-                          <td class="text-end"><b>{{ compra?.iva | currency:'USD':'symbol':'1.2'}}</b> </td>
+                          <td class="text-end"><b>{{ compra?.iva | currency}}</b> </td>
                         }
                     </tr>
                     @if (compra?.percepcion > 0) {
@@ -153,7 +153,7 @@
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Percepción (1%)</b></td>
                         @if (!apiService.isSupervisorLimitado()) {
-                          <td class="text-end"><b>{{ compra?.percepcion | currency:'USD':'symbol':'1.2' }}</b></td>
+                          <td class="text-end"><b>{{ compra?.percepcion | currency }}</b></td>
                         }
                       </tr>
                     }
@@ -162,7 +162,7 @@
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Renta retenida</b></td>
                         @if (!apiService.isSupervisorLimitado()) {
-                          <td class="text-end"><b>{{ compra?.renta_retenida | currency:'USD':'symbol':'1.2'}}</b> </td>
+                          <td class="text-end"><b>{{ compra?.renta_retenida | currency}}</b> </td>
                         }
                       </tr>
                     }
@@ -170,7 +170,7 @@
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Total:</b></td>
                         @if (!apiService.isSupervisorLimitado()) {
-                          <td class="text-end"><b>{{ compra?.total | currency:'USD':'symbol':'1.2' }}</b></td>
+                          <td class="text-end"><b>{{ compra?.total | currency }}</b></td>
                         }
                     </tr>
                 </tbody>
@@ -242,7 +242,7 @@
                                 <option value="Confirmado">Confirmado</option>
                             </select>
                         </td>
-                        <td class="text-end">{{ abono.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ abono.total | currency }}</td>
                        <!--  <td class="text-center">
                             <a (click)="imprimirRecibo(abono)" class="btn btn-light">
                                 <i class="fa fa-fw fa-print"></i>
@@ -293,7 +293,7 @@
                                 {{ devolucion?.enable == '1' ? 'Activa' : 'Anulada' }}
                             </span>
                         </td>
-                        <td class="text-end">{{ devolucion.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ devolucion.total | currency }}</td>
                     </tr>
                 </tbody>
             </table>

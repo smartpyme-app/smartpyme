@@ -10,10 +10,10 @@ use App\Http\Requests\Bancos\StoreCuentaRequest;
 
 class CuentasController extends Controller
 {
-    
+
 
     public function index(Request $request) {
-       
+
         $cuentas = Cuenta::when($request->buscador, function($query) use ($request){
             return $query->where('nombre_banco', 'like' ,'%' . $request->buscador . '%')
             ->orWhere('tipo', 'like' ,'%' . $request->buscador . '%')
@@ -30,7 +30,7 @@ class CuentasController extends Controller
     }
 
     public function list() {
-       
+
         $cuentas = Cuenta::orderby('numero')
                                 // ->where('activo', true)
                                 ->get();
@@ -38,7 +38,7 @@ class CuentasController extends Controller
         return Response()->json($cuentas, 200);
 
     }
-    
+
     public function read($id) {
 
         $cuenta = Cuenta::where('id', $id)->firstOrFail();
@@ -53,7 +53,7 @@ class CuentasController extends Controller
             $cuenta = Cuenta::findOrFail($request->id);
         else
             $cuenta = new Cuenta;
-        
+
         $cuenta->fill($request->all());
         $cuenta->save();
 

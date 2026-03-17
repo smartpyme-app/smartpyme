@@ -263,12 +263,12 @@
         class="form-select p-0"
       >
         <ng-template ng-label-tmp let-item="item">
-          {{ item.concepto }} ({{ item.sub_total | currency:'USD':'symbol':'1.2' }})
+          {{ item.concepto }} ({{ item.sub_total | currency }})
         </ng-template>
         <ng-template ng-option-tmp let-item="item">
           <div class="d-flex justify-content-between">
             <span>{{ item.concepto }}</span>
-            <span>{{ item.sub_total | currency:'USD':'symbol':'1.2' }}</span>
+            <span>{{ item.sub_total | currency }}</span>
           </div>
         </ng-template>
       </ng-select>
@@ -312,12 +312,12 @@
         class="form-select p-0"
       >
         <ng-template ng-label-tmp let-item="item">
-          {{ item.concepto }} ({{ item.sub_total | currency:'USD':'symbol':'1.2' }})
+          {{ item.concepto }} ({{ item.sub_total | currency }})
         </ng-template>
         <ng-template ng-option-tmp let-item="item">
           <div class="d-flex justify-content-between">
             <span>{{ item.concepto }}</span>
-            <span>{{ item.sub_total | currency:'USD':'symbol':'1.2' }}</span>
+            <span>{{ item.sub_total | currency }}</span>
           </div>
         </ng-template>
       </ng-select>
@@ -361,12 +361,12 @@
         class="form-select p-0"
       >
         <ng-template ng-label-tmp let-item="item">
-          {{ item.concepto }} ({{ item.sub_total | currency:'USD':'symbol':'1.2' }})
+          {{ item.concepto }} ({{ item.sub_total | currency }})
         </ng-template>
         <ng-template ng-option-tmp let-item="item">
           <div class="d-flex justify-content-between">
             <span>{{ item.concepto }}</span>
-            <span>{{ item.sub_total | currency:'USD':'symbol':'1.2' }}</span>
+            <span>{{ item.sub_total | currency }}</span>
           </div>
         </ng-template>
       </ng-select>
@@ -399,7 +399,7 @@
     <div class="col-md-12 text-end">
       <h5>
         Total de Gastos:
-        {{ retaceo.total_gastos | currency:'USD':'symbol':'1.2' }}
+        {{ retaceo.total_gastos | currency }}
       </h5>
     </div>
   </div>
@@ -488,10 +488,10 @@
               <td>{{ item?.producto?.nombre || "Producto sin nombre" }}</td>
               <td class="text-center">{{ item.cantidad }}</td>
               <td class="text-end">
-                {{ item.costo_original | currency : "USD" : "symbol" : "1.2" }}
+                {{ item.costo_original | currency }}
               </td>
               <td class="text-end">
-                {{ item.valor_fob | currency : "USD" : "symbol" : "1.2" }}
+                {{ item.valor_fob | currency }}
               </td>
               <td class="text-end">
                 <!-- Campo editable para el porcentaje de distribución -->
@@ -526,19 +526,19 @@
                 </div>
               </td>
               <td class="text-end">
-                {{ item.monto_transporte | currency : "USD" : "symbol" : "1.2" }}
+                {{ item.monto_transporte | currency }}
               </td>
               <td class="text-end">
-                {{ item.monto_seguro | currency : "USD" : "symbol" : "1.2" }}
+                {{ item.monto_seguro | currency }}
               </td>
               <td class="text-end">
-                {{ item.monto_dai | currency : "USD" : "symbol" : "1.2" }}
+                {{ item.monto_dai | currency }}
               </td>
               <td class="text-end">
-                {{ item.monto_otros | currency : "USD" : "symbol" : "1.2" }}
+                {{ item.monto_otros | currency }}
               </td>
               <td class="text-end">
-                {{ item.costo_landed | currency : "USD" : "symbol" : "1.2" }}
+                {{ item.costo_landed | currency }}
               </td>
               <td class="text-end">
                 <span
@@ -547,7 +547,7 @@
                   "
                   [class.text-danger]="item.costo_retaceado < item.costo_original"
                 >
-                  {{ item.costo_retaceado | currency : "USD" : "symbol" : "1.2" }}
+                  {{ item.costo_retaceado | currency }}
                 </span>
               </td>
             </tr>
@@ -557,34 +557,34 @@
             <td class="text-center">{{ calcularTotalCantidad() }}</td>
             <td class="text-end">
               {{
-                calcularTotalCostoAntes() | currency : "USD" : "symbol" : "1.2"
+                calcularTotalCostoAntes() | currency
               }}
             </td>
             <td class="text-end">
-              {{ calcularTotalFOB() | currency : "USD" : "symbol" : "1.2" }}
+              {{ calcularTotalFOB() | currency }}
             </td>
             <td class="text-end">100 %</td>
             <td class="text-end">-</td>
             <td class="text-end">
               {{
-                calcularTotalTransporte() | currency : "USD" : "symbol" : "1.2"
+                calcularTotalTransporte() | currency
               }}
             </td>
             <td class="text-end">
-              {{ calcularTotalSeguro() | currency : "USD" : "symbol" : "1.2" }}
+              {{ calcularTotalSeguro() | currency }}
             </td>
             <td class="text-end">
-              {{ calcularTotalDAI() | currency : "USD" : "symbol" : "1.2" }}
+              {{ calcularTotalDAI() | currency }}
             </td>
             <td class="text-end">
-              {{ calcularTotalOtros() | currency : "USD" : "symbol" : "1.2" }}
+              {{ calcularTotalOtros() | currency }}
             </td>
             <td class="text-end">
-              {{ calcularTotalLanded() | currency : "USD" : "symbol" : "1.2" }}
+              {{ calcularTotalLanded() | currency }}
             </td>
             <td class="text-end">
               {{
-                calcularTotalRetaceado() | currency : "USD" : "symbol" : "1.2"
+                calcularTotalRetaceado() | currency
               }}
             </td>
           </tr>
@@ -634,12 +634,12 @@
                 <td class="text-center">{{ item.cantidad }}</td>
                 <td class="text-end">
                   {{
-                    item.costo_original | currency : "USD" : "symbol" : "1.0-2"
+                    item.costo_original | currency
                   }}
                 </td>
                 <td class="text-end">
                   {{
-                    item.costo_retaceado | currency : "USD" : "symbol" : "1.0-2"
+                    item.costo_retaceado | currency
                   }}
                 </td>
                 <td
@@ -651,7 +651,7 @@
                 >
                   {{
                     item.costo_retaceado - item.costo_original
-                      | currency : "USD" : "symbol" : "1.0-2"
+                      | currency
                   }}
                 </td>
                 <td
@@ -669,7 +669,7 @@
                 >
                   {{
                     (item.costo_retaceado - item.costo_original) * item.cantidad
-                      | currency : "USD" : "symbol" : "1.0-2"
+                      | currency
                   }}
                 </td>
               </tr>
@@ -688,7 +688,7 @@
                 }"
               >
                 {{
-                  calcularImpactoTotal() | currency : "USD" : "symbol" : "1.0-2"
+                  calcularImpactoTotal() | currency
                 }}
               </td>
             </tr>

@@ -22,7 +22,7 @@
                                 <tr>
                                     <td>{{ user.empresa.plan }}</td>
                                     <td>{{ user.empresa.tipo_plan }}</td>
-                                    <td class="text-end">{{ user.empresa.total | currency:'USD':'symbol':'1.2' }}</td>
+                                    <td class="text-end">{{ user.empresa.total | currency }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -40,9 +40,9 @@
                                     <td>{{ user.empresa.tipo_plan }}</td>
                                     <td class="text-end">
                                         <span *ngIf="tieneDescuento && totalOriginal > 0" style="text-decoration: line-through; color: red; margin-right: 8px;">
-                                            {{ totalOriginal | currency:'USD':'symbol':'1.2'}}
+                                            {{ totalOriginal | currency}}
                                         </span>
-                                        {{ user.empresa.total | currency:'USD':'symbol':'1.2' }}
+                                        {{ user.empresa.total | currency }}
                                     </td>
                                 </tr>
                             </tbody>

@@ -61,9 +61,9 @@
                     <tr class="animated fadeIn">
                         <td>{{venta.categoria}}</td>
                         <td class="text-center">{{venta.cantidad}}</td>
-                        <td class="text-center">{{venta.subtotal | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-center">{{venta.iva | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">{{venta.subtotal | currency}}</td>
+                        <td class="text-center">{{venta.iva | currency}}</td>
+                        <td class="text-center">{{venta.total | currency}}</td>
                     </tr>
                 }
 
@@ -71,9 +71,9 @@
                     <tr>
                         <td class="text-center"><b>Total</b></td>                                
                         <td class="text-center"><b>{{ compras | sum:'cantidad'}}</b></td>
-                        <td class="text-center"><b>{{ compras | sum:'subtotal' | currency:'USD':'symbol':'1.2' }}</b></td>
-                        <td class="text-center"><b>{{ compras | sum:'iva' | currency:'USD':'symbol':'1.2' }}</b></td>
-                        <td class="text-center"><b>{{ compras | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-center"><b>{{ compras | sum:'subtotal' | currency }}</b></td>
+                        <td class="text-center"><b>{{ compras | sum:'iva' | currency }}</b></td>
+                        <td class="text-center"><b>{{ compras | sum:'total' | currency }}</b></td>
                     </tr>
                 }
             </tbody>

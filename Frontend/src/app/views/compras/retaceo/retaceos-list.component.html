@@ -74,7 +74,7 @@
                 <small>Ref: {{ retaceo.compra?.referencia || 'N/A' }}</small>
               </td>
               <td>{{ retaceo.fecha | date:'dd/MM/yyyy' }}</td>
-              <td>{{ retaceo.total_retaceado | currency:'USD':'symbol':'1.2' }}</td>
+              <td>{{ retaceo.total_retaceado | currency }}</td>
               <td>
                 <select 
                   class="form-select form-select-sm" 

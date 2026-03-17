@@ -103,7 +103,7 @@
                                 }
                             </span>
                         </td>
-                        <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-right">{{compra.total | currency}}</td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
@@ -244,7 +244,7 @@
                 <select name="id_compra" [(ngModel)]="id_compra" class="form-select">
                     @for (compra of comprasList; track compra.id) {
                         <option [value]="compra.id">
-                            {{ compra.fecha | date:'dd/MM/yyyy' }} {{ compra.nombre_proveedor }} {{ compra.total | currency:'USD':'symbol':'1.2'}} {{ compra.tipo_documento }} # {{ compra.referencia }}
+                            {{ compra.fecha | date:'dd/MM/yyyy' }} {{ compra.nombre_proveedor }} {{ compra.total | currency}} {{ compra.tipo_documento }} # {{ compra.referencia }}
                         </option>
                     }
                 </select>

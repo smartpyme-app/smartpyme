@@ -96,26 +96,26 @@
                         </td>
                         <td class="text-right">
                             <span [popover]="popTotalTemplate" placement="left" triggers="mouseenter:mouseleave">
-                                {{ compra.total | currency:'USD':'symbol':'1.2' }}
+                                {{ compra.total | currency }}
                             </span>
                             <ng-template #popTotalTemplate>
                                 <table class="w-100 table table-sm mb-0">
                                     <tbody>
                                         <tr>
                                             <td>Total</td>
-                                            <td class="text-end">{{ compra.total | currency:'USD':'symbol':'1.2' }}</td>
+                                            <td class="text-end">{{ compra.total | currency }}</td>
                                         </tr>
                                         <tr>
                                             <td>Abonos</td>
-                                            <td class="text-end">{{ (compra.abonos_sum_total || 0) | currency:'USD':'symbol':'1.2' }}</td>
+                                            <td class="text-end">{{ (compra.abonos_sum_total || 0) | currency }}</td>
                                         </tr>
                                         <tr>
                                             <td>Devoluciones</td>
-                                            <td class="text-end">{{ (compra.devoluciones_sum_total || 0) | currency:'USD':'symbol':'1.2' }}</td>
+                                            <td class="text-end">{{ (compra.devoluciones_sum_total || 0) | currency }}</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Saldo</strong></td>
-                                            <td class="text-end"><strong>{{ getSaldo(compra) | currency:'USD':'symbol':'1.2' }}</strong></td>
+                                            <td class="text-end"><strong>{{ getSaldo(compra) | currency }}</strong></td>
                                         </tr>
                                     </tbody>
                                 </table>

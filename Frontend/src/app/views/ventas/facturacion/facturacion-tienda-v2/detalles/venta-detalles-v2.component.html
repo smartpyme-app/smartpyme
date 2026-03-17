@@ -95,7 +95,7 @@
                         </div>
                         <select [(ngModel)]="detalle.precio_iva" (change)="onPrecioSelectChange(detalle)" class="form-select" name="precio_iva" *ngIf="detalle?.precios?.length > 1">
                             <option [value]="precio.precio" *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
-                                {{ precio.precio | currency:'USD':'symbol':'1.0-6'}}
+                                {{ precio.precio | currency}}
                             </option>
                         </select>
                     </td>
@@ -131,7 +131,7 @@
                         </select>
                     </td>
                     <td style="width: 100px;" class="text-right">
-                        <div>{{ detalle.total_iva | currency:'USD':'symbol':'1.0-6'}}</div>
+                        <div>{{ detalle.total_iva | currency}}</div>
                     </td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">

@@ -35,7 +35,7 @@
                 <td><a routerLink="/proveedor/{{compra.proveedor_id}}">{{compra.proveedor | truncate:30 }}</a></td>
                 <td class="text-center">{{compra.referencia}}</td>
                 <td class="text-center">{{compra.estado}}</td>
-                 <td class="text-center">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+                 <td class="text-center">{{compra.total | currency}}</td>
                 <td class="text-center">
                     <div class="btn-group" role="group">
                         <a class="btn btn-default" routerLink="/compra/{{compra.id}}" tooltip="Editar">

@@ -230,14 +230,14 @@
 
                 <tr>
                     <td>{{ producto.precio | currency }}</td>
-                    <td>{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
+                    <td>{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency }}</td>
                     <td>Todos</td>
                 </tr>
 
                 @for (precio of producto?.precios; track precio.id) {
                 <tr class="animated fadeIn">
                     <td>{{ precio.precio | currency }}</td>
-                    <td>{{ (precio.precio * 1) + (precio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
+                    <td>{{ (precio.precio * 1) + (precio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency }}</td>
                     <td>
                         <div class="d-flex gap-2 flex-wrap">
                             @for (usuario of precio.usuarios; track usuario.id) {

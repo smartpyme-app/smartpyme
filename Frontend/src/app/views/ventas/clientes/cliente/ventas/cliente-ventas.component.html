@@ -5,7 +5,7 @@
             <span class="text-muted float-start p-2">
                 {{ ventas?.total + ' registros' }}
                 @if (filtrado) {
-                    <span>{{ ventas?.data | sum:'total' | currency:'USD':'symbol':'1.2'  }}</span>
+                    <span>{{ ventas?.data | sum:'total' | currency  }}</span>
                 }
             </span>
         }
@@ -102,7 +102,7 @@
                             </td>
                         }
 
-                        <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-right">{{venta.total | currency}}</td>
                         <td class="text-center">
                             <div class="btn-group" role="group">
                                 @if (apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)) {

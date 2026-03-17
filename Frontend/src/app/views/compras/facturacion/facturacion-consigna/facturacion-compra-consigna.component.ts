@@ -38,7 +38,7 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
     public supervisor:any = {};
     public override loading = false;
     public imprimir:boolean = false;
-    
+
     // Propiedades para agregar productos/servicios
     public productos: any[] = [];
     public servicios: any[] = [];
@@ -49,10 +49,10 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
     public searchProductos$ = new Subject<string>();
     public detalle: any = {};
 
-    
+
     private cdr = inject(ChangeDetectorRef);
 
-	constructor( 
+	constructor(
 	    public apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
@@ -61,7 +61,7 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
 	) {
         super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
-        
+
         // Configurar búsqueda dinámica de productos
         this.searchProductos$.pipe(
             debounceTime(300),
@@ -72,7 +72,7 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
                 }
                 this.searchLoading = true;
                 this.searchTerm = term;
-                
+
                 return this.apiService.store('productos/buscar-modal', {
                     termino: term,
                     id_empresa: this.apiService.auth_user().id_empresa,
@@ -155,6 +155,19 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
 
     }
 
+    public cambioMetodoDePago() {
+        if (this.apiService.isModuloBancos() && this.compra.forma_pago && this.compra.forma_pago !== 'Efectivo') {
+            const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.compra.forma_pago);
+            if (formaPagoSeleccionada?.banco?.nombre_banco) {
+                this.compra.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+            } else {
+                this.compra.detalle_banco = '';
+            }
+        } else if (this.compra.forma_pago === 'Efectivo') {
+            this.compra.detalle_banco = '';
+        }
+    }
+
     public updateTotal(detalle:any){
         if(!detalle.cantidad){
             detalle.cantidad = 0;
@@ -171,8 +184,8 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
 
     public sumTotal() {
         this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
-        this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0; 
-        this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0; 
+        this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0;
+        this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
 
         if(this.compra.cobrar_impuestos){
             this.compra.iva = ( this.compra.sub_total * 0.13 ).toFixed(2);
@@ -218,10 +231,10 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
         if (!this.compra.detalles) {
             this.compra.detalles = [];
         }
-        
+
         // Calcular total del detalle
         this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.costo) - parseFloat(this.detalle.descuento)).toFixed(2);
-        
+
         this.compra.detalles.push({...this.detalle});
         this.detalle = {};
         this.sumTotal();

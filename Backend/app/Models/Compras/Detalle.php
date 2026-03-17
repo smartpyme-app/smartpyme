@@ -30,7 +30,8 @@ class Detalle extends Model {
     }
 
     public function getImgAttribute(){
-        return $this->producto()->withoutGlobalScopes()->first()->img;
+        $producto = $this->producto()->withoutGlobalScopes()->first();
+        return $producto ? $producto->img : 'productos/default.jpg';
     }
 
     public function getcodigoAttribute(){

@@ -117,6 +117,20 @@ export class CuentasComponent extends BaseCrudComponent<any> implements OnInit {
         this.onSubmit();
     }
 
+  public override setPagination(event: any) {
+    this.loading = true;
+    this.apiService.paginate(this.cuentas.path + '?page=' + event.page, this.filtros).subscribe(
+      (cuentas) => {
+        this.cuentas = cuentas;
+        this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
+  }
+
     public override delete(cuenta:any){
         Swal.fire({
           title: '¿Estás seguro?',
@@ -127,11 +141,11 @@ export class CuentasComponent extends BaseCrudComponent<any> implements OnInit {
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('cuenta/', cuenta.id)
+                this.apiService.delete('banco/cuenta/', cuenta.id)
                   .pipe(this.untilDestroyed())
                   .subscribe({
                     next: (data) => {
-                        for (let i = 0; i < this.cuentas.data.length; i++) { 
+                        for (let i = 0; i < this.cuentas.data.length; i++) {
                             if (this.cuentas.data[i].id == data.id )
                                 this.cuentas.data.splice(i, 1);
                         }

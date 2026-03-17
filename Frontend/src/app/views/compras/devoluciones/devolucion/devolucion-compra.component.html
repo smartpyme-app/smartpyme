@@ -71,47 +71,47 @@
                       <tr>
                         <td class="text-center"> {{ $index + 1 }} </td>
                         <td> {{ detalle.nombre_producto }} </td>
-                        <td class="text-center">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-center">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-center">{{ detalle.costo | currency }}</td>
+                        <td class="text-center">{{ detalle.descuento | currency }}</td>
                         <td class="text-center">{{ detalle.cantidad }}</td>
-                        <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ detalle.total | currency }}</td>
                       </tr>
                     }
                     <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Sub Total:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.sub_total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.sub_total | currency }}</b></td>
                     </tr>
                     <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>IVA:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.iva | currency }}</b></td>
                     </tr>
                     @if (devolucion?.descuento > 0) {
                       <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Descuento:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.descuento | currency }}</b></td>
                       </tr>
                     }
                     @if (devolucion?.iva_retenido > 0) {
                       <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Retención:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.iva_retenido | currency }}</b></td>
                       </tr>
                     }
                     @if (devolucion?.iva_percibido > 0) {
                       <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Percepción:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.iva_percibido | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.iva_percibido | currency }}</b></td>
                       </tr>
                     }
                     <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Total:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.total | currency }}</b></td>
                     </tr>
                 </tbody>
             </table>

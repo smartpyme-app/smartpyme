@@ -263,7 +263,7 @@ class MH extends Model
 
     protected function receptor(){
 
-        if (!$this->venta->id_cliente) {
+        if (!$this->venta->id_cliente || !$this->venta->cliente) {
             return NULL;
         }
 
@@ -294,6 +294,20 @@ class MH extends Model
     }
 
     protected function receptorCCF(){
+
+        if (!$this->venta->id_cliente || !$this->venta->cliente) {
+            return [
+                "nit" => NULL,
+                "nombreComercial" => NULL,
+                "nrc" => NULL,
+                "nombre" => $this->venta->nombre_cliente ?? 'Consumidor Final',
+                "codActividad" => NULL,
+                "descActividad" => NULL,
+                "direccion" => ["departamento" => NULL, "municipio" => NULL, "complemento" => NULL],
+                "telefono" => NULL,
+                "correo" => NULL
+            ];
+        }
 
         return [
               "nit" =>  $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL,

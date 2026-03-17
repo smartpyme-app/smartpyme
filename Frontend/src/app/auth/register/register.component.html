@@ -45,9 +45,9 @@
                                 <label class="w-100">Plan 
                                     <span class="float-end" *ngIf="user.empresa.plan && user.empresa.plan !== '' && (user.empresa.total > 0 || totalOriginal > 0)">
                                         <span *ngIf="tieneDescuento" style="text-decoration: line-through; color: red; margin-right: 8px;">
-                                            {{ totalOriginal | currency:'USD':'symbol':'1.2'}}
+                                            {{ totalOriginal | currency}}
                                         </span>
-                                        Precio: {{ user.empresa.total | currency:'USD':'symbol':'1.2'}}
+                                        Precio: {{ user.empresa.total | currency}}
                                     </span>
                                 </label>
                                 <div class="input-group">
@@ -67,7 +67,7 @@
                             </div>
                             <div  class="form-group col-12 mb-4" *ngIf="user.empresa.total > 0">
                                 <label>
-                                    Total {{ getFrecuenciaPago(user.empresa.frecuencia_pago) }}: {{ getTotalAPagar() | currency:'USD':'symbol':'1.2'}}
+                                    Total {{ getFrecuenciaPago(user.empresa.frecuencia_pago) }}: {{ getTotalAPagar() | currency}}
                                     <span class="text-success ms-2" *ngIf="esPlanAnual()">
                                         <i class="fa fa-check-circle"></i> ¡Obtienes un 20% de descuento en tu suscripción anual!
                                     </span>

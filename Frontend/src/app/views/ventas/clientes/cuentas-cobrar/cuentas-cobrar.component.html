@@ -98,26 +98,26 @@
                         </td>
                         <td class="text-right">
                             <span [popover]="popTotalTemplate" placement="left" triggers="mouseenter:mouseleave">
-                                {{ venta.total | currency:'USD':'symbol':'1.2' }}
+                                {{ venta.total | currency }}
                             </span>
                             <ng-template #popTotalTemplate>
                                 <table class="w-100 table table-sm mb-0">
                                     <tbody>
                                         <tr>
                                             <td>Total</td>
-                                            <td class="text-end">{{ venta.total | currency:'USD':'symbol':'1.2' }}</td>
+                                            <td class="text-end">{{ venta.total | currency }}</td>
                                         </tr>
                                         <tr>
                                             <td>Abonos</td>
-                                            <td class="text-end">{{ (venta.abonos_sum_total || 0) | currency:'USD':'symbol':'1.2' }}</td>
+                                            <td class="text-end">{{ (venta.abonos_sum_total || 0) | currency }}</td>
                                         </tr>
                                         <tr>
                                             <td>Devoluciones</td>
-                                            <td class="text-end">{{ (venta.devoluciones_sum_total || 0) | currency:'USD':'symbol':'1.2' }}</td>
+                                            <td class="text-end">{{ (venta.devoluciones_sum_total || 0) | currency }}</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Saldo</strong></td>
-                                            <td class="text-end"><strong>{{ getSaldo(venta) | currency:'USD':'symbol':'1.2' }}</strong></td>
+                                            <td class="text-end"><strong>{{ getSaldo(venta) | currency }}</strong></td>
                                         </tr>
                                     </tbody>
                                 </table>

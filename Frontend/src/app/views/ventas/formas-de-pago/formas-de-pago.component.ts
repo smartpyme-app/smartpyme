@@ -84,13 +84,13 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
         if (this.contabilidadHabilitada) {
             this.apiService.getAll('banco/cuentas/list')
                 .pipe(this.untilDestroyed())
-                .subscribe(bancos => { 
+                .subscribe(bancos => {
                     this.bancos = bancos;
                     this.loading = false;
                     this.cdr.markForCheck();
                 }, error => {
-                    this.alertService.error(error); 
-                    this.cdr.markForCheck(); 
+                    this.alertService.error(error);
+                    this.cdr.markForCheck();
                 });
         }
         // Si no tiene contabilidad, no cargar bancos aquí ya que se muestran en <app-bancos>
@@ -102,7 +102,7 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
             this.apiService.getAll('formas-de-pago')
                 .pipe(this.untilDestroyed())
                 .subscribe({
-                    next: (formas_pago) => { 
+                    next: (formas_pago) => {
                 if (!this.contabilidadHabilitada) {
                     // LÓGICA DEL BRANCH DE MAIN: Mostrar todas las formas de pago posibles
                     // independientemente de si existen en BD o no
@@ -119,7 +119,7 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
                         'N1co',
                         'Otro'
                     ];
-                    
+
                     // Crear un array con todas las formas de pago
                     // En el branch de main, el estado activo se determina por la existencia del registro en BD
                     // Si existe en BD = activo, si no existe = inactivo
@@ -139,15 +139,15 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
                     // LÓGICA CON CONTABILIDAD: Mostrar solo las formas de pago que existen en BD
                     this.formas_pago = formas_pago;
                 }
-                
+
                         this.wompiActivo = this.formas_pago.find((item:any) => item.nombre == 'Wompi')?.activo || false;
                         this.loading = false;
                         this.cdr.markForCheck();
                         resolve();
                     },
                     error: (error) => {
-                        this.alertService.error(error); 
-                        this.loading = false; 
+                        this.alertService.error(error);
+                        this.loading = false;
                         this.cdr.markForCheck();
                         reject(error);
                     }
@@ -168,19 +168,19 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
         // Este método solo se usa cuando NO tiene contabilidad habilitada
         // En el branch de main, el estado activo se maneja creando/eliminando registros,
         // NO usando un campo activo en la tabla
-        
+
         // Protección contra múltiples llamadas simultáneas
         if (this.guardandoFormaPago) {
             return;
         }
-        
+
         // Guardar el estado anterior para comparar
         const estadoAnterior = forma.activo;
         const teniaId = !!forma.id;
         const nuevoEstado = forma.activo; // El estado ya fue cambiado por el ngModel
-        
+
         this.guardandoFormaPago = true;
-        
+
         try {
             if (nuevoEstado && !teniaId) {
                 // Si se está activando y no existe, crear el registro
@@ -196,7 +196,7 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
                 // Si ya existe y se está activando (ya está activo), no hacer nada
                 // Esto puede pasar si el usuario hace doble click
             }
-            
+
             // Después de guardar/eliminar, recargar para obtener el estado actualizado desde el servidor
             await this.loadAll();
         } catch (error) {
@@ -209,15 +209,17 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
         }
     }
 
-    public onSubmitWompi(){
+    public onSubmitWompi() {
         this.saving = true;
-        this.apiService.store('wompi', this.empresa)
-            .pipe(this.untilDestroyed())
-            .subscribe(forma_pago => {
-            this.saving = false;
-            this.alertService.success('Conexión exitosa', 'Conexión con Wompi exitosa, ya puede crear enlaces de pago para tus ventas.');
-            this.cdr.markForCheck();
-        }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
+        this.apiService.store('wompi', this.empresa).subscribe(
+            () => {
+                this.saving = false;
+                this.alertService.success('Conexión exitosa', 'Conexión con Wompi exitosa, ya puede crear enlaces de pago para tus ventas.');
+            },
+            (error) => {
+                this.alertService.error(error);
+                this.saving = false;
+            }
+        );
     }
-
 }

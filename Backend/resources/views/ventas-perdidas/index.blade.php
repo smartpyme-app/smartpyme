@@ -160,11 +160,19 @@
                     <input type="date" name="fecha_fin" value="{{ $fechaFin }}" required>
                 </div>
                 <div>
+                    <label>ID Empresa (opcional)</label>
+                    <input type="number" name="id_empresa" value="{{ $idEmpresa ?? '' }}" placeholder="Ej: 427" min="1">
+                </div>
+                <div>
                     <button type="submit" class="btn btn-primary">Buscar</button>
                 </div>
                 @if(count($datos['ventas_perdidas']) > 0 || count($datos['clientes_perdidos']) > 0)
                 <div>
-                    <a href="{{ url('/api/ventas-perdidas/excel?' . http_build_query(['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin])) }}" class="btn btn-success">
+                    @php
+                        $excelParams = ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin];
+                        if (!empty($idEmpresa)) { $excelParams['id_empresa'] = $idEmpresa; }
+                    @endphp
+                    <a href="{{ url('/api/ventas-perdidas/excel?' . http_build_query($excelParams)) }}" class="btn btn-success">
                         Descargar Excel
                     </a>
                 </div>

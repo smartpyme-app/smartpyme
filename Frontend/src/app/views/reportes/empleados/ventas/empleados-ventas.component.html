@@ -72,11 +72,11 @@
                             <!-- <td class="text-center">{{empleado.id}}</td> -->
                             <td>{{empleado.nombre}} <a class="float-end d-none"  tooltip="Ver información del empleado" routerLink="/empleado/{{empleado.id}}"><i class="fa fa-edit"></i></a></td>
                             <td>{{empleado.nombre_cargo}}</td>
-                            <td>{{empleado.comisiones_mes | currency:'USD':'symbol':'1.2'}}</td>
-                            <td>{{empleado.meta_mes | currency:'USD':'symbol':'1.2'}}</td>
+                            <td>{{empleado.comisiones_mes | currency}}</td>
+                            <td>{{empleado.meta_mes | currency}}</td>
                             <td>
                                 @if (empleado.meta_mes) {
-                                    <progressbar [value]="(empleado.ventas_brutas_mes / empleado.meta_mes) * 100" type="success" tooltip="{{ (empleado.ventas_brutas_mes | currency:'USD':'symbol':'1.2') + ' de ' + (empleado.meta_mes | currency:'USD':'symbol':'1.2')}}">
+                                    <progressbar [value]="(empleado.ventas_brutas_mes / empleado.meta_mes) * 100" type="success" tooltip="{{ (empleado.ventas_brutas_mes | currency) + ' de ' + (empleado.meta_mes | currency)}}">
                                         <span>{{ (empleado.ventas_brutas_mes / empleado.meta_mes) * 100  | number:'1.0'}}%</span>
                                     </progressbar>
                                 }
@@ -87,7 +87,7 @@
                                 }
                             </td>
                             <td>
-                                <span tooltip="Sin IVA: {{ empleado.ventas_netas_mes | currency:'USD':'symbol':'1.2'}}">{{empleado.ventas_brutas_mes | currency:'USD':'symbol':'1.2'}}</span>
+                                <span tooltip="Sin IVA: {{ empleado.ventas_netas_mes | currency}}">{{empleado.ventas_brutas_mes | currency}}</span>
                             </td>
                         </tr>
                     }

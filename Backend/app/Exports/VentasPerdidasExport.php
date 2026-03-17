@@ -9,9 +9,9 @@ class VentasPerdidasExport implements WithMultipleSheets
 {
     protected $datos;
 
-    public function __construct(string $fechaInicio, string $fechaFin)
+    public function __construct(string $fechaInicio, string $fechaFin, ?int $idEmpresa = null)
     {
-        $service = new RecuperarVentasPerdidasService($fechaInicio, $fechaFin);
+        $service = new RecuperarVentasPerdidasService($fechaInicio, $fechaFin, $idEmpresa);
         $this->datos = $service->getDatosCompletos();
     }
 

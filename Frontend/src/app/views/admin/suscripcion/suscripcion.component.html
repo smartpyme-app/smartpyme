@@ -92,7 +92,7 @@
       <label class="fw-bold">Costo</label>
       <p>
         {{
-          suscripcion?.suscripcion?.monto | currency : "USD" : "symbol" : "1.2"
+          suscripcion?.suscripcion?.monto | currency
         }}
       </p>
     </div>
@@ -865,7 +865,7 @@
                         <td>
                             <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : recibo?.estado == 'Pendiente', 'bg-success' : recibo?.estado == 'Pagada'}">{{ recibo.estado }}</span>
                         </td>
-                        <td class="text-right">{{recibo.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-right">{{recibo.total | currency}}</td>
                         <td class="text-center">
                             <a class="btn btn-default click" (click)="imprimirDoc(recibo)"><i class="fa fa-print"></i></a>
                         </td>

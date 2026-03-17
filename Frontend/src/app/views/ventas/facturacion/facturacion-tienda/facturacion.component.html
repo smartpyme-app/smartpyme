@@ -75,9 +75,9 @@
                 </div>
                 <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
 
-                <!-- Botón de Puntos -->
+                <!-- Botón de Puntos (solo si la empresa tiene módulo de fidelización activo) -->
                 <button
-                    *ngIf="venta?.cliente && venta.cliente.id"
+                    *ngIf="tieneFidelizacionHabilitada && venta?.cliente && venta.cliente.id"
                     type="button"
                     class="btn ms-2"
                     [class.btn-success]="puntosCliente > 0"
@@ -122,14 +122,22 @@
             </div>
         }
     </div>
-    <div class="row mt-2" *ngIf="venta.cliente?.limite_credito && venta.cotizacion != 1">
+    <!-- Estado de cuenta: bloque unificado cuando pref habilitada, o solo crédito cuando pref deshabilitada y cliente tiene límite -->
+    <div class="row mt-2" *ngIf="((apiService.isEstadoCuentaEnFacturacionHabilitado() && venta.cliente?.id) || (!apiService.isEstadoCuentaEnFacturacionHabilitado() && venta.cliente?.limite_credito)) && venta.cotizacion != 1">
         <div class="col-12">
-            <div class="alert alert-info py-2 mb-0 small">
-                <strong>Crédito del cliente:</strong>
-                Límite permitido: {{ venta.cliente.limite_credito | currency:'USD':'symbol':'1.2' }}
-                • Límite actual: {{ ((venta.cliente.limite_credito ?? 0) - (venta.cliente.saldo_pendiente ?? 0)) | currency:'USD':'symbol':'1.2' }}
-                <span *ngIf="venta.cliente.dias_credito"> • Días de crédito: {{ venta.cliente.dias_credito }}</span>
-                • Saldo pendiente: {{ (venta.cliente.saldo_pendiente ?? 0) | currency:'USD':'symbol':'1.2' }}
+            <div class="alert alert-info py-2 mb-0 small d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <strong>{{ venta.cliente?.limite_credito ? 'Estado de cuenta y crédito del cliente:' : 'Estado de cuenta del cliente:' }}</strong>
+                    Saldo pendiente: {{ (venta.cliente?.saldo_pendiente ?? 0) | currency }}
+                    <span *ngIf="venta.cliente?.limite_credito">
+                        • Límite permitido: {{ venta.cliente.limite_credito | currency }}
+                        • Límite disponible: {{ ((venta.cliente.limite_credito ?? 0) - (venta.cliente.saldo_pendiente ?? 0)) | currency }}
+                        <span *ngIf="venta.cliente.dias_credito"> • Días de crédito: {{ venta.cliente.dias_credito }}</span>
+                    </span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-info" (click)="abrirEstadoCuentaPdf()" title="Imprimir estado de cuenta">
+                    <i class="fa fa-print me-1"></i> Ver estado de cuenta
+                </button>
             </div>
         </div>
     </div>
@@ -251,13 +259,13 @@
                     <tr>
                         <td class="text-right"><b>Sub Total</b> </td>
                         <td style="width: 150px;" class="text-right"> {{ venta.sub_total |
-                            currency:'USD':'symbol':'1.2'}} </td>
+                            currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
                         <td class="text-right"><b>Descuentos</b> </td>
                         <td style="width: 150px;" class="text-right"> {{ venta.descuento |
-                            currency:'USD':'symbol':'1.2'}} </td>
+                            currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngIf="descuentoPuntos > 0" class="text-success">
@@ -266,7 +274,7 @@
                             <b>Descuento por puntos</b>
                             <small class="d-block text-muted">{{ formatNumber(puntosCanjeados) }} puntos canjeados</small>
                         </td>
-                        <td style="width: 150px;" class="text-right"> -{{ descuentoPuntos | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> -{{ descuentoPuntos | currency}} </td>
                         <td style="width: 50px;">
                             <button
                                 type="button"
@@ -279,55 +287,55 @@
                     </tr>
                     <!-- <tr>
                         <td class="text-right"> <b>Impuestos</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}}
+                        <td style="width: 150px;" class="text-right"> {{ venta.iva | currency}}
                         </td>
                         <td style="width: 50px;"></td>
                     </tr> -->
                     <tr *ngFor="let impuesto of venta?.impuestos">
                         <td class="text-right"> {{ impuesto.nombre }} <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small> </td>
-                        <td style="width: 150px;" class="text-right"> {{ (impuesto.monto ?? 0) | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ (impuesto.monto ?? 0) | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngIf="venta.retencion">
                         <td class="text-right"> <b>Retención (1%)</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngIf="venta.renta">
                         <td class="text-right"> <b>Renta (10%)</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ venta.renta_retenida | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.renta_retenida | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngIf="venta.exenta > 0">
                         <td class="text-right"> <b>Ventas Exentas</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ venta.exenta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.exenta | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngIf="venta.no_sujeta > 0">
                         <td class="text-right"> <b>Ventas No Sujetas</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ venta.no_sujeta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.no_sujeta | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngIf="venta.cuenta_a_terceros > 0">
                         <td class="text-right"> <b>Cuenta a terceros</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngIf="tieneAccesoPropina && venta.cobrar_propina">
                         <td class="text-right"> <b>Propina ({{ apiService.auth_user().empresa.propina_porcentaje | number:'1.0-2' }}%)</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ venta.propina | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.propina | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.total |
-                                currency:'USD':'symbol':'1.2'}}</b> </td>
+                                currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     @if (tieneAccesoPropina && venta.cobrar_propina) {
                     <tr>
                         <td class="text-right"> <b>Total + Propina</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ getTotalConPropina() | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ getTotalConPropina() | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     }
@@ -593,11 +601,11 @@
                     <form name="facturacion" autocomplete="off" (ngSubmit)="onFacturar()">
                         <div class="row text-center">
                             <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ venta.total |
-                                    currency:'USD':'symbol':'1.2' }}</span></h4>
+                                    currency }}</span></h4>
                             <h4 class="col-md-6">Vuelto:
                                 @if (venta.recibido) {
                                     <span class="badge badge-info">{{
-                                        venta.recibido - venta.total | currency:'USD':'symbol':'1.2' }}</span>
+                                        venta.recibido - venta.total | currency }}</span>
                                 }
                                 @if (!venta.recibido) {
                                     <span class="badge badge-info">$0.00</span>
@@ -606,7 +614,7 @@
                             <div class="form-group text-center col-md-12 my-3">
                                 <label for="recibido">Recibido:</label>
                                 <input type="number" name="recibido" [(ngModel)]="venta.recibido"
-                                    placeholder="{{ venta.total | currency:'USD':'symbol':'1.2' }}"
+                                    placeholder="{{ venta.total | currency }}"
                                     class="form-control text-center">
                             </div>
 

@@ -141,22 +141,29 @@ export class FacturacionV2Component implements OnInit {
       }
     );
 
-    this.apiService.getAll('bancos/list').subscribe(
-      (bancos) => {
-        this.bancos = bancos;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    if (this.apiService.isModuloBancos()) {
+      this.apiService.getAll('banco/cuentas/list').subscribe(
+        (bancos) => { this.bancos = bancos; },
+        (error) => { this.alertService.error(error); }
+      );
+    } else {
+      this.apiService.getAll('bancos/list').subscribe(
+        (bancos) => { this.bancos = bancos; },
+        (error) => { this.alertService.error(error); }
+      );
+    }
 
     this.apiService.getAll('formas-de-pago/list').subscribe(
       (formaPagos) => {
         this.formaPagos = formaPagos;
+        if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
+          const formaPagoSeleccionada = formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+          if (formaPagoSeleccionada?.banco?.nombre_banco && !this.venta.detalle_banco) {
+            this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+          }
+        }
       },
-      (error) => {
-        this.alertService.error(error);
-      }
+      (error) => { this.alertService.error(error); }
     );
 
     this.apiService.getAll('canales/list').subscribe(
@@ -866,7 +873,9 @@ export class FacturacionV2Component implements OnInit {
             }
 
             // Obtener saldo pendiente si el cliente tiene límite de crédito
-            if (cliente.limite_credito) {
+            // Obtener saldo pendiente: siempre si pref "estado de cuenta en facturación" activa, o solo si tiene límite de crédito
+            const cargarSaldo = this.apiService.isEstadoCuentaEnFacturacionHabilitado() || cliente.limite_credito;
+            if (cargarSaldo) {
                 this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 };
                 this.apiService.getAll('cliente/' + cliente.id + '/saldo-pendiente').subscribe(
                     (res: any) => {
@@ -884,6 +893,15 @@ export class FacturacionV2Component implements OnInit {
             this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
         }
         console.log(cliente);
+    }
+
+    /**
+     * Abrir PDF del estado de cuenta del cliente en nueva pestaña
+     */
+    public abrirEstadoCuentaPdf(): void {
+        if (!this.venta?.cliente?.id) return;
+        const url = `${this.apiService.baseUrl}/api/cliente/estado-de-cuenta/${this.venta.cliente.id}?token=${this.apiService.auth_token()}`;
+        window.open(url, '_blank');
     }
 
     // Proyecto
@@ -1032,12 +1050,18 @@ export class FacturacionV2Component implements OnInit {
             });
         }
         
-        // Limpiar banco y mensaje de error al cambiar método de pago
-        if (!this.requiereBanco()) {
+        // Si módulo bancos: asignar banco por defecto del método de pago
+        if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
+            const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+            if (formaPagoSeleccionada?.banco?.nombre_banco) {
+                this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+            } else {
+                this.venta.detalle_banco = '';
+            }
+        } else if (!this.requiereBanco()) {
             this.venta.detalle_banco = '';
             this.mensajeErrorBanco = '';
         }
-        console.log(this.venta);
     }
 
     public setDocumento(id_documento: any) {
@@ -1126,7 +1150,8 @@ export class FacturacionV2Component implements OnInit {
   public requiereBanco(): boolean {
     return this.venta.forma_pago && 
            this.venta.forma_pago !== 'Efectivo' && 
-           this.venta.forma_pago !== 'Wompi';
+           this.venta.forma_pago !== 'Wompi' &&
+           this.venta.forma_pago !== 'Multiple';
   }
 
   // Guardar venta

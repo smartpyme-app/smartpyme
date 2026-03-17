@@ -27,7 +27,7 @@
                 }
                 <tr>
                     <td>{{ producto.precio | currency }}</td>
-                    <td>{{ (producto.precio * 1) + (producto.precio * (getPorcentajeProducto() / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
+                    <td>{{ (producto.precio * 1) + (producto.precio * (getPorcentajeProducto() / 100) )  | currency }}</td>
                     <td>{{ producto.clasificacion }}</td>
                     <td>Todos los usuarios</td>
                 </tr>
@@ -35,7 +35,7 @@
                 @for (precio of producto?.precios; track precio.id) {
                 <tr class="animated fadeIn">
                     <td>{{ precio.precio | currency }}</td>
-                    <td>{{ (precio.precio * 1) + (precio.precio * (getPorcentajeProducto() / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
+                    <td>{{ (precio.precio * 1) + (precio.precio * (getPorcentajeProducto() / 100) )  | currency }}</td>
                     <td>{{ precio.clasificacion }}</td>
                     <td>
                         <span [attr.data-bs-toggle]="precio.usuarios && precio.usuarios.length > 0 ? 'tooltip' : null"

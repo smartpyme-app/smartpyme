@@ -22,7 +22,7 @@ export class CrearAbonoVentaComponent extends BaseComponent implements OnInit {
 	@Input() venta: any = {};
 	@Output() update = new EventEmitter();
 	public formaPagos: any = [];
-    // public bancos: any = [];
+	public bancos: any = [];
     public abono: any = {};
  	public loading = false;
     public saving = false;
@@ -55,13 +55,37 @@ export class CrearAbonoVentaComponent extends BaseComponent implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(formaPagos => {
             this.formaPagos = formaPagos;
+            if (this.apiService.isModuloBancos() && this.abono.forma_pago && this.abono.forma_pago !== 'Efectivo' && this.abono.forma_pago !== 'Wompi') {
+                const formaPagoSeleccionada = formaPagos.find((fp: any) => fp.nombre === this.abono.forma_pago);
+                if (formaPagoSeleccionada?.banco?.nombre_banco && !this.abono.detalle_banco) {
+                    this.abono.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+                }
+            }
         }, error => {this.alertService.error(error); });
 
-        // this.apiService.getAll('bancos/list').subscribe(bancos => {
-        // this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
-        //     this.bancos = bancos;
-        // }, error => {this.alertService.error(error);});
+        if (this.apiService.isModuloBancos()) {
+            this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+                this.bancos = bancos;
+            }, error => {this.alertService.error(error);});
+        } else {
+            this.apiService.getAll('bancos/list').subscribe(bancos => {
+                this.bancos = bancos;
+            }, error => {this.alertService.error(error);});
+        }
 	}
+
+    public cambioMetodoDePago() {
+        if (this.apiService.isModuloBancos() && this.abono.forma_pago && this.abono.forma_pago !== 'Efectivo' && this.abono.forma_pago !== 'Wompi') {
+            const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.abono.forma_pago);
+            if (formaPagoSeleccionada?.banco?.nombre_banco) {
+                this.abono.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+            } else {
+                this.abono.detalle_banco = '';
+            }
+        } else if (this.abono.forma_pago === 'Efectivo' || this.abono.forma_pago === 'Wompi') {
+            this.abono.detalle_banco = '';
+        }
+    }
 
     public setTotal(total:any){
         this.abono.total = total;

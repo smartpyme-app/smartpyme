@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Cuentas</h2>
+    <h2 class="page-heading">Cuentas Bancarias</h2>
     @if (apiService.canCreateTest('finanzas.cuentas.crear')) {
         <button routerLink="/bancos/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
     }
@@ -134,7 +134,7 @@
                 </select>
             </div>
         </div>
-        
+
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
                 @if (!loading) {

@@ -113,17 +113,17 @@
                 <tbody>
                     <tr>
                         <td class="text-right"><b>Sub Total</b> </td>
-                        <td style="width: 150px;" class="text-right"> {{ venta.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.sub_total | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
                         <td class="text-right"><b>Descuentos</b> </td>
-                        <td style="width: 150px;" class="text-right"> {{ venta.descuento | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.descuento | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
                         <td class="text-right"> <b>Impuestos</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.iva | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     @for (impuesto of venta?.impuestos; track impuesto.id || $index) {
@@ -134,7 +134,7 @@
                                     <span>%{{ impuesto.porcentaje }}</span>
                                 }
                                 @if (impuesto?.monto > 0) {
-                                    <span tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje }}</span>
+                                    <span tooltip="{{ impuesto.monto | currency}}">%{{ impuesto.porcentaje }}</span>
                                 }
                             </td>
                             <td style="width: 50px;"></td>
@@ -142,7 +142,7 @@
                     }
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.total | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                 </tbody>

@@ -88,8 +88,8 @@
               <td>{{ i + 1 }}</td>
               <td>{{ detalle.nombre_producto }}</td>
               <td class="text-end">{{ detalle.cantidad }}</td>
-              <td class="text-end">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
-              <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+              <td class="text-end">{{ detalle.costo | currency }}</td>
+              <td class="text-end">{{ detalle.total | currency }}</td>
             </tr>
           }
         </tbody>

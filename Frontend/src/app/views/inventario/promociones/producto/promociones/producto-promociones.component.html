@@ -28,7 +28,7 @@
                         <a (click)="deletePromocion(promocion)" class="btn btn-danger btn-sm"><i class="fa fa-minus"></i></a>
                         <a (click)="openModal(mPromocion, promocion)" class="btn btn-default btn-sm"><i class="fa fa-pencil-alt"></i></a>
                     </td>
-                    <td class="text-center">{{ promocion.precio | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center">{{ promocion.precio | currency }}</td>
                     <td class="text-center">
                         <span class="badge badge-pop" [ngClass]="{'badge-danger' : !promocion?.activa, 'badge-success' : promocion?.activa}" [popover]="popTemplate" [outsideClick]="true">
                             @if (promocion.activa) {
@@ -59,7 +59,7 @@
     <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">
             <div class="form-group col-sm-12">
-                <label for="precio">Precio:</label> <small class="text-muted float-end">Precio actual: {{ producto.precio | currency:'USD':'symbol':'1.2' }} </small>
+                <label for="precio">Precio:</label> <small class="text-muted float-end">Precio actual: {{ producto.precio | currency }} </small>
                 <input type="number" name="precio" [(ngModel)]="promocion.precio" placeholder="Precio de promoción" class="form-control" focus="true">
             </div>
 

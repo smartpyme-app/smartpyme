@@ -75,19 +75,19 @@
                     <tbody>
                         <tr>
                             <td class="text-right"> Sub Total: </td>
-                            <td width="70px" class="text-right"> {{ devolucion.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+                            <td width="70px" class="text-right"> {{ devolucion.sub_total | currency}} </td>
                         </tr>
                         <tr>
                             <td class="text-right"> IVA: </td>
-                            <td width="70px" class="text-right"> {{ devolucion.iva | currency:'USD':'symbol':'1.2'}} </td>
+                            <td width="70px" class="text-right"> {{ devolucion.iva | currency}} </td>
                         </tr>
                         <tr *ngIf="devolucion.cobrar_percepcion">
                             <td class="text-right"> <b>Percepción (1%)</b></td>
-                            <td width="70px" class="text-right"> {{ devolucion.iva_percibido | currency:'USD':'symbol':'1.2'}} </td>
+                            <td width="70px" class="text-right"> {{ devolucion.iva_percibido | currency}} </td>
                         </tr>
                         <tr *ngIf="compra.tipo_documento == 'Sujeto excluido' && devolucion.renta">
                             <td class="text-right"> <b>Ret. Renta (10%)</b></td>
-                            <td width="70px" class="text-right"> {{ devolucion.renta_retenida | currency:'USD':'symbol':'1.2'}} </td>
+                            <td width="70px" class="text-right"> {{ devolucion.renta_retenida | currency}} </td>
                         </tr>
                         <!--  <tr>
                             <td class="text-right">
@@ -99,24 +99,24 @@
                                 </div>
                             </td>
                             <td  width="70px" class="text-right">
-                               {{ (devolucion.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
+                               {{ (devolucion.iva_retenido ) | currency}}
                             </td>
                         </tr> -->
                       <!--   <tr>
                             <td class="text-right">No Sujeta:</td>
-                            <td width="70px" class="text-right">{{ devolucion.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
+                            <td width="70px" class="text-right">{{ devolucion.no_sujeta | currency}}</td>
                         </tr>
                         <tr>
                             <td class="text-right">Exenta:</td>
-                            <td width="70px" class="text-right">{{ devolucion.exenta | currency:'USD':'symbol':'1.2'}}</td>
+                            <td width="70px" class="text-right">{{ devolucion.exenta | currency}}</td>
                         </tr>
                         <tr>
                             <td class="text-right">Gravada:</td>
-                            <td width="70px" class="text-right">{{ devolucion.gravada | currency:'USD':'symbol':'1.2'}}</td>
+                            <td width="70px" class="text-right">{{ devolucion.gravada | currency}}</td>
                         </tr> -->
                         <tr>
                             <td class="text-right"> <b>Total:</b> </td>
-                            <td width="70px" class="text-right"><b> {{ devolucion.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                            <td width="70px" class="text-right"><b> {{ devolucion.total | currency}}</b> </td>
                         </tr>
                     </tbody>
                 </table>

@@ -60,9 +60,9 @@
                     <tr class="animated fadeIn">
                         <td>{{venta.categoria}}</td>
                         <td class="text-center">{{venta.cantidad}}</td>
-                        <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-center">{{venta.costo | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-center">{{venta.utilidad | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">{{venta.total | currency}}</td>
+                        <td class="text-center">{{venta.costo | currency}}</td>
+                        <td class="text-center">{{venta.utilidad | currency}}</td>
                         <td class="text-center">{{venta.margen | number:'1.2'}} %</td>
                     </tr>
                 }
@@ -71,9 +71,9 @@
                     <tr>
                         <td class="text-center"><b>Total</b></td>                                
                         <td class="text-center"><b>{{ ventas | sum:'cantidad'}}</b></td>
-                        <td class="text-center"><b>{{ ventas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
-                        <td class="text-center"><b>{{ ventas | sum:'costo' | currency:'USD':'symbol':'1.2' }}</b></td>
-                        <td class="text-center"><b>{{ ventas | sum:'utilidad' | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-center"><b>{{ ventas | sum:'total' | currency }}</b></td>
+                        <td class="text-center"><b>{{ ventas | sum:'costo' | currency }}</b></td>
+                        <td class="text-center"><b>{{ ventas | sum:'utilidad' | currency }}</b></td>
                         <td class="text-center"><b>{{ ventas | avg:'margen' | number:'1.2'}} %</b></td>
                     </tr>
                 }

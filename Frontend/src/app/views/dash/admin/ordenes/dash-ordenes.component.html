@@ -44,7 +44,7 @@
                             <td class="d-none d-md-table-cell">{{flete.tipo}}</td>
                             <td class="d-none d-md-table-cell">{{flete.nombre_cabezal}}<a class="float-end d-none"  tooltip="Ver información del flota" routerLink="/flota/{{flete.cabezal_id}}"><i class="fa fa-edit"></i></a></td>
                             <td class="d-none d-md-table-cell">{{flete.nombre_remolque}}<a class="float-end d-none"  tooltip="Ver información del flota" routerLink="/flota/{{flete.remolque_id}}"><i class="fa fa-edit"></i></a></td>
-                            <td class="text-right">{{ flete.total  | currency:'USD':'symbol':'1.2' }}</td>
+                            <td class="text-right">{{ flete.total  | currency }}</td>
                             <td class="text-right">
                                 <div role="group" class="btn-group">
                                     <div class="dropdown d-none d-md-inline-block">

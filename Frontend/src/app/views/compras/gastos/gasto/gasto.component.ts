@@ -51,6 +51,9 @@ export class GastoComponent implements OnInit {
   public jsonContent: string = '';
   public processingJson: boolean = false;
 
+  public varios_items = false;
+  public detalles: any[] = [];
+
   public opAvanzadas: boolean = false;
   public otrosImpuestos: boolean = false;
   public areasDisponibles: any[] = [];
@@ -59,6 +62,12 @@ export class GastoComponent implements OnInit {
   public contabilidadHabilitada: boolean = false;
 
   modalRef?: BsModalRef;
+
+  readonly TIPOS_CATEGORIA = [
+    'Alquiler', 'Combustible', 'Costo de venta', 'Gastos varios', 'Insumos',
+    'Impuestos', 'Gastos Administrativos', 'Mantenimiento', 'Marketing',
+    'Materia Prima', 'Servicios', 'Pago comisión', 'Planilla', 'Préstamos', 'Publicidad'
+  ];
 
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -265,6 +274,20 @@ export class GastoComponent implements OnInit {
             this.gasto.area_empresa = '';
           }
 
+          if (this.gasto.detalles && this.gasto.detalles.length > 1) {
+            this.varios_items = true;
+            this.detalles = this.gasto.detalles.map((d: any) => ({
+              ...d,
+              tipo_gravado: d.tipo_gravado || (d.aplica_iva ? 'gravada' : 'no_sujeta'),
+            }));
+          } else if (this.gasto.detalles && this.gasto.detalles.length === 1) {
+            this.varios_items = false;
+            this.detalles = [];
+          } else {
+            this.varios_items = false;
+            this.detalles = [];
+          }
+
           this.loading = false;
           this.cdr.markForCheck();
         },
@@ -298,6 +321,8 @@ export class GastoComponent implements OnInit {
       this.gasto.area_empresa = '';
       this.gasto.id_area_empresa = '';
       this.gasto.es_retaceo = false;
+      this.varios_items = false;
+      this.detalles = [];
 
       if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
         this.gasto.id_proyecto =
@@ -467,6 +492,19 @@ export class GastoComponent implements OnInit {
     }
   }
 
+  public cambioMetodoDePago() {
+    if (this.apiService.isModuloBancos() && this.gasto.forma_pago && this.gasto.forma_pago !== 'Efectivo' && this.gasto.forma_pago !== 'Wompi') {
+      const formaPagoSeleccionada = this.formaspago.find((fp: any) => fp.nombre === this.gasto.forma_pago);
+      if (formaPagoSeleccionada?.banco?.nombre_banco) {
+        this.gasto.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+      } else {
+        this.gasto.detalle_banco = '';
+      }
+    } else if (this.gasto.forma_pago === 'Efectivo' || this.gasto.forma_pago === 'Wompi') {
+      this.gasto.detalle_banco = '';
+    }
+  }
+
   public setCredito() {
     if (this.gasto.credito) {
       this.gasto.estado = 'Pendiente';
@@ -606,6 +644,100 @@ export class GastoComponent implements OnInit {
     }
   }
 
+  public toggleVariosItems() {
+    if (this.varios_items && this.detalles.length === 0) {
+      this.addDetalle();
+    } else if (!this.varios_items) {
+      this.detalles = [];
+    }
+  }
+
+  public addDetalle() {
+    this.detalles.push({
+      concepto: '',
+      tipo: 'Gastos varios',
+      tipo_gravado: 'gravada',
+      cantidad: 1,
+      precio_unitario: 0,
+      sub_total: 0,
+      iva: 0,
+      renta_retenida: 0,
+      iva_percibido: 0,
+      total: 0,
+      aplica_iva: true,
+      aplica_renta: false,
+      aplica_percepcion: false,
+      area_empresa: null,
+      id_proyecto: this.gasto.id_proyecto || null,
+    });
+  }
+
+  public removeDetalle(idx: number) {
+    this.detalles.splice(idx, 1);
+    this.recalcularTotalesDetalles();
+  }
+
+  public recalcularDetalleLinea(idx: number) {
+    const d = this.detalles[idx];
+    const sub = parseFloat(d.sub_total) || 0;
+    let total = sub;
+    const ivaRate = this.apiService.auth_user()?.empresa?.iva || 13;
+    const esGravada = d.tipo_gravado === 'gravada' || (!d.tipo_gravado && d.aplica_iva);
+    if (esGravada) {
+      d.iva = parseFloat((sub * (ivaRate / 100)).toFixed(2));
+      d.aplica_iva = true;
+      total += d.iva;
+    } else {
+      d.iva = 0;
+      d.aplica_iva = false;
+    }
+    if (d.aplica_renta) {
+      d.renta_retenida = parseFloat((sub * 0.1).toFixed(2));
+      total -= d.renta_retenida;
+    } else {
+      d.renta_retenida = 0;
+    }
+    if (d.aplica_percepcion) {
+      d.iva_percibido = parseFloat((sub * 0.01).toFixed(2));
+      total += d.iva_percibido;
+    } else {
+      d.iva_percibido = 0;
+    }
+    d.total = parseFloat(total.toFixed(2));
+    this.recalcularTotalesDetalles();
+  }
+
+  public recalcularDesdeSubtotal(idx: number) {
+    const d = this.detalles[idx];
+    const sub = parseFloat(d.sub_total) || 0;
+    d.precio_unitario = d.cantidad ? sub / d.cantidad : sub;
+    this.recalcularDetalleLinea(idx);
+  }
+
+  public recalcularDesdePrecio(idx: number) {
+    const d = this.detalles[idx];
+    const cant = parseFloat(d.cantidad) || 1;
+    const precio = parseFloat(d.precio_unitario) || 0;
+    d.sub_total = parseFloat((cant * precio).toFixed(2));
+    this.recalcularDetalleLinea(idx);
+  }
+
+  public recalcularTotalesDetalles() {
+    let st = 0, iv = 0, rr = 0, ip = 0, tot = 0;
+    this.detalles.forEach(d => {
+      st += parseFloat(d.sub_total) || 0;
+      iv += parseFloat(d.iva) || 0;
+      rr += parseFloat(d.renta_retenida) || 0;
+      ip += parseFloat(d.iva_percibido) || 0;
+      tot += parseFloat(d.total) || 0;
+    });
+    this.gasto.sub_total = parseFloat(st.toFixed(2));
+    this.gasto.iva = parseFloat(iv.toFixed(2));
+    this.gasto.renta_retenida = parseFloat(rr.toFixed(2));
+    this.gasto.iva_percibido = parseFloat(ip.toFixed(2));
+    this.gasto.total = parseFloat(tot.toFixed(2));
+  }
+
   public cambioFormaPago() {
     // Limpiar banco si la forma de pago no requiere banco
     if (this.gasto.forma_pago == 'Efectivo' || this.gasto.forma_pago == 'Wompi') {
@@ -652,8 +784,35 @@ export class GastoComponent implements OnInit {
       }
     }
 
+    const payload: any = { ...this.gasto };
+    if (this.varios_items && this.detalles.length > 0) {
+      payload.varios_items = true;
+      payload.detalles = this.detalles.map(d => {
+        const tg = d.tipo_gravado || (d.aplica_iva ? 'gravada' : 'no_sujeta');
+        return {
+          concepto: d.concepto,
+          tipo: d.tipo || 'Gastos varios',
+          tipo_gravado: ['gravada', 'exenta', 'no_sujeta'].includes(tg) ? tg : 'gravada',
+          cantidad: parseFloat(d.cantidad) || 1,
+          precio_unitario: parseFloat(d.precio_unitario) || parseFloat(d.sub_total) || 0,
+          sub_total: parseFloat(d.sub_total) || 0,
+          iva: parseFloat(d.iva) || 0,
+          renta_retenida: parseFloat(d.renta_retenida) || 0,
+          iva_percibido: parseFloat(d.iva_percibido) || 0,
+          total: parseFloat(d.total) || 0,
+          aplica_iva: tg === 'gravada',
+          aplica_renta: !!d.aplica_renta,
+          aplica_percepcion: !!d.aplica_percepcion,
+          area_empresa: d.area_empresa || null,
+          id_proyecto: d.id_proyecto || null,
+        };
+      });
+    } else {
+      payload.varios_items = false;
+    }
+
     try {
-      const gastoGuardado = await this.apiService.store('gasto', this.gasto)
+      const gastoGuardado = await this.apiService.store('gasto', payload)
         .pipe(this.untilDestroyed())
         .toPromise();
 
@@ -691,6 +850,7 @@ export class GastoComponent implements OnInit {
       this.cdr.markForCheck();
     }
   }
+
 
   public setOtrosImpuestos() {
 
@@ -898,23 +1058,44 @@ export class GastoComponent implements OnInit {
         // Usar la primera descripción como concepto principal
         this.gasto.concepto = jsonData.cuerpoDocumento[0].descripcion;
 
-        // Si hay más de un ítem, añadirlos como nota
+        // Si hay más de un ítem, usar modo varios ítems
         if (jsonData.cuerpoDocumento.length > 1) {
-          const itemsAdicionales = jsonData.cuerpoDocumento
-            .slice(1)
-            .map(
-              (item: any, index: number) =>
-                `${index + 2}. ${item.descripcion} (${item.cantidad} x $${
-                  item.precioUni
-                })`
-            )
-            .join('\n');
-
-          this.gasto.nota = `Detalle adicional:\n${itemsAdicionales}`;
+          this.varios_items = true;
+          const items = jsonData.cuerpoDocumento;
+          const ivaRate = (this.apiService.auth_user()?.empresa?.iva || 13) / 100;
+          this.detalles = items.map((item: any) => {
+            const cant = parseFloat(item.cantidad) || 1;
+            const precio = parseFloat(item.precioUni) || 0;
+            const compra = parseFloat(item.compra) || cant * precio;
+            const sub = ivaRate > 0 ? compra / (1 + ivaRate) : compra;
+            const iva = compra - sub;
+            const esGravada = iva > 0;
+            return {
+              concepto: item.descripcion || '',
+              tipo: 'Gastos varios',
+              tipo_gravado: esGravada ? 'gravada' : 'no_sujeta',
+              cantidad: cant,
+              precio_unitario: precio,
+              sub_total: parseFloat(sub.toFixed(2)),
+              iva: parseFloat(iva.toFixed(2)),
+              renta_retenida: 0,
+              iva_percibido: 0,
+              total: parseFloat(compra.toFixed(2)),
+              aplica_iva: esGravada,
+              aplica_renta: false,
+              aplica_percepcion: false,
+              area_empresa: null,
+              id_proyecto: this.gasto.id_proyecto || null,
+            };
+          });
+          this.recalcularTotalesDetalles();
+          this.gasto.concepto = items[0].descripcion;
+          this.gasto.tipo = this.determinarCategoria(items);
+        } else {
+          this.varios_items = false;
+          this.detalles = [];
+          this.gasto.tipo = this.determinarCategoria(jsonData.cuerpoDocumento);
         }
-
-        // Intentar determinar categoría basada en las descripciones
-        this.determinarCategoria(jsonData.cuerpoDocumento);
       }
 
       // Mapear totales financieros

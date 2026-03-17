@@ -150,22 +150,22 @@
                             @if (venta.estado != 'Pendiente' && !venta.abonos_sum_total) {
                               @if(venta.propina > 0){
                                 <span>
-                                {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
+                                {{getTotalConPropina(venta) | currency}}
                                 </span>
                               } @else {
                                 <span>
-                                {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                {{venta.total | currency}}
                                 </span>
                               }
                             }
                             @if (venta.estado == 'Pendiente' || venta.abonos_sum_total > 0) {
                               @if(venta.propina > 0){
                                 <span>
-                                {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
+                                {{getTotalConPropina(venta) | currency}}
                                 </span>
                               } @else {
                                 <span class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                                {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                {{venta.total | currency}}
                                 </span>
                               }
                             }

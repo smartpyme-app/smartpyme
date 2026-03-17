@@ -80,9 +80,9 @@
                     <td>{{compra.producto}}</td>
                     <td>{{compra.medida}}</td>
                     <td class="text-center">{{compra.cantidad | number:'1.0'}}</td>
-                    <td class="text-center">{{compra.subtotal | currency:'USD':'symbol':'1.2'}}</td>
-                    <td class="text-center">{{compra.iva | currency:'USD':'symbol':'1.2'}}</td>
-                    <td class="text-center">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+                    <td class="text-center">{{compra.subtotal | currency}}</td>
+                    <td class="text-center">{{compra.iva | currency}}</td>
+                    <td class="text-center">{{compra.total | currency}}</td>
                 </tr>
             }
 
@@ -90,9 +90,9 @@
                 <tr>
                     <td colspan="3" class="text-center"><b>Total</b></td>                                
                     <td class="text-center"><b>{{ compras | sum:'cantidad' | number:'1.0'}}</b></td>
-                    <td class="text-center"><b>{{ compras | sum:'subtotal' | currency:'USD':'symbol':'1.2' }}</b></td>
-                    <td class="text-center"><b>{{ compras | sum:'iva' | currency:'USD':'symbol':'1.2' }}</b></td>                                
-                    <td class="text-center"><b>{{ compras | sum:'total' | currency:'USD':'symbol':'1.2'}}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'subtotal' | currency }}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'iva' | currency }}</b></td>                                
+                    <td class="text-center"><b>{{ compras | sum:'total' | currency}}</b></td>
                 </tr>
             }
             </tbody>

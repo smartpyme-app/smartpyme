@@ -16,7 +16,7 @@
             <span class="text-muted float-start pl-3">
                 {{ ventas?.length + ' registros' }}
                 @if (filtrado) {
-                    <span>{{ ventas | sum:'total' | currency:'USD':'symbol':'1.2'  }}</span>
+                    <span>{{ ventas | sum:'total' | currency  }}</span>
                 }
             </span>
         }
@@ -64,7 +64,7 @@
                             <td>{{venta.nombre_usuario | truncate:30}}</td>
                             <td class="text-center"> {{venta.tipo }} </td>
                             <td>{{venta.nota}}</td>
-                            <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-center">{{venta.total | currency}}</td>
                             <td class="text-center">
                                 <div class="btn-group" role="group">
                                     <!-- <a *ngIf="apiService.auth_user().tipo == 'Cajero'" class="btn btn-default" (click)="reemprimir(venta)" tooltip="Reemprimir">

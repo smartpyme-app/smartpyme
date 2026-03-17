@@ -108,7 +108,7 @@
                         </select>
                        </td>
                       <td>{{venta.fecha_expiracion | date:'dd/MM/yyyy'}}</td>
-                      <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                      <td class="text-right">{{venta.total | currency}}</td>
                       <td class="text-center">
                           <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                               <i class="fa fa-ellipsis-vertical fa-fw"></i>

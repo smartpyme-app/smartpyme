@@ -1386,7 +1386,7 @@
                       {{ pago.fecha_transaccion | date : "dd/MM/yyyy HH:mm" }}
                     </td>
                     <td>{{ pago.id_orden }}</td>
-                    <td>{{ pago.monto | currency : "USD" }}</td>
+                    <td>{{ pago.monto | currency }}</td>
                     <td>
                       <span
                         class="badge"
@@ -1455,7 +1455,7 @@
                     <td>
                       {{ pago.fecha_transaccion | date : "dd/MM/yyyy HH:mm" }}
                     </td>
-                    <td>{{ pago.monto | currency : "USD" }}</td>
+                    <td>{{ pago.monto | currency }}</td>
                     <td>
                       @if (pago.comprobante_url) {
                         <a

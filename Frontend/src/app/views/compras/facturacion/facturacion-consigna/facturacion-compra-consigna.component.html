@@ -90,15 +90,15 @@
                     @for (detalle of compra?.detalles; track detalle.id || $index) {
                       <tr>
                         <td>
-                            <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle" height="50px" width="50px"> 
+                            <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle" height="50px" width="50px">
                             {{ detalle.nombre_producto }}
                         </td>
                         <td style="width: 150px;">
                             <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="cantidad">
                         </td>
-                        <td style="width: 150px;" class="text-right"> {{ detalle.costo  | currency:'USD':'symbol':'1.2'}} </td>
-                        <td style="width: 150px;" class="text-right"> {{ detalle.descuento  | currency:'USD':'symbol':'1.2'}} </td>
-                        <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td style="width: 150px;" class="text-right"> {{ detalle.costo  | currency}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ detalle.descuento  | currency}} </td>
+                        <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}</td>
                         <td style="width: 50px;" class="text-center">
                             <div class="btn-group">
                                 <button class="btn btn-link" (click)="delete(detalle)">
@@ -118,22 +118,22 @@
                 <tbody>
                     <tr>
                         <td class="text-right"><b>Sub Total</b> </td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.sub_total | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
                         <td class="text-right"><b>Descuentos</b> </td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.descuento | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.descuento | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
                         <td class="text-right"> <b>Impuestos</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.iva | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.iva | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                 </tbody>
@@ -171,7 +171,7 @@
             <button type="submit" (click)="onFacturar()" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F8" title="Procesar compra (F8)">
                 @if (!loading) {
                   <span>
-                    Procesar 
+                    Procesar
                     @if (compra.estado == 'Pre-compra') {
                       <span>cotización</span>
                     }
@@ -199,9 +199,9 @@
         <div class="row mb-3">
             <div class="col-md-12">
                 <label for="searchProductos">Buscar producto o servicio:</label>
-                <input 
-                    type="text" 
-                    class="form-control" 
+                <input
+                    type="text"
+                    class="form-control"
                     id="searchProductos"
                     placeholder="Escriba el nombre del producto o servicio..."
                     [(ngModel)]="searchTerm"
@@ -214,22 +214,22 @@
                 }
             </div>
         </div>
-        
+
         @if (searchResults.length > 0) {
           <div class="row">
             <div class="col-md-12">
                 <h6>Resultados de búsqueda:</h6>
                 <div class="list-group">
                     @for (producto of searchResults; track producto.id || $index) {
-                      <div 
+                      <div
                         class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
                         (click)="selectProducto(producto)"
                         style="cursor: pointer;">
                         <div class="d-flex align-items-center">
-                            <img 
-                                [src]="apiService.baseUrl + '/img/' + (producto.img || 'default-product.png')" 
-                                class="rounded-circle me-3" 
-                                height="40px" 
+                            <img
+                                [src]="apiService.baseUrl + '/img/' + (producto.img || 'default-product.png')"
+                                class="rounded-circle me-3"
+                                height="40px"
                                 width="40px"
                                 onerror="this.src='assets/img/default-product.png'">
                             <div>
@@ -237,7 +237,7 @@
                                 <small class="text-muted">{{ producto.descripcion || 'Sin descripción' }}</small>
                                 <br>
                                 <small class="text-success">
-                                    <strong>{{ producto.costo | currency:'USD':'symbol':'1.2' }}</strong>
+                                    <strong>{{ producto.costo | currency }}</strong>
                                     <span class="badge bg-secondary ms-2">{{ producto.tipo }}</span>
                                 </small>
                             </div>
@@ -251,14 +251,14 @@
             </div>
           </div>
         }
-        
+
         @if (searchTerm.length >= 2 && searchResults.length === 0 && !searchLoading) {
           <div class="text-center text-muted py-4">
             <i class="fa fa-search fa-2x mb-2"></i>
             <p>No se encontraron productos o servicios con ese término de búsqueda.</p>
           </div>
         }
-        
+
         @if (searchTerm.length < 2) {
           <div class="text-center text-muted py-4">
             <i class="fa fa-search fa-2x mb-2"></i>

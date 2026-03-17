@@ -174,35 +174,35 @@
                 <tbody>
                     <tr>
                         <td class="text-right"><b>Sub Total</b> </td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.sub_total | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
                         <td class="text-right"><b>Descuentos</b> </td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.descuento | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.descuento | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <!-- Desglose de impuestos por tasa: nombre con % al lado, valor en la columna derecha (igual que en ventas) -->
                     <tr *ngFor="let impuesto of compra?.impuestos">
                         <td class="text-right"> {{ impuesto.nombre }} <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small> </td>
-                        <td style="width: 150px;" class="text-right"> {{ (impuesto.monto ?? 0) | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ (impuesto.monto ?? 0) | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
                         <td class="text-right"> <b>Percepción (1%)</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.percepcion | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.percepcion | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     @if (compra.tipo_documento == 'Sujeto excluido') {
                       <tr>
                         <td class="text-right"> <b>Ret. Renta (10%)</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.renta_retenida | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.renta_retenida | currency}} </td>
                         <td style="width: 50px;"></td>
                       </tr>
                     }
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                 </tbody>
@@ -371,10 +371,10 @@
   <div class="modal-body">
     <form name="facturacion" autocomplete="off" (ngSubmit)="onFacturar()">
         <div class="row text-center">
-            <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ compra.total | currency:'USD':'symbol':'1.2' }}</span></h4>
+            <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ compra.total | currency }}</span></h4>
             <h4 class="col-md-6">Vuelto:
               @if (compra.recibido) {
-                <span class="badge badge-info">{{ compra.recibido - compra.total | currency:'USD':'symbol':'1.2' }}</span>
+                <span class="badge badge-info">{{ compra.recibido - compra.total | currency }}</span>
               }
               @if (!compra.recibido) {
                 <span class="badge badge-info">$0.00</span>
@@ -382,7 +382,7 @@
             </h4>
             <div class="form-group text-center col-md-12 my-3">
                 <label for="recibido">Recibido:</label>
-                <input type="number" name="recibido" [(ngModel)]="compra.recibido" placeholder="{{ compra.total | currency:'USD':'symbol':'1.2' }}" class="form-control text-center">
+                <input type="number" name="recibido" [(ngModel)]="compra.recibido" placeholder="{{ compra.total | currency }}" class="form-control text-center">
             </div>
 
             @if (!compra.nota) {
@@ -512,7 +512,7 @@
                   {{ item.cantidad }}
                 </td>
                 <td class="text-end">
-                  {{ item.precioUni | currency:'USD':'symbol':'1.2' }}
+                  {{ item.precioUni | currency }}
                 </td>
                 <td>
                   <!-- Mostrar sugerencias automáticas si las hay -->

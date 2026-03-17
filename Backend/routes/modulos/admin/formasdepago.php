@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Admin\FormasDePagosController;
 
@@ -8,6 +8,6 @@ use App\Http\Controllers\Api\Admin\FormasDePagosController;
     Route::delete('/forma-de-pago/{id}',    [FormasDePagosController::class, 'delete']);
 
     Route::post('/wompi', [FormasDePagosController::class, 'wompi']);
-    
+
 
 ?>

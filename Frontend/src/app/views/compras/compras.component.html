@@ -127,11 +127,11 @@
                         </td>
                         <td class="text-end">
                             <span *ngIf="compra.estado != 'Pendiente' && !compra.abonos_sum_total && !compra.devoluciones_sum_total">
-                                {{compra.total | currency:'USD':'symbol':'1.2'}}
+                                {{compra.total | currency}}
                             </span>
                             <span *ngIf="compra.estado == 'Pendiente' || compra.abonos_sum_total > 0 || compra.devoluciones_sum_total > 0" class="click"
                                 placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                                {{compra.total | currency:'USD':'symbol':'1.2'}}
+                                {{compra.total | currency}}
                             </span>
                             <ng-template #popTemplate>
                                 <table class="w-100">
