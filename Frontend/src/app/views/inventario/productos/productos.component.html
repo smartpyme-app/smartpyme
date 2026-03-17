@@ -249,7 +249,7 @@
                                         routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
                                         <img src="/assets/icons/edit.png" class="icon me-2">Editar
                                     </button>
-                                    <button type="button" routerLink="/kardex/{{producto.id}}"
+                                    <button type="button" [routerLink]="apiService.getTipoKardex() === 'farmacia' ? ['/kardex-farmacias', producto.id] : ['/kardex', producto.id]"
                                         class="btn text-start border-0">
                                         <img src="/assets/icons/file-text.png" class="icon me-2">Kardex
                                     </button>

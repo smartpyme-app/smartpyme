@@ -195,6 +195,19 @@ export class ApiService {
         return customConfig?.configuraciones?.estado_cuenta_en_facturacion === true;
     }
 
+    /** Obtiene el tipo de kardex configurado para la empresa: 'general' | 'farmacia'. Por defecto 'general'. */
+    getTipoKardex(): 'general' | 'farmacia' {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return 'general';
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        const tipo = customConfig?.configuraciones?.tipo_kardex;
+        return tipo === 'farmacia' ? 'farmacia' : 'general';
+    }
+
     auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
 
     date():string{let today = new Date(); let dd = today.getDate(); let mm = today.getMonth()+1; let d; let m; var yyyy = today.getFullYear(); if(dd<10){d='0'+dd;}else{d= dd;} if(mm<10){m='0'+mm;} else{m=mm;} let date:string = yyyy+'-'+m+'-'+d; return date; }

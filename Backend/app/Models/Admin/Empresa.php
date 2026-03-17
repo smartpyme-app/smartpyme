@@ -628,8 +628,8 @@ class Empresa extends Model
             ],
             'modulos' => [],
             'configuraciones' => [
-                'ticket_en_pdf' => false
-                // Para futuras configuraciones generales
+                'ticket_en_pdf' => false,
+                'tipo_kardex' => 'general' // 'general' | 'farmacia'
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados
@@ -832,6 +832,22 @@ class Empresa extends Model
                 ->where('last_message_at', '>=', now()->subHours(24))
                 ->count()
         ];
+    }
+
+    /**
+     * Obtener el tipo de kardex configurado para la empresa (general | farmacia)
+     */
+    public function getTipoKardex(): string
+    {
+        return (string) $this->getCustomConfigValue('configuraciones', 'tipo_kardex', 'general');
+    }
+
+    /**
+     * Verificar si el tipo de kardex es farmacia
+     */
+    public function isKardexFarmacia(): bool
+    {
+        return $this->getTipoKardex() === 'farmacia';
     }
 
     /**

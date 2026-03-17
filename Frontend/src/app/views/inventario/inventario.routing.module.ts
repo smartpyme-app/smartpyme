@@ -14,6 +14,7 @@ import { ProductosConsignasComponent } from '@views/inventario/consignas/product
 import { MateriasPrimaComponent } from '@views/inventario/materias-prima/materias-prima.component';
 import { MateriaPrimaComponent } from '@views/inventario/materias-prima/materia-prima/materia-prima.component';
 import { KardexComponent } from '@views/inventario/kardex/kardex.component';
+import { KardexFarmaciasComponent } from '@views/inventario/kardex-farmacias/kardex-farmacias.component';
 import { TrasladosComponent } from '@views/inventario/traslados/traslados.component';
 import { TrasladoComponent } from '@views/inventario/traslados/traslado/traslado.component';
 import { AjustesComponent } from '@views/inventario/ajustes/ajustes.component';
@@ -57,6 +58,7 @@ const routes: Routes = [
 
         { path: 'producto/:id', component: ProductoComponent },
         { path: 'kardex/:id', component: KardexComponent },
+        { path: 'kardex-farmacias/:id', component: KardexFarmaciasComponent, title: 'Kardex Farmacia' },
         { path: 'promociones', component: PromocionesComponent},
         
         { path: 'traslados', component: TrasladosComponent, title: 'Traslados' },
