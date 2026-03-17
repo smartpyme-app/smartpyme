@@ -89,7 +89,7 @@ class AbonosController extends Controller
             'nombre_de'    => 'required|max:255',
             'estado'      => 'required|max:255',
             'forma_pago' => 'required|max:255',
-            'detalle_banco' => 'required_unless:forma_pago,"Efectivo"',
+            'detalle_banco' => 'required_unless:forma_pago,Efectivo,Wompi',
             'total'       => 'required|numeric',
             'id_venta'    => 'required|numeric',
             'id_usuario'    => 'required|numeric',
