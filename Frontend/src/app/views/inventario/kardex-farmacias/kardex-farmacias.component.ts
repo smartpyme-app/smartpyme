@@ -18,7 +18,7 @@ export class KardexFarmaciasComponent implements OnInit {
   public loading: boolean = false;
 
   constructor(
-    private apiService: ApiService,
+    public apiService: ApiService,
     private alertService: AlertService,
     private route: ActivatedRoute,
     private router: Router
@@ -118,6 +118,15 @@ export class KardexFarmaciasComponent implements OnInit {
     } else {
       this.loadAll();
     }
+  }
+
+  /** Número del lote seleccionado (para encabezado tarjeta de control) */
+  get loteSeleccionadoNumero(): string {
+    if (!this.filtros.lote_id || !this.lotes?.length) {
+      return '—';
+    }
+    const lote = this.lotes.find((l: any) => String(l.id) === String(this.filtros.lote_id));
+    return lote?.numero_lote ?? '—';
   }
 
   public descargarKardex() {
