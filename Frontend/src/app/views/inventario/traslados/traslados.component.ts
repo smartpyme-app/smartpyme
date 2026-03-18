@@ -111,17 +111,34 @@ export class TrasladosComponent implements OnInit {
         this.filtrarTraslados();
     }
 
-    public setEstado(traslado:any){
+    public setEstado(traslado: any) {
         this.traslado = traslado;
         if (this.traslado.estado == 'Cancelado') {
             if (confirm('¿Confirma cancelar el traslado?')) {
                 this.delete(this.traslado.id);
+            } else {
+                traslado.estado = 'Confirmado';
             }
-        }else{
+        } else {
             if (confirm('¿Confirma confirmar el traslado?')) {
-                this.onSubmit();
+                this.confirmarTraslado(this.traslado);
+            } else {
+                traslado.estado = 'Cancelado';
             }
         }
+    }
+
+    public confirmarTraslado(traslado: any) {
+        this.saving = true;
+        this.apiService.update('traslado', traslado.id, { estado: 'Confirmado' }).subscribe(() => {
+            this.alertService.success('Traslado confirmado', 'El traslado fue confirmado exitosamente.');
+            this.filtrarTraslados();
+            this.saving = false;
+        }, error => {
+            this.alertService.error(error);
+            traslado.estado = 'Cancelado';
+            this.saving = false;
+        });
     }
 
     public productoSelect(producto: any) {

@@ -136,7 +136,7 @@ class MHSujetoExcluidoGasto extends Model
             $this->gasto->proveedor->num_documento = $this->gasto->proveedor->nit ? str_replace('-', '', $this->gasto->proveedor->nit) : NULL;
         }
         if ($this->gasto->proveedor->dui) {
-            $this->gasto->proveedor->tipo_documento = '13';
+            $this->gasto->proveedor->tipo_documento = $this->gasto->proveedor->tipo_documento ?? '13';
             $this->gasto->proveedor->num_documento = $this->gasto->proveedor->dui ? str_replace('-', '', $this->gasto->proveedor->dui) : NULL;
         }
 
@@ -199,7 +199,7 @@ class MHSujetoExcluidoGasto extends Model
                 $precioUni = $esGravada
                     ? floatval($detalle->sub_total) + floatval($detalle->iva)
                     : floatval($detalle->sub_total);
-                $compra = floatval($detalle->total);
+                $compra = floatval($detalle->sub_total + $detalle->iva);
                 $descuento = 0;
                 $detalles->push([
                     "numItem" => $index + 1,

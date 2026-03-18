@@ -1,0 +1,93 @@
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+  <h2 class="page-heading">Detalle de traslado</h2>
+  <div class="d-flex gap-2">
+    <button *ngIf="traslado.id" class="btn btn-default" (click)="imprimir()" tooltip="Imprimir">
+      <i class="fa fa-print"></i> Imprimir
+    </button>
+    <button class="btn btn-light text-danger" routerLink="/traslados">
+      <i class="fa fa-arrow-left"></i> Regresar
+    </button>
+  </div>
+</section>
+
+<div *ngIf="loading" class="row">
+  <p class="col-md-12 text-center text-muted mt-5">Cargando...</p>
+</div>
+
+<div class="card" *ngIf="!loading && traslado.id">
+  <div class="card-body">
+
+    <!-- Información general -->
+    <div class="row">
+      <div class="form-group col-6 col-md-2">
+        <label><strong>Fecha:</strong></label>
+        <div>{{ traslado.created_at | date:'dd/MM/yyyy' }}</div>
+      </div>
+      <div class="form-group col-6 col-md-2">
+        <label><strong>Producto:</strong></label>
+        <div>{{ traslado.nombre_producto }}</div>
+      </div>
+      <div class="form-group col-6 col-md-2">
+        <label><strong>Cantidad:</strong></label>
+        <div>{{ traslado.cantidad | number:'1.0' }}</div>
+      </div>
+      <div class="form-group col-6 col-md-2">
+        <label><strong>Concepto:</strong></label>
+        <div>{{ traslado.concepto || '-' }}</div>
+      </div>
+      <div class="form-group col-6 col-md-2">
+        <label><strong>Estado:</strong></label>
+        <div>
+          <span class="badge" [ngClass]="{
+            'bg-success': traslado.estado === 'Confirmado',
+            'bg-danger': traslado.estado === 'Cancelado',
+            'bg-info': traslado.estado !== 'Confirmado' && traslado.estado !== 'Cancelado'
+          }">{{ traslado.estado || '-' }}</span>
+        </div>
+      </div>
+      <div class="form-group col-6 col-md-2">
+        <label><strong>Usuario:</strong></label>
+        <div>{{ traslado.usuario?.name || '-' }}</div>
+      </div>
+    </div>
+
+    <!-- Origen y destino -->
+    <div class="row mt-3">
+      <div class="col-12 col-md-6">
+        <div class="card bg-light">
+          <div class="card-body">
+            <label><strong><i class="fa fa-arrow-right text-muted"></i> De (Origen):</strong></label>
+            <div class="mt-1">{{ traslado.nombre_origen || traslado.origen?.nombre || '-' }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 mt-2 mt-md-0">
+        <div class="card bg-light">
+          <div class="card-body">
+            <label><strong><i class="fa fa-arrow-left text-muted"></i> Para (Destino):</strong></label>
+            <div class="mt-1">{{ traslado.nombre_destino || traslado.destino?.nombre || '-' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información de lotes (si aplica) -->
+    <div class="row mt-3" *ngIf="traslado.lote || traslado.loteDestino">
+      <div class="col-12">
+        <div class="alert alert-info mb-0">
+          <div class="row">
+            <div class="col-md-6" *ngIf="traslado.lote">
+              <label><strong>Lote origen:</strong></label>
+              <div>{{ traslado.lote.numero_lote || 'Sin número' }} - Stock: {{ traslado.lote.stock | number:'1.2' }}</div>
+            </div>
+            <div class="col-md-6" *ngIf="traslado.loteDestino">
+              <label><strong>Lote destino:</strong></label>
+              <div>{{ traslado.loteDestino.numero_lote || 'Sin número' }} - Stock: {{ traslado.loteDestino.stock | number:'1.2' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
