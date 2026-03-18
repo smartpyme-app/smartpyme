@@ -136,7 +136,7 @@ class MHSujetoExcluidoGasto extends Model
             $this->gasto->proveedor->num_documento = $this->gasto->proveedor->nit ? str_replace('-', '', $this->gasto->proveedor->nit) : NULL;
         }
         if ($this->gasto->proveedor->dui) {
-            $this->gasto->proveedor->tipo_documento = '13';
+            $this->gasto->proveedor->tipo_documento = $this->gasto->proveedor->tipo_documento ?? '13';
             $this->gasto->proveedor->num_documento = $this->gasto->proveedor->dui ? str_replace('-', '', $this->gasto->proveedor->dui) : NULL;
         }
 
