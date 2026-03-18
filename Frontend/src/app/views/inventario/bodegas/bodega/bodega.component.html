@@ -70,7 +70,7 @@
                                     <i class="fa fa-pencil-alt"></i>
                                 </a>
                                 <app-crear-ajuste [producto]="inventario.producto" [inventario]="inventario" (setAjuste)="setAjuste($event)"></app-crear-ajuste>
-                                <a class="btn btn-default" routerLink="/kardex/{{ inventario.producto_id }}" tooltip="Kardex">
+                                <a class="btn btn-default" [routerLink]="['/kardex', inventario.producto_id]" tooltip="Kardex">
                                     <i class="fa fa-right-left"></i>
                                 </a>
                             </div>  

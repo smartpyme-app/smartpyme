@@ -57,6 +57,7 @@ const routes: Routes = [
         { path: 'materia-prima/editar/:id', component: ProductoComponent, title: 'Materia prima'  },
 
         { path: 'producto/:id', component: ProductoComponent },
+        { path: 'kardex', component: KardexComponent, title: 'Kardex' },
         { path: 'kardex/:id', component: KardexComponent },
         { path: 'promociones', component: PromocionesComponent},
         

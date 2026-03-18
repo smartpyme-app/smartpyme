@@ -629,7 +629,6 @@ class Empresa extends Model
             'modulos' => [],
             'configuraciones' => [
                 'ticket_en_pdf' => false
-                // Para futuras configuraciones generales
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados
