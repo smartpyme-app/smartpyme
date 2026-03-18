@@ -41,7 +41,6 @@ import { MateriaPrimaComponent } from './materias-prima/materia-prima/materia-pr
 import { MateriaPrimaInformacionComponent } from './materias-prima/materia-prima/informacion/materia-prima-informacion.component';
 
 import { KardexComponent } from './kardex/kardex.component';
-import { KardexFarmaciasComponent } from './kardex-farmacias/kardex-farmacias.component';
 import { TrasladosComponent } from './traslados/traslados.component';
 import { TrasladoComponent } from './traslados/traslado/traslado.component';
 import { AjustesComponent } from './ajustes/ajustes.component';
@@ -93,7 +92,6 @@ import { LotesComponent } from './lotes/lotes.component';
     DetalleProductoComponent,
     ProductoComponent,
     KardexComponent,
-    KardexFarmaciasComponent,
     PromocionesComponent,
     ProductoInformacionComponent,
     ProductoInventariosComponent,
@@ -136,7 +134,6 @@ import { LotesComponent } from './lotes/lotes.component';
     DetalleProductoComponent,
     ProductoComponent,
     KardexComponent,
-    KardexFarmaciasComponent,
     PromocionesComponent,
     ProductoInformacionComponent,
     ProductoInventariosComponent,

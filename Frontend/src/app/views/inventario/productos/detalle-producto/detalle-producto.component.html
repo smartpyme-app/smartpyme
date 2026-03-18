@@ -6,7 +6,7 @@
         <a *ngIf="apiService.canEdit() && producto?.id" [routerLink]="['/producto/editar', producto.id]" class="btn btn-default me-2">
             <i class="fas fa-fw fa-pen"></i> Editar
         </a>
-        <a *ngIf="producto?.id" [routerLink]="apiService.isLotesActivo() ? ['/kardex-farmacias', producto.id] : ['/kardex', producto.id]" class="btn btn-default me-2">
+        <a *ngIf="producto?.id" [routerLink]="['/kardex', producto.id]" class="btn btn-default me-2">
             <i class="fas fa-fw fa-file-lines"></i> Kardex
         </a>
         <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>

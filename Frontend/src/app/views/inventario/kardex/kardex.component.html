@@ -15,10 +15,37 @@
 
 <div class="bg-white p-4 rounded mb-3">
     <form name="form" (ngSubmit)="loadAll()" class="row g-3 mb-4">
+        <div class="col-12 col-lg-4">
+            <label class="form-label">Producto</label>
+            <ng-select
+                [(ngModel)]="productoSeleccionado"
+                name="producto_kardex"
+                [typeahead]="searchProductos$"
+                [loading]="searchLoading"
+                [clearable]="true"
+                placeholder="Buscar por nombre o código (mín. 2 caracteres)..."
+                class="form-select p-0"
+                bindLabel="nombre"
+                [compareWith]="compareProductos"
+                (change)="onProductoDesdeBuscador($event)">
+                <ng-option *ngFor="let p of opcionesBuscador" [value]="p">
+                    <div>{{ p.nombre }}</div>
+                    <small class="text-muted" *ngIf="p.codigo">Cód: {{ p.codigo }}</small>
+                    <span *ngIf="p.marca" class="text-muted"> · {{ p.marca }}</span>
+                </ng-option>
+            </ng-select>
+        </div>
         <div class="col-md-6 col-lg-2">
             <label class="form-label">Bodega</label>
             <select class="form-select" [(ngModel)]="filtros.id_inventario" name="id_inventario" (change)="onBodegaChange()">
                 <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
+            </select>
+        </div>
+        <div class="col-md-6 col-lg-2" *ngIf="mostrarLote">
+            <label class="form-label">Lote <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="filtros.lote_id" name="lote_id" (change)="loadAll()" [disabled]="!filtros.id_inventario || lotes.length === 0">
+                <option value="">Seleccione un lote</option>
+                <option [value]="lote.id" *ngFor="let lote of lotes">{{ lote.numero_lote }} (Stock: {{ lote.stock | number:'1.0' }})</option>
             </select>
         </div>
         <div class="col-md-6 col-lg-2">
@@ -50,24 +77,27 @@
         </div>
     </form>
 
-    <!-- Encabezado tipo Tarjeta de Control (sin Lote) -->
     <div class="border rounded p-3 mb-4">
         <div class="text-center mb-2">
-            <h5 class="mb-0 text-uppercase fw-bold">{{ apiService.auth_user()?.empresa?.nombre || 'Empresa' }}</h5>
-            <p class="mb-0 small text-secondary">TARJETA DE CONTROL DE INVENTARIOS DE MATERIALES DEL {{ filtros.inicio | date:'dd/MM/yyyy' }} AL {{ filtros.fin | date:'dd/MM/yyyy' }}</p>
-            <p class="mb-0 fw-bold">COSTO PROMEDIO</p>
-            <div class="d-flex justify-content-between small mt-1 px-4">
-                <span>NIT: {{ apiService.auth_user()?.empresa?.nit || '—' }}</span>
-                <span>NRC: {{ apiService.auth_user()?.empresa?.ncr || '—' }}</span>
+            <h5 class="mb-0 text-uppercase">{{ apiService.auth_user()?.empresa?.nombre || 'Empresa' }}</h5>
+            <p class="mb-0 small">TARJETA DE CONTROL DE INVENTARIOS DE MATERIALES DEL {{ filtros.inicio | date:'dd/MM/yyyy' }} AL {{ filtros.fin | date:'dd/MM/yyyy' }}</p>
+            <p class="mb-0">COSTO PROMEDIO</p>
+            <div class="d-flex justify-content-between small mt-1">
+                <span><strong>NIT:</strong> {{ apiService.auth_user()?.empresa?.nit || '—' }}</span>
+                <span><strong>NRC:</strong> {{ apiService.auth_user()?.empresa?.ncr || '—' }}</span>
             </div>
         </div>
-        <div class="row small border-top pt-2 mt-2">
+        <div class="row small border-top pt-2 mt-2" *ngIf="mostrarLote">
+            <div class="col-md-4"><strong>ARTÍCULO:</strong> {{ producto?.nombre || '—' }}</div>
+            <div class="col-md-4 text-center"><strong>TAMAÑO:</strong> {{ producto?.medida || '—' }}</div>
+            <div class="col-md-4 text-end"><strong>LOTE:</strong> {{ loteSeleccionadoNumero }}</div>
+        </div>
+        <div class="row small border-top pt-2 mt-2" *ngIf="!mostrarLote">
             <div class="col-md-6"><strong>ARTÍCULO:</strong> {{ producto?.nombre || '—' }}</div>
             <div class="col-md-6 text-end"><strong>TAMAÑO:</strong> {{ producto?.medida || '—' }}</div>
         </div>
     </div>
 
-    <!-- Tabla: N° Correlativo, Fecha, N° Documento, Nombre Proveedor, Nacionalidad, Descripción, Fuente Ref. | ENTRADAS | SALIDAS | EXISTENCIAS -->
     <div class="table-responsive">
         <table class="table table-bordered table-sm">
             <thead>
@@ -75,6 +105,7 @@
                     <th rowspan="2" class="align-middle text-center">N° Correlativo</th>
                     <th rowspan="2" class="align-middle">Fecha</th>
                     <th rowspan="2" class="align-middle">N° del Documento</th>
+                    <th rowspan="2" class="align-middle" *ngIf="mostrarLote">Lote</th>
                     <th rowspan="2" class="align-middle">Nombre del Proveedor</th>
                     <th rowspan="2" class="align-middle">Nacionalidad del Proveedor</th>
                     <th rowspan="2" class="align-middle">Descripción del Producto</th>
@@ -97,15 +128,16 @@
             </thead>
             <tbody>
                 <tr *ngIf="producto?.movimientos?.length < 1 && !loading">
-                    <td colspan="16" class="text-center py-4 text-muted">No hay movimientos registrados</td>
+                    <td [attr.colspan]="colspanTabla" class="text-center py-4 text-muted">No hay movimientos registrados</td>
                 </tr>
                 <tr *ngIf="loading">
-                    <td colspan="16" class="text-center py-4">Cargando...</td>
+                    <td [attr.colspan]="colspanTabla" class="text-center py-4">Cargando...</td>
                 </tr>
                 <tr *ngFor="let movimiento of producto?.movimientos; let i = index">
                     <td class="text-center">{{ i + 1 }}</td>
                     <td>{{ movimiento.fecha | date:'dd/MM/yyyy' }}</td>
                     <td>{{ movimiento.modelo_detalle || '—' }}</td>
+                    <td class="text-center" *ngIf="mostrarLote">{{ movimiento.numero_lote || '—' }}</td>
                     <td>{{ movimiento.nombre_proveedor_origen || '—' }}</td>
                     <td>{{ movimiento.nacionalidad_proveedor || '—' }}</td>
                     <td>{{ producto?.nombre || '—' }}</td>

@@ -10,13 +10,10 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\KardexMasivoQueue;
-use App\Models\Admin\Empresa;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\Inventario\KardexExport;
 use App\Exports\Inventario\KardexFarmaciasExport;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 
 class KardexController extends Controller
 {
@@ -133,19 +130,10 @@ class KardexController extends Controller
 
     public function export(Request $request)
     {
-        $user = Auth::user();
-        $empresa = $user->empresa ?? Empresa::find($user->id_empresa ?? null);
-        $usarKardexFarmacia = $empresa && $empresa->isLotesActivo();
-
-        if ($usarKardexFarmacia) {
-            $kardex = new KardexFarmaciasExport();
-        } else {
-            $kardex = new KardexExport();
-        }
+        $kardex = new KardexFarmaciasExport();
         $kardex->filter($request);
 
-        $nombreArchivo = $usarKardexFarmacia ? 'kardex-farmacia.xlsx' : 'kardex.xlsx';
-        return Excel::download($kardex, $nombreArchivo);
+        return Excel::download($kardex, 'kardex.xlsx');
     }
 
     public function exportFiltrado(Request $request)
