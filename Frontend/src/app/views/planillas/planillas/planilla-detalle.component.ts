@@ -510,6 +510,9 @@ export class PlanillaDetalleComponent implements OnInit {
     if (this.detalleSeleccionado.abonos_sin_retencion === undefined || this.detalleSeleccionado.abonos_sin_retencion === null) {
       this.detalleSeleccionado.abonos_sin_retencion = true;
     }
+    if (this.detalleSeleccionado.viaticos === undefined || this.detalleSeleccionado.viaticos === null) {
+      this.detalleSeleccionado.viaticos = 0;
+    }
     this.listaHorasExtraES = [];
     if (this.esElSalvador) {
       const dhe = detalle.detalle_horas_extra;
@@ -754,6 +757,7 @@ export class PlanillaDetalleComponent implements OnInit {
       // Comentarios o detalles adicionales
       detalle_otras_deducciones:
         this.detalleSeleccionado.detalle_otras_deducciones || '',
+      viaticos: this.detalleSeleccionado.viaticos || 0,
     };
     const abonosConMonto = this.abonosPrestamosAsignados.filter((a) => (Number(a.monto) || 0) > 0);
     if (abonosConMonto.length > 0) {
@@ -1036,7 +1040,9 @@ export class PlanillaDetalleComponent implements OnInit {
           const url = window.URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `boleta_${this.planilla.codigo}_${detalle.empleado.codigo}.pdf`;
+          const codigoPlanilla = this.planilla?.codigo ?? `planilla_${this.planilla?.id ?? 'x'}`;
+          const codigoEmpleado = detalle.empleado?.codigo ?? detalle.codigo ?? detalle.id_empleado ?? detalle.id;
+          link.download = `boleta_${codigoPlanilla}_${codigoEmpleado}.pdf`;
           link.click();
           window.URL.revokeObjectURL(url);
 
@@ -1800,6 +1806,24 @@ export class PlanillaDetalleComponent implements OnInit {
     const otros = parseFloat(detalle.otros_ingresos) || 0;
 
     return bon + com + horas + otros;
+  }
+
+  /** Total a pagar = sueldo neto + viáticos (viáticos no afectan deducciones) */
+  getTotalAPagar(detalle: any): number {
+    const sueldoNeto = Number(detalle?.sueldo_neto) || 0;
+    const viaticos = Number(detalle?.viaticos) || 0;
+    return sueldoNeto + viaticos;
+  }
+
+  /** Total a pagar de toda la planilla */
+  getTotalAPagarPlanilla(): number {
+    if (!this.detalles?.length) return 0;
+    return this.detalles.reduce((sum, d) => sum + this.getTotalAPagar(d), 0);
+  }
+
+  /** Viáticos no afectan cálculos; solo actualizar vista */
+  onViaticosChange(): void {
+    // No-op: viáticos no afectan sueldo_neto ni deducciones
   }
 
   calcularValoresDetalle() {

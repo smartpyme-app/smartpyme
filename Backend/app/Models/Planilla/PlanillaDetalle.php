@@ -25,6 +25,7 @@ class PlanillaDetalle extends Model
         'comisiones',
         'bonificaciones',
         'otros_ingresos',
+        'viaticos',
         'abonos',
         'abonos_sin_retencion',
         'isss_empleado',
