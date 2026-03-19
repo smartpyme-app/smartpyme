@@ -170,8 +170,8 @@
                         &nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                         &nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                          Firma de recibido de conformidad</td>
-                    <td></td>
-                    <td></td>
+                    <td style="padding: 0 3px 0 0; text-align: right;">TOTAL A PAGAR:</td>
+                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($venta->total, 2) }}</td>
                 </tr>
             </tfoot>
         </table>
