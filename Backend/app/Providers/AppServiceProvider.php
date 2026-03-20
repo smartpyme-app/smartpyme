@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
+use App\Observers\FidelizacionCliente\ClienteNivelObserver;
 use App\Observers\InventarioObserver;
 use App\Observers\ProductoObserver;
 use App\Observers\ShopifyInventarioObserver;
@@ -40,7 +42,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        // Registrar el observer de Inventario
+        Cliente::observe(ClienteNivelObserver::class);
         Inventario::observe(InventarioObserver::class);
 
         // Registrar el observer de Producto solo cuando sea necesario

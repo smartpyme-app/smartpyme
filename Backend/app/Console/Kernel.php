@@ -142,6 +142,15 @@ class Kernel extends ConsoleKernel
             ->appendOutputTo(storage_path('logs/cliente360-completo.log'))
             ->emailOutputOnFailure('joseespana94@gmail.com');
 
+        // ============================================
+        // FIDELIZACIÓN - EXPIRACIÓN DE PUNTOS
+        // ============================================
+        $schedule->command('fidelizacion:procesar-expiracion-puntos --sync')
+            ->dailyAt('02:00')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/fidelizacion-expiracion-puntos.log'))
+            ->emailOutputOnFailure('jose.e@smartpyme.sv');
 
         $schedule->call(function () {
             Log::info('Working');

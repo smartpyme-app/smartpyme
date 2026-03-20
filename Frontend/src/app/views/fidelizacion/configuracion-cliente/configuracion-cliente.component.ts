@@ -34,6 +34,8 @@ export class ConfiguracionClienteComponent implements OnInit {
     is_default: false,
     configuracion_avanzada: this.getDefaultAdvancedConfig()
   };
+  /** Valor del selector de nivel en UI: id de tipo base (number) o 'personalizado' */
+  public nivelSeleccionado: number | 'personalizado' | null = null;
   public filtros: any = {
     buscador: '',
     orden: 'nivel',
@@ -53,6 +55,9 @@ export class ConfiguracionClienteComponent implements OnInit {
   };
   
   public downloading: boolean = false;
+
+  /** Ocultar configuración avanzada hasta que esté lista */
+  public mostrarConfiguracionAvanzada: boolean = false;
 
   // Propiedades para gestión de reglas de upgrade
   public showUpgradeRulesModal: boolean = false;
@@ -169,8 +174,11 @@ export class ConfiguracionClienteComponent implements OnInit {
    */
   openCreateModal(): void {
     this.editingTipo = null;
+    const primerTipoBase = this.tiposBase?.[0];
     this.formData = {
-      nivel: 1,
+      id_tipo_base: primerTipoBase?.id,
+      nivel: primerTipoBase?.orden ?? 1,
+      nombre_personalizado: undefined,
       puntos_por_dolar: 1.0,
       minimo_canje: 100,
       maximo_canje: 1000,
@@ -178,6 +186,7 @@ export class ConfiguracionClienteComponent implements OnInit {
       is_default: false,
       configuracion_avanzada: this.getDefaultAdvancedConfig()
     };
+    this.nivelSeleccionado = primerTipoBase ? primerTipoBase.id : 'personalizado';
     this.showModal = true;
   }
 
@@ -197,6 +206,7 @@ export class ConfiguracionClienteComponent implements OnInit {
       is_default: tipo.is_default,
       configuracion_avanzada: this.ensureAdvancedConfig(tipo.configuracion_avanzada)
     };
+    this.nivelSeleccionado = tipo.is_personalizado ? 'personalizado' : (tipo.tipo_base?.id ?? null);
     this.showModal = true;
   }
 
@@ -206,6 +216,26 @@ export class ConfiguracionClienteComponent implements OnInit {
   closeModal(): void {
     this.showModal = false;
     this.editingTipo = null;
+    this.nivelSeleccionado = null;
+  }
+
+  /**
+   * Al cambiar el nivel seleccionado en la UI (Standard, VIP, Ultra VIP o Personalizado)
+   */
+  onNivelSeleccionadoChange(value: number | 'personalizado' | null): void {
+    this.nivelSeleccionado = value;
+    if (value === 'personalizado') {
+      this.formData.id_tipo_base = undefined;
+      this.formData.nivel = this.formData.nivel || 1;
+      this.formData.nombre_personalizado = this.formData.nombre_personalizado || '';
+    } else if (value !== null && typeof value === 'number') {
+      const tipoBase = this.tiposBase.find(t => t.id === value);
+      if (tipoBase) {
+        this.formData.id_tipo_base = tipoBase.id;
+        this.formData.nivel = tipoBase.orden;
+        this.formData.nombre_personalizado = undefined;
+      }
+    }
   }
 
   /**
@@ -609,6 +639,13 @@ export class ConfiguracionClienteComponent implements OnInit {
    * Proceder con el guardado después de mostrar la simulación
    */
   private procederConGuardado(): void {
+    // Validar nombre personalizado cuando es tipo personalizado
+    if (this.nivelSeleccionado === 'personalizado') {
+      if (!this.formData.nombre_personalizado?.trim()) {
+        this.alertService.error('El nombre del tipo es requerido para tipos personalizados');
+        return;
+      }
+    }
     // Validar datos
     const errors = this.fidelizacionService.validatePuntosConfig(this.formData);
     if (errors.length > 0) {
@@ -709,7 +746,7 @@ export class ConfiguracionClienteComponent implements OnInit {
    * Establecer como tipo por defecto
    */
   setAsDefault(tipo: TipoClienteEmpresa): void {
-    if (confirm(`¿Está seguro de establecer "${tipo.nombre_efectivo}" como tipo por defecto para el nivel ${tipo.nivel}?`)) {
+    if (confirm(`¿Está seguro de establecer "${tipo.nombre_efectivo}" como tipo por defecto? Los clientes sin tipo asignado usarán este.`)) {
       const updateData: UpdateTipoClienteRequest = {
         id_tipo_base: tipo.tipo_base?.id,
         nivel: tipo.nivel,

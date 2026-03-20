@@ -14,7 +14,7 @@ class ClienteResource extends JsonResource
     {
         $puntosCliente = $this->puntosCliente;
         $ultimaVenta = $this->ventas->first();
-        $tipoCliente = $this->tipoCliente;
+        $tipoCliente = $this->resource->getTipoClienteEfectivo();
 
         return [
             'id' => $this->id,
@@ -25,23 +25,25 @@ class ClienteResource extends JsonResource
             'ncr' => $this->ncr,
             'tipo' => $this->tipo,
             'enable' => $this->enable,
-            'tipo_cliente_fidelizacion' => $this->when($tipoCliente, [
-                'id' => $tipoCliente?->id,
-                'nivel' => $tipoCliente?->nivel,
-                'nombre_efectivo' => $tipoCliente?->nombre_efectivo,
-                'descripcion_efectiva' => $tipoCliente?->descripcion_efectiva,
-                'puntos_por_dolar' => $tipoCliente?->puntos_por_dolar,
-                'minimo_canje' => $tipoCliente?->minimo_canje,
-                'maximo_canje' => $tipoCliente?->maximo_canje,
-                'expiracion_meses' => $tipoCliente?->expiracion_meses,
-            ]),
+            'tipo_cliente_fidelizacion' => $this->when($tipoCliente, function () use ($tipoCliente) {
+                return [
+                    'id' => $tipoCliente->id,
+                    'nivel' => $tipoCliente->nivel,
+                    'nombre_efectivo' => $tipoCliente->nombre_efectivo,
+                    'descripcion_efectiva' => $tipoCliente->descripcion_efectiva,
+                    'puntos_por_dolar' => $tipoCliente->puntos_por_dolar,
+                    'minimo_canje' => $tipoCliente->minimo_canje,
+                    'maximo_canje' => $tipoCliente->maximo_canje,
+                    'expiracion_meses' => $tipoCliente->expiracion_meses,
+                ];
+            }),
             'puntos_acumulados' => $puntosCliente?->puntos_totales_ganados ?? 0,
             'puntos_disponibles' => $puntosCliente?->puntos_disponibles ?? 0,
             'puntos_vencidos' => $this->calcularPuntosVencidos($this->id),
             'ultima_compra' => $ultimaVenta?->created_at?->format('Y-m-d'),
             'total_compras' => $this->ventas()->count(),
             'total_gastado' => $this->ventas()->sum('total'),
-            'nivel_actual' => $tipoCliente?->nivel ?? 1,
+            'nivel_actual' => $tipoCliente ? $tipoCliente->nivel : 1,
             'fecha_registro' => $this->created_at->format('Y-m-d'),
             'fecha_ultima_actividad' => $puntosCliente?->fecha_ultima_actividad,
         ];

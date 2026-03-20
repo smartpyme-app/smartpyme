@@ -39,7 +39,7 @@ class ClienteFidelizacionController extends Controller
                 'order' => 'in:nombre,puntos,puntos_disponibles,puntos_acumulados,ultima_compra',
                 'direction' => 'in:asc,desc',
                 'tipo_cliente' => 'string|max:50',
-                'nivel' => 'integer|min:1',
+                'nivel' => 'sometimes|integer|min:1|max:3',
                 'puntos_min' => 'integer|min:0',
                 'puntos_max' => 'integer|min:0',
                 'estado' => 'boolean'
@@ -116,6 +116,8 @@ class ClienteFidelizacionController extends Controller
                   ->where('tipos_cliente_empresa.id_empresa', $empresaEfectivaId)
                   ->with('tipoBase');
             },
+            'empresa.tipoClienteDefault',
+            'empresa.licenciaEmpresa.licencia.empresa.tipoClienteDefault',
             'puntosCliente' => function($q) use ($empresaEfectivaId) {
                 $q->withoutGlobalScopes()
                   ->where('puntos_cliente.id_empresa', $empresaEfectivaId);
@@ -133,11 +135,13 @@ class ClienteFidelizacionController extends Controller
      */
     private function aplicarFiltros(Builder $query, Request $request, int $empresaId, $empresa = null): Builder
     {
+        $nivel = $request->has('nivel') ? (int) $request->input('nivel') : null;
+
         return $query
             ->when($request->search, fn($q) => $this->aplicarFiltrosBusqueda($q, $request->search))
             ->when($request->tipo_cliente, fn($q) => $q->where('clientes.tipo', $request->tipo_cliente))
             ->when($request->has('estado'), fn($q) => $q->where('clientes.enable', (bool) $request->estado))
-            ->when($request->nivel, fn($q) => $this->aplicarFiltroNivel($q, $request->nivel, $empresaId))
+            ->when($request->has('nivel') && $nivel >= 1 && $nivel <= 3, fn($q) => $q->where('clientes.nivel', $nivel))
             ->when($request->puntos_min || $request->puntos_max, 
                 fn($q) => $this->aplicarFiltroPuntos($q, $request->puntos_min, $request->puntos_max, $empresaId)
             );
@@ -174,22 +178,6 @@ class ClienteFidelizacionController extends Controller
                     });
                 }
             }
-        });
-    }
-
-    /**
-     * Aplica filtro por nivel de cliente
-     */
-    private function aplicarFiltroNivel(Builder $query, int $nivel, int $empresaId): Builder
-    {
-        return $query->where(function($subQuery) use ($nivel, $empresaId) {
-            $subQuery->whereHas('tipoCliente', function($q) use ($nivel, $empresaId) {
-                $q->where('tipos_cliente_empresa.id_empresa', $empresaId)
-                  ->where('nivel', $nivel);
-            })->orWhere(function($q) use ($nivel) {
-                $q->whereNull('clientes.id_tipo_cliente')
-                  ->where('clientes.nivel', $nivel);
-            });
         });
     }
 
@@ -278,14 +266,19 @@ class ClienteFidelizacionController extends Controller
             // Obtener parámetros de paginación
             $perPage = (int) $request->input('paginate', 25);
             $page = (int) $request->input('page', 1);
+            $order = $request->input('order', 'nombre');
+            $direction = $request->input('direction', 'asc');
 
-            // Mostrar todos los clientes sin filtrar por tipo específico
-            $clientes = Cliente::with([
+            // Query base: clientes de este tipo (asignado) o sin tipo si este es el default
+            $esDefault = (bool) $tipoCliente->is_default;
+            $query = Cliente::with([
                 'tipoCliente' => function($q) use ($empresaEfectivaId) {
                     $q->withoutGlobalScopes()
                       ->where('tipos_cliente_empresa.id_empresa', $empresaEfectivaId)
                       ->with('tipoBase');
                 },
+                'empresa.tipoClienteDefault',
+                'empresa.licenciaEmpresa.licencia.empresa.tipoClienteDefault',
                 'puntosCliente' => function($q) use ($empresaEfectivaId) {
                     $q->withoutGlobalScopes()
                       ->where('puntos_cliente.id_empresa', $empresaEfectivaId);
@@ -297,15 +290,24 @@ class ClienteFidelizacionController extends Controller
                 }
             ])
             ->whereIn('clientes.id_empresa', $empresasLicenciaIds)
-            ->orderBy('nombre')
-            ->paginate($perPage, ['*'], 'page', $page);
+            ->where(function ($q) use ($tipoId, $esDefault) {
+                $q->where('clientes.id_tipo_cliente', $tipoId);
+                if ($esDefault) {
+                    $q->orWhereNull('clientes.id_tipo_cliente');
+                }
+            });
+
+            // Aplicar filtros (nivel, búsqueda, estado)
+            $query = $this->aplicarFiltros($query, $request, $empresaId, $empresa);
+            $query = $this->aplicarOrdenamiento($query, $order, $direction, $empresaEfectivaId);
+            $clientes = $query->paginate($perPage, ['*'], 'page', $page);
 
             // Transformar los datos (mismo formato que index)
             $clientesData = [];
             foreach ($clientes->items() as $cliente) {
                 $puntosCliente = $cliente->puntosCliente;
                 $ultimaVenta = $cliente->ventas->first();
-                $tipoCliente = $cliente->tipoCliente;
+                $tipoCliente = $cliente->getTipoClienteEfectivo();
 
                 $clientesData[] = [
                     'id' => $cliente->id,
@@ -332,7 +334,7 @@ class ClienteFidelizacionController extends Controller
                     'ultima_compra' => $ultimaVenta ? $ultimaVenta->created_at->format('Y-m-d') : null,
                     'total_compras' => $cliente->ventas()->count(),
                     'total_gastado' => $cliente->ventas()->sum('total'),
-                    'nivel_actual' => $tipoCliente->nivel ?? 1,
+                    'nivel_actual' => $tipoCliente ? $tipoCliente->nivel : 1,
                     'fecha_registro' => $cliente->created_at->format('Y-m-d'),
                     'fecha_ultima_actividad' => $puntosCliente->fecha_ultima_actividad ?? null,
                 ];
@@ -386,6 +388,8 @@ class ClienteFidelizacionController extends Controller
                       ->where('tipos_cliente_empresa.id_empresa', $empresaId)
                       ->with('tipoBase');
                 },
+                'empresa.tipoClienteDefault',
+                'empresa.licenciaEmpresa.licencia.empresa.tipoClienteDefault',
                 'puntosCliente' => function($q) use ($empresaId) {
                     $q->withoutGlobalScopes()
                       ->where('puntos_cliente.id_empresa', $empresaId);
@@ -408,8 +412,8 @@ class ClienteFidelizacionController extends Controller
     
             $puntosCliente = $cliente->puntosCliente;
             $ultimaVenta = $cliente->ventas->first();
-            $tipoCliente = $cliente->tipoCliente;
-    
+            $tipoCliente = $cliente->getTipoClienteEfectivo();
+
             // Determinar el teléfono correcto según el tipo
             $telefono = $cliente->getTelefonoEfectivo();
     
@@ -445,11 +449,11 @@ class ClienteFidelizacionController extends Controller
                 'ultima_compra' => $ultimaVenta ? $ultimaVenta->created_at->format('Y-m-d') : null,
                 'total_compras' => $cliente->ventas()->count(),
                 'total_gastado' => $cliente->ventas()->sum('total'),
-                'nivel_actual' => $tipoCliente->nivel ?? 1,
+                'nivel_actual' => $tipoCliente ? $tipoCliente->nivel : 1,
                 'fecha_registro' => $cliente->created_at->format('Y-m-d'),
                 'fecha_ultima_actividad' => $puntosCliente->fecha_ultima_actividad ?? null,
             ];
-    
+
             return response()->json([
                 'success' => true,
                 'data' => $detalles,
@@ -471,13 +475,21 @@ class ClienteFidelizacionController extends Controller
     public function cambiarTipo(Request $request, $id): JsonResponse
     {
         try {
-            $empresaId = $request->user()->id_empresa;
+            $user = $request->user();
+            $empresa = $user->empresa;
 
             $request->validate([
                 'id_tipo_cliente' => 'required|integer|exists:tipos_cliente_empresa,id'
             ]);
 
-            $cliente = Cliente::where('clientes.id_empresa', $empresaId)->find($id);
+            $empresaEfectiva = $this->licenciaService->getEmpresaEfectiva($empresa);
+            $empresaEfectivaId = $empresaEfectiva->id;
+            $empresasLicenciaIds = $this->licenciaService->getEmpresasLicenciaIds($empresa);
+
+            $cliente = Cliente::withoutGlobalScope('empresa')
+                ->whereIn('clientes.id_empresa', $empresasLicenciaIds)
+                ->find($id);
+
             if (!$cliente) {
                 return response()->json([
                     'success' => false,
@@ -486,7 +498,7 @@ class ClienteFidelizacionController extends Controller
             }
 
             $nuevoTipo = TipoClienteEmpresa::where('id', $request->id_tipo_cliente)
-                ->where('id_empresa', $empresaId)
+                ->where('id_empresa', $empresaEfectivaId)
                 ->first();
 
             if (!$nuevoTipo) {
@@ -498,7 +510,10 @@ class ClienteFidelizacionController extends Controller
 
             DB::beginTransaction();
 
-            $cliente->update(['id_tipo_cliente' => $request->id_tipo_cliente]);
+            $cliente->update([
+                'id_tipo_cliente' => $request->id_tipo_cliente,
+                'nivel' => $nuevoTipo->nivel
+            ]);
 
             // Log de la acción
             Log::info("Cliente {$cliente->id} cambió de tipo a {$nuevoTipo->nombre_efectivo}");

@@ -187,35 +187,39 @@
                 <i class="fa fa-cog me-2"></i>Configuración Básica
               </h6>
               
-              <!-- Tipo Base -->
+              <!-- Nivel (concepto principal: Standard, VIP, Ultra VIP o Personalizado) -->
               <div class="mb-3">
-                <label class="form-label">Tipo Base</label>
-                <select class="form-select" [(ngModel)]="formData.id_tipo_base" name="id_tipo_base">
-                  <option value="">Seleccionar tipo base</option>
-                  <option *ngFor="let tipoBase of tiposBase" [value]="tipoBase.id">
-                    {{ tipoBase.nombre }} - {{ tipoBase.descripcion }}
+                <label class="form-label">Nivel</label>
+                <select class="form-select" [ngModel]="nivelSeleccionado" (ngModelChange)="onNivelSeleccionadoChange($event)"
+                  name="nivelSeleccionado" required>
+                  <option [ngValue]="null" disabled>Seleccionar nivel</option>
+                  <option *ngFor="let tipoBase of tiposBase" [ngValue]="tipoBase.id">
+                    {{ tipoBase.nombre }} — {{ tipoBase.descripcion }}
                   </option>
+                  <option [ngValue]="'personalizado'">Personalizado — Crear tipo con nombre propio</option>
                 </select>
-                <small class="form-text text-muted">
-                  Dejar vacío para crear un tipo personalizado
+                <small class="form-text text-muted" *ngIf="nivelSeleccionado && nivelSeleccionado !== 'personalizado'">
+                  Nivel {{ formData.nivel }} asignado automáticamente según el tipo seleccionado
                 </small>
               </div>
 
-              <!-- Nivel -->
-              <div class="mb-3">
-                <label class="form-label">Nivel</label>
+              <!-- Nivel y Nombre (solo cuando es Personalizado) -->
+              <div class="mb-3" *ngIf="nivelSeleccionado === 'personalizado'">
+                <label class="form-label">Nivel de beneficios</label>
                 <select class="form-select" [(ngModel)]="formData.nivel" name="nivel" required>
-                  <option value="1">1 - Standard</option>
-                  <option value="2">2 - VIP</option>
-                  <option value="3">3 - Ultra VIP</option>
+                  <option value="1">1 - Standard (beneficios básicos)</option>
+                  <option value="2">2 - VIP (beneficios premium)</option>
+                  <option value="3">3 - Ultra VIP (máximos beneficios)</option>
                 </select>
+                <small class="form-text text-muted">
+                  Define qué nivel de beneficios tendrá este tipo personalizado
+                </small>
               </div>
 
-              <!-- Nombre Personalizado -->
-              <div class="mb-3" *ngIf="!formData.id_tipo_base">
-                <label class="form-label">Nombre Personalizado</label>
+              <div class="mb-3" *ngIf="nivelSeleccionado === 'personalizado'">
+                <label class="form-label">Nombre del tipo</label>
                 <input type="text" class="form-control" [(ngModel)]="formData.nombre_personalizado"
-                  name="nombre_personalizado" placeholder="Ej: Cliente Premium">
+                  name="nombre_personalizado" placeholder="Ej: Cliente Mayorista" required>
               </div>
 
               <!-- Por Defecto -->
@@ -289,8 +293,8 @@
               </div>
             </div>
 
-            <!-- Columna 3: Configuración Avanzada -->
-            <div class="col-md-4">
+            <!-- Columna 3: Configuración Avanzada (oculta hasta que esté lista) -->
+            <div class="col-md-4" *ngIf="mostrarConfiguracionAvanzada">
               <h6 class="text-warning border-bottom pb-2 mb-3">
                 <i class="fa fa-magic me-2"></i>Configuración Avanzada
               </h6>

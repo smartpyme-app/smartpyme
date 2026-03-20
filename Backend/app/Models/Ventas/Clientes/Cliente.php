@@ -45,6 +45,7 @@ class Cliente extends Model {
        'etiquetas',
        'id_usuario',
        'id_empresa',
+       'nivel',
        'id_tipo_cliente',
        'id_vendedor',
        'habilita_credito',
