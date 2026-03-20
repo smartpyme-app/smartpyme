@@ -358,17 +358,17 @@
             </tfoot>
         </table>
 
-        <table style="margin-top: 50px; width: 100%; border-collapse: collapse;">
+        <table style="margin-top: 50px; width: 100%; border-collapse: collapse; border: none;">
             <tr>
-                <td style="width: 50%; vertical-align: top; padding-right: 20px;">
-                    <span style="display: block; margin-bottom: 5px;">Firma:</span>
+                <td style="width: 50%; vertical-align: top; padding-right: 20px; border: none;">
                     @if ($venta->empresa()->pluck('logo')->first())
-                        <img style="height: 90px;" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Firma">
+                    <img style="height: 90px;" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Firma">
                     @endif
+                    <span style="display: block; margin-bottom: 5px;">Firma:</span>
                 </td>
-                <td style="width: 50%; vertical-align: top; text-align: right;">
+                <td style="width: 50%; vertical-align: top; text-align: right; border: none;">
+                    <div style="height: 90px; min-width: 200px; margin-left: auto;"></div>
                     <span style="display: block; margin-bottom: 5px;">Firma del cliente:</span>
-                    <div style="height: 90px; border-bottom: 1px solid black; min-width: 200px; margin-left: auto;"></div>
                 </td>
             </tr>
         </table>
