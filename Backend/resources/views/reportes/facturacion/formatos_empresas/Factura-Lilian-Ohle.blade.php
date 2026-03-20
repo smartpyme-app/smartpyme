@@ -180,6 +180,11 @@
             page-break-inside: avoid;
         }
 
+        /* Tabla de firmas sin bordes */
+        #firmas, #firmas tbody, #firmas tr, #firmas td, #firmas th {
+            border: none !important;
+        }
+
         /* Espaciado adicional para el contenido de la tabla */
         #productos {
             border-spacing: 0;
@@ -358,7 +363,7 @@
             </tfoot>
         </table>
 
-        <table style="margin-top: 50px; width: 100%; border-collapse: collapse; border: none;">
+        <table id="firmas" style="margin-top: 50px; width: 100%; border-collapse: collapse;">
             <tr>
                 <td style="width: 50%; vertical-align: top; padding-right: 20px; border: none;">
                     @if ($venta->empresa()->pluck('logo')->first())
@@ -367,7 +372,7 @@
                     <span style="display: block; margin-bottom: 5px;">Firma:</span>
                 </td>
                 <td style="width: 50%; vertical-align: top; text-align: right; border: none;">
-                    <div style="height: 90px; min-width: 200px; margin-left: auto;"></div>
+                    <div style="height: 90px; min-width: 200px; margin-left: auto;">____________________________</div>
                     <span style="display: block; margin-bottom: 5px;">Firma del cliente:</span>
                 </td>
             </tr>
