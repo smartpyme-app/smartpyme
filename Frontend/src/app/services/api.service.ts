@@ -22,6 +22,8 @@ export class ApiService {
 
     getToUrl(url:string) {return this.http.get<any>(url).pipe(retry(0), catchError(this.handleError) )}
 
+    getAsText(url: string): Observable<string> {return this.http.get(this.apiUrl + url, { responseType: 'text' }).pipe(retry(0), catchError(this.handleError)); }
+
     getAll(url:string, filtros:any = {}) {return this.http.get<any>(this.apiUrl + url, { params: filtros }).pipe(retry(0), catchError(this.handleError) )}
 
     read(url:string, id: number) {return this.http.get<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
@@ -39,6 +41,8 @@ export class ApiService {
     }
 
     update(url: string, id: number, model: any) {return this.http .put<any>(`${this.apiUrl}${url}/${id}`, model) .pipe(retry(0), catchError(this.handleError)); }
+
+    putToUrl(url: string, model: any) {return this.http.put<any>(this.apiUrl + url, model).pipe(retry(0), catchError(this.handleError)); }
 
     delete(url:string, id: number) {return this.http.delete<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
 

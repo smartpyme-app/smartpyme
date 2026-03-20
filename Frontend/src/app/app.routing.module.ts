@@ -107,6 +107,11 @@ const routes: Routes = [
         {
           path: '',
           loadChildren: () => import('./views/fidelizacion/fidelizacion.module').then(m => m.FidelizacionModule),
+        },
+        // Restaurante
+        {
+          path: '',
+          loadChildren: () => import('./views/restaurante/restaurante.module').then(m => m.RestauranteModule),
         }
       ]
     },

@@ -73,5 +73,6 @@ class Kernel extends HttpKernel
         'limite.usuarios' => \App\Http\Middleware\LimiteUsuarios::class,
         'limite.sucursales' => \App\Http\Middleware\LimiteSucursales::class,
         'external.api' => \App\Http\Middleware\ExternalApiAuth::class,
+        'verificar.funcionalidad' => \App\Http\Middleware\VerificarAccesoFuncionalidad::class,
     ];
 }

@@ -33,6 +33,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     public notificaciones: any = [];
     public authUser: any = {};
     public tieneFidelizacionHabilitada: boolean = false;
+    public tieneModuloRestaurante: boolean = false;
+    public restauranteIsCollapsed: boolean = true;
 
     searchControl = new FormControl();
 
@@ -89,6 +91,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }else{
             this.licenciasIsCollapsed = JSON.parse(localStorage.getItem('licenciasIsCollapsed')!);
         }
+        if (!localStorage.getItem('restauranteIsCollapsed')) {
+            localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
+        } else {
+            this.restauranteIsCollapsed = JSON.parse(localStorage.getItem('restauranteIsCollapsed')!);
+        }
         this.usuario = this.apiService.auth_user();
 
         this.searchControl.valueChanges
@@ -106,6 +113,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.loadNotificaciones();
         this.usuarioLogueado();
         this.verificarFidelizacionHabilitada();
+        this.verificarModuloRestauranteHabilitado();
         
         // Suscribirse a cambios de ruta para verificar funcionalidades cuando el usuario cambie
         this.router.events
@@ -116,6 +124,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
                 if (currentUser && (!this.authUser || this.authUser.id !== currentUser.id)) {
                     this.usuarioLogueado();
                     this.verificarFidelizacionHabilitada();
+                    this.verificarModuloRestauranteHabilitado();
                 }
             });
     }
@@ -230,6 +239,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.toggleSidebarMenu();
     }
 
+    toggleRestaurante() {
+        if (this.restauranteIsCollapsed) {
+            this.closeAll();
+        }
+        this.restauranteIsCollapsed = !this.restauranteIsCollapsed;
+        localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
 
     toggleSidebarMenu() {
         if (this.sidebarCollapsed) {
@@ -255,6 +273,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
         localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
         this.lealtadClientesIsCollapsed = true;
         localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        this.restauranteIsCollapsed = true;
+        localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
     }
 
     public onSubmit(){
@@ -285,6 +305,18 @@ export class SidebarComponent implements OnInit, OnDestroy {
             error: (error) => {
                 console.error('Error al verificar acceso a fidelización:', error);
                 this.tieneFidelizacionHabilitada = false;
+            }
+        });
+    }
+
+    private verificarModuloRestauranteHabilitado() {
+        this.funcionalidadesService.verificarAcceso('modulo-restaurante').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneModuloRestaurante = tieneAcceso;
+            },
+            error: (error) => {
+                console.error('Error al verificar acceso a módulo restaurante:', error);
+                this.tieneModuloRestaurante = false;
             }
         });
     }

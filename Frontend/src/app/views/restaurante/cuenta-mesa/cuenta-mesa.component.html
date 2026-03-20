@@ -1,0 +1,216 @@
+<div class="container-fluid py-4">
+  <div class="row mb-3">
+    <div class="col">
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="volver()">
+        <i class="fa fa-arrow-left me-1"></i> Volver al mapa
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="text-center py-5">
+    <span class="spinner-border spinner-border-sm me-2"></span> Cargando cuenta...
+  </div>
+
+  <div *ngIf="!loading && sesion" class="row">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h5 class="mb-0">
+              Mesa {{ sesion.mesa?.numero }}
+              <span class="badge ms-2" [class.bg-warning]="sesion.estado === 'abierta'" [class.bg-info]="sesion.estado === 'pre_cuenta'">
+                {{ sesion.estado === 'abierta' ? 'Abierta' : 'Pre-cuenta' }}
+              </span>
+            </h5>
+            <div class="small text-muted mt-1">
+              <span>{{ sesion.num_comensales }} comensales</span>
+              <span class="ms-2">•</span>
+              <span>{{ tiempoTranscurrido() }}</span>
+              <span *ngIf="sesion.mesero" class="ms-2">• Mesero: {{ sesion.mesero?.name || sesion.mesero?.email || '-' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3" *ngIf="sesion.observaciones">
+            <strong>Observaciones:</strong> {{ sesion.observaciones }}
+          </p>
+
+          <div class="mb-4" *ngIf="sesion.estado === 'abierta'">
+            <label class="form-label">Agregar producto</label>
+            <app-buscador-productos (selectProducto)="onProductoSelect($event)"></app-buscador-productos>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th class="text-center" style="width:90px">Cantidad</th>
+                  <th class="text-end" style="width:90px">Precio</th>
+                  <th class="text-end" style="width:90px">Subtotal</th>
+                  <th class="text-center" style="width:80px" *ngIf="sesion.estado === 'abierta'">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of sesion.orden_detalle">
+                  <td>
+                    <span *ngIf="item.enviado_cocina" class="badge bg-success me-1">Cocina</span>
+                    <span *ngIf="editandoItemId !== item.id">{{ item.producto?.nombre }}</span>
+                    <span *ngIf="editandoItemId === item.id">{{ item.producto?.nombre }}</span>
+                    <small class="text-muted d-block" *ngIf="editandoItemId !== item.id && item.notas">{{ item.notas }}</small>
+                    <input *ngIf="editandoItemId === item.id" type="text" class="form-control form-control-sm mt-1" placeholder="Nota (opcional)"
+                      [(ngModel)]="editNotas" (keydown.enter)="guardarEdicion()">
+                  </td>
+                  <td class="text-center">
+                    <span *ngIf="editandoItemId !== item.id">{{ item.cantidad }}</span>
+                    <input *ngIf="editandoItemId === item.id" type="number" class="form-control form-control-sm" min="0.01" step="0.01"
+                      [(ngModel)]="editCantidad" (keydown.enter)="guardarEdicion()">
+                  </td>
+                  <td class="text-end">{{ item.precio_unitario | currency }}</td>
+                  <td class="text-end">{{ (item.cantidad * item.precio_unitario) | currency }}</td>
+                  <td class="text-center" *ngIf="sesion.estado === 'abierta'">
+                    <span *ngIf="editandoItemId !== item.id">
+                      <button type="button" class="btn btn-sm btn-outline-secondary me-1" (click)="iniciarEditar(item)" title="Editar">
+                        <i class="fa fa-pencil-alt"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="eliminarItem(item)" title="Eliminar">
+                        <i class="fa fa-trash"></i>
+                      </button>
+                    </span>
+                    <span *ngIf="editandoItemId === item.id">
+                      <button type="button" class="btn btn-sm btn-success me-1" (click)="guardarEdicion()">
+                        <i class="fa fa-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelarEdicion()">
+                        <i class="fa fa-times"></i>
+                      </button>
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="!sesion.orden_detalle?.length">
+                  <td colspan="5" class="text-center text-muted py-4">
+                    No hay ítems en la orden. Busque y agregue productos arriba.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm sticky-top">
+        <div class="card-body">
+          <h6 class="mb-3">Resumen</h6>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal</span>
+            <strong>{{ subtotal() | currency }}</strong>
+          </div>
+          <hr>
+          <div class="d-grid gap-2" *ngIf="sesion.estado === 'abierta'">
+            <button type="button" class="btn btn-outline-primary" [disabled]="!hayItemsPendientes || enviandoComanda"
+              (click)="enviarACocina()">
+              <span *ngIf="!enviandoComanda"><i class="fa fa-utensils me-2"></i>Enviar a cocina</span>
+              <span *ngIf="enviandoComanda">Enviando...</span>
+            </button>
+            <button type="button" class="btn btn-primary" [disabled]="!sesion.orden_detalle?.length || solicitandoCuenta"
+              (click)="abrirModalSolicitarCuenta()">
+              <span *ngIf="!solicitandoCuenta"><i class="fa fa-file-invoice me-2"></i>Solicitar cuenta</span>
+              <span *ngIf="solicitandoCuenta">Procesando...</span>
+            </button>
+          </div>
+          <div *ngIf="sesion.estado === 'pre_cuenta'">
+            <h6 class="mb-2">Pre-cuentas</h6>
+            <div class="list-group list-group-flush mb-2" *ngIf="preCuentas.length">
+              <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0" *ngFor="let pc of preCuentas">
+                <span>
+                  {{ pc.numero_pre_cuenta }} — {{ pc.total | currency }}
+                  <span class="badge bg-success ms-1" *ngIf="pc.estado === 'facturada'">Facturada</span>
+                </span>
+                <span class="d-flex gap-1">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="imprimirPreCuenta(pc.id)" title="Imprimir">
+                    <i class="fa fa-print"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-primary" *ngIf="pc.estado === 'pendiente'"
+                    (click)="irAFacturar(pc.id)" title="Facturar">
+                    <i class="fa fa-file-invoice-dollar"></i> Facturar
+                  </button>
+                </span>
+              </div>
+            </div>
+            <p class="small text-muted mb-0" *ngIf="!preCuentas.length">Cargando pre-cuentas...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Solicitar cuenta -->
+<div class="modal fade" [class.show]="mostrarModalCuenta" [class.d-block]="mostrarModalCuenta" tabindex="-1" *ngIf="mostrarModalCuenta"
+  (click)="solicitandoCuenta ? null : cerrarModalCuenta()" style="background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-content shadow">
+      <div class="modal-header">
+        <h5 class="modal-title">Solicitar cuenta</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalCuenta()" [disabled]="solicitandoCuenta" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3"><strong>¿Cómo desea cobrar?</strong></p>
+        <div class="solicitar-cuenta-opciones mb-4">
+          <label class="solicitar-cuenta-opcion" [class.opcion-seleccionada]="modoCuenta === 'completo'">
+            <input type="radio" name="modoCuenta" value="completo" [(ngModel)]="modoCuenta">
+            <span class="opcion-texto">Cobro completo (una sola cuenta)</span>
+          </label>
+          <label class="solicitar-cuenta-opcion" [class.opcion-seleccionada]="modoCuenta === 'dividir'">
+            <input type="radio" name="modoCuenta" value="dividir" [(ngModel)]="modoCuenta">
+            <span class="opcion-texto">Dividir cuenta</span>
+          </label>
+        </div>
+
+        <div *ngIf="modoCuenta === 'dividir'" class="solicitar-cuenta-dividir">
+          <p class="mb-2"><strong>Tipo de división</strong></p>
+          <div class="solicitar-cuenta-opciones mb-3">
+            <label class="solicitar-cuenta-opcion" [class.opcion-seleccionada]="tipoDivision === 'equitativa'">
+              <input type="radio" name="tipoDiv" value="equitativa" [(ngModel)]="tipoDivision">
+              <span class="opcion-texto">Equitativa: repartir el total entre N personas</span>
+            </label>
+            <label class="solicitar-cuenta-opcion" [class.opcion-seleccionada]="tipoDivision === 'por_items'">
+              <input type="radio" name="tipoDiv" value="por_items" [(ngModel)]="tipoDivision">
+              <span class="opcion-texto">Por ítems: asignar cada producto a una persona</span>
+            </label>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Número de personas</label>
+            <input type="number" class="form-control form-control-sm" min="2" max="20" [(ngModel)]="numPagadores" style="width: 100px;">
+          </div>
+          <div *ngIf="tipoDivision === 'por_items'" class="mt-3">
+            <label class="form-label">Asignar cada ítem a:</label>
+            <div class="table-responsive" style="max-height: 180px; overflow-y: auto;">
+              <table class="table table-sm table-bordered mb-0 bg-white">
+                <tbody>
+                  <tr *ngFor="let item of sesion?.orden_detalle">
+                    <td class="align-middle">{{ item.producto?.nombre }} ({{ item.cantidad }}x)</td>
+                    <td style="width: 140px;">
+                      <select class="form-select form-select-sm" [(ngModel)]="asignacionesPorItem[item.id]">
+                        <option *ngFor="let n of opcionesPagadores" [value]="n">Persona {{ n }}</option>
+                      </select>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="cerrarModalCuenta()" [disabled]="solicitandoCuenta">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmarSolicitarCuenta()" [disabled]="solicitandoCuenta">
+          <span *ngIf="!solicitandoCuenta">Confirmar</span>
+          <span *ngIf="solicitandoCuenta">Procesando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

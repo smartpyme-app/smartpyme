@@ -7,6 +7,7 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
@@ -46,6 +47,10 @@ export class FacturacionComponent implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  /** Pre-cuenta restaurante: al facturar desde cuenta-mesa */
+  preCuentaId: number | null = null;
+  sesionId: number | null = null;
+
   // Información de puntos canjeados
   public puntosCanjeados: number = 0;
   public descuentoPuntos: number = 0;
@@ -84,7 +89,8 @@ export class FacturacionComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private fidelizacionService: FidelizacionService,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private restauranteService: RestauranteService
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
@@ -331,6 +337,44 @@ export class FacturacionComponent implements OnInit {
       this.venta.cotizacion = 1;
       this.venta.estado = 'Pendiente';
         this.venta.observaciones = this.venta.id_empresa == 2 ? 'Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \nPagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \nDisponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \nPropiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \nLimitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \nDuración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \nSituaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \nRenovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \nPolítica de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \nBrindar capacitaciones y soporte técnico a usuarios de negocios. \nGarantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \nOfrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\nBrindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
+    }
+
+    // Pre-cuenta restaurante: state o queryParams (respaldo por si state se pierde)
+    const navState = history.state as any;
+    const qp = this.route.snapshot.queryParamMap;
+    const preCuentaIdFromState = navState?.preCuentaId;
+    const preCuentaIdFromQuery = qp.get('pre_cuenta');
+    const preCuentaIdVal = preCuentaIdFromState ?? (preCuentaIdFromQuery ? +preCuentaIdFromQuery : null);
+    if (preCuentaIdVal) {
+      this.preCuentaId = preCuentaIdVal;
+      this.sesionId = navState?.sesionId ?? (qp.get('sesion') ? +qp.get('sesion')! : null);
+      const detalles = navState?.preCuentaData?.detalles ?? [];
+      if (detalles.length) {
+        const iva = this.apiService.auth_user()?.empresa?.iva ?? 0;
+        this.venta.observaciones = ((this.venta.observaciones || '') + ' Mesa ' + (navState.preCuentaData.mesa_numero || '')).trim();
+        this.venta.detalles = detalles.map((d: any) => {
+          const sub = (d.cantidad || 0) * (parseFloat(d.precio) || 0);
+          return {
+            id_producto: d.id_producto,
+            cantidad: d.cantidad,
+            precio: parseFloat(d.precio).toFixed(4),
+            descripcion: d.descripcion || '',
+            costo: 0,
+            descuento: 0,
+            descuento_porcentaje: 0,
+            sub_total: sub.toFixed(4),
+            total: sub.toFixed(4),
+            tipo_gravado: 'gravada',
+            porcentaje_impuesto: iva,
+            gravada: 0,
+            exenta: 0,
+            no_sujeta: 0,
+            iva: 0,
+          };
+        });
+        this.normalizarDetallesTipoGravado(this.venta);
+        this.sumTotal();
+      }
     }
 
     // Para editar cotizaciones Pre-venta
@@ -1040,6 +1084,26 @@ export class FacturacionComponent implements OnInit {
         });
     }
 
+    private navegarPostFacturaPreCuenta(ventaId: number) {
+        if (!this.preCuentaId) {
+            this.alertService.warning('No se pudo vincular la pre-cuenta', 'ID de pre-cuenta no disponible.');
+            this.router.navigate(['/restaurante']);
+            return;
+        }
+        this.restauranteService.marcarPreCuentaFacturada(this.preCuentaId, ventaId).subscribe({
+            next: (res: any) => {
+                const dest = res?.sesion_cerrada ? ['/restaurante'] : (this.sesionId ? ['/restaurante/cuenta', this.sesionId] : ['/restaurante']);
+                this.router.navigate(dest);
+                this.alertService.success('Factura creada', res?.sesion_cerrada ? 'Pre-cuenta facturada. Mesa liberada.' : 'Pre-cuenta marcada como facturada.');
+            },
+            error: (err) => {
+                const msg = err?.error?.error || err?.error?.message || err?.message || err;
+                this.alertService.error(msg ?? 'Error al marcar pre-cuenta como facturada');
+                this.router.navigate(['/restaurante']);
+            }
+        });
+    }
+
   public onFacturar() {
     // Validar que si el método de pago requiere banco, este esté seleccionado
     this.mensajeErrorBanco = '';
@@ -1142,9 +1206,13 @@ export class FacturacionComponent implements OnInit {
               'Impresión',
               'width=400'
             );
-            this.cargarDatosIniciales();
-            this.loadData();
-            this.router.navigate(['/venta/crear']);
+            if (this.preCuentaId && this.venta.id) {
+              this.navegarPostFacturaPreCuenta(this.venta.id);
+            } else {
+              this.cargarDatosIniciales();
+              this.loadData();
+              this.router.navigate(['/venta/crear']);
+            }
           }
         } else {
           if (this.venta.cotizacion == 1) {
@@ -1153,6 +1221,8 @@ export class FacturacionComponent implements OnInit {
               'Cotización creada',
               'La cotizacion fue añadida exitosamente.'
             );
+          } else if (this.preCuentaId && this.venta.id) {
+            this.navegarPostFacturaPreCuenta(this.venta.id);
           } else {
             this.router.navigate(['/ventas']);
             this.alertService.success(
@@ -1224,8 +1294,12 @@ export class FacturacionComponent implements OnInit {
           'Impresión',
           'width=400'
         );
-        this.cargarDatosIniciales();
-        this.router.navigate(['/venta/crear']);
+        if (this.preCuentaId && this.venta.id) {
+          this.navegarPostFacturaPreCuenta(this.venta.id);
+        } else {
+          this.cargarDatosIniciales();
+          this.router.navigate(['/venta/crear']);
+        }
       })
       .catch((error) => {
         this.cargarDatosIniciales();
