@@ -358,18 +358,20 @@
             </tfoot>
         </table>
 
-        <div style="margin-top: 50px; overflow: hidden;">
-            <div style="float: left; width: 50%;">
-                <span style="display: block; margin-bottom: 5px;">Firma:</span>
-                @if ($venta->empresa()->pluck('logo')->first())
-                    <img style="height: 90px; margin-left: 0;" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Firma">
-                @endif
-            </div>
-            <div style="float: right; width: 50%; text-align: right;">
-                <span style="display: block; margin-bottom: 5px;">Firma del cliente:</span>
-                <div style="height: 90px; border-bottom: 1px solid black; display: inline-block; min-width: 200px;"></div>
-            </div>
-        </div>
+        <table style="margin-top: 50px; width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 50%; vertical-align: top; padding-right: 20px;">
+                    <span style="display: block; margin-bottom: 5px;">Firma:</span>
+                    @if ($venta->empresa()->pluck('logo')->first())
+                        <img style="height: 90px;" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Firma">
+                    @endif
+                </td>
+                <td style="width: 50%; vertical-align: top; text-align: right;">
+                    <span style="display: block; margin-bottom: 5px;">Firma del cliente:</span>
+                    <div style="height: 90px; border-bottom: 1px solid black; min-width: 200px; margin-left: auto;"></div>
+                </td>
+            </tr>
+        </table>
 
         <h3 style="text-align: center; margin-top: 30px;">
             ¡Gracias por su Compra! <br>
