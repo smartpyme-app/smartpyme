@@ -365,15 +365,15 @@
 
         <table id="firmas" style="margin-top: 50px; width: 100%; border-collapse: collapse;">
             <tr>
-                <td style="width: 50%; vertical-align: top; padding-right: 20px; border: none;">
+                <td style="width: 50%; vertical-align: bottom; padding-right: 20px; border: none;">
                     @if ($venta->empresa()->pluck('logo')->first())
                     <img style="height: 90px;" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Firma">
                     @endif
                     <span style="display: block; margin-bottom: 5px;">Firma:</span>
                 </td>
-                <td style="width: 50%; vertical-align: top; text-align: right; border: none;">
-                    <div style="height: 90px; min-width: 200px; margin-left: auto;">____________________________</div>
-                    <span style="display: block; margin-bottom: 5px;">Firma del cliente:</span>
+                <td style="width: 50%; vertical-align: bottom; text-align: right; border: none;">
+                    ____________________________<br>
+                    Firma del cliente
                 </td>
             </tr>
         </table>
