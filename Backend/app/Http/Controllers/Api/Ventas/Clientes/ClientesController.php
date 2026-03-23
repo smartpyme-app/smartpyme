@@ -26,9 +26,13 @@ use PgSql\Lob;
 
 class ClientesController extends Controller
 {
-    public function __construct(
-        protected LicenciaFidelizacionService $licenciaFidelizacionService
-    ) {}
+    /** @var LicenciaFidelizacionService */
+    protected $licenciaFidelizacionService;
+
+    public function __construct(LicenciaFidelizacionService $licenciaFidelizacionService)
+    {
+        $this->licenciaFidelizacionService = $licenciaFidelizacionService;
+    }
 
     public function index(Request $request)
     {

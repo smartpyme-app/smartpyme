@@ -38,14 +38,47 @@ class TipoClienteEmpresaController extends Controller
                 ], 400);
             }
 
-            // Obtener parámetros de paginación
+            // Obtener parámetros de paginación y filtros
             $perPage = (int) $request->input('paginate', 25);
             $page = (int) $request->input('page', 1);
 
             $query = TipoClienteEmpresa::with(['tipoBase'])
-                ->porEmpresaConLicencia($empresaId)
-                ->orderBy('nivel')
-                ->orderBy('created_at');
+                ->porEmpresaConLicencia($empresaId);
+
+            // Buscador: nombre personalizado, nombre/code del tipo base, nivel
+            if ($request->filled('search')) {
+                $term = $request->search;
+                $query->where(function ($q) use ($term) {
+                    $q->where('nombre_personalizado', 'like', "%{$term}%")
+                        ->orWhereHas('tipoBase', function ($sub) use ($term) {
+                            $sub->where('nombre', 'like', "%{$term}%")
+                                ->orWhere('code', 'like', "%{$term}%");
+                        });
+                    if (is_numeric($term)) {
+                        $q->orWhere('nivel', (int) $term);
+                    }
+                });
+            }
+
+            // Filtro por estado (Activo/Inactivo)
+            if ($request->filled('estado')) {
+                if ($request->estado === 'Activo') {
+                    $query->where('activo', true);
+                } elseif ($request->estado === 'Inactivo') {
+                    $query->where('activo', false);
+                }
+            }
+
+            // Filtro por tipo (Personalizado/Basado)
+            if ($request->filled('tipo')) {
+                if ($request->tipo === 'Personalizado') {
+                    $query->whereNull('id_tipo_base');
+                } elseif ($request->tipo === 'Basado') {
+                    $query->whereNotNull('id_tipo_base');
+                }
+            }
+
+            $query->orderBy('nivel')->orderBy('created_at');
 
             $tiposCliente = $query->paginate($perPage, ['*'], 'page', $page);
 
@@ -53,11 +86,19 @@ class TipoClienteEmpresaController extends Controller
             $tiposCliente->getCollection()->transform(function ($tipo) {
                 return [
                     'id' => $tipo->id,
+                    'id_tipo_base' => $tipo->id_tipo_base,
                     'nivel' => $tipo->nivel,
                     'nombre_efectivo' => $tipo->nombre_efectivo,
                     'descripcion_efectiva' => $tipo->descripcion_efectiva,
                     'code_efectivo' => $tipo->code_efectivo,
                     'activo' => $tipo->activo,
+                    'tipo_base' => $tipo->tipoBase ? [
+                        'id' => $tipo->tipoBase->id,
+                        'code' => $tipo->tipoBase->code,
+                        'nombre' => $tipo->tipoBase->nombre,
+                        'descripcion' => $tipo->tipoBase->descripcion,
+                        'orden' => $tipo->tipoBase->orden,
+                    ] : null,
                     'puntos_por_dolar' => $tipo->puntos_por_dolar,
                     'valor_punto' => $tipo->valor_punto,
                     'minimo_canje' => $tipo->minimo_canje,
@@ -289,8 +330,10 @@ class TipoClienteEmpresaController extends Controller
 
             DB::beginTransaction();
 
+            $idTipoBase = $request->filled('id_tipo_base') ? $request->id_tipo_base : $tipoCliente->id_tipo_base;
+
             $tipoCliente->update([
-                'id_tipo_base' => $request->id_tipo_base,
+                'id_tipo_base' => $idTipoBase,
                 'nivel' => $request->nivel,
                 'nombre_personalizado' => $request->nombre_personalizado,
                 'activo' => $request->activo ?? $tipoCliente->activo,

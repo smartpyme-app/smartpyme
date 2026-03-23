@@ -44,6 +44,7 @@ export interface ConfiguracionAvanzada {
   descuento_cumpleanos_porcentaje?: number;
   acceso_exclusivo?: boolean;
   soporte_prioritario?: boolean;
+  /** TODO: BENEFICIOS_EXCLUSIVOS - UI y lógica comentadas; implementar en backend */
   beneficios_exclusivos?: {
     descuento_maximo_adicional?: number;
     puntos_bienvenida_anual?: number;

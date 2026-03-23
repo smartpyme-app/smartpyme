@@ -75,6 +75,11 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
       this.filtros.nivel = queryParams['nivel'] ?? '';
       this.filtros.estado = queryParams['estado'] ?? '';
       this.filtros.buscador = queryParams['search'] ?? this.filtros.buscador;
+      this.filtros.orden = queryParams['order'] ?? this.filtros.orden;
+      this.filtros.direccion = queryParams['direction'] ?? this.filtros.direccion;
+      this.filtros.tipo_cliente = queryParams['tipo_cliente'] ?? '';
+      this.filtros.puntos_min = queryParams['puntos_min'] ?? '';
+      this.filtros.puntos_max = queryParams['puntos_max'] ?? '';
       this.pagination.current_page = parseInt(queryParams['page'] || '1', 10);
       this.loadClientes();
     });
@@ -88,10 +93,18 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
   }
 
   loadAll(): void {
-    // Limpiar filtros y recargar
+    // Limpiar todos los filtros y recargar
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { page: null, nivel: null, estado: null, search: null },
+      queryParams: {
+        page: null,
+        nivel: null,
+        estado: null,
+        search: null,
+        tipo_cliente: null,
+        puntos_min: null,
+        puntos_max: null
+      },
       queryParamsHandling: ''
     });
   }
@@ -277,6 +290,41 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Cambio de paginación: recargar con nuevo tamaño (sin depender de router)
+   */
+  onPaginateChange(): void {
+    this.pagination.current_page = 1;
+    this.loadClientes();
+  }
+
+  /**
+   * Limpiar solo los filtros avanzados (tipo, nivel, puntos, estado) sin afectar búsqueda ni orden
+   */
+  limpiarFiltrosAvanzados(): void {
+    this.filtros.tipo_cliente = '';
+    this.filtros.nivel = '';
+    this.filtros.puntos_min = '';
+    this.filtros.puntos_max = '';
+    this.filtros.estado = '';
+    this.modalRef?.hide();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        page: 1,
+        nivel: null,
+        estado: null,
+        tipo_cliente: null,
+        puntos_min: null,
+        puntos_max: null,
+        search: this.filtros.buscador || null,
+        order: this.filtros.orden !== 'nombre' ? this.filtros.orden : null,
+        direction: this.filtros.orden !== 'nombre' ? this.filtros.direccion : null
+      },
+      queryParamsHandling: ''
+    });
+  }
+
+  /**
    * Filtrar clientes - actualiza URL con queryParams para que la petición incluya los filtros
    */
   filtrarClientes(): void {
@@ -288,7 +336,12 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
         page: 1,
         nivel: this.filtros.nivel || null,
         estado: this.filtros.estado !== '' && this.filtros.estado != null ? this.filtros.estado : null,
-        search: this.filtros.buscador || null
+        search: this.filtros.buscador || null,
+        order: this.filtros.orden !== 'nombre' ? this.filtros.orden : null,
+        direction: this.filtros.orden !== 'nombre' ? this.filtros.direccion : null,
+        tipo_cliente: this.filtros.tipo_cliente || null,
+        puntos_min: this.filtros.puntos_min || null,
+        puntos_max: this.filtros.puntos_max || null
       },
       queryParamsHandling: ''
     });
@@ -317,9 +370,10 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
       // Si es la misma columna, cambiar dirección
       this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
     } else {
-      // Si es una columna diferente, establecer como ascendente por defecto
+      // Puntos: por defecto DESC para que los que tienen más aparezcan primero
+      const defaulDesc = ['puntos_disponibles', 'puntos_acumulados'].includes(columna);
       this.filtros.orden = columna;
-      this.filtros.direccion = 'asc';
+      this.filtros.direccion = defaulDesc ? 'desc' : 'asc';
     }
     this.filtrarClientes();
   }
@@ -359,7 +413,14 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
     if (page >= 1 && page <= this.pagination.last_page) {
       this.router.navigate([], {
         relativeTo: this.route,
-        queryParams: { page, nivel: this.filtros.nivel || null, estado: this.filtros.estado || null, search: this.filtros.buscador || null },
+        queryParams: {
+          page,
+          nivel: this.filtros.nivel || null,
+          estado: this.filtros.estado || null,
+          search: this.filtros.buscador || null,
+          order: this.filtros.orden !== 'nombre' ? this.filtros.orden : null,
+          direction: this.filtros.orden !== 'nombre' ? this.filtros.direccion : null
+        },
         queryParamsHandling: ''
       });
     }

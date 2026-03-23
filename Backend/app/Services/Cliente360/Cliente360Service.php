@@ -4,6 +4,7 @@ namespace App\Services\Cliente360;
 
 use App\Models\Ventas\Clientes\Cliente;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class Cliente360Service
 {
@@ -26,7 +27,7 @@ class Cliente360Service
 
         // Usar tablas agregadas - SIN FALLBACKS PESADOS
         $ventasMetrics = $this->getVentasMetrics($id_cliente);
-        $fidelizacionData = $this->getFidelizacionData($id_cliente);
+        $fidelizacionData = $this->getFidelizacionData($id_cliente, $cliente->id_empresa ?? null);
         $transacciones = $this->getTransacciones($id_cliente);
         $topProducts = $this->getTopProducts($id_cliente);
         $ventasMensuales = $this->getVentasMensuales($id_cliente);
@@ -56,33 +57,41 @@ class Cliente360Service
             return $this->getEmptyMetrics();
         }
 
+        $m = (array) $metricas;
+
         return [
-            'clv' => $metricas->total_gastado,
-            'averagePurchase' => $metricas->ticket_promedio,
-            'healthScore' => $metricas->health_score,
-            'recency' => $metricas->dias_ultima_compra,
-            'frequency' => $metricas->compras_ultimos_12_meses,
-            'monetary' => $metricas->gasto_ultimos_12_meses,
-            'totalVentas' => $metricas->total_gastado,
-            'cantidadVentas' => $metricas->total_compras,
-            'segmento' => $metricas->segmento_rfm,
-            'clasificacion_abc' => $metricas->clasificacion_abc,
-            'tendencia_consumo' => $metricas->tendencia_consumo,
-            'porcentaje_tendencia' => $metricas->porcentaje_tendencia,
-            'recency_score' => $metricas->recency_score,
-            'frequency_score' => $metricas->frequency_score,
-            'monetary_score' => $metricas->monetary_score
+            'clv' => $m['total_gastado'] ?? 0,
+            'averagePurchase' => $m['ticket_promedio'] ?? 0,
+            'healthScore' => $m['health_score'] ?? 0,
+            'recency' => $m['dias_ultima_compra'] ?? null,
+            'frequency' => $m['compras_ultimos_12_meses'] ?? 0,
+            'monetary' => $m['gasto_ultimos_12_meses'] ?? 0,
+            'totalVentas' => $m['total_gastado'] ?? 0,
+            'cantidadVentas' => $m['total_compras'] ?? 0,
+            'segmento' => $m['segmento_rfm'] ?? 'New',
+            'clasificacion_abc' => $m['clasificacion_abc'] ?? '',
+            'tendencia_consumo' => $m['tendencia_consumo'] ?? '',
+            'porcentaje_tendencia' => $m['porcentaje_tendencia'] ?? 0,
+            'recency_score' => $m['recency_score'] ?? 0,
+            'frequency_score' => $m['frequency_score'] ?? 0,
+            'monetary_score' => $m['monetary_score'] ?? 0
         ];
     }
 
     /**
      * Obtener datos de fidelización desde snapshot (SIN FALLBACK PESADO)
+     * Si la tabla tiene id_empresa, filtra por la empresa del cliente.
      */
-    private function getFidelizacionData($id_cliente)
+    private function getFidelizacionData($id_cliente, $id_empresa = null)
     {
-        $snapshot = DB::table('cliente_fidelizacion_snapshot')
-            ->where('id_cliente', $id_cliente)
-            ->first();
+        $query = DB::table('cliente_fidelizacion_snapshot')
+            ->where('id_cliente', $id_cliente);
+
+        if ($id_empresa && Schema::hasColumn('cliente_fidelizacion_snapshot', 'id_empresa')) {
+            $query->where('id_empresa', $id_empresa);
+        }
+
+        $snapshot = $query->first();
 
         if (!$snapshot) {
             return $this->getEmptyFidelizacion();

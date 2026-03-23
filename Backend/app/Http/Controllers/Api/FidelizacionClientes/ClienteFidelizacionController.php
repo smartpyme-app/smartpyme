@@ -40,8 +40,8 @@ class ClienteFidelizacionController extends Controller
                 'direction' => 'in:asc,desc',
                 'tipo_cliente' => 'string|max:50',
                 'nivel' => 'sometimes|integer|min:1|max:3',
-                'puntos_min' => 'integer|min:0',
-                'puntos_max' => 'integer|min:0',
+                'puntos_min' => 'sometimes|nullable|integer|min:0',
+                'puntos_max' => 'sometimes|nullable|integer|min:0',
                 'estado' => 'boolean'
             ]);
 
@@ -69,8 +69,9 @@ class ClienteFidelizacionController extends Controller
             // Aplicar todos los filtros
             $query = $this->aplicarFiltros($query, $request, $empresaId, $empresa);
             
-            // Aplicar ordenamiento
-            $query = $this->aplicarOrdenamiento($query, $order, $direction, $empresaId);
+            // Empresa efectiva para orden por puntos (debe coincidir con buildBaseQuery/puntosCliente)
+            $empresaEfectiva = $this->licenciaService->getEmpresaEfectiva($empresa);
+            $query = $this->aplicarOrdenamiento($query, $order, $direction, $empresaEfectiva->id);
 
             // Paginar resultados
             $clientes = $query->paginate($perPage, ['*'], 'page', $page);
@@ -136,14 +137,16 @@ class ClienteFidelizacionController extends Controller
     private function aplicarFiltros(Builder $query, Request $request, int $empresaId, $empresa = null): Builder
     {
         $nivel = $request->has('nivel') ? (int) $request->input('nivel') : null;
+        $empresaEfectiva = $empresa ? $this->licenciaService->getEmpresaEfectiva($empresa) : null;
+        $empresaPuntosId = $empresaEfectiva ? $empresaEfectiva->id : $empresaId;
 
         return $query
             ->when($request->search, fn($q) => $this->aplicarFiltrosBusqueda($q, $request->search))
             ->when($request->tipo_cliente, fn($q) => $q->where('clientes.tipo', $request->tipo_cliente))
             ->when($request->has('estado'), fn($q) => $q->where('clientes.enable', (bool) $request->estado))
             ->when($request->has('nivel') && $nivel >= 1 && $nivel <= 3, fn($q) => $q->where('clientes.nivel', $nivel))
-            ->when($request->puntos_min || $request->puntos_max, 
-                fn($q) => $this->aplicarFiltroPuntos($q, $request->puntos_min, $request->puntos_max, $empresaId)
+            ->when($request->puntos_min || $request->puntos_max,
+                fn($q) => $this->aplicarFiltroPuntos($q, $request->puntos_min, $request->puntos_max, $empresaPuntosId)
             );
     }
 
@@ -210,7 +213,7 @@ class ClienteFidelizacionController extends Controller
                          ->where('puntos_cliente.id_empresa', '=', $empresaId);
                 })
                 ->select('clientes.*')
-                ->orderBy('puntos_cliente.puntos_disponibles', $direction);
+                ->orderByRaw('COALESCE(puntos_cliente.puntos_disponibles, 0) ' . (strtolower($direction) === 'desc' ? 'DESC' : 'ASC'));
                 
             case 'puntos_acumulados':
                 return $query->leftJoin('puntos_cliente', function($join) use ($empresaId) {
@@ -218,7 +221,7 @@ class ClienteFidelizacionController extends Controller
                          ->where('puntos_cliente.id_empresa', '=', $empresaId);
                 })
                 ->select('clientes.*')
-                ->orderBy('puntos_cliente.puntos_totales_ganados', $direction);
+                ->orderByRaw('COALESCE(puntos_cliente.puntos_totales_ganados, 0) ' . (strtolower($direction) === 'desc' ? 'DESC' : 'ASC'));
                 
             case 'ultima_compra':
                 return $query->leftJoin('ventas', function($join) use ($empresaId) {

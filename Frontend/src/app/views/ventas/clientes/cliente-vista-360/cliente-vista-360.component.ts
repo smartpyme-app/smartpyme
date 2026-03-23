@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -87,6 +88,7 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     private modalService: BsModalService,
     private route: ActivatedRoute,
     private router: Router,
+    private location: Location,
     private formBuilder: FormBuilder,
     private cdr: ChangeDetectorRef
   ) { 
@@ -756,6 +758,10 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     } else {
       this.alertService.warning('warning','No se encontró dirección');
     }
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 
   editCliente(): void {

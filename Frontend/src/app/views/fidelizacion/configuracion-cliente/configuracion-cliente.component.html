@@ -140,7 +140,7 @@
                   <button type="button" (click)="openEditModal(tipo)" class="btn text-start border-0">
                     <i class="fa fa-fw fa-edit me-2"></i> Editar
                   </button>
-                  <button type="button" (click)="openUpgradeRulesModal(tipo)" class="btn text-start border-0">
+                  <button *ngIf="tipo.nivel < 3" type="button" (click)="openUpgradeRulesModal(tipo)" class="btn text-start border-0">
                     <i class="fa fa-fw fa-cog me-2"></i> Reglas de Upgrade
                     <span class="badge bg-primary ms-2"
                       *ngIf="tipo.configuracion_avanzada?.upgrade_automatico?.reglas?.length > 0">
@@ -227,11 +227,11 @@
                 <div class="">
                   <input class="form-check-input" type="checkbox" [(ngModel)]="formData.is_default" name="is_default">
                   <label class="form-check-label">
-                    Tipo por defecto para este nivel
+                    Tipo por defecto para la empresa
                   </label>
                 </div>
                 <small class="form-text text-muted">
-                  Solo puede haber un tipo por defecto por nivel
+                  Solo puede haber un tipo por defecto por empresa. Los clientes sin tipo asignado usarán este.
                 </small>
               </div>
             </div>
@@ -365,8 +365,8 @@
                 </div>
               </div>
 
-              <!-- Upgrade Automático -->
-              <div class="mb-3">
+              <!-- Upgrade Automático - solo para niveles 1 y 2 (no Ultra VIP ni personalizado nivel 3) -->
+              <div class="mb-3" *ngIf="formData.nivel < 3">
                 <div class="">
                   <input class="form-check-input" type="checkbox"
                     [(ngModel)]="formData.configuracion_avanzada.upgrade_automatico.habilitado"
@@ -382,67 +382,57 @@
             </div>
           </div>
 
-          <!-- Beneficios Exclusivos (solo para Ultra VIP) -->
+          <!-- TODO: BENEFICIOS_EXCLUSIVOS - Implementar cuando el backend aplique estas funcionalidades.
+              Buscar "BENEFICIOS_EXCLUSIVOS" en el proyecto para re-encontrar todo lo relacionado.
+              Funcionalidades pendientes: puntos_bienvenida_anual (job/cron), descuento_maximo_adicional (ventas),
+              acceso_eventos_vip, entrega_express_gratis, asistente_personal (informacional o integraciones). -->
+          <!--
           <div class="row mt-4" *ngIf="formData.nivel >= 3">
             <div class="col-12">
               <h6 class="text-info border-bottom pb-2 mb-3">
                 <i class="fa fa-crown me-2"></i>Beneficios Exclusivos (Ultra VIP)
               </h6>
             </div>
-
             <div class="col-md-4 mb-3">
               <label class="form-label">Descuento Máximo Adicional (%)</label>
               <input type="number" class="form-control"
                 [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.descuento_maximo_adicional"
                 name="descuento_maximo_adicional" min="0" max="50">
-              <small class="form-text text-muted">
-                Descuento adicional para clientes Ultra VIP
-              </small>
+              <small class="form-text text-muted">Descuento adicional para clientes Ultra VIP</small>
             </div>
-
             <div class="col-md-4 mb-3">
               <label class="form-label">Puntos Bienvenida Anual</label>
               <input type="number" class="form-control"
                 [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.puntos_bienvenida_anual"
                 name="puntos_bienvenida_anual" min="0">
-              <small class="form-text text-muted">
-                Puntos de bienvenida anuales
-              </small>
+              <small class="form-text text-muted">Puntos de bienvenida anuales</small>
             </div>
-
             <div class="col-md-4 mb-3">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox"
                   [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.acceso_eventos_vip"
                   name="acceso_eventos_vip">
-                <label class="form-check-label">
-                  Acceso a Eventos VIP
-                </label>
+                <label class="form-check-label">Acceso a Eventos VIP</label>
               </div>
             </div>
-
             <div class="col-md-4 mb-3">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox"
                   [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.entrega_express_gratis"
                   name="entrega_express_gratis">
-                <label class="form-check-label">
-                  Entrega Express Gratis
-                </label>
+                <label class="form-check-label">Entrega Express Gratis</label>
               </div>
             </div>
-
             <div class="col-md-4 mb-3">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox"
                   [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.asistente_personal"
                   name="asistente_personal">
-                <label class="form-check-label">
-                  Asistente Personal
-                </label>
+                <label class="form-check-label">Asistente Personal</label>
               </div>
             </div>
           </div>
+          -->
         </form>
       </div>
 

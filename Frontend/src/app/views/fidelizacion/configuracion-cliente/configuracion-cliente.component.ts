@@ -41,7 +41,8 @@ export class ConfiguracionClienteComponent implements OnInit {
     orden: 'nivel',
     direccion: 'asc',
     paginate: 25,
-    estado: ''
+    estado: '',
+    tipo: ''
   };
   
   // Propiedades para paginación
@@ -86,6 +87,9 @@ export class ConfiguracionClienteComponent implements OnInit {
   }
 
   loadAll(): void {
+    this.filtros.estado = '';
+    this.filtros.tipo = '';
+    this.pagination.current_page = 1;
     this.loadTiposCliente();
     this.loadTiposBase();
   }
@@ -104,7 +108,8 @@ export class ConfiguracionClienteComponent implements OnInit {
       ...(this.filtros.buscador && { search: this.filtros.buscador }),
       ...(this.filtros.orden && { order: this.filtros.orden }),
       ...(this.filtros.direccion && { direction: this.filtros.direccion }),
-      ...(this.filtros.estado && { estado: this.filtros.estado })
+      ...(this.filtros.estado && { estado: this.filtros.estado }),
+      ...(this.filtros.tipo && { tipo: this.filtros.tipo })
     };
     
     this.fidelizacionService.getTiposCliente(params).subscribe({
@@ -250,6 +255,7 @@ export class ConfiguracionClienteComponent implements OnInit {
         habilitado: true,
         reglas: []
       },
+      // TODO: BENEFICIOS_EXCLUSIVOS - Mantener estructura para compatibilidad; UI comentada en .html
       beneficios_exclusivos: {
         descuento_maximo_adicional: 0,
         puntos_bienvenida_anual: 0,
@@ -276,6 +282,7 @@ export class ConfiguracionClienteComponent implements OnInit {
       descuento_cumpleanos_porcentaje: config.descuento_cumpleanos_porcentaje,
       acceso_exclusivo: config.acceso_exclusivo || false,
       soporte_prioritario: config.soporte_prioritario || false,
+      // TODO: BENEFICIOS_EXCLUSIVOS - Mantener para compatibilidad; UI comentada
       beneficios_exclusivos: {
         descuento_maximo_adicional: config.beneficios_exclusivos?.descuento_maximo_adicional || 0,
         puntos_bienvenida_anual: config.beneficios_exclusivos?.puntos_bienvenida_anual || 0,
@@ -299,7 +306,6 @@ export class ConfiguracionClienteComponent implements OnInit {
       { value: 'puntos_acumulados', label: 'Puntos Acumulados', description: 'Basado en puntos acumulados' },
       { value: 'compras_periodo', label: 'Compras en Período', description: 'Basado en número de compras en un período' }
     ];
-    console.log('Tipos de reglas disponibles:', tipos);
     return tipos;
   }
 
@@ -730,7 +736,7 @@ export class ConfiguracionClienteComponent implements OnInit {
     this.fidelizacionService.toggleStatus(tipo.id).subscribe({
       next: (response) => {
         if (response.success) {
-          this.alertService.success('success','Estado actualizado exitosamente');
+          this.alertService.success('Exito','Estado actualizado exitosamente');
           this.loadTiposCliente();
         } else {
           this.alertService.error(response.message || 'Error al cambiar el estado');
@@ -748,7 +754,7 @@ export class ConfiguracionClienteComponent implements OnInit {
   setAsDefault(tipo: TipoClienteEmpresa): void {
     if (confirm(`¿Está seguro de establecer "${tipo.nombre_efectivo}" como tipo por defecto? Los clientes sin tipo asignado usarán este.`)) {
       const updateData: UpdateTipoClienteRequest = {
-        id_tipo_base: tipo.tipo_base?.id,
+        id_tipo_base: tipo.tipo_base?.id ?? (tipo as any).id_tipo_base ?? undefined,
         nivel: tipo.nivel,
         nombre_personalizado: tipo.is_personalizado ? tipo.nombre_efectivo : undefined,
         puntos_por_dolar: tipo.puntos_por_dolar,
@@ -762,7 +768,7 @@ export class ConfiguracionClienteComponent implements OnInit {
       this.fidelizacionService.updateTipoCliente(tipo.id, updateData).subscribe({
         next: (response) => {
           if (response.success) {
-            this.alertService.success('success','Tipo de cliente establecido como por defecto exitosamente');
+            this.alertService.success('Exito','Tipo de cliente establecido como por defecto exitosamente');
             this.loadTiposCliente();
           } else {
             this.alertService.error(response.message || 'Error al establecer como por defecto');
@@ -850,7 +856,7 @@ export class ConfiguracionClienteComponent implements OnInit {
     // TODO: Implementar descarga de tipos de cliente
     setTimeout(() => {
       this.downloading = false;
-      this.alertService.success('success', 'Descarga completada');
+      this.alertService.success('Exito', 'Descarga completada');
     }, 1000);
   }
 

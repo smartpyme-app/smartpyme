@@ -24,7 +24,7 @@
         <div class="col-md-6 mb-3">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="pagination?.total">
                 Mostrando 
-                <select name="paginate" class="form-select w-auto" (change)="filtrarClientes()" [(ngModel)]="filtros.paginate">
+                <select name="paginate" class="form-select w-auto" (change)="onPaginateChange()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
                     <option value="50">50</option>
@@ -240,9 +240,12 @@
             </div>
             
             <br><br>
-            <div class="d-grid">
-                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-outline-secondary" (click)="limpiarFiltrosAvanzados()">
+                    <i class="fa fa-times me-1"></i> Limpiar
+                </button>
+                <button type="submit" [disabled]="loading" class="btn btn-primary">
+                    <span *ngIf="!loading"><i class="fa fa-filter me-1"></i> Filtrar</span>
                     <span *ngIf="loading">Filtrando...</span>
                 </button>
             </div>

@@ -1,10 +1,15 @@
-<!-- Breadcrumb -->
-<div class="breadcrumb">
-    <a routerLink="/dashboard">Dashboard</a>
-    <span>›</span>
-    <a routerLink="/fidelizacion/clientes">Clientes</a>
-    <span>›</span>
-    <span>Vista 360° - {{ cliente.nombre || 'Cliente' }}</span>
+<!-- Header con Breadcrumb y Regresar -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="breadcrumb mb-0">
+        <a routerLink="/dashboard">Dashboard</a>
+        <span>›</span>
+        <a routerLink="/fidelizacion/clientes">Clientes</a>
+        <span>›</span>
+        <span>Vista 360° - {{ cliente.nombre || 'Cliente' }}</span>
+    </div>
+    <button class="btn btn-light text-danger" (click)="goBack()">
+        <i class="fa fa-arrow-left"></i> Regresar
+    </button>
 </div>
 
 <!-- Loading State -->
