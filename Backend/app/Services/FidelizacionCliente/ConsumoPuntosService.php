@@ -58,6 +58,12 @@ class ConsumoPuntosService
             return false;
         }
 
+        // 2b. Con canje de puntos en la misma venta no se acumulan puntos nuevos
+        if ($venta->tieneCanjeDePuntosEnVenta()) {
+            Log::debug('Venta con canje de puntos: no se acumulan puntos', ['venta_id' => $venta->id]);
+            return false;
+        }
+
         // 3. Verificar si ya existe una transacción de puntos para esta venta (más eficiente)
         $existeTransaccion = TransaccionPuntos::where('id_venta', $venta->id)
             ->where('tipo', TransaccionPuntos::TIPO_GANANCIA)

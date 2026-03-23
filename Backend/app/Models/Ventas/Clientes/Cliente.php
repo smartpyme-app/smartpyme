@@ -71,9 +71,19 @@ class Cliente extends Model {
     {
         parent::boot();
 
-    if (Auth::check()) {
+        /*
+         * Registrar siempre el scope; el usuario se resuelve al ejecutar la consulta (después del middleware JWT).
+         * - API JWT usa guard "api"; Auth::check() / Auth::user() solo miran el default "web" y el scope no se aplicaba.
+         * - Si se envuelve en if (Auth::check()) antes de addGlobalScope, Cliente::observe() en AppServiceProvider
+         *   dispara boot() sin usuario y el scope nunca se registraba.
+         * Sin usuario (webhooks, consola): no se añade filtro (comportamiento previo cuando no había scope activo).
+         */
         static::addGlobalScope('empresa', function (Builder $builder) {
-            $user = Auth::user();
+            $user = Auth::guard('api')->user() ?? Auth::user();
+            if (!$user) {
+                return;
+            }
+
             $empresa = $user->empresa;
 
             if ($empresa) {
@@ -95,11 +105,7 @@ class Cliente extends Model {
                     $builder->where('clientes.id_empresa', $user->id_empresa);
                 }
             }
-
-
         });
-    }
-
     }
 
     public function getNombreCompletoAttribute()
