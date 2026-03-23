@@ -5,6 +5,7 @@ import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 
@@ -41,14 +42,31 @@ export class FacturacionV2Component implements OnInit {
   public facturarCotizacion = false;
   public api: boolean = false;
   public tieneAccesoPropina: boolean = false;
+  public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  // Información de puntos canjeados
+  public puntosCanjeados: number = 0;
+  public descuentoPuntos: number = 0;
+  public puntosCliente: number = 0;
+  public loadingPuntos: boolean = false;
+  public loadingModalPuntos: boolean = false;
+  public puntosInfoModal: PuntosDisponiblesInfo | null = null;
+  public configuracionModal: ConfiguracionCliente | null = null;
+  public puntosProximosAExpirarModal: any[] = [];
+  public usarPuntosModal: boolean = false;
+  public puntosACanjearModal: number = 0;
+
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
+  modalPuntosRef!: BsModalRef;
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
+
+  @ViewChild('modalPuntos')
+  public modalPuntosTemplate!: TemplateRef<any>;
 
   @ViewChild('mcredito')
   public creditoTemplate!: TemplateRef<any>;
@@ -61,6 +79,7 @@ export class FacturacionV2Component implements OnInit {
     private sumPipe: SumPipe,
     private route: ActivatedRoute,
     private router: Router,
+    private fidelizacionService: FidelizacionService,
     private funcionalidadesService: FuncionalidadesService
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
@@ -72,6 +91,7 @@ export class FacturacionV2Component implements OnInit {
     this.cargarDatosIniciales();
     this.loadData();
     this.verificarAccesoPropina();
+    this.verificarFidelizacionHabilitada();
   }
 
   public loadData() {
@@ -800,14 +820,16 @@ export class FacturacionV2Component implements OnInit {
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = (Math.round(rawTotalCosto * 100) / 100).toFixed(4);
 
-    // El total NO incluye la propina; calcular con 2 decimales para que cuadre con subtotal + IVA
+    // El total NO incluye la propina; incluir descuento por puntos si aplica
+    const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const totalNum =
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(String(this.venta.iva_percibido)) -
       parseFloat(String(this.venta.iva_retenido)) -
-      parseFloat(String(this.venta.renta_retenida));
+      parseFloat(String(this.venta.renta_retenida)) -
+      descuentoPuntos;
     this.venta.total = (Math.round(totalNum * 100) / 100).toFixed(2);
 
 
@@ -837,6 +859,12 @@ export class FacturacionV2Component implements OnInit {
             if(cliente.tipo_contribuyente == "Grande") {
                 this.venta.retencion = 1;
                 this.sumTotal();
+            }
+
+            // Resetear y cargar puntos del cliente (si fidelización habilitada)
+            this.resetearPuntos();
+            if (this.tieneFidelizacionHabilitada) {
+                this.cargarPuntosCliente();
             }
             
             // Asignar vendedor si el cliente tiene uno asignado
@@ -872,6 +900,8 @@ export class FacturacionV2Component implements OnInit {
             this.mensajeValidacionFecha = '';
         } else {
             this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
+            this.puntosCliente = 0;
+            this.resetearPuntos();
         }
         console.log(cliente);
     }
@@ -1399,5 +1429,210 @@ public getTotalConPropina(): number {
     return total + propina;
 }
 
+  // ==================== FIDELIZACIÓN - PUNTOS ====================
+
+  private resetearPuntos(): void {
+    this.puntosCanjeados = 0;
+    this.descuentoPuntos = 0;
+    this.venta.puntos_canjeados = 0;
+    this.venta.descuento_puntos = 0;
+  }
+
+  public getEmpresaId(): number {
+    return this.apiService.auth_user().empresa.id;
+  }
+
+  private cargarPuntosCliente(): void {
+    if (!this.venta.cliente?.id) {
+      this.puntosCliente = 0;
+      return;
+    }
+    this.loadingPuntos = true;
+    this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.puntosCliente = response.data.puntos_disponibles;
+          } else {
+            this.puntosCliente = 0;
+          }
+          this.loadingPuntos = false;
+        },
+        error: () => {
+          this.puntosCliente = 0;
+          this.loadingPuntos = false;
+        }
+      });
+  }
+
+  public abrirModalPuntos(): void {
+    if (!this.venta.cliente?.id) return;
+    this.modalPuntosRef = this.modalService.show(this.modalPuntosTemplate, { class: 'modal-lg' });
+    this.cargarDatosModal();
+  }
+
+  public cerrarModalPuntos(): void {
+    this.modalPuntosRef?.hide();
+  }
+
+  private cargarDatosModal(): void {
+    this.loadingModalPuntos = true;
+    this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.puntosInfoModal = response.data;
+            this.configuracionModal = response.data.configuracion || null;
+            this.calcularPuntosProximosAExpirarModal();
+            if (this.puntosCanjeados > 0) {
+              this.usarPuntosModal = true;
+              this.puntosACanjearModal = this.puntosCanjeados;
+            } else {
+              this.usarPuntosModal = false;
+              this.puntosACanjearModal = 0;
+            }
+          } else {
+            this.puntosInfoModal = null;
+            this.configuracionModal = null;
+          }
+          this.loadingModalPuntos = false;
+        },
+        error: () => {
+          this.puntosInfoModal = null;
+          this.configuracionModal = null;
+          this.loadingModalPuntos = false;
+        }
+      });
+  }
+
+  private calcularPuntosProximosAExpirarModal(): void {
+    if (!this.puntosInfoModal?.ganancias_detalle) {
+      this.puntosProximosAExpirarModal = [];
+      return;
+    }
+    this.puntosProximosAExpirarModal = this.puntosInfoModal.ganancias_detalle
+      .filter((g: any) => g.puntos_disponibles > 0 && g.dias_para_expirar <= 30)
+      .sort((a: any, b: any) => a.dias_para_expirar - b.dias_para_expirar)
+      .slice(0, 5);
+  }
+
+  public onToggleUsarPuntosModal(): void {
+    if (!this.usarPuntosModal) {
+      this.puntosACanjearModal = 0;
+    } else {
+      this.puntosACanjearModal = this.configuracionModal?.minimo_canje || 1;
+    }
+  }
+
+  public onCambiarPuntosModal(): void {
+    if (!this.puntosInfoModal || !this.configuracionModal) return;
+    if (this.puntosACanjearModal < 0) this.puntosACanjearModal = 0;
+    const minimo = this.configuracionModal.minimo_canje || 1;
+    const maximo = this.getMaximoCanje();
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles;
+    if (this.puntosACanjearModal > puntosDisponibles) {
+      this.puntosACanjearModal = puntosDisponibles;
+      this.alertService.warning('Puntos insuficientes', `Solo tienes ${puntosDisponibles} puntos disponibles`);
+    }
+    if (this.puntosACanjearModal > maximo) {
+      this.puntosACanjearModal = maximo;
+      this.alertService.warning('Límite excedido', `El máximo de canje para ${this.configuracionModal.tipo_cliente} es ${maximo} puntos`);
+    }
+    if (this.puntosACanjearModal > 0 && this.puntosACanjearModal < minimo) {
+      this.alertService.warning('Cantidad inválida', `El mínimo de canje para ${this.configuracionModal.tipo_cliente} es ${minimo} puntos`);
+    }
+  }
+
+  public usarTodosPuntosModal(): void {
+    if (!this.puntosInfoModal || !this.configuracionModal) return;
+    this.puntosACanjearModal = this.getMaximoCanje();
+    this.usarPuntosModal = true;
+  }
+
+  public getDescuentoTotalModal(): number {
+    if (!this.configuracionModal) return 0;
+    return this.puntosACanjearModal * (this.configuracionModal.valor_punto || 0.01);
+  }
+
+  public aplicarCanjeModal(): void {
+    if (!this.usarPuntosModal || this.puntosACanjearModal <= 0) return;
+    if (!this.puntosInfoModal || !this.configuracionModal) {
+      this.alertService.error('No se pudo cargar la información de puntos');
+      return;
+    }
+    const minimo = this.configuracionModal.minimo_canje || 1;
+    const maximo = this.getMaximoCanje();
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles;
+    if (this.puntosACanjearModal < minimo) {
+      this.alertService.warning('Cantidad inválida', `El mínimo de canje para ${this.configuracionModal.tipo_cliente} es ${minimo} puntos`);
+      return;
+    }
+    if (this.puntosACanjearModal > maximo) {
+      this.alertService.warning('Límite excedido', `El máximo de canje para ${this.configuracionModal.tipo_cliente} es ${maximo} puntos`);
+      return;
+    }
+    if (this.puntosACanjearModal > puntosDisponibles) {
+      this.alertService.warning('Puntos insuficientes', `Solo tienes ${puntosDisponibles} puntos disponibles`);
+      return;
+    }
+    this.puntosCanjeados = this.puntosACanjearModal;
+    this.descuentoPuntos = this.getDescuentoTotalModal();
+    this.venta.puntos_canjeados = this.puntosCanjeados;
+    this.venta.descuento_puntos = this.descuentoPuntos;
+    this.sumTotal();
+    this.puntosCliente = (this.puntosInfoModal?.puntos_disponibles || 0) - this.puntosCanjeados;
+    this.alertService.success('¡Descuento aplicado!', `Se aplicó un descuento de $${this.descuentoPuntos.toFixed(2)} por ${this.puntosCanjeados} puntos`);
+  }
+
+  public getDiasExpiracionClass(dias: number): string {
+    if (dias <= 3) return 'text-danger fw-bold';
+    if (dias <= 7) return 'text-warning fw-bold';
+    if (dias <= 30) return 'text-info';
+    return 'text-muted';
+  }
+
+  public quitarDescuentoPuntos(): void {
+    this.resetearPuntos();
+    this.usarPuntosModal = false;
+    this.puntosACanjearModal = 0;
+    this.sumTotal();
+    this.cargarPuntosCliente();
+    this.alertService.success('Descuento removido', 'El descuento por puntos ha sido eliminado');
+    this.cerrarModalPuntos();
+  }
+
+  public getMaximoCanje(): number {
+    if (!this.configuracionModal || !this.puntosInfoModal) return 0;
+    const maximoConfiguracion = this.configuracionModal.maximo_canje || 1000;
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles || 0;
+    return Math.min(maximoConfiguracion, puntosDisponibles);
+  }
+
+  public getValorPunto(): string {
+    const valor = this.configuracionModal?.valor_punto || 0.01;
+    return `$${Number(valor).toFixed(3)}`;
+  }
+
+  public isCanjeValido(): boolean {
+    if (!this.usarPuntosModal || !this.puntosInfoModal || !this.configuracionModal) return false;
+    const minimo = this.configuracionModal.minimo_canje || 1;
+    const maximo = this.getMaximoCanje();
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles;
+    return this.puntosACanjearModal >= minimo &&
+      this.puntosACanjearModal <= maximo &&
+      this.puntosACanjearModal <= puntosDisponibles &&
+      this.puntosACanjearModal > 0;
+  }
+
+  public formatNumber(value: number): string {
+    return value?.toLocaleString() || '0';
+  }
+
+  private verificarFidelizacionHabilitada(): void {
+    this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
+      next: (tieneAcceso: boolean) => { this.tieneFidelizacionHabilitada = tieneAcceso; },
+      error: () => { this.tieneFidelizacionHabilitada = false; }
+    });
+  }
 }
 
