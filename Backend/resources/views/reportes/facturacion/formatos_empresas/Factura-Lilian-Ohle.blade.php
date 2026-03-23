@@ -180,6 +180,11 @@
             page-break-inside: avoid;
         }
 
+        /* Tabla de firmas sin bordes */
+        #firmas, #firmas tbody, #firmas tr, #firmas td, #firmas th {
+            border: none !important;
+        }
+
         /* Espaciado adicional para el contenido de la tabla */
         #productos {
             border-spacing: 0;
@@ -358,12 +363,20 @@
             </tfoot>
         </table>
 
-        <div style="margin-top: 50px;">
-            <span style="float: left; margin-top: 50px;">Firma:</span>
-            @if ($venta->empresa()->pluck('logo')->first())
-                <img style="height: 90px; margin-left: 20px;" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Firma">
-            @endif
-        </div>
+        <table id="firmas" style="margin-top: 50px; width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 50%; vertical-align: bottom; padding-right: 20px; border: none;">
+                    @if ($venta->empresa()->pluck('logo')->first())
+                    <img style="height: 90px;" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Firma">
+                    @endif
+                    <span style="display: block; margin-bottom: 5px;">Firma:</span>
+                </td>
+                <td style="width: 50%; vertical-align: bottom; text-align: right; border: none;">
+                    ____________________________<br>
+                    Firma del cliente
+                </td>
+            </tr>
+        </table>
 
         <h3 style="text-align: center; margin-top: 30px;">
             ¡Gracias por su Compra! <br>
