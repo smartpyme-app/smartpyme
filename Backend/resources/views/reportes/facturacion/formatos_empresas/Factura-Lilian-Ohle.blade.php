@@ -180,6 +180,11 @@
             page-break-inside: avoid;
         }
 
+        /* Tabla de firmas sin bordes */
+        #firmas, #firmas tbody, #firmas tr, #firmas td, #firmas th {
+            border: none !important;
+        }
+
         /* Espaciado adicional para el contenido de la tabla */
         #productos {
             border-spacing: 0;
@@ -228,7 +233,7 @@
                 </tr>
             </tbody>
         </table>
-
+<!-- 
         <table id="op">
             <thead>
                 <tr>
@@ -250,95 +255,128 @@
                     <td>{{ $venta->condicion }}</td> 
                 </tr>
             </tbody>
-        </table>
-        <br>
-        @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
+        </table> -->
+        <!-- <br> -->
+        <?php
+            $iva = $venta->empresa()->pluck('iva')->first() / 100;
+            $ivaEmpresa = (float) ($venta->empresa()->pluck('iva')->first() ?? 18);
+            $iva_15 = 0;
+            $iva_18 = 0;
+            $gravada_15 = 0;
+            $gravada_18 = 0;
+            foreach ($venta->detalles as $det) {
+                $porc = $det->porcentaje_impuesto !== null && $det->porcentaje_impuesto !== '' ? (float) $det->porcentaje_impuesto : $ivaEmpresa;
+                if ($porc == 15 || (abs($porc - 15) < 0.01)) {
+                    $iva_15 += (float) ($det->iva ?? 0);
+                    $gravada_15 += (float) ($det->gravada ?? $det->sub_total ?? 0);
+                } elseif ($porc == 18 || (abs($porc - 18) < 0.01)) {
+                    $iva_18 += (float) ($det->iva ?? 0);
+                    $gravada_18 += (float) ($det->gravada ?? $det->sub_total ?? 0);
+                } else {
+                    if ($porc < 17) {
+                        $iva_15 += (float) ($det->iva ?? 0);
+                        $gravada_15 += (float) ($det->gravada ?? $det->sub_total ?? 0);
+                    } else {
+                        $iva_18 += (float) ($det->iva ?? 0);
+                        $gravada_18 += (float) ($det->gravada ?? $det->sub_total ?? 0);
+                    }
+                }
+            }
+        ?>
         
         <table id="productos">
             <thead style="display: table-row-group;">
                 <tr>
                     <th>CANT</th>
-                    <th style="text-align: center;">ITEM #</th>
+                    <th style="text-align: center;">CÓD. BARRAS</th>
                     <th>DESCRIPCION</th>
                     <th>PRECIO UNIT.</th>
+                    <th style="text-align: center;">% IMPUESTO</th>
+                    <th style="text-align: center;">% DESCUENTO</th>
                     <th>IMPORTE</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($venta->detalles as $detalle)
+                <?php $producto = $detalle->producto ?? null; ?>
                 <tr>
                     <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
-                    <td class="codigo">   {{ $detalle->producto->codigo  }}</td>
+                    <td class="codigo" style="text-align: center;">{{ $producto ? ($producto->barcode ?: $producto->codigo) : '-' }}</td>
                     <td class="producto">   {{ $detalle->nombre_producto  }}</td>
                     <td class="precio">     <span style="float: left;">L </span>{{ number_format($detalle->precio, 2) }}</td>
+                    <td class="codigo" style="text-align: center;">{{ number_format($detalle->porcentaje_impuesto ?? $ivaEmpresa ?? 0, 0) }}%</td>
+                    <td class="codigo" style="text-align: center;">{{ number_format($detalle->porcentaje_descuento ?? 0, 0) }}%</td>
                     <td class="gravadas">  <span style="float: left;">L </span>{{ number_format($detalle->total, 2) }} </td> 
                 </tr>
                 @endforeach
             </tbody>
             <tfoot style="display: table-row-group; page-break-inside: avoid;">
                 <tr>
-                    <td colspan="3"><span style="font-size: 12px;">Original: Cliente &nbsp;&nbsp;&nbsp; Copia: Emisor</span></td>
+                    <td colspan="5"><span style="font-size: 12px;">Original: Cliente &nbsp;&nbsp;&nbsp; Copia: Emisor</span></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Exento:</td>
                     <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
                 </tr>
                 <tr>
                     {{-- Fecha Límite de Emisión (comentado de momento) --}}
-                    <td colspan="3"></td>
+                    <td colspan="5"></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Exonerado:</td>
                     <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
                 </tr>
                 <tr>
                     {{-- Fecha de Autorización (comentado de momento) --}}
-                    <td colspan="3"></td>
+                    <td colspan="5"></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Fiscal:</td> 
                     <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($venta->sub_total, 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="3"></td>
+                    <td colspan="5"></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Gravado 15%:</td> 
-                    <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
+                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($gravada_15, 2) }}</td>
                 </tr>
                 <tr>
                     {{-- Rango autorizado (comentado de momento) --}}
-                    <td colspan="3"></td>
+                    <td colspan="5"></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Gravado 18%:</td>
-                    <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
+                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($gravada_18, 2) }}</td>
                 </tr>
                 <tr>
                     {{-- CAI (comentado de momento) --}}
-                    <td colspan="3"></td>
+                    <td colspan="5"></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Desc. y Rebajas:</td>
                     <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
                 </tr>
                 <tr>
-                    <td colspan="3"></td>
+                    <td colspan="5"></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">ISV 15%:</td>
-                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($venta->iva, 2) }}</td>
+                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($iva_15, 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="3"><p style="color: red;">Original: Cliente</p></td>
+                    <td colspan="5"><p style="color: red;">Original: Cliente</p></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">ISV 18%:</td>
-                    <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
+                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($iva_18, 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="3"> {{$dolares}} CON {{$centavos}}/100 LEMPIRAS. <br> </td>
+                    <td colspan="5"> {{$dolares}} CON {{$centavos}}/100 LEMPIRAS. <br> </td>
                     <td style="padding: 0 3px 0 0; text-align: right;">TOTAL A PAGAR:</td>
                     <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($venta->total, 2) }}</td>
-                </tr>
-                <tr>
-                    <td colspan="3" style="border-top: 1px solid black;">Escribir en Letras el Total a Pagar</td>
-                    <td style="padding: 0 3px 0 0; text-align: right;">TOTAL A PAGAR:</td>
-                    <td style="border: 1px solid black; text-align: left;"><span style="float: left;">$ </span></td>
                 </tr>
             </tfoot>
         </table>
 
-        <div style="margin-top: 50px;">
-            <span style="float: left; margin-top: 50px;">Firma:</span>
-            @if ($venta->empresa()->pluck('logo')->first())
-                <img style="height: 90px; margin-left: 20px;" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Firma">
-            @endif
-        </div>
+        <table id="firmas" style="margin-top: 50px; width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 50%; vertical-align: bottom; padding-right: 20px; border: none;">
+                    @if ($venta->empresa()->pluck('logo')->first())
+                    <img style="height: 90px;" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Firma">
+                    @endif
+                    <span style="display: block; margin-bottom: 5px;">Firma:</span>
+                </td>
+                <td style="width: 50%; vertical-align: bottom; text-align: right; border: none;">
+                    ____________________________<br>
+                    Firma del cliente
+                </td>
+            </tr>
+        </table>
 
         <h3 style="text-align: center; margin-top: 30px;">
             ¡Gracias por su Compra! <br>

@@ -13,6 +13,9 @@ import { PresupuestosComponent } from '@views/contabilidad/presupuestos/presupue
 import { PresupuestoComponent } from '@views/contabilidad/presupuestos/presupuesto/presupuesto.component';
 import { PresupuestoDetallesComponent } from '@views/contabilidad/presupuestos/presupuesto-detalles/presupuesto-detalles.component';
 
+import { CuentasComponent } from '@views/contabilidad/bancos/cuentas/cuentas.component';
+import { CuentaComponent } from '@views/contabilidad/bancos/cuentas/cuenta/cuenta.component';
+
 const routes: Routes = [
   {
     path: '',
@@ -30,7 +33,11 @@ const routes: Routes = [
           title: 'Consumidor final'},
         { path: 'libro-compras', component: LibroComprasComponent, title: 'Libro de compras'},
         { path: 'libro-anulados', component: LibroAnuladosComponent, title: 'Libro de anulados'},
-        { path: 'libro-compras-sujetos-excluidos', component: LibroComprasSujetosExcluidosComponent, title: 'Libro de compras sujetos excluidos'}
+        { path: 'libro-compras-sujetos-excluidos', component: LibroComprasSujetosExcluidosComponent, title: 'Libro de compras sujetos excluidos'},
+
+        { path: 'bancos/cuentas', component: CuentasComponent, title: 'Cuentas bancarias'},
+        { path: 'bancos/cuenta/crear', component: CuentaComponent, title: 'Crear cuenta'},
+        { path: 'bancos/cuenta/:id', component: CuentaComponent, title: 'Editar cuenta'}
     ]
   }
 ]; 

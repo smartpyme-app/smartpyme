@@ -629,7 +629,6 @@ class Empresa extends Model
             'modulos' => [],
             'configuraciones' => [
                 'ticket_en_pdf' => false
-                // Para futuras configuraciones generales
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados
@@ -691,6 +690,14 @@ class Empresa extends Model
     public function isComponenteQuimicoHabilitado(): bool
     {
         return (bool) $this->getCustomConfigValue('configuraciones', 'componente_quimico_activo', false);
+    }
+
+    /**
+     * Verificar si el módulo de bancos está activo para la empresa
+     */
+    public function isModuloBancos(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'modulo_bancos', false);
     }
 
     /**

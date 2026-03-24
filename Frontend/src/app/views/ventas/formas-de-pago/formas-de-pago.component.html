@@ -1,72 +1,182 @@
-<div class="row">
-    <div class="col-md-6">
-        <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-            <h2 class="page-heading">Métodos de pago</h2>
-        </section>
+<!-- Vista cuando módulo de bancos está habilitado: CRUD con asignación de banco -->
+<ng-container *ngIf="apiService.isModuloBancos()">
+    <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+        <h2 class="page-heading">Métodos de pago</h2>
+        <button (click)="openModal(mdetalle)" tooltip="Crear forma de pago (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir forma de pago</button>
+    </section>
 
-        <div class="card p-3">
-            <table class="table table-borderless">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th class="ps-4">Activo</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                    <td colspan="10" class="text-center" *ngIf="formas_pago?.length < 1 && !loading">
-                        <span class="badge bg-primary">No hay formas de pago</span>
-                    </td>
-                    <td colspan="10" class="text-center" *ngIf="loading">
-                        <span class="badge bg-primary">Cargando...</span>
-                    </td>
-                </tr>
-                <tr *ngFor="let forma of formas_pago">
-                  <td>{{ forma.nombre }}</td>
-                  <td class="d-flex gap-2">
-                    <div class="form-switch">
-                      <input class="form-check-input ms-0" type="checkbox" role="switch" (click)="onSubmit(forma.nombre)" name="activo" [(ngModel)]="forma.activo">
-                    </div>
-                    <!-- <button *ngIf="forma.nombre == 'Wompi'" (click)="openModal(mWompi)" class="btn btn-default">Configurar</button> -->
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Banco</th>
+                            <th class="text-center"><i class="fa fa-cog"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="3" class="text-center" *ngIf="formas_pago?.length < 1 && !loading">
+                                <span class="badge bg-primary">No tiene formas de pago registradas</span>
+                            </td>
+                            <td colspan="3" class="text-center" *ngIf="loading">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                        <tr *ngFor="let forma of formas_pago">
+                            <td>{{ forma.nombre }}</td>
+                            <td>{{ forma.banco?.nombre_banco || '-' }}</td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-default" (click)="deleteFormaPago(forma)" tooltip="Eliminar">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-default" (click)="openModal(mdetalle, forma)" tooltip="Editar">
+                                        <i class="fa fa-pencil-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="card p-3" *ngIf="wompiActivo">
-            <h2 class="page-heading">Configuración para Wompi</h2>
-            <div class="row">
-                <div class="col-12">
-                    <p class="alert alert-info">
-                        Ingresa los datos de tu aplicativo de Wompi, y prueba la conexión. <br>
-                        Con esto podrás generar enlaces de pago para cobrar ventas
-                    </p>
+    </div>
+
+    <ng-template #mdetalle>
+        <div class="modal-header">
+            <div class="modal-title">
+                <h2>Formas de pago</h2>
+            </div>
+            <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <app-notificaciones-container></app-notificaciones-container>
+            <form autocomplete="off" (ngSubmit)="onSubmit()">
+                <div class="row">
+                    <div class="form-group col-lg-12">
+                        <label for="forma_pago.nombre">Nombre</label>
+                        <input type="text" class="form-control" [(ngModel)]="forma_pago.nombre" name="forma_pago.nombre" required>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="forma_pago.id_banco">Banco (opcional)</label>
+                        <ng-select [(ngModel)]="forma_pago.id_banco" class="form-select p-0" name="forma_pago.id_banco" [clearable]="true">
+                            <ng-option [value]="''">Ninguno</ng-option>
+                            <ng-option *ngFor="let banco of bancos" [value]="banco.id">{{ banco.nombre_banco }} - {{ banco.numero }}</ng-option>
+                        </ng-select>
+                    </div>
                 </div>
-                <div class="form-group col-md-12">
-                    <label for="">Aplicativo</label>
-                    <input type="text" name="wompi_aplicativo" [(ngModel)]="empresa.wompi_aplicativo" class="form-control" required>
-                </div>
-                <div class="form-group col-md-12">
-                    <label for="">App ID</label>
-                    <input type="text" name="wompi_id" [(ngModel)]="empresa.wompi_id" class="form-control" required>
-                </div>
-                <div class="form-group col-md-12">
-                    <label for="">API Secret</label>
-                    <input type="text" name="wompi_secret" [(ngModel)]="empresa.wompi_secret" class="form-control" required>
-                </div>
-            
-                <div class="form-group col-md-12">
-                    <button type="submit" [disabled]="saving" (click)="onSubmitWompi()" class="btn btn-primary float-end">
-                        <span *ngIf="!saving">Probar conexión</span>
-                        <span *ngIf="saving">Probando conexión...</span>
+                <div class="d-grid mt-3">
+                    <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+                        <span *ngIf="!saving">Guardar</span>
+                        <span *ngIf="saving">Guardando...</span>
                     </button>
+                </div>
+            </form>
+        </div>
+    </ng-template>
+
+    <div class="card p-3 mt-3" *ngIf="wompiActivo">
+        <h2 class="page-heading">Configuración para Wompi</h2>
+        <div class="row">
+            <div class="col-12">
+                <p class="alert alert-info">
+                    Ingresa los datos de tu aplicativo de Wompi, y prueba la conexión. <br>
+                    Con esto podrás generar enlaces de pago para cobrar ventas
+                </p>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="">Aplicativo</label>
+                <input type="text" name="wompi_aplicativo" [(ngModel)]="empresa.wompi_aplicativo" class="form-control">
+            </div>
+            <div class="form-group col-md-12">
+                <label for="">App ID</label>
+                <input type="text" name="wompi_id" [(ngModel)]="empresa.wompi_id" class="form-control">
+            </div>
+            <div class="form-group col-md-12">
+                <label for="">API Secret</label>
+                <input type="text" name="wompi_secret" [(ngModel)]="empresa.wompi_secret" class="form-control">
+            </div>
+            <div class="form-group col-md-12">
+                <button type="button" [disabled]="saving" (click)="onSubmitWompi()" class="btn btn-primary float-end">
+                    <span *ngIf="!saving">Probar conexión</span>
+                    <span *ngIf="saving">Probando conexión...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</ng-container>
+
+<!-- Vista cuando módulo de bancos NO está habilitado: switches predefinidos + Bancos -->
+<ng-container *ngIf="!apiService.isModuloBancos()">
+    <div class="row">
+        <div class="col-md-6">
+            <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+                <h2 class="page-heading">Métodos de pago</h2>
+            </section>
+
+            <div class="card p-3">
+                <table class="table table-borderless">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th class="ps-4">Activo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="2" class="text-center" *ngIf="formas_pago?.length < 1 && !loading">
+                                <span class="badge bg-primary">No hay formas de pago</span>
+                            </td>
+                            <td colspan="2" class="text-center" *ngIf="loading">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                        <tr *ngFor="let forma of formas_pago">
+                            <td>{{ forma.nombre }}</td>
+                            <td class="d-flex gap-2">
+                                <div class="form-switch">
+                                    <input class="form-check-input ms-0" type="checkbox" role="switch" (click)="onSubmit(forma.nombre)" name="activo" [(ngModel)]="forma.activo">
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card p-3" *ngIf="wompiActivo">
+                <h2 class="page-heading">Configuración para Wompi</h2>
+                <div class="row">
+                    <div class="col-12">
+                        <p class="alert alert-info">
+                            Ingresa los datos de tu aplicativo de Wompi, y prueba la conexión. <br>
+                            Con esto podrás generar enlaces de pago para cobrar ventas
+                        </p>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="">Aplicativo</label>
+                        <input type="text" name="wompi_aplicativo" [(ngModel)]="empresa.wompi_aplicativo" class="form-control" required>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="">App ID</label>
+                        <input type="text" name="wompi_id" [(ngModel)]="empresa.wompi_id" class="form-control" required>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="">API Secret</label>
+                        <input type="text" name="wompi_secret" [(ngModel)]="empresa.wompi_secret" class="form-control" required>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <button type="button" [disabled]="saving" (click)="onSubmitWompi()" class="btn btn-primary float-end">
+                            <span *ngIf="!saving">Probar conexión</span>
+                            <span *ngIf="saving">Probando conexión...</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-        
+        <div class="col-md-6">
+            <app-bancos></app-bancos>
+        </div>
     </div>
-    <div class="col-md-6">
-        <app-bancos></app-bancos>
-    </div>
-</div>
-
+</ng-container>

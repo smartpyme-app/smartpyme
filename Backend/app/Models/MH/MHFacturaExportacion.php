@@ -146,7 +146,7 @@ class MHFacturaExportacion extends Model
 
     protected function receptor(){
 
-        if (!$this->venta->id_cliente) {
+        if (!$this->venta->id_cliente || !$this->venta->cliente) {
             return [
                 "tipoDocumento" => NULL, //36 NIT 13 DUI
                 "numDocumento" => NULL,
