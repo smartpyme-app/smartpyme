@@ -38,6 +38,9 @@ require base_path('routes/modulos/n1co/suscripciones-n1co.php');
 // require base_path('routes/modulos/n1co/payment.php');
 require base_path('routes/modulos/auth.php');
 
+// Gmail OAuth callback - no JWT (Google redirects user here)
+Route::get('/email-accounts/gmail/callback', [App\Http\Controllers\Api\DteManagement\GmailAuthController::class, 'callback']);
+
 Route::group(['middleware' => ['jwt.auth']], function () {
 
 	Route::get('constants', [ConstantsController::class, 'getAppConstants']);
@@ -151,6 +154,10 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	require base_path('routes/modulos/planilla/historialcontratos.php');
 
+	// DTE Management - Email accounts (Gmail OAuth, IMAP)
+	require base_path('routes/modulos/dte-management/email-accounts.php');
+	require base_path('routes/modulos/dte-management/dte-documents.php');
+	require base_path('routes/modulos/dte-management/sync-logs.php');
 });
 
 //webhook

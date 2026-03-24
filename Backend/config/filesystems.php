@@ -72,6 +72,11 @@ return [
             'visibility' => 'public',
         ],
 
+        'dtes' => [
+            'driver' => env('DTE_STORAGE_DRIVER', 'local'),
+            'root' => storage_path('app/dtes'),
+        ],
+
     ],
 
     /*

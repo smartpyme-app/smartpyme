@@ -14,6 +14,7 @@
         "doctrine/dbal": "^3.9",
         "fideloper/proxy": "^4.2",
         "fruitcake/laravel-cors": "^2.0",
+        "google/apiclient": "^2.0",
         "guzzlehttp/guzzle": "^7.0.1",
         "intervention/image": "^2.7",
         "laravel/framework": "^8.0",
@@ -24,7 +25,8 @@
         "magarrent/laravel-currency-formatter": "^1.0",
         "milon/barcode": "^9.0",
         "mpdf/mpdf": "^8.2",
-        "tymon/jwt-auth": "^1.0"
+        "tymon/jwt-auth": "^1.0",
+        "webklex/laravel-imap": "^5.0"
     },
     "require-dev": {
         "facade/ignition": "^2.3.6",

@@ -1,0 +1,73 @@
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row mb-3">
+    <div class="col">
+      <input type="text" class="form-control" [(ngModel)]="filtros.buscador" (keyup.enter)="filtrar()" placeholder="Buscar por número, NIT, emisor...">
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" [(ngModel)]="filtros.validation_status" (ngModelChange)="filtrar()">
+        <option value="">Validación</option>
+        <option value="valid">Válido</option>
+        <option value="invalid">Inválido</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" [(ngModel)]="filtros.processing_status" (ngModelChange)="filtrar()">
+        <option value="">Estado</option>
+        <option value="pending">Pendiente</option>
+        <option value="pendiente_clasificacion">Pend. clasificación</option>
+        <option value="processed">Procesado</option>
+        <option value="failed">Fallido</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <input type="date" class="form-control" [(ngModel)]="filtros.inicio" (ngModelChange)="filtrar()" placeholder="Desde">
+    </div>
+    <div class="col-md-2">
+      <input type="date" class="form-control" [(ngModel)]="filtros.fin" (ngModelChange)="filtrar()" placeholder="Hasta">
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary" (click)="filtrar()">Filtrar</button>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Número</th>
+          <th>Emisor</th>
+          <th>Total</th>
+          <th>Validación</th>
+          <th>Estado</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="8" class="text-center py-4"><span class="badge bg-primary">Cargando...</span></td>
+        </tr>
+        <tr *ngIf="!loading && !documents?.data?.length">
+          <td colspan="8" class="text-center py-4 text-muted">No hay DTEs</td>
+        </tr>
+        <tr *ngFor="let doc of documents?.data" [class]="doc.processing_status === 'pendiente_clasificacion' ? 'table-warning' : ''">
+          <td>{{ doc.emission_date | date:'dd/MM/yyyy' }}</td>
+          <td>{{ dteTypeLabel(doc.dte_type) }}</td>
+          <td>{{ doc.dte_number }}</td>
+          <td>{{ doc.issuer_name | truncate:25 }}</td>
+          <td>{{ doc.total_amount | currency:'USD':'symbol':'1.2' }}</td>
+          <td><span class="badge" [ngClass]="validationBadgeClass(doc.validation_status)">{{ validationStatusLabel(doc.validation_status) }}</span></td>
+          <td><span class="badge" [ngClass]="processingBadgeClass(doc.processing_status)" [title]="doc.processing_status === 'pendiente_clasificacion' ? 'Algunos ítems del DTE no coinciden con productos del catálogo. Debe asignar productos manualmente antes de procesar en Compras.' : null">{{ processingStatusLabel(doc.processing_status) }}</span></td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-primary" [routerLink]="['/dte-management/dtes', doc.id]" tooltip="Ver detalle">
+              <i class="fa fa-eye"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="col-12 mt-3" *ngIf="documents && documents.last_page > 1">
+    <app-pagination [items]="documents" (setPagination)="setPagination($event)"></app-pagination>
+  </div>
+</section>

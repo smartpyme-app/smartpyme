@@ -146,6 +146,12 @@ class Kernel extends ConsoleKernel
         $schedule->call(function () {
             Log::info('Working');
         })->daily();
+
+        // Sync DTE email accounts every hour (download DTEs from connected mailboxes)
+        $schedule->command('dte:sync-accounts --dias=30')
+            ->hourly()
+            ->withoutOverlapping(30)
+            ->appendOutputTo(storage_path('logs/dte-sync.log'));
     }
 
     /**
