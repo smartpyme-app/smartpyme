@@ -7,7 +7,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
@@ -44,7 +44,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private mhService: MHService,
+        private facturacionElectronica: FacturacionElectronicaService,
         private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager, {
@@ -252,14 +252,23 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
 
     emitirDTE() {
         this.saving = true;
-        this.mhService.emitirDTENotaCredito(this.venta).then((venta) => {
-            this.venta = venta;
+        this.facturacionElectronica.emitirDTENotaCredito(this.venta).then((doc) => {
+            this.venta = doc;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
-            this.enviarDTE(this.venta);
-        }).catch((error) => {
+            if (this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
+                this.enviarDTE(this.venta);
+            } else {
+                this.cdr.markForCheck();
+            }
+        }).catch((error: any) => {
             this.saving = false;
-            this.alertService.warning('Hubo un problema', error);
+            if (error?.devolucion) {
+                this.venta = error.devolucion;
+            }
+            const msg = typeof error === 'string' ? error : error?.message ?? 'Hubo un problema';
+            this.alertService.warning('Comprobante electrónico', msg);
+            this.cdr.markForCheck();
         });
     }
 
@@ -295,7 +304,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                     .subscribe({
                         next: (dte) => {
                             this.venta.dte_invalidacion = dte;
-                            this.mhService.firmarDTE(dte)
+                            this.facturacionElectronica.firmarDTE(dte)
                                 .pipe(this.untilDestroyed())
                                 .subscribe({
                                     next: (dteFirmado) => {
@@ -305,7 +314,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                                             this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
                                         }
 
-                                        this.mhService.anularDTE(this.venta, dteFirmado.body)
+                                        this.facturacionElectronica.anularDTE(this.venta, dteFirmado.body)
                                             .pipe(this.untilDestroyed())
                                             .subscribe({
                                                 next: (dte) => {

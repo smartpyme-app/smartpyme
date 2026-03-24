@@ -7,7 +7,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { SharedDataService } from '@services/shared-data.service';
@@ -122,7 +122,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
   constructor(
     public apiService: ApiService,
-    public mhService: MHService,
+    private facturacionElectronica: FacturacionElectronicaService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
     private modalService: BsModalService,
@@ -1444,7 +1444,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
   emitirDTE() {
     this.emiting = true;
-    this.mhService
+    this.facturacionElectronica
       .emitirDTE(this.venta)
       .then((venta) => {
         this.venta = venta;
@@ -1452,7 +1452,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           'DTE emitido.',
           'El documento ha sido emitido.'
         );
-        if (this.venta.id_cliente) {
+        if (this.venta.id_cliente && this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
           this.enviarDTE();
         }
         this.emiting = false;
@@ -1469,12 +1469,16 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         this.cargarDatosIniciales();
         this.router.navigate(['/venta/crear']);
       })
-      .catch((error) => {
+      .catch((error: any) => {
         this.cargarDatosIniciales();
         this.router.navigate(['/venta/crear']);
 
         this.emiting = false;
-        this.alertService.warning('El documento no fue emitido.', error);
+        if (error?.venta) {
+          this.venta = error.venta;
+        }
+        const msg = typeof error === 'string' ? error : error?.message ?? error;
+        this.alertService.warning('El documento no fue emitido.', msg);
       });
   }
 

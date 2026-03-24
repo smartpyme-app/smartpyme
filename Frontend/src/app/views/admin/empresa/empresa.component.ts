@@ -15,6 +15,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 
 @Component({
     selector: 'app-empresa',
@@ -59,6 +60,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     public showpassword: boolean = false;
     public showpassword2: boolean = false;
+    public subiendoCertCr: boolean = false;
+    /** Hay al menos un .p12 en servidor (FE Costa Rica). */
+    public tieneCertificadoFeCr: boolean = false;
     public canales: any = [];
     public tieneAccesoPropina: boolean = false;
 
@@ -123,8 +127,14 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.initializeCustomConfig();
             this.loading = false;
 
+            if (resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR) {
+                this.refreshEstadoCertificadoFeCr();
+            } else {
+                this.tieneCertificadoFeCr = false;
+            }
+
             //Se cargan las facturas cuando ya se ha inicializado la empresa
-            if (this.empresa && this.empresa.fe_ambiente === '00') {
+            if (this.empresa && this.empresa.fe_ambiente === '00' && resolveCodigoPaisFe(this.empresa) !== FE_PAIS_CR) {
                 this.cargarEstadisticasPruebas();
                 // this.cargarDocumentosBase();
             }
@@ -145,6 +155,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.saving = true;
         this.cdr.markForCheck();
         try {
+            this.empresa.custom_empresa = this.customConfig;
             const empresaGuardada = await this.apiService.store('empresa', this.empresa)
                 .pipe(this.untilDestroyed())
                 .toPromise();
@@ -158,10 +169,12 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             user.empresa = empresaGuardada;
             localStorage.setItem('SP_auth_user', JSON.stringify(user));
 
-            if (this.empresa.fe_ambiente == '01') {
-                localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
-            } else {
-                localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
+            if (resolveCodigoPaisFe(this.empresa) !== FE_PAIS_CR) {
+                if (this.empresa.fe_ambiente == '01') {
+                    localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
+                } else {
+                    localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
+                }
             }
 
             this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
@@ -343,6 +356,50 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         );
     }
 
+    private refreshEstadoCertificadoFeCr(): void {
+        this.apiService
+            .get('empresa/fe-cr-certificado-estado')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (r: any) => {
+                    this.tieneCertificadoFeCr = !!r?.tiene_certificado;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.tieneCertificadoFeCr = false;
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
+    /**
+     * Guarda empresa y prueba certificado + credenciales ATV contra Hacienda CR.
+     */
+    public onCheckFeCr(): void {
+        this.cheking = true;
+        this.cdr.markForCheck();
+        this.onSubmit().then(() => {
+            this.apiService
+                .store('empresa/fe-cr-probar-conexion', {})
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: () => {
+                        this.cheking = false;
+                        this.alertService.success(
+                            'Conexión exitosa',
+                            'Autenticación con Hacienda (ATV) correcta para el ambiente seleccionado.'
+                        );
+                        this.cdr.markForCheck();
+                    },
+                    error: (e) => {
+                        this.cheking = false;
+                        this.alertService.error(e);
+                        this.cdr.markForCheck();
+                    },
+                });
+        });
+    }
+
     public onCheckMH(): void {
         this.cheking = true;
         this.cdr.markForCheck();
@@ -373,6 +430,45 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public mostrarPassword2() {
         this.showpassword2 = !this.showpassword2;
         this.cdr.markForCheck();
+    }
+
+    public esCostaRicaFe(): boolean {
+        return resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR;
+    }
+
+    public subirCertificadoFeCr(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        if (!file) {
+            return;
+        }
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (ext !== 'p12') {
+            this.alertService.warning('Archivo no válido', 'Seleccione un archivo .p12');
+            input.value = '';
+            return;
+        }
+        const fd = new FormData();
+        fd.append('certificado', file);
+        this.subiendoCertCr = true;
+        this.cdr.markForCheck();
+        this.apiService.upload('empresa/fe-cr-certificado', fd)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: () => {
+                    this.subiendoCertCr = false;
+                    this.tieneCertificadoFeCr = true;
+                    this.alertService.success('Certificado', 'El archivo se guardó correctamente.');
+                    input.value = '';
+                    this.cdr.markForCheck();
+                },
+                error: (e) => {
+                    this.subiendoCertCr = false;
+                    this.alertService.error(e);
+                    input.value = '';
+                    this.cdr.markForCheck();
+                },
+            });
     }
 
     public onCheckFE() {
@@ -1225,6 +1321,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             columnas: {
                 columna_proyecto: false
             },
+            facturacion_fe: {} as Record<string, unknown>,
             modulos: {},
             configuraciones: {
                 ticket_en_pdf: false,
@@ -1256,6 +1353,10 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             }
         } else {
             this.customConfig = defaultConfig;
+        }
+
+        if (! this.customConfig.facturacion_fe || typeof this.customConfig.facturacion_fe !== 'object' || Array.isArray(this.customConfig.facturacion_fe)) {
+            this.customConfig.facturacion_fe = {};
         }
     }
 

@@ -8,6 +8,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
@@ -55,15 +56,20 @@ export class LoginComponent implements OnInit {
                     localStorage.removeItem('returnUrl');
         
                     this.user = this.apiService.auth_user();
-        
-                    if(this.user.empresa.fe_ambiente == '01'){
-                        localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
-                    }else{
-                        localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
-                    }
-        
-                    if(this.user.empresa.mh_usuario && this.user.empresa.mh_contrasena){
-                        this.mhService.login();
+
+                    const paisFe = resolveCodigoPaisFe(this.user.empresa);
+                    if (paisFe === FE_PAIS_SV) {
+                        if (this.user.empresa.fe_ambiente == '01') {
+                            localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
+                        } else {
+                            localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
+                        }
+                        if (this.user.empresa.mh_usuario && this.user.empresa.mh_contrasena) {
+                            this.mhService.login();
+                        }
+                    } else {
+                        localStorage.removeItem('SP_mh_url_base');
+                        localStorage.removeItem('SP_token_mh');
                     }
         
                     this.apiService.loadData();

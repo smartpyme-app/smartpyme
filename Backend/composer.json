@@ -12,6 +12,7 @@
         "aws/aws-sdk-php": "^3.337",
         "barryvdh/laravel-dompdf": "^3.0",
         "cweagans/composer-patches": "^2.0",
+        "dazza-dev/laravel-dgt-cr": "1.0",
         "doctrine/dbal": "^3.9",
         "guzzlehttp/guzzle": "^7.0.1",
         "intervention/image": "^2.7",

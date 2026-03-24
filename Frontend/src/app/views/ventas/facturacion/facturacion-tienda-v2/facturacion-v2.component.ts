@@ -9,7 +9,7 @@ import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { BuscadorClientesComponent } from '@shared/parts/buscador-clientes/buscador-clientes.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
@@ -74,7 +74,7 @@ export class FacturacionV2Component implements OnInit {
 
   constructor(
     public apiService: ApiService,
-    public mhService: MHService,
+    private facturacionElectronica: FacturacionElectronicaService,
     private alertService: AlertService,
     private modalService: BsModalService,
     private sumPipe: SumPipe,
@@ -1281,7 +1281,7 @@ export class FacturacionV2Component implements OnInit {
 
   emitirDTE() {
     this.emiting = true;
-    this.mhService
+    this.facturacionElectronica
       .emitirDTE(this.venta)
       .then((venta) => {
         this.venta = venta;
@@ -1289,7 +1289,7 @@ export class FacturacionV2Component implements OnInit {
           'DTE emitido.',
           'El documento ha sido emitido.'
         );
-        if(this.venta.id_cliente){
+        if (this.venta.id_cliente && this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
             this.enviarDTE();
         }
         this.emiting = false;
@@ -1306,12 +1306,16 @@ export class FacturacionV2Component implements OnInit {
         this.cargarDatosIniciales();
         this.router.navigate(['/ventas-v2/crear']);
       })
-      .catch((error) => {
+      .catch((error: any) => {
         this.cargarDatosIniciales();
         this.router.navigate(['/ventas-v2/crear']);
 
         this.emiting = false;
-        this.alertService.warning('El documento no fue emitido.', error);
+        if (error?.venta) {
+          this.venta = error.venta;
+        }
+        const msg = typeof error === 'string' ? error : error?.message ?? error;
+        this.alertService.warning('El documento no fue emitido.', msg);
       });
   }
 

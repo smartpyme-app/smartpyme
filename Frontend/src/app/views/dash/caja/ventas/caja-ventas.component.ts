@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
@@ -34,7 +34,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
 
     constructor(
         protected override apiService: ApiService,
-        public mhService: MHService,
+        private facturacionElectronica: FacturacionElectronicaService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService
     ){
@@ -261,13 +261,17 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTE(this.venta).then((venta) => {
+        this.facturacionElectronica.emitirDTE(this.venta).then((venta) => {
             this.venta = venta;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
-        }).catch((error) => {
+        }).catch((error: any) => {
             this.saving = false;
-            this.alertService.warning('Hubo un problema', error);
+            if (error?.venta) {
+                this.venta = error.venta;
+            }
+            const msg = typeof error === 'string' ? error : error?.message ?? error;
+            this.alertService.warning('Hubo un problema', msg);
         });
     }
 
@@ -289,7 +293,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
     emitirEnContingencia(venta:any){
         this.venta = venta;
         this.saving = true;
-        this.mhService.emitirDTEContingencia(this.venta).then((venta) => {
+        this.facturacionElectronica.emitirDTEContingencia(this.venta).then((venta) => {
             this.venta = venta;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
@@ -299,8 +303,69 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
         });
     }
 
+    esFeCostaRica(): boolean {
+        return this.facturacionElectronica.isCostaRicaFe();
+    }
+
+    consultarFeCr(): void {
+        this.saving = true;
+        this.facturacionElectronica
+            .consultarEstadoFeCrVenta(this.venta.id)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (res: any) => {
+                    if (res?.venta) {
+                        this.venta = res.venta;
+                    }
+                    const ok = !!res?.detalle_estado?.success;
+                    const messages = res?.detalle_estado?.messages;
+                    if (ok) {
+                        this.alertService.success('Estado en Hacienda', 'Comprobante aceptado.');
+                    } else {
+                        this.alertService.info(
+                            'Estado en Hacienda',
+                            typeof messages === 'string' && messages
+                                ? messages
+                                : 'Aún no consta como aceptado o está en proceso.'
+                        );
+                    }
+                    this.saving = false;
+                },
+                error: (err) => {
+                    this.saving = false;
+                    this.alertService.error(err);
+                },
+            });
+    }
+
     anularDTE(venta:any){
         this.venta = venta;
+        if (this.facturacionElectronica.isCostaRicaFe() && venta.sello_mh) {
+            if (
+                window.confirm(
+                    '¿Anular esta venta en el sistema?\n\nSi el comprobante fue aceptado por Hacienda, los ajustes tributarios deben hacerse según las reglas de Costa Rica.'
+                )
+            ) {
+                this.saving = true;
+                const v = { ...venta, estado: 'Anulada' };
+                this.apiService
+                    .store('venta', v)
+                    .pipe(this.untilDestroyed())
+                    .subscribe({
+                        next: () => {
+                            this.saving = false;
+                            this.alertService.success('Venta anulada', 'Registro actualizado.');
+                            this.loadAll();
+                            this.modalRef?.hide();
+                        },
+                        error: (e) => {
+                            this.saving = false;
+                            this.alertService.error(e);
+                        },
+                    });
+            }
+            return;
+        }
         if(venta.sello_mh){
             if (confirm('¿Confirma anular la venta y el DTE?')) {
                 this.venta = venta;
@@ -310,7 +375,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
                   .subscribe(dte => {
                     // this.alertService.success('DTE generado.');
                     this.venta.dte_invalidacion = dte;
-                    this.mhService.firmarDTE(dte)
+                    this.facturacionElectronica.firmarDTE(dte)
                       .pipe(this.untilDestroyed())
                       .subscribe(dteFirmado => {
                         this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
@@ -319,7 +384,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
                             this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
                         }
                         
-                        this.mhService.anularDTE(this.venta, dteFirmado.body)
+                        this.facturacionElectronica.anularDTE(this.venta, dteFirmado.body)
                           .pipe(this.untilDestroyed())
                           .subscribe(dte => {
                             if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {

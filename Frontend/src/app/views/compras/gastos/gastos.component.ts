@@ -13,7 +13,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
@@ -46,7 +46,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
 
     constructor(
         apiService: ApiService,
-        public mhService: MHService,
+        private facturacionElectronica: FacturacionElectronicaService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private router: Router,
@@ -334,7 +334,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTESujetoExcluidoGasto(this.gasto).then((gasto: any) => {
+        this.facturacionElectronica.emitirDTESujetoExcluidoGasto(this.gasto).then((gasto: any) => {
             this.gasto = gasto;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
@@ -377,12 +377,12 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
                     .subscribe({
                         next: (dte) => {
                             this.gasto.dte_invalidacion = dte;
-                            this.mhService.firmarDTE(dte)
+                            this.facturacionElectronica.firmarDTE(dte)
                                 .pipe(this.untilDestroyed())
                                 .subscribe({
                                     next: (dteFirmado) => {
                                         this.gasto.dte_invalidacion.firmaElectronica = dteFirmado.body;
-                                        this.mhService.anularDTE(this.gasto, dteFirmado.body)
+                                        this.facturacionElectronica.anularDTE(this.gasto, dteFirmado.body)
                                             .pipe(this.untilDestroyed())
                                             .subscribe({
                                                 next: (dte) => {

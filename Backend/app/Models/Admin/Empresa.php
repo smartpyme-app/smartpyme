@@ -95,6 +95,7 @@ class Empresa extends Model
         'mh_pwd_certificado',
         'mh_usuario',
         'mh_contrasena',
+
         'cod_estable_mh',
         'cod_estable',
 

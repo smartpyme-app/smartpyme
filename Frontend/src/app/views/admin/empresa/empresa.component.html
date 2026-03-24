@@ -740,14 +740,24 @@
     @if (empresa.facturacion_electronica) {
       <tab heading="Facturación electrónica">
         <section class="bg-white rounded p-3 mb-3">
+            @if (esCostaRicaFe()) {
+              <div class="alert alert-secondary mb-3">
+                <strong>Facturación electrónica en Costa Rica</strong><br>
+                Use el mismo usuario y contraseña con los que entra al portal de Hacienda (ATV).
+                La contraseña del certificado es la que usted definió al descargar o recibir su certificado digital.
+                Elija <em>Pruebas</em> mientras valida todo y <em>Producción</em> cuando vaya a facturar de verdad.
+                Suba su certificado más abajo y, si aplica, complete los datos opcionales (código de producto y tipo de cambio).
+                Para guardar cambios use el botón <strong>Guardar</strong> en la pestaña «Datos de mi empresa» o el botón <strong>Comprobar conexión con Hacienda</strong>.
+              </div>
+            }
             <div class="row">
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="mh_usuario">Usuario:</label>
+                    <label for="mh_usuario">{{ esCostaRicaFe() ? 'Usuario en Hacienda (ATV):' : 'Usuario:' }}</label>
                     <input type="text" class="form-control" [(ngModel)]="empresa.mh_usuario" name="mh_usuario"
                         placeholder="Escribe aquí">
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="mh_contrasena">Contraseña de la API:</label>
+                    <label for="mh_contrasena">{{ esCostaRicaFe() ? 'Contraseña en Hacienda (ATV):' : 'Contraseña de la API:' }}</label>
                     <div class="input-group">
                         <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="mh_contrasena"
                             [(ngModel)]="empresa.mh_contrasena" placeholder="Escribe aquí" #mh_contrasena="ngModel"
@@ -758,7 +768,7 @@
                     </div>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="mh_pwd_certificado">Clave Privada del Certificado:</label>
+                    <label for="mh_pwd_certificado">{{ esCostaRicaFe() ? 'Contraseña del certificado digital:' : 'Clave Privada del Certificado:' }}</label>
                     <div class="input-group">
                         <input [type]="showpassword2 ? 'text' : 'password'" class="form-control"
                             name="mh_pwd_certificado" [(ngModel)]="empresa.mh_pwd_certificado"
@@ -769,7 +779,7 @@
                     </div>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="fe_ambiente">Ambiente:</label>
+                    <label for="fe_ambiente">{{ esCostaRicaFe() ? 'Modo:' : 'Ambiente:' }}</label>
                     <select name="fe_ambiente" class="form-select" (change)="cargarEstadisticasPruebas()"
                         [(ngModel)]="empresa.fe_ambiente">
                         <option value="00">Pruebas</option>
@@ -788,12 +798,59 @@
                     </div>
                 </div>
             </div>
+            @if (esCostaRicaFe()) {
+            <div class="row mt-2">
+                <div class="form-group col-md-8 col-lg-6">
+                    <label for="fe_cr_certificado_p12">Archivo de certificado digital</label>
+                    <input id="fe_cr_certificado_p12" type="file" class="form-control" accept=".p12,application/x-pkcs12"
+                        (change)="subirCertificadoFeCr($event)" [disabled]="subiendoCertCr" />
+                    <small class="form-text text-muted d-block mt-1">
+                        @if (subiendoCertCr) {
+                            <span>Guardando certificado…</span>
+                        } @else if (tieneCertificadoFeCr) {
+                            <span class="text-success">Ya tiene un certificado cargado; puede reemplazarlo eligiendo otro archivo.</span>
+                        } @else {
+                            Suba el certificado que le entregó su banco o asesor (archivo con extensión .p12) antes de probar la conexión o emitir facturas electrónicas.
+                        }
+                    </small>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6 class="mb-2">Datos opcionales</h6>
+                    <p class="small text-muted mb-3">
+                        Solo si lo necesita: si un producto no tiene código de clasificación de Hacienda, puede usar uno por defecto aquí.
+                        Si deja vacío el tipo de cambio, el sistema intentará usar el del Banco Central.
+                    </p>
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="fe_cr_cabys_default">Código de producto por defecto</label>
+                    <input type="text" class="form-control" id="fe_cr_cabys_default" name="fe_cr_cabys_default"
+                        [(ngModel)]="customConfig.facturacion_fe.cabys_default" maxlength="13" inputmode="numeric"
+                        placeholder="13 dígitos, si aplica" autocomplete="off" />
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="fe_cr_tipo_cambio">Tipo de cambio (1 dólar en colones)</label>
+                    <input type="number" class="form-control" id="fe_cr_tipo_cambio" name="fe_cr_tipo_cambio"
+                        [(ngModel)]="customConfig.facturacion_fe.tipo_cambio_usd_crc" step="0.01" min="0"
+                        placeholder="Ej. 520" />
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="fe_cr_receptor_actividad">Actividad económica del cliente (opcional, 6 dígitos)</label>
+                    <input type="text" class="form-control" id="fe_cr_receptor_actividad" name="fe_cr_receptor_actividad"
+                        [(ngModel)]="customConfig.facturacion_fe.receptor_actividad_codigo" maxlength="6" inputmode="numeric"
+                        placeholder="Si Hacienda lo exige en su caso" autocomplete="off" />
+                </div>
+            </div>
+            }
         </section>
         <div class="bg-white rounded p-3 mb-3">
             <div class="form-group col-sm-12 pt-2 pb-4">
-                <button [disabled]="cheking || !empresa.mh_usuario || !empresa.mh_contrasena || !empresa.mh_pwd_certificado" (click)="onCheckMH()" class="btn btn-primary float-end">
+                <button type="button"
+                    [disabled]="cheking || !empresa.mh_usuario || !empresa.mh_contrasena || !empresa.mh_pwd_certificado || (esCostaRicaFe() && !tieneCertificadoFeCr)"
+                    (click)="esCostaRicaFe() ? onCheckFeCr() : onCheckMH()" class="btn btn-primary float-end">
                     @if (!cheking) {
-                      <span>Comprobar datos</span>
+                      <span>{{ esCostaRicaFe() ? 'Comprobar conexión con Hacienda' : 'Comprobar datos' }}</span>
                     }
                     @if (cheking) {
                       <span>Comprobando...</span>
@@ -804,7 +861,7 @@
 
          <!-- Pruebas masivas -->
 
-         @if (empresa.fe_ambiente == '00') {
+         @if (empresa.fe_ambiente == '00' && !esCostaRicaFe()) {
            <section class="bg-white rounded p-4 mb-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0"><i class="fa fa-rocket me-2"></i> Pruebas Masivas de Documentos</h5>

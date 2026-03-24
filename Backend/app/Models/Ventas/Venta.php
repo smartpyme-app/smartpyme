@@ -97,7 +97,9 @@ class Venta extends Model {
         'recurrente' => 'string',
         'puntos_ganados' => 'integer',
         'puntos_canjeados' => 'integer',
-        'descuento_puntos' => 'decimal:2'
+        'descuento_puntos' => 'decimal:2',
+        'dte' => 'array',
+        'dte_invalidacion' => 'array',
     ];
 
     protected static function boot()

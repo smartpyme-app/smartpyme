@@ -33,6 +33,9 @@ use App\Http\Requests\Admin\Empresas\StoreEmpresaRequest;
 use App\Http\Requests\Admin\Empresas\UpdatePagoRecurrenteRequest;
 use App\Http\Requests\Admin\Empresas\UpdateCustomConfigRequest;
 use App\Http\Requests\Admin\Empresas\StoreImagenesRequest;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaDgtClientFactory;
+use Illuminate\Http\JsonResponse;
 
 class EmpresasController extends Controller
 {
@@ -923,5 +926,75 @@ class EmpresasController extends Controller
             'message' => 'Imagen guardada correctamente',
             'path' => "/" . $path
         ]);
+    }
+
+    /**
+     * Certificado .p12 para FE Costa Rica (storage/app/fe-cr/{id}/certificado.p12).
+     */
+    public function uploadFeCrCertificado(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $empresa = Empresa::findOrFail($request->user()->id_empresa);
+        if (FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            return response()->json(['error' => 'Solo disponible para empresas con país Costa Rica.'], 422);
+        }
+
+        $request->validate([
+            'certificado' => 'required|file|max:5120',
+        ]);
+
+        $file = $request->file('certificado');
+        $ext = strtolower((string) $file->getClientOriginalExtension());
+        if ($ext !== 'p12') {
+            return response()->json(['error' => 'El archivo debe tener extensión .p12'], 422);
+        }
+
+        $dir = 'fe-cr/'.$empresa->id;
+        Storage::disk('local')->makeDirectory($dir);
+        $file->storeAs($dir, 'certificado.p12', 'local');
+
+        return response()->json(['message' => 'Certificado guardado correctamente.']);
+    }
+
+    /**
+     * Indica si existe al menos un .p12 en storage para FE Costa Rica.
+     */
+    public function estadoFeCrCertificado(Request $request): JsonResponse
+    {
+        $empresa = Empresa::findOrFail($request->user()->id_empresa);
+        if (FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            return response()->json(['tiene_certificado' => false]);
+        }
+
+        $dir = 'fe-cr/'.$empresa->id;
+        if (! Storage::disk('local')->exists($dir)) {
+            return response()->json(['tiene_certificado' => false]);
+        }
+
+        foreach (Storage::disk('local')->files($dir) as $file) {
+            if (str_ends_with(strtolower($file), '.p12')) {
+                return response()->json(['tiene_certificado' => true]);
+            }
+        }
+
+        return response()->json(['tiene_certificado' => false]);
+    }
+
+    /**
+     * Prueba certificado .p12 + credenciales ATV contra el ambiente según fe_ambiente (00 pruebas, 01 producción).
+     */
+    public function probarConexionFeCr(Request $request, CostaRicaDgtClientFactory $factory): JsonResponse
+    {
+        $empresa = Empresa::findOrFail($request->user()->id_empresa);
+        if (FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            return response()->json(['error' => 'Solo disponible para empresas con país Costa Rica.'], 422);
+        }
+
+        try {
+            $factory->make($empresa);
+
+            return response()->json(['message' => 'Autenticación con Hacienda (ATV) exitosa.']);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
     }
 }

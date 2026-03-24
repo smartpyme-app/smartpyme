@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\Route;
     Route::get('/suscripcion/recibo/pdf/{id}',             [EmpresasController::class, 'printRecibo']);
 
     Route::post('/empresa/imagenes',             [EmpresasController::class, 'storeImagenes']);
+    Route::post('/empresa/fe-cr-certificado',         [EmpresasController::class, 'uploadFeCrCertificado']);
+    Route::get('/empresa/fe-cr-certificado-estado',   [EmpresasController::class, 'estadoFeCrCertificado']);
+    Route::post('/empresa/fe-cr-probar-conexion',     [EmpresasController::class, 'probarConexionFeCr']);
     Route::get('/dashboards',                 [DashboardsController::class, 'index']);
     Route::get('/dashboards/list',                 [DashboardsController::class, 'list']);
     Route::post('/dashboard',                 [DashboardsController::class, 'store']);

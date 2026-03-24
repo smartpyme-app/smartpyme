@@ -41,19 +41,18 @@ class FacturacionElectronicaHelperService
     public function filtrarVentasPorFacturacionElectronica(Collection $ventas): Collection
     {
         if ($this->tieneFacturacionElectronica()) {
-            // Con facturación electrónica: solo ventas con sello_mh
-            $ventasSinSello = $ventas->filter(function ($venta) {
-                return empty($venta->sello_mh);
+            $ventasSinComprobante = $ventas->filter(function ($venta) {
+                return ! $this->ventaTieneComprobanteElectronicoValido($venta);
             });
 
-            if ($ventasSinSello->isNotEmpty()) {
-                Log::warning('Se excluyeron ventas sin sello', [
-                    'ventas' => $ventasSinSello->pluck('id'),
+            if ($ventasSinComprobante->isNotEmpty()) {
+                Log::warning('Se excluyeron ventas sin comprobante electrónico válido', [
+                    'ventas' => $ventasSinComprobante->pluck('id'),
                 ]);
             }
 
             return $ventas->reject(function ($venta) {
-                return empty($venta->sello_mh);
+                return ! $this->ventaTieneComprobanteElectronicoValido($venta);
             });
         } else {
             // Sin facturación electrónica: todas las ventas
@@ -69,8 +68,13 @@ class FacturacionElectronicaHelperService
      */
     public function obtenerCodigoGeneracion(Venta $venta): string
     {
-        if ($this->tieneFacturacionElectronica() && $venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
-            return $venta->dte['identificacion']['codigoGeneracion'];
+        if ($this->tieneFacturacionElectronica()) {
+            if ($this->ventaFeCrAceptada($venta) && ! empty($venta->codigo_generacion)) {
+                return (string) $venta->codigo_generacion;
+            }
+            if ($venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
+                return $venta->dte['identificacion']['codigoGeneracion'];
+            }
         }
         return trim((string) $venta->correlativo);
     }
@@ -83,8 +87,13 @@ class FacturacionElectronicaHelperService
      */
     public function obtenerNumeroControl(Venta $venta): string
     {
-        if ($this->tieneFacturacionElectronica() && $venta->sello_mh && isset($venta->dte['identificacion']['numeroControl'])) {
-            return $venta->dte['identificacion']['numeroControl'];
+        if ($this->tieneFacturacionElectronica()) {
+            if ($this->ventaFeCrAceptada($venta) && ! empty($venta->codigo_generacion)) {
+                return (string) $venta->codigo_generacion;
+            }
+            if ($venta->sello_mh && isset($venta->dte['identificacion']['numeroControl'])) {
+                return $venta->dte['identificacion']['numeroControl'];
+            }
         }
         return $venta->numero_control ?? trim((string) $venta->correlativo);
     }
@@ -111,10 +120,29 @@ class FacturacionElectronicaHelperService
      */
     public function obtenerClaseDocumento(Venta $venta): string
     {
-        if ($this->tieneFacturacionElectronica() && $venta->sello_mh) {
-            return '4'; // DTE
+        if ($this->tieneFacturacionElectronica() && $this->ventaTieneComprobanteElectronicoValido($venta)) {
+            return '4'; // DTE / comprobante electrónico
         }
         return '1'; // Impreso
+    }
+
+    private function ventaTieneComprobanteElectronicoValido(Venta $venta): bool
+    {
+        if ($this->ventaFeCrAceptada($venta)) {
+            return true;
+        }
+
+        return ! empty($venta->sello_mh);
+    }
+
+    private function ventaFeCrAceptada(Venta $venta): bool
+    {
+        $dte = $venta->dte;
+
+        return is_array($dte)
+            && ($dte['pais'] ?? null) === 'CR'
+            && ! empty($dte['cr']['aceptada'])
+            && ! empty($venta->codigo_generacion);
     }
 
     /**

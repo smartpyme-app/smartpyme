@@ -214,7 +214,7 @@
                                             <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
                                         </a>
                                     }
-                                    @if (apiService.auth_user().empresa.fe_ambiente == '00' && apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh) {
+                                    @if (!esFeCostaRica() && apiService.auth_user().empresa.fe_ambiente == '00' && apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="emitirEnContingencia(venta)" tooltip="Emitir DTE en contingencia">
                                             <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE en contingencia
                                         </a>
@@ -575,7 +575,7 @@
 
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">
-        <h5 class="modal-title mb-0">DTE </h5>
+        <h5 class="modal-title mb-0">{{ esFeCostaRica() ? 'Comprobante electrónico (Costa Rica)' : 'DTE' }}</h5>
         <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;"
             aria-label="Close"></button>
     </div>
@@ -584,19 +584,23 @@
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 
-            @if (venta.sello_mh) {
+            @if (esFeCostaRica() && venta.codigo_generacion) {
+                <p class="small text-muted text-break mb-2"><strong>Clave:</strong> {{ venta.codigo_generacion }}</p>
+            }
+
+            @if (venta.sello_mh && !esFeCostaRica()) {
                 <button (click)="imprimirDTEJSON(venta)" class="mb-3 btn btn-primary btn-block">
                     Ver JSON
                 </button>
             }
 
-            @if (venta.sello_mh) {
+            @if (venta.sello_mh && !esFeCostaRica()) {
                 <button (click)="imprimirDTEPDF(venta)" class="mb-3 btn btn-primary btn-block">
                     Ver PDF
                 </button>
             }
 
-            @if (venta.sello_mh) {
+            @if (venta.sello_mh && !esFeCostaRica()) {
                 <button [disabled]="sending" (click)="enviarDTE(venta)"
                     class="mb-3 btn btn-primary btn-block">
                     @if (!sending) {
@@ -608,7 +612,56 @@
                 </button>
             }
 
-            @if (!venta?.sello_mh) {
+            @if (esFeCostaRica() && venta.codigo_generacion) {
+                <button type="button" [disabled]="consulting || saving" (click)="consultarDTE()"
+                    class="mb-3 btn btn-outline-primary btn-block">
+                    @if (!consulting) {
+                        <span>Consultar estado en Hacienda</span>
+                    }
+                    @if (consulting) {
+                        <span>Consultando...</span>
+                    }
+                </button>
+            }
+
+            @if (ventaPuedeNotaDebitoFeCr(venta)) {
+                <div class="border rounded p-3 mb-3 text-start">
+                    <h6 class="mb-2">Nota de débito electrónica</h6>
+                    <p class="small text-muted mb-2">Ajuste sobre esta factura ya aceptada. Monto total con IVA (13%). Configure el código de producto por defecto (13 dígitos) en Facturación electrónica de la cuenta si no lo ha hecho.</p>
+                    <div class="mb-2">
+                        <label class="form-label small mb-0" for="ndFeCrMotivo">Motivo</label>
+                        <input id="ndFeCrMotivo" type="text" class="form-control form-control-sm" name="ndFeCrMotivo"
+                            [(ngModel)]="ndFeCrMotivo" placeholder="Opcional" autocomplete="off" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-0" for="ndFeCrMonto">Monto (₡, con IVA)</label>
+                        <input id="ndFeCrMonto" type="number" class="form-control form-control-sm" name="ndFeCrMonto"
+                            [(ngModel)]="ndFeCrMonto" min="0.01" step="0.01" placeholder="Ej. 1130" />
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm w-100" [disabled]="saving"
+                        (click)="emitirNotaDebitoFeCr()">
+                        @if (!saving) {
+                            <span>Emitir nota de débito</span>
+                        }
+                        @if (saving) {
+                            <span>Enviando...</span>
+                        }
+                    </button>
+                </div>
+            }
+
+            @if (esFeCostaRica() && venta?.dte?.cr?.nota_debito?.clave) {
+                <p class="small text-muted text-break mb-2">
+                    <strong>Nota de débito:</strong> {{ venta.dte.cr.nota_debito.clave }}
+                    @if (venta.dte.cr.nota_debito.aceptada) {
+                        <span class="text-success"> — Aceptada</span>
+                    } @else {
+                        <span> — Pendiente o no aceptada; consulte estado.</span>
+                    }
+                </p>
+            }
+
+            @if (!venta?.sello_mh && !(esFeCostaRica() && venta.codigo_generacion)) {
                 <div class="w-100">
                     @if (consulting) {
                         <p class="alert alert-info">El DTE ya fue emitido, se consultará por el sello
@@ -616,7 +669,7 @@
                     }
                     <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary w-100">
                         @if (!saving && !consulting) {
-                            <span>Emitir</span>
+                            <span>{{ esFeCostaRica() ? 'Emitir comprobante' : 'Emitir' }}</span>
                         }
                         @if (saving) {
                             <span>Emitiendo...</span>

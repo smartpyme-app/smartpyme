@@ -12,7 +12,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { SharedDataService } from '@services/shared-data.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
@@ -62,7 +62,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
     constructor(
         apiService: ApiService,
-        public mhService: MHService,
+        private facturacionElectronica: FacturacionElectronicaService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private router: Router,
@@ -504,7 +504,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTESujetoExcluidoCompra(this.compra).then((compra) => {
+        this.facturacionElectronica.emitirDTESujetoExcluidoCompra(this.compra).then((compra) => {
             this.compra = compra;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
@@ -542,13 +542,13 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                     .subscribe(dte => {
                         // this.alertService.success('DTE generado.');
                         this.compra.dte_invalidacion = dte;
-                        this.mhService.firmarDTE(dte)
+                        this.facturacionElectronica.firmarDTE(dte)
                             .pipe(this.untilDestroyed())
                             .subscribe(dteFirmado => {
                                 this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
                                 // this.alertService.success('DTE firmado.');
 
-                                this.mhService.anularDTE(this.compra, dteFirmado.body)
+                                this.facturacionElectronica.anularDTE(this.compra, dteFirmado.body)
                                     .pipe(this.untilDestroyed())
                                     .subscribe(dte => {
                                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
