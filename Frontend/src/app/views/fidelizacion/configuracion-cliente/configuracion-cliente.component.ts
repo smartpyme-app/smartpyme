@@ -121,7 +121,7 @@ export class ConfiguracionClienteComponent implements OnInit {
             puntos_por_dolar: this.formatDecimal(parseFloat(tipo.puntos_por_dolar.toString())),
             configuracion_avanzada: {
               ...tipo.configuracion_avanzada,
-              valor_punto: this.formatDecimal(parseFloat(tipo.configuracion_avanzada?.valor_punto?.toString() || '0'))
+              valor_punto: this.formatValorPuntoDecimal(parseFloat(tipo.configuracion_avanzada?.valor_punto?.toString() || '0'))
             }
           }));
           this.pagination = {
@@ -275,7 +275,7 @@ export class ConfiguracionClienteComponent implements OnInit {
     }
 
     return {
-      valor_punto: config.valor_punto || 0.01,
+      valor_punto: config.valor_punto ?? 0.01,
       multiplicador_especial: config.multiplicador_especial || false,
       multiplicador_valor: config.multiplicador_valor,
       descuento_cumpleanos: config.descuento_cumpleanos || false,
@@ -564,7 +564,7 @@ export class ConfiguracionClienteComponent implements OnInit {
    * Mostrar simulación de venta con la configuración actual
    */
   private mostrarSimulacionVenta(): void {
-    const valorPunto = this.formData.configuracion_avanzada?.valor_punto || 0.01;
+    const valorPunto = this.formData.configuracion_avanzada?.valor_punto ?? 0.01;
     const puntosPorDolar = this.formData.puntos_por_dolar || 1.0;
     const minimoCanje = this.formData.minimo_canje || 100;
     const maximoCanje = this.formData.maximo_canje || 1000;
@@ -597,7 +597,7 @@ export class ConfiguracionClienteComponent implements OnInit {
         <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #dee2e6;">
           <h5 style="color: #495057; margin-bottom: 10px;">💰 Configuración Actual:</h5>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
-            <div><strong>Valor del punto:</strong> $${valorPunto.toFixed(2)}</div>
+            <div><strong>Valor del punto:</strong> $${valorPunto.toFixed(4)}</div>
             <div><strong>Puntos por dólar:</strong> ${puntosPorDolar}</div>
             <div><strong>Mínimo canje:</strong> ${minimoCanje} puntos</div>
             <div><strong>Máximo canje:</strong> ${maximoCanje} puntos</div>
@@ -919,5 +919,15 @@ export class ConfiguracionClienteComponent implements OnInit {
    */
   formatDecimal(value: number): number {
     return Math.round(value * 100) / 100;
+  }
+
+  /**
+   * Valor del punto en BD: decimal(8,4); no usar formatDecimal (2 cifras) para no perder precisión.
+   */
+  formatValorPuntoDecimal(value: number): number {
+    if (isNaN(value)) {
+      return 0;
+    }
+    return Math.round(value * 10000) / 10000;
   }
 }

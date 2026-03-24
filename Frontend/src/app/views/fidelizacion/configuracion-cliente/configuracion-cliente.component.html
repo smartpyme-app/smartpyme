@@ -256,9 +256,9 @@
               <div class="mb-3">
                 <label class="form-label">Valor del Punto ($)</label>
                 <input type="number" class="form-control" [(ngModel)]="formData.configuracion_avanzada.valor_punto"
-                  name="valor_punto" step="0.01" min="0" required>
+                  name="valor_punto" step="0.0001" min="0" required>
                 <small class="form-text text-muted">
-                  Valor en dólares de cada punto al canjear
+                  Valor en dólares de cada punto al canjear (hasta 4 decimales, p. ej. 0.001)
                 </small>
               </div>
 
