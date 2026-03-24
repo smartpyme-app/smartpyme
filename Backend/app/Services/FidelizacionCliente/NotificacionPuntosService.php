@@ -144,7 +144,7 @@ class NotificacionPuntosService
             ]);
 
             // Enviar email real (tanto en desarrollo como en producción)
-            // Mail::to($email)->send(new PuntosGanadosMailable($datosEmail));
+            Mail::to($email)->send(new PuntosGanadosMailable($datosEmail));
             Log::info("Email enviado exitosamente");
             
         } catch (\Exception $e) {

@@ -43,6 +43,14 @@ class CanjePuntosController extends Controller
             $clienteId = $request->input('cliente_id');
             $empresaId = $request->input('empresa_id');
 
+            // Verificación de autorización multi-tenant
+            if (Auth::user()->id_empresa !== $empresaId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No autorizado para acceder a esta empresa'
+                ], 403);
+            }
+
             $informacionPuntos = $this->consumoPuntosService->obtenerInformacionPuntosDisponibles($clienteId, $empresaId);
 
             return response()->json([
@@ -51,10 +59,17 @@ class CanjePuntosController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error al obtener información de puntos', [
+                'cliente_id' => $request->input('cliente_id'),
+                'empresa_id' => $request->input('empresa_id'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener información de puntos',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor'
             ], 500);
         }
     }
@@ -72,7 +87,8 @@ class CanjePuntosController extends Controller
                 'cliente_id' => 'required|integer|exists:clientes,id',
                 'empresa_id' => 'required|integer|exists:empresas,id',
                 'puntos_a_canjear' => 'required|integer|min:1',
-                'descripcion' => 'nullable|string|max:255'
+                'descripcion' => 'nullable|string|max:255',
+                'idempotency_token' => 'nullable|uuid'
             ]);
 
             if ($validator->fails()) {
@@ -87,8 +103,17 @@ class CanjePuntosController extends Controller
             $empresaId = $request->input('empresa_id');
             $puntosACanjear = $request->input('puntos_a_canjear');
             $descripcion = $request->input('descripcion');
+            $idempotencyToken = $request->input('idempotency_token');
 
-            $resultado = $this->consumoPuntosService->canjearPuntos($clienteId, $empresaId, $puntosACanjear, $descripcion);
+            // Verificación de autorización multi-tenant
+            if (Auth::user()->id_empresa !== $empresaId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No autorizado para acceder a esta empresa'
+                ], 403);
+            }
+
+            $resultado = $this->consumoPuntosService->canjearPuntos($clienteId, $empresaId, $puntosACanjear, $descripcion, $idempotencyToken);
 
             if ($resultado['success']) {
                 return response()->json([
@@ -105,10 +130,18 @@ class CanjePuntosController extends Controller
             }
 
         } catch (\Exception $e) {
+            \Log::error('Error interno al procesar el canje', [
+                'cliente_id' => $request->input('cliente_id'),
+                'empresa_id' => $request->input('empresa_id'),
+                'puntos_a_canjear' => $request->input('puntos_a_canjear'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error interno al procesar el canje',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor'
             ], 500);
         }
     }
@@ -139,6 +172,14 @@ class CanjePuntosController extends Controller
             $clienteId = $request->input('cliente_id');
             $empresaId = $request->input('empresa_id');
             $limite = $request->input('limite', 20);
+
+            // Verificación de autorización multi-tenant
+            if (Auth::user()->id_empresa !== $empresaId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No autorizado para acceder a esta empresa'
+                ], 403);
+            }
 
             $canjes = \App\Models\FidelizacionClientes\TransaccionPuntos::where('id_cliente', $clienteId)
                 ->where('id_empresa', $empresaId)
@@ -172,10 +213,17 @@ class CanjePuntosController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error al obtener historial de canjes', [
+                'cliente_id' => $request->input('cliente_id'),
+                'empresa_id' => $request->input('empresa_id'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener historial de canjes',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor'
             ], 500);
         }
     }

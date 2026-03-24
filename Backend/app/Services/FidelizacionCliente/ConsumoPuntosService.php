@@ -280,9 +280,10 @@ class ConsumoPuntosService
      * @param int $empresaId
      * @param int $puntosACanjear
      * @param string $descripcion
+     * @param string $idempotencyToken Token de idempotencia opcional desde frontend
      * @return array
      */
-    public function canjearPuntos(int $clienteId, int $empresaId, int $puntosACanjear, string $descripcion = null): array
+    public function canjearPuntos(int $clienteId, int $empresaId, int $puntosACanjear, string $descripcion = null, string $idempotencyToken = null): array
     {
         try {
             // 1. Verificar que la empresa tiene fidelización habilitada
@@ -325,29 +326,31 @@ class ConsumoPuntosService
 
             if ($puntosACanjear > $tipoCliente->maximo_canje) {
                 return [
-                    'success' => false, 
+                    'success' => false,
                     'error' => "El máximo de canje para este tipo de cliente es {$tipoCliente->maximo_canje} puntos",
                     'maximo_canje' => $tipoCliente->maximo_canje
                 ];
             }
 
-            // 5. Verificar saldo disponible del cliente
-            $puntosCliente = PuntosCliente::where('id_cliente', $clienteId)
-                ->where('id_empresa', $empresaId)
-                ->first();
+            // 5. Procesar el canje en una transacción (verificación de saldo dentro con lock)
+            return DB::transaction(function () use ($clienteId, $empresaId, $puntosACanjear, $descripcion, $tipoCliente, $idempotencyToken) {
+                // Obtener el cliente con bloqueo exclusivo para evitar race conditions
+                $puntosCliente = PuntosCliente::where('id_cliente', $clienteId)
+                    ->where('id_empresa', $empresaId)
+                    ->lockForUpdate()
+                    ->first();
 
-            if (!$puntosCliente || $puntosCliente->puntos_disponibles < $puntosACanjear) {
-                return [
-                    'success' => false, 
-                    'error' => 'Puntos insuficientes',
-                    'puntos_disponibles' => $puntosCliente ? $puntosCliente->puntos_disponibles : 0,
-                    'puntos_solicitados' => $puntosACanjear
-                ];
-            }
+                // Verificar saldo disponible DENTRO de la transacción con lock
+                if (!$puntosCliente || $puntosCliente->puntos_disponibles < $puntosACanjear) {
+                    return [
+                        'success' => false,
+                        'error' => 'Puntos insuficientes',
+                        'puntos_disponibles' => $puntosCliente ? $puntosCliente->puntos_disponibles : 0,
+                        'puntos_solicitados' => $puntosACanjear
+                    ];
+                }
 
-            // 6. Procesar el canje en una transacción
-            return DB::transaction(function () use ($clienteId, $empresaId, $puntosACanjear, $descripcion, $puntosCliente, $tipoCliente) {
-                return $this->procesarCanjeConFifo($clienteId, $empresaId, $puntosACanjear, $descripcion, $puntosCliente, $tipoCliente);
+                return $this->procesarCanjeConFifo($clienteId, $empresaId, $puntosACanjear, $descripcion, $puntosCliente, $tipoCliente, $idempotencyToken);
             });
 
         } catch (\Exception $e) {
@@ -372,11 +375,12 @@ class ConsumoPuntosService
      * @param string $descripcion
      * @param PuntosCliente $puntosCliente
      * @param TipoClienteEmpresa $tipoCliente
+     * @param string $idempotencyToken
      * @return array
      */
-    private function procesarCanjeConFifo(int $clienteId, int $empresaId, int $puntosACanjear, ?string $descripcion, PuntosCliente $puntosCliente, TipoClienteEmpresa $tipoCliente): array
+    private function procesarCanjeConFifo(int $clienteId, int $empresaId, int $puntosACanjear, ?string $descripcion, PuntosCliente $puntosCliente, TipoClienteEmpresa $tipoCliente, ?string $idempotencyToken): array
     {
-        // 1. Obtener ganancias disponibles ordenadas por FIFO (más antiguas primero, próximas a expirar primero)
+        // 1. Obtener ganancias disponibles ordenadas por FIFO con bloqueo exclusivo
         $gananciasDisponibles = TransaccionPuntos::where('id_cliente', $clienteId)
             ->where('id_empresa', $empresaId)
             ->where('tipo', TransaccionPuntos::TIPO_GANANCIA)
@@ -384,6 +388,8 @@ class ConsumoPuntosService
             ->whereRaw('puntos - puntos_consumidos > 0') // Solo con puntos disponibles
             ->orderBy('fecha_expiracion', 'asc') // Primero las que expiran pronto
             ->orderBy('created_at', 'asc') // Luego por orden de creación (FIFO)
+            ->orderBy('id', 'asc') // Orden determinístico final para evitar deadlocks
+            ->lockForUpdate() // Bloqueo exclusivo para evitar race conditions
             ->get();
 
         if ($gananciasDisponibles->isEmpty()) {
@@ -394,11 +400,39 @@ class ConsumoPuntosService
         $puntosAntes = $puntosCliente->puntos_disponibles;
         $puntosDespues = $puntosAntes - $puntosACanjear;
 
-        $idempotencyKey = TransaccionPuntos::generarIdempotencyKey(
-            $clienteId,
-            TransaccionPuntos::TIPO_CANJE,
-            'canje_' . time()
-        );
+        // Generar clave de idempotencia
+        // Si el frontend envía un token, usarlo directamente para idempotencia real
+        // Si no, generar UUID único (sin protección de duplicados - responsabilidad del frontend)
+        if ($idempotencyToken) {
+            $idempotencyKey = "canje_{$clienteId}_{$empresaId}_{$idempotencyToken}";
+
+            // Verificar si ya existe un canje con este token (protección anti-duplicados)
+            $canjeExistente = TransaccionPuntos::where('idempotency_key', $idempotencyKey)->first();
+
+            if ($canjeExistente) {
+                Log::info('Canje duplicado detectado por idempotency_token', [
+                    'cliente_id' => $clienteId,
+                    'empresa_id' => $empresaId,
+                    'idempotency_token' => $idempotencyToken,
+                    'canje_existente_id' => $canjeExistente->id
+                ]);
+
+                // Devolver el canje existente como exitoso (idempotencia correcta)
+                return [
+                    'success' => true,
+                    'transaccion_id' => $canjeExistente->id,
+                    'puntos_canjeados' => abs($canjeExistente->puntos),
+                    'valor_descuento' => $canjeExistente->monto_asociado,
+                    'puntos_despues' => $canjeExistente->puntos_despues,
+                    'mensaje' => 'Canje procesado previamente (idempotente)',
+                    'duplicado' => true
+                ];
+            }
+        } else {
+            // Sin token: generar UUID único (sin protección, cada request es considerado único)
+            $uuid = \Illuminate\Support\Str::uuid();
+            $idempotencyKey = "canje_{$clienteId}_{$empresaId}_{$uuid}";
+        }
 
         // Calcular el valor del descuento usando la configuración del tipo de cliente
         $valorDescuento = $tipoCliente->calcularDescuento($puntosACanjear);
