@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 
@@ -9,6 +9,7 @@ import { AgGridAngular } from 'ag-grid-angular';
 })
 export class GastosComponent implements OnInit, OnChanges {
   @Input() datos: any = {};
+  @Output() filtrosCambiados = new EventEmitter<any>();
 
   // Datos originales (sin filtrar)
   datosOriginales: any = {};
@@ -17,6 +18,7 @@ export class GastosComponent implements OnInit, OnChanges {
   datosFiltrados: any = {};
 
   public inicializado: boolean = false;
+  private filtrosListosParaEmitir = false;
 
   @ViewChild('detalleGastosGrid') detalleGastosGrid!: AgGridAngular;
   
@@ -29,8 +31,8 @@ export class GastosComponent implements OnInit, OnChanges {
   // AG Grid options
   detalleGastosGridOptions: GridOptions = {};
 
-  fechaInicio: string = '';
-  fechaFin: string = '';
+  anio: string = new Date().getFullYear().toString();
+  mes: string = '';
   filtroSucursal: string = '';
   filtroEstado: string = '';
   filtroCliente: string = '';
@@ -104,13 +106,6 @@ export class GastosComponent implements OnInit, OnChanges {
   constructor(private cdr: ChangeDetectorRef) { }
 
   ngOnInit(): void {
-    // Inicializar fechas por defecto (mes actual)
-    const hoy = new Date();
-    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    
-    this.fechaFin = hoy.toISOString().split('T')[0];
-    this.fechaInicio = primerDiaMes.toISOString().split('T')[0];
-    
     // Configurar AG Grid
     this.configurarAGGrid();
     
@@ -118,6 +113,10 @@ export class GastosComponent implements OnInit, OnChanges {
     if (this.datos && Object.keys(this.datos).length > 0) {
       this.inicializarDatos();
     }
+
+    setTimeout(() => {
+      this.filtrosListosParaEmitir = true;
+    }, 100);
   }
 
   configurarAGGrid(): void {
@@ -280,21 +279,30 @@ export class GastosComponent implements OnInit, OnChanges {
     return filtros.join(', ');
   }
 
-  aplicarFiltros() {
-    console.log('aplicarFiltros');
-    console.log(this.fechaInicio);
-    console.log(this.fechaFin);
-    console.log(this.filtroSucursal);
-    console.log(this.filtroEstado);
-    console.log(this.filtroCliente);
+  aplicarFiltros(): void {
+    if (!this.filtrosListosParaEmitir) {
+      return;
+    }
+    if (!this.anio) {
+      this.anio = new Date().getFullYear().toString();
+    }
+    const filtros: any = {
+      anio: this.anio,
+      sucursal: this.filtroSucursal,
+      cliente: this.filtroCliente
+    };
+    if (this.mes) {
+      filtros.mes = this.mes;
+    }
+    if (this.filtroEstado) {
+      filtros.estadoGasto = this.filtroEstado;
+    }
+    this.filtrosCambiados.emit(filtros);
   }
 
   limpiarFiltros(): void {
-    const hoy = new Date();
-    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    
-    this.fechaFin = hoy.toISOString().split('T')[0];
-    this.fechaInicio = primerDiaMes.toISOString().split('T')[0];
+    this.anio = new Date().getFullYear().toString();
+    this.mes = '';
     this.filtroSucursal = '';
     this.filtroEstado = '';
     this.filtroCliente = '';

@@ -1,3 +1,19 @@
+/* Contenedor que envuelve el área de datos + overlay de carga (no desmontar hijos al cargar) */
+.dashboard-shell {
+    min-height: 12rem;
+}
+
+.dashboard-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248, 249, 250, 0.72);
+    z-index: 10;
+    border-radius: 8px;
+}
+
 /* Fondo general del dashboard */
 .dashboard-container {
     background-color: #f8f9fa;

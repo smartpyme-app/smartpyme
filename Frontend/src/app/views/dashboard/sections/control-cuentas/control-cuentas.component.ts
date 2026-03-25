@@ -25,9 +25,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   quickFilterText: string = '';
   quickFilterTextResumen: string = '';
 
-  // Filtros de fechas
-  fechaInicio: string = '';
-  fechaFin: string = '';
+  anio: string = new Date().getFullYear().toString();
+  mes: string = '';
   
   // Filtros adicionales (Cuentas por cobrar)
   mostrarFiltrosAdicionales: boolean = false;
@@ -66,7 +65,6 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   constructor() { }
 
   ngOnInit(): void {
-    this.inicializarFechas();
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridResumenPagar();
@@ -97,14 +95,6 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     }
   }
 
-  inicializarFechas(): void {
-    const hoy = new Date();
-    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    
-    this.fechaFin = hoy.toISOString().split('T')[0];
-    this.fechaInicio = primerDiaMes.toISOString().split('T')[0];
-  }
-
   cargarOpcionesFiltros(): void {
     // Aquí cargarías las opciones desde el servicio
     // Por ahora valores de ejemplo
@@ -123,11 +113,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   limpiarFiltros(): void {
-    const hoy = new Date();
-    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    
-    this.fechaFin = hoy.toISOString().split('T')[0];
-    this.fechaInicio = primerDiaMes.toISOString().split('T')[0];
+    this.anio = new Date().getFullYear().toString();
+    this.mes = '';
     // Limpiar filtros de cuentas por cobrar
     this.filtroSucursal = '';
     this.filtroEstado = '';
@@ -147,21 +134,47 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       return;
     }
     
-    const filtros = {
-      fechaInicio: this.fechaInicio,
-      fechaFin: this.fechaFin,
-      // Filtros de cuentas por cobrar
+    if (!this.anio) {
+      this.anio = new Date().getFullYear().toString();
+    }
+
+    const filtros: any = {
+      anio: this.anio,
       sucursal: this.filtroSucursal,
       estado: this.filtroEstado,
       cliente: this.filtroCliente,
-      // Filtros de cuentas por pagar
       proveedor: this.filtroProveedor,
       estadoPagar: this.filtroEstadoPagar,
       categoriaGasto: this.filtroCategoriaGasto
     };
+    if (this.mes) {
+      filtros.mes = this.mes;
+    }
     
     // Emitir evento al componente padre para recargar datos
     this.filtrosCambiados.emit(filtros);
+  }
+
+  get puedeLimpiarFiltrosCxc(): boolean {
+    const anioActual = new Date().getFullYear().toString();
+    return (
+      !!this.mes ||
+      this.anio !== anioActual ||
+      !!this.filtroSucursal ||
+      !!this.filtroEstado ||
+      !!this.filtroCliente
+    );
+  }
+
+  get puedeLimpiarFiltrosCxp(): boolean {
+    const anioActual = new Date().getFullYear().toString();
+    return (
+      !!this.mes ||
+      this.anio !== anioActual ||
+      !!this.filtroProveedor ||
+      !!this.filtroEstadoPagar ||
+      !!this.filtroCategoriaGasto
+    );
   }
 
   formatCurrency(value: number): string {

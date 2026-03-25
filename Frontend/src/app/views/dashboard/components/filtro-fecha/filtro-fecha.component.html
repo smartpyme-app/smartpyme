@@ -1,0 +1,35 @@
+<div class="d-flex align-items-end gap-3">
+    <div class="d-flex flex-column">
+        <label [attr.for]="idAnio" [class]="labelClass" [style.color]="labelColor || null">Año</label>
+        <select
+            [id]="idAnio"
+            class="form-select"
+            [ngModel]="anio"
+            (ngModelChange)="onAnioChange($event)">
+            <option value="">Seleccionar</option>
+            <option *ngFor="let a of aniosDisponibles; trackBy: trackByAnio" [value]="a">{{ a }}</option>
+        </select>
+    </div>
+    <div class="d-flex flex-column">
+        <label [attr.for]="idMes" [class]="labelClass" [style.color]="labelColor || null">Mes</label>
+        <select
+            [id]="idMes"
+            class="form-select"
+            [ngModel]="mes"
+            (ngModelChange)="onMesChange($event)">
+            <option value="">Todos</option>
+            <option value="1">Enero</option>
+            <option value="2">Febrero</option>
+            <option value="3">Marzo</option>
+            <option value="4">Abril</option>
+            <option value="5">Mayo</option>
+            <option value="6">Junio</option>
+            <option value="7">Julio</option>
+            <option value="8">Agosto</option>
+            <option value="9">Septiembre</option>
+            <option value="10">Octubre</option>
+            <option value="11">Noviembre</option>
+            <option value="12">Diciembre</option>
+        </select>
+    </div>
+</div>

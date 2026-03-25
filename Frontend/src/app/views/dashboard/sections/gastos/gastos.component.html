@@ -7,27 +7,13 @@
                 <div class="card-body">
                     <h2 class="mb-3" style="color: #F19447;">Gastos</h2>
                     <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
-                        <!-- Rango de fechas a la izquierda -->
-                        <div class="d-flex align-items-end gap-3">
-                            <div class="d-flex flex-column">
-                                <label for="fechaInicio" class="fw-medium small mb-1">Fecha Inicio</label>
-                                <input 
-                                    type="date" 
-                                    id="fechaInicio"
-                                    class="form-control"
-                                    [(ngModel)]="fechaInicio"
-                                    (change)="aplicarFiltros()">
-                            </div>
-                            <div class="d-flex flex-column">
-                                <label for="fechaFin" class="fw-medium small mb-1">Fecha Fin</label>
-                                <input 
-                                    type="date" 
-                                    id="fechaFin"
-                                    class="form-control"
-                                    [(ngModel)]="fechaFin"
-                                    (change)="aplicarFiltros()">
-                            </div>
-                        </div>
+                        <app-filtro-fecha
+                            [(anio)]="anio"
+                            [(mes)]="mes"
+                            (filtroChange)="aplicarFiltros()"
+                            controlId="gastos-filtro-principal"
+                            labelClass="fw-medium small mb-1">
+                        </app-filtro-fecha>
                         
                         <!-- Botones y controles a la derecha -->
                         <div class="d-flex align-items-end gap-2">

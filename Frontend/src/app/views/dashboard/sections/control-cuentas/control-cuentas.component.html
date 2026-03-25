@@ -7,27 +7,12 @@
                 <div class="card-body">
                     <h2 class="mb-3" style="color: #3366cc;">Cuentas por cobrar</h2>
                     <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
-                        <!-- Rango de fechas a la izquierda -->
-                        <div class="d-flex align-items-end gap-3">
-                            <div class="d-flex flex-column">
-                                <label for="fechaInicio" class="text-primary fw-medium small mb-1">Fecha Inicio</label>
-                                <input 
-                                    type="date" 
-                                    id="fechaInicio"
-                                    class="form-control"
-                                    [(ngModel)]="fechaInicio"
-                                    (change)="aplicarFiltros()">
-                            </div>
-                            <div class="d-flex flex-column">
-                                <label for="fechaFin" class="text-primary fw-medium small mb-1">Fecha Fin</label>
-                                <input 
-                                    type="date" 
-                                    id="fechaFin"
-                                    class="form-control"
-                                    [(ngModel)]="fechaFin"
-                                    (change)="aplicarFiltros()">
-                            </div>
-                        </div>
+                        <app-filtro-fecha
+                            [(anio)]="anio"
+                            [(mes)]="mes"
+                            (filtroChange)="aplicarFiltros()"
+                            controlId="control-cuentas-cxc">
+                        </app-filtro-fecha>
                         
                         <!-- Botones y controles a la derecha -->
                         <div class="d-flex align-items-end gap-2">
@@ -49,7 +34,7 @@
                                 class="btn btn-outline-primary"
                                 tooltip="Limpiar filtros"
                                 (click)="limpiarFiltros()"
-                                *ngIf="fechaInicio || fechaFin || filtroSucursal || filtroEstado || filtroCliente">
+                                *ngIf="puedeLimpiarFiltrosCxc">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
                             </button>
                         </div>
@@ -311,27 +296,14 @@
                 <div class="card-body">
                     <h2 class="mb-3" style="color: #F19447;">Cuentas por pagar</h2>
                     <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
-                        <!-- Rango de fechas a la izquierda -->
-                        <div class="d-flex align-items-end gap-3">
-                            <div class="d-flex flex-column">
-                                <label for="fechaInicio2" class="fw-medium small mb-1" style="color: #F19447;">Fecha Inicio</label>
-                                <input 
-                                    type="date" 
-                                    id="fechaInicio2"
-                                    class="form-control"
-                                    [(ngModel)]="fechaInicio"
-                                    (change)="aplicarFiltros()">
-                            </div>
-                            <div class="d-flex flex-column">
-                                <label for="fechaFin2" class="fw-medium small mb-1" style="color: #F19447;">Fecha Fin</label>
-                                <input 
-                                    type="date" 
-                                    id="fechaFin2"
-                                    class="form-control"
-                                    [(ngModel)]="fechaFin"
-                                    (change)="aplicarFiltros()">
-                            </div>
-                        </div>
+                        <app-filtro-fecha
+                            [(anio)]="anio"
+                            [(mes)]="mes"
+                            (filtroChange)="aplicarFiltros()"
+                            controlId="control-cuentas-cxp"
+                            labelClass="fw-medium small mb-1"
+                            labelColor="#F19447">
+                        </app-filtro-fecha>
                         
                         <!-- Botones y controles a la derecha -->
                         <div class="d-flex align-items-end gap-2">
@@ -355,7 +327,7 @@
                                 style="border-color: #F19447; color: #F19447;"
                                 tooltip="Limpiar filtros"
                                 (click)="limpiarFiltros()"
-                                *ngIf="fechaInicio || fechaFin || filtroProveedor || filtroEstadoPagar || filtroCategoriaGasto">
+                                *ngIf="puedeLimpiarFiltrosCxp">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
                             </button>
                         </div>

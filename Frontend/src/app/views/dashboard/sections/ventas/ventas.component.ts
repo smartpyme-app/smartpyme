@@ -35,7 +35,6 @@ export class VentasComponent implements OnInit, OnChanges {
   // Filtro por año (obligatorio en API) y mes (opcional; vacío = año completo)
   anio: string = new Date().getFullYear().toString();
   mes: string = '';
-  aniosDisponibles: number[] = [];
   
   // Filtros adicionales
   mostrarFiltrosAdicionales: boolean = false;
@@ -245,10 +244,6 @@ export class VentasComponent implements OnInit, OnChanges {
   });
 
   ngOnInit(): void {
-    const anioActual = new Date().getFullYear();
-    for (let a = 2023; a <= anioActual; a++) {
-      this.aniosDisponibles.push(a);
-    }
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridClientes();

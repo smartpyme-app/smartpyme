@@ -35,9 +35,8 @@ export class InventarioComponent implements OnInit, OnChanges {
   private ajustesGridColumnApi!: ColumnApi;
   quickFilterTextAjustes: string = '';
 
-  // Filtros de fechas
-  fechaInicio: string = '';
-  fechaFin: string = '';
+  anio: string = new Date().getFullYear().toString();
+  mes: string = '';
   
   // Filtros adicionales
   mostrarFiltrosAdicionales: boolean = false;
@@ -70,7 +69,6 @@ export class InventarioComponent implements OnInit, OnChanges {
   constructor() { }
 
   ngOnInit(): void {
-    this.inicializarFechas();
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridEntradasSalidas();
@@ -105,14 +103,6 @@ export class InventarioComponent implements OnInit, OnChanges {
     }
   }
 
-  inicializarFechas(): void {
-    const hoy = new Date();
-    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    
-    this.fechaFin = hoy.toISOString().split('T')[0];
-    this.fechaInicio = primerDiaMes.toISOString().split('T')[0];
-  }
-
   cargarOpcionesFiltros(): void {
     // Aquí cargarías las opciones desde el servicio
     // Por ahora valores de ejemplo
@@ -127,11 +117,8 @@ export class InventarioComponent implements OnInit, OnChanges {
   }
 
   limpiarFiltros(): void {
-    const hoy = new Date();
-    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    
-    this.fechaFin = hoy.toISOString().split('T')[0];
-    this.fechaInicio = primerDiaMes.toISOString().split('T')[0];
+    this.anio = new Date().getFullYear().toString();
+    this.mes = '';
     this.filtroCategoria = '';
     this.filtroProducto = '';
     this.filtroSucursal = '';
@@ -145,17 +132,34 @@ export class InventarioComponent implements OnInit, OnChanges {
       return;
     }
     
-    const filtros = {
-      fechaInicio: this.fechaInicio,
-      fechaFin: this.fechaFin,
+    if (!this.anio) {
+      this.anio = new Date().getFullYear().toString();
+    }
+
+    const filtros: any = {
+      anio: this.anio,
       categoria: this.filtroCategoria,
       producto: this.filtroProducto,
       sucursal: this.filtroSucursal,
       proveedor: this.filtroProveedor
     };
-    
-    // Emitir evento al componente padre para recargar datos
+    if (this.mes) {
+      filtros.mes = this.mes;
+    }
+
     this.filtrosCambiados.emit(filtros);
+  }
+
+  get puedeLimpiarFiltrosInventario(): boolean {
+    const anioActual = new Date().getFullYear().toString();
+    return (
+      !!this.mes ||
+      this.anio !== anioActual ||
+      !!this.filtroCategoria ||
+      !!this.filtroProducto ||
+      !!this.filtroSucursal ||
+      !!this.filtroProveedor
+    );
   }
 
   formatCurrency(value: number): string {

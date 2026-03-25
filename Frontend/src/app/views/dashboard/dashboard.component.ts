@@ -111,6 +111,33 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  onFiltrosGastosCambiados(filtros: any): void {
+    this.loading = true;
+
+    const filtrosCompletos = {
+      seccion: 'Gastos',
+      ...filtros
+    };
+
+    this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
+      next: (data) => {
+        this.datos = data || {};
+        this.loading = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
+      },
+      error: (error) => {
+        console.error('Error al cargar datos de gastos:', error);
+        this.datos = {};
+        this.loading = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
+      }
+    });
+  }
+
   onFiltrosVentasCambiados(filtros: any): void {
     // Recargar datos con los filtros específicos de ventas
     this.loading = true;

@@ -12,47 +12,50 @@
     </div>
 </div> 
 
-<div class="dashboard-container" *ngIf="!loading">
-    <ng-container [ngSwitch]="seccionActiva">
-        <app-resultados 
-            *ngSwitchCase="'Resultados'"
-            [datos]="datos"
-            (filtrosCambiados)="onFiltrosResultadosCambiados($event)">
-        </app-resultados>
+<div class="dashboard-shell position-relative">
+    <div class="dashboard-container">
+        <ng-container [ngSwitch]="seccionActiva">
+            <app-resultados 
+                *ngSwitchCase="'Resultados'"
+                [datos]="datos"
+                (filtrosCambiados)="onFiltrosResultadosCambiados($event)">
+            </app-resultados>
 
-        <app-ventas 
-            *ngSwitchCase="'Ventas'"
-            [datos]="datos"
-            (filtrosCambiados)="onFiltrosVentasCambiados($event)">
-        </app-ventas>
+            <app-ventas 
+                *ngSwitchCase="'Ventas'"
+                [datos]="datos"
+                (filtrosCambiados)="onFiltrosVentasCambiados($event)">
+            </app-ventas>
 
-        <app-finanzas 
-            *ngSwitchCase="'Finanzas'"
-            [datos]="datos">
-        </app-finanzas>
+            <!-- <app-finanzas 
+                *ngSwitchCase="'Finanzas'"
+                [datos]="datos">
+            </app-finanzas> -->
 
-        <app-gastos 
-            *ngSwitchCase="'Gastos'"
-            [datos]="datos">
-        </app-gastos>
+            <app-gastos 
+                *ngSwitchCase="'Gastos'"
+                [datos]="datos"
+                (filtrosCambiados)="onFiltrosGastosCambiados($event)">
+            </app-gastos>
 
-        <app-control-cuentas 
-            *ngSwitchCase="'Control de cuentas'"
-            [datos]="datos"
-            (filtrosCambiados)="onFiltrosControlCuentasCambiados($event)">
-        </app-control-cuentas>
+            <app-control-cuentas 
+                *ngSwitchCase="'Control de cuentas'"
+                [datos]="datos"
+                (filtrosCambiados)="onFiltrosControlCuentasCambiados($event)">
+            </app-control-cuentas>
 
-        <app-inventario 
-            *ngSwitchCase="'Inventario'"
-            [datos]="datos"
-            (filtrosCambiados)="onFiltrosInventarioCambiados($event)">
-        </app-inventario>
-    </ng-container>
-</div>
+            <app-inventario 
+                *ngSwitchCase="'Inventario'"
+                [datos]="datos"
+                (filtrosCambiados)="onFiltrosInventarioCambiados($event)">
+            </app-inventario>
+        </ng-container>
+    </div>
 
-<div class="d-flex justify-content-center align-items-center p-5" *ngIf="loading">
-    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-        <span class="visually-hidden">Cargando...</span>
+    <div class="dashboard-loading-overlay" *ngIf="loading" aria-busy="true" aria-live="polite">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
     </div>
 </div>
 

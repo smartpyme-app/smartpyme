@@ -13,7 +13,7 @@ export class DashboardComponent implements OnInit {
   // Filtros
   secciones = [
     { nombre: 'Ventas', activo: false },
-    { nombre: 'Finanzas', activo: false },
+    // { nombre: 'Finanzas', activo: false },
     { nombre: 'Gastos', activo: false },
     { nombre: 'Resultados', activo: true },
     { nombre: 'Control de cuentas', activo: false },

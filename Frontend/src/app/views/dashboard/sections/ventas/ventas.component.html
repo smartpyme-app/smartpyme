@@ -5,42 +5,12 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
-                        <!-- Año y mes (API: anio obligatorio, mes opcional = año completo) -->
-                        <div class="d-flex align-items-end gap-3">
-                            <div class="d-flex flex-column">
-                                <label for="anio" class="text-primary fw-medium small mb-1">Año</label>
-                                <select 
-                                    id="anio"
-                                    class="form-select"
-                                    [(ngModel)]="anio"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Seleccionar</option>
-                                    <option *ngFor="let a of aniosDisponibles; trackBy: trackByIndex" [value]="a">{{ a }}</option>
-                                </select>
-                            </div>
-                            <div class="d-flex flex-column">
-                                <label for="mes" class="text-primary fw-medium small mb-1">Mes</label>
-                                <select 
-                                    id="mes"
-                                    class="form-select"
-                                    [(ngModel)]="mes"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todos</option>
-                                    <option value="1">Enero</option>
-                                    <option value="2">Febrero</option>
-                                    <option value="3">Marzo</option>
-                                    <option value="4">Abril</option>
-                                    <option value="5">Mayo</option>
-                                    <option value="6">Junio</option>
-                                    <option value="7">Julio</option>
-                                    <option value="8">Agosto</option>
-                                    <option value="9">Septiembre</option>
-                                    <option value="10">Octubre</option>
-                                    <option value="11">Noviembre</option>
-                                    <option value="12">Diciembre</option>
-                                </select>
-                            </div>
-                        </div>
+                        <app-filtro-fecha
+                            [(anio)]="anio"
+                            [(mes)]="mes"
+                            (filtroChange)="aplicarFiltros()"
+                            controlId="ventas-filtro-principal">
+                        </app-filtro-fecha>
                         
                         <!-- Botones y controles a la derecha -->
                         <div class="d-flex align-items-end gap-2">
@@ -526,42 +496,12 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
-                        <!-- Año y mes (API: anio obligatorio, mes opcional = año completo) -->
-                        <div class="d-flex align-items-end gap-3">
-                            <div class="d-flex flex-column">
-                                <label for="anioVentasTabla" class="text-primary fw-medium small mb-1">Año</label>
-                                <select 
-                                    id="anioVentasTabla"
-                                    class="form-select"
-                                    [(ngModel)]="anio"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Seleccionar</option>
-                                    <option *ngFor="let a of aniosDisponibles; trackBy: trackByIndex" [value]="a">{{ a }}</option>
-                                </select>
-                            </div>
-                            <div class="d-flex flex-column">
-                                <label for="mesVentasTabla" class="text-primary fw-medium small mb-1">Mes</label>
-                                <select 
-                                    id="mesVentasTabla"
-                                    class="form-select"
-                                    [(ngModel)]="mes"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todos</option>
-                                    <option value="1">Enero</option>
-                                    <option value="2">Febrero</option>
-                                    <option value="3">Marzo</option>
-                                    <option value="4">Abril</option>
-                                    <option value="5">Mayo</option>
-                                    <option value="6">Junio</option>
-                                    <option value="7">Julio</option>
-                                    <option value="8">Agosto</option>
-                                    <option value="9">Septiembre</option>
-                                    <option value="10">Octubre</option>
-                                    <option value="11">Noviembre</option>
-                                    <option value="12">Diciembre</option>
-                                </select>
-                            </div>
-                        </div>
+                        <app-filtro-fecha
+                            [(anio)]="anio"
+                            [(mes)]="mes"
+                            (filtroChange)="aplicarFiltros()"
+                            controlId="ventas-filtro-tablas">
+                        </app-filtro-fecha>
                         
                         <!-- Botones y controles a la derecha -->
                         <div class="d-flex align-items-end gap-2">

@@ -16,6 +16,7 @@ import { TreemapChartComponent } from './components/treemap-chart/treemap-chart.
 import { AccountsListComponent } from './components/accounts-list/accounts-list.component';
 import { CashFlowGaugeComponent } from './components/cash-flow-gauge/cash-flow-gauge.component';
 import { BudgetCardComponent } from './components/budget-card/budget-card.component';
+import { FiltroFechaComponent } from './components/filtro-fecha/filtro-fecha.component';
 
 // Componentes de secciones
 import { ResultadosComponent } from './sections/resultados/resultados.component';
@@ -49,6 +50,7 @@ import { PipesModule } from '@pipes/pipes.module';
     AccountsListComponent,
     CashFlowGaugeComponent,
     BudgetCardComponent,
+    FiltroFechaComponent,
     ResultadosComponent,
     VentasComponent,
     FinanzasComponent,
@@ -66,6 +68,7 @@ import { PipesModule } from '@pipes/pipes.module';
     AccountsListComponent,
     CashFlowGaugeComponent,
     BudgetCardComponent,
+    FiltroFechaComponent,
     RevoGrid
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
