@@ -178,9 +178,6 @@ class ComprasController extends Controller
             // Ajustar stocks
             foreach ($compra->detalles as $detalle) {
 
-                $producto = Producto::where('id', $detalle->id_producto)
-                                        ->with('composiciones')->firstOrFail();
-                                        
                 $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
                 
                 // Anular compra y regresar stock

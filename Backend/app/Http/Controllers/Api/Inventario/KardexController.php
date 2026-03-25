@@ -11,7 +11,7 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\KardexMasivoQueue;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\Inventario\KardexExport;
+use App\Exports\Inventario\KardexFarmaciasExport;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 
@@ -130,7 +130,7 @@ class KardexController extends Controller
 
     public function export(Request $request)
     {
-        $kardex = new KardexExport();
+        $kardex = new KardexFarmaciasExport();
         $kardex->filter($request);
 
         return Excel::download($kardex, 'kardex.xlsx');

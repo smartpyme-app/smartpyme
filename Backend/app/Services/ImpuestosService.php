@@ -107,6 +107,31 @@ class ImpuestosService
     }
 
     /**
+     * Calcula el IVA desde la base gravada según regla de Hacienda (El Salvador).
+     * IVA = round(baseGravada * porcentaje/100, 2)
+     *
+     * @param float $baseGravada Subtotal o base gravada sin IVA
+     * @param int $empresaId
+     * @return float Monto de IVA redondeado a 2 decimales
+     */
+    public function calcularIvaDesdeBaseGravada($baseGravada, $empresaId)
+    {
+        $baseGravada = floatval($baseGravada);
+
+        if ($baseGravada <= 0) {
+            return 0.0;
+        }
+
+        $porcentajeIva = $this->obtenerPorcentajeImpuesto($empresaId);
+
+        if ($porcentajeIva <= 0) {
+            return 0.0;
+        }
+
+        return round($baseGravada * ($porcentajeIva / 100), 2);
+    }
+
+    /**
      * Calcula el monto de impuesto desde un precio con impuesto
      *
      * @param float $precioConImpuesto

@@ -32,7 +32,7 @@ class ClientesController extends Controller
         $clientes = Cliente::select([
                 'id', 'nombre', 'apellido', 'nombre_empresa', 'tipo', 'tipo_contribuyente',
                 'nit', 'dui', 'ncr', 'giro', 'telefono', 'correo', 'direccion',
-                'red_social', 'enable', 'fecha_cumpleanos', 'created_at', 'updated_at'
+                'red_social', 'enable', 'fecha_cumpleanos', 'created_at', 'updated_at', 'id_empresa'
             ])
             ->with(['contactos' => function($query) {
                 $query->select('id', 'id_cliente', 'nombre', 'telefono', 'correo', 'estado');

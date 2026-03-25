@@ -63,9 +63,9 @@
                 </div>
                 <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
                 
-                <!-- Botón de Puntos -->
+                <!-- Botón de Puntos (solo si la empresa tiene módulo de fidelización activo) -->
                 <button 
-                    *ngIf="venta?.cliente && venta.cliente.id" 
+                    *ngIf="tieneFidelizacionHabilitada && venta?.cliente && venta.cliente.id" 
                     type="button"
                     class="btn ms-2"
                     [class.btn-success]="puntosCliente > 0"
@@ -106,14 +106,22 @@
             placeholder="Número de identificación">
         </div>
     </div>
-    <div class="row mt-2" *ngIf="venta.cliente?.limite_credito && venta.cotizacion != 1">
+    <!-- Estado de cuenta: bloque unificado cuando pref habilitada, o solo crédito cuando pref deshabilitada y cliente tiene límite -->
+    <div class="row mt-2" *ngIf="((apiService.isEstadoCuentaEnFacturacionHabilitado() && venta.cliente?.id) || (!apiService.isEstadoCuentaEnFacturacionHabilitado() && venta.cliente?.limite_credito)) && venta.cotizacion != 1">
         <div class="col-12">
-            <div class="alert alert-info py-2 mb-0 small">
-                <strong>Crédito del cliente:</strong>
-                Límite permitido: {{ venta.cliente.limite_credito | currency:'USD':'symbol':'1.2' }}
-                • Límite actual: {{ ((venta.cliente.limite_credito ?? 0) - (venta.cliente.saldo_pendiente ?? 0)) | currency:'USD':'symbol':'1.2' }}
-                <span *ngIf="venta.cliente.dias_credito"> • Días de crédito: {{ venta.cliente.dias_credito }}</span>
-                • Saldo pendiente: {{ (venta.cliente.saldo_pendiente ?? 0) | currency:'USD':'symbol':'1.2' }}
+            <div class="alert alert-info py-2 mb-0 small d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <strong>{{ venta.cliente?.limite_credito ? 'Estado de cuenta y crédito del cliente:' : 'Estado de cuenta del cliente:' }}</strong>
+                    Saldo pendiente: {{ (venta.cliente?.saldo_pendiente ?? 0) | currency:'USD':'symbol':'1.2' }}
+                    <span *ngIf="venta.cliente?.limite_credito">
+                        • Límite permitido: {{ venta.cliente.limite_credito | currency:'USD':'symbol':'1.2' }}
+                        • Límite disponible: {{ ((venta.cliente.limite_credito ?? 0) - (venta.cliente.saldo_pendiente ?? 0)) | currency:'USD':'symbol':'1.2' }}
+                        <span *ngIf="venta.cliente.dias_credito"> • Días de crédito: {{ venta.cliente.dias_credito }}</span>
+                    </span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-info" (click)="abrirEstadoCuentaPdf()" title="Imprimir estado de cuenta">
+                    <i class="fa fa-print me-1"></i> Ver estado de cuenta
+                </button>
             </div>
         </div>
     </div>

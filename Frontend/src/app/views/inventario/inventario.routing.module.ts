@@ -16,6 +16,7 @@ import { MateriaPrimaComponent } from '@views/inventario/materias-prima/materia-
 import { KardexComponent } from '@views/inventario/kardex/kardex.component';
 import { TrasladosComponent } from '@views/inventario/traslados/traslados.component';
 import { TrasladoComponent } from '@views/inventario/traslados/traslado/traslado.component';
+import { TrasladoDetalleComponent } from '@views/inventario/traslados/traslado-detalle/traslado-detalle.component';
 import { AjustesComponent } from '@views/inventario/ajustes/ajustes.component';
 import { AjusteComponent } from '@views/inventario/ajustes/ajuste/ajuste.component';
 import { CategoriasComponent } from '@views/inventario/categorias/categorias.component';
@@ -56,11 +57,13 @@ const routes: Routes = [
         { path: 'materia-prima/editar/:id', component: ProductoComponent, title: 'Materia prima'  },
 
         { path: 'producto/:id', component: ProductoComponent },
+        { path: 'kardex', component: KardexComponent, title: 'Kardex' },
         { path: 'kardex/:id', component: KardexComponent },
         { path: 'promociones', component: PromocionesComponent},
         
         { path: 'traslados', component: TrasladosComponent, title: 'Traslados' },
         { path: 'traslado/:id', component: TrasladoComponent, title: 'Traslado'  },
+        { path: 'traslado/detalle/:id', component: TrasladoDetalleComponent, title: 'Detalle de traslado' },
 
         { path: 'categorias', component: CategoriasComponent, title: 'Categorias' },
         
