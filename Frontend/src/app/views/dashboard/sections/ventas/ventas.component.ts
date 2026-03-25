@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
@@ -6,7 +6,8 @@ import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 @Component({
   selector: 'app-ventas',
   templateUrl: './ventas.component.html',
-  styleUrls: ['./ventas.component.css']
+  styleUrls: ['./ventas.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VentasComponent implements OnInit, OnChanges {
   @Input() datos: any = {};
@@ -31,9 +32,10 @@ export class VentasComponent implements OnInit, OnChanges {
   quickFilterText: string = '';
   busquedaVentasDetalladas: string = '';
 
-  // Filtros de fechas
-  fechaInicio: string = '';
-  fechaFin: string = '';
+  // Filtro por año (obligatorio en API) y mes (opcional; vacío = año completo)
+  anio: string = new Date().getFullYear().toString();
+  mes: string = '';
+  aniosDisponibles: number[] = [];
   
   // Filtros adicionales
   mostrarFiltrosAdicionales: boolean = false;
@@ -120,6 +122,12 @@ export class VentasComponent implements OnInit, OnChanges {
     }
   ];
 
+  // Propiedades cacheadas para evitar recálculos
+  private _ventasDetalladasRowsCache: any[] = [];
+  private _ventasPorProductoRowsCache: any[] = [];
+  private _ventasPorClienteRowsCache: any[] = [];
+  private _lastDatosHash: string = '';
+
   ventasPorProductoColumns = [
     { 
       prop: 'categoria', 
@@ -186,25 +194,76 @@ export class VentasComponent implements OnInit, OnChanges {
     }
   ];
 
-  constructor() { }
+  constructor(private cdr: ChangeDetectorRef) { }
 
   private inicializado: boolean = false;
 
+  /**
+   * Método eficiente de clonación profunda
+   */
+  private clonarDatos(obj: any): any {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (obj instanceof Date) return new Date(obj.getTime());
+    if (Array.isArray(obj)) return obj.map(item => this.clonarDatos(item));
+
+    const clonado: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        clonado[key] = this.clonarDatos(obj[key]);
+      }
+    }
+    return clonado;
+  }
+
+  /**
+   * Genera un hash simple de los datos para detectar cambios
+   */
+  private generarHashDatos(datos: any): string {
+    if (!datos) return '';
+    try {
+      const str = JSON.stringify(datos);
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return hash.toString();
+    } catch {
+      return Math.random().toString();
+    }
+  }
+
+  /**
+   * Formateador de moneda con caché
+   */
+  private currencyFormatter = new Intl.NumberFormat('es-GT', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
   ngOnInit(): void {
-    this.inicializarFechas();
+    const anioActual = new Date().getFullYear();
+    for (let a = 2023; a <= anioActual; a++) {
+      this.aniosDisponibles.push(a);
+    }
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridClientes();
     // Guardar datos originales si existen
     if (this.datos && Object.keys(this.datos).length > 0) {
-      this.datosOriginales = JSON.parse(JSON.stringify(this.datos));
-      this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+      this.datosOriginales = this.clonarDatos(this.datos);
+      this.datosFiltrados = this.clonarDatos(this.datos);
       // Asegurar que los arrays estén ordenados de mayor a menor
       this.ordenarArraysIniciales();
+      this.recalcularRowsCache();
     }
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
+      this.cdr.markForCheck();
     }, 100);
   }
 
@@ -212,15 +271,17 @@ export class VentasComponent implements OnInit, OnChanges {
     if (changes['datos']) {
       // Actualizar datos originales cuando cambian
       if (this.datos && Object.keys(this.datos).length > 0) {
-        this.datosOriginales = JSON.parse(JSON.stringify(this.datos));
+        this.datosOriginales = this.clonarDatos(this.datos);
         // Aplicar filtros interactivos si existen
         if (Object.keys(this.filtrosInteractivos).length > 0) {
           this.aplicarFiltrosInteractivos();
         } else {
-          this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+          this.datosFiltrados = this.clonarDatos(this.datos);
           this.ordenarArraysIniciales();
           this.datos = this.datosFiltrados;
+          this.recalcularRowsCache();
         }
+        this.cdr.markForCheck();
       }
     }
   }
@@ -556,17 +617,6 @@ export class VentasComponent implements OnInit, OnChanges {
     }
   }
 
-  inicializarFechas(): void {
-    const hoy = new Date();
-    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    
-    this.fechaFin = hoy.toISOString().split('T')[0];
-    this.fechaInicio = primerDiaMes.toISOString().split('T')[0];
-    
-    // NO aplicar filtros automáticamente durante la inicialización
-    // Los filtros se aplicarán cuando el usuario interactúe o cuando el componente esté listo
-  }
-
   cargarOpcionesFiltros(): void {
     // Aquí cargarías las opciones desde el servicio
     // Por ahora valores de ejemplo
@@ -580,10 +630,12 @@ export class VentasComponent implements OnInit, OnChanges {
 
   toggleFiltrosAdicionales(): void {
     this.mostrarFiltrosAdicionales = !this.mostrarFiltrosAdicionales;
+    this.cdr.markForCheck();
   }
 
   cambiarVistaMetricas(vista: string): void {
     this.vistaMetricas = vista;
+    this.cdr.markForCheck();
     // Aquí puedes recargar los datos según la vista seleccionada
     // Por ejemplo, emitir un evento o llamar a un servicio
   }
@@ -609,11 +661,8 @@ export class VentasComponent implements OnInit, OnChanges {
   }
 
   limpiarFiltros(): void {
-    const hoy = new Date();
-    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    
-    this.fechaFin = hoy.toISOString().split('T')[0];
-    this.fechaInicio = primerDiaMes.toISOString().split('T')[0];
+    this.anio = new Date().getFullYear().toString();
+    this.mes = '';
     this.filtroSucursal = '';
     this.filtroEstado = '';
     this.filtroCanal = '';
@@ -627,42 +676,77 @@ export class VentasComponent implements OnInit, OnChanges {
     if (!this.inicializado) {
       return;
     }
-    
-    const filtros = {
-      fechaInicio: this.fechaInicio,
-      fechaFin: this.fechaFin,
+
+    if (!this.anio) {
+      this.anio = new Date().getFullYear().toString();
+    }
+
+    const filtros: any = {
+      anio: this.anio,
       sucursal: this.filtroSucursal,
       estado: this.filtroEstado,
       canal: this.filtroCanal,
       cliente: this.filtroCliente,
       vendedor: this.filtroVendedor
     };
-    
-    // Emitir evento al componente padre para recargar datos
+    if (this.mes) {
+      filtros.mes = this.mes;
+    }
+
     this.filtrosCambiados.emit(filtros);
   }
 
+  get puedeLimpiarFiltrosVentas(): boolean {
+    const anioActual = new Date().getFullYear().toString();
+    return (
+      !!this.mes ||
+      this.anio !== anioActual ||
+      !!this.filtroSucursal ||
+      !!this.filtroEstado ||
+      !!this.filtroCanal ||
+      !!this.filtroCliente ||
+      !!this.filtroVendedor
+    );
+  }
+
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
+    return this.currencyFormatter.format(value);
+  }
+
+  /**
+   * Recalcula todas las filas cacheadas
+   */
+  private recalcularRowsCache(): void {
+    const currentHash = this.generarHashDatos(this.datos);
+    if (currentHash === this._lastDatosHash) {
+      return; // No hay cambios
+    }
+    this._lastDatosHash = currentHash;
+
+    // Recalcular ventas detalladas
+    if (this.datos.ventasDetalladas) {
+      this._ventasDetalladasRowsCache = this.datos.ventasDetalladas.map((v: any) => ({
+        fecha: v.fecha || '-',
+        cliente: v.cliente || '-',
+        factura: v.factura || '-',
+        productos: v.productos || 0,
+        monto: this.formatCurrency(v.monto || 0),
+        montoOriginal: v.monto || 0,
+        estado: v.estado || '-'
+      }));
+    } else {
+      this._ventasDetalladasRowsCache = [];
+    }
+
+    // Recalcular ventas por producto
+    this._ventasPorProductoRowsCache = this.calcularVentasPorProductoRows();
+
+    // Recalcular ventas por cliente
+    this._ventasPorClienteRowsCache = this.calcularVentasPorClienteRows();
   }
 
   get ventasDetalladasRows(): any[] {
-    if (!this.datos.ventasDetalladas) return [];
-    const rows = this.datos.ventasDetalladas.map((v: any) => ({
-      fecha: v.fecha || '-',
-      cliente: v.cliente || '-',
-      factura: v.factura || '-',
-      productos: v.productos || 0,
-      monto: this.formatCurrency(v.monto || 0),
-      montoOriginal: v.monto || 0,
-      estado: v.estado || '-'
-    }));
-    return this.filtrarVentasDetalladasPorBusqueda(rows);
+    return this.filtrarVentasDetalladasPorBusqueda(this._ventasDetalladasRowsCache);
   }
 
   filtrarVentasDetalladasPorBusqueda(rows: any[]): any[] {
@@ -678,6 +762,7 @@ export class VentasComponent implements OnInit, OnChanges {
   }
 
   onBusquedaVentasDetalladasChange(): void {
+    this.cdr.markForCheck();
   }
 
   exportarVentasDetalladas(): void {
@@ -694,7 +779,7 @@ export class VentasComponent implements OnInit, OnChanges {
     return this.datos.ventasDetalladas.reduce((sum: number, item: any) => sum + (item.monto || 0), 0);
   }
 
-  get ventasPorProductoRows(): any[] {
+  private calcularVentasPorProductoRows(): any[] {
     if (!this.datos.ventasPorProducto) return [];
     const rows = this.datos.ventasPorProducto.map((item: any) => ({
       categoria: item.categoria || '-',
@@ -713,7 +798,7 @@ export class VentasComponent implements OnInit, OnChanges {
       utilidadOriginal: item.utilidad || 0,
       isTotal: false
     }));
-    
+
     // Agregar fila de totales al final
     const totales = this.totalVentasPorProducto;
     if (totales.cantidad > 0) {
@@ -735,8 +820,12 @@ export class VentasComponent implements OnInit, OnChanges {
         isTotal: true
       });
     }
-    
+
     return rows;
+  }
+
+  get ventasPorProductoRows(): any[] {
+    return this._ventasPorProductoRowsCache;
   }
 
   get totalVentasPorProducto(): any {
@@ -751,7 +840,7 @@ export class VentasComponent implements OnInit, OnChanges {
     }), { cantidad: 0, ventasSinIVA: 0, costoTotal: 0, utilidad: 0 });
   }
 
-  get ventasPorClienteRows(): any[] {
+  private calcularVentasPorClienteRows(): any[] {
     if (!this.datos.ventasPorCliente) return [];
     const rows = this.datos.ventasPorCliente.map((item: any) => ({
       cliente: item.cliente || '-',
@@ -762,7 +851,7 @@ export class VentasComponent implements OnInit, OnChanges {
       ventasOriginal: item.ventas || 0,
       isTotal: false
     }));
-    
+
     // Agregar fila de totales al final
     const totales = this.totalVentasPorCliente;
     if (totales.transacciones > 0) {
@@ -776,8 +865,12 @@ export class VentasComponent implements OnInit, OnChanges {
         isTotal: true
       });
     }
-    
+
     return rows;
+  }
+
+  get ventasPorClienteRows(): any[] {
+    return this._ventasPorClienteRowsCache;
   }
 
   get totalVentasPorCliente(): any {
@@ -1141,12 +1234,12 @@ export class VentasComponent implements OnInit, OnChanges {
 
   aplicarFiltrosInteractivos(): void {
     // Si no hay datos originales, usar los datos actuales
-    const datosBase = Object.keys(this.datosOriginales).length > 0 
-      ? this.datosOriginales 
+    const datosBase = Object.keys(this.datosOriginales).length > 0
+      ? this.datosOriginales
       : (this.datos || {});
 
     // Crear una copia profunda de los datos para filtrar
-    this.datosFiltrados = JSON.parse(JSON.stringify(datosBase));
+    this.datosFiltrados = this.clonarDatos(datosBase);
 
     // Primero filtrar las ventas detalladas según todos los filtros activos
     this.filtrarVentasDetalladas();
@@ -1158,7 +1251,11 @@ export class VentasComponent implements OnInit, OnChanges {
     this.recalcularMetricas();
 
     // Actualizar los datos que se muestran (crear nueva referencia para que Angular detecte cambios)
-    this.datos = JSON.parse(JSON.stringify(this.datosFiltrados));
+    this.datos = this.clonarDatos(this.datosFiltrados);
+
+    // Recalcular cache y marcar para detección de cambios
+    this.recalcularRowsCache();
+    this.cdr.markForCheck();
   }
 
   filtrarVentasDetalladas(): void {
@@ -1473,13 +1570,15 @@ export class VentasComponent implements OnInit, OnChanges {
     this.filtrosInteractivos = {};
     // Restaurar datos originales
     if (Object.keys(this.datosOriginales).length > 0) {
-      this.datosFiltrados = JSON.parse(JSON.stringify(this.datosOriginales));
+      this.datosFiltrados = this.clonarDatos(this.datosOriginales);
       this.datos = this.datosFiltrados;
     } else if (this.datos) {
       // Si no hay datos originales guardados, recargar desde el input
-      this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+      this.datosFiltrados = this.clonarDatos(this.datos);
       this.datos = this.datosFiltrados;
     }
+    this.recalcularRowsCache();
+    this.cdr.markForCheck();
   }
 
   tieneFiltrosInteractivos(): boolean {
@@ -1496,6 +1595,30 @@ export class VentasComponent implements OnInit, OnChanges {
     if (this.filtrosInteractivos.cliente) filtros.push(`Cliente: ${this.filtrosInteractivos.cliente}`);
     if (this.filtrosInteractivos.mes) filtros.push(`Mes: ${this.filtrosInteractivos.mes}`);
     return filtros.join(', ');
+  }
+
+  // ─────────────────────────────────────────────
+  // TrackBy functions para optimizar ngFor
+  // ─────────────────────────────────────────────
+
+  trackByIndex(index: number, item: any): number {
+    return index;
+  }
+
+  trackByFactura(index: number, item: any): string | number {
+    return item.factura || index;
+  }
+
+  trackByProducto(index: number, item: any): string | number {
+    return item.producto ? `${item.producto}_${item.formaPago || ''}` : index;
+  }
+
+  trackByCliente(index: number, item: any): string | number {
+    return item.cliente || index;
+  }
+
+  trackByName(index: number, item: any): string | number {
+    return item.name || index;
   }
 
 }

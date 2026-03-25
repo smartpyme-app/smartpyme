@@ -5,25 +5,40 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
-                        <!-- Rango de fechas a la izquierda -->
+                        <!-- Año y mes (API: anio obligatorio, mes opcional = año completo) -->
                         <div class="d-flex align-items-end gap-3">
                             <div class="d-flex flex-column">
-                                <label for="fechaInicio" class="text-primary fw-medium small mb-1">Fecha Inicio</label>
-                                <input 
-                                    type="date" 
-                                    id="fechaInicio"
-                                    class="form-control"
-                                    [(ngModel)]="fechaInicio"
+                                <label for="anio" class="text-primary fw-medium small mb-1">Año</label>
+                                <select 
+                                    id="anio"
+                                    class="form-select"
+                                    [(ngModel)]="anio"
                                     (change)="aplicarFiltros()">
+                                    <option value="">Seleccionar</option>
+                                    <option *ngFor="let a of aniosDisponibles; trackBy: trackByIndex" [value]="a">{{ a }}</option>
+                                </select>
                             </div>
                             <div class="d-flex flex-column">
-                                <label for="fechaFin" class="text-primary fw-medium small mb-1">Fecha Fin</label>
-                                <input 
-                                    type="date" 
-                                    id="fechaFin"
-                                    class="form-control"
-                                    [(ngModel)]="fechaFin"
+                                <label for="mes" class="text-primary fw-medium small mb-1">Mes</label>
+                                <select 
+                                    id="mes"
+                                    class="form-select"
+                                    [(ngModel)]="mes"
                                     (change)="aplicarFiltros()">
+                                    <option value="">Todos</option>
+                                    <option value="1">Enero</option>
+                                    <option value="2">Febrero</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Mayo</option>
+                                    <option value="6">Junio</option>
+                                    <option value="7">Julio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
+                                </select>
                             </div>
                         </div>
                         
@@ -47,7 +62,7 @@
                                 class="btn btn-outline-primary"
                                 tooltip="Limpiar filtros"
                                 (click)="limpiarFiltros()"
-                                *ngIf="fechaInicio || fechaFin || filtroSucursal || filtroEstado || filtroCanal || filtroCliente || filtroVendedor">
+                                *ngIf="puedeLimpiarFiltrosVentas">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
                             </button>
                         </div>
@@ -64,7 +79,7 @@
                                     [(ngModel)]="filtroSucursal"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                                    <option *ngFor="let sucursal of sucursales; trackBy: trackByIndex" [value]="sucursal.id">
                                         {{ sucursal.nombre }}
                                     </option>
                                 </select>
@@ -90,7 +105,7 @@
                                     [(ngModel)]="filtroCanal"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let canal of canales" [value]="canal.id">
+                                    <option *ngFor="let canal of canales; trackBy: trackByIndex" [value]="canal.id">
                                         {{ canal.nombre }}
                                     </option>
                                 </select>
@@ -103,7 +118,7 @@
                                     [(ngModel)]="filtroCliente"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let cliente of clientes" [value]="cliente.id">
+                                    <option *ngFor="let cliente of clientes; trackBy: trackByIndex" [value]="cliente.id">
                                         {{ cliente.nombre }}
                                     </option>
                                 </select>
@@ -116,7 +131,7 @@
                                     [(ngModel)]="filtroVendedor"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let vendedor of vendedores" [value]="vendedor.id">
+                                    <option *ngFor="let vendedor of vendedores; trackBy: trackByIndex" [value]="vendedor.id">
                                         {{ vendedor.nombre }}
                                     </option>
                                 </select>
@@ -335,7 +350,7 @@
                                     [(ngModel)]="filtroCategoriaProducto"
                                     (change)="aplicarFiltrosProductos()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let categoria of categoriasProductos" [value]="categoria.id">
+                                    <option *ngFor="let categoria of categoriasProductos; trackBy: trackByIndex" [value]="categoria.id">
                                         {{ categoria.nombre }}
                                     </option>
                                 </select>
@@ -350,7 +365,7 @@
                                     [(ngModel)]="filtroProducto"
                                     (change)="aplicarFiltrosProductos()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let producto of productos" [value]="producto.id">
+                                    <option *ngFor="let producto of productos; trackBy: trackByIndex" [value]="producto.id">
                                         {{ producto.nombre }}
                                     </option>
                                 </select>
@@ -511,25 +526,40 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
-                        <!-- Rango de fechas a la izquierda -->
+                        <!-- Año y mes (API: anio obligatorio, mes opcional = año completo) -->
                         <div class="d-flex align-items-end gap-3">
                             <div class="d-flex flex-column">
-                                <label for="fechaInicio" class="text-primary fw-medium small mb-1">Fecha Inicio</label>
-                                <input 
-                                    type="date" 
-                                    id="fechaInicio"
-                                    class="form-control"
-                                    [(ngModel)]="fechaInicio"
+                                <label for="anioVentasTabla" class="text-primary fw-medium small mb-1">Año</label>
+                                <select 
+                                    id="anioVentasTabla"
+                                    class="form-select"
+                                    [(ngModel)]="anio"
                                     (change)="aplicarFiltros()">
+                                    <option value="">Seleccionar</option>
+                                    <option *ngFor="let a of aniosDisponibles; trackBy: trackByIndex" [value]="a">{{ a }}</option>
+                                </select>
                             </div>
                             <div class="d-flex flex-column">
-                                <label for="fechaFin" class="text-primary fw-medium small mb-1">Fecha Fin</label>
-                                <input 
-                                    type="date" 
-                                    id="fechaFin"
-                                    class="form-control"
-                                    [(ngModel)]="fechaFin"
+                                <label for="mesVentasTabla" class="text-primary fw-medium small mb-1">Mes</label>
+                                <select 
+                                    id="mesVentasTabla"
+                                    class="form-select"
+                                    [(ngModel)]="mes"
                                     (change)="aplicarFiltros()">
+                                    <option value="">Todos</option>
+                                    <option value="1">Enero</option>
+                                    <option value="2">Febrero</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Mayo</option>
+                                    <option value="6">Junio</option>
+                                    <option value="7">Julio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
+                                </select>
                             </div>
                         </div>
                         
@@ -553,7 +583,7 @@
                                 class="btn btn-outline-primary"
                                 tooltip="Limpiar filtros"
                                 (click)="limpiarFiltros()"
-                                *ngIf="fechaInicio || fechaFin || filtroSucursal || filtroEstado || filtroCanal || filtroCliente || filtroVendedor">
+                                *ngIf="puedeLimpiarFiltrosVentas">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
                             </button>
                         </div>
@@ -570,7 +600,7 @@
                                     [(ngModel)]="filtroSucursal"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                                    <option *ngFor="let sucursal of sucursales; trackBy: trackByIndex" [value]="sucursal.id">
                                         {{ sucursal.nombre }}
                                     </option>
                                 </select>
@@ -596,7 +626,7 @@
                                     [(ngModel)]="filtroCanal"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let canal of canales" [value]="canal.id">
+                                    <option *ngFor="let canal of canales; trackBy: trackByIndex" [value]="canal.id">
                                         {{ canal.nombre }}
                                     </option>
                                 </select>
@@ -609,7 +639,7 @@
                                     [(ngModel)]="filtroCliente"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let cliente of clientes" [value]="cliente.id">
+                                    <option *ngFor="let cliente of clientes; trackBy: trackByIndex" [value]="cliente.id">
                                         {{ cliente.nombre }}
                                     </option>
                                 </select>
@@ -622,7 +652,7 @@
                                     [(ngModel)]="filtroVendedor"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let vendedor of vendedores" [value]="vendedor.id">
+                                    <option *ngFor="let vendedor of vendedores; trackBy: trackByIndex" [value]="vendedor.id">
                                         {{ vendedor.nombre }}
                                     </option>
                                 </select>

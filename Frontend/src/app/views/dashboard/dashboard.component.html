@@ -10,10 +10,9 @@
             {{ seccion.nombre }}
         </button>
     </div>
-</div>
+</div> 
 
 <div class="dashboard-container" *ngIf="!loading">
-    <!-- Selector dinámico de componentes según la sección activa -->
     <ng-container [ngSwitch]="seccionActiva">
         <app-resultados 
             *ngSwitchCase="'Resultados'"
