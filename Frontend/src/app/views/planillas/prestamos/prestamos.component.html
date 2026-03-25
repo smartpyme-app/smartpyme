@@ -1,0 +1,404 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Préstamos</h2>
+  <div class="d-flex gap-2">
+    <button
+      type="button"
+      class="btn btn-outline-primary"
+      (click)="setTab('estado-cuenta')"
+    >
+      <i class="fa fa-list-alt me-1"></i> Estado de cuenta
+    </button>
+    <button
+      *ngIf="apiService.canCreate()"
+      type="button"
+      class="btn btn-primary"
+      (click)="setTab('crear')"
+      tooltip="Crear nuevo préstamo"
+    >
+      <i class="fa fa-plus me-1"></i> Crear préstamo
+    </button>
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      (click)="setTab('abono')"
+    >
+      <i class="fa fa-money-bill me-1"></i> Abono
+    </button>
+  </div>
+</section>
+
+<!-- Listado de préstamos (vista principal) -->
+<section *ngIf="tabActivo === 'listado'" class="bg-white p-4 rounded mb-3">
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <span class="text-muted d-flex align-items-center gap-2" *ngIf="prestamos?.total">
+        Mostrando
+        <select
+          name="paginate"
+          class="form-select w-auto"
+          (change)="cargarPrestamos()"
+          [(ngModel)]="filtros.paginate"
+        >
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+        de {{ prestamos?.total + " registros" }}
+      </span>
+    </div>
+    <div class="col-md-6 mb-3">
+      <div class="d-flex gap-2 justify-content-end">
+        <button
+          type="button"
+          class="btn btn-default"
+          tooltip="Filtrar"
+          (click)="openFilter(mfilter)"
+        >
+          <img src="/assets/icons/filter.png" class="icon" alt="" />
+        </button>
+        <button type="button" class="btn btn-default" tooltip="Limpiar filtros" (click)="limpiarFiltros()">
+          <i class="fa fa-refresh"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Nº Préstamo</th>
+            <th class="text-end">Monto inicial</th>
+            <th class="text-end">Saldo actual</th>
+            <th>Estado</th>
+            <th>Fecha desembolso</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="7" class="text-center" *ngIf="prestamos?.total < 1 && !loadingPrestamos">
+              <span class="badge bg-primary">No hay préstamos registrados</span>
+            </td>
+            <td colspan="7" class="text-center" *ngIf="loadingPrestamos">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+          <tr *ngFor="let p of prestamos?.data">
+            <td>{{ getNombreEmpleado(p.empleado) }}</td>
+            <td>Préstamo #{{ p.numero_prestamo }}</td>
+            <td class="text-end">{{ p.monto_inicial | currency }}</td>
+            <td class="text-end">{{ p.saldo_actual | currency }}</td>
+            <td>
+              <span
+                class="badge py-2"
+                style="font-size: 0.8rem"
+                [ngClass]="getEstadoPrestamoClass(p.estado)"
+              >
+                {{ getEstadoPrestamoNombre(p.estado) }}
+              </span>
+            </td>
+            <td>{{ p.fecha_desembolso | date : "dd/MM/yyyy" }}</td>
+            <td class="text-center">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                (click)="empleadoSeleccionado = p.empleado; setTab('estado-cuenta'); cargarEstadoCuenta()"
+                tooltip="Ver estado de cuenta"
+              >
+                <i class="fa fa-list-alt"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-12 mt-3" *ngIf="prestamos?.last_page > 1">
+    <app-pagination
+      [items]="prestamos"
+      (setPagination)="setPagination($event)"
+    ></app-pagination>
+  </div>
+</section>
+
+<!-- Tab Estado de cuenta -->
+<section *ngIf="tabActivo === 'estado-cuenta'" class="bg-white p-4 rounded mb-3">
+  <div class="row mb-4">
+    <div class="col-md-5">
+      <label class="form-label">Empleado</label>
+      <ng-select
+        [items]="empleados"
+        bindLabel="nombres"
+        [(ngModel)]="empleadoSeleccionado"
+        (change)="estadoCuenta = null"
+        placeholder="Seleccione empleado"
+        [loading]="loadingEmpleados"
+        appendTo="body"
+      >
+        <ng-template ng-label-tmp let-item="item">
+          {{ item?.nombres }} {{ item?.apellidos }} ({{ item?.codigo || item?.id }})
+        </ng-template>
+        <ng-template ng-option-tmp let-item="item">
+          {{ item?.nombres }} {{ item?.apellidos }} ({{ item?.codigo || item?.id }})
+        </ng-template>
+      </ng-select>
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="cargarEstadoCuenta()"
+        [disabled]="!empleadoSeleccionado || loadingEstadoCuenta"
+      >
+        <span *ngIf="loadingEstadoCuenta" class="spinner-border spinner-border-sm me-1"></span>
+        <i class="fa fa-search me-1" *ngIf="!loadingEstadoCuenta"></i> Ver estado de cuenta
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loadingEstadoCuenta" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2 text-muted mb-0">Cargando estado de cuenta...</p>
+  </div>
+
+  <div *ngIf="estadoCuenta && !loadingEstadoCuenta">
+    <h5 class="mb-3">Reporte de préstamos: {{ estadoCuenta.empleado?.nombres }} {{ estadoCuenta.empleado?.apellidos }}</h5>
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Deuda a cuenta (empleado)</th>
+            <th>Deuda a cuenta (préstamo)</th>
+            <th class="text-end">Monto</th>
+            <th class="text-end">Abono</th>
+            <th class="text-end">Total</th>
+            <th>Descripción</th>
+            <th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let fila of estadoCuenta.filas" [class.table-light]="fila.es_resumen_prestamo">
+            <td>{{ fila.deuda_a_cuenta_empleado }}</td>
+            <td>{{ fila.deuda_a_cuenta_prestamo }}</td>
+            <td class="text-end">{{ fila.monto | number : "1.2-2" }}</td>
+            <td class="text-end">{{ fila.abono | number : "1.2-2" }}</td>
+            <td class="text-end"><strong>{{ fila.total | number : "1.2-2" }}</strong></td>
+            <td>{{ fila.descripcion }}</td>
+            <td>{{ fila.fecha | date : "dd/MM/yyyy" }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-3 text-end">
+      <strong class="text-danger" style="font-size: 1.1rem;">Saldo total: {{ estadoCuenta.saldo_total | currency }}</strong>
+    </div>
+  </div>
+
+  <div *ngIf="empleadoSeleccionado && !estadoCuenta && !loadingEstadoCuenta" class="alert alert-info mb-0">
+    <i class="fa fa-info-circle me-2"></i>Haga clic en "Ver estado de cuenta" para cargar el reporte.
+  </div>
+</section>
+
+<!-- Tab Crear préstamo -->
+<section *ngIf="tabActivo === 'crear'" class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-4">Crear préstamo</h5>
+  <form (ngSubmit)="crearPrestamo()">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Empleado <span class="text-danger">*</span></label>
+        <ng-select
+          [items]="empleadosParaSelect"
+          bindLabel="nombres"
+          bindValue="id"
+          [(ngModel)]="formPrestamo.id_empleado"
+          name="id_empleado"
+          placeholder="Seleccione empleado"
+          [loading]="loadingEmpleados"
+          appendTo="body"
+          required
+        >
+          <ng-template ng-label-tmp let-item="item">
+            {{ item?.nombres }} {{ item?.apellidos }} ({{ item?.codigo || item?.id }})
+          </ng-template>
+          <ng-template ng-option-tmp let-item="item">
+            {{ item?.nombres }} {{ item?.apellidos }} ({{ item?.codigo || item?.id }})
+          </ng-template>
+        </ng-select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Monto inicial <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+          <input type="number" class="form-control" [(ngModel)]="formPrestamo.monto_inicial" name="monto_inicial" step="0.01" min="0.01" required />
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Fecha de desembolso <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" [(ngModel)]="formPrestamo.fecha_desembolso" name="fecha_desembolso" required />
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Descripción</label>
+        <input type="text" class="form-control" [(ngModel)]="formPrestamo.descripcion" name="descripcion" placeholder="Préstamo personal autorizado" />
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary" [disabled]="savingPrestamo">
+          <span *ngIf="savingPrestamo" class="spinner-border spinner-border-sm me-1"></span>
+          <i class="fa fa-save me-1" *ngIf="!savingPrestamo"></i> Crear préstamo
+        </button>
+        <button type="button" class="btn btn-light ms-2" (click)="setTab('listado')">Cancelar</button>
+      </div>
+    </div>
+  </form>
+</section>
+
+<!-- Tab Abono -->
+<section *ngIf="tabActivo === 'abono'" class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-4">Abono a préstamo</h5>
+  <form (ngSubmit)="registrarAbono()">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Empleado</label>
+        <ng-select
+          [items]="empleados"
+          bindLabel="nombres"
+          [(ngModel)]="empleadoParaAbono"
+          (change)="cargarPrestamosActivosEmpleado()"
+          placeholder="Seleccione empleado para ver sus préstamos"
+          appendTo="body"
+        >
+          <ng-template ng-label-tmp let-item="item">
+            {{ item?.nombres }} {{ item?.apellidos }} ({{ item?.codigo || item?.id }})
+          </ng-template>
+          <ng-template ng-option-tmp let-item="item">
+            {{ item?.nombres }} {{ item?.apellidos }} ({{ item?.codigo || item?.id }})
+          </ng-template>
+        </ng-select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Préstamo <span class="text-danger">*</span></label>
+        <ng-select
+          [items]="prestamosParaAbono"
+          bindValue="id"
+          [(ngModel)]="formAbono.id_prestamo"
+          name="id_prestamo"
+          placeholder="Seleccione préstamo"
+          appendTo="body"
+          required
+        >
+          <ng-template ng-label-tmp let-item="item">
+            Préstamo #{{ item?.numero_prestamo }} — Saldo: {{ item?.saldo_actual | currency }}
+          </ng-template>
+          <ng-template ng-option-tmp let-item="item">
+            Préstamo #{{ item?.numero_prestamo }} — Saldo: {{ item?.saldo_actual | currency }}
+          </ng-template>
+        </ng-select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Monto del abono <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+          <input type="number" class="form-control" [(ngModel)]="formAbono.monto" name="monto" step="0.01" min="0.01" required />
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Tipo de abono</label>
+        <select class="form-select" [(ngModel)]="formAbono.tipo" name="tipo">
+          <option value="abono_efectivo">Abono efectivo</option>
+          <option value="abono_planilla">Abono desde planilla</option>
+        </select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Fecha</label>
+        <input type="date" class="form-control" [(ngModel)]="formAbono.fecha" name="fecha" />
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Descripción</label>
+        <input type="text" class="form-control" [(ngModel)]="formAbono.descripcion" name="descripcion" />
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary" [disabled]="savingAbono">
+          <span *ngIf="savingAbono" class="spinner-border spinner-border-sm me-1"></span>
+          <i class="fa fa-money-bill me-1" *ngIf="!savingAbono"></i> Registrar abono
+        </button>
+        <button type="button" class="btn btn-light ms-2" (click)="setTab('listado')">Cancelar</button>
+      </div>
+    </div>
+  </form>
+</section>
+
+<!-- Botón volver al listado cuando se está en otra pestaña -->
+<div *ngIf="tabActivo !== 'listado'" class="mb-3">
+  <button type="button" class="btn btn-outline-secondary btn-sm" (click)="setTab('listado')">
+    <i class="fa fa-arrow-left me-1"></i> Volver al listado
+  </button>
+</div>
+
+<!-- Modal de filtros -->
+<ng-template #mfilter>
+  <div class="modal-header">
+    <h5 class="modal-title">Filtrar Préstamos</h5>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Cerrar"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="aplicarFiltros()">
+      <div class="mb-3">
+        <label class="form-label">Estado</label>
+        <select
+          class="form-select"
+          [(ngModel)]="filtros.estado"
+          name="filtro_estado"
+        >
+          <option value="">Todos los estados</option>
+          <option value="activo">Activo</option>
+          <option value="liquidado">Liquidado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Empleado</label>
+        <ng-select
+          class="w-100"
+          [items]="empleados"
+          bindLabel="nombres"
+          bindValue="id"
+          [(ngModel)]="filtros.id_empleado"
+          placeholder="Todos los empleados"
+          [clearable]="true"
+          name="filtro_id_empleado"
+        >
+          <ng-template ng-label-tmp let-item="item">
+            {{ item?.nombres }} {{ item?.apellidos }}
+          </ng-template>
+          <ng-template ng-option-tmp let-item="item">
+            {{ item?.nombres }} {{ item?.apellidos }}
+          </ng-template>
+        </ng-select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Mostrar por página</label>
+        <select
+          class="form-select"
+          [(ngModel)]="filtros.paginate"
+          name="filtro_paginate"
+        >
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+      </div>
+      <div class="d-flex gap-2 justify-content-end mt-3">
+        <button type="button" class="btn btn-light" (click)="modalRef.hide()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="loadingPrestamos">
+          <span *ngIf="!loadingPrestamos">Filtrar</span>
+          <span *ngIf="loadingPrestamos">Filtrando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

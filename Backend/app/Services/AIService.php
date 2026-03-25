@@ -66,7 +66,7 @@ class AIService
             'total_tokens' => $totalTokens
         ];
 
-        Log::info('Token usage', $usage);
+        // Log::info('Token usage', $usage);
 
         return $usage;
     }
@@ -185,11 +185,11 @@ class AIService
             ];
 
             // Log para depuración
-            Log::debug('Solicitud a Bedrock:', [
-                'modelId' => $this->modelId,
-                'inferenceProfileArn' => $this->inferenceProfileArn,
-                'body' => $requestBody
-            ]);
+            // Log::debug('Solicitud a Bedrock:', [
+            //     'modelId' => $this->modelId,
+            //     'inferenceProfileArn' => $this->inferenceProfileArn,
+            //     'body' => $requestBody
+            // ]);
 
             // Invocar al modelo
             $response = $this->client->invokeModel([
@@ -201,6 +201,8 @@ class AIService
 
             // Procesar la respuesta
             $result = json_decode($response->get('body')->getContents(), true);
+
+            //Log::info($result);
 
             // Extraer el texto de la respuesta
             $botResponse = $this->extractResponseText($result);

@@ -21,16 +21,192 @@ use App\Exports\Contabilidad\AnexoSujetosExcluidosExport;
 use App\Exports\Contabilidad\LibroComprasExport;
 use App\Exports\Contabilidad\AnexoComprasExport;
 use App\Exports\Contabilidad\GlobalDttesExport;
+use App\Exports\Contabilidad\NotasCreditoDebitoExport;
 use App\Exports\Contabilidad\LibroRetencion1Export;
 use App\Exports\Contabilidad\AnexoRetencion1Export;
 use App\Exports\Contabilidad\LibroPercepcion1Export;
 use App\Exports\Contabilidad\AnexoPercepcion1Export;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
-use Barryvdh\DomPDF\Facade as PDF;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Admin\Empresa;
 
 class LibrosIVAController extends Controller
 {
+    /**
+     * Obtiene la empresa del usuario autenticado
+     */
+    private function obtenerEmpresa(): ?Empresa
+    {
+        return Auth::user()->empresa()->first();
+    }
+
+    /**
+     * Verifica si la empresa tiene facturación electrónica habilitada
+     */
+    private function tieneFacturacionElectronica(): bool
+    {
+        $empresa = $this->obtenerEmpresa();
+        return $empresa && $empresa->facturacion_electronica === true;
+    }
+
+    /**
+     * Filtra ventas según si tienen facturación electrónica o no
+     */
+    private function filtrarVentasPorFacturacionElectronica($ventas)
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            // Con facturación electrónica: solo ventas con sello_mh
+            $ventasSinSello = $ventas->filter(function ($venta) {
+                return empty($venta->sello_mh);
+            });
+
+            if ($ventasSinSello->isNotEmpty()) {
+                Log::warning('Se excluyeron ventas sin sello', [
+                    'ventas' => $ventasSinSello->pluck('id'),
+                ]);
+            }
+
+            return $ventas->reject(function ($venta) {
+                return empty($venta->sello_mh);
+            });
+        } else {
+            // Sin facturación electrónica: todas las ventas
+            return $ventas;
+        }
+    }
+
+    /**
+     * Obtiene el código de generación o correlativo según facturación electrónica
+     */
+    private function obtenerCodigoGeneracion($venta): string
+    {
+        if ($this->tieneFacturacionElectronica() && $venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
+            return $venta->dte['identificacion']['codigoGeneracion'];
+        }
+        return trim((string) $venta->correlativo);
+    }
+
+    /**
+     * Obtiene el número de control según facturación electrónica
+     */
+    private function obtenerNumeroControl($venta): string
+    {
+        if ($this->tieneFacturacionElectronica() && $venta->sello_mh && isset($venta->dte['identificacion']['numeroControl'])) {
+            return $venta->dte['identificacion']['numeroControl'];
+        }
+        return $venta->numero_control ?? trim((string) $venta->correlativo);
+    }
+
+    /**
+     * Obtiene el sello según facturación electrónica
+     */
+    private function obtenerSello($venta): string
+    {
+        if ($this->tieneFacturacionElectronica() && isset($venta->dte['sello'])) {
+            return $venta->dte['sello'];
+        }
+        return $venta->sello_mh ?? '';
+    }
+
+    /**
+     * Obtiene la clase de documento (DTE o Impreso)
+     */
+    private function obtenerClaseDocumento($venta): string
+    {
+        if ($this->tieneFacturacionElectronica() && $venta->sello_mh) {
+            return '4'; // DTE
+        }
+        return '1'; // Impreso
+    }
+
+    /**
+     * Obtiene el código de generación para devoluciones
+     */
+    private function obtenerCodigoGeneracionDevolucion($devolucion): string
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            $dte = $devolucion->dte ?? [];
+            if ($devolucion->codigo_generacion) {
+                return $devolucion->codigo_generacion;
+            }
+            if (isset($dte['identificacion']['codigoGeneracion'])) {
+                return $dte['identificacion']['codigoGeneracion'];
+            }
+        }
+        return trim((string) $devolucion->correlativo);
+    }
+
+    /**
+     * Obtiene el número de control para devoluciones
+     */
+    private function obtenerNumeroControlDevolucion($devolucion): string
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            $dte = $devolucion->dte ?? [];
+            if ($devolucion->numero_control) {
+                return $devolucion->numero_control;
+            }
+            if (isset($dte['identificacion']['numeroControl'])) {
+                return $dte['identificacion']['numeroControl'];
+            }
+        }
+        return trim((string) $devolucion->correlativo);
+    }
+
+    /**
+     * Obtiene el sello para devoluciones
+     */
+    private function obtenerSelloDevolucion($devolucion): string
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            $dte = $devolucion->dte ?? [];
+            if (isset($dte['sello'])) {
+                return $dte['sello'];
+            }
+        }
+        return $devolucion->sello_mh ?? '';
+    }
+
+    private function validarVentasPendientes(Request $request, ?array $documentos = null): ?JsonResponse
+    {
+        if (!$request->filled('inicio') || !$request->filled('fin')) {
+            return null;
+        }
+
+        // Solo validar ventas pendientes si tiene facturación electrónica
+        if (!$this->tieneFacturacionElectronica()) {
+            return null;
+        }
+
+        $ventasPendientes = Venta::query()
+            ->where('estado', '!=', 'Anulada')
+            ->where('cotizacion', 0)
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when(!empty($documentos), function ($query) use ($documentos) {
+                $query->whereHas('documento', function ($subQuery) use ($documentos) {
+                    $subQuery->whereIn('nombre', $documentos);
+                });
+            })
+            ->where(function ($query) {
+                $query->whereNull('sello_mh')
+                    ->orWhere('sello_mh', '');
+            })
+            ->exists();
+
+        if ($ventasPendientes) {
+            return response()->json([
+                'message' => 'Existen ventas pendientes de emitirse para el período seleccionado, por favor complete las ventas pendientes emitiendo los documentos.',
+            ], 500);
+        }
+
+        return null;
+    }
 
     public function consumidores(Request $request)
     {
@@ -46,40 +222,109 @@ class LibrosIVAController extends Controller
             })
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
-            ->orderByDesc('fecha')
             ->get();
 
-        $ivas = $ventas->map(function ($venta) {
-            $documento = $venta->documento;
-            $cliente = optional($venta->cliente);
+        // Filtrar ventas según facturación electrónica
+        $ventasFiltradas = $this->filtrarVentasPorFacturacionElectronica($ventas);
 
-            return [
-                'fecha'                 => $venta->fecha,
-                'correlativo'           => $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : trim($venta->correlativo),
-                'num_control_interno'   => $venta->correlativo,
-                'ventas_exentas'        => $venta->iva == 0 ? $venta->total : 0,
-                'ventas_gravadas'       => $venta->iva > 0 ? ($venta->documento->nombre === 'Factura de exportación' ? '0.00' : $venta->total) : 0,
-                'exportaciones'         => $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0.00',
-                'total'                 => $venta->total,
-                'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
-                'no_sujeta'            => $venta->no_sujeta,
-                'id_venta'              => $venta->id,
-            ];
-        });
-        //
+        $libroconsumidores = $ventasFiltradas
+            ->groupBy(function ($venta) {
+                return Carbon::parse($venta->fecha)->format('Y-m-d');
+            })
+            ->map(function ($ventasDia, $fecha) {
+                $ventasOrdenadasPorCorrelativo = $ventasDia->sortBy(function ($venta) {
+                    return trim((string) $venta->correlativo);
+                });
 
+                $ventasOrdenadasPorCodigo = $ventasDia->sortBy(function ($venta) {
+                    return $this->obtenerCodigoGeneracion($venta);
+                });
 
-        // Ordenamos por 'correlativo' de forma descendente y reindexamos
-        $libroconsumidores = $ivas->sortByDesc(function ($item) {
-                return [$item['fecha'], $item['correlativo']];
-            })->values()->all();
+                // Primero identificar exportaciones (sin importar el IVA)
+                $exportaciones = $ventasDia->sum(function ($venta) {
+                    $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
+                    return strtolower($documentoNombre) === 'factura de exportación'
+                        ? (float) $venta->total
+                        : 0;
+                });
+
+                // Luego clasificar las ventas restantes (excluyendo exportaciones)
+                $ventasExentas = $ventasDia->sum(function ($venta) {
+                    $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
+                    // Excluir exportaciones
+                    if (strtolower($documentoNombre) === 'factura de exportación') {
+                        return 0;
+                    }
+                    return $venta->iva == 0 ? (float) $venta->total : 0;
+                });
+
+                $ventasGravadas = $ventasDia->sum(function ($venta) {
+                    $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
+                    // Excluir exportaciones
+                    if (strtolower($documentoNombre) === 'factura de exportación') {
+                        return 0;
+                    }
+                    return $venta->iva > 0 ? (float) $venta->total : 0;
+                });
+
+                $ventasTerceros = $ventasDia->sum(function ($venta) {
+                    return (float) $venta->cuenta_a_terceros;
+                });
+
+                $totalDiario = $ventasDia->sum(function ($venta) {
+                    return (float) $venta->total;
+                });
+
+                $primeraVenta = $ventasOrdenadasPorCodigo->first();
+                $ultimaVenta = $ventasOrdenadasPorCodigo->last();
+                $correlativoInicial = optional($ventasOrdenadasPorCorrelativo->first())->correlativo;
+
+                return [
+                    'fecha' => $fecha,
+                    'correlativo_inicial' => $primeraVenta ? $this->obtenerCodigoGeneracion($primeraVenta) : null,
+                    'correlativo_final' => $ultimaVenta ? $this->obtenerCodigoGeneracion($ultimaVenta) : null,
+                    'ventas_exentas' => round($ventasExentas, 2),
+                    'ventas_internas_gravadas' => round($ventasGravadas, 2),
+                    'exportaciones' => round($exportaciones, 2),
+                    'total_ventas_diarias_propias' => round($totalDiario, 2),
+                    'ventas_a_cuenta_de_terceros' => round($ventasTerceros, 2),
+                    'correlativo_orden' => trim((string) $correlativoInicial),
+                ];
+            })
+            ->sortBy(function ($item) {
+                return [$item['fecha'], $item['correlativo_orden'] ?? ''];
+            })
+            ->values()
+            ->all();
+
+        $totalesConsumidores = collect($libroconsumidores)->reduce(function ($carry, $item) {
+            $carry['ventas_exentas'] += $item['ventas_exentas'];
+            $carry['ventas_internas_gravadas'] += $item['ventas_internas_gravadas'];
+            $carry['exportaciones'] += $item['exportaciones'];
+            $carry['total_ventas_diarias_propias'] += $item['total_ventas_diarias_propias'];
+            $carry['ventas_a_cuenta_de_terceros'] += $item['ventas_a_cuenta_de_terceros'];
+            return $carry;
+        }, [
+            'ventas_exentas' => 0,
+            'ventas_internas_gravadas' => 0,
+            'exportaciones' => 0,
+            'total_ventas_diarias_propias' => 0,
+            'ventas_a_cuenta_de_terceros' => 0,
+        ]);
         
 
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView('reportes.contabilidad.libro-consumidores', compact('libroconsumidores', 'request'));
-            $pdf->setPaper('US Letter', 'landscape');
+            $pdf = app('dompdf.wrapper')->loadView(
+                'reportes.contabilidad.libro-consumidores',
+                [
+                    'libroconsumidores' => $libroconsumidores,
+                    'request' => $request,
+                    'totalesConsumidores' => $totalesConsumidores,
+                ]
+            );
+            $pdf->setPaper('Legal', 'landscape');
 
             return $pdf->stream('libro-consumidores.pdf');
         }
@@ -89,6 +334,10 @@ class LibrosIVAController extends Controller
 
     public function consumidoresLibroExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
+            return $alerta;
+        }
+
         $consumidores = new LibroConsumidoresExport();
         $consumidores->filter($request);
 
@@ -97,6 +346,10 @@ class LibrosIVAController extends Controller
 
     public function consumidoresAnexoExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
+            return $alerta;
+        }
+
         $consumidores = new AnexoConsumidoresExport();
         $consumidores->filter($request);
 
@@ -116,33 +369,43 @@ class LibrosIVAController extends Controller
             })
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
-            ->orderByDesc('fecha')
             ->get();
 
-        $ventasData = $ventas->map(function ($venta) {
-            $documento = $venta->documento;
+        // Filtrar ventas según facturación electrónica
+        $ventasFiltradas = $this->filtrarVentasPorFacturacionElectronica($ventas);
+
+        $ventasData = $ventasFiltradas->map(function ($venta) {
             $cliente = optional($venta->cliente);
 
+            $codigoGeneracion = $this->obtenerCodigoGeneracion($venta);
+            $numeroControl = $this->obtenerNumeroControl($venta);
+            $sello = $this->obtenerSello($venta);
+
             return [
-                'fecha'                 => $venta->fecha,
-                'correlativo'           => $venta->correlativo,
-                'num_documento'         => $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : trim($venta->correlativo),
-                'nombre_cliente'        => $venta->nombre_cliente,
-                'nit_nrc'               => $cliente->ncr ?? $cliente->nit,
-                'ventas_exentas'        => $venta->iva == 0 ? $venta->sub_total : 0,
-                'ventas_gravadas'       => $venta->iva > 0 ? $venta->sub_total : 0,
-                'debito_fiscal'         => $venta->iva,
-                'ventas_exentas_cuenta_a_terceros' => 0.00,
-                'ventas_gravadas_cuenta_a_terceros' => $venta->cuenta_a_terceros,
-                'debito_fiscal_cuenta_a_terceros' => 0.00,
-                'iva_percibido'         => $venta->iva_percibido,
-                'total'                 => $venta->total,
-                'id_venta'              => $venta->id,
+                'fecha' => $venta->fecha,
+                'codigo_generacion' => $codigoGeneracion,
+                'numero_control' => $numeroControl,
+                'sello' => $sello,
+                'correlativo' => trim((string) $venta->correlativo),
+                'nombre_cliente' => $venta->nombre_cliente,
+                'nrc_cliente' => $cliente->ncr ?? $cliente->nit,
+                'ventas_exentas' => $venta->iva == 0 ? (float) $venta->sub_total : 0,
+                'ventas_internas_gravadas' => $venta->iva > 0 ? (float) $venta->sub_total : 0,
+                'debito_fiscal' => (float) $venta->iva,
+                'ventas_exentas_a_cuenta_de_terceros' => 0.0,
+                'ventas_internas_gravadas_a_cuenta_de_terceros' => (float) $venta->cuenta_a_terceros,
+                'debito_fiscal_por_cuenta_de_terceros' => 0.0,
+                'iva_retenido' => (float) $venta->iva_retenido,
+                'iva_percibido' => (float) $venta->iva_percibido,
+                'total' => (float) $venta->total,
             ];
         });
 
-        $devoluciones = DevolucionVenta::with(['cliente'])
+        $devoluciones = DevolucionVenta::with(['cliente', 'venta'])
             ->where('enable', true)
+            ->whereHas('venta', function ($query) {
+                $query->where('estado', '!=', 'Anulada');
+            })
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
@@ -151,44 +414,77 @@ class LibrosIVAController extends Controller
 
 
         // Transformar devoluciones
-        $devolucionesData = $devoluciones->map(function ($venta) {
-            $documento = $venta->documento;
-            $cliente = optional($venta->cliente);
+        $devolucionesData = $devoluciones->map(function ($devolucion) {
+            $cliente = optional($devolucion->cliente);
+
+            $codigoGeneracion = $this->obtenerCodigoGeneracionDevolucion($devolucion);
+            $numeroControl = $this->obtenerNumeroControlDevolucion($devolucion);
+            $sello = $this->obtenerSelloDevolucion($devolucion);
 
             return [
-                'fecha'                 => $venta->fecha,
-                'correlativo'         => $venta->correlativo,
-                'num_documento'         => $venta->correlativo,
-                'nombre_cliente'        => $venta->nombre_cliente,
-                'nit_nrc'               => $cliente->nit ?? $cliente->ncr,
-                'ventas_exentas'        => $venta->exenta > 0 ? $venta->exenta * -1 : $venta->exenta,
-                'ventas_no_sujetas'     => $venta->no_sujeta > 0 ? $venta->no_sujeta * -1 : $venta->no_sujeta,
-                'ventas_gravadas'       => $venta->sub_total > 0 ? $venta->sub_total * -1 : $venta->sub_total,
-                'cuenta_a_terceros'     => $venta->cuenta_a_terceros > 0 ? $venta->cuenta_a_terceros * -1 : $venta->cuenta_a_terceros,
-                'debito_fiscal'         => $venta->iva > 0 ? $venta->iva * -1 : $venta->iva,
-                'ventas_exentas_cuenta_a_terceros' => 0,
-                'ventas_gravadas_cuenta_a_terceros' => 0,
-                'debito_fiscal_cuenta_a_terceros' => 0,
-                'iva_retenido'         => $venta->iva_retenido > 0 ? $venta->iva_retenido * -1 : $venta->iva_retenido,
-                'iva_percibido'         => $venta->iva_percibido > 0 ? $venta->iva_percibido * -1 : $venta->iva_percibido,
-                'total'                 => $venta->total > 0 ? $venta->total * -1 : $venta->total,
+                'fecha' => $devolucion->fecha,
+                'codigo_generacion' => $codigoGeneracion,
+                'numero_control' => $numeroControl,
+                'sello' => $sello,
+                'correlativo' => trim((string) $devolucion->correlativo),
+                'nombre_cliente' => $devolucion->nombre_cliente,
+                'nrc_cliente' => $cliente->ncr ?? $cliente->nit,
+                'ventas_exentas' => $devolucion->exenta > 0 ? $devolucion->exenta * -1 : $devolucion->exenta,
+                'ventas_internas_gravadas' => $devolucion->sub_total > 0 ? $devolucion->sub_total * -1 : $devolucion->sub_total,
+                'debito_fiscal' => $devolucion->iva > 0 ? $devolucion->iva * -1 : $devolucion->iva,
+                'ventas_exentas_a_cuenta_de_terceros' => 0.0,
+                'ventas_internas_gravadas_a_cuenta_de_terceros' => $devolucion->cuenta_a_terceros > 0 ? $devolucion->cuenta_a_terceros * -1 : $devolucion->cuenta_a_terceros,
+                'debito_fiscal_por_cuenta_de_terceros' => 0.0,
+                'iva_retenido' => $devolucion->iva_retenido > 0 ? $devolucion->iva_retenido * -1 : $devolucion->iva_retenido,
+                'iva_percibido' => $devolucion->iva_percibido > 0 ? $devolucion->iva_percibido * -1 : $devolucion->iva_percibido,
+                'total' => $devolucion->total > 0 ? $devolucion->total * -1 : $devolucion->total,
             ];
         });
 
         // Unir y ordenar ambas colecciones por fecha
         $librocontribuyentes = collect($ventasData)
-            ->merge(collect($devolucionesData))
-            ->sortByDesc(function ($item) {
+            ->merge($devolucionesData)
+            ->sortBy(function ($item) {
                 return [$item['fecha'], $item['correlativo']];
             })
             ->values()
             ->all();
 
+        $totalesContribuyentes = collect($librocontribuyentes)->reduce(function ($carry, $item) {
+            $carry['ventas_exentas'] += $item['ventas_exentas'];
+            $carry['ventas_internas_gravadas'] += $item['ventas_internas_gravadas'];
+            $carry['debito_fiscal'] += $item['debito_fiscal'];
+            $carry['ventas_exentas_a_cuenta_de_terceros'] += $item['ventas_exentas_a_cuenta_de_terceros'];
+            $carry['ventas_internas_gravadas_a_cuenta_de_terceros'] += $item['ventas_internas_gravadas_a_cuenta_de_terceros'];
+            $carry['debito_fiscal_por_cuenta_de_terceros'] += $item['debito_fiscal_por_cuenta_de_terceros'];
+            $carry['iva_retenido'] += $item['iva_retenido'];
+            $carry['iva_percibido'] += $item['iva_percibido'];
+            $carry['total'] += $item['total'];
+            return $carry;
+        }, [
+            'ventas_exentas' => 0,
+            'ventas_internas_gravadas' => 0,
+            'debito_fiscal' => 0,
+            'ventas_exentas_a_cuenta_de_terceros' => 0,
+            'ventas_internas_gravadas_a_cuenta_de_terceros' => 0,
+            'debito_fiscal_por_cuenta_de_terceros' => 0,
+            'iva_retenido' => 0,
+            'iva_percibido' => 0,
+            'total' => 0,
+        ]);
+
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView('reportes.contabilidad.libro-contribuyentes', compact('librocontribuyentes', 'request'));
-            $pdf->setPaper('US Letter', 'landscape');
+            $pdf = app('dompdf.wrapper')->loadView(
+                'reportes.contabilidad.libro-contribuyentes',
+                [
+                    'librocontribuyentes' => $librocontribuyentes,
+                    'request' => $request,
+                    'totalesContribuyentes' => $totalesContribuyentes,
+                ]
+            );
+            $pdf->setPaper('Legal', 'landscape');
 
             return $pdf->stream('libro-contribuyentes.pdf');
         }
@@ -198,6 +494,10 @@ class LibrosIVAController extends Controller
 
     public function contribuyentesLibroExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request, ['Crédito fiscal'])) {
+            return $alerta;
+        }
+
         $contribuyentes = new LibroContribuyentesExport();
         $contribuyentes->filter($request);
 
@@ -206,6 +506,10 @@ class LibrosIVAController extends Controller
 
     public function contribuyentesAnexoExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request, ['Crédito fiscal'])) {
+            return $alerta;
+        }
+
         $contribuyentes = new AnexoContribuyentesExport();
         $contribuyentes->filter($request);
 
@@ -257,6 +561,10 @@ class LibrosIVAController extends Controller
 
     public function anuladosLibroExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación', 'Crédito fiscal'])) {
+            return $alerta;
+        }
+
         $anulados = new LibroAnuladosExport();
         $anulados->filter($request);
 
@@ -265,6 +573,10 @@ class LibrosIVAController extends Controller
 
     public function anuladosAnexoExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación', 'Crédito fiscal'])) {
+            return $alerta;
+        }
+
         $anulados = new AnexoAnuladosExport();
         $anulados->filter($request);
 
@@ -281,7 +593,7 @@ class LibrosIVAController extends Controller
                 $q->where('id_sucursal', $request->id_sucursal);
             })
             ->where('iva' , '>', 0)
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
             ->get()
@@ -333,12 +645,13 @@ class LibrosIVAController extends Controller
 
         // Obtener los gastos
         $gastos = Gasto::with(['proveedor'])
+            ->where('estado', '!=', 'Cancelado')
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
             ->where('iva' , '>', 0)
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
             ->map(function ($gasto) {
@@ -357,7 +670,7 @@ class LibrosIVAController extends Controller
                 'num_documento'         => $gasto->referencia,
                 'nit_nrc'               => $proveedor->ncr ?? $proveedor->nit,
                 'nombre_proveedor'      => $gasto->nombre_proveedor,
-                'compras_exentas'       => 0,
+                'compras_exentas'       => $gasto->total_otros_impuestos,
                 'importaciones_exentas' => 0,
                 'compras_gravadas'      => 0,
                 'importaciones_gravadas' => 0,
@@ -391,7 +704,7 @@ class LibrosIVAController extends Controller
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
             ->where('iva' , '>', 0)
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
             ->map(function ($devolucion) {
@@ -451,7 +764,7 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
             $pdf->setPaper('US Letter', 'landscape');
 
             return $pdf->stream('libro-compras.pdf');
@@ -520,6 +833,7 @@ class LibrosIVAController extends Controller
 
         // Obtener los gastos
         $gastos = Gasto::with(['proveedor'])
+            ->where('estado', '!=', 'Cancelado')
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
@@ -586,6 +900,11 @@ class LibrosIVAController extends Controller
     public function GlobalDttesExport(Request $request)
     {
         try {
+            
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            
             $dttes = new GlobalDttesExport();
             $dttes->filter($request);
             
@@ -593,25 +912,82 @@ class LibrosIVAController extends Controller
             
             if (!$result['success']) {
                 Log::error('Error al generar ZIP: ' . $result['message']);
-                
-                // Devolver texto plano en lugar de JSON
                 return response($result['message'], 400)
                     ->header('Content-Type', 'text/plain');
             }
             
-            return response()->download(
-                storage_path('app/' . $result['path']),
-                $result['filename'],
-                [
-                    'Content-Type' => 'application/zip',
-                    'Content-Disposition' => 'attachment; filename=' . $result['filename']
-                ]
-            )->deleteFileAfterSend(true);
+            $filePath = storage_path('app/' . $result['path']);
+            
+            if (!file_exists($filePath)) {
+                Log::error('Archivo ZIP no encontrado: ' . $filePath);
+                return response('Archivo no encontrado', 404)
+                    ->header('Content-Type', 'text/plain');
+            }
+            
+            $fileSize = filesize($filePath);
+            
+            // Leer contenido
+            $fileContent = file_get_contents($filePath);
+            
+            // Eliminar archivo
+            @unlink($filePath);
+            
+            
+            // Retornar respuesta con headers claros
+            return response($fileContent, 200)
+                ->header('Content-Type', 'application/zip')
+                ->header('Content-Disposition', 'attachment; filename="' . $result['filename'] . '"')
+                ->header('Content-Length', strlen($fileContent))
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
+            
         } catch (\Exception $e) {
             Log::error('Excepción al exportar DTEs: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             
-            // Devolver texto plano en lugar de JSON
+            return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
+                ->header('Content-Type', 'text/plain');
+        }
+    }
+
+    // Descarga un ZIP con los JSON de notas de crédito y débito para declaración.
+    public function notasCreditoDebitoExport(Request $request)
+    {
+        try {
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            $export = new NotasCreditoDebitoExport();
+            $export->filter($request);
+            $result = $export->generateZip();
+
+            if (!$result['success']) {
+                Log::error('Error al generar ZIP notas: ' . $result['message']);
+                return response($result['message'], 400)
+                    ->header('Content-Type', 'text/plain');
+            }
+
+            $filePath = storage_path('app/' . $result['path']);
+            if (!file_exists($filePath)) {
+                Log::error('Archivo ZIP no encontrado: ' . $filePath);
+                return response('Archivo no encontrado', 404)
+                    ->header('Content-Type', 'text/plain');
+            }
+
+            $fileContent = file_get_contents($filePath);
+            @unlink($filePath);
+
+            return response($fileContent, 200)
+                ->header('Content-Type', 'application/zip')
+                ->header('Content-Disposition', 'attachment; filename="' . $result['filename'] . '"')
+                ->header('Content-Length', strlen($fileContent))
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
+        } catch (\Exception $e) {
+            Log::error('Excepción al exportar notas crédito/débito: ' . $e->getMessage());
             return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
                 ->header('Content-Type', 'text/plain');
         }
@@ -619,6 +995,10 @@ class LibrosIVAController extends Controller
 
     public function libroRetencion1Export(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $retencion = new LibroRetencion1Export();
         $retencion->filter($request);
 
@@ -628,6 +1008,10 @@ class LibrosIVAController extends Controller
 
     public function libroPercepcion1Export(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $percepcion = new LibroPercepcion1Export();
         $percepcion->filter($request);
 
@@ -636,6 +1020,10 @@ class LibrosIVAController extends Controller
 
     public function anexoRetencion1Export(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $retencion = new AnexoRetencion1Export();
         $retencion->filter($request);
 
@@ -644,6 +1032,10 @@ class LibrosIVAController extends Controller
 
     public function anexoPercepcion1Export(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $percepcion = new AnexoPercepcion1Export();
         $percepcion->filter($request);
 

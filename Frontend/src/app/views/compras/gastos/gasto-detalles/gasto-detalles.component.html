@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Gasto</h2>
-    <button class="btn btn-light text-danger" routerLink="/gastos"><i class="fa fa-arrow-left"></i> Regresar</button>
+    <button class="btn btn-light text-danger"  onclick="history.back()"><i class="fa fa-arrow-left"></i> Regresar</button>
 </section>
 
 <div class="row mb-5">
@@ -39,12 +39,44 @@
                         <label class="fw-medium">Tipo:</label>
                         <p>{{ gasto.tipo }}</p>
                     </div>
-                    <div class="form-group col-md-12 col-lg-3">
+                    <div class="form-group col-md-12 col-lg-3" *ngIf="!gasto.detalles || gasto.detalles.length <= 1">
                         <label class="fw-medium">Concepto:</label>
                         <p>{{ gasto.concepto }}</p>
                     </div>
                 </div>
                 <h6>Detalle de facturación</h6>
+                <div class="table-responsive mb-3" *ngIf="gasto.detalles && gasto.detalles.length > 1">
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Concepto</th>
+                                <th>Categoría</th>
+                                <th>Tipo</th>
+                                <th class="text-end">Sub total</th>
+                                <th class="text-end">IVA</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let d of gasto.detalles; let i = index">
+                                <td>{{ i + 1 }}</td>
+                                <td>{{ d.concepto }}</td>
+                                <td>{{ d.tipo }}</td>
+                                <td>
+                                    <span class="badge" [ngClass]="{
+                                        'bg-success': d.tipo_gravado === 'gravada',
+                                        'bg-info': d.tipo_gravado === 'exenta',
+                                        'bg-secondary': d.tipo_gravado === 'no_sujeta' || !d.tipo_gravado
+                                    }">{{ (d.tipo_gravado === 'gravada' ? 'Gravada' : d.tipo_gravado === 'exenta' ? 'Exenta' : 'No sujeta') }}</span>
+                                </td>
+                                <td class="text-end">{{ d.sub_total | currency:'USD':'symbol':'1.2' }}</td>
+                                <td class="text-end">{{ d.iva | currency:'USD':'symbol':'1.2' }}</td>
+                                <td class="text-end fw-medium">{{ d.total | currency:'USD':'symbol':'1.2' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
                 <div class="row">
                     <div class="form-group col-md-4 col-lg-3">
                         <label class="fw-medium">Forma de pago:</label>
@@ -96,4 +128,58 @@
     </div>
 </div>
 
+<div class="card" *ngIf="gasto.abonos?.length > 0 || gasto.estado == 'Pendiente'">
+    <h5 class="card-title p-3">
+        Recibos de pago
+        <a *ngIf="gasto.saldo > 0" (click)="openAbono(mabono, gasto)" class="btn btn-default float-end">
+            <i class="fas fa-fw fa-hand-holding-usd"></i> Agregar abono
+        </a>
+    </h5>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Concepto</th>
+                        <th>Forma de pago</th>
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" class="text-center" *ngIf="gasto.abonos?.length < 1 && !loading">
+                            <span class="badge bg-primary">No tiene abonos agregados</span>
+                        </td>
+                        <td colspan="5" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let abono of gasto.abonos; let i=index">
+                        <td>{{ abono.fecha | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ abono.concepto }}</td>
+                        <td>{{ abono.forma_pago }} <small *ngIf="abono.detalle_banco" class="text-muted">({{ abono.detalle_banco }})</small></td>
+                        <td>
+                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(abono)" [(ngModel)]="abono.estado" [ngClass]="{'bg-light-danger' : abono?.estado == 'Cancelado', 'bg-light-success' : abono?.estado == 'Confirmado'}">
+                                <option value="Cancelado">Cancelado</option>
+                                <option value="Confirmado">Confirmado</option>
+                            </select>
+                        </td>
+                        <td class="text-end">{{ abono.total | currency:'USD':'symbol':'1.2' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<ng-template #mabono>
+    <div class="modal-header d-block text-center">
+        <h4 class="modal-title">Agregar abono</h4>
+    </div>
+    <div class="modal-body">
+        <app-crear-abono-gasto [gasto]="gasto" (update)="loadAll()"></app-crear-abono-gasto>
+    </div>
+</ng-template>
 

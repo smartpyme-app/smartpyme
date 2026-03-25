@@ -27,6 +27,10 @@ export class MHService {
         let user = JSON.parse(localStorage.getItem('SP_auth_user')!);
         let formData:FormData = new FormData();
 
+        if (!user.empresa?.mh_usuario || !user.empresa?.mh_contrasena) {
+            return throwError(() => new Error("Configure el usuario y contraseña para conectarse a la API de hacienda"));
+        }
+
         formData.append('user', user.empresa.mh_usuario.replace(/-/g, ''));
         formData.append('pwd', user.empresa.mh_contrasena);
 
@@ -44,6 +48,18 @@ export class MHService {
     firmarDTE(DTE: any): Observable<any> {
         let user = JSON.parse(localStorage.getItem('SP_auth_user')!);
 
+        if (!user) {
+            return throwError(() => new Error('Usuario no autenticado, vuelva a iniciar sesión'));
+        }
+
+        if (!user.empresa?.nit) {
+            return throwError(() => new Error('NIT no configurado en la información de la cuenta'));
+        }
+
+        if (!user.empresa.mh_pwd_certificado) {
+            return throwError(() => new Error('Contraseña del certificado no configurada en los datos de facturación electrónica'));
+        }
+
         let formData:any = {};
         formData.nit = user.empresa.nit.replace(/-/g, '');
         formData.activo = true;
@@ -55,15 +71,15 @@ export class MHService {
 
     enviarDTE(venta: any, dteFirmado: any): Observable<any> {
         let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
+        if (!token) {
+            return throwError(() => new Error('Token de MH no creado'));
+        }
 
         const headers = new HttpHeaders({
           'Content-Type': 'application/json',
           'User-Agent': 'Angular',
           'Authorization': token.token,
         });
-
-        console.log(venta);
-        console.log(dteFirmado);
 
         let formData:any = {};
         formData.ambiente = venta.dte.identificacion.ambiente;
@@ -72,7 +88,6 @@ export class MHService {
         formData.tipoDte = venta.dte.identificacion.tipoDte;
         formData.documento = dteFirmado;
         formData.codigoGeneracion = venta.dte.codigoGeneracion;
-        console.log(formData);
 
         return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base') + this.url_recepciondte}`, formData, { headers, params: { saltarJWT: true } });
     }
@@ -154,9 +169,11 @@ export class MHService {
                     this.enviarDTE(venta, dteFirmado.body).subscribe(dte => {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             venta.dte.sello = dte.selloRecibido;
+                            venta.dte.selloRecibido = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
-                            venta.tipo_dte = dte.tipo_dte;
-                            venta.numero_control = dte.numero_control;
+                            venta.tipo_dte = venta.dte?.identificacion?.tipoDte ?? dte.tipo_dte ?? dte.tipoDte;
+                            venta.numero_control = dte.numeroControl;
+                            venta.codigo_generacion = dte.codigoGeneracion;
                             // venta.estado = 'Emitido';
                             this.apiService.store('venta', venta).subscribe(data => {
                                 resolve(data);
@@ -197,8 +214,9 @@ export class MHService {
                     this.enviarDTE(venta, dteFirmado.body).subscribe(dte => {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             venta.dte.sello = dte.selloRecibido;
+                            venta.dte.selloRecibido = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
-                            venta.tipo_dte = dte.tipo_dte;
+                            venta.tipo_dte = venta.dte?.identificacion?.tipoDte ?? dte.tipo_dte ?? dte.tipoDte;
                             venta.numero_control = dte.numero_control;
                             // venta.estado = 'Emitido';
                             this.apiService.store('devolucion/venta', venta).subscribe(data => {
@@ -240,8 +258,9 @@ export class MHService {
                     this.enviarDTE(gasto, dteFirmado.body).subscribe(dte => {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             gasto.dte.sello = dte.selloRecibido;
+                            gasto.dte.selloRecibido = dte.selloRecibido;
                             gasto.sello_mh = dte.selloRecibido;
-                            gasto.tipo_dte = dte.tipo_dte;
+                            gasto.tipo_dte = gasto.dte?.identificacion?.tipoDte ?? dte.tipo_dte ?? dte.tipoDte;
                             gasto.numero_control = dte.numero_control;
                             // gasto.estado = 'Emitido';
                             this.apiService.store('gasto', gasto).subscribe(data => {
@@ -283,8 +302,9 @@ export class MHService {
                     this.enviarDTE(compra, dteFirmado.body).subscribe(dte => {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             compra.dte.sello = dte.selloRecibido;
+                            compra.dte.selloRecibido = dte.selloRecibido;
                             compra.sello_mh = dte.selloRecibido;
-                            compra.tipo_dte = dte.tipo_dte;
+                            compra.tipo_dte = compra.dte?.identificacion?.tipoDte ?? dte.tipo_dte ?? dte.tipoDte;
                             compra.numero_control = dte.numero_control;
                             // compra.estado = 'Emitido';
                             this.apiService.store('compra', compra).subscribe(data => {
@@ -327,6 +347,7 @@ export class MHService {
 
                         if ((dte.estado == 'RECIBIDO') && dte.selloRecibido) {
                             venta.dte.sello = dte.selloRecibido;
+                            venta.dte.selloRecibido = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
                             this.apiService.store('venta', venta).subscribe(data => {
                                 resolve(data);
@@ -369,24 +390,22 @@ export class MHService {
             correlativo_inicial: correlativoInicial
         };
         
-        // Usa apiService para la llamada HTTP
-        // El endpoint procesará la solicitud de forma asíncrona
         return this.apiService.store(this.url_pruebas_ejecutar, datos)
             .pipe(
                 map(response => {
-                    // Manejar la respuesta exitosa (ahora incluye el campo 'queued')
+                    // NUEVO: Mensaje personalizado para CCF con notas automáticas
+                    if (response.success && tipo === 'creditosFiscales') {
+                        response.message += ' Además, se generarán automáticamente las notas de crédito y débito correspondientes.';
+                    }
                     return response;
                 }),
                 catchError(error => {
-                    // Registrar y manejar errores
                     console.error('Error al ejecutar pruebas masivas:', error);
                     
-                    // Si hay un mensaje de error específico en la respuesta, úsalo
                     if (error.error && error.error.message) {
                         return throwError(error.error.message);
                     }
                     
-                    // De lo contrario, devolver un mensaje genérico o el error completo
                     return throwError('Error al ejecutar pruebas masivas. Por favor, intente nuevamente.');
                 })
             );

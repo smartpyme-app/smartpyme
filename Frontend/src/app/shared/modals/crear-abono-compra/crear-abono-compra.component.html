@@ -9,7 +9,7 @@
 
         <div class="form-group col-md-6">
             <label for="forma_pago">Forma de pago</label>
-            <select name="forma_pago" [(ngModel)]="abono.forma_pago" class="form-select">
+            <select name="forma_pago" (change)="cambioMetodoDePago()" [(ngModel)]="abono.forma_pago" class="form-select">
                 <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
             </select>
         </div>
@@ -17,7 +17,12 @@
             <label for="detalle_banco">Banco</label>
             <select name="detalle_banco" [(ngModel)]="abono.detalle_banco" class="form-select">
                 <option value="">Seleccione aquí</option>
-                <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+                <ng-container *ngIf="apiService.isModuloBancos()">
+                    <option [value]="banco.nombre_banco" *ngFor="let banco of bancos">{{ banco.nombre_banco }} - {{ banco.numero }}</option>
+                </ng-container>
+                <ng-container *ngIf="!apiService.isModuloBancos()">
+                    <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+                </ng-container>
             </select>
         </div>
         <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo'">
@@ -29,16 +34,18 @@
             <table class="table table-bordered">
                 <tbody>
                     <tr>
-                        <th colspan="3" class="text-center">Datos de la compra</th>
+                        <th colspan="4" class="text-center">Datos de la compra</th>
                     </tr>
                     <tr>
-                        <th width="33%">Total</th>
-                        <th width="33%">Abonado</th>
-                        <th width="33%">Saldo</th>
+                        <th width="25%">Total</th>
+                        <th width="25%">Abonado</th>
+                        <th width="25%">Devoluciones</th>
+                        <th width="25%">Saldo</th>
                     </tr>
                     <tr>
                         <td>{{ compra.total | currency}}</td>
-                        <td>{{ (compra.total - compra.saldo) | currency}}</td>
+                        <td>{{ compra.abonos_sum_total | currency}}</td>
+                        <td>{{ compra.devoluciones_sum_total | currency}}</td>
                         <td>{{ compra.saldo | currency}}</td>
                     </tr>
                 </tbody>
@@ -58,7 +65,7 @@
         <div class="form-group col-md-12">
             <label>Total:</label>
             <div class="input-group">
-                <div class="input-group-text">$</div>
+                <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                 <input type="number" class="form-control" id="total" [(ngModel)]="abono.total" name="total">
             </div>
         </div>

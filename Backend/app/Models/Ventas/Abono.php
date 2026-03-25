@@ -4,14 +4,15 @@ namespace App\Models\Ventas;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
+use Auth;
 
-class Abono extends Model
-{
+class Abono extends Model {
 
     protected $table = 'abonos_ventas';
     protected $fillable = array(
         'fecha',
+        'correlativo',
+        'id_documento',
         'concepto',
         'referencia',
         'estado',
@@ -29,7 +30,6 @@ class Abono extends Model
         'id_sucursal',
         'id_empresa',
     );
-    protected $appends = ['correlativo'];
 
     protected static function boot()
     {
@@ -42,28 +42,26 @@ class Abono extends Model
         }
     }
 
-    public function venta()
-    {
-        return $this->belongsTo('App\Models\Ventas\Venta', 'id_venta');
+    public function venta(){
+        return $this->belongsTo('App\Models\Ventas\Venta','id_venta');
     }
 
-    public function usuario()
-    {
-        return $this->belongsTo('App\Models\User', 'id_usuario');
+    public function usuario(){
+        return $this->belongsTo('App\Models\User','id_usuario');
     }
 
-    public function sucursal()
-    {
-        return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
+    public function sucursal(){
+        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
-    public function getCorrelativoAttribute()
-    {
-
-        $position = static::where('id_empresa', $this->id_empresa)
-            ->where('id', '<=', $this->id)
-            ->count();
-
-        return  str_pad($position, 5, '0', STR_PAD_LEFT);
+    public function documento(){
+        return $this->belongsTo('App\Models\Admin\Documento','id_documento');
     }
+
+    protected $appends = ['nombre_documento'];
+
+    public function getNombreDocumentoAttribute(){
+        return $this->documento()->pluck('nombre')->first();
+    }
+
 }

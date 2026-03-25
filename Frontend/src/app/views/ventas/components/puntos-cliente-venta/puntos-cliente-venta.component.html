@@ -1,0 +1,148 @@
+<!-- Información de Puntos del Cliente -->
+<div *ngIf="cliente && cliente.id" class="puntos-cliente-container">
+  
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-2">
+    <div class="spinner-border spinner-border-sm text-primary" role="status">
+      <span class="visually-hidden">Cargando puntos...</span>
+    </div>
+    <small class="text-muted ms-2">Consultando puntos...</small>
+  </div>
+
+    <!-- Información de Puntos Disponibles -->
+    <div *ngIf="!loading && mostrarPuntos && puntosInfo" class="card border-success">
+      <div class="card-header bg-success bg-opacity-10 py-2">
+        <div class="d-flex align-items-center justify-content-between">
+          <h6 class="mb-0 text-success">
+            <i class="fas fa-coins me-1"></i>
+            Puntos de Fidelización
+            <small *ngIf="puntosInfo.configuracion" class="text-muted">
+              ({{ puntosInfo.configuracion.tipo_cliente }} - Nivel {{ puntosInfo.configuracion.nivel }})
+            </small>
+          </h6>
+          <span class="badge bg-success">{{ formatNumber(puntosInfo.puntos_disponibles) }} pts</span>
+        </div>
+      </div>
+
+    <div class="card-body py-2">
+      
+      <!-- Resumen de Puntos -->
+      <div class="row text-center mb-3">
+        <div class="col-4">
+          <div class="h6 text-success mb-0">{{ formatNumber(puntosInfo.puntos_disponibles) }}</div>
+          <small class="text-muted">Disponibles</small>
+        </div>
+        <div class="col-4">
+          <div class="h6 text-primary mb-0">{{ formatNumber(puntosInfo.puntos_totales_ganados) }}</div>
+          <small class="text-muted">Total Ganados</small>
+        </div>
+        <div class="col-4">
+          <div class="h6 text-secondary mb-0">{{ formatNumber(puntosInfo.puntos_totales_canjeados) }}</div>
+          <small class="text-muted">Canjeados</small>
+        </div>
+      </div>
+
+      <!-- Puntos Próximos a Expirar -->
+      <div *ngIf="puntosProximosAExpirar.length > 0" class="alert alert-warning py-2 mb-3">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <div class="flex-grow-1">
+            <strong>Próximos a expirar:</strong>
+            <div class="d-flex flex-wrap gap-1 mt-1">
+              <span *ngFor="let ganancia of puntosProximosAExpirar" 
+                    class="badge"
+                    [class]="getDiasExpiracionClass(ganancia.dias_para_expirar)">
+                {{ formatNumber(ganancia.puntos_disponibles) }} pts - {{ getUrgenciaText(ganancia.dias_para_expirar) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección de Canje -->
+      <div class="canje-section">
+        <div class="form-check mb-2">
+          <input 
+            class="form-check-input" 
+            type="checkbox" 
+            id="usarPuntos"
+            [(ngModel)]="usarPuntos"
+            (change)="onToggleUsarPuntos()">
+          <label class="form-check-label fw-bold" for="usarPuntos">
+            <i class="fas fa-gift me-1"></i>
+            Usar puntos como descuento
+          </label>
+        </div>
+
+        <!-- Controles de Canje -->
+        <div *ngIf="usarPuntos" class="canje-controls">
+          <div class="row align-items-end">
+            <div class="col-6">
+              <label class="form-label small mb-1">Puntos a canjear:</label>
+              <div class="input-group input-group-sm">
+                <input 
+                  type="number" 
+                  class="form-control text-center"
+                  [(ngModel)]="puntosACanjear"
+                  (ngModelChange)="onCambiarPuntosACanjear()"
+                  [min]="0"
+                  [max]="puntosInfo.puntos_disponibles"
+                  placeholder="0">
+                <span class="input-group-text">pts</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <button 
+                type="button"
+                class="btn btn-outline-success btn-sm w-100"
+                (click)="usarTodosPuntos()"
+                [disabled]="puntosInfo.puntos_disponibles === 0">
+                <i class="fas fa-coins me-1"></i>
+                Usar todos
+              </button>
+            </div>
+          </div>
+
+          <!-- Preview del Descuento -->
+          <div *ngIf="puntosACanjear > 0" class="descuento-preview mt-2">
+            <div class="alert alert-info py-2 mb-0">
+              <div class="d-flex justify-content-between align-items-center">
+                <span>
+                  <i class="fas fa-calculator me-1"></i>
+                  <strong>Descuento:</strong>
+                </span>
+                <span class="h6 text-success mb-0">
+                  ${{ getDescuentoTotal().toFixed(2) }}
+                </span>
+              </div>
+              <small class="text-muted">
+                {{ formatNumber(puntosACanjear) }} puntos × ${{ valorPunto.toFixed(3) }} = ${{ getDescuentoTotal().toFixed(2) }}
+                <span *ngIf="puntosInfo?.configuracion" class="d-block">
+                  Límites: {{ minimoCanje }} - {{ maximoCanje }} puntos
+                </span>
+              </small>
+            </div>
+          </div>
+
+          <!-- Información FIFO -->
+          <div class="mt-2">
+            <small class="text-muted">
+              <i class="fas fa-info-circle me-1"></i>
+              Se aplicará lógica FIFO: primero los puntos que expiran más pronto.
+            </small>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Estado: Sin Puntos -->
+  <div *ngIf="!loading && !mostrarPuntos && cliente && cliente.id" class="alert alert-light py-2 mb-0">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-coins text-muted me-2"></i>
+      <span class="text-muted">Este cliente no tiene puntos disponibles</span>
+    </div>
+  </div>
+
+</div>

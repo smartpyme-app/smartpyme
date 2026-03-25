@@ -45,9 +45,35 @@ Route::get('/inventariostock', function(){
 
 });
 
+Route::get('/ventassintipodte', function () {
+    $ventas = App\Models\Ventas\Venta::whereNull('tipo_dte')
+        ->whereNotNull('dte')
+        ->whereYear('fecha', 2026)
+        ->get();
+
+    $ventasProcesadas = 0;
+
+    foreach ($ventas as $venta) {
+        $tipoDte = data_get($venta->dte, 'identificacion.tipoDte');
+
+        if (!$tipoDte) {
+            continue;
+        }
+
+        $venta->tipo_dte = $tipoDte;
+        $venta->save();
+        $ventasProcesadas++;
+    }
+
+    return "Se procesaron {$ventasProcesadas} ventas";
+});
+
 
 Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
 
+// Documentación API Externa (rutas públicas)
+Route::get('/api/external/documentation', [App\Http\Controllers\Api\External\DocumentationController::class, 'index'])->name('external-api.documentation');
+Route::get('/api/external/documentation/json', [App\Http\Controllers\Api\External\DocumentationController::class, 'json'])->name('external-api.json');
 
 Auth::routes();

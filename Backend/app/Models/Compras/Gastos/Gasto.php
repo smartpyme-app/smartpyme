@@ -5,7 +5,9 @@ namespace App\Models\Compras\Gastos;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
-class Gasto extends Model {
+
+class Gasto extends Model
+{
 
     protected $table = 'egresos';
     protected $fillable = [
@@ -23,7 +25,6 @@ class Gasto extends Model {
         'estado',
         'forma_pago',
         'detalle_banco',
-        'condicion',
         'fecha_pago',
         'recurrente',
         'fecha_recurrente',
@@ -35,13 +36,14 @@ class Gasto extends Model {
         'otros_impuestos',
         'total',
         'nota',
-        'id_area_empresa',
+        'area_empresa',
         'id_usuario',
         'id_proyecto',
         'id_empresa',
         'id_sucursal',
         'dte',
         'dte_invalidacion',
+        'prueba_masiva',
         'tipo_operacion',
         'tipo_clasificacion',
         'tipo_sector',
@@ -52,7 +54,7 @@ class Gasto extends Model {
         'otros_impuestos' => 'json',
     ];
 
-    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto', 'id_departamento','nombre_departamento'];
+    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto', 'total_otros_impuestos', 'saldo'];
 
     protected static function boot()
     {
@@ -67,31 +69,35 @@ class Gasto extends Model {
 
     public function getDteAttribute($value)
     {
-        return is_string($value) ? json_decode($value,true) : $value;
+        return is_string($value) ? json_decode($value, true) : $value;
     }
 
     public function getDteInvalidacionAttribute($value)
     {
-        return is_string($value) ? json_decode($value,true) : $value;
+        return is_string($value) ? json_decode($value, true) : $value;
     }
 
-    public function getNombreUsuarioAttribute(){
+    public function getNombreUsuarioAttribute()
+    {
         return $this->usuario()->pluck('name')->first();
     }
 
-    public function getNombreCategoriaAttribute(){
+    public function getNombreCategoriaAttribute()
+    {
         return $this->categoria()->pluck('nombre')->first();
     }
 
     public function getNombreProveedorAttribute()
-    {   $proveedor = $this->proveedor()->first();
+    {
+        $proveedor = $this->proveedor()->first();
         if ($proveedor) {
             return $proveedor->tipo == 'Empresa' ? $proveedor->nombre_empresa : $proveedor->nombre . ' ' . $proveedor->apellido;
         }
         return 'Consumidor Final';
     }
 
-    public function getNombreSucursalAttribute(){
+    public function getNombreSucursalAttribute()
+    {
         return $this->sucursal()->pluck('nombre')->first();
     }
 
@@ -101,23 +107,54 @@ class Gasto extends Model {
         return $this->proyecto ? $this->proyecto->nombre : null;
     }
 
-    public function usuario(){
+    public function getTotalOtrosImpuestosAttribute()
+    {
+        // Si el campo es null, vacío o no es un array, retorna 0
+        if (!$this->otros_impuestos || !is_array($this->otros_impuestos)) {
+            return 0;
+        }
+
+        $total = 0;
+
+        // Verificar si existe la estructura con 'valores'
+        if (isset($this->otros_impuestos['valores']) && is_array($this->otros_impuestos['valores'])) {
+            foreach ($this->otros_impuestos['valores'] as $impuesto) {
+                if (isset($impuesto['valor']) && is_numeric($impuesto['valor'])) {
+                    $total += (float) $impuesto['valor'];
+                }
+            }
+        }
+
+        return $total;
+    }
+
+    public function getSaldoAttribute(){
+        $abonos = $this->abonos()->where('estado', 'Confirmado')->sum('total');
+        return round($this->total - $abonos, 2);
+    }
+
+    public function usuario()
+    {
         return $this->belongsTo('App\Models\User', 'id_usuario');
     }
 
-    public function proveedor(){
+    public function proveedor()
+    {
         return $this->belongsTo('App\Models\Compras\Proveedores\Proveedor', 'id_proveedor');
     }
 
-    public function categoria(){
+    public function categoria()
+    {
         return $this->belongsTo('App\Models\Compras\Gastos\Categoria', 'id_categoria');
     }
 
-    public function sucursal(){
+    public function sucursal()
+    {
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
     }
 
-    public function empresa(){
+    public function empresa()
+    {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
@@ -126,28 +163,21 @@ class Gasto extends Model {
         return $this->belongsTo('App\Models\Contabilidad\Proyecto', 'id_proyecto');
     }
 
-    public function areaEmpresa(){
-        return $this->belongsTo('App\Models\Compras\Gastos\AreaEmpresa', 'id_area_empresa');
+    public function abonos()
+    {
+        return $this->hasMany('App\Models\Compras\Gastos\Abono', 'id_gasto');
     }
 
-    public function departamento(){
-        return $this->belongsTo('App\Models\Admin\Departamento', 'id_departamento');
+    public function detalles()
+    {
+        return $this->hasMany('App\Models\Compras\Gastos\DetalleEgreso', 'id_egreso')->orderBy('numero_item');
     }
 
-    public function getIdDepartamentoAttribute(){
-        return $this->areaEmpresa ? $this->areaEmpresa->id_departamento : null;
+    /**
+     * Indica si el egreso tiene detalles (modelo unificado) o es registro legacy
+     */
+    public function getTieneDetallesAttribute(): bool
+    {
+        return $this->detalles()->exists();
     }
-
-    public function getDepartamentoAttribute(){
-        return $this->areaEmpresa ? $this->areaEmpresa->departamento : null;
-    }
-
-    public function getNombreDepartamentoAttribute(){
-        return $this->areaEmpresa ? $this->areaEmpresa->departamento->nombre : null;
-    }
-
-
 }
-
-
-

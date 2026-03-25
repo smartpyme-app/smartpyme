@@ -1,9 +1,10 @@
-import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { of } from 'rxjs';
+import { FormControl } from '@angular/forms';
+import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 
-import { debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
-import { fromEvent, timer } from 'rxjs';
+import { ApiService } from '@services/api.service';
+import { AlertService } from '@services/alert.service';
 
 @Component({
   selector: 'app-buscador-productos',
@@ -11,37 +12,93 @@ import { fromEvent, timer } from 'rxjs';
 })
 export class BuscadorProductosComponent implements OnInit {
 
-	@Output() selectProducto = new EventEmitter();
+    @Output() selectProducto = new EventEmitter();
+    @Input() id_bodega?: number; // Parámetro opcional para filtrar por bodega
+    searchControl = new FormControl();
 
-	public productos: any = [];
-    @Input() producto: any = {};
-    public searching = false;
+    public productos:any = [];
+    public loading:boolean = false;
 
-	constructor(private apiService: ApiService, private alertService: AlertService) { }
+    constructor( 
+        private apiService: ApiService, private alertService: AlertService
+    ) { }
 
-	ngOnInit() {
+    ngOnInit() {
 
-        const input = document.getElementById('example')!;
-        const example = fromEvent(input, 'keyup').pipe(map(i => (<HTMLTextAreaElement>i.currentTarget).value));
-        const debouncedInput = example.pipe(debounceTime(500));
-        const subscribe = debouncedInput.subscribe(val => { this.searchProducto(); });
 
-    }
+        this.searchControl.valueChanges
+          .pipe(
+            debounceTime(500),
+            filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
+            switchMap((query: any) => {
+              // Decidir qué endpoint usar basado en si se proporciona id_bodega
+              let endpoint = 'productos/buscar-by-query';
+              let params = `query=${encodeURIComponent(query)}`;
+              
+              if (this.id_bodega) {
+                endpoint = 'productos/buscar-by-query-bodega';
+                params += `&id_bodega=${this.id_bodega}`;
+              }
+              
+              return this.apiService.getAll(`${endpoint}?${params}`).pipe(
+                catchError(error => {
+                  console.error('Error en la búsqueda:', error);
+                  this.productos = []; // Limpiar resultados en caso de error.
+                  this.loading = false; // Asegurar que el estado de carga se actualice.
+                  return of([]); // Retornar un observable vacío para que el flujo continúe.
+                })
+              );
+            })
+          )
+          .subscribe({
+            next: (results: any[]) => {
+              this.productos = Array.isArray(results) ? results : [];
+              this.loading = false;
 
-    searchProducto(){
-        if(this.producto.nombre && this.producto.nombre.length > 1) {
-            this.searching = true;
-            this.apiService.read('productos-all/buscar/', this.producto.nombre).subscribe(productos => {
-               this.productos = productos;
-               this.searching = false;
-            }, error => {this.alertService.error(error);this.searching = false;});
-        }else if (!this.producto.nombre  || this.producto.nombre.length < 1 ){ this.searching = false; this.producto = {}; this.productos.total = 0; }
+              if (
+                results &&
+                results.length == 1 &&
+                (this.searchControl.value == results[0].codigo || this.searchControl.value == results[0].barcode)
+              ) {
+                this.productoSelect(results[0]);
+              }
+            },
+            error: (err) => {
+              console.error('Error no controlado:', err); // Log en caso de un error en la suscripción.
+            }
+          });
+
     }
 
     productoSelect(producto:any){
         this.productos = [];
-        this.producto = producto;
-        this.selectProducto.emit(this.producto);
+        this.searchControl.setValue('');
+        this.selectProducto.emit(producto);
+    }
+
+    onProductoClick(producto:any){
+        this.productoSelect(producto);
+    }
+
+    /**
+     * Verifica si el componente químico está habilitado en la empresa
+     */
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
+    }
+
+    /**
+     * Verifica si Shopify está activo en la empresa
+     */
+    public isShopifyActive(): boolean {
+        const empresa = this.apiService.auth_user()?.empresa;
+        if (!empresa) return false;
+        
+        // Verificar si Shopify está configurado y conectado
+        return !!(empresa.shopify_store_url && 
+                 empresa.shopify_consumer_secret && 
+                 empresa.shopify_status === 'connected');
     }
 
 }
+

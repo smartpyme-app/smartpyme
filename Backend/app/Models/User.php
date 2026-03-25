@@ -34,7 +34,9 @@ class User extends Authenticatable implements JWTSubject
         'telefono',
         'whatsapp_verification_code',
         'whatsapp_code_expires_at',
-        'whatsapp_verified'
+        'whatsapp_verified',
+        'shopify_status',
+
     ];
 
     protected $hidden = ['password', 'remember_token', 'whatsapp_verification_code'];
@@ -81,6 +83,11 @@ class User extends Authenticatable implements JWTSubject
     public function sucursal()
     {
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
+    }
+
+    public function bodega()
+    {
+        return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega');
     }
 
     public function accesos()
@@ -151,7 +158,7 @@ class User extends Authenticatable implements JWTSubject
             return array_map(fn() => true, $permissions);
         }
 
-        if ($this->tipo === 'vendedor') {
+        if ($this->tipo === 'vendedor' || $this->tipo === 'Ventas' || $this->tipo === 'Ventas Limitado') {
             $permissions['view_sales'] = true;
             $permissions['view_inventory'] = true;
             $permissions['view_customers'] = true;

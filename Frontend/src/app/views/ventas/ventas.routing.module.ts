@@ -2,7 +2,9 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
 import { AdminGuard } from '../../guards/admin.guard';
+import { FacturacionVersionGuard } from '../../guards/facturacion-version.guard';
 import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
+import { SolicitudesCompraComponent } from '@views/ventas/solicitudes-compra/solicitudes-compra.component';
 
 import { VentasComponent } from '@views/ventas/ventas.component';
 import { VentaComponent } from '@views/ventas/venta/venta.component';
@@ -20,12 +22,14 @@ import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/
 import { DevolucionVentaNuevaComponent } from '@views/ventas/devoluciones/devolucion-nueva/devolucion-nueva.component';
 import { FacturacionComponent } from '@views/ventas/facturacion/facturacion-tienda/facturacion.component';
 import { FacturacionConsignaComponent } from '@views/ventas/facturacion/facturacion-consigna/facturacion-consigna.component';
+import { FacturacionV2Component } from '@views/ventas/facturacion/facturacion-tienda-v2/facturacion-v2.component';
 
 import { ClientesComponent } from '@views/ventas/clientes/clientes.component';
 import { CuentasCobrarComponent } from '@views/ventas/clientes/cuentas-cobrar/cuentas-cobrar.component';
 import { ClienteComponent } from '@views/ventas/clientes/cliente/cliente.component';
 import { ClienteDetallesComponent } from '@views/ventas/clientes/cliente-detalles/cliente-detalles.component';
 import { ClientesDashComponent } from '@views/ventas/clientes/dash/clientes-dash.component';
+import { ClienteVista360Component } from '@views/ventas/clientes/cliente-vista-360/cliente-vista-360.component';
 
 import { HistorialVentasComponent } from '@views/reportes/ventas/historial/historial-ventas.component';
 import { DetalleVentasComponent } from '@views/reportes/ventas/detalle/detalle-ventas.component';
@@ -41,7 +45,8 @@ const routes: Routes = [
     children: [
 
         { path: 'ventas', canActivate: [AdminGuard], component: VentasComponent, title: 'Ventas'},
-        { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación'},
+        { path: 'venta/crear', canActivate: [FacturacionVersionGuard], component: FacturacionComponent, title: 'Facturación'},
+        { path: 'ventas-v2/crear', component: FacturacionV2Component, title: 'Facturación V2'},
         { path: 'venta/consigna/revisar/:id', component: FacturacionConsignaComponent, title: 'Facturación consigna'},
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
 
@@ -51,6 +56,8 @@ const routes: Routes = [
         { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
         { path: 'cotizacion/crear', component: FacturacionComponent, title: 'Cotización' },
         { path: 'cotizacion/editar/:id', component: FacturacionComponent, title: 'Cotización' },
+        
+        { path: 'solicitudes-compra', component: SolicitudesCompraComponent, title: 'Solicitudes de compra' },
     // 
         { path: 'canales', canActivate: [AdminGuard], component: CanalesComponent, title: 'Canales de venta'},
         { path: 'formas-de-pago', canActivate: [AdminGuard], component: FormasDePagoComponent, title: 'Formas de pago'},
@@ -65,9 +72,10 @@ const routes: Routes = [
     // Clientes
         { path: 'clientes', component: ClientesComponent, title: 'Clientes'},
         { path: 'cliente/detalles/:id', component: ClienteDetallesComponent, title: 'Cliente'},
+        { path: 'cliente/vista-360/:id', component: ClienteVista360Component, title: 'Vista 360° Cliente'},
         { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente'},
         { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente'},
-        { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent },
+        { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent, title: 'Cuentas por cobrar' },
         { path: 'clientes/crm', component: ClientesDashComponent },
 
     // Reportes 

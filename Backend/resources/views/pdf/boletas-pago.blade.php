@@ -73,6 +73,14 @@
                 <td>Préstamos</td>
                 <td>${{ number_format($detalle->prestamos, 2) }}</td>
             </tr>
+            @if($detalle->anticipos > 0)
+            <tr>
+                <td></td>
+                <td></td>
+                <td>Anticipos</td>
+                <td>${{ number_format($detalle->anticipos, 2) }}</td>
+            </tr>
+            @endif
             <tr>
                 <td>Otros Ingresos</td>
                 <td>${{ number_format($detalle->otros_ingresos, 2) }}</td>

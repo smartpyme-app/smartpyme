@@ -1,3 +1,13 @@
-ALTER TABLE empresas ADD tipo_renta_servicios VARCHAR(255) NULL AFTER logo;
-ALTER TABLE empresas ADD tipo_renta_productos VARCHAR(255) NULL AFTER tipo_renta_servicios;
-ALTER TABLE empresas ADD tipo_sector VARCHAR(255) NULL AFTER tipo_renta_productos;
+ALTER TABLE producto_precios
+ADD COLUMN clasificacion VARCHAR(100) NULL AFTER precio;
+
+ALTER TABLE clientes
+ADD COLUMN clasificacion VARCHAR(100) NULL AFTER nombre;
+
+
+
+ALTER TABLE devoluciones_venta
+ADD COLUMN tipo VARCHAR(100) default "devolucion" AFTER tipo_dte;
+
+ALTER TABLE devoluciones_compra
+ADD COLUMN tipo VARCHAR(100) default "devolucion" AFTER tipo_documento;

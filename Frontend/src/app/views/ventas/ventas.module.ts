@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PipesModule } from '@pipes/pipes.module';
 import { ModalModule } from 'ngx-bootstrap/modal';
@@ -19,6 +19,7 @@ import { RecurrentesComponent } from '@views/ventas/recurrentes/recurrentes.comp
 import { AbonosVentasComponent } from '@views/ventas/abonos/abonos-ventas.component';
 
 import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
+import { SolicitudesCompraComponent } from '@views/ventas/solicitudes-compra/solicitudes-compra.component';
 
 import { CanalesComponent } from '@views/ventas/canales/canales.component';
 import { FormasDePagoComponent } from '@views/ventas/formas-de-pago/formas-de-pago.component';
@@ -31,11 +32,13 @@ import { DevolucionVentaNuevaComponent } from '@views/ventas/devoluciones/devolu
 import { DevolucionVentaDetallesComponent } from '@views/ventas/devoluciones/devolucion-nueva/detalles/devolucion-venta-detalles.component';
 import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/devolucion-venta.component';
 import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/documento-historial.component';
+import { FacturacionVersionGuard } from '@guards/facturacion-version.guard';
 
 @NgModule({
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     RouterModule,
     SharedModule,
     PipesModule,
@@ -53,6 +56,7 @@ import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/
     RecurrentesComponent,
     AbonosVentasComponent,
     CotizacionesComponent,
+    SolicitudesCompraComponent,
     CanalesComponent,
     FormasDePagoComponent,
     BancosComponent,
@@ -70,6 +74,7 @@ import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/
     RecurrentesComponent,
     AbonosVentasComponent,
     CotizacionesComponent,
+    SolicitudesCompraComponent,
     CanalesComponent,
     FormasDePagoComponent,
     BancosComponent,
@@ -80,6 +85,9 @@ import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/
     DevolucionVentaNuevaComponent,
     DevolucionVentaDetallesComponent,
     DocumentoHistorialComponent
+  ],
+  providers: [
+    FacturacionVersionGuard
   ]
 })
 export class VentasModule { }

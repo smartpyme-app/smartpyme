@@ -21,10 +21,10 @@ export class DevolucionCompraNuevaComponent implements OnInit {
     public loading = false;
     public saving = false;
     public imprimir:boolean = true;
-    
+
     modalRef!: BsModalRef;
-    
-    constructor( 
+
+    constructor(
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router,
@@ -35,7 +35,6 @@ export class DevolucionCompraNuevaComponent implements OnInit {
     ngOnInit() {
 
         const id = +this.route.snapshot.queryParamMap.get('id_compra')!;
-        console.log(id);
         if(id == 0){
             this.cargarDatosIniciales();
         }
@@ -48,12 +47,13 @@ export class DevolucionCompraNuevaComponent implements OnInit {
                 this.devolucion.id_proveedor = compra.id_proveedor;
                 this.devolucion.fecha = this.apiService.date();
                 this.devolucion.id_compra = id;
-                this.devolucion.tipo = 'Interna';
+                this.devolucion.tipo = 'devolucion';
                 this.devolucion.observaciones = '';
 
-                this.devolucion.cobrar_impuestos = this.compra.iva > 0 ? true : false; 
-                this.devolucion.cobrar_percepcion = this.compra.percepcion > 0 ? true : false; 
+                this.devolucion.cobrar_impuestos = this.compra.iva > 0 ? true : false;
+                this.devolucion.cobrar_percepcion = this.compra.percepcion > 0 ? true : false;
                 this.devolucion.retencion = this.compra.iva_retenido > 0 ? true : false;
+                this.devolucion.renta = this.compra.renta_retenida > 0 ? true : false;
 
                 let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
                 if (corte) {
@@ -61,9 +61,9 @@ export class DevolucionCompraNuevaComponent implements OnInit {
                     this.devolucion.id_corte = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
                 }
                 this.devolucion.id_usuario = this.apiService.auth_user().id;
-                this.devolucion.id_sucursal = this.compra.id_sucursal;
-                this.devolucion.id_bodega = this.compra.id_bodega;
-                this.devolucion.id_empresa = this.compra.id_empresa;
+                this.devolucion.id_sucursal = compra.id_sucursal;
+                this.devolucion.id_bodega = compra.id_bodega;
+                this.devolucion.id_empresa = compra.id_empresa;
                 this.sumTotal();
                 this.cargarDocumentos();
                 this.loading = false;
@@ -79,21 +79,17 @@ export class DevolucionCompraNuevaComponent implements OnInit {
 
             if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_debito') {
                 let documento = this.documentos.find((x:any) => x.nombre == 'Nota de débito');
-                console.log(documento);
                 if(documento){
                     this.devolucion.tipo_documento = documento.nombre;
                 }
             }
             if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_credito') {
 
-                console.log(this.documentos);
                 let documento = this.documentos.find((x:any) => x.nombre == 'Nota de crédito');
-                console.log(documento);
                 if(documento){
                     this.devolucion.tipo_documento = documento.nombre;
                 }
             }
-            console.log(this.devolucion);
         }, error => {this.alertService.error(error);});
     }
 
@@ -101,7 +97,7 @@ export class DevolucionCompraNuevaComponent implements OnInit {
         this.cargarDocumentos();
         this.devolucion = {};
         this.devolucion.fecha = this.apiService.date();
-        this.devolucion.tipo = 'Interna';
+        this.devolucion.tipo = 'devolucion';
         this.devolucion.cliente = {};
         this.devolucion.detalles = [];
         this.devolucion.canal = 'Tienda';
@@ -124,9 +120,9 @@ export class DevolucionCompraNuevaComponent implements OnInit {
 
     public sumTotal() {
         this.devolucion.sub_total = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'total'))).toFixed(2);
-        this.devolucion.iva_percibido = this.devolucion.cobrar_percepcion ? this.devolucion.sub_total * 0.01 : 0; 
+        this.devolucion.iva_percibido = this.devolucion.cobrar_percepcion ? this.devolucion.sub_total * 0.01 : 0;
         this.devolucion.iva_retenido = this.devolucion.retencion ? this.devolucion.sub_total * 0.01 : 0;
-        this.devolucion.renta_retenida = this.devolucion.renta ? this.devolucion.sub_total * 0.10 : 0; 
+        this.devolucion.renta_retenida = this.devolucion.renta ? this.devolucion.sub_total * 0.10 : 0;
 
         if(this.devolucion.cobrar_impuestos){
             this.devolucion.iva = ( this.devolucion.sub_total * 0.13 ).toFixed(2);

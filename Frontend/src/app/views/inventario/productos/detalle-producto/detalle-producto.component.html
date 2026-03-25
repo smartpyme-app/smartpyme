@@ -1,0 +1,97 @@
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+    <h2 class="page-heading">
+        Detalle del producto
+    </h2>
+    <div>
+        <a *ngIf="apiService.canEdit() && producto?.id" [routerLink]="['/producto/editar', producto.id]" class="btn btn-default me-2">
+            <i class="fas fa-fw fa-pen"></i> Editar
+        </a>
+        <a *ngIf="producto?.id" [routerLink]="['/kardex', producto.id]" class="btn btn-default me-2">
+            <i class="fas fa-fw fa-file-lines"></i> Kardex
+        </a>
+        <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>
+    </div>
+</section>
+
+<div class="card border-0" *ngIf="loading">
+    <div class="card-body text-center py-5">
+        <span class="badge bg-primary">Cargando...</span>
+    </div>
+</div>
+
+<div class="card border-0" *ngIf="!loading && producto?.id">
+    <div class="card-body">
+        <div class="row">
+            <h6 class="col-12">Información</h6>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Nombre</label>
+                <p>{{ producto.nombre }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Código</label>
+                <p>{{ producto.codigo || '—' }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Código de barras</label>
+                <p>{{ producto.barcode || '—' }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Tipo</label>
+                <p>{{ producto.tipo || '—' }}</p>
+            </div>
+            <div class="form-group col-lg-4" *ngIf="producto.tipo != 'Servicio'">
+                <label class="fw-medium">Unidad de medida</label>
+                <p>{{ producto.medida || '—' }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Categoría</label>
+                <p>{{ producto.nombre_categoria || producto.categoria?.nombre || '—' }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Marca</label>
+                <p>{{ producto.marca || '—' }}</p>
+            </div>
+            <div class="form-group col-lg-4" *ngIf="producto.tipo != 'Servicio'">
+                <label class="fw-medium">Estado</label>
+                <p>
+                    <span class="badge" [ngClass]="producto.enable == 1 ? 'bg-light-success text-dark' : 'bg-light-danger text-dark'">
+                        {{ producto.enable == 1 ? 'Activo' : 'Inactivo' }}
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0" *ngIf="!loading && producto?.id && (producto.tipo == 'Producto' || producto.tipo == 'Compuesto' || producto.tipo == 'Servicio')">
+    <div class="card-body">
+        <div class="row">
+            <h6 class="col-12">Precio y costo</h6>
+            <div class="form-group col-lg-4" *ngIf="producto.tipo != 'Materia prima'">
+                <label class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</label>
+                <p>{{ producto.precio | currency:'USD':'symbol':'1.2' }}</p>
+            </div>
+            <div class="form-group col-lg-4" *ngIf="producto.tipo != 'Servicio' && producto.tipo != 'Materia prima'">
+                <label class="fw-medium">Costo</label>
+                <p>{{ (producto.costo ?? producto.costo_promedio) | currency:'USD':'symbol':'1.2' }}</p>
+            </div>
+            <div class="form-group col-lg-4" *ngIf="producto.tipo != 'Materia prima' && (producto.porcentaje_impuesto != null || apiService.auth_user()?.empresa?.iva > 0)">
+                <label class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA' : 'Precio con Impuesto' }}</label>
+                <p>{{ (producto.precio_final || (producto.precio * (1 + ((producto.porcentaje_impuesto ?? apiService.auth_user()?.empresa?.iva ?? 0) / 100)))) | currency:'USD':'symbol':'1.2' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0" *ngIf="!loading && producto?.descripcion">
+    <div class="card-body">
+        <h6 class="col-12">Descripción</h6>
+        <p class="mb-0">{{ producto.descripcion }}</p>
+    </div>
+</div>
+
+<div class="card border-0" *ngIf="!loading && producto?.id && !producto?.nombre">
+    <div class="card-body text-center py-5">
+        <span class="badge bg-warning text-dark">Producto no encontrado</span>
+    </div>
+</div>

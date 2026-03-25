@@ -19,16 +19,17 @@ use App\Models\Transaccion;
 use App\Models\User;
 use App\Services\Suscripcion\SuscripcionService;
 use Illuminate\Support\Facades\Storage;
-use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\DB;
 use Intervention\Image\ImageManagerStatic as Image;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use JWTAuth;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Auth;
+use App\Models\EmpresaConfiguracionPlanilla;
+use App\Services\Planilla\PlanillaTemplatesService;
 
 class EmpresasController extends Controller
 {
-
     private $suscripcionService;
 
     public function __construct(SuscripcionService $suscripcionService)
@@ -36,183 +37,64 @@ class EmpresasController extends Controller
         $this->suscripcionService = $suscripcionService;
     }
 
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
 
-        $empresas = Empresa::when($request->activo !== null, function($q) use ($request){
+        $empresas = Empresa::when($request->activo !== null, function ($q) use ($request) {
             $q->where('activo', !!$request->activo);
         })
-        ->when($request->isColumnEnabled('columna_proyecto'), function($query) {
-            return $query->with('proyecto');
-        })
-        ->when($request->id_proyecto, function($query) use ($request) {
-            return $query->where('id_proyecto', $request->id_proyecto);
-        })
+            ->when($request->isColumnEnabled('columna_proyecto'), function ($query) {
+                return $query->with('proyecto');
+            })
+            ->when($request->id_proyecto, function ($query) use ($request) {
+                return $query->where('id_proyecto', $request->id_proyecto);
+            })
 
-        ->when($request->buscador, function($query) use ($request){
-            return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
-                            ->orwhere('correo', 'like' ,"%" . $request->buscador . "%");
-        })
-        ->when($request->pago_inicio, function($query) use ($request){
-            return $query->where('fecha_ultimo_pago', '>=', $request->pago_inicio);
-        })
-        ->when($request->pago_fin, function($query) use ($request){
-            return $query->where('fecha_ultimo_pago', '<=', $request->pago_fin);
-        })
-        ->when($request->suscripcion_inicio, function($query) use ($request){
-            return $query->where('created_at', '>=', $request->suscripcion_inicio);
-        })
-        ->when($request->suscripcion_fin, function($query) use ($request){
-            return $query->where('created_at', '<=', $request->suscripcion_fin);
-        })
-        ->when($request->forma_pago, function($query) use ($request){
-            return $query->where('forma_pago', $request->forma_pago);
-        })
-        ->when($request->plan, function($query) use ($request){
-            return $query->where('plan', $request->plan);
-        })
-        ->orderBy($request->orden, $request->direccion)
-        ->paginate($request->paginate);
+            ->when($request->buscador, function ($query) use ($request) {
+                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('correo', 'like', "%" . $request->buscador . "%");
+            })
+            ->when($request->pago_inicio, function ($query) use ($request) {
+                return $query->where('fecha_ultimo_pago', '>=', $request->pago_inicio);
+            })
+            ->when($request->pago_fin, function ($query) use ($request) {
+                return $query->where('fecha_ultimo_pago', '<=', $request->pago_fin);
+            })
+            ->when($request->suscripcion_inicio, function ($query) use ($request) {
+                return $query->where('created_at', '>=', $request->suscripcion_inicio);
+            })
+            ->when($request->suscripcion_fin, function ($query) use ($request) {
+                return $query->where('created_at', '<=', $request->suscripcion_fin);
+            })
+            ->when($request->forma_pago, function ($query) use ($request) {
+                return $query->where('forma_pago', $request->forma_pago);
+            })
+            ->when($request->plan, function ($query) use ($request) {
+                return $query->where('plan', $request->plan);
+            })
+            ->orderBy($request->orden, $request->direccion)
+            ->paginate($request->paginate);
 
         return Response()->json($empresas, 200);
-
     }
 
-    public function list() {
+    public function list()
+    {
 
         $empresas = Empresa::orderby('nombre')
-                                ->where('activo', true)
-                                ->get();
+            ->where('activo', true)
+            ->get();
 
         return Response()->json($empresas, 200);
-
     }
 
 
-    public function read($id) {
+    public function read($id)
+    {
 
-        $empresa = Empresa::with('empresa_cliente')->findOrFail($id);
+        $empresa = Empresa::findOrFail($id);
         return Response()->json($empresa, 200);
-
     }
-
-    // public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         'nombre'        => 'required|max:255',
-    //         'iva'       => 'required|numeric',
-    //     ]);
-
-    //     if($request->id)
-    //         $empresa = Empresa::findOrFail($request->id);
-    //     else
-    //         $empresa = new Empresa;
-
-    //     //Bloquear usuarios
-    //     if ($request->id && ($empresa->activo == '1') && ($request['activo'] == '0')){
-    //         foreach ($empresa->usuarios()->get() as $usuario) {
-    //             $usuario->enable = false;
-    //             $usuario->save();
-    //         }
-    //     }
-    //     //Des bloquear usuario Administrador
-    //     if ($request->id && ($empresa->activo == '0') && ($request['activo'] == '1')){
-    //         foreach ($empresa->usuarios()->where('tipo', 'Administrador')->get() as $usuario) {
-    //             $usuario->enable = true;
-    //             $usuario->save();
-    //         }
-    //     }
-
-    //     $woocommerceFields = [
-    //         'woocommerce_api_key',
-    //         'woocommerce_store_url',
-    //         'woocommerce_consumer_key',
-    //         'woocommerce_consumer_secret',
-    //         'woocommerce_status'
-    //     ];
-
-    //     $woocommerceValues = [];
-    //     foreach ($woocommerceFields as $field) {
-    //         $woocommerceValues[$field] = $empresa->$field;
-    //     }
-
-    //     $empresa->fill($request->all());
-
-    //     if ($request->hasFile('file')) {
-    //         if ($request->id && $empresa->logo && $empresa->logo != 'empresas/default.jpg') {
-    //             Storage::delete($empresa->logo);
-    //         }
-    //         $path   = $request->file('file');
-    //         $resize = Image::make($path)->resize(350,350)->encode('jpg', 75);
-    //         $hash = md5($resize->__toString());
-    //         $path = "empresas/{$hash}.jpg";
-    //         $resize->save(public_path('img/'.$path), 50);
-    //         $empresa->logo = "/" . $path;
-    //     }
-
-    //     foreach ($woocommerceFields as $field) {
-    //         $empresa->$field = $woocommerceValues[$field];
-    //     }
-
-
-    //     $empresa->save();
-
-    //     if(!isset($request->isRegister) || $request->isRegister !== false) {
-
-    //         $suscripcion = $this->createSuscripcion([
-    //             'empresa_id' => $empresa->id,
-    //             'plan_id' => $plan = $this->getPlan($empresa->plan, true, $empresa->plan)->id,
-    //             'usuario_id' => $usuario->id,
-    //             'tipo_plan' => $empresa->tipo_plan,
-    //             'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
-    //             'monto' => $plan->precio,
-    //             'id_pago' => null,
-    //             'id_orden' => null,
-    //             'estado_ultimo_pago' => null,
-    //             'fecha_ultimo_pago' => null,
-    //             'fecha_proximo_pago' => null,
-    //             'fin_periodo_prueba' => now()->addDays($plan->duracion_dias),
-    //             'fecha_cancelacion' => null,
-    //             'motivo_cancelacion' => null,
-    //             'requiere_factura' => false,
-    //             'nit' => null,
-    //             'nombre_factura' => $empresa->nombre,
-    //             'direccion_factura' => $empresa->direccion,
-    //             'intentos_cobro' => 0,
-    //             'ultimo_intento_cobro' => null,
-    //             'historial_pagos' => null
-    //         ]);
-
-    //     }
-
-    //     //Crear sucursal
-    //         if(!$request->id){
-    //             // Crear cliente
-    //                 $cliente = Cliente::create(['nombre' => $empresa->nombre, 'id_empresa' => 2]);
-    //                 $empresa->cliente_id = $cliente->id;
-    //                 $empresa->save();
-    //             // Crear sucursal
-    //             $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
-    //             // Crear bodega
-    //             $bodega = Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //             // Crear canales
-    //             Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
-    //             // Crear impuesto
-    //             Impuesto::create(['nombre' => 'IVA', 'porcentaje' => $empresa->iva, 'id_empresa' => $empresa->id]);
-    //             // Formas de pago
-    //             FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_EFECTIVO'), 'id_empresa' => $empresa->id]);
-    //             FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TRANSFERENCIA'), 'id_empresa' => $empresa->id]);
-    //             FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TARJETA'), 'id_empresa' => $empresa->id]);
-    //             // Crear documentos
-    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_TICKET'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_FACTURA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_COTIZACION'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //         }
-
-    //     return Response()->json($empresa, 200);
-
-    // }
 
     public function store(Request $request)
     {
@@ -240,6 +122,11 @@ class EmpresasController extends Controller
 
         $this->handleCustomEmpresa($request, $empresa); // Maneja la personalización de la empresa
 
+        // Si se envía el país pero no el cod_pais, establecerlo automáticamente
+        if ($request->has('pais') && !$request->has('cod_pais')) {
+            $request->merge(['cod_pais' => $this->mapearCodigoPais($request->pais)]);
+        }
+
         $empresa->fill($request->all());
 
         if ($request->hasFile('file')) {
@@ -255,6 +142,11 @@ class EmpresasController extends Controller
 
     private function createEmpresa(Request $request)
     {
+        // Si se envía el país pero no el cod_pais, establecerlo automáticamente
+        if ($request->has('pais') && !$request->has('cod_pais')) {
+            $request->merge(['cod_pais' => $this->mapearCodigoPais($request->pais)]);
+        }
+
         $empresa = new Empresa;
         $empresa->fill($request->all());
 
@@ -384,8 +276,42 @@ class EmpresasController extends Controller
         ]);
 
         $this->createPaymentMethods($empresa);
-
         $this->createDocuments($sucursal, $empresa);
+        $this->createPlanillaConfiguration($empresa);
+    }
+
+    private function createPlanillaConfiguration($empresa)
+    {
+        try {
+            $codPais = $this->mapearCodigoPais($empresa->pais ?? 'El Salvador');
+            
+            EmpresaConfiguracionPlanilla::create([
+                'empresa_id' => $empresa->id,
+                'cod_pais' => $codPais,
+                'configuracion' => PlanillaTemplatesService::getConfiguracionPorPais($codPais),
+                'activo' => true,
+                'fecha_vigencia_desde' => now(),
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error creando configuración: {$e->getMessage()}");
+        }
+    }
+
+    private function mapearCodigoPais($nombrePais)
+    {
+        $mapeo = [
+            'El Salvador' => 'SV',
+            'Guatemala' => 'GT', 
+            'Honduras' => 'HN',
+            'Nicaragua' => 'NI',
+            'Costa Rica' => 'CR',
+            'Panama' => 'PA',
+            'Panamá' => 'PA',
+            'Belice' => 'BZ'
+        ];
+
+        return $mapeo[$nombrePais] ?? 'SV';
     }
 
     private function createPaymentMethods(Empresa $empresa)
@@ -469,7 +395,6 @@ class EmpresasController extends Controller
         $empresa->delete();
 
         return Response()->json($empresa, 201);
-
     }
 
     // public function suscripcion()
@@ -488,7 +413,7 @@ class EmpresasController extends Controller
 
     // }
 
-   public function suscripcion()
+    public function suscripcion()
     {
         $empresa = Empresa::with('pagos')->where('id', JWTAuth::parseToken()->authenticate()->id_empresa)->firstOrFail();
         $suscripcion = $empresa->suscripcion()->where('estado', 'activo')
@@ -558,6 +483,7 @@ class EmpresasController extends Controller
         foreach ($usuarios as $usuario) {
             $pagosPorUsuario = $usuario->ordenesPago()
                 ->select('plan', 'divisa', 'monto', 'estado', 'fecha_transaccion')
+                ->whereIn('estado', ['completado', 'fallido', 'rechazado'])
                 ->latest()
                 ->get()
                 ->toArray();
@@ -565,23 +491,17 @@ class EmpresasController extends Controller
             $pagos = array_merge($pagos, $pagosPorUsuario);
         }
 
-        usort($pagos, function($a, $b) {
+        usort($pagos, function ($a, $b) {
             return strtotime($b['fecha_transaccion']) - strtotime($a['fecha_transaccion']);
         });
 
-        // Obtener métodos de pago asociados a la empresa
+        // Obtener métodos de pago asociados a la empresa 
         $metodoPago = null;
-        foreach ($usuarios as $usuario) {
-            $metodo = $usuario->metodoPago()
-                ->where('es_predeterminado', true)
-                ->where('esta_activo', true)
-                ->first(['id', 'marca_tarjeta', 'ultimos_cuatro']);
-
-            if ($metodo) {
-                $metodoPago = $metodo;
-                break;
-            }
-        }
+        $usuarioAutenticado = JWTAuth::parseToken()->authenticate();
+        $metodoPago = $usuarioAutenticado->metodoPago()
+            ->where('es_predeterminado', true)
+            ->where('esta_activo', true)
+            ->first(['id', 'marca_tarjeta', 'ultimos_cuatro']);
 
         $dataResponse = [
             'suscripcion' => $suscripcion,
@@ -598,7 +518,7 @@ class EmpresasController extends Controller
     //     $recibo = Transaccion::where('id', $id)->firstOrFail();
     //     // return $recibo;
     //     $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
-    //     $pdf->setPaper('US Letter', 'portrait');
+    //     $pdf->setPaper('US Letter', 'portrait');  
 
 
     //     return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');
@@ -629,14 +549,14 @@ class EmpresasController extends Controller
             $recibo->total = $monto;
             $recibo->estado = $estado;
             $recibo->created_at = $fechaTransaccion ?
-                                \Carbon\Carbon::parse($fechaTransaccion) :
-                                now();
+                \Carbon\Carbon::parse($fechaTransaccion) :
+                now();
 
             // Asignar la empresa como una propiedad normal (no como función)
             $recibo->empresa = $empresa;
 
             // Generar el PDF
-            $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.recibo-suscripcion', compact('recibo'));
             $pdf->setPaper('US Letter', 'portrait');
 
             return $pdf->stream("recibo-plan-{$plan}.pdf");
@@ -650,7 +570,8 @@ class EmpresasController extends Controller
         }
     }
 
-    public function eliminarDatos(Request $request){
+    public function eliminarDatos(Request $request)
+    {
         $empresa = Empresa::where('id', $request->id)->firstOrFail();
         $sucursales = $empresa->sucursales()->pluck('id')->toArray();
         $bodegas = $empresa->bodegas()->pluck('id')->toArray();
@@ -712,13 +633,13 @@ class EmpresasController extends Controller
         return response()->json($empresas);
     }
 
-    private function getPlan($plan_id,$withName = false,$name = null)
+    private function getPlan($plan_id, $withName = false, $name = null)
     {
-       $plan= null;
+        $plan = null;
         if ($withName) {
-            $plan= Plan::where('nombre', $name)->first();
-        }else{
-            $plan= Plan::find($plan_id);
+            $plan = Plan::where('nombre', $name)->first();
+        } else {
+            $plan = Plan::find($plan_id);
         }
 
         return $plan;
@@ -809,6 +730,11 @@ class EmpresasController extends Controller
                     $customConfig['columnas'] = $this->validateColumnConfig($customConfig['columnas']);
                 }
 
+                // Validar y limpiar datos de configuraciones
+                if (isset($customConfig['configuraciones']) && is_array($customConfig['configuraciones'])) {
+                    $customConfig['configuraciones'] = $this->validateConfiguracionConfig($customConfig['configuraciones']);
+                }
+
                 $empresa->custom_empresa = $customConfig;
             }
         } else {
@@ -838,6 +764,32 @@ class EmpresasController extends Controller
         return $validatedColumns;
     }
 
+    /**
+     * Validación opcional para configuraciones
+     */
+    private function validateConfiguracionConfig(array $configuraciones): array
+    {
+        $validatedConfig = [];
+        $allowedConfigs = [
+            'ticket_en_pdf',
+            'componente_quimico_activo',
+        ];
+
+        foreach ($configuraciones as $config => $value) {
+            // Solo permitir configuraciones válidas
+            if (in_array($config, $allowedConfigs)) {
+                // Para configuraciones booleanas
+                if (in_array($config, ['ticket_en_pdf', 'componente_quimico_activo'])) {
+                    $validatedConfig[$config] = (bool) $value;
+                } else {
+                    $validatedConfig[$config] = $value;
+                }
+            }
+        }
+
+        return $validatedConfig;
+    }
+
     public function updateCustomConfig(Request $request)
     {
         $request->validate([
@@ -847,6 +799,12 @@ class EmpresasController extends Controller
         ]);
 
         $empresa = Auth::user()->empresa;
+
+        if ($request->input('section') === 'configuraciones' && in_array($request->input('key'), ['ticket_en_pdf', 'componente_quimico_activo'])) {
+            $request->validate([
+                'value' => 'boolean'
+            ]);
+        }
 
         $empresa->updateCustomConfig(
             $request->input('section'),
@@ -891,4 +849,55 @@ class EmpresasController extends Controller
         ]);
     }
 
+
+    public function storeImagenes(Request $request)
+    {
+        $empresa = Empresa::where("id", $request->id)->first();
+
+        $type = $request->type;
+
+
+        if ($type == 'sello') {
+            if ($empresa->sello && $empresa->sello != 'empresas/default.jpg') {
+                Storage::delete($empresa->sello);
+            }
+        }
+
+        if ($type == 'firma') {
+            if ($empresa->firma && $empresa->firma != 'empresas/default.jpg') {
+                Storage::delete($empresa->firma);
+            }
+        }
+
+        if ($type == 'logo') {
+            if ($empresa->logo && $empresa->logo != 'empresas/default.jpg') {
+                Storage::delete($empresa->logo);
+            }
+        }
+
+        $path = $request->file('file');
+        $resize = Image::make($path)->resize(350, 350)->encode('jpg', 75);
+        $hash = md5($resize->__toString());
+        $path = "empresas/{$hash}.jpg";
+        $resize->save(public_path('img/' . $path), 50);
+
+        if ($type == 'sello') {
+            $empresa->sello = "/" . $path;
+        }
+
+        if ($type == 'firma') {
+            $empresa->firma = "/" . $path;
+        }
+
+        if ($type == 'logo') {
+            $empresa->logo = "/" . $path;
+        }
+        $empresa->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Imagen guardada correctamente',
+            'path' => "/" . $path
+        ]);
+    }
 }

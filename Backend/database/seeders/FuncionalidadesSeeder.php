@@ -12,24 +12,36 @@ class FuncionalidadesSeeder extends Seeder
     public function run()
     {
         $this->command->info('Iniciando seeder de funcionalidades...');
-        
+
         $funcionalidades = [
             [
                 'nombre' => 'Chat Asistente IA',
                 'slug' => 'chat-asistente-ia',
                 'descripcion' => 'Acceso al asistente virtual con Inteligencia Artificial',
                 'orden' => 1
-            ]
+            ],
+            [
+                'nombre' => 'Chatbot WhatsApp',
+                'slug' => 'chatbot-whatsapp',
+                'descripcion' => 'Acceso al chatbot de WhatsApp',
+                'orden' => 2
+            ],
+            [
+                'nombre' => 'Cobro de Propina',
+                'slug' => 'cobro-propina',
+                'descripcion' => 'Permite cobrar propina en las ventas del módulo de facturación',
+                'orden' => 3
+            ],
             //,
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
-        
+
         $contador = 0;
-        
+
         foreach ($funcionalidades as $funcionalidad) {
             try {
                 Funcionalidad::updateOrCreate(
-                    ['slug' => $funcionalidad['slug']], 
+                    ['slug' => $funcionalidad['slug']],
                     $funcionalidad
                 );
                 $contador++;
@@ -38,7 +50,7 @@ class FuncionalidadesSeeder extends Seeder
                 $this->command->error("Error al procesar la funcionalidad {$funcionalidad['nombre']}: " . $e->getMessage());
             }
         }
-        
+
         $this->command->info("Seeder completado: {$contador} funcionalidades procesadas correctamente");
     }
 }

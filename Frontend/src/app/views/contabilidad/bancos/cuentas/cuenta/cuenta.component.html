@@ -1,0 +1,47 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3>{{ cuenta.id ? 'Editar' : 'Crear' }} cuenta</h3>
+    <button class="btn btn-light text-danger" routerLink="/bancos/cuentas"><i class="fa fa-arrow-left"></i> Regresar</button>
+</div>
+
+<form autocomplete="off" (ngSubmit)="onSubmit()">
+    <div class="bg-white rounded p-3">
+        <div class="row">
+
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="nombre_banco">Nombre del banco:</label>
+                <input type="text" class="form-control" name="nombre_banco" [(ngModel)]="cuenta.nombre_banco" required />
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="tipo">Tipo de cuenta:</label>
+                <select class="form-select" name="tipo" [(ngModel)]="cuenta.tipo">
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Banco">Banco</option>
+                    <option value="Tarjeta de crédito">Tarjeta de crédito</option>
+                    <option value="Tarjeta de débito">Tarjeta de débito</option>
+                </select>
+            </div>
+            <div class="form-group col-md-12 col-lg-4">
+                <label for="numero">Número de cuenta:</label>
+                <input type="text" class="form-control" name="numero" [(ngModel)]="cuenta.numero" [required]="cuenta.tipo !== 'Efectivo'" />
+            </div>
+            <div class="form-group col-md-12 col-lg-4">
+                <label for="correlativo_cheques">Correlativo de cheques:</label>
+                <input type="text" class="form-control" name="correlativo_cheques" [(ngModel)]="cuenta.correlativo_cheques" />
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="saldo">Saldo inicial:</label>
+                <input type="number" step="0.01" class="form-control" name="saldo" [(ngModel)]="cuenta.saldo" required />
+            </div>
+
+        </div>
+    </div>
+
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="form-group col-sm-12 pt-2 pb-4">
+            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                <span *ngIf="!saving">Guardar cuenta <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </div>
+</form>

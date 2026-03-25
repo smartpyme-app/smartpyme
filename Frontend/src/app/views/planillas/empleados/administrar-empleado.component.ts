@@ -14,6 +14,12 @@ import { createDuration } from '@fullcalendar/core/internal';
       .cursor-pointer {
         cursor: pointer;
       }
+      .margin-for-checkbox {
+        margin-left: 2rem;
+      }
+      .margin-label-for-checkbox {
+        margin-left: 1rem;
+      }
     `,
   ],
   templateUrl: './administrar-empleado.component.html',
@@ -41,6 +47,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
   public activeTab: string = 'informacion';
   public historialContratos: any[] = [];
   public historialBajas: any[] = [];
+  public mostrarOpcionesAvanzadas: boolean = false;
   public nuevoDocumento: any = {
     tipo_documento: '',
     fecha_documento: '',
@@ -106,6 +113,10 @@ export class AdministrarEmpleadoComponent implements OnInit {
         relacion: '',
         telefono: '',
         direccion: '',
+      },
+      configuracion_descuentos: {
+        aplicar_afp: true,
+        aplicar_isss: true,
       },
     };
     this.id_empresa = JSON.parse(
@@ -396,6 +407,10 @@ export class AdministrarEmpleadoComponent implements OnInit {
         telefono: '',
         direccion: '',
       },
+      configuracion_descuentos: {
+        aplicar_afp: true,
+        aplicar_isss: true,
+      },
     };
   }
 
@@ -539,6 +554,10 @@ export class AdministrarEmpleadoComponent implements OnInit {
                   telefono: '',
                   direccion: '',
                 },
+                configuracion_descuentos: empleado.configuracion_descuentos || {
+                  aplicar_afp: true,
+                  aplicar_isss: true,
+                },
               };
 
               if (this.empleado.id_departamento) {
@@ -571,6 +590,10 @@ export class AdministrarEmpleadoComponent implements OnInit {
               relacion: '',
               telefono: '',
               direccion: '',
+            },
+            configuracion_descuentos: {
+              aplicar_afp: true,
+              aplicar_isss: true,
             },
           };
         }
@@ -693,20 +716,42 @@ export class AdministrarEmpleadoComponent implements OnInit {
     this.empleado.id_empresa = this.id_empresa;
     this.empleado.id_sucursal = this.id_sucursal;
 
-    this.apiService.store('empleados', this.empleado).subscribe(
-      (response) => {
-        const mensaje = this.empleado.id
-          ? 'Empleado actualizado exitosamente'
-          : 'Empleado creado exitosamente';
+    // Asegurar que configuracion_descuentos tenga valores por defecto si no existe
+    if (!this.empleado.configuracion_descuentos) {
+      this.empleado.configuracion_descuentos = {
+        aplicar_afp: true,
+        aplicar_isss: true,
+      };
+    }
 
-        this.alertService.success('Éxito', mensaje);
-        this.router.navigate(['/planilla/empleados']);
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      }
-    );
+    // Determinar si es actualización o creación
+    const esActualizacion = !!this.empleado.id;
+
+    if (esActualizacion) {
+      // Usar el endpoint update para actualizar
+      this.apiService.update('empleados', this.empleado.id, this.empleado).subscribe(
+        (response) => {
+          this.alertService.success('Éxito', 'Empleado actualizado exitosamente');
+          this.router.navigate(['/planilla/empleados']);
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.saving = false;
+        }
+      );
+    } else {
+      // Usar el endpoint store para crear
+      this.apiService.store('empleados', this.empleado).subscribe(
+        (response) => {
+          this.alertService.success('Éxito', 'Empleado creado exitosamente');
+          this.router.navigate(['/planilla/empleados']);
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.saving = false;
+        }
+      );
+    }
   }
 
   public verificarSiExiste() {

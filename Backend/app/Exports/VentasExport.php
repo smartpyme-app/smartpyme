@@ -3,22 +3,27 @@
 namespace App\Exports;
 
 use App\Models\Ventas\Venta;
-use Illuminate\Support\Facades\Auth;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Illuminate\Http\Request;
 
-class VentasExport implements FromCollection, WithHeadings, WithMapping
+class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkReading
 {
-    /**
-     * @return \Illuminate\Support\Collection
-     */
     public $request;
 
     public function filter(Request $request)
     {
         $this->request = $request;
+    }
+
+    /**
+     * Procesar en lotes para reducir uso de memoria (evita ->get() que carga todo).
+     */
+    public function chunkSize(): int
+    {
+        return 500;
     }
 
     public function headings(): array
@@ -44,7 +49,9 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             'Descuento',
             'IVA',
             'Utilidad',
+            'Total sin IVA',
             'Total',
+            'Propina',
             'Empresa',
             'Observaciones',
             'Usuario',
@@ -52,33 +59,40 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
         ];
     }
 
-    public function collection()
+    /**
+     * Retorna el query (sin ->get()). WithChunkReading ejecuta en lotes.
+     * Eager loading evita N+1 en map().
+     */
+    public function query()
     {
-        $request = $this->request; //where('id_empresa', Auth::user()->id_empresa)
+        $request = $this->request;
+        if (!$request) {
+            return Venta::query()->whereRaw('1 = 0');
+        }
 
-        $ventas = Venta::when($request->buscador, function ($query) use ($request) {
-            return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
-                ->orwhere('estado', 'like', '%' . $request->buscador . '%')
-                ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
-                ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
-        })
+        $columnasOrdenPermitidas = ['id', 'fecha', 'correlativo', 'total', 'estado', 'created_at', 'num_identificacion', 'id_proyecto', 'fecha_pago', 'sub_total', 'iva', 'descuento'];
+        $orden = in_array($request->orden ?? '', $columnasOrdenPermitidas) ? $request->orden : 'fecha';
+        $direccion = in_array(strtolower($request->direccion ?? ''), ['asc', 'desc']) ? strtolower($request->direccion) : 'desc';
+
+        return Venta::query()
+            ->with(['cliente', 'usuario', 'vendedor', 'sucursal.empresa', 'documento', 'canal', 'proyecto'])
             ->when($request->inicio, function ($query) use ($request) {
                 return $query->where('fecha', '>=', $request->inicio);
-            })
-            ->when($request->recurrente !== null, function ($q) use ($request) {
-                $q->where('recurrente', !!$request->recurrente);
-            })
-            ->when($request->id_proyecto, function($q) use ($request){
-                $q->where('id_proyecto', $request->id_proyecto);
-            })
-            ->when($request->num_identificacion, function($q) use ($request){
-                $q->where('num_identificacion', $request->num_identificacion);
             })
             ->when($request->fin, function ($query) use ($request) {
                 return $query->where('fecha', '<=', $request->fin);
             })
+            ->when($request->recurrente !== null, function ($q) use ($request) {
+                $q->where('recurrente', !!$request->recurrente);
+            })
+            ->when($request->num_identificacion, function ($q) use ($request) {
+                $q->where('num_identificacion', $request->num_identificacion);
+            })
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->id_bodega, function ($query) use ($request) {
+                return $query->where('id_bodega', $request->id_bodega);
             })
             ->when($request->id_cliente, function ($query) use ($request) {
                 return $query->where('id_cliente', $request->id_cliente);
@@ -101,8 +115,18 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             ->when($request->id_canal, function ($query) use ($request) {
                 return $query->where('id_canal', $request->id_canal);
             })
+            ->when($request->id_proyecto, function ($query) use ($request) {
+                return $query->where('id_proyecto', $request->id_proyecto);
+            })
             ->when($request->id_documento, function ($query) use ($request) {
-                return $query->where('id_documento', $request->id_documento);
+                $documento = \App\Models\Admin\Documento::find($request->id_documento);
+                if ($documento) {
+                    return $query->whereHas('documento', function ($q) use ($documento) {
+                        $q->whereRaw('LOWER(nombre) = LOWER(?)', [$documento->nombre]);
+                    });
+                } else {
+                    return $query->where('id_documento', $request->id_documento);
+                }
             })
             ->when($request->estado, function ($query) use ($request) {
                 return $query->where('estado', $request->estado);
@@ -111,25 +135,53 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
                 return $query->where('metodo_pago', $request->metodo_pago);
             })
             ->when($request->tipo_documento, function ($query) use ($request) {
-                return $query->where('tipo_documento', $request->tipo_documento);
+                return $query->whereHas('documento', function ($q) use ($request) {
+                    $q->where('nombre', $request->tipo_documento);
+                });
+            })
+            ->when($request->dte && $request->dte == 1, function ($query) {
+                return $query->whereNull('sello_mh');
+            })
+            ->when($request->dte && $request->dte == 2, function ($query) {
+                return $query->whereNotNull('sello_mh');
             })
             ->where('cotizacion', 0)
-            ->orderBy($request->orden, $request->direccion)
-            ->orderBy('id', 'desc')
-            ->get();
-
-        return $ventas;
+            ->when($request->buscador, function ($query) use ($request) {
+                $buscador = '%' . $request->buscador . '%';
+                return $query->where(function ($q) use ($buscador) {
+                    $q->whereHas('cliente', function ($qCliente) use ($buscador) {
+                        $qCliente->where('nombre', 'like', $buscador)
+                            ->orWhere('nombre_empresa', 'like', $buscador)
+                            ->orWhere('ncr', 'like', $buscador)
+                            ->orWhere('nit', 'like', $buscador);
+                    })
+                        ->orWhere('correlativo', 'like', $buscador)
+                        ->orWhere('estado', 'like', $buscador)
+                        ->orWhere('observaciones', 'like', $buscador)
+                        ->orWhere('forma_pago', 'like', $buscador);
+                });
+            })
+            ->orderBy($orden, $direccion)
+            ->orderBy('id', 'desc');
     }
 
+    /**
+     * Usa relaciones eager-loaded (sin queries adicionales).
+     * Compatible con PHP 7.4 (sin el operador ?->).
+     */
     public function map($row): array
     {
-        $fields = [
+        $cliente = $row->relationLoaded('cliente') ? $row->cliente : null;
+        $sucursal = $row->relationLoaded('sucursal') ? $row->sucursal : null;
+        $empresa = ($sucursal && $sucursal->relationLoaded('empresa')) ? $sucursal->empresa : null;
+
+        return [
             $row->fecha,
             $row->nombre_cliente,
-            $row->cliente()->pluck('telefono')->first(),
-            $row->cliente()->pluck('dui')->first(),
-            $row->cliente()->pluck('nit')->first(),
-            $row->cliente()->pluck('direccion')->first(),
+            $cliente ? $cliente->telefono : '',
+            $cliente ? $cliente->dui : '',
+            $cliente ? $cliente->nit : '',
+            $cliente ? $cliente->direccion : '',
             $row->nombre_documento,
             $row->nombre_proyecto,
             $row->num_identificacion,
@@ -139,18 +191,18 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             $row->estado,
             $row->nombre_canal,
             $row->estado == 'Anulada' ? '0.0' : round($row->total_costo, 2),
-            round($row->cuenta_a_terceros, 2),
+            round($row->cuenta_a_terceros ?? 0, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->sub_total, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->descuento, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->iva, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->total - $row->total_costo - $row->iva, 2),
+            $row->estado == 'Anulada' ? '0.0' : round($row->sub_total - $row->descuento, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->total, 2),
-            $row->sucursal()->first()->empresa()->pluck('nombre')->first(),
+            $row->estado == 'Anulada' ? '0.0' : round($row->propina ?? 0, 2),
+            $empresa ? $empresa->nombre : '',
             $row->observaciones,
             $row->nombre_usuario,
             $row->nombre_vendedor,
-
         ];
-        return $fields;
     }
 }

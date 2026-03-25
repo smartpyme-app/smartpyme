@@ -19,6 +19,7 @@ class Sucursal extends Model {
         'direccion',
         'tipo_establecimiento',
         'cod_estable_mh',
+        'codigo_punto_venta',
         'activo',
         'id_empresa',
     ];

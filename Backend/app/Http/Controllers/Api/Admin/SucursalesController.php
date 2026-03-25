@@ -9,28 +9,54 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
 use Illuminate\Support\Facades\Log;
-use JWTAuth;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class SucursalesController extends Controller
 {
     
 
-    public function index(Request $request) {
+    // public function index(Request $request) {
+    //     Log::info($request->all());
        
-        $sucursales = Sucursal::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
-                                ->when($request->estado !== null, function($q) use ($request){
-                                    $q->where('activo', !!$request->estado);
-                                })
-                                ->when($request->buscador, function($query) use ($request){
-                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
-                                                 ->orwhere('telefono', 'like' ,"%" . $request->buscador . "%");
-                                })
-                                // ->orderBy('enable', 'desc')
-                                ->orderBy($request->orden, $request->direccion)
-                                ->paginate($request->paginate);
+    //     $sucursales = Sucursal::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+    //                             ->when($request->estado !== null, function($q) use ($request){
+    //                                 $q->where('activo', !!$request->estado);
+    //                             })
+    //                             ->when($request->buscador, function($query) use ($request){
+    //                                 return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+    //                                              ->orwhere('telefono', 'like' ,"%" . $request->buscador . "%");
+    //                             })
+    //                             // ->orderBy('enable', 'desc')
+    //                             ->orderBy($request->orden, $request->direccion ?? 'asc')
+    //                             ->paginate($request->paginate);
 
+    //     return Response()->json($sucursales, 200);
+
+    // }
+
+    public function index(Request $request) {
+        Log::info($request->all());
+        
+        $query = Sucursal::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+            ->when($request->estado !== null, function($q) use ($request){
+                $q->where('activo', !!$request->estado);
+            })
+            ->when($request->buscador, function($query) use ($request){
+                return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+                             ->orwhere('telefono', 'like' ,"%" . $request->buscador . "%");
+            });
+        
+        // Aplicar ordenamiento solo si se proporciona una columna válida
+        if ($request->filled('orden')) {
+            $query->orderBy($request->orden, $request->direccion ?? 'asc');
+        } else {
+            // Ordenamiento por defecto
+            $query->orderBy('id', 'desc');
+        }
+        
+        $sucursales = $query->paginate($request->paginate);
+    
         return Response()->json($sucursales, 200);
-
     }
 
     public function list() {

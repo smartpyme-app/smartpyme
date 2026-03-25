@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Recibo de abono #{{ $recibo->correlativo }} - {{ $recibo->nombre_cliente }}</title>
+    <title>{{ $recibo->nombre_documento ?? 'Recibo' }} de abono #{{ $recibo->correlativo ?? $recibo->id }} - {{ $recibo->nombre_cliente }}</title>
     <style>
 
         *{ 
@@ -63,7 +63,7 @@
         </table>
         <br>
         <br>
-        <h2 class="text-center">Comprobante de pago</h2>
+        <h2 class="text-center">{{ $recibo->nombre_documento ?? 'Comprobante de pago' }}</h2>
         <br>
         <table>
             <tbody>
@@ -79,12 +79,18 @@
                             {{ $venta->cliente()->pluck('departamento')->first() }}
                             {{ $venta->cliente()->pluck('direccion')->first() }} <br>
                         </p>
-                        <p><b>NCR:</b>{{ $venta->cliente()->pluck('ncr')->first() }}</p>
-                        <p><b>DUI:</b>{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                        @if($venta->empresa->pais == 'El Salvador')
+                            <p><b>NCR:</b>{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                            <p><b>DUI:</b>{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                        @else
+                            <p><b>Registro tributario:</b>{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                            <p><b>Número de identificación:</b>{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                        @endif
                         <p><b>Teléfono:</b>{{ $venta->cliente()->pluck('telefono')->first() }}</p>
                     </td>
                     <td>
-                        <p class="text-left"><b>Abono #:</b> {{ $recibo->correlativo }}</p>
+                        <p class="text-left"><b>Abono #:</b> {{ $recibo->correlativo ?? $recibo->id }}</p>
+                        <p class="text-left"><b>Tipo:</b> {{ $recibo->nombre_documento ?? 'Recibo' }}</p>
                         <p class="text-left"><b>Forma pago:</b> {{$recibo->forma_pago}}</p>
                         @if ($recibo->detalle_banco)
                             <p class="text-left"><b>Banco:</b> {{$recibo->detalle_banco}}</p>

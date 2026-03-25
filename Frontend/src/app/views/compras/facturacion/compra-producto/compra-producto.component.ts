@@ -18,6 +18,7 @@ export class CompraProductoComponent implements OnInit {
     @Input() compra: any = {};
     @Output() productoSelect = new EventEmitter();
     modalRef!: BsModalRef;
+    modalCreateProductRef?: BsModalRef;
     searchControl = new FormControl();
 
     public productos:any = [];
@@ -27,13 +28,26 @@ export class CompraProductoComponent implements OnInit {
     public filtros:any = {};
     public buscador:any = '';
     public loading:boolean = false;
+    public search:any = '';
+    public tieneShopify: boolean = false;
+    public descripcionesExpandidas: { [key: number]: boolean } = {};
+
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
+    }
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService, private sumPipe:SumPipe
+        private modalService: BsModalService, private sumPipe:SumPipe,
+        
     ) { }
 
     ngOnInit() {
+        this.alertService.modal = false;
+
+        // Cachear verificación de Shopify una sola vez
+        const empresa = this.apiService.auth_user()?.empresa;
+        this.tieneShopify = !!empresa?.shopify_store_url;
 
         this.searchControl.valueChanges
               .pipe(
@@ -120,11 +134,43 @@ export class CompraProductoComponent implements OnInit {
         this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
     }
 
+    crearProducto(template: TemplateRef<any>) {
+        this.modalCreateProductRef = this.modalService.show(template, {
+            class: 'modal-lg',
+            backdrop: 'static',
+            keyboard: false,
+            ignoreBackdropClick: true
+        });
+    }
+
+    onProductoCreated(producto: any) {
+        // Aquí puedes manejar el producto creado si es necesario
+        producto.id_producto    = producto.id;
+        
+        // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
+        producto.nombre_producto = this.getNombreCompleto(producto);
+        producto.img            = producto.img;
+        producto.precio         = parseFloat(producto.precio);
+        producto.costo          = parseFloat(producto.costo);
+        producto.inventarios        = producto?.inventarios?.filter((item:any) => item.id_sucursal == this.compra.id_sucursal) || [];
+        producto.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+        producto.cantidad       = 1;
+        producto.descuento      = 0;
+        producto.inventario_por_lotes = producto.inventario_por_lotes || false;
+        producto.lote_id = null;
+        producto.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+        
+        console.log('Producto creado:', producto);
+        
+        this.productoSelect.emit(producto);
+    }
 
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
         this.detalle.id_producto    = producto.id;
-        this.detalle.nombre_producto = producto.nombre;
+        
+        // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
+        this.detalle.nombre_producto = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.costo          = parseFloat(producto.costo);
@@ -132,13 +178,18 @@ export class CompraProductoComponent implements OnInit {
         this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
+        this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
+        this.detalle.lote_id = null;
+        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
         this.onSubmit();
     }
 
     onCheckProducto(producto:any){
         this.detalle = Object.assign({}, producto);
         this.detalle.id_producto    = producto.id;
-        this.detalle.nombre_producto = producto.nombre;
+        
+        // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
+        this.detalle.nombre_producto = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.costo          = parseFloat(producto.costo);
@@ -146,6 +197,8 @@ export class CompraProductoComponent implements OnInit {
         this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
+        this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
+        this.detalle.lote_id = null;
 
         console.log(this.detalle);
         let radio = document.getElementById('producto' + this.detalle.id_producto) as HTMLInputElement;
@@ -155,12 +208,64 @@ export class CompraProductoComponent implements OnInit {
     }
 
     onSubmit(){
+        console.log(this.detalle);
         this.productos = [];
         this.searchControl.setValue('');
         this.productoSelect.emit(this.detalle);
         if(this.modalRef){
             this.modalRef.hide();
         }
+    }
+
+    /**
+     * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
+     */
+    getNombreCompleto(producto: any): string {
+        if (this.tieneShopify && producto.nombre_variante) {
+            return `${producto.nombre} ${producto.nombre_variante}`;
+        }
+        return producto.nombre;
+    }
+
+    /**
+     * Obtiene la descripción del producto (completa o truncada según el estado)
+     */
+    getDescripcion(producto: any): string {
+        if (!producto.descripcion) {
+            return '';
+        }
+        const estaExpandida = this.descripcionesExpandidas[producto.id] || false;
+        if (estaExpandida || producto.descripcion.length <= 20) {
+            return producto.descripcion;
+        }
+        return producto.descripcion.substring(0, 20) + '...';
+    }
+
+    /**
+     * Verifica si la descripción está truncada (necesita "ver más")
+     */
+    necesitaVerMas(producto: any): boolean {
+        if (!producto.descripcion) {
+            return false;
+        }
+        const estaExpandida = this.descripcionesExpandidas[producto.id] || false;
+        return !estaExpandida && producto.descripcion.length > 20;
+    }
+
+    /**
+     * Verifica si la descripción está expandida (muestra "ver menos")
+     */
+    estaExpandida(producto: any): boolean {
+        return this.descripcionesExpandidas[producto.id] || false;
+    }
+
+    /**
+     * Alterna el estado de expansión de la descripción
+     */
+    toggleDescripcion(event: Event, producto: any): void {
+        event.stopPropagation(); // Previene que se seleccione el producto
+        const estadoActual = this.descripcionesExpandidas[producto.id] || false;
+        this.descripcionesExpandidas[producto.id] = !estadoActual;
     }
 
 }

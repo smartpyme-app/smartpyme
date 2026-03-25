@@ -7,7 +7,7 @@
     <div class="row">
         <div class="col-md-6 mb-3">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="clientes?.total">
-                Mostrando 
+                Mostrando
                 <select name="paginate" class="form-select w-auto" (change)="filtrarClientes()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -38,9 +38,9 @@
     </div>
 
     <div class="d-flex mb-3">
-        <div class="col d-flex gap-2">
-            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
-            <!-- <button class="btn btn-default">Traslados</button> -->
+        <div class="col d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/clientes">Todos</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/clientes/cuentas-cobrar">Cuentas por cobrar</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
             <select name="estado" (change)="filtrarClientes()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
@@ -56,26 +56,26 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Nombre</th>
-                        <th>Correo</th>
                         <th>Teléfono</th>
-                        <th class="d-none d-md-table-cell">DUI</th>
-                        <th class="d-none d-md-table-cell">NCR</th>
+                        <th class="d-none d-md-table-cell">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</th>
+                        <th class="d-none d-md-table-cell">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NCR' : 'Registro tributario' }}</th>
                         <th class="d-none d-lg-table-cell">Tipo</th>
+                        <th class="d-none d-lg-table-cell">Estado</th>
+                        <th class="d-none d-md-table-cell">Crédito</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="clientes?.total < 1 && !loading">
+                        <td colspan="9" class="text-center" *ngIf="clientes?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene clientes registrados</span>
                         </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
+                        <td colspan="9" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
                     <tr *ngFor=" let cliente of clientes?.data">
                         <td>{{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo | truncate:30 }}</td>
-                        <td>{{ cliente.correo }}</td>
                         <td>{{ cliente.telefono }}</td>
                         <td class="d-none d-md-table-cell">{{ cliente.dui}}</td>
                         <td class="d-none d-md-table-cell">{{ cliente.ncr }}</td>
@@ -83,6 +83,18 @@
                             <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-success' : cliente?.tipo == 'Empresa', 'bg-info' : cliente?.tipo == 'Persona', 'bg-dark' : cliente?.tipo == 'Extranjero'}">
                                     {{ cliente.tipo}}
                             </span>
+                        </td>
+                        <td class="d-none d-lg-table-cell">
+                          <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-success' : cliente.enable, 'bg-danger' : !cliente.enable}">
+                            {{ cliente.enable ? 'Activo' : 'Inactivo' }}
+                          </span>
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                          <span *ngIf="cliente.habilita_credito" class="badge bg-info py-2" style="font-size: 0.75rem;"
+                            [title]="'Límite: ' + (cliente.limite_credito ? ('$' + cliente.limite_credito) : 'Sin límite')">
+                            {{ cliente.dias_credito }} días
+                          </span>
+                          <span *ngIf="!cliente.habilita_credito" class="text-muted">—</span>
                         </td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
@@ -96,6 +108,12 @@
                                     <a routerLink="/cliente/detalles/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
+                                    <a (click)="generarEstadoCuenta(cliente)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-file-pdf"></i> Estado de cuenta
+                                    </a>
+                                    <a *ngIf="tieneFidelizacionHabilitada" routerLink="/fidelizacion/cliente-detalles/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
+                                      <i class="fa fa-fw fa-star"></i> Detalles lealtad
+                                  </a>
                                     <a *ngIf="cliente.enable && apiService.canEdit()" (click)="setActivo(cliente, false)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-ban"></i> Deshabilitar
                                     </a>
@@ -135,6 +153,7 @@
                     <option value="">Todos</option>
                     <option value="Persona">Persona</option>
                     <option value="Empresa">Empresa</option>
+                    <option value="Extranjero">Extranjero</option>
                 </select>
             </div>
             <div class="form-group col-sm-6">
@@ -159,7 +178,7 @@
                 <input type='date' class="form-control" name="filtros.fecha_cumpleanos" [(ngModel)]="filtros.fecha_cumpleanos"/>
             </div>
         </div>
-        
+
         <br><br>
         <div class="d-grid">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
@@ -224,7 +243,7 @@
       </div>
       <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
     </div>
-  
+
     <div class="modal-body p-4">
       <div class="container-fluid">
         <div class="row">
@@ -238,7 +257,7 @@
               </div>
             </div>
           </div>
-  
+
           <!-- Empresa -->
           <div class="col-12 mb-4">
             <div class="card border-0 shadow-sm hover-effect">
@@ -249,7 +268,7 @@
               </div>
             </div>
           </div>
-  
+
           <!-- Extranjeros -->
           <div class="col-12">
             <div class="card border-0 shadow-sm hover-effect">
@@ -264,7 +283,7 @@
       </div>
     </div>
   </ng-template>
-  
+
 <!-- <ng-template #mexportar>
   <div class="modal-header">
     <div class="modal-title text-center">
@@ -297,12 +316,12 @@
       </div>
       <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
     </div>
-  
+
     <div class="modal-body p-4">
       <div class="container-fluid">
         <div class="row">
           <app-notificaciones-container></app-notificaciones-container>
-          
+
           <!-- Persona Natural -->
           <div class="col-12 mb-4">
             <div class="card border-0 shadow-sm hover-effect">
@@ -312,8 +331,8 @@
                 </div>
                 <div class="flex-grow-1">
                   <h5 class="fw-bold mb-3">Clientes Persona Natural</h5>
-                  <button [disabled]="downloading" tooltip="Descargar clientes persona" 
-                          (click)="descargarPersonas()" 
+                  <button [disabled]="downloading" tooltip="Descargar clientes persona"
+                          (click)="descargarPersonas()"
                           class="btn btn-default tcla-F6">
                     <i class="fas fa-download me-2"></i>
                     Exportar
@@ -322,7 +341,7 @@
               </div>
             </div>
           </div>
-  
+
           <!-- Empresa -->
           <div class="col-12">
             <div class="card border-0 shadow-sm hover-effect">
@@ -332,8 +351,8 @@
                 </div>
                 <div class="flex-grow-1">
                   <h5 class="fw-bold mb-3">Clientes Empresa</h5>
-                  <button [disabled]="downloading" tooltip="Descargar clientes empresa" 
-                          (click)="descargarEmpresas()" 
+                  <button [disabled]="downloading" tooltip="Descargar clientes empresa"
+                          (click)="descargarEmpresas()"
                           class="btn btn-default tcla-F6">
                     <i class="fas fa-download me-2"></i>
                     Exportar
@@ -350,8 +369,8 @@
                     </div>
                     <div class="flex-grow-1">
                         <h5 class="fw-bold mb-3">Clientes Extranjeros</h5>
-                        <button [disabled]="downloading" tooltip="Descargar clientes internacionales" 
-                                (click)="descargarExtranjeros()" 
+                        <button [disabled]="downloading" tooltip="Descargar clientes internacionales"
+                                (click)="descargarExtranjeros()"
                                 class="btn btn-default tcla-F6">
                           <i class="fas fa-download me-2"></i>
                           Exportar
@@ -364,4 +383,4 @@
       </div>
     </div>
   </ng-template>
-  
+

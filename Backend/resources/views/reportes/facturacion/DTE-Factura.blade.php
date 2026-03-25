@@ -10,7 +10,7 @@
         }
         body {
             font-family: serif; 
-            margin: 270px 50px 50px 50px;
+            margin: 50px;
             font-size: 10px;
         }
         h1,h2,h3,h4,h5,h6{color: #003 !important; }
@@ -18,13 +18,32 @@
         .table{width: 100%; border-collapse: collapse; }
         .table th, .table td{
             border-collapse: collapse;
-            padding: 5px;
+            padding: 3px;
             text-align: left;
         }
 
         .table.bordered th, .table.bordered td{
             border: 1px solid #aaa;
         }
+
+        /* Propiedades para permitir división de tabla entre páginas */
+        .table.bordered {
+            page-break-inside: auto;
+        }
+        
+        .table.bordered tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        
+        .table.bordered thead {
+            display: table-header-group;
+        }
+        
+        .table.bordered tfoot {
+            display: table-footer-group;
+        }
+        
         .text-right{
             text-align: right !important;
         }
@@ -33,10 +52,7 @@
             background-color: #ddd;
         }
 
-        header {
-            margin: 50px 50px 0px 50px;
-            position: fixed;
-        }
+        /* Sin position:fixed para evitar que logo/QR se superpongan con la tabla en DomPDF */
 
     </style>
     
@@ -58,7 +74,7 @@
                 '13'
         ];
     @endphp
-    <header>
+    <div class="dte-header">
         <table class="table">
             <tbody>
                 <tr>
@@ -82,19 +98,25 @@
             <tbody>
                 <tr>
                     <td style="width: 50%;">
-                        <p><b>Código de Generación:</b> {{ $DTE['identificacion']['codigoGeneracion'] }}</p>
-                        <p><b>Número de Control:</b> {{ $DTE['identificacion']['numeroControl'] }}</p>
-                        <p><b>Sello de Recepción:</b> {{ $DTE['sello'] }}</p>
+                        <p><b>Código de Generación:</b> {{ isset($DTE['identificacion']['codigoGeneracion']) ? $DTE['identificacion']['codigoGeneracion'] : '' }}</p>
+                        <p><b>Número de Control:</b> {{ isset($DTE['identificacion']['numeroControl']) ? $DTE['identificacion']['numeroControl'] : '' }}</p>
+                        <p><b>Sello de Recepción:</b> {{ isset($DTE['sello']) ? $DTE['sello'] : '' }}</p>
                     </td>
                     <td style="width: 50%;">
-                        <p><b>Modelo de Facturación:</b> {{ $tipoModelo[$DTE['identificacion']['tipoModelo'] - 1] }}</p>
-                        <p><b>Tipo de Transmisión:</b> {{ $tipoOperacion[$DTE['identificacion']['tipoOperacion'] - 1] }}</p>
-                        <p><b>Fecha y Hora de Generación:</b> {{ \Carbon\Carbon::parse($DTE['identificacion']['fecEmi'] . ' ' . $DTE['identificacion']['horEmi'])->format('d/m/Y H:i:s') }}</p>
+                        <p><b>Modelo de Facturación:</b> {{ isset($DTE['identificacion']['tipoModelo']) ? $tipoModelo[$DTE['identificacion']['tipoModelo'] - 1] : '' }}</p>
+                        <p><b>Tipo de Transmisión:</b> {{ isset($DTE['identificacion']['tipoOperacion']) ? $tipoOperacion[$DTE['identificacion']['tipoOperacion'] - 1] : '' }}</p>
+                        <p><b>Fecha y Hora de Generación:</b> 
+                            @if (isset($DTE['identificacion']['fecEmi']) && isset($DTE['identificacion']['horEmi']))
+                                {{ \Carbon\Carbon::parse($DTE['identificacion']['fecEmi'] . ' ' . $DTE['identificacion']['horEmi'])->format('d/m/Y H:i:s') }}
+                            @endif
+                        </p>
                     </td>
                 </tr>
             </tbody>
         </table>
-    </header>
+    </div>
+
+    <br>
 
     <table class="table bordered">
         <tbody>
@@ -112,7 +134,10 @@
                     <p><b>NIT:</b> {{ $DTE['emisor']['nit'] }}</p>
                     <p><b>NRC:</b> {{ $DTE['emisor']['nrc'] }}</p>
                     <p><b>Act. económica:</b> {{ $DTE['emisor']['descActividad'] }}</p>
-                    <p><b>Dirección:</b> {{ $DTE['emisor']['direccion']['complemento'] }}
+                    <p><b>Dirección:</b> 
+                        @if (isset($DTE['emisor']['direccion']['complemento']))
+                            {{ $DTE['emisor']['direccion']['complemento'] }}
+                        @endif
                         {{ $registro->empresa()->pluck('municipio')->first(); }}
                         {{ $registro->empresa()->pluck('departamento')->first(); }}
                     </p>
@@ -143,8 +168,10 @@
                         <p><b>Núm de Documento:</b> {{ $DTE['receptor']['numDocumento'] }}</p>
                         <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
                             <p><b>Dirección:</b> 
-                                @if ($registro->cliente_id)
-                                    {{ $DTE['receptor']['direccion']['complemento'] }}
+                                @if ($registro->id_cliente)
+                                    @if (isset($DTE['receptor']['direccion']['complemento']))
+                                        {{ $DTE['receptor']['direccion']['complemento'] }}
+                                    @endif
                                     {{ $registro->cliente()->pluck('municipio')->first(); }}
                                     {{ $registro->cliente()->pluck('departamento')->first(); }}
                                 @endif
@@ -177,10 +204,18 @@
             @foreach($DTE['cuerpoDocumento'] as $detalle)
             <tr>
                 <td class="border-bottom">   {{ $detalle['numItem']  }}</td>
-                <td class="border-bottom">   {{ number_format($detalle['cantidad'] , 4) }}</td>
+                <td class="border-bottom">   {{ number_format($detalle['cantidad'] , 2) }}</td>
                 <td class="border-bottom">   {{ $detalle['codigo']  }}</td>
-                <td class="border-bottom">   {{ $detalle['descripcion']  }}</td>
-                <td class="border-bottom text-right">   ${{number_format($detalle['precioUni'] , 4) }}</td>
+                <td class="border-bottom">
+                    {{ $detalle['descripcion']  }}
+                    @if ($registro->empresa()->pluck('id')->first() != 529 && $registro->detalles->where('descripcion', $detalle['descripcion'])->first() && $registro->detalles->where('descripcion', $detalle['descripcion'])->first()->producto)
+                        <br>
+                        <span class="text-muted">
+                            {!! nl2br(e($registro->detalles->where('descripcion', $detalle['descripcion'])->first()->producto->descripcion)) !!}
+                        </span>
+                    @endif
+                </td>
+                <td class="border-bottom text-right">   ${{number_format($detalle['precioUni'] , 2) }}</td>
                 <td class="border-bottom text-right">   ${{number_format($detalle['montoDescu'] , 2) }}</td>
                 @if ($detalle['noGravado'])
                     <td class="border-bottom text-right">   ${{ number_format($detalle['noGravado'], 2) }}</th>
@@ -252,11 +287,29 @@
                 <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Retención de Renta: </td>
                 <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'], 2) }}</td>
             </tr>
-            <tr>
-                <td colspan="4"></td>
-                <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Monto Total de la Operación: </td>
-                <td class="text-right">${{ number_format($DTE['resumen']['montoTotalOperacion'], 2) }}</td>
-            </tr>
+            @if(isset($registro->propina) && floatval($registro->propina) > 0)
+                <tr>
+                    <td colspan="4"></td>
+                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Propina: </td>
+                    <td class="text-right">${{ number_format(floatval($registro->propina), 2) }}</td>
+                </tr>
+                <tr>
+                    <td colspan="4"></td>
+                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Total: </td>
+                    <td class="text-right">${{ number_format(floatval($DTE['resumen']['montoTotalOperacion'] ?? 0), 2) }}</td>
+                </tr>
+                <tr>
+                    <td colspan="4"></td>
+                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}"><b>Total + Propina: </b></td>
+                    <td class="text-right"><b>${{ number_format(floatval($DTE['resumen']['montoTotalOperacion'] ?? 0) + floatval($registro->propina), 2) }}</b></td>
+                </tr>
+            @else
+                <tr>
+                    <td colspan="4"></td>
+                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Monto Total de la Operación: </td>
+                    <td class="text-right">${{ number_format(floatval($DTE['resumen']['montoTotalOperacion'] ?? 0), 2) }}</td>
+                </tr>
+            @endif
             @if ($DTE['resumen']['totalNoGravado'] > 0)
                 <tr>
                     <td colspan="4"></td>
@@ -267,7 +320,7 @@
             <tr>
                 <td colspan="4"></td>
                 <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}" class="bg-light"><b>Total a pagar:</b></td>
-                <td class="bg-light text-right"><b>${{ number_format($DTE['resumen']['totalPagar'], 2) }}</b></td>
+                <td class="bg-light text-right"><b>${{ number_format(floatval($DTE['resumen']['totalPagar'] ?? 0) + (isset($registro->propina) && floatval($registro->propina) > 0 ? floatval($registro->propina) : 0), 2) }}</b></td>
             </tr>
         </tfoot>
     </table>
@@ -284,6 +337,16 @@
                     @endif
                 </td>
             </tr>
+            @if (isset($DTE['apendice']))
+                @foreach ($DTE['apendice'] as $atributo)
+                <tr>
+                    <td colspan="2">
+                        <b>{{ $atributo['etiqueta'] }}:</b>
+                        {{ $atributo['valor'] }}
+                    </td>
+                </tr>
+                @endforeach
+            @endif
         </tbody>
     </table>
 

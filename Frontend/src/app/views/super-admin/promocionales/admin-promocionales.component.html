@@ -1,0 +1,528 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Códigos Promocionales</h2>
+  <button
+    (click)="openCrear(mcrear)"
+    tooltip="Crear código promocional"
+    class="btn btn-default"
+  >
+    <i class="fa fa-plus"></i> Añadir código promocional
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <span
+        class="text-muted d-flex align-items-center gap-2"
+        *ngIf="promocionales?.total"
+      >
+        Mostrando
+        <select
+          name="paginate"
+          class="form-select w-auto"
+          (change)="filtrarPromocionales()"
+          [(ngModel)]="filtros.paginate"
+        >
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        {{ promocionales?.total + " registros" }}
+      </span>
+    </div>
+    <div class="col-md-6 mb-3">
+      <div class="d-flex gap-2">
+        <!-- <button
+          [disabled]="downloading"
+          tooltip="Descargar códigos promocionales"
+          (click)="descargar()"
+          class="btn btn-default"
+        >
+          <img src="/assets/icons/download.png" class="icon" />
+        </button> -->
+        <form
+          class="d-flex input-group"
+          name="form"
+          (ngSubmit)="filtrarPromocionales()"
+          autocomplete="off"
+        >
+          <div class="input-group">
+            <div class="input-group-text bg-white border-end-0">
+              <i class="fa fa-search text-muted"></i>
+            </div>
+            <input
+              type="search"
+              name="buscador"
+              class="form-control pull-right border-start-0"
+              placeholder="Buscar código, campaña o descripción"
+              [(ngModel)]="filtros.buscador"
+            />
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex">
+    <div class="col-md-6 d-flex gap-2 mb-3">
+      <button
+        class="btn"
+        tooltip="Actualizar"
+        routerLinkActive="btn-primary"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="loadAll()"
+        routerLink="/admin/promocionales"
+      >
+        Todos
+      </button>
+    </div>
+    <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
+      <select
+        name="activo"
+        (change)="filtrarPromocionales()"
+        [(ngModel)]="filtros.activo"
+        class="form-select bg-default w-auto"
+      >
+        <option value="">Estado</option>
+        <option value="true">Activo</option>
+        <option value="false">Inactivo</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th
+              (click)="setOrden('codigo')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'codigo' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'codigo' && filtros.direccion == 'desc'
+              }"
+              class="click"
+            >
+              Código
+            </th>
+            <th
+              (click)="setOrden('descuento')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'descuento' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'descuento' && filtros.direccion == 'desc'
+              }"
+              class="click"
+            >
+              Descuento
+            </th>
+            <th
+              (click)="setOrden('tipo')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'tipo' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'tipo' && filtros.direccion == 'desc'
+              }"
+              class="click"
+            >
+              Tipo
+            </th>
+            <th
+              (click)="setOrden('campania')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'campania' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'campania' && filtros.direccion == 'desc'
+              }"
+              class="click"
+            >
+              Campaña
+            </th>
+            <th>Descripción</th>
+            <th>Planes Permitidos</th>
+            <th
+              (click)="setOrden('activo')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'activo' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'activo' && filtros.direccion == 'desc'
+              }"
+              class="click text-center"
+            >
+              Estado
+            </th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td
+              colspan="8"
+              class="text-center"
+              *ngIf="promocionales?.total < 1 && !loading"
+            >
+              <span class="badge bg-primary"
+                >No hay códigos promocionales registrados</span
+              >
+            </td>
+            <td colspan="8" class="text-center" *ngIf="loading">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+
+          <tr *ngFor="let promocional of promocionales?.data">
+            <td>
+              <strong>{{ promocional.codigo }}</strong>
+            </td>
+            <td>
+              <span *ngIf="promocional.tipo === 'porcentaje'">
+                {{ promocional.descuento }}%
+              </span>
+              <span *ngIf="promocional.tipo === 'monto_fijo'">
+                ${{ promocional.descuento }}
+              </span>
+            </td>
+            <td>
+              <span class="badge bg-info">
+                {{ promocional.tipo === 'porcentaje' ? 'Porcentaje' : 'Monto Fijo' }}
+              </span>
+            </td>
+            <td>
+              <span class="text-muted">{{ promocional.campania || "-" }}</span>
+            </td>
+            <td>
+              <span class="text-muted">{{ promocional.descripcion || "-" }}</span>
+            </td>
+            <td>
+              <span *ngIf="promocional.planes_permitidos && promocional.planes_permitidos.length > 0">
+                <span
+                  *ngFor="let plan of promocional.planes_permitidos"
+                  class="badge bg-secondary me-1"
+                >
+                  {{ plan }}
+                </span>
+              </span>
+              <span *ngIf="!promocional.planes_permitidos || promocional.planes_permitidos.length === 0" class="text-muted">
+                Todos
+              </span>
+            </td>
+            <td class="text-center">
+              <span
+                class="badge py-2 text-center"
+                style="font-size: 0.8rem"
+                [ngClass]="{
+                  'bg-success': promocional.activo,
+                  'bg-danger': !promocional.activo
+                }"
+              >
+                {{ promocional.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span
+                class="btn"
+                [popover]="accionesTemplate"
+                [outsideClick]="true"
+                tooltip="Acciones"
+              >
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesTemplate>
+                <div class="list-group border-0">
+                  <a
+                    (click)="openEditar(mcrear, promocional)"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
+                    <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
+                  <a
+                    (click)="toggleActivo(promocional)"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
+                    <i class="fa fa-fw fa-toggle-on" *ngIf="promocional.activo"></i>
+                    <i class="fa fa-fw fa-toggle-off" *ngIf="!promocional.activo"></i>
+                    {{ promocional.activo ? 'Desactivar' : 'Activar' }}
+                  </a>
+                  <a
+                    (click)="eliminar(promocional)"
+                    class="list-group-item list-group-item-action border-0 click text-danger"
+                  >
+                    <i class="fa fa-fw fa-trash"></i> Eliminar
+                  </a>
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-12" *ngIf="promocionales?.last_page > 1">
+      <app-pagination
+        [items]="promocionales"
+        (setPagination)="setPagination($event)"
+      ></app-pagination>
+    </div>
+  </div>
+</section>
+
+<ng-template #mcrear>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">
+      {{ editando ? 'Editar' : 'Crear' }} Código Promocional
+    </h4>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form (ngSubmit)="onSubmit()" #promocionalForm="ngForm">
+      <div class="row">
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Código: <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="promocional.codigo"
+              name="codigo"
+              required
+              placeholder="Ej: SMARTPYME2025"
+              [readonly]="editando"
+            />
+            <button
+              *ngIf="!editando"
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="generarCodigoAutomatico()"
+              tooltip="Generar código automático"
+            >
+              <i class="fa fa-magic"></i> Generar
+            </button>
+          </div>
+          <small class="text-muted">El código se convertirá automáticamente a mayúsculas</small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Tipo de Descuento: <span class="text-danger">*</span></label>
+          <select
+            class="form-select"
+            [(ngModel)]="promocional.tipo"
+            name="tipo"
+            required
+          >
+            <option value="porcentaje">Porcentaje (%)</option>
+            <option value="monto_fijo">Monto Fijo ($)</option>
+          </select>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Descuento: <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text" *ngIf="promocional.tipo === 'porcentaje'">%</span>
+            <span class="input-group-text" *ngIf="promocional.tipo === 'monto_fijo'">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="promocional.descuento"
+              name="descuento"
+              step="0.01"
+              min="0"
+              required
+              [placeholder]="promocional.tipo === 'porcentaje' ? 'Ej: 50' : 'Ej: 100'"
+            />
+          </div>
+          <small class="text-muted">
+            {{ promocional.tipo === 'porcentaje' ? 'Porcentaje de descuento (ej: 50 = 50%)' : 'Monto fijo de descuento en dólares' }}
+          </small>
+        </div>
+
+          <div class="form-group col-md-6 mb-3">
+            <label class="form-label mb-2">Estado:</label>
+            <label class="form-check-label me-2" for="activo">
+              {{ promocional.activo ? 'Activo' : 'Inactivo' }}
+            </label>
+            <div class="form-check form-switch ms-4">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                [(ngModel)]="promocional.activo"
+                name="activo"
+                id="activo"
+              />
+             
+            </div>
+          </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Campaña:</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="promocional.campania"
+            name="campania"
+            placeholder="Ej: Boxful"
+          />
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Descripción:</label>
+          <textarea
+            class="form-control"
+            [(ngModel)]="promocional.descripcion"
+            name="descripcion"
+            rows="2"
+            placeholder="Descripción del código promocional"
+          ></textarea>
+        </div>
+
+        <div class="form-group col-md-12 mb-3">
+          <label class="form-label">Planes Permitidos:</label>
+          <div class="d-flex gap-3">
+            <div class="" *ngFor="let plan of planesDisponibles">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                [checked]="isPlanPermitido(plan)"
+                (change)="togglePlanPermitido(plan)"
+                [id]="'plan-' + plan"
+              />
+              <label class="form-check-label" [for]="'plan-' + plan">
+                {{ plan }}
+              </label>
+            </div>
+          </div>
+          <small class="text-muted">
+            Si no se selecciona ningún plan, el código será válido para todos los planes
+          </small>
+        </div>
+
+        <div class="form-group col-md-12 mb-3">
+          <h5 class="mb-3">Opciones Avanzadas</h5>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Fecha de Inicio:</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="promocional.opciones.fecha_inicio"
+            name="fecha_inicio"
+          />
+          <small class="text-muted">Fecha desde la cual el código estará disponible</small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Fecha de Expiración:</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="promocional.opciones.fecha_expiracion"
+            name="fecha_expiracion"
+          />
+          <small class="text-muted">Fecha hasta la cual el código será válido</small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Uso Máximo:</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="promocional.opciones.uso_maximo"
+            name="uso_maximo"
+            min="0"
+            placeholder="Sin límite"
+          />
+          <small class="text-muted">Número máximo de veces que se puede usar el código (dejar vacío para sin límite)</small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Uso por Usuario:</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="promocional.opciones.uso_por_usuario"
+            name="uso_por_usuario"
+            min="1"
+            required
+          />
+          <small class="text-muted">Número de veces que un usuario puede usar este código</small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Monto Mínimo:</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="promocional.opciones.monto_minimo"
+            name="monto_minimo"
+            step="0.01"
+            min="0"
+            placeholder="Sin mínimo"
+          />
+          <small class="text-muted">Monto mínimo de compra para aplicar el código</small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Monto Máximo:</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="promocional.opciones.monto_maximo"
+            name="monto_maximo"
+            step="0.01"
+            min="0"
+            placeholder="Sin máximo"
+          />
+          <small class="text-muted">Monto máximo de descuento aplicable</small>
+        </div>
+
+        <div class="form-group col-md-12 mb-3 ms-4">
+          <div class=" form-switch">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              [(ngModel)]="promocional.opciones.combinable"
+              name="combinable"
+              id="combinable"
+            />
+            <label class="form-check-label" for="combinable">
+              Combinable con otros descuentos
+            </label>
+          </div>
+        </div>
+
+        <div class="d-grid mt-4">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="saving || !promocionalForm.form.valid"
+          >
+            <i class="fas fa-save me-2"></i>
+            <span *ngIf="!saving">
+              {{ editando ? 'Guardar Cambios' : 'Crear Código' }}
+            </span>
+            <span *ngIf="saving">
+              <i class="fas fa-spinner fa-spin me-2"></i>
+              {{ editando ? 'Guardando...' : 'Creando...' }}
+            </span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+

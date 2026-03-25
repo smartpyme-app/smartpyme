@@ -21,9 +21,9 @@ class MHNotaDebito extends Model
     public function generarDTE($devolucion){
         $this->devolucion = $devolucion;
         $this->empresa = $this->devolucion->empresa()->first();
-        $this->sucursal = $this->devolucion->usuario()->first()->sucursal()->first();
+        $this->sucursal = $this->devolucion->sucursal()->first();
 
-        $this->caja_codigo = '0001';
+        $this->caja_codigo = $this->sucursal->codigo_punto_venta ?? 'P001';
         $this->devolucion->tipo_dte = '06';
         $this->devolucion->numero_control = 'DTE-'. $this->devolucion->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->devolucion->correlativo, 15, '0', STR_PAD_LEFT);
 
@@ -140,7 +140,7 @@ class MHNotaDebito extends Model
               "direccion" => [
                 "departamento" => $this->devolucion->cliente->cod_departamento,
                 "municipio" => $this->devolucion->cliente->cod_departamento,
-                "complemento" => $this->devolucion->cliente->direccion ? $this->devolucion->cliente->direccion : $this->devolucion->cliente->empresa_direccion,
+                "complemento" => $this->devolucion->cliente->empresa_direccion ?? $this->devolucion->cliente->direccion,
               ],
               "telefono" => $this->devolucion->cliente->telefono,
               "correo" => $this->devolucion->cliente->correo
@@ -241,20 +241,24 @@ class MHNotaDebito extends Model
                 $detalle->exenta = $detalle->total;
             }
 
+            $precioUni = round(floatval($detalle->precio), 4);
+            $cantidad = round(floatval($detalle->cantidad), 2);
+            $montoDescu = round(floatval($detalle->descuento), 2);
+            $ventaItem = round($precioUni * $cantidad - $montoDescu, 2);
             $detalles->push([
                 "numItem" => $index + 1,
                 "tipoItem" => $detalle->tipo_item,
                 "numeroDocumento" => $this->devolucion->venta->dte['identificacion']['codigoGeneracion'],
-                "cantidad" => floatval(number_format($detalle->cantidad,2)),
+                "cantidad" => floatval(number_format($cantidad, 2, '.', '')),
                 "codigo" => $detalle->codigo,
                 "codTributo" => $detalle->codTributo,
                 "uniMedida" => $detalle->cod_medida,
                 "descripcion" => $detalle->nombre_producto,
-                "precioUni" => floatval(number_format($detalle->precio,4, '.', '')),
-                "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
-                "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
-                "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
-                "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
+                "precioUni" => floatval(number_format($precioUni, 4, '.', '')),
+                "montoDescu" => floatval(number_format($montoDescu, 2, '.', '')),
+                "ventaNoSuj" => floatval(number_format($detalle->no_sujeta > 0 ? $ventaItem : 0, 2, '.', '')),
+                "ventaExenta" => floatval(number_format($detalle->exenta > 0 ? $ventaItem : 0, 2, '.', '')),
+                "ventaGravada" => floatval(number_format($detalle->gravada > 0 ? $ventaItem : 0, 2, '.', '')),
                 "tributos" => $tributos,
                 // "ivaItem" => floatval($detalle->iva)
               ]);

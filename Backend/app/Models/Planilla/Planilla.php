@@ -2,7 +2,6 @@
 
 namespace App\Models\Planilla;
 
-use App\Models\Planilla\Empleado;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -78,7 +77,7 @@ class Planilla extends Model
 
         // Calcular totales
         $this->total_salarios = $detalles->sum(function ($detalle) {
-            return $detalle->salario_base +
+            return $detalle->salario_devengado +
                 $detalle->monto_horas_extra +
                 $detalle->comisiones +
                 $detalle->bonificaciones +

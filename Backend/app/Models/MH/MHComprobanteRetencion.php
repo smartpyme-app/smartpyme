@@ -23,7 +23,7 @@ class MHComprobanteRetencion extends Model
         $this->empresa = $this->venta->empresa()->first();
         $this->sucursal = $this->venta->sucursal()->first();
 
-        $this->caja_codigo = '0001';
+        $this->caja_codigo = $this->sucursal->codigo_punto_venta ?? 'P001';
         $this->venta->tipo_dte = '07';
         $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
 
@@ -134,7 +134,7 @@ class MHComprobanteRetencion extends Model
 
     protected function receptor(){
 
-        if (!$this->venta->id_cliente) {
+        if (!$this->venta->id_cliente || !$this->venta->cliente) {
             return [
                 "tipoDocumento" => NULL, //36 NIT 13 DUI
                 "numDocumento" => NULL,

@@ -1,54 +1,65 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Registros</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/venta/crear" tooltip="Crear venta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir venta</button>
+    <button *ngIf="apiService.canCreate()" routerLink="/venta/crear" tooltip="Crear venta (F4)"
+        class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir venta</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="ventas?.total">
-                Mostrando 
-                <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
+                Mostrando
+                <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()"
+                    [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
                 </select>
-                 de {{ ventas?.total + ' registros' }}
+                de {{ ventas?.total + ' registros' }}
             </span>
         </div>
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'ventas'"></app-importar-excel>
-                <button tooltip="Descargar ventas" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+                <button tooltip="Descargar ventas" (click)="openDescargar(mdescargar)"
+                    class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarVentas()" autocomplete="off">
-                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar"
+                        [(ngModel)]="filtros.buscador" (input)="onBuscadorInput()">
                 </form>
-                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img
+                        src="/assets/icons/filter.png" class="icon"> </button>
                 <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
                     <i class="fa fa-refresh"></i>
-                  </button>
+                </button>
             </div>
         </div>
     </div>
 
-    <div class="d-flex">
-        <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/ventas">Todos</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/devoluciones/ventas">Devoluciones</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/abonos">Abonos</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/recurrentes">Recurrentes</button>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary"
+                [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/ventas">Todos</button>
+            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+                routerLink="/devoluciones/ventas">Devoluciones</button>
+            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+                routerLink="/ventas/abonos">Abonos</button>
+            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+                routerLink="/ventas/recurrentes">Recurrentes</button>
         </div>
-        <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
-            <select name="estado" (change)="filtrarVentas()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+        <div class="ms-auto d-flex gap-2">
+            <select name="estado" (change)="filtrarVentas()" [(ngModel)]="filtros.estado"
+                class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="Anulada">Anulada</option>
                 <option value="Consigna">Consigna</option>
                 <option value="Pagada">Pagada</option>
             </select>
-            <select name="id_sucursal" (change)="filtrarVentas()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
+            <select name="id_sucursal" (change)="filtrarVentas()" [(ngModel)]="filtros.id_sucursal"
+                class="form-select bg-default w-auto">
                 <option value="">Sucursal</option>
                 <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
@@ -61,14 +72,22 @@
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
-                        <th *ngIf="isColumnEnabled('columna_proyecto')" (click)="setOrden('id_proyecto')" [ngClass]="{'sorted-asc': filtros.orden == 'id_proyecto' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id_proyecto' && filtros.direccion == 'desc'}" class="click">Proyecto</th>
+                        <th (click)="setOrden('fecha')"
+                            [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}"
+                            class="click">Fecha</th>
+                        <th *ngIf="isColumnEnabled('columna_proyecto')" (click)="setOrden('id_proyecto')"
+                            [ngClass]="{'sorted-asc': filtros.orden == 'id_proyecto' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id_proyecto' && filtros.direccion == 'desc'}"
+                            class="click">Proyecto</th>
                         <th>Cliente</th>
                         <th class="d-none d-md-table-cell">Documento</th>
                         <th class="d-none d-md-table-cell">Método de pago</th>
-                        <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha vencimiento</th>
+                        <th (click)="setOrden('fecha_pago')"
+                            [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}"
+                            class="click">Fecha vencimiento</th>
                         <th>Estado</th>
-                        <th (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
+                        <th (click)="setOrden('total')"
+                            [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}"
+                            class="click text-right">Total</th>
                         <th class="text-center">Más</th>
                     </tr>
                 </thead>
@@ -83,18 +102,23 @@
                     </tr>
 
                     <tr *ngFor=" let venta of ventas?.data">
-                        
-                        <td><span tooltip="{{ venta.created_at | date:'hh:mm a'}}">{{venta.fecha | date:'dd/MM/yyyy'}}</span></td>
+
+                        <td><span tooltip="{{ venta.created_at | date:'hh:mm a'}}">{{venta.fecha |
+                                date:'dd/MM/yyyy'}}</span></td>
                         <td *ngIf="isColumnEnabled('columna_proyecto')">
                             <div class="d-flex flex-column align-items-center">
-                                <span *ngIf="venta.nombre_proyecto" class="badge bg-info">{{ venta.nombre_proyecto | truncate:20 }}</span>
+                                <span *ngIf="venta.nombre_proyecto" class="badge bg-info">{{ venta.nombre_proyecto |
+                                    truncate:20 }}</span>
                                 <small class="text-muted d-block">{{venta.num_identificacion ?? ''}}</small>
                             </div>
                             <span *ngIf="!venta.nombre_proyecto" class="text-muted">-</span>
                         </td>
-                        <td>{{venta.nombre_cliente | truncate:30 }}<a *ngIf="venta.id_cliente && venta.id_cliente != 1" class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{venta.nombre_cliente | truncate:30 }}<a *ngIf="venta.id_cliente && venta.id_cliente != 1"
+                                class="float-end d-none" tooltip="Ver información del cliente"
+                                routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>
-                            <a class="text-decoration-none text-dark"  tooltip="Ver información de la venta" routerLink="/venta/{{venta.id}}">
+                            <a class="text-decoration-none text-dark" tooltip="Ver información de la venta"
+                                routerLink="/venta/{{venta.id}}">
                                 {{venta.nombre_documento}} #{{venta.correlativo}}
                             </a>
                         </td>
@@ -102,22 +126,37 @@
                         <!-- <td>{{venta.estado != 'Pendiente' ? venta.forma_pago : 'Pendiente'}}</td> -->
                         <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
-                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;"
+                                [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">
                                 <span *ngIf="venta.estado != 'Pendiente'">{{ venta.estado }}</span>
-                                <a tooltip="Pagar venta" *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, venta)" class="text-decoration-none text-dark click">
+                                <a tooltip="Pagar venta" *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()"
+                                    (click)="openAbono(mabono, venta)" class="text-decoration-none text-dark click">
                                     {{ venta.estado }}
                                 </a>
-                                <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
-                                    ✅                       
+                                <span title="Emitido a hacienda"
+                                    style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;"
+                                    *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
+                                    ✅
                                 </span>
                             </span>
                         </td>
                         <td class="text-end">
                             <span *ngIf="venta.estado != 'Pendiente' && !venta.abonos_sum_total">
-                                {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                <span *ngIf="venta.propina > 0">
+                                    {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
+                                </span>
+                                <span *ngIf="!(venta.propina > 0)">
+                                    {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                </span>
                             </span>
-                            <span *ngIf="venta.estado == 'Pendiente' || venta.abonos_sum_total > 0" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                                {{venta.total | currency:'USD':'symbol':'1.2'}}
+                            <span *ngIf="venta.estado == 'Pendiente' || venta.abonos_sum_total > 0" class="click"
+                                placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                <span *ngIf="venta.propina > 0">
+                                    {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
+                                </span>
+                                <span *ngIf="!(venta.propina > 0)">
+                                    {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                </span>
                             </span>
                             <ng-template #popTemplate>
                                 <table class="w-100">
@@ -126,13 +165,26 @@
                                             <td>Total</td>
                                             <td class="text-end">{{ venta.total | currency}}</td>
                                         </tr>
+                                        <tr *ngIf="venta.propina > 0">
+                                            <td>Propina</td>
+                                            <td class="text-end">{{ venta.propina | currency}}</td>
+                                        </tr>
+                                        <tr *ngIf="venta.propina > 0">
+                                            <td><strong>Total + Propina</strong></td>
+                                            <td class="text-end"><strong>{{ getTotalConPropina(venta) | currency}}</strong></td>
+                                        </tr>
                                         <tr>
                                             <td>Abonos</td>
                                             <td class="text-end">{{ venta.abonos_sum_total | currency}}</td>
                                         </tr>
                                         <tr>
+                                            <td>Devoluciones</td>
+                                            <td class="text-end">{{ venta.devoluciones_sum_total | currency}}</td>
+                                        </tr>
+                                        <tr>
                                             <td>Saldo</td>
-                                            <td class="text-end">{{ venta.total - venta.abonos_sum_total | currency}}</td>
+                                            <td class="text-end">{{ getSaldo(venta) | currency}}
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -146,51 +198,85 @@
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
 
-                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh"
+                                        class="list-group-item list-group-item-action border-0 click"
+                                        (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
                                     </a>
-                                    <a *ngIf="apiService.auth_user().empresa.fe_ambiente == '00' && apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="emitirEnContingencia(venta)" tooltip="Emitir DTE en contingencia">
+                                    <a *ngIf="apiService.auth_user().empresa.fe_ambiente == '00' && apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh"
+                                        class="list-group-item list-group-item-action border-0 click"
+                                        (click)="emitirEnContingencia(venta)" tooltip="Emitir DTE en contingencia">
                                         <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE en contingencia
                                     </a>
-                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh"
+                                        class="list-group-item list-group-item-action border-0 click"
+                                        (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
                                     </a>
 
-                                    <a routerLink="/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
+                                    <a routerLink="/venta/{{venta.id}}"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()"
+                                        (click)="openAbono(mabono, venta)"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar venta
                                     </a>
-                                    <a *ngIf="venta.estado != 'Anulada' && apiService.canEdit()" (click)="anularDTE(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado != 'Anulada' && apiService.canEdit()"
+                                        (click)="anularDTE(venta)"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular venta
                                     </a>
-                                    <a *ngIf="venta.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado == 'Anulada' && apiService.canEdit()"
+                                        (click)="setEstado(venta, 'Pagada')"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEdit()" (click)="openModalEdit(mventa, venta)"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a *ngIf="venta.estado == 'Consigna' && apiService.canEdit()" routerLink="/venta/consigna/revisar/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado == 'Consigna' && apiService.canEdit()"
+                                        routerLink="/venta/consigna/revisar/{{venta.id}}"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
                                     </a>
-                                    <a *ngIf="venta.recurrente == 0 && apiService.canEdit()" (click)="setRecurrencia(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.recurrente == 0 && apiService.canEdit()"
+                                        (click)="setRecurrencia(venta)"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEdit()" (click)="imprimir(venta)"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
-                                    <a *ngIf="venta.forma_pago == 'Wompi' && venta.estado == 'Pendiente' && apiService.canEdit()" (click)="linkWompi(venta)" class="list-group-item list-group-item-action border-0 click">
-                                        <img src="https://wompi.sv/img/icon.png" width="15px" class="img-fluid" alt=""> Generar enlace de pago
+                                    <a *ngIf="venta.forma_pago == 'Wompi' && venta.estado == 'Pendiente' && apiService.canEdit()"
+                                        (click)="linkWompi(venta)"
+                                        class="list-group-item list-group-item-action border-0 click">
+                                        <img src="https://wompi.sv/img/icon.png" width="15px" class="img-fluid" alt="">
+                                        Generar enlace de pago
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEdit()" routerLink="/devolucion-venta/nueva"
+                                        [queryParams]="{ id_venta: venta.id }"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-right-left"></i> Hacer devolucion
                                     </a>
-                                    <a *ngIf="apiService.canEdit() && venta.nombre_documento == 'Crédito fiscal'" routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_credito'}" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEdit() && venta.nombre_documento == 'Crédito fiscal'"
+                                        routerLink="/devolucion-venta/nueva"
+                                        [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_credito'}"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-folder-minus"></i> Hacer nota de crédito
                                     </a>
-                                    <a *ngIf="apiService.canEdit() && venta.nombre_documento == 'Crédito fiscal'" routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_debito'}" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEdit() && venta.nombre_documento == 'Crédito fiscal'"
+                                        routerLink="/devolucion-venta/nueva"
+                                        [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_debito'}"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-folder-plus"></i> Hacer nota de débito
+                                    </a>
+                                    <a class="list-group-item list-group-item-action border-0 click"
+                                        (click)="generarTrasladoEmpresa(venta)">
+                                        <i class="fa fa-fw fa-exchange"></i> Generar traslado a empresa
                                     </a>
                                 </div>
                             </ng-template>
@@ -218,178 +304,255 @@
 </ng-template>
 
 <ng-template #mdescargar>
-  <div class="modal-header">
-    <h4 class="modal-title text-center">Descargar registro de ventas</h4>
-    <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
-    <button type="button" class="btn-close" (click)="modalRefDescargar.hide()" aria-label="Close"></button>
-  </div>
-  <div class="modal-body">
-    <app-notificaciones-container></app-notificaciones-container>
-        <p class="alert bg-info">Acá puedes descargar los registros de ventas en un archivo de Excel.</p>
-        <div class="row">
-            <div class="d-grid mt-4">
-                <p>Descargar los detalles de ventas por producto.</p>
-                <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
-                    <span *ngIf="!downloadingDetalles">Descargar Detalles</span>
-                    <span *ngIf="downloadingDetalles">Descargando...</span>
-                </button>
-            </div>
-            <div class="d-grid my-4">
-                <p>Descargar los detalles de ventas totales.</p>
-                <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
-                    <span *ngIf="!downloadingVentas">Descargar Ventas</span>
-                    <span *ngIf="downloadingVentas">Descargando...</span>
-                </button>
-            </div>
-            <div class="d-grid mb-4">
-                <p>Descarga acumulado por producto.</p>
-                <button [disabled]="saving" (click)="abrirModalFiltrosAcumulado(mfiltrosAcumulado)" class="btn btn-primary btn-block">
-                  Descargar Acumulado
-                </button>
-              </div>
+    <div class="modal-header">
+        <h4 class="modal-title text-center">Descargar reporte de registros de ventas</h4>
+        <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
+        <button type="button" class="btn-close" (click)="modalRefDescargar.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        <p class="alert bg-info">Al seleccionar el reporte, se mostrará un boton para descargar los datos.</p>
+        <div class="mb-3">
+            <label class="form-label">Seleccione el reporte a descargar:</label>
+            <select class="form-select" [(ngModel)]="reporteSeleccionado" (ngModelChange)="seleccionarReporte($event)">
+                <option value="">Seleccione una opción</option>
+                <option value="detalles">Detalles de ventas por producto</option>
+                <option value="ventas">Detalles de ventas totales</option>
+                <option value="acumulado">Acumulado por producto</option>
+                <option value="marca">Detalles de ventas por marca</option>
+                <option value="utilidades">Detalles de ventas utilidades</option>
+                <option value="cobros-vendedor">Cobros por vendedor</option>
+            </select>
         </div>
-  </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'detalles'">
+            <p>Descargar los detalles de ventas por producto.</p>
+            <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
+                <span *ngIf="!downloadingDetalles">Descargar Detalles</span>
+                <span *ngIf="downloadingDetalles">Descargando...</span>
+            </button>
+        </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'ventas'">
+            <p>Descargar los detalles de ventas totales.</p>
+            <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
+                <span *ngIf="!downloadingVentas">Descargar Ventas</span>
+                <span *ngIf="downloadingVentas">Descargando...</span>
+            </button>
+        </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'acumulado'">
+            <p>Descarga acumulado por producto.</p>
+            <button [disabled]="saving" (click)="abrirModalFiltrosAcumulado(mfiltrosAcumulado)"
+                class="btn btn-primary btn-block">
+                Descargar Acumulado
+            </button>
+        </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'marca'">
+            <p>Descarga detalles de ventas por marca.</p>
+            <button class="btn btn-primary" (click)="abrirModalFiltrosPorMarca(mfiltrosPorMarca)">
+                Descargar por Marca
+            </button>
+        </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'utilidades'">
+            <p>Descarga detalles de ventas utilidades.</p>
+            <button class="btn btn-primary" (click)="abrirModalFiltrosPorUtilidades(mfiltrosPorMarca)">
+                Descargar por Utilidades
+            </button>
+        </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'cobros-vendedor'">
+            <p>Descarga reporte de cobros por vendedor (facturas pagadas y pendientes con días de vencimiento y crédito).</p>
+            <button class="btn btn-primary" (click)="abrirModalFiltrosCobrosVendedor(mfiltrosCobrosVendedor)">
+                Descargar Cobros por Vendedor
+            </button>
+        </div>
+    </div>
 </ng-template>
 
 <ng-template #mventa>
-  <div class="modal-header">
-    <h4 class="modal-title text-center">Editar venta</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
-  </div>
-  <div class="modal-body">
-    <app-notificaciones-container></app-notificaciones-container>
-    <form name="form" (ngSubmit)="onSubmit()">
-        <div class="row">
-            <div class="form-group col-md-6">
-                <label for="fecha">Fecha:</label>
-                <input type="date" [(ngModel)]="venta.fecha" name="fecha" class="form-control">
-            </div>
-            <div class="form-group col-md-6">
-                <label for="forma_pago">Método de pago:</label>
-                <select name="forma_pago" [(ngModel)]="venta.forma_pago" class="form-select">
-                    <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
-                </select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="id_documento">Documento:</label>
-                <select name="id_documento" [(ngModel)]="venta.id_documento" class="form-select">
-                    <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
-                </select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="correlativo">Correlativo:</label>
-                <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo">
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="venta.id_canal">Canal:</label>
-                <select [(ngModel)]="venta.id_canal" class="form-control form-select" name="venta.id_canal">
-                    <option value="">Todos</option>
-                    <option *ngFor="let canal of canales" [value]="canal.id">
-                        {{ canal.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="id_usuario">Usuario:</label>
-                <ng-select [(ngModel)]="venta.id_usuario" class="form-select p-0" name="id_usuario">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
-                        {{ usuario.name }}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <!-- <div class="form-group col-md-6" *ngIf="venta.estado == 'Pendiente'">
+    <div class="modal-header">
+        <h4 class="modal-title text-center">Editar venta</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        <form name="form" (ngSubmit)="onSubmit()">
+            <div class="row">
+                <div class="form-group col-md-4">
+                    <label for="fecha">Fecha:</label>
+                    <input type="date" [(ngModel)]="venta.fecha" name="fecha" class="form-control">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="forma_pago">Método de pago:</label>
+                    <select name="forma_pago" [(ngModel)]="venta.forma_pago" class="form-select">
+                        <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="id_documento">Documento:</label>
+                    <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
+                        <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="correlativo">Correlativo:</label>
+                    <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="estado">Estado:</label>
+                    <select name="estado" [(ngModel)]="venta.estado" class="form-select">
+                        <option value="">Estado</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Anulada">Anulada</option>
+                        <option value="Consigna">Consigna</option>
+                        <option value="Pagada">Pagada</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-4" *ngIf="apiService.isAdmin()">
+                    <label for="condicion">Condición de pago:</label>
+                    <select name="condicion" [(ngModel)]="venta.condicion" (change)="onCondicionChange()" class="form-select">
+                        <option value="Contado">Contado</option>
+                        <option value="Crédito">Crédito</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-4" *ngIf="apiService.isAdmin() && venta.condicion == 'Crédito'">
+                    <label for="fecha_pago">Fecha de pago:</label>
+                    <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="venta.id_canal">Canal:</label>
+                    <select [(ngModel)]="venta.id_canal" class="form-control form-select" name="venta.id_canal">
+                        <option value="">Todos</option>
+                        <option *ngFor="let canal of canales" [value]="canal.id">
+                            {{ canal.nombre }}
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="id_usuario">Usuario:</label>
+                    <ng-select [(ngModel)]="venta.id_usuario" class="form-select p-0" name="id_usuario">
+                        <ng-option value="">Todos</ng-option>
+                        <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                            {{ usuario.name }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="id_vendedor">Vendedor:</label>
+                    <ng-select [(ngModel)]="venta.id_vendedor" class="form-select p-0" name="id_vendedor" [clearable]="true">
+                        <ng-option [value]="null">Todos</ng-option>
+                        <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                            {{ usuario.codigo ? usuario.codigo + ' - ' : '' }}{{ usuario.name }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <!-- <div class="form-group col-md-4" *ngIf="venta.estado == 'Pendiente'">
                 <label for="fecha_pago">Fecha de pago:</label>
                 <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
             </div> -->
-            <div class="form-group col-md-6">
-                <label for="num_cotizacion">Núm Cotización:</label>
-                <input type="number" class="form-control" [(ngModel)]="venta.num_cotizacion" name="num_cotizacion">
-            </div>
-            <div class="form-group col-md-6">
-                <label for="num_orden">Núm de orden:</label>
-                <input type="number" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden">
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="tipo_operacion">Tipo de operación:</label>
-                <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">
-                    <option [ngValue]="null">Seleccione aquí</option>
-                    <option value="Gravada">Gravada</option>
-                    <option value="No Gravada">No Gravada</option>
-                    <option value="Excluido">Excluido</option>
-                    <option value="Mixta">Mixta</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtro.tipo_renta">Tipo de ingreso:</label>
-                <select name="tipo_renta" class="form-select" [(ngModel)]="venta.tipo_renta">
-                    <option [ngValue]="null">Seleccione aquí</option>
-                    <option value="Profesiones, Artes y Oficios">Profesiones, Artes y Oficios</option>
-                    <option value="Actividades de Servicios">Actividades de Servicios</option>
-                    <option value="Actividades Comerciales">Actividades Comerciales</option>
-                    <option value="Actividades Industriales">Actividades Industriales</option>
-                    <option value="Actividades Agropecuarias">Actividades Agropecuarias</option>
-                    <option value="Utilidades y Dividendos">Utilidades y Dividendos</option>
-                    <option value="Exportaciones de bienes">Exportaciones de bienes</option>
-                    <option value="Servicios Realizados en el Exterior y Utilizados en El Salvador">Servicios Realizados en el Exterior y Utilizados en El Salvador</option>
-                    <option value="Exportaciones de servicios">Exportaciones de servicios</option>
-                    <option value="Otras Rentas Gravables">Otras Rentas Gravables</option>
-                    <option value="Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910">Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910</option>
-                    <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
-                </select>
-            </div>
-            <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
-                <label for="id_proyecto">Proyecto:</label>
-                <ng-select [(ngModel)]="venta.id_proyecto" class="form-select p-0" name="id_proyecto">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
-                        {{ proyecto.nombre }}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-md-6 col-lg-6" *ngIf="isColumnEnabled('columna_proyecto')">
-                <label for="num_identificacion">Número identificación:</label>
-                <input 
-                type="text" 
-                [(ngModel)]="venta.num_identificacion" 
-                name="num_identificacion" 
-                class="form-control" 
-                id="num_identificacion" 
-                placeholder="Número de identificación">
-            </div>
-            <div *ngIf="apiService.auth_user().empresa.editar_descripcion_venta">
-                <div class="form-group col-md-12 without-label">
-                    <div class="form-switch bg-light-info rounded">
-                      <label for="descripcion_personalizada">Agrupar detalles de venta y personalizar descripción</label>
-                      <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="venta.descripcion_personalizada">
+                <div class="form-group col-md-4">
+                    <label for="num_cotizacion">Núm Cotización:</label>
+                    <input type="number" class="form-control" [(ngModel)]="venta.num_cotizacion" name="num_cotizacion">
+                </div>
+                <div class="form-group col-md-4" *ngIf="apiService.auth_user().empresa.pais == 'Honduras'">
+                    <label for="num_orden">Número de orden:</label><br>
+                    <input type="text" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden"
+                        id="num_orden">
+                </div>
+                <div class="form-group col-md-4" *ngIf="apiService.auth_user().empresa.pais == 'Honduras'">
+                    <label for="num_orden_exento">Número de orden exento:</label><br>
+                    <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento"
+                        id="num_orden_exento">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="tipo_operacion">Tipo de operación:</label>
+                    <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">
+                        <option [ngValue]="null">Seleccione aquí</option>
+                        <option value="Gravada">Gravada</option>
+                        <option value="No Gravada">No Gravada</option>
+                        <option value="Excluido">Excluido</option>
+                        <option value="Mixta">Mixta</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="filtro.tipo_renta">Tipo de ingreso:</label>
+                    <select name="tipo_renta" class="form-select" [(ngModel)]="venta.tipo_renta">
+                        <option [ngValue]="null">Seleccione aquí</option>
+                        <option value="Profesiones, Artes y Oficios">Profesiones, Artes y Oficios</option>
+                        <option value="Actividades de Servicios">Actividades de Servicios</option>
+                        <option value="Actividades Comerciales">Actividades Comerciales</option>
+                        <option value="Actividades Industriales">Actividades Industriales</option>
+                        <option value="Actividades Agropecuarias">Actividades Agropecuarias</option>
+                        <option value="Utilidades y Dividendos">Utilidades y Dividendos</option>
+                        <option value="Exportaciones de bienes">Exportaciones de bienes</option>
+                        <option value="Servicios Realizados en el Exterior y Utilizados en El Salvador">Servicios
+                            Realizados en el Exterior y Utilizados en El Salvador</option>
+                        <option value="Exportaciones de servicios">Exportaciones de servicios</option>
+                        <option value="Otras Rentas Gravables">Otras Rentas Gravables</option>
+                        <option
+                            value="Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910">
+                            Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910
+                        </option>
+                        <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
+                    </select>
+                </div>
+                <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-4">
+                    <label for="id_proyecto">Proyecto:</label>
+                    <ng-select [(ngModel)]="venta.id_proyecto" class="form-select p-0" name="id_proyecto">
+                        <ng-option value="">Todos</ng-option>
+                        <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                            {{ proyecto.nombre }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-md-4" *ngIf="isColumnEnabled('columna_proyecto')">
+                    <label for="num_identificacion">Número identificación:</label>
+                    <input type="text" [(ngModel)]="venta.num_identificacion" name="num_identificacion"
+                        class="form-control" id="num_identificacion" placeholder="Número de identificación">
+                </div>
+                <div *ngIf="apiService.auth_user().empresa.editar_descripcion_venta">
+                    <div class="form-group col-md-12 without-label">
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="descripcion_personalizada">Agrupar detalles de venta y personalizar
+                                descripción</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                [(ngModel)]="venta.descripcion_personalizada" name="venta.descripcion_personalizada">
+                        </div>
+                    </div>
+                    <div class="form-group col-md-12" *ngIf="venta.descripcion_personalizada">
+                        <label for="descripcion_impresion">Descripción a mostrar el la impresión del documento:</label>
+                        <textarea class="form-control" placeholder="Escribe aquí"
+                            [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
                     </div>
                 </div>
-                <div class="form-group col-md-12" *ngIf="venta.cotizacion != 1 && venta.descripcion_personalizada">
-                    <label for="descripcion_impresion">Descripción a mostrar el la impresión del documento:</label>
-                    <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
+                <div class="form-group col-md-12">
+                    <label for="observaciones">Observaciones:</label>
+                    <textarea class="form-control" [(ngModel)]="venta.observaciones" name="observaciones" cols="30"
+                        rows="2"></textarea>
+                </div>
+                <div class="d-grid mt-4">
+                    <button [disabled]="saving" class="btn btn-primary btn-block">
+                        <span *ngIf="!saving">Guardar</span>
+                        <span *ngIf="saving">Guardando...</span>
+                    </button>
                 </div>
             </div>
-            <div class="form-group col-md-12">
-                <label for="observaciones">Observaciones:</label>
-                <textarea class="form-control" [(ngModel)]="venta.observaciones" name="observaciones" cols="30" rows="2"></textarea>
-            </div>
-            <div class="d-grid mt-4">
-                <button [disabled]="saving" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Guardar</span>
-                    <span *ngIf="saving">Guardando...</span>
-                </button>
-            </div>
-        </div>
-    </form>
-  </div>
+        </form>
+    </div>
 </ng-template>
 
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">
         <h5 class="modal-title mb-0">DTE </h5>
-        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;"
+            aria-label="Close"></button>
     </div>
-  <div class="modal-body">
+    <div class="modal-body">
+        <app-alerts-hacienda [errores]="venta.errores"></app-alerts-hacienda>
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 
@@ -401,13 +564,15 @@
                 Ver PDF
             </button>
 
-            <button *ngIf="venta.sello_mh" [disabled]="sending" (click)="enviarDTE(venta)" class="mb-3 btn btn-primary btn-block">
+            <button *ngIf="venta.sello_mh" [disabled]="sending" (click)="enviarDTE(venta)"
+                class="mb-3 btn btn-primary btn-block">
                 <span *ngIf="!sending">Enviar por correo</span>
                 <span *ngIf="sending">Enviando...</span>
             </button>
 
             <div class="w-100" *ngIf="!venta?.sello_mh">
-                <p *ngIf="consulting" class="alert alert-info">El DTE ya fue emitido, se consultará por el sello correspondiente.</p>
+                <p *ngIf="consulting" class="alert alert-info">El DTE ya fue emitido, se consultará por el sello
+                    correspondiente.</p>
                 <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary w-100">
                     <span *ngIf="!saving && !consulting">Emitir</span>
                     <span *ngIf="saving">Emitiendo...</span>
@@ -417,219 +582,388 @@
             </div>
 
         </div>
-  </div>
+    </div>
 </ng-template>
 
 <ng-template #mfilter>
-  <!-- <div class="modal-header">
+    <!-- <div class="modal-header">
     <div class="modal-title text-center">
         <h2 class="text-center">Filtrar</h2>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div> -->
-  <!-- En el modal de filtros -->
-<div class="modal-header">
-    <div class="modal-title text-center">
-      <h2 class="text-center">
-        Filtrar
-        <!-- <span *ngIf="filtrosActivos()" class="badge bg-primary ms-2">Filtros activos</span> -->
-      </h2>
+    <!-- En el modal de filtros -->
+    <div class="modal-header">
+        <div class="modal-title text-center">
+            <h2 class="text-center">
+                Filtrar
+                <!-- <span *ngIf="filtrosActivos()" class="badge bg-primary ms-2">Filtros activos</span> -->
+            </h2>
+        </div>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
     </div>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
-  </div>
-  <div class="modal-body">
-    <app-notificaciones-container></app-notificaciones-container>
-    <form autocomplete="off" (ngSubmit)="filtrarVentas()">
-        <div class="row">
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        <form autocomplete="off" (ngSubmit)="filtrarVentas()">
+            <div class="row">
 
-            <div class="form-group col-sm-6">
-                <label for="">Del:</label>
-                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="">Al:</label>
-                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.estado">Estado:</label>
-                <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
-                    <option value="">Todos</option>
-                    <option value="Pagada">Pagadas</option>
-                    <option value="Pendiente">Pendientes</option>
-                    <option value="Anulada">Anuladas</option>
-                    <option value="Consigna">Consignas</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.forma_pago">Método de pago:</label>
-                <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
-                    <option value="">Todos</option>
-                    <option *ngFor="let formaPago of formaPagos" [value]="formaPago.nombre">
-                        {{ formaPago.nombre }}
-                    </option>
-                    <option value="Multiple">Multiple</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.id_documento">Documento:</label>
-                <select [(ngModel)]="filtros.id_documento" class="form-control form-select" name="filtros.id_documento">
-                    <option value="">Todos</option>
-                    <option *ngFor="let documento of documentos" [value]="documento.id">
-                        {{ documento.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.id_canal">Canal:</label>
-                <select [(ngModel)]="filtros.id_canal" class="form-control form-select" name="filtros.id_canal">
-                    <option value="">Todos</option>
-                    <option *ngFor="let canal of canales" [value]="canal.id">
-                        {{ canal.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.sucursal">Sucursal:</label>
-                <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
-                    <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.id_cliente">Cliente:</label>
-                <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                        {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="filtros.id_usuario">Usuario:</label>
-                <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
-                        {{ usuario.name }}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="filtros.id_vendedor">Vendedor:</label>
-                <ng-select [(ngModel)]="filtros.id_vendedor" class="form-select  p-0" name="filtros.id_vendedor">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
-                        {{ usuario.name }}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
-                <label for="id_proyecto">Proyecto:</label>
-                <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
-                        {{ proyecto.nombre }}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-sm-6" *ngIf="apiService.auth_user().empresa.facturacion_electronica">
-                <label for="filtro.dte">Facturación electrónica (DTE):</label>
-                <select name="dts" class="form-select" [(ngModel)]="filtros.dte">
-                    <option value="">Todos</option>
-                    <option value="1">Sin emitir</option>
-                    <option value="2">Emitidos</option>
-                </select>
+                <div class="form-group col-sm-6">
+                    <label for="">Del:</label>
+                    <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio" />
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="">Al:</label>
+                    <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin" />
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtros.estado">Estado:</label>
+                    <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
+                        <option value="">Todos</option>
+                        <option value="Pagada">Pagadas</option>
+                        <option value="Pendiente">Pendientes</option>
+                        <option value="Anulada">Anuladas</option>
+                        <option value="Consigna">Consignas</option>
+                    </select>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtros.forma_pago">Método de pago:</label>
+                    <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
+                        <option value="">Todos</option>
+                        <option *ngFor="let formaPago of formaPagos" [value]="formaPago.nombre">
+                            {{ formaPago.nombre }}
+                        </option>
+                        <option value="Multiple">Multiple</option>
+                    </select>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtros.id_documento">Documento:</label>
+                    <select [(ngModel)]="filtros.id_documento" class="form-control form-select"
+                        name="filtros.id_documento">
+                        <option value="">Todos</option>
+                        <option *ngFor="let documento of documentos" [value]="documento.id">
+                            {{ documento.nombre }}
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtros.id_canal">Canal:</label>
+                    <select [(ngModel)]="filtros.id_canal" class="form-control form-select" name="filtros.id_canal">
+                        <option value="">Todos</option>
+                        <option *ngFor="let canal of canales" [value]="canal.id">
+                            {{ canal.nombre }}
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtros.sucursal">Sucursal:</label>
+                    <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select"
+                        name="filtros.id_sucursal">
+                        <option value="">Todos</option>
+                        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtros.id_cliente">Cliente:</label>
+                    <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
+                        <ng-option value="">Todos</ng-option>
+                        <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                            {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="filtros.id_usuario">Usuario:</label>
+                    <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
+                        <ng-option value="">Todos</ng-option>
+                        <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                            {{ usuario.name }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="filtros.id_vendedor">Vendedor:</label>
+                    <ng-select [(ngModel)]="filtros.id_vendedor" class="form-select  p-0" name="filtros.id_vendedor">
+                        <ng-option value="">Todos</ng-option>
+                        <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                            {{ usuario.name }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
+                    <label for="id_proyecto">Proyecto:</label>
+                    <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
+                        <ng-option value="">Todos</ng-option>
+                        <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                            {{ proyecto.nombre }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-sm-6" *ngIf="apiService.auth_user().empresa.facturacion_electronica">
+                    <label for="filtro.dte">Facturación electrónica (DTE):</label>
+                    <select name="dts" class="form-select" [(ngModel)]="filtros.dte">
+                        <option value="">Todos</option>
+                        <option value="1">Sin emitir</option>
+                        <option value="2">Emitidos</option>
+                    </select>
+                </div>
+
+                <div class="form-group col-sm-6" *ngIf="isColumnEnabled('columna_proyecto')">
+                    <label for="filtro.num_identificacion">Num. Identificación:</label>
+                    <ng-select [(ngModel)]="filtros.num_identificacion" class="form-select p-0"
+                        name="num_identificacion">
+                        <ng-option value="">Todos</ng-option>
+                        <ng-option *ngFor="let numIds of numeros_ids" [value]="numIds.num_identificacion">
+                            {{ numIds.num_identificacion }}
+                        </ng-option>
+                    </ng-select>
+                </div>
             </div>
 
-            <div class="form-group col-sm-6" *ngIf="isColumnEnabled('columna_proyecto')">
-                <label for="filtro.num_identificacion">Num. Identificación:</label>
-                <ng-select [(ngModel)]="filtros.num_identificacion" class="form-select p-0" name="num_identificacion">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let numIds of numeros_ids" [value]="numIds.num_identificacion">
-                        {{ numIds.num_identificacion }}
-                    </ng-option>
-                </ng-select>
+            <div class="d-grid mt-3">
+                <button type="submit" [disabled]="loading" class="btn btn-primary">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
             </div>
-        </div>
-        
-        <div class="d-grid mt-3">
-            <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
-            </button>
-        </div>
-    </form>
-  </div>
+        </form>
+    </div>
 </ng-template>
 
-    <ng-template #mfiltrosAcumulado>
-      <div class="modal-header">
+<ng-template #mfiltrosAcumulado>
+    <div class="modal-header">
         <h4 class="modal-title text-center">Filtros para Reporte Acumulado</h4>
         <button type="button" class="btn-close" (click)="modalRefAcumulado.hide()" aria-label="Close"></button>
         <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
-      </div>
-      <div class="modal-body">
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+
+        <form (ngSubmit)="descargarAcumulado()">
+            <div class="row">
+                <!-- Fechas -->
+                <div class="form-group col-sm-6">
+                    <label>Del:</label>
+                    <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.inicio" name="inicio">
+                </div>
+                <div class="form-group col-sm-6">
+                    <label>Al:</label>
+                    <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.fin" name="fin">
+                </div>
+
+                <!-- Sucursales -->
+                <div class="form-group col-12 mt-3">
+                    <label>Sucursales:</label>
+                    <ng-select [multiple]="true" class="form-select p-0" [items]="sucursales"
+                        [(ngModel)]="filtrosAcumulado.sucursales" bindLabel="nombre" bindValue="id"
+                        placeholder="Seleccione sucursales" name="sucursales">
+                    </ng-select>
+                </div>
+
+                <!-- Categorías -->
+                <div class="form-group col-12 mt-3">
+                    <label>Categorías:</label>
+                    <ng-select [multiple]="true" class="form-select p-0" [items]="categorias"
+                        [(ngModel)]="filtrosAcumulado.categorias" bindLabel="nombre" bindValue="id"
+                        placeholder="Seleccione categorías" name="categorias">
+                    </ng-select>
+                </div>
+
+                <!-- Marcas -->
+                <div class="form-group col-12 mt-3">
+                    <label>Marcas:</label>
+                    <ng-select [multiple]="true" class="form-select p-0" [items]="marcas"
+                        [(ngModel)]="filtrosAcumulado.marcas" bindLabel="nombre" bindValue="nombre"
+                        placeholder="Seleccione marcas" name="marcas">
+                    </ng-select>
+                </div>
+
+                <!-- Detalle por sucursal -->
+                <div class="form-group col-12 mt-3">
+                    <div class="form-switch bg-light-info rounded">
+                        <label for="detallePorSucursal">Detalle por sucursal</label>
+                        <input class="form-check-input float-end" type="checkbox" role="switch" id="detallePorSucursal"
+                            [(ngModel)]="filtrosAcumulado.detallePorSucursal" name="detallePorSucursal">
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary" [disabled]="downloadingAcumulado">
+                    <span *ngIf="!downloadingAcumulado">Descargar Reporte</span>
+                    <span *ngIf="downloadingAcumulado">Descargando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+
+<ng-template #mfiltrosPorMarca>
+    <div class="modal-header">
+        <h4 class="modal-title text-center">Filtros para Reporte {{ esReporteMarca ? 'de Marcas' : 'de Utilidades' }}</h4>
+        <button type="button" class="btn-close" (click)="modalRefPorMarca.hide()" aria-label="Close"></button>
+        <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+
+        <form (ngSubmit)="descargarReportePorMarcaOUtilidades()">
+            <div class="row">
+                <!-- Fechas -->
+                <div class="form-group col-12">
+                    <label>Desde:</label>
+                    <input type="date" class="form-control" [(ngModel)]="filtrosPorMarca.inicio" name="inicio">
+                </div>
+
+            </div>
+            <div class="row">
+                <div class="form-group col-12">
+                    <label>Hasta:</label>
+                    <input type="date" class="form-control" [(ngModel)]="filtrosPorMarca.fin" name="fin">
+                </div>
+            </div>
+
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary"
+                    [disabled]="downloadingPorMarca || !filtrosPorMarca.inicio || !filtrosPorMarca.fin">
+                    <span *ngIf="!downloadingPorMarca">Descargar Reporte</span>
+                    <span *ngIf="downloadingPorMarca">Descargando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+
+<ng-template #mfiltrosCobrosVendedor>
+    <div class="modal-header">
+        <h4 class="modal-title text-center">Filtros para Reporte de Cobros por Vendedor</h4>
+        <button type="button" class="btn-close" (click)="modalRefCobrosVendedor.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+
+        <form (ngSubmit)="descargarCobrosPorVendedor()">
+            <div class="row">
+                <!-- Fechas -->
+                <div class="form-group col-12">
+                    <label>Desde:</label>
+                    <input type="date" class="form-control" [(ngModel)]="filtrosCobrosVendedor.inicio" name="inicio" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-12">
+                    <label>Hasta:</label>
+                    <input type="date" class="form-control" [(ngModel)]="filtrosCobrosVendedor.fin" name="fin" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-12">
+                    <label>Sucursal:</label>
+                    <select class="form-select" [(ngModel)]="filtrosCobrosVendedor.id_sucursal" name="id_sucursal">
+                        <option value="">Todas las sucursales</option>
+                        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-12">
+                    <label>Vendedor:</label>
+                    <ng-select [(ngModel)]="filtrosCobrosVendedor.id_vendedor" class="form-select p-0" name="id_vendedor" [clearable]="true">
+                        <ng-option [value]="''">Todos los vendedores</ng-option>
+                        <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                            {{ usuario.name }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+            </div>
+
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary"
+                    [disabled]="downloadingCobrosVendedor || !filtrosCobrosVendedor.inicio || !filtrosCobrosVendedor.fin">
+                    <span *ngIf="!downloadingCobrosVendedor">Descargar Reporte</span>
+                    <span *ngIf="downloadingCobrosVendedor">Descargando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+
+<ng-template #modalAnulacion>
+    <div class="modal-header">
+        <h4 class="modal-title">Anular Venta y DTE</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); venta.errores = null;" [disabled]="saving" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-alerts-hacienda [errores]="venta.errores"></app-alerts-hacienda>
         <app-notificaciones-container></app-notificaciones-container>
         
-        <form (ngSubmit)="descargarAcumulado()">
-          <div class="row">
-            <!-- Fechas -->
-            <div class="form-group col-sm-6">
-              <label>Del:</label>
-              <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.inicio" name="inicio">
+        <form (ngSubmit)="confirmarAnulacion()" *ngIf="!saving || venta.errores">
+            <div class="mb-3">
+                <label for="fechaAnulacion" class="form-label">Fecha de Anulación <span class="text-danger">*</span></label>
+                <input type="date" 
+                       class="form-control" 
+                       id="fechaAnulacion" 
+                       [(ngModel)]="fechaAnulacion" 
+                       name="fechaAnulacion"
+                       [disabled]="saving"
+                       required>
             </div>
-            <div class="form-group col-sm-6">
-              <label>Al:</label>
-              <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.fin" name="fin">
+            <div class="mb-3">
+                <label for="tipoAnulacion" class="form-label">Tipo de Anulación <span class="text-danger">*</span></label>
+                <select class="form-select" 
+                        id="tipoAnulacion" 
+                        [(ngModel)]="tipoAnulacion" 
+                        name="tipoAnulacion"
+                        (change)="onTipoAnulacionChange()"
+                        [disabled]="saving"
+                        required>
+                    <option *ngFor="let motivo of motivosAnulacion" [value]="motivo.valor">
+                        {{ motivo.texto }}
+                    </option>
+                </select>
             </div>
-    
-            <!-- Sucursales -->
-            <div class="form-group col-12 mt-3">
-              <label>Sucursales:</label>
-              <ng-select [multiple]="true" class="form-select p-0"
-                        [items]="sucursales"
-                        [(ngModel)]="filtrosAcumulado.sucursales"
-                        bindLabel="nombre"
-                        bindValue="id"
-                        placeholder="Seleccione sucursales"
-                        name="sucursales">
-              </ng-select>
+            <div class="mb-3" *ngIf="tipoAnulacion == 3">
+                <label for="motivoAnulacion" class="form-label">Motivo de Anulación <span class="text-danger">*</span></label>
+                <textarea class="form-control" 
+                          id="motivoAnulacion" 
+                          [(ngModel)]="motivoAnulacion" 
+                          name="motivoAnulacion"
+                          rows="3"
+                          placeholder="Ingrese el motivo de anulación"
+                          [disabled]="saving"
+                          required></textarea>
             </div>
-    
-            <!-- Categorías -->
-            <div class="form-group col-12 mt-3">
-              <label>Categorías:</label>
-              <ng-select [multiple]="true" class="form-select p-0"
-                        [items]="categorias"
-                        [(ngModel)]="filtrosAcumulado.categorias"
-                        bindLabel="nombre"
-                        bindValue="id"
-                        placeholder="Seleccione categorías"
-                        name="categorias">
-              </ng-select>
+            <div class="mb-3" *ngIf="tipoAnulacion == 1 || tipoAnulacion == 3">
+                <label for="codigoGeneracionRemplazo" class="form-label">Código de Generación de la venta que sustituye a esta <span class="text-danger">*</span></label>
+                <input type="text" 
+                       class="form-control" 
+                       id="codigoGeneracionRemplazo" 
+                       [(ngModel)]="codigoGeneracionRemplazo" 
+                       name="codigoGeneracionRemplazo"
+                       placeholder="Ingrese el código de generación de la venta que reemplaza esta"
+                       [disabled]="saving"
+                       required>
             </div>
-    
-            <!-- Marcas -->
-            <div class="form-group col-12 mt-3">
-              <label>Marcas:</label>
-              <ng-select [multiple]="true" class="form-select p-0"
-                        [items]="marcas"
-                        [(ngModel)]="filtrosAcumulado.marcas"
-                        bindLabel="nombre"
-                        bindValue="nombre"
-                        placeholder="Seleccione marcas"
-                        name="marcas">
-              </ng-select>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="modalRef.hide(); venta.errores = null;" [disabled]="saving">Cancelar</button>
+                <button type="submit" class="btn btn-danger" [disabled]="saving">
+                    <span *ngIf="!saving">Confirmar Anulación</span>
+                    <span *ngIf="saving">
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        Anulando...
+                    </span>
+                </button>
             </div>
-          </div>
-    
-          <div class="d-grid mt-4">
-            <button type="submit" class="btn btn-primary" [disabled]="downloadingAcumulado">
-              <span *ngIf="!downloadingAcumulado">Descargar Reporte</span>
-              <span *ngIf="downloadingAcumulado">Descargando...</span>
-            </button>
-          </div>
         </form>
-      </div>
-    </ng-template>
+        
+        <div *ngIf="saving && !venta.errores" class="text-center py-4">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Anulando...</span>
+            </div>
+            <p class="mb-0">Anulando DTE...</p>
+        </div>
+    </div>
+</ng-template>

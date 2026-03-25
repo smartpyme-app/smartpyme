@@ -26,21 +26,14 @@ Route::get('/prueba', function () {
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
+// Ventas perdidas (reporte comparación sp_nova vs vps)
+Route::get('ventas-perdidas', [App\Http\Controllers\VentasPerdidasController::class, 'index'])->name('ventas.perdidas');
+Route::get('ventas-perdidas/excel', [App\Http\Controllers\VentasPerdidasController::class, 'excel'])->name('ventas.perdidas.excel');
+
+
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
 require base_path('routes/modulos/n1co/suscripciones-n1co.php');
-
-Route::group(['prefix' => 'payment'], function () {
-    Route::post('method', [N1coChargeController::class, 'createPaymentMethod']);
-    Route::post('process', [N1coChargeController::class, 'processCharge']);
-    Route::post('process-ready', [N1coChargeController::class, 'processChargeReady']);
-    Route::post('process/3ds', [N1coChargeController::class, 'processCharge3DS']);
-    Route::post('update-method-payment', [N1coChargeController::class, 'updateMethodPayment']);
-    Route::post('check-auth-status', [N1coChargeController::class, 'checkAuthenticationStatus']);
-    Route::get('validate/{paymentId}', [N1coChargeController::class, 'validatePayment']);
-    Route::get('{empresaId}', [N1coChargeController::class, 'checkout']);
-
-});
 
 // require base_path('routes/modulos/n1co/payment.php');
 require base_path('routes/modulos/auth.php');
@@ -64,11 +57,19 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/ventas/abonos.php');
 	require base_path('routes/modulos/ventas/clientes.php');
 
+	// Lealtad
+	require base_path('routes/modulos/fidelizacion.php');
+
+	// Cliente 360
+	require base_path('routes/modulos/cliente-360/cliente-360.php');
+	require base_path('routes/modulos/cliente-360/cliente-notas.php');
+
 	// Compras
 	require base_path('routes/modulos/compras/compras.php');
 	require base_path('routes/modulos/compras/detalles.php');
 	require base_path('routes/modulos/compras/devoluciones.php');
 	require base_path('routes/modulos/compras/gastos.php');
+	require base_path('routes/modulos/compras/gastos-abonos.php');
 	require base_path('routes/modulos/compras/proveedores.php');
 	require base_path('routes/modulos/compras/abonos.php');
 	require base_path('routes/modulos/compras/ordenes-de-compras.php');
@@ -83,6 +84,8 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/inventario/ajustes.php');
 	require base_path('routes/modulos/inventario/bodegas.php');
 	require base_path('routes/modulos/inventario/paquetes.php');
+	require base_path('routes/modulos/inventario/entradas-salidas.php');
+	require base_path('routes/modulos/inventario/lotes.php');
 
 	// Eventos
 	require base_path('routes/modulos/eventos/eventos.php');
@@ -100,6 +103,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/contabilidad/presupuestos.php');
 	require base_path('routes/modulos/contabilidad/proyectos.php');
 	require base_path('routes/modulos/contabilidad/libros-iva.php');
+
+	// Bancos
+	require base_path('routes/modulos/bancos/cuentas.php');
 
 	// Admin
 	require base_path('routes/modulos/admin/empresas.php');
@@ -125,7 +131,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/pagos.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
 
-	//require base_path('chatbot
+	//Crequire base_path('rhatbot
 	require base_path('routes/modulos/chat/chat.php');
 	//Funcionalidades
 	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
@@ -137,26 +143,17 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	require base_path('routes/modulos/planilla/empleados.php');
 	require base_path('routes/modulos/planilla/planillas.php');
+	require base_path('routes/modulos/planilla/prestamos.php');
+	require base_path('routes/modulos/planilla/aguinaldos.php');
+	require base_path('routes/modulos/planilla/configuraciones.php');
 	require base_path('routes/modulos/planilla/cargos.php');
-	require base_path('routes/modulos/planilla/departamentos-empresa.php');
-	require base_path('routes/modulos/planilla/areas-empresa.php');
+	require base_path('routes/modulos/planilla/departamentos-planilla.php');
 
 	require base_path('routes/modulos/planilla/historialcontratos.php');
-	//Funcionalidades
-	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
+
 });
 
-// Webhook
-require base_path('routes/modulos/webhook/webhook.php');
-
-// Route::get('/api/pago-completado/{id}', [AuthJWTController::class, 'pagoCompletado'])->name('pagoCompletado');
-
-
-//token
-
-require base_path('routes/modulos/token/token.php');
-
-
+//webhook
 
 require base_path('routes/modulos/webhook/webhook.php');
 

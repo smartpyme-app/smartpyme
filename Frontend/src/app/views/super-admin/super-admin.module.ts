@@ -33,6 +33,7 @@ import { AdminSucursalesComponent } from './sucursales/admin-sucursales.componen
 import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.component';
 
 import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones.component';
+import { AdminPromocionalesComponent } from './promocionales/admin-promocionales.component';
 
 import { EmpresasFuncionalidadesComponent } from './funcionalidades/empresas-funcionalidades.component';
 
@@ -66,6 +67,7 @@ import { EmpresasFuncionalidadesComponent } from './funcionalidades/empresas-fun
     AdminSucursalesComponent,
     AdminSucursalComponent,
     AdminSuscripcionesComponent,
+    AdminPromocionalesComponent,
     AdminSucursalComponent,
     EmpresasFuncionalidadesComponent
   ],

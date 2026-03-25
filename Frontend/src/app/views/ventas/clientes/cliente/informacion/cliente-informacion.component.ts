@@ -23,11 +23,36 @@ export class ClienteInformacionComponent implements OnInit {
   public municipios: any = [];
   public actividad_economicas: any = [];
   public contacto: any = {};
+  public vendedores: any = [];
   //loading
   public loading_contacto = false;
   public esNuevo = false;
+  public tipoAnterior = '';
+  public diasCreditoOpciones = [3, 8, 10, 15, 30, 45, 60];
 
   modalRef?: BsModalRef;
+
+  puedeEditarCreditoCliente(): boolean {
+    const tipo = this.apiService.auth_user()?.tipo || '';
+    return ['Administrador', 'Supervisor', 'Supervisor Limitado'].includes(tipo);
+  }
+
+  onHabilitaCreditoChange() {
+    if (this.cliente.habilita_credito && !this.cliente.dias_credito) {
+      const clasificacion = this.cliente.clasificacion?.toUpperCase();
+      if (clasificacion === 'A' || clasificacion === 'B') {
+        this.cliente.dias_credito = 30;
+      } else if (clasificacion === 'C') {
+        this.cliente.dias_credito = 15;
+      } else {
+        this.cliente.dias_credito = 30;
+      }
+    }
+    if (!this.cliente.habilita_credito) {
+      this.cliente.dias_credito = null;
+      this.cliente.limite_credito = null;
+    }
+  }
 
   constructor(
     public apiService: ApiService,
@@ -46,6 +71,16 @@ export class ClienteInformacionComponent implements OnInit {
     this.actividad_economicas = JSON.parse(
       localStorage.getItem('actividad_economicas')!
     );
+    
+    // Cargar vendedores
+    this.apiService.getAll('usuarios/list').subscribe(
+      (usuarios) => {
+        this.vendedores = usuarios;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
   }
 
   public loadAll() {
@@ -56,6 +91,7 @@ export class ClienteInformacionComponent implements OnInit {
         this.apiService.read('cliente/', params.id).subscribe(
           (cliente) => {
             this.cliente = cliente;
+            this.tipoAnterior = cliente.tipo;
             this.loading = false;
             if (!this.cliente.contactos) {
               this.cliente.contactos = [];
@@ -72,6 +108,9 @@ export class ClienteInformacionComponent implements OnInit {
         this.cliente.tipo = 'Persona';
         this.cliente.contactos = [];
         this.cliente.tipo_contribuyente = '';
+        this.cliente.habilita_credito = false;
+        this.cliente.dias_credito = null;
+        this.cliente.limite_credito = null;
         this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
         this.cliente.id_usuario = this.apiService.auth_user().id;
       }
@@ -139,38 +178,12 @@ export class ClienteInformacionComponent implements OnInit {
     this.cliente.cod_distrito = '';
   }
 
-  //   public onSubmit(): void {
-  //     this.saving = true;
-  //     console.log('Cliente', this.cliente);
-
-  //     this.apiService.store('cliente', this.cliente).subscribe(
-  //       (cliente) => {
-  //         if (!this.cliente.id) {
-  //           this.alertService.success(
-  //             'Cliente guardado',
-  //             'El cliente fue guardado exitosamente.'
-  //           );
-  //         } else {
-  //           this.alertService.success(
-  //             'Cliente creado',
-  //             'El cliente fue añadido exitosamente.'
-  //           );
-  //           this.router.navigate(['/clientes']);
-  //           this.cliente = cliente;
-  //           this.saving = false;
-  //         }
-  //       },
-  //       (error) => {
-  //         this.alertService.error(error);
-  //         this.saving = false;
-  //       }
-  //     );
-  //   }
-
   public onSubmit(): void {
     this.saving = true;
 
-    this.apiService.store('cliente', this.cliente).subscribe({
+    let routeUrl = this.esNuevo ? 'cliente' : 'cliente/update';
+
+    this.apiService.store(routeUrl, this.cliente).subscribe({
       next: (cliente) => {
         const titulo = this.esNuevo ? 'Cliente creado' : 'Cliente actualizado';
         const mensaje = this.esNuevo
@@ -181,8 +194,6 @@ export class ClienteInformacionComponent implements OnInit {
 
         this.cliente = cliente;
         if (this.esNuevo) {
-          //this.router.navigate(['/clientes']);
-          //cliente/editar
           this.router.navigate(['/cliente/editar', cliente.id]);
         }
 
@@ -401,5 +412,131 @@ export class ClienteInformacionComponent implements OnInit {
         }
       }
     });
+  }
+
+  onTipoChange() {
+      if (this.esNuevo) {
+          // Creando: limpiar todo
+          this.limpiarTodosSinTipo();
+      } else {
+          // Editando: mapeo inteligente
+          const tipoAnterior = this.tipoAnterior;
+          const nuevoTipo = this.cliente.tipo;
+          this.mapearCamposEntreTipos(tipoAnterior, nuevoTipo);
+      }
+      
+      this.tipoAnterior = this.cliente.tipo;
+  }
+
+  limpiarTodosSinTipo() {
+    // Campos comunes
+    this.cliente.codigo_cliente = '';
+    this.cliente.nombre = '';
+    this.cliente.apellido = '';
+    this.cliente.correo = '';
+    this.cliente.telefono = '';
+    this.cliente.direccion = '';
+    this.cliente.pais = '';
+    this.cliente.departamento = '';
+    this.cliente.municipio = '';
+    this.cliente.distrito = '';
+    
+    // Campos de persona
+    this.cliente.dui = '';
+    this.cliente.fecha_cumpleanos = '';
+    this.cliente.red_social = '';
+    this.cliente.etiquetas = [];
+    this.cliente.nota = '';
+    
+    // Campos de empresa
+    this.cliente.nombre_empresa = '';
+    this.cliente.nit = '';
+    this.cliente.ncr = '';
+    this.cliente.tipo_contribuyente = '';
+    this.cliente.giro = '';
+    this.cliente.empresa_telefono = '';
+    this.cliente.empresa_direccion = '';
+    
+    // Campos de extranjero
+    this.cliente.tipo_documento = '';
+    this.cliente.tipo_persona = '';
+    
+    // Códigos de ubicación
+    this.cliente.cod_pais = '';
+    this.cliente.cod_departamento = '';
+    this.cliente.cod_municipio = '';
+    this.cliente.cod_distrito = '';
+    this.cliente.cod_giro = '';
+  }
+
+  mapearCamposEntreTipos(desde: string, hacia: string) {
+    const datosComunes = {
+        codigo_cliente: this.cliente.codigo_cliente,
+        nombre: this.cliente.nombre,
+        apellido: this.cliente.apellido,
+        correo: this.cliente.correo,
+        telefono: this.cliente.telefono,
+        direccion: this.cliente.direccion,
+        pais: this.cliente.pais,
+        departamento: this.cliente.departamento,
+        municipio: this.cliente.municipio,
+        distrito: this.cliente.distrito
+    };
+ 
+    const mapeos: any = {
+        'Persona->Empresa': {
+            ...datosComunes,
+            nombre_empresa: [this.cliente.nombre, this.cliente.apellido]
+            .filter(Boolean)
+            .join(' ') || this.cliente.nombre_empresa || '',
+            empresa_telefono: this.cliente.telefono,
+            empresa_direccion: this.cliente.direccion
+        },
+        'Empresa->Persona': {
+            ...datosComunes,
+            telefono: this.cliente.empresa_telefono || this.cliente.telefono,
+            direccion: this.cliente.empresa_direccion || this.cliente.direccion
+        },
+        'Persona->Extranjero': {
+            ...datosComunes,
+            tipo_persona: 'Persona Natural',
+            tipo_documento: '13', // DUI
+            dui: this.cliente.dui
+        },
+        'Empresa->Extranjero': {
+            ...datosComunes,
+            nombre_empresa: this.cliente.nombre_empresa,
+            tipo_persona: 'Persona Juridica',
+            tipo_documento: '36', // NIT
+            giro: this.cliente.giro,
+            telefono: this.cliente.empresa_telefono || this.cliente.telefono
+        },
+        'Extranjero->Persona': {
+            ...datosComunes,
+            dui: this.cliente.dui
+        },
+        'Extranjero->Empresa': {
+            ...datosComunes,
+            nombre_empresa: this.cliente.nombre_empresa || this.cliente.nombre + ' ' + this.cliente.apellido,
+            giro: this.cliente.giro,
+            empresa_telefono: this.cliente.telefono
+        }
+    };
+ 
+    const clave = `${desde}->${hacia}`;
+    const mapeo = mapeos[clave];
+ 
+    if (mapeo) {
+        this.limpiarTodosSinTipo();
+        Object.assign(this.cliente, mapeo);
+        
+        this.alertService.info(
+            'Datos adaptados',
+            'Los campos se han adaptado automáticamente al nuevo tipo de cliente.'
+        );
+    } else {
+        this.limpiarTodosSinTipo();
+        Object.assign(this.cliente, datosComunes);
+    }
   }
 }

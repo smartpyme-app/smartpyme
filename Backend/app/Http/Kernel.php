@@ -3,10 +3,6 @@
 namespace App\Http;
 
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
-use Laravel\Passport\Http\Middleware\CheckClientCredentials;
-use App\Http\Middleware\CheckClientTokenAccess;
-use App\Http\Middleware\CheckClientToken;
-use App\Http\Middleware\CreateToken;
 
 class Kernel extends HttpKernel
 {
@@ -45,6 +41,7 @@ class Kernel extends HttpKernel
 
         'api' => [
             // 'throttle:240,1',
+            // \App\Http\Middleware\OptimizePerformance::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];
@@ -75,9 +72,6 @@ class Kernel extends HttpKernel
         'superadmin' => \App\Http\Middleware\SuperAdmin::class,
         'limite.usuarios' => \App\Http\Middleware\LimiteUsuarios::class,
         'limite.sucursales' => \App\Http\Middleware\LimiteSucursales::class,
-        'client' => CheckClientCredentials::class,
-        'CheckClientTokenAccess' => CheckClientTokenAccess::class,
-        'create_token' => CreateToken::class,
-        'token_client' => CheckClientToken::class,
+        'external.api' => \App\Http\Middleware\ExternalApiAuth::class,
     ];
 }

@@ -29,7 +29,12 @@ use App\Http\Controllers\Api\Ventas\Cotizaciones\CotizacionesController;
 
 
     Route::get('/set-campos-nuevos', function () {
-        $ventas = App\Models\Ventas\Venta::with('detalles', 'empresa')->get();
+        $ventas = App\Models\Ventas\Venta::with('detalles', 'empresa')
+        ->whereBetween('created_at', [
+            now()->subMonths(3)->startOfMonth(),
+            now()->endOfMonth()
+        ])          
+        ->get();
 
         foreach ($ventas as $venta) {
             if ($venta->iva > 0) {
@@ -52,7 +57,12 @@ use App\Http\Controllers\Api\Ventas\Cotizaciones\CotizacionesController;
             $venta->save();
         }
 
-        $compras = App\Models\Compras\Compra::with('empresa')->get();
+        $compras = App\Models\Compras\Compra::with('empresa')
+        ->whereBetween('created_at', [
+          now()->subMonths(3)->startOfMonth(),
+          now()->endOfMonth()
+      ])          
+      ->get();
 
         foreach ($compras as $compra) {
             if ($compra->iva > 0) {
@@ -68,7 +78,12 @@ use App\Http\Controllers\Api\Ventas\Cotizaciones\CotizacionesController;
 
         }
 
-        $gastos = App\Models\Compras\Gastos\Gasto::with('empresa')->get();
+        $gastos = App\Models\Compras\Gastos\Gasto::with('empresa')
+        ->whereBetween('created_at', [
+          now()->subMonths(3)->startOfMonth(),
+          now()->endOfMonth()
+      ])          
+      ->get();
 
         foreach ($gastos as $gasto) {
             if ($gasto->iva > 0) {
@@ -84,6 +99,6 @@ use App\Http\Controllers\Api\Ventas\Cotizaciones\CotizacionesController;
 
         }
 
-        return 'Datos actualizados correctamente.';
+         return response()->json($ventas, 200);
     });
 

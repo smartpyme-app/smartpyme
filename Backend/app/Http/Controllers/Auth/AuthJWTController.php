@@ -24,8 +24,11 @@ use JWTAuth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\Notificacion;
+use App\Models\EmpresaConfiguracionPlanilla;
 use App\Models\Plan;
+use App\Models\Promocional;
 use App\Models\Suscripcion;
+use App\Services\Planilla\PlanillaTemplatesService;
 use App\Services\Suscripcion\SuscripcionService;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
@@ -72,11 +75,19 @@ class AuthJWTController extends Controller
         $acceso->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
+        
+        // Agregar información sobre el tipo de empresa (padre/hija)
+        if ($user->empresa) {
+            $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
+            $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+        }
+        
         $suscripcion = $user->empresa->suscripcion()
-            ->whereNotIn('estado', [
-                config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
-                config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
-            ])
+            //Esto nos rompio las pelotas >:(
+            // ->whereNotIn('estado', [
+            //     config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+            //     config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+            // ])
             ->latest()
             ->first();
         $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
@@ -210,7 +221,57 @@ class AuthJWTController extends Controller
             $empresa->validador_nit = $mascara_nit;
             $empresa->validador_nrc = $mascara_nrc;
             $empresa->validador_telefono = $mascara_telefono;
-            $empresa->total   = $request['empresa']['total'];
+            
+            // Obtener frecuencia_pago (puede venir como frecuencia_pago o tipo_plan)
+            $frecuenciaPago = $request['empresa']['frecuencia_pago'] ?? $request['empresa']['tipo_plan'] ?? 'Mensual';
+            
+            // Calcular el total original basándose en el plan y frecuencia de pago
+            $plan = $this->getPlan($request['empresa']['plan']);
+            $precioMensual = $this->calcularTotalOriginal($plan, 'Mensual');
+            
+            // Calcular el total según la frecuencia de pago
+            $totalOriginal = $precioMensual;
+            if ($frecuenciaPago === 'Trimestral') {
+                $totalOriginal = $precioMensual * 3;
+            } elseif ($frecuenciaPago === 'Anual') {
+                // Aplicar 20% de descuento al plan anual
+                $totalOriginal = ($precioMensual * 12) * 0.8;
+            }
+            
+            // Aplicar código promocional si viene en el request
+            $codigoPromocional = isset($request['empresa']['codigo_promocional']) && !empty($request['empresa']['codigo_promocional']) 
+                ? $request['empresa']['codigo_promocional'] 
+                : null;
+            
+            // Guardar código promocional en la empresa (sin aplicar descuento aún)
+            if ($codigoPromocional) {
+                $empresa->codigo_promocional = $codigoPromocional;
+            }
+            
+            // Calcular montos mensual y anual con descuentos aplicados
+            $montoMensual = $this->calcularMontoMensual($precioMensual, $codigoPromocional);
+            $montoAnual = $this->calcularMontoAnual($precioMensual, $codigoPromocional);
+            
+            // Obtener configuración del código promocional SIN validar planes (para obtener campaña)
+            // Esto permite guardar la campaña para tracking incluso si el código no aplica al plan seleccionado
+            $promocionalParaCampania = null;
+            if ($codigoPromocional) {
+                $promocionalParaCampania = $this->obtenerConfiguracionCodigoPromocional($codigoPromocional, null);
+                // Guardar campaña si existe (para tracking de alianzas/partnerships)
+                if ($promocionalParaCampania && $promocionalParaCampania->campania) {
+                    $empresa->campania = $promocionalParaCampania->campania;
+                }
+            }
+            
+            // Aplicar código promocional al total según la frecuencia seleccionada
+            // Aquí SÍ se valida el plan para aplicar el descuento
+            $resultadoPromocional = $this->aplicarCodigoPromocional($empresa, $codigoPromocional, $totalOriginal, $frecuenciaPago);
+            
+            $empresa->total = $resultadoPromocional['total'];
+            $empresa->tipo_plan = $frecuenciaPago; // Guardar la frecuencia de pago como tipo_plan
+            $empresa->frecuencia_pago = $frecuenciaPago; // Guardar frecuencia de pago
+            $empresa->monto_mensual = $montoMensual; // Guardar monto mensual con descuentos
+            $empresa->monto_anual = $montoAnual; // Guardar monto anual con descuentos (incluye 20% + código promocional)
             $empresa->moneda = $request['empresa']['moneda'];
             $empresa->save();
 
@@ -239,6 +300,8 @@ class AuthJWTController extends Controller
                 Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
                 Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_COTIZACION'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
                 Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+
+                $this->createPlanillaConfiguration($empresa);
             }
 
             if ($request->id) {
@@ -262,19 +325,31 @@ class AuthJWTController extends Controller
             DB::commit();
 
             $plan = $this->getPlan($request['empresa']['plan']);
+            
+            // Usar el total con descuento aplicado (ya incluye el total según frecuencia de pago)
+            $montoSuscripcion = $empresa->total;
+            
+            // Calcular fin_periodo_prueba: si hay código promocional válido, usar el día actual
+            $finPeriodoPrueba = $this->calcularFinPeriodoPrueba($codigoPromocional, $plan, $empresa->tipo_plan);
+            
+            // Calcular fecha_proximo_pago según la frecuencia de pago
+            Log::info('Frecuencia de pago: ' . $empresa->tipo_plan);
+            $fechaProximoPago = $this->calcularFechaProximoPago($empresa->tipo_plan);
+            Log::info('Fecha próximo pago: ' . $fechaProximoPago);
+            
             $suscripcion = $this->createSuscripcion([
                 'empresa_id' => $empresa->id,
                 'plan_id' => $plan->id,
                 'usuario_id' => $usuario->id,
-                'tipo_plan' => $empresa->tipo_plan,
+                'tipo_plan' => $empresa->tipo_plan, // Guarda la frecuencia: Mensual, Trimestral o Anual
                 'estado' => config('constants.ESTADO_SUSCRIPCION_PRUEBA'),
-                'monto' => $plan->precio,
+                'monto' => $montoSuscripcion, // Total a pagar según frecuencia (con descuentos aplicados)
                 'id_pago' => null,
                 'id_orden' => null,
                 'estado_ultimo_pago' => null,
                 'fecha_ultimo_pago' => null,
-                'fecha_proximo_pago' => null,
-                'fin_periodo_prueba' => now()->addDays($this->getPlan($request['empresa']['plan'])->duracion_dias),
+                'fecha_proximo_pago' => $fechaProximoPago, // Próximo pago según frecuencia
+                'fin_periodo_prueba' => $finPeriodoPrueba,
                 'fecha_cancelacion' => null,
                 'motivo_cancelacion' => null,
                 'requiere_factura' => false,
@@ -288,34 +363,6 @@ class AuthJWTController extends Controller
 
             $usuario->empresa = $usuario->empresa()->first();
 
-            // if ($empresa->plan == config('constants.PLAN_EMPRENDEDOR')){
-            //     $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
-            // }
-            // if ($empresa->plan == config('constants.PLAN_ESTANDAR')){
-            //     $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
-            // }
-            // if ($empresa->plan == config('constants.PLAN_AVANZADO')){
-            //     $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
-            // }
-            // if ($empresa->plan == config('constants.PLAN_PRO')){
-            //     $usuario->url_n1co = config('constants.URL_N1CO_PRO');
-            // }
-
-
-            // $paymentLink = $this->createPaymentLink([
-            //     'name' => "SmartPyme Plan " . $empresa->plan,
-            //     'description' => "Suscripción SmartPyme - Plan " . $empresa->plan,
-            //     'amount' => $empresa->total,
-            //     'user_id' => $usuario->id,
-            //     'plan' => $empresa->plan
-            // ]);
-
-            // if ($paymentLink['success']) {
-            //     $usuario->url_n1co = $paymentLink['paymentLinkUrl'];
-            //     Log::info('URL de pago generada:', ['url' => $usuario->url_n1co]);
-            // } else {
-            // Log::error('Error al generar la URL de pago:', ['error' => $paymentLink['error']]);
-            // Usar URLs por defecto como fallback
             switch ($empresa->plan) {
                 case config('constants.PLAN_EMPRENDEDOR'):
                     $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
@@ -427,7 +474,7 @@ class AuthJWTController extends Controller
 
         $transaccion = Empresa::findOrfail(Crypt::decrypt($transaccion));
 
-        $pdf = PDF::loadView('documentos.ticket-suscription', compact('transaccion'));
+        $pdf = app('dompdf.wrapper')->loadView('documentos.ticket-suscription', compact('transaccion'));
         $pdf->setPaper([0, 0, 365.669, 566.929133858]);
 
         return $pdf->download($transaccion->descripcion . '-' . $transaccion->id . '.pdf');
@@ -697,17 +744,23 @@ class AuthJWTController extends Controller
     private function createSuscripcion(array $data): array
     {
         $plan = Plan::find($data['plan_id']);
+        
+        // Preservar el monto con descuento si ya viene en los datos
+        $monto = $data['monto'] ?? $plan->precio;
 
         if ($plan && $plan->permite_periodo_prueba) {
             $diasPrueba = $plan->dias_periodo_prueba;
+            
+            // Preservar fin_periodo_prueba si ya viene en los datos (útil para códigos promocionales)
+            $finPeriodoPrueba = $data['fin_periodo_prueba'] ?? now()->addDays($diasPrueba);
 
             $data = array_merge($data, [
                 'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'), // Cambiar estado a 'prueba'
                 'estado_ultimo_pago' => null,
                 'fecha_ultimo_pago' => null, // No hay pago inicial en período de prueba
                 'fecha_proximo_pago' => now()->addDays($diasPrueba), // Próximo pago al finalizar la prueba
-                'fin_periodo_prueba' => now()->addDays($diasPrueba),
-                'monto' => $plan->precio, // Sin costo durante el período de prueba
+                'fin_periodo_prueba' => $finPeriodoPrueba,
+                'monto' => $monto, // Usar el monto con descuento aplicado
                 'intentos_cobro' => 0,
                 'ultimo_intento_cobro' => null,
                 'historial_pagos' => null,
@@ -722,7 +775,8 @@ class AuthJWTController extends Controller
                 'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
                 'fecha_ultimo_pago' => null,
                 'fecha_proximo_pago' => null,
-                'fin_periodo_prueba' => null
+                'fin_periodo_prueba' => null,
+                'monto' => $monto // Usar el monto con descuento aplicado
             ]);
         }
 
@@ -741,6 +795,165 @@ class AuthJWTController extends Controller
         return $plan;
     }
 
+    /**
+     * Calcula el total original basándose en el plan y tipo de plan
+     * 
+     * @param Plan $plan
+     * @param string $tipoPlan
+     * @return float
+     */
+    private function calcularTotalOriginal($plan, $tipoPlan)
+    {
+        if (!$plan) {
+            return 0;
+        }
+
+        // Si el plan tiene precio definido, usarlo
+        if ($plan->precio) {
+            return floatval($plan->precio);
+        }
+
+        // Si no tiene precio, calcular basándose en el nombre del plan y tipo
+        $planNombre = strtolower($plan->nombre ?? '');
+        $esMensual = strtolower($tipoPlan) === 'mensual';
+
+        // Precios por plan (Mensual / Anual)
+        $precios = [
+            'emprendedor' => ['mensual' => 16.95, 'anual' => 203.4],
+            'estándar' => ['mensual' => 28.25, 'anual' => 339],
+            'estandar' => ['mensual' => 28.25, 'anual' => 339],
+            'avanzado' => ['mensual' => 56.5, 'anual' => 678],
+            'pro' => ['mensual' => 113, 'anual' => 1220]
+        ];
+
+        foreach ($precios as $nombre => $precio) {
+            if (strpos($planNombre, $nombre) !== false) {
+                return $esMensual ? $precio['mensual'] : $precio['anual'];
+            }
+        }
+
+        // Si no se encuentra, usar el precio del plan si existe
+        return $plan->precio ?? 0;
+    }
+
+    /**
+     * Obtiene la configuración de un código promocional desde la base de datos
+     * 
+     * @param string $codigo
+     * @param string|null $tipoPlan Tipo de plan para validar planes permitidos
+     * @return Promocional|null
+     */
+    private function obtenerConfiguracionCodigoPromocional($codigo, $tipoPlan = null)
+    {
+        if (empty($codigo)) {
+            return null;
+        }
+
+        $codigoUpper = strtoupper(trim($codigo));
+        
+        // Buscar el código promocional en la base de datos
+        $promocional = Promocional::where('codigo', $codigoUpper)
+            ->where('activo', true)
+            ->first();
+
+        if (!$promocional) {
+            return null;
+        }
+
+        // Validar fechas de expiración si están definidas
+        $opciones = $promocional->opciones ?? [];
+        if (isset($opciones['fecha_expiracion'])) {
+            $fechaExpiracion = Carbon::parse($opciones['fecha_expiracion']);
+            if (now()->gt($fechaExpiracion)) {
+                return null; // Código expirado
+            }
+        }
+
+        if (isset($opciones['fecha_inicio'])) {
+            $fechaInicio = Carbon::parse($opciones['fecha_inicio']);
+            if (now()->lt($fechaInicio)) {
+                return null; // Código aún no válido
+            }
+        }
+
+        // Validar planes permitidos si están definidos
+        if ($tipoPlan && !empty($promocional->planes_permitidos)) {
+            $planesPermitidos = array_map('strtolower', $promocional->planes_permitidos);
+            $tipoPlanLower = strtolower($tipoPlan);
+            if (!in_array($tipoPlanLower, $planesPermitidos)) {
+                return null; // Plan no permitido para este código
+            }
+        }
+
+        return $promocional;
+    }
+
+    /**
+     * Aplica las reglas de códigos promocionales a la empresa
+     * 
+     * @param Empresa $empresa
+     * @param string|null $codigoPromocional
+     * @param float $totalOriginal
+     * @param string|null $tipoPlan Tipo de plan para validar planes permitidos
+     * @return array ['total' => float, 'campania' => string|null]
+     */
+    private function aplicarCodigoPromocional($empresa, $codigoPromocional, $totalOriginal, $tipoPlan = null)
+    {
+        $total = $totalOriginal;
+        $campania = null;
+
+        if (!empty($codigoPromocional)) {
+            // Guardar código promocional en la empresa
+            $empresa->codigo_promocional = $codigoPromocional;
+
+            // Obtener configuración del código promocional desde la base de datos
+            $promocional = $this->obtenerConfiguracionCodigoPromocional($codigoPromocional, $tipoPlan);
+            
+            if ($promocional) {
+                // Aplicar descuento según el tipo
+                if ($promocional->tipo === 'porcentaje') {
+                    // Descuento por porcentaje (descuento está en formato decimal, ej: 50.00 = 50%)
+                    $descuentoDecimal = $promocional->descuento / 100;
+                    $total = $totalOriginal * (1 - $descuentoDecimal);
+                } elseif ($promocional->tipo === 'monto_fijo') {
+                    // Descuento por monto fijo
+                    $total = max(0, $totalOriginal - $promocional->descuento);
+                }
+                
+                // Establecer campaña si está definida
+                if ($promocional->campania) {
+                    $empresa->campania = $promocional->campania;
+                    $campania = $promocional->campania;
+                }
+            }
+        }
+
+        return [
+            'total' => $total,
+            'campania' => $campania
+        ];
+    }
+
+    /**
+     * Calcula la fecha de fin del período de prueba
+     * Si hay código promocional válido, retorna la fecha actual (sin período de prueba)
+     * Si no hay código promocional, retorna la fecha actual más los días de duración del plan
+     * 
+     * @param string|null $codigoPromocional
+     * @param Plan $plan
+     * @param string|null $tipoPlan
+     * @return Carbon
+     */
+    private function calcularFinPeriodoPrueba($codigoPromocional, $plan, $tipoPlan = null)
+    {
+        $tieneCodigoPromocional = !empty($codigoPromocional) && 
+                                  $this->obtenerConfiguracionCodigoPromocional($codigoPromocional, $tipoPlan) !== null;
+        
+        return $tieneCodigoPromocional 
+            ? now() 
+            : now()->addDays($plan->duracion_dias ?? 0);
+    }
+
     public function me($id)
     {
         $user = User::find($id);
@@ -753,6 +966,13 @@ class AuthJWTController extends Controller
         $user->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
+        
+        // Agregar información sobre el tipo de empresa (padre/hija)
+        if ($user->empresa) {
+            $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
+            $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+        }
+        
         $suscripcion = $user->empresa->suscripcion()
             ->whereNotIn('estado', [
                 config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
@@ -773,5 +993,142 @@ class AuthJWTController extends Controller
         $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
 
         return response()->json(['user' => $user], 200);
+    }
+
+    private function createPlanillaConfiguration($empresa)
+    {
+        try {
+            $codPais = $this->mapearCodigoPais($empresa->pais ?? 'El Salvador');
+            
+            EmpresaConfiguracionPlanilla::create([
+                'empresa_id' => $empresa->id,
+                'cod_pais' => $codPais,
+                'configuracion' => PlanillaTemplatesService::getConfiguracionPorPais($codPais),
+                'activo' => true,
+                'fecha_vigencia_desde' => now(),
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error creando configuración: {$e->getMessage()}");
+        }
+    }
+
+    private function mapearCodigoPais($nombrePais)
+    {
+        $mapeo = [
+            'El Salvador' => 'SV',
+            'Guatemala' => 'GT', 
+            'Honduras' => 'HN',
+            'Nicaragua' => 'NI',
+            'Costa Rica' => 'CR',
+            'Panama' => 'PA',
+            'Panamá' => 'PA',
+            'Belice' => 'BZ'
+        ];
+
+        return $mapeo[$nombrePais] ?? 'SV';
+    }
+
+    /**
+     * Establece la frecuencia de pago en la empresa
+     */
+    private function setFrecuenciaPago($empresa, $frecuenciaPago)
+    {
+        $empresa->frecuencia_pago = $frecuenciaPago;
+        $empresa->save();
+        return $frecuenciaPago;
+    }
+
+    /**
+     * Establece el monto mensual en la empresa
+     */
+    private function setMontoMensual($empresa, $montoMensual)
+    {
+        $empresa->monto_mensual = $montoMensual;
+        $empresa->save();
+        return $montoMensual;
+    }
+
+    /**
+     * Establece el monto anual en la empresa
+     */
+    private function setMontoAnual($empresa, $montoAnual)
+    {
+        $empresa->monto_anual = $montoAnual;
+        $empresa->save();
+        return $montoAnual;
+    }
+
+    /**
+     * Calcula el monto mensual con descuentos aplicados del código promocional
+     */
+    private function calcularMontoMensual($precioMensual, $codigoPromocional = null)
+    {
+        $montoMensual = $precioMensual;
+        
+        if (empty($codigoPromocional)) {
+            return $montoMensual;
+        }
+        
+        $promocional = $this->obtenerConfiguracionCodigoPromocional($codigoPromocional, 'Mensual');
+        
+        if (!$promocional) {
+            return $montoMensual;
+        }
+        
+        if ($promocional->tipo === 'porcentaje') {
+            $descuentoDecimal = $promocional->descuento / 100;
+            $montoMensual = $precioMensual * (1 - $descuentoDecimal);
+        } elseif ($promocional->tipo === 'monto_fijo') {
+            $montoMensual = max(0, $precioMensual - $promocional->descuento);
+        }
+        
+        return $montoMensual;
+    }
+
+    /**
+     * Calcula el monto anual con descuentos aplicados (20% de descuento anual + código promocional si aplica)
+     */
+    private function calcularMontoAnual($precioMensual, $codigoPromocional = null)
+    {
+        // Calcular precio anual con 20% de descuento
+        $precioAnualSinDescuento = $precioMensual * 12;
+        $precioAnualConDescuento20 = $precioAnualSinDescuento * 0.8; // 20% de descuento anual
+        $montoAnual = $precioAnualConDescuento20;
+        
+        if (empty($codigoPromocional)) {
+            return $montoAnual;
+        }
+        
+        $promocional = $this->obtenerConfiguracionCodigoPromocional($codigoPromocional, 'Anual');
+        
+        if (!$promocional) {
+            return $montoAnual;
+        }
+        
+        if ($promocional->tipo === 'porcentaje') {
+            $descuentoDecimal = $promocional->descuento / 100;
+            $montoAnual = $precioAnualConDescuento20 * (1 - $descuentoDecimal);
+        } elseif ($promocional->tipo === 'monto_fijo') {
+            $montoAnual = max(0, $precioAnualConDescuento20 - $promocional->descuento);
+        }
+        
+        return $montoAnual;
+    }
+
+    /**
+     * Calcula la fecha del próximo pago según la frecuencia de pago
+     */
+    private function calcularFechaProximoPago($frecuenciaPago)
+    {
+        switch ($frecuenciaPago) {
+            case config('constants.FRECUENCIA_PAGO_TRIMESTRAL'):    
+                return now()->addMonths(3);
+            case config('constants.FRECUENCIA_PAGO_ANUAL'):
+                return now()->addMonths(12);
+            case config('constants.FRECUENCIA_PAGO_MENSUAL'):
+            default:
+                return now()->addMonth();
+        }
     }
 }

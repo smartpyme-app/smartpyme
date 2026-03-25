@@ -37,6 +37,7 @@
     <div class="d-flex mb-3">
         <div class="col d-flex gap-2">
             <button class="btn btn-primary tcla-F5" tooltip="Filtrar (F5)"  (click)="loadAll()">Todos</button>
+            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/gastos/abonos">Abonos</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/gastos/recurrentes">Recurrentes</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
@@ -97,7 +98,8 @@
                         <td>{{gasto.tipo_documento}} #{{gasto.referencia}}</td>
                         <td>{{gasto.forma_pago}}</td>
                         <td>
-                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado', 'bg-warning' : gasto.estado == 'Pendiente', 'bg-success' : gasto.estado == 'Confirmado'}">
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado', 'bg-warning' : gasto.estado == 'Pendiente', 'bg-danger' : gasto.estado == 'Anulada', 
+                            'bg-success' : gasto.estado == 'Confirmado', 'bg-info' : gasto.estado == 'Pagado'}">
                                 {{ gasto.estado }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && gasto.sello_mh">
                                     ✅
@@ -121,8 +123,8 @@
                                     <a routerLink="/gasto/detalles/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="gasto.estado == 'Pendiente' && apiService.canEdit()" (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fas fa-fw fa-credit-card"></i> Pagar
+                                    <a *ngIf="gasto.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, gasto)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar gasto
                                     </a>
                                     <a *ngIf="apiService.canEdit()" routerLink="/gasto/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
@@ -130,7 +132,7 @@
                                     <a *ngIf="gasto.recurrente == 0 && apiService.canEdit()" (click)="setRecurrencia(gasto)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
                                     </a>
-                                    <a *ngIf="gasto.estado != 'Cancelado' && apiService.canEdit()" (click)="gasto.estado = 'Cancelado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="gasto.estado != 'Cancelado' && apiService.canEdit()" (click)="gasto.estado = 'Cancelado'; anularDTE(gasto);" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Cancelar
                                     </a>
                                     <a *ngIf="gasto.estado == 'Cancelado' && apiService.canEdit()" (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
@@ -305,4 +307,14 @@
 
         </div>
   </div>
+</ng-template>
+
+<ng-template #mabono>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">Recibo de pago </h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-crear-abono-gasto [gasto]="gasto" (update)="filtrarGastos()"></app-crear-abono-gasto>
+    </div>
 </ng-template>

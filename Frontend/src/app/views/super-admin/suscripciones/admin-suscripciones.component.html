@@ -1,14 +1,28 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Estado de empresas</h2>
-  <button routerLink="/admin/empresa/crear"  tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir empresa</button>
+  <button
+    routerLink="/admin/empresa/crear"
+    tooltip="Crear empresa (F4)"
+    class="btn btn-default tcla-F4"
+  >
+    <i class="fa fa-plus"></i> Añadir empresa
+  </button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
   <div class="row">
     <div class="col-md-6 mb-3">
-      <span class="text-muted d-flex align-items-center gap-2" *ngIf="suscripciones?.total">
+      <span
+        class="text-muted d-flex align-items-center gap-2"
+        *ngIf="suscripciones?.total"
+      >
         Mostrando
-        <select name="paginate" class="form-select w-auto" (change)="filtrarSuscripciones()" [(ngModel)]="filtros.paginate">
+        <select
+          name="paginate"
+          class="form-select w-auto"
+          (change)="filtrarSuscripciones()"
+          [(ngModel)]="filtros.paginate"
+        >
           <option value="10">10</option>
           <option value="25">25</option>
           <option value="50">50</option>
@@ -22,6 +36,14 @@
         <!-- <form class="d-flex input-group" name="form" (ngSubmit)="filtrarSuscripciones()" autocomplete="off">
               <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
           </form> -->
+        <button
+          [disabled]="downloading"
+          tooltip="Descargar suscripciones"
+          (click)="descargar()"
+          class="btn btn-default tcla-F6"
+        >
+          <img src="/assets/icons/download.png" class="icon" />
+        </button>
         <form
           class="d-flex input-group"
           name="form"
@@ -90,22 +112,128 @@
       <table class="table table-borderless table-hover mb-0">
         <thead>
           <tr>
-            <th>Empresa</th>
-            <th>Plan</th>
-            <th>Tipo Plan</th>
-            <th class="text-center">Metodo de pago</th>
+            <th
+              (click)="setOrden('nombre')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'nombre' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'nombre' && filtros.direccion == 'desc'
+              }"
+              class="click"
+            >
+              Empresa
+            </th>
+            <th
+              (click)="setOrden('campania')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'campania' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'campania' && filtros.direccion == 'desc'
+              }"
+              class="click"
+            >
+              Campaña
+            </th>
+            <th
+              (click)="setOrden('plan')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'plan' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'plan' && filtros.direccion == 'desc'
+              }"
+              class="click"
+            >
+              Plan
+            </th>
+            <th
+              (click)="setOrden('tipo_plan')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'tipo_plan' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'tipo_plan' && filtros.direccion == 'desc'
+              }"
+              class="click text-center"
+            >
+              Tipo Plan
+            </th>
+            <th
+              (click)="setOrden('metodo_pago')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'metodo_pago' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'metodo_pago' && filtros.direccion == 'desc'
+              }"
+              class="click text-center"
+            >
+              Método de pago
+            </th>
             <th>Monto</th>
-            <th class="text-center">Estado suscripción</th>
-            <th class="text-center">Estado pago</th>
-            <th>Último pago</th>
-            <th>Próximo pago</th>
+            <th
+              (click)="setOrden('estado_suscripcion')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'estado_suscripcion' &&
+                  filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'estado_suscripcion' &&
+                  filtros.direccion == 'desc'
+              }"
+              class="click text-center"
+            >
+              Estado suscripción
+            </th>
+            <th
+              (click)="setOrden('estado_pago')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'estado_pago' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'estado_pago' && filtros.direccion == 'desc'
+              }"
+              class="click text-center"
+            >
+              Estado pago
+            </th>
+            <th
+              (click)="setOrden('fecha_ultimo_pago')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'fecha_ultimo_pago' &&
+                  filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'fecha_ultimo_pago' &&
+                  filtros.direccion == 'desc'
+              }"
+              class="click"
+            >
+              Último pago
+            </th>
+            <th
+              (click)="setOrden('fecha_proximo_pago')"
+              [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'fecha_proximo_pago' &&
+                  filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'fecha_proximo_pago' &&
+                  filtros.direccion == 'desc'
+              }"
+              class="click"
+            >
+              Próximo pago
+            </th>
             <th class="text-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td
-              colspan="8"
+              colspan="11"
               class="text-center"
               *ngIf="suscripciones?.total < 1 && !loading"
             >
@@ -113,13 +241,16 @@
                 >No hay suscripciones registradas</span
               >
             </td>
-            <td colspan="8" class="text-center" *ngIf="loading">
+            <td colspan="11" class="text-center" *ngIf="loading">
               <span class="badge bg-primary">Cargando...</span>
             </td>
           </tr>
 
           <tr *ngFor="let empresa of suscripciones?.data">
             <td>{{ empresa.nombre }}</td>
+            <td>
+              <span class="text-muted">{{ empresa?.campania ?? "-" }}</span>
+            </td>
             <td>
               <span *ngIf="!empresa.suscripcion" class="text-muted">{{
                 empresa.plan
@@ -149,7 +280,8 @@
                   'bg-success':
                     empresa.suscripcion?.estado.toLowerCase() == 'activo',
                   'bg-danger':
-                    empresa.suscripcion?.estado.toLowerCase() == 'cancelado' || empresa.suscripcion?.estado.toLowerCase() == 'suspendido',
+                    empresa.suscripcion?.estado.toLowerCase() == 'cancelado' ||
+                    empresa.suscripcion?.estado.toLowerCase() == 'suspendido',
                   'bg-warning':
                     empresa.suscripcion?.estado.toLowerCase() == 'vencido',
                   'bg-info':
@@ -219,8 +351,11 @@
               </span>
               <ng-template #accionesTemplate>
                 <div class="list-group border-0">
-                  <a routerLink="/admin/empresa/{{empresa.id}}" class="list-group-item list-group-item-action border-0 click">
-                      <i class="fa fa-fw fa-edit"></i> Editar
+                  <a
+                    routerLink="/admin/empresa/{{ empresa.id }}"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
+                    <i class="fa fa-fw fa-edit"></i> Editar
                   </a>
                   <a
                     *ngIf="empresa.suscripcion"
@@ -372,6 +507,24 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Frecuencia de Pago:</label>
+          <select
+            class="form-select"
+            [(ngModel)]="suscripcion.frecuencia_pago"
+            name="frecuencia_pago"
+            (change)="onFrecuenciaPagoChange(suscripcion.frecuencia_pago, true)"
+          >
+            <option value="">Seleccione frecuencia</option>
+            <option value="Mensual">Mensual</option>
+            <option value="Trimestral">Trimestral</option>
+            <option value="Anual">Anual</option>
+          </select>
+          <small class="text-muted">
+            Frecuencia de pago de la suscripción
+          </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
           <label class="form-label">Estado:</label>
           <select
             class="form-select"
@@ -428,7 +581,7 @@
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto:</label>
           <div class="input-group">
-            <span class="input-group-text">$</span>
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
             <input
               type="number"
               class="form-control"
@@ -437,8 +590,45 @@
               step="0.01"
               min="0"
               required
+              (ngModelChange)="onMontoChange($event, true)"
             />
           </div>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Monto Mensual:</label>
+          <div class="input-group">
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="suscripcion.monto_mensual"
+              name="monto_mensual"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <small class="text-muted">
+            Monto mensual de la empresa
+          </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Monto Anual:</label>
+          <div class="input-group">
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="suscripcion.monto_anual"
+              name="monto_anual"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <small class="text-muted">
+            Monto anual de la empresa
+          </small>
         </div>
 
         <div class="form-group col-md-6 mb-3">
@@ -463,7 +653,33 @@
           />
         </div>
         <div class="form-group col-md-6 mb-3">
-          <label class="form-label">NIT:</label>
+          <label class="form-label">Código Promocional:</label>
+          <select
+            class="form-select"
+            [(ngModel)]="suscripcion.codigo_promocional"
+            name="codigo_promocional"
+          >
+            <option value="">Ninguno (sin código promocional)</option>
+            <option
+              *ngFor="let codigo of codigosPromocionales"
+              [value]="codigo.codigo"
+            >
+              {{ getCodigoPromocionalDisplay(codigo) }}
+            </option>
+          </select>
+          <small class="text-muted" *ngIf="!suscripcion.codigo_promocional">
+            Código promocional aplicado a esta suscripción
+          </small>
+          <small class="text-success" *ngIf="suscripcion.codigo_promocional">
+            <i class="fa fa-check-circle"></i> {{ getDescuentoCodigoPromocional(suscripcion.codigo_promocional, true) }}
+          </small>
+          <div *ngIf="loadingCodigosPromocionales" class="text-muted mt-1">
+            <i class="fas fa-spinner fa-spin"></i> Cargando códigos...
+          </div>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT:' : 'Identificación fiscal:' }}</label>
           <input
             type="text"
             class="form-control"
@@ -556,17 +772,22 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
-          <label class="form-label">Tipo pago:</label>
+          <label class="form-label">Frecuencia de Pago:</label>
           <select
             class="form-select"
-            [(ngModel)]="nuevaSuscripcion.tipo_plan"
-            name="tipo_plan"
+            [(ngModel)]="nuevaSuscripcion.frecuencia_pago"
+            name="frecuencia_pago"
             required
+            (change)="onFrecuenciaPagoChange(nuevaSuscripcion.frecuencia_pago, false)"
           >
-            <option value="">Seleccione tipo de pago</option>
+            <option value="">Seleccione frecuencia</option>
             <option value="Mensual">Mensual</option>
+            <option value="Trimestral">Trimestral</option>
             <option value="Anual">Anual</option>
           </select>
+          <small class="text-muted">
+            Frecuencia de pago de la suscripción
+          </small>
         </div>
 
         <div class="form-group col-md-6 mb-3">
@@ -626,7 +847,7 @@
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto:</label>
           <div class="input-group">
-            <span class="input-group-text">$</span>
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
             <input
               type="number"
               class="form-control"
@@ -636,12 +857,49 @@
               min="0"
               required
               [class.bg-light]="true"
+              (ngModelChange)="onMontoChange($event, false)"
             />
           </div>
           <small class="text-muted"
             >El monto se establece automáticamente según el plan
             seleccionado</small
           >
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Monto Mensual:</label>
+          <div class="input-group">
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="nuevaSuscripcion.monto_mensual"
+              name="monto_mensual"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <small class="text-muted">
+            Monto mensual de la empresa
+          </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Monto Anual:</label>
+          <div class="input-group">
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="nuevaSuscripcion.monto_anual"
+              name="monto_anual"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <small class="text-muted">
+            Monto anual de la empresa
+          </small>
         </div>
 
         <div class="form-group col-md-6 mb-3">
@@ -667,7 +925,33 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
-          <label class="form-label">NIT:</label>
+          <label class="form-label">Código Promocional:</label>
+          <select
+            class="form-select"
+            [(ngModel)]="nuevaSuscripcion.codigo_promocional"
+            name="codigo_promocional"
+          >
+            <option value="">Ninguno (sin código promocional)</option>
+            <option
+              *ngFor="let codigo of codigosPromocionales"
+              [value]="codigo.codigo"
+            >
+              {{ getCodigoPromocionalDisplay(codigo) }}
+            </option>
+          </select>
+          <small class="text-muted" *ngIf="!nuevaSuscripcion.codigo_promocional">
+            Código promocional aplicado a esta suscripción
+          </small>
+          <small class="text-success" *ngIf="nuevaSuscripcion.codigo_promocional">
+            <i class="fa fa-check-circle"></i> {{ getDescuentoCodigoPromocional(nuevaSuscripcion.codigo_promocional, false) }}
+          </small>
+          <div *ngIf="loadingCodigosPromocionales" class="text-muted mt-1">
+            <i class="fas fa-spinner fa-spin"></i> Cargando códigos...
+          </div>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT:' : 'Identificación fiscal:' }}</label>
           <input
             type="text"
             class="form-control"
@@ -676,7 +960,7 @@
             [class.bg-light]="nuevaSuscripcion.nit"
           />
           <small class="text-muted" *ngIf="nuevaSuscripcion.nit">
-            NIT de la empresa
+            {{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT' : 'Identificación fiscal' }} de la empresa
           </small>
         </div>
 
@@ -844,6 +1128,33 @@
           </div>
         </div>
         <div class="form-group col-sm-12">
+          <label for="">Fecha de pago (próximo pago):</label>
+          <div class="row">
+            <div class="col-6">
+              <label class="form-label" for="filtros.fecha_pago_inicio">Desde</label>
+              <input
+                type="date"
+                class="form-control"
+                name="filtros.fecha_pago_inicio"
+                [(ngModel)]="filtros.fecha_pago_inicio"
+              />
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="filtros.fecha_pago_fin">Hasta</label>
+              <input
+                type="date"
+                class="form-control"
+                name="filtros.fecha_pago_fin"
+                [(ngModel)]="filtros.fecha_pago_fin"
+              />
+            </div>
+          </div>
+          <small class="text-muted">
+            Filtra clientes según el día del mes en que tienen programado su próximo pago
+          </small>
+        </div>
+        <div class="form-group col-12 col-md-6">
+          <label for="filtros.plan">Plan:</label>
           <select
             class="form-select"
             name="filtros.plan"
@@ -856,7 +1167,7 @@
             <option value="Pro">Pro</option>
           </select>
         </div>
-        <div class="form-group col-sm-12">
+        <div class="form-group col-12 col-md-6">
           <label for="filtros.forma_pago">Forma de pago:</label>
           <select
             class="form-select"
@@ -885,6 +1196,27 @@
             <option value="suspendido">Suspendido</option>
             <option value="vencido">Vencido</option>
           </select>
+        </div>
+        <div class="form-group col-12 col-md-6">
+          <label for="filtros.campania">Campaña:</label>
+          <ng-select
+            [(ngModel)]="filtros.campania"
+            [typeahead]="searchCampanias$"
+            [typeaheadLoading]="loadingCampanias"
+            [clearable]="true"
+            placeholder="Escriba para buscar campañas..."
+            class="form-select"
+            name="filtros.campania"
+            [loading]="loadingCampanias"
+            notFoundText="No se encontraron campañas"
+          >
+            <ng-option
+              *ngFor="let campania of campaniasResults"
+              [value]="campania"
+            >
+              {{ campania }}
+            </ng-option>
+          </ng-select>
         </div>
         <!-- <div class="form-group col-sm-6">
                 <label for="filtros.forma_pago">Método de pago:</label>

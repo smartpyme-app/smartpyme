@@ -16,6 +16,7 @@
                     <th style="width: 150px;">Cantidad</th>
                     <th style="width: 150px;">Precio</th>
                     <th style="width: 150px;">Descuento</th>
+                    <th style="width: 120px;" *ngIf="usuario.empresa.cambiar_tipo_impuesto_venta">Tipo</th>
                     <th style="width: 100px;" class="text-right">Total</th>
                     <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
                 </tr>
@@ -23,7 +24,7 @@
             <tbody class="align-top">
                 <!-- if no h ay ningun producto -->
                 <tr *ngIf="venta?.detalles?.length < 1">
-                    <td colspan="7" class="text-center">
+                    <td [attr.colspan]="6 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0) + (usuario.empresa.cambiar_tipo_impuesto_venta ? 1 : 0)" class="text-center">
                         <p class="text-muted my-3">
                             Agregue productos y servicios
                         </p>
@@ -46,6 +47,18 @@
                             <div>
                                 {{ detalle.descripcion }} <br>
                                 <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
+                                <br>
+                                <small class="text-muted" *ngIf="detalle.inventario_por_lotes">
+                                    <button class="btn btn-sm btn-outline-primary mt-1" 
+                                            (click)="abrirModalLoteVenta(mloteVenta, detalle)"
+                                            *ngIf="getLotesMetodologia() === 'Manual'">
+                                        <i class="fa fa-box"></i> 
+                                        {{ detalle.lote_id ? 'Lote: ' + (detalle.lote?.numero_lote || 'N/A') : 'Seleccionar lote' }}
+                                    </button>
+                                    <span *ngIf="getLotesMetodologia() !== 'Manual' && detalle.lote_id" class="badge bg-info">
+                                        Lote: {{ detalle.lote?.numero_lote || 'N/A' }}
+                                    </span>
+                                </small>
                                 <div style="font-size: 14px;" >
                                     <ul>
                                         <li class="mb-2" *ngFor="let composicion of detalle?.composiciones">
@@ -78,21 +91,46 @@
                         <div class="input-group" *ngIf="detalle?.precios?.length < 2">
                             <!-- <span class="input-group-text">$</span> -->
                             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-                            <input type="number" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio">
+                            <input type="number" step="0.000001" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio">
                         </div>
                         <select [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-select" name="precio" *ngIf="detalle?.precios?.length > 1">
-                            <option [value]="precio.precio" *ngFor="let precio of detalle.precios">
-                                {{ precio.precio | currency}}
+                            <option [value]="precio.precio" *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
+                                {{ precio.precio | currency:'USD':'symbol':'1.0-6'}}
                             </option>
                         </select>
                     </td>
                     <td style="width: 150px;">
-                        <div class="input-group">
-                            <span class="input-group-text">%</span>
-                            <input type="number" [(ngModel)]="detalle.descuento_porcentaje" (change)="updateTotal(detalle)" class="form-control" name="descuento_porcentaje">
+                        <div *ngIf="detalle.descuento_is_monto">
+                            <div class="input-group">
+                                <span tooltip="Cambiar a descuento en porcentaje" tooltipPosition="top" class="input-group-text click" style="cursor: pointer;" (click)="detalle.descuento_is_monto = false; detalle.descuento = 0; detalle.descuento_monto = 0; updateTotal(detalle)">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                                <input 
+                                    type="number" 
+                                    [(ngModel)]="detalle.descuento_monto" 
+                                    (change)="updateTotal(detalle)"
+                                    class="form-control" 
+                                    name="descuento_monto">
+                            </div>
+                        </div>
+                        <div *ngIf="!detalle.descuento_is_monto">
+                            <div class="input-group">
+                                <span tooltip="Cambiar a descuento en monto" tooltipPosition="top" class="input-group-text click" style="cursor: pointer;" (click)="detalle.descuento_is_monto = true; detalle.descuento = 0; detalle.descuento_porcentaje = 0; updateTotal(detalle)">%</span>
+                                <input 
+                                    type="number" 
+                                    [(ngModel)]="detalle.descuento_porcentaje" 
+                                    (change)="updateTotal(detalle)"
+                                    class="form-control" 
+                                    name="descuento_porcentaje">
+                            </div>
                         </div>
                     </td>
-                    <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}</td>
+                    <td style="width: 120px;" *ngIf="usuario.empresa.cambiar_tipo_impuesto_venta">
+                        <select class="form-select" [(ngModel)]="detalle.tipo_gravado" (change)="onTipoGravadoChange(detalle)" name="tipo_gravado">
+                            <option value="gravada">Gravada</option>
+                            <option value="exenta">Exenta</option>
+                            <option value="no_sujeta">No sujeta</option>
+                        </select>
+                    </td>
+                    <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.0-6'}}</td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
                             <button class="btn btn-light" (click)="delete(detalle)">
@@ -152,4 +190,71 @@
         </div>
     </div>
   </div>
+</ng-template>
+
+<!-- Modal para seleccionar lote en ventas -->
+<ng-template #mloteVenta>
+    <div class="modal-header">
+        <h4 class="modal-title">Seleccionar Lote - {{ detalleConLote?.descripcion }}</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i> 
+            Seleccione el lote del cual se descontará el stock para esta venta.
+        </div>
+        <div class="table-responsive" style="max-height: 400px;">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Stock disponible</th>
+                        <th>Vencimiento</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngIf="loading">
+                        <td colspan="5" class="text-center">Cargando...</td>
+                    </tr>
+                    <tr *ngIf="!loading && lotes.length == 0">
+                        <td colspan="5" class="text-center text-muted">No hay lotes disponibles con stock suficiente</td>
+                    </tr>
+                    <tr *ngFor="let lote of lotes">
+                        <td><strong>{{ lote.numero_lote || 'N/A' }}</strong></td>
+                        <td>
+                            <span class="badge" [ngClass]="lote.stock >= detalleConLote.cantidad ? 'bg-success' : 'bg-warning'">
+                                {{ lote.stock }}
+                            </span>
+                        </td>
+                        <td>
+                            {{ lote.fecha_vencimiento ? (lote.fecha_vencimiento | date:'dd/MM/yyyy') : 'Sin vencimiento' }}
+                            <br>
+                            <small class="text-muted" *ngIf="lote.dias_vencimiento !== null">
+                                ({{ lote.dias_vencimiento > 0 ? '+' : '' }}{{ lote.dias_vencimiento }} días)
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge" 
+                                  [ngClass]="{
+                                    'bg-danger': lote.dias_vencimiento < 0,
+                                    'bg-warning': lote.dias_vencimiento >= 0 && lote.dias_vencimiento <= 7,
+                                    'bg-success': lote.dias_vencimiento > 7 || lote.dias_vencimiento === null
+                                  }">
+                                {{ lote.dias_vencimiento < 0 ? 'Vencido' : (lote.dias_vencimiento <= 7 ? 'Vence pronto' : 'Vigente') }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" 
+                                    (click)="seleccionarLoteVenta(lote)"
+                                    [disabled]="lote.stock < detalleConLote.cantidad">
+                                Seleccionar
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </ng-template>

@@ -22,30 +22,112 @@ class MessageHandler
         }
     }
 
+    // public function handle(WhatsAppSession $session, string $message): ?string
+    // {
+    //     $message = trim($message);
+
+    //     if ($this->isGlobalCommand(strtolower($message))) {
+    //         return $this->handleGlobalCommand($session, $message);
+    //     }
+
+    //     switch ($session->status) {
+    //         case 'pending_code':
+    //             return $this->handlePendingCode($session, $message);
+
+    //         case 'pending_user':
+    //             return $this->handlePendingUser($session, $message);
+
+    //         case 'pending_verification': // ← NUEVO ESTADO
+    //             return $this->handlePendingVerification($session, $message);
+
+    //         case 'connected':
+    //             if (config('services.whatsapp.use_ai', false)) {
+    //                 return $this->handleWithLucasIA($session, $message);
+    //             } else {
+    //                 return $this->handleConnectedUser($session, strtolower($message));
+    //             }
+
+    //         default:
+    //             return $this->getWelcomeMessage();
+    //     }
+    // }
+
+
     public function handle(WhatsAppSession $session, string $message): ?string
     {
         $message = trim($message);
+        $lowerMessage = strtolower($message);
 
-        if ($this->isGlobalCommand(strtolower($message))) {
-            return $this->handleGlobalCommand($session, $message);
+
+        if (in_array($lowerMessage, ['reset', 'salir', 'cancelar', 'reiniciar'])) {
+            $session->resetConnection();
+            Log::info('Sesión reiniciada por comando de emergencia', [
+                'session_id' => $session->id,
+                'comando' => $lowerMessage,
+                'estado_anterior' => $session->status
+            ]);
+            return "🔄 Sesión reiniciada.\n\n" . $this->getWelcomeMessage();
         }
+
 
         switch ($session->status) {
             case 'pending_code':
+
+                if ($this->isGlobalCommand($lowerMessage)) {
+                    return $this->getContextualHelp('pending_code');
+                }
                 return $this->handlePendingCode($session, $message);
 
             case 'pending_user':
+                if ($this->isGlobalCommand($lowerMessage)) {
+                    return $this->getContextualHelp('pending_user');
+                }
                 return $this->handlePendingUser($session, $message);
 
-            case 'pending_verification': // ← NUEVO ESTADO
+            case 'pending_verification':
+                if ($this->isGlobalCommand($lowerMessage)) {
+                    return $this->getContextualHelp('pending_verification');
+                }
                 return $this->handlePendingVerification($session, $message);
 
             case 'connected':
+                // En estado conectado, comandos globales funcionan normal
+                if ($this->isGlobalCommand($lowerMessage)) {
+                    return $this->handleGlobalCommand($session, $lowerMessage);
+                }
+
                 if (config('services.whatsapp.use_ai', false)) {
                     return $this->handleWithLucasIA($session, $message);
                 } else {
-                    return $this->handleConnectedUser($session, strtolower($message));
+                    return $this->handleConnectedUser($session, $lowerMessage);
                 }
+
+            default:
+                // Estado inicial o desconocido, comandos globales funcionan
+                if ($this->isGlobalCommand($lowerMessage)) {
+                    return $this->handleGlobalCommand($session, $lowerMessage);
+                }
+                return $this->getWelcomeMessage();
+        }
+    }
+
+    private function getContextualHelp(string $status): string
+    {
+        switch ($status) {
+            case 'pending_code':
+                return "👋 ¡Hola! Estoy esperando el código de tu empresa.\n\n" .
+                    "🔍 Por favor, escribe el código para continuar.\n\n" .
+                    "🔄 Escribe '*reset*' si quieres reiniciar desde el inicio.";
+
+            case 'pending_user':
+                return "👋 ¡Hola! Estoy esperando tu email registrado.\n\n" .
+                    "📧 Por favor, escribe tu email para continuar.\n\n" .
+                    "🔄 Escribe '*reset*' si quieres reiniciar desde el inicio.";
+
+            case 'pending_verification':
+                return "👋 ¡Hola! Estoy esperando tu código de verificación.\n\n" .
+                    "🔐 Por favor, escribe el código de 6 dígitos que enviamos a tu correo.\n\n" .
+                    "🔄 Escribe '*reset*' si quieres reiniciar desde el inicio.";
 
             default:
                 return $this->getWelcomeMessage();
@@ -71,7 +153,7 @@ class MessageHandler
                 return $session->usuario;
             });
 
-            $response = $this->chatController->bedrockChat($request);
+            $response = $this->chatController->bedrockChat($request,'WhatsApp');
 
             $responseData = $response->getData(true);
 
@@ -275,25 +357,41 @@ class MessageHandler
     }
 
 
+    // private function isGlobalCommand(string $message): bool
+    // {
+    //     $globalCommands = ['hola', 'inicio', 'menu', 'ayuda', 'salir', 'reset'];
+    //     return in_array($message, $globalCommands);
+    // }
+
     private function isGlobalCommand(string $message): bool
     {
-        $globalCommands = ['hola', 'inicio', 'menu', 'ayuda', 'salir', 'reset'];
+        $globalCommands = ['hola', 'inicio', 'menu', 'ayuda'];
         return in_array($message, $globalCommands);
     }
 
+
     // private function handleGlobalCommand(WhatsAppSession $session, string $message): string
     // {
+    //     Log::info('WhatsApp session handleGlobalCommand', ['session' => $session]);
+    //     Log::info('WhatsApp session handleGlobalCommand message', ['message' => $message]);
     //     switch ($message) {
-    //         case 'hola':
-    //         case 'inicio':
-    //         case 'menu':
-    //             return $session->isConnected() ? $this->getMainMenu($session) : $this->getWelcomeMessage();
+    //         case 'Hola':
+    //         case 'Inicio':
+    //         case 'Menu':
+    //             if ($session->isConnected()) {
+    //                 $menu = $this->getMainMenu($session);
+    //                 if (is_array($menu)) {
+    //                     return $menu['body'];
+    //                 }
+    //                 return $menu;
+    //             }
+    //             return $this->getWelcomeMessage();
 
-    //         case 'ayuda':
+    //         case 'Ayuda':
     //             return $this->getHelpMessage();
 
-    //         case 'salir':
-    //         case 'reset':
+    //         case 'Salir':
+    //         case 'Reset':
     //             $session->resetConnection();
     //             return "👋 Sesión reiniciada. " . $this->getWelcomeMessage();
 
@@ -304,12 +402,10 @@ class MessageHandler
 
     private function handleGlobalCommand(WhatsAppSession $session, string $message): string
     {
-        Log::info('WhatsApp session handleGlobalCommand', ['session' => $session]);
-        Log::info('WhatsApp session handleGlobalCommand message', ['message' => $message]);
         switch ($message) {
-            case 'Hola':
-            case 'Inicio':
-            case 'Menu':
+            case 'hola':
+            case 'inicio':
+            case 'menu':
                 if ($session->isConnected()) {
                     $menu = $this->getMainMenu($session);
                     if (is_array($menu)) {
@@ -319,13 +415,8 @@ class MessageHandler
                 }
                 return $this->getWelcomeMessage();
 
-            case 'Ayuda':
+            case 'ayuda':
                 return $this->getHelpMessage();
-
-            case 'Salir':
-            case 'Reset':
-                $session->resetConnection();
-                return "👋 Sesión reiniciada. " . $this->getWelcomeMessage();
 
             default:
                 return $this->getWelcomeMessage();
@@ -409,7 +500,7 @@ class MessageHandler
 
                 Mail::to($usuario->email)->send(new WhatsAppVerificationMail($datosEmail));
 
-               // $usuario->notify(new WhatsAppVerificationCode($verificationCode, $usuario->name));
+                // $usuario->notify(new WhatsAppVerificationCode($verificationCode, $usuario->name));
 
                 $session->update(['status' => 'pending_verification']);
 

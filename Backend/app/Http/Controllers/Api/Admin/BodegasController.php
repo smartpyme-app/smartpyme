@@ -103,7 +103,7 @@ class BodegasController extends Controller
 
         $bodega->productos = $p->sortBy([ ['categoria', 'asc'],['nombre', 'asc']]);
         // return $bodega;
-        $reportes = \PDF::loadView('reportes.bodegas', compact('bodega', 'empresa'));
+        $reportes = app('dompdf.wrapper')->loadView('reportes.bodegas', compact('bodega', 'empresa'));
         return $reportes->stream();
 
     }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Compras\Cotizaciones\CotizacionesController;
 use App\Http\Controllers\Api\Compras\Cotizaciones\DetallesController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/ordenes-de-compras',                    [CotizacionesController::class, 'index']);
     Route::get('/orden-de-compra/{id}',                [CotizacionesController::class, 'read']);
@@ -11,12 +12,16 @@ use App\Http\Controllers\Api\Compras\Cotizaciones\DetallesController;
     Route::get('/orden-de-compra/impresion/{id}',        [CotizacionesController::class, 'generarDoc']);
 
     Route::get('/ordenes-de-compras/exportar',    [CotizacionesController::class, 'export']);
+    Route::get('/ordenes-de-compras/solicitudes/exportar',    [CotizacionesController::class, 'export']);
     
     Route::get('/orden-de-compra/detalles',           [DetallesController::class, 'index']);
     Route::get('/orden-de-compra/detalle/{id}',       [DetallesController::class, 'read']);
     Route::post('/orden-de-compra/detalle',           [DetallesController::class, 'store']);
     Route::delete('/orden-de-compra/detalle/{id}',    [DetallesController::class, 'delete']);
     Route::post('/orden-de-compra/detalle',          [DetallesController::class, 'historial']);
+
+    Route::get('/ordenes-de-compras/solicitudes',    [CotizacionesController::class, 'solicitudes']);
+    Route::get('/orden-de-compra/solicitud/{id}',    [CotizacionesController::class, 'solicitud']);
 
 
 ?>

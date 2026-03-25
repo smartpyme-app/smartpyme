@@ -11,6 +11,7 @@ class Devolucion extends Model {
     protected $table = 'devoluciones_compra';
     protected $fillable = array(
         'fecha',
+        'tipo',
         'tipo_documento',
         'referencia',
         'id_proveedor',
@@ -30,7 +31,7 @@ class Devolucion extends Model {
 
     );
 
-    protected $appends = ['nombre_proveedor', 'nombre_usuario'];
+    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];
     protected $casts = ['enable' => 'string'];
 
     protected static function booted()
@@ -57,6 +58,11 @@ class Devolucion extends Model {
         return $this->usuario()->pluck('name')->first();
     }
 
+    public function getNombreSucursalAttribute()
+    {
+        return $this->sucursal()->pluck('nombre')->first();
+    }
+
     public function proveedor(){
         return $this->belongsTo('App\Models\Compras\Proveedores\Proveedor','id_proveedor');
     }
@@ -67,6 +73,10 @@ class Devolucion extends Model {
 
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa','id_empresa');
+    }
+
+    public function sucursal(){
+        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
     public function compra(){

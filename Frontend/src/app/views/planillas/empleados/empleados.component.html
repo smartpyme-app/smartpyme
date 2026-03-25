@@ -9,7 +9,7 @@
       <i class="fa fa-plus"></i> Añadir empleado
     </button>
   </section>
-
+  
   <section class="bg-white p-4 rounded mb-3">
     <div class="row">
       <div class="col-md-6 mb-3">
@@ -32,9 +32,17 @@
           de {{ empleados?.total + " registros" }}
         </span>
       </div>
-
+  
       <div class="col-md-6 mb-3">
         <div class="d-flex gap-2">
+          <button
+            *ngIf="apiService.canCreate()"
+            (click)="openModal(mimportar)"
+            class="btn btn-default"
+            tooltip="Importar empleados desde archivo de Excel"
+          >
+            <img src="/assets/icons/upload.png" class="icon" />
+          </button>
           <form
             class="d-flex input-group"
             name="form"
@@ -45,10 +53,11 @@
               type="text"
               name="buscador"
               class="form-control pull-right"
-              placeholder="Buscar por nombre, DUI o código"
+              placeholder="Buscar por nombre, {{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'número de identificación' }} o código"
               [(ngModel)]="filtros.buscador"
             />
           </form>
+          
           <button
             tooltip="Filtrar"
             (click)="openFilter(mfilter)"
@@ -59,14 +68,14 @@
         </div>
       </div>
     </div>
-
+  
     <div class="row">
       <div class="table-responsive">
         <table class="table table-borderless table-hover mb-0">
           <thead>
             <tr>
               <th>Código</th>
-              <th>DUI</th>
+              <th>Número de identificación</th>
               <th
                 (click)="setOrden('nombres')"
                 [ngClass]="{
@@ -110,7 +119,7 @@
                 <span class="badge bg-primary">Cargando...</span>
               </td>
             </tr>
-
+  
             <tr *ngFor="let empleado of empleados?.data">
               <td>{{ empleado.codigo }}</td>
               <td>{{ empleado.dui }}</td>
@@ -177,7 +186,7 @@
           </tbody>
         </table>
       </div>
-
+  
       <div class="col-12" *ngIf="empleados?.last_page > 1">
         <app-pagination
           [items]="empleados"
@@ -186,7 +195,7 @@
       </div>
     </div>
   </section>
-
+  
   <!-- Modal para filtros -->
   <ng-template #mfilter>
     <div class="modal-header">
@@ -246,7 +255,7 @@
             </select>
           </div>
         </div>
-
+  
         <div class="d-grid mt-3">
           <button type="submit" [disabled]="loading" class="btn btn-primary">
             <span *ngIf="!loading">Filtrar</span>
@@ -256,7 +265,67 @@
       </form>
     </div>
   </ng-template>
+  
+  <!-- Modal para importar empleados -->
+  <ng-template #mimportar>
+    <div class="modal-header">
+      <h4 class="modal-title">Importar Empleados</h4>
+      <button
+        type="button"
+        class="btn-close"
+        (click)="modalRef.hide()"
+        aria-label="Close"
+      ></button>
+    </div>
+    <div class="modal-body">
+      <app-notificaciones-container></app-notificaciones-container>
+      <form (ngSubmit)="importarEmpleados()" enctype="multipart/form-data">
+        <div class="row">
+          <!-- Archivo Excel -->
+          <div class="col-12 mb-3">
+            <label class="form-label">Archivo Excel</label>
+            <input
+              type="file"
+              class="form-control"
+              (change)="onFileSelectedImport($event)"
+              accept=".xlsx,.xls"
+              required
+            />
+            <small class="text-muted">
+              Formatos permitidos: Excel (.xlsx, .xls)<br />
+              <a href="javascript:void(0)" (click)="descargarPlantilla()">
+                <i class="fa fa-download"></i> Descargar plantilla de ejemplo
+              </a>
+            </small>
+          </div>
 
+          <div class="col-12">
+            <div class="alert alert-info">
+              <i class="fa fa-info-circle me-2"></i>
+              <strong>Nota:</strong> Puedes usar la misma plantilla de planillas para importar empleados.
+              El sistema leerá automáticamente los datos del empleado e ignorará las columnas de planilla.
+            </div>
+          </div>
+
+          <div class="col-12">
+            <button
+              type="submit"
+              class="btn btn-primary w-100"
+              [disabled]="!datosImportacion.archivo || procesandoImportacion"
+            >
+              <span *ngIf="!procesandoImportacion">
+                <i class="fa fa-upload"></i> Importar Empleados
+              </span>
+              <span *ngIf="procesandoImportacion">
+                <i class="fa fa-spinner fa-spin"></i> Procesando...
+              </span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </ng-template>
+  
   <!-- Modal para crear/editar empleado -->
   <ng-template #mEmpleado>
     <div class="modal-header">
@@ -295,10 +364,10 @@
               required
             />
           </div>
-
+  
           <!-- Documentos -->
           <div class="form-group col-md-6">
-            <label for="dui">DUI:</label>
+            <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI:' : 'Número de identificación:' }}</label>
             <input
               type="text"
               [(ngModel)]="empleado.dui"
@@ -308,7 +377,7 @@
             />
           </div>
           <div class="form-group col-md-6">
-            <label for="nit">NIT:</label>
+            <label for="nit">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT:' : 'Identificación fiscal:' }}</label>
             <input
               type="text"
               [(ngModel)]="empleado.nit"
@@ -337,7 +406,7 @@
               required
             />
           </div>
-
+  
           <!-- Información Laboral -->
           <div class="form-group col-md-6">
             <label for="id_departamento">Departamento:</label>
@@ -370,7 +439,7 @@
               </option>
             </select>
           </div>
-
+  
           <!-- Salario y Tipo de Contrato -->
           <div class="form-group col-md-6">
             <label for="salario_base">Salario Base:</label>
@@ -396,7 +465,7 @@
               <option value="Temporal">Temporal</option>
             </select>
           </div>
-
+  
           <!-- Fechas -->
           <div class="form-group col-md-6">
             <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
@@ -418,7 +487,7 @@
               required
             />
           </div>
-
+  
           <!-- Contacto -->
           <div class="form-group col-md-12">
             <label for="direccion">Dirección:</label>
@@ -450,7 +519,7 @@
               required
             />
           </div>
-
+  
           <div class="d-grid mt-4">
             <button [disabled]="saving" class="btn btn-primary btn-block">
               <span *ngIf="!saving">Guardar</span>
@@ -461,7 +530,7 @@
       </form>
     </div>
   </ng-template>
-
+  
   <!-- Modal para dar de baja -->
   <ng-template #mDarBaja>
     <div class="modal-header">
@@ -489,7 +558,7 @@
               Día en que se notificó la renuncia o despido.
             </small>
           </div>
-
+  
           <div class="form-group col-12 mb-3">
             <label for="fecha_baja">Fecha efectiva de baja:</label>
             <input
@@ -505,7 +574,7 @@
               igual o anterior a hoy.
             </small>
           </div>
-
+  
           <div class="form-group col-12 mb-3">
             <label for="tipo_baja">Tipo de baja:</label>
             <select
@@ -525,7 +594,7 @@
               Según la ley, el empleado debe dar un preaviso de 15 días.
             </small>
           </div>
-
+  
           <div class="form-group col-12 mb-3">
             <label for="motivo">Motivo de la baja:</label>
             <textarea
@@ -536,7 +605,7 @@
               required
             ></textarea>
           </div>
-
+  
           <div class="form-group col-12 mb-3">
             <label for="documento">Documento de respaldo:</label>
             <input
@@ -550,13 +619,13 @@
               Tamaño máximo: 2MB. Formatos permitidos: PDF, DOC, DOCX
             </small>
           </div>
-
+  
           <div class="alert alert-info">
               <i class="fa fa-info-circle me-2"></i>
-              <strong>Información:</strong> Si la fecha efectiva de baja es hoy o en el pasado, el empleado se
+              <strong>Información:</strong> Si la fecha efectiva de baja es hoy o en el pasado, el empleado se 
               desactivará inmediatamente. Si es una fecha futura, el sistema mantendrá al empleado activo hasta esa fecha.
           </div>
-
+  
           <div class="d-grid gap-2">
             <button type="submit" [disabled]="saving" class="btn btn-danger">
               <span *ngIf="!saving">
@@ -598,7 +667,7 @@
               required
             />
           </div>
-
+  
           <div class="form-group col-12 mb-3">
             <label for="documento">Documento de respaldo:</label>
             <input
@@ -612,7 +681,7 @@
               Tamaño máximo: 2MB. Formatos permitidos: PDF, DOC, DOCX
             </small>
           </div>
-
+  
           <div class="d-grid gap-2">
             <button type="submit" [disabled]="saving" class="btn btn-success">
               <span *ngIf="!saving">
@@ -630,3 +699,4 @@
       </form>
     </div>
   </ng-template>
+  

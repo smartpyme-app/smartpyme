@@ -9,37 +9,8 @@
             suscripción ahora.
           </p>
 
-          <div class="list-group mt-3 mb-2">
-            <!-- Mostrar todos los planes cuando showAllPlans es true -->
-            <!-- <div *ngIf="showAllPlans">
-              
-              <div
-                class="list-group-item border mb-2 rounded-3 hover-highlight plan-container visible"
-                *ngFor="
-                  let plan of [
-                    PLANES.EMPRENDEDOR,
-                    PLANES.ESTANDAR,
-                    PLANES.AVANZADO,
-                    PLANES.PRO
-                  ]
-                "
-                (click)="setPlanFeatures(plan.NOMBRE)"
-                [class.active]="planName === plan.NOMBRE"
-              >
-                <div class="d-flex justify-content-between align-items-center">
-                  <div>
-                    <h6 class="mb-1">Plan {{ plan.NOMBRE }}</h6>
-                    <p class="mb-1 text-muted small">
-                      {{ plan.CARACTERISTICAS[0] }}
-                    </p>
-                  </div>
-                  <span class="badge bg-primary rounded-pill"
-                    >${{ plan.PRECIO }}/mes</span
-                  >
-                </div>
-              </div>
-            </div> -->
-
+          <!-- ✅ Plan actual -->
+          <div class="list-group mt-3 mb-2" *ngIf="showAllPlans">
             <h4>Plan actual:</h4>
             <div
               class="list-group-item border mb-2 rounded-3 selected-plan hover-highlight plan-container visible"
@@ -54,44 +25,90 @@
                 >
               </div>
             </div>
-            <!-- <div
-              *ngIf="!showAllPlans && planName"
-              class="list-group-item border mb-2 rounded-3 selected-plan plan-container visible"
-            >
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="mb-1">Plan {{ planName }}</h6>
-                  <p class="mb-1 text-muted small">{{ planFeatures[0] }}</p>
-                </div>
-                <span class="badge bg-primary rounded-pill"
-                  >${{ this.montoPlanActual }}/mes</span
-                >
-              </div>
-            </div>
-          </div> -->
+          </div>
 
-          <!-- Botones de acción -->
-          <div class="d-grid gap-2 mb-2" *ngIf="!showCardForm">
+          <!-- ✅ Botón principal para iniciar pago -->
+          <div class="d-grid gap-2 mb-2" *ngIf="showAllPlans">
             <button
               class="btn btn-lg btn-primary rounded-3"
-              (click)="togglePaymentForm()"
+              (click)="showPaymentOptionsModal()"
               [disabled]="!planName"
             >
               <i class="fas fa-credit-card me-2"></i>
               Realizar Pago
             </button>
-
-            <!-- <button 
-              class="btn btn-lg btn-outline-primary rounded-3"
-              (click)="renewSubscription()"
-              [disabled]="!planName">
-              <i class="fas fa-external-link-alt me-2"></i>
-              Pagar con n1co
-            </button> -->
           </div>
 
-          <!-- Formulario de tarjeta -->
+          <!-- ✅ Modal de opciones de pago -->
+          <div *ngIf="showPaymentOptions" class="payment-options-container">
+            <h5 class="mb-3">Selecciona tu método de pago</h5>
+
+            <!-- Opción: Método de pago existente -->
+            <div *ngIf="paymentMethodExists" class="mb-3">
+              <button
+                class="btn btn-outline-secondary btn-no-hover-white w-100 p-3 text-start"
+                (click)="selectPaymentOption('existing')"
+                [disabled]="loading"
+              >
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="fas fa-credit-card me-2"></i>
+                    <strong>Usar tarjeta guardada</strong>
+                    <br />
+                    <small class="text-muted">
+                      {{ existingPaymentMethod?.marca_tarjeta }}
+                      ****{{ existingPaymentMethod?.ultimos_cuatro }}
+                    </small>
+                  </div>
+                  <i class="fas fa-chevron-right"></i>
+                </div>
+              </button>
+            </div>
+
+            <!-- Opción: Nueva tarjeta -->
+            <div class="mb-3">
+              <button
+                class="btn btn-outline-secondary btn-no-hover-white w-100 p-3 text-start"
+                (click)="selectPaymentOption('new')"
+                [disabled]="loading"
+              >
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="fas fa-plus me-2"></i>
+                    <strong>Usar nueva tarjeta</strong>
+                    <br />
+                    <small class="text-muted"
+                      >Ingresar nueva información de pago</small
+                    >
+                  </div>
+                  <i class="fas fa-chevron-right"></i>
+                </div>
+              </button>
+            </div>
+
+            <!-- Botón cancelar -->
+            <button
+              class="btn btn-outline-secondary w-100"
+              (click)="cancelPayment()"
+            >
+              Cancelar
+            </button>
+          </div>
+
+          <!-- ✅ Formulario de nueva tarjeta -->
           <div *ngIf="showCardForm" class="payment-form">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0">Nueva tarjeta de pago</h5>
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                (click)="backToPaymentOptions()"
+                *ngIf="paymentMethodExists"
+              >
+                <i class="fas fa-arrow-left me-1"></i>
+                Volver
+              </button>
+            </div>
+
             <form (ngSubmit)="processPayment()" #paymentForm="ngForm">
               <!-- Número de tarjeta -->
               <div class="mb-3">
@@ -193,20 +210,13 @@
                     <option value="" disabled selected>
                       Seleccione un país
                     </option>
-                    <option *ngFor="let pais of paises" [value]="pais.cod">{{ pais.nombre }}</option>
+                    <option *ngFor="let pais of paises" [value]="pais.cod">
+                      {{ pais.nombre }}
+                    </option>
                   </select>
-                  <div
-                    class="invalid-feedback"
-                    *ngIf="
-                      countryCode.invalid &&
-                      (countryCode.dirty || countryCode.touched)
-                    "
-                  >
-                    País inválido
-                  </div>
                 </div>
 
-                <!-- Código de Estado -->
+                <!-- Estado -->
                 <div class="col-md-4 mb-3">
                   <label class="form-label">Estado</label>
                   <select
@@ -215,24 +225,18 @@
                     name="stateCode"
                     (change)="onEstadoChange()"
                     required
-                    [ngClass]="{
-                      'is-invalid':
-                        stateCode.invalid &&
-                        (stateCode.dirty || stateCode.touched)
-                    }"
                     #stateCode="ngModel"
                   >
-                    <option value="" disabled selected>Selecciona estado</option>
-                    <option *ngFor="let estado of estados" [value]="estado.codigo">{{ estado.nombre }}</option>
+                    <option value="" disabled selected>
+                      Selecciona estado
+                    </option>
+                    <option
+                      *ngFor="let estado of estados"
+                      [value]="estado.codigo"
+                    >
+                      {{ estado.nombre }}
+                    </option>
                   </select>
-                  <div
-                    class="invalid-feedback"
-                    *ngIf="
-                      stateCode.invalid && (stateCode.dirty || stateCode.touched)
-                    "
-                  >
-                    Estado inválido
-                  </div>
                 </div>
 
                 <!-- Código ZIP -->
@@ -244,22 +248,10 @@
                     [(ngModel)]="billingInfo.zipCode"
                     name="zipCode"
                     required
-                    [ngClass]="{
-                      'is-invalid':
-                        zipCode.invalid && (zipCode.dirty || zipCode.touched)
-                    }"
                     maxlength="5"
                     placeholder="1101"
                     #zipCode="ngModel"
                   />
-                  <div
-                    class="invalid-feedback"
-                    *ngIf="
-                      zipCode.invalid && (zipCode.dirty || zipCode.touched)
-                    "
-                  >
-                    Código ZIP inválido
-                  </div>
                 </div>
               </div>
 
@@ -273,31 +265,38 @@
                     *ngIf="loading"
                     class="spinner-border spinner-border-sm me-2"
                   ></span>
+                  <i class="fas fa-lock me-2" *ngIf="!loading"></i>
                   Procesar Pago
                 </button>
                 <button
                   type="button"
                   class="btn btn-outline-secondary"
-                  (click)="togglePaymentForm()"
+                  (click)="
+                    paymentMethodExists
+                      ? backToPaymentOptions()
+                      : cancelPayment()
+                  "
                 >
                   Cancelar
                 </button>
               </div>
             </form>
           </div>
-        </div>
-        <div class="text-center">
-          <button
-            class="btn btn-sm btn-link px-4 rounded-3 text-decoration-none"
-            (click)="logout()"
-          >
-            <p class="text-muted">Cerrar sesión</p>
-          </button>
-        </div>
-        <div class="text-center mb-2">
-          <button class="btn btn-sm btn-link text-muted">
-            Si tienes alguna duda o problema, contáctanos.
-          </button>
+
+          <!-- Botón cerrar sesión -->
+          <div class="text-center" *ngIf="showAllPlans">
+            <button
+              class="btn btn-sm btn-link px-4 rounded-3 text-decoration-none"
+              (click)="logout()"
+            >
+              <p class="text-muted">Cerrar sesión</p>
+            </button>
+          </div>
+          <div class="text-center mb-2" *ngIf="showAllPlans">
+            <button class="btn btn-sm btn-link text-muted">
+              Si tienes alguna duda o problema, contáctanos.
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -309,5 +308,6 @@
   *ngIf="mostrar3DSModal"
   [authUrl]="urlAutenticacion"
   (close)="mostrar3DSModal = false"
+  (messageReceived)="on3DSMessageReceived($event)"
 >
 </app-threeds-modal>

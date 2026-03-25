@@ -51,11 +51,12 @@ export class AbonosVentasComponent implements OnInit {
         this.filtros.id_cliente = '';
         this.filtros.estado = '';
         this.filtros.forma_pago = '';
+        this.filtros.id_documento = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        
+
         this.filtrarAbonos();
     }
 
@@ -70,9 +71,9 @@ export class AbonosVentasComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
-    public setEstado(cotizacion:any){
-        this.apiService.store('orden-de-venta', cotizacion).subscribe(cotizacion => { 
-            this.alertService.success('Orden de venta actualizada', 'La orden de venta fue actualizada exitosamente.');
+    public setEstado(abono:any){
+        this.apiService.store('venta/abono', abono).subscribe(abono => { 
+            this.alertService.success('Abono actualizado', 'El abono fue actualizado exitosamente.');
         }, error => {this.alertService.error(error); });
     }
 
@@ -125,13 +126,24 @@ export class AbonosVentasComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+        this.apiService.getAll('clientes/list').subscribe(clientes => {
             this.clientes = clientes;
         }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
+
+        if (!this.documentos.length) {
+            this.apiService.getAll('documentos/list-nombre').subscribe(
+                (documentos) => {
+                    this.documentos = documentos;
+                },
+                (error) => {
+                    this.alertService.error(error);
+                }
+            );
+        }
 
         this.modalRef = this.modalService.show(template);
     }

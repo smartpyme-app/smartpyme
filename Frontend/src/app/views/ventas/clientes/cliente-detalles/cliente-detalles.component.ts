@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
@@ -7,34 +7,60 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-cliente-detalles',
-  templateUrl: './cliente-detalles.component.html'
+    selector: 'app-cliente-detalles',
+    templateUrl: './cliente-detalles.component.html'
 })
 export class ClienteDetallesComponent implements OnInit {
 
-    public cliente:any = {};
+    public cliente: any = {};
+    public camposPorTipoCliente: any = {
+        'Persona': [
+            'nombre', 'apellido', 'correo', 'dui',
+            //  'tipo_contribuyente', 
+            'nota', 'telefono', 'municipio', 'departamento', 'direccion'
+        ],
+        'Empresa': [
+            'nombre_empresa', 'ncr', 'nit', 'giro', 'telefono',
+            'municipio', 'departamento', 'empresa_direccion', 'nota'
+            ,'tipo_contribuyente'
+        ],
+        'Extranjero': [
+            'nombre', 'apellido', 'numero_identificacion', 'correo', 'pasaporte', 'pais',
+            'nota', 'telefono', 'direccion','tipo_documento'
+            ,'tipo_persona'
+        ]
+    };
     public loading = false;
-    public contacto:any = {};
+    public contacto: any = {};
+    public tipoDocumento: any = {
+        '13': 'DUI',
+        '36': 'NIT',
+        '03': 'Pasaporte',
+        '02': 'Carnet de residente',
+        '37': 'Otro'
+    };
     modalRef?: BsModalRef;
 
-	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
-	) { }
+    constructor(
+        private apiService: ApiService, private alertService: AlertService,
+        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+    ) { }
 
-	ngOnInit() {
+    ngOnInit() {
         this.loadAll();
     }
 
-    public loadAll(){
-        this.route.params.subscribe((params:any) => {
+    /**Carga todos los datos del cliente
+     * @returns void*/
+    public loadAll() {
+        this.route.params.subscribe((params: any) => {
             if (params.id) {
                 this.loading = true;
                 this.apiService.read('cliente/', params.id).subscribe(cliente => {
                     this.cliente = cliente;
                     this.loading = false;
-                }, error => {this.alertService.error(error); this.loading = false;});
-            }else{
+                }, error => { this.alertService.error(error); this.loading = false; });
+            } else {
                 this.cliente = {};
                 this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
                 this.cliente.id_usuario = this.apiService.auth_user().id;
@@ -42,12 +68,86 @@ export class ClienteDetallesComponent implements OnInit {
         });
     }
 
+    /**Abre el modal para ver los contactos adicionales
+     * @param template - TemplateRef del modal
+     * @param contacto - Contacto a mostrar*/
     openModal(template: TemplateRef<any>, contacto: any) {
         this.contacto = contacto;
         this.modalRef = this.modalService.show(template, {
-          class: 'modal-lg',
-          backdrop: 'static',
+            class: 'modal-lg',
+            backdrop: 'static',
         });
-      }
+    }
+
+    /**Obtiene el tipo de cliente
+     * @returns string - El tipo de cliente*/
+    getTipoCliente() {
+        return this.cliente.tipo;
+    }
+
+    /**Obtiene los campos válidos para el tipo de cliente actual
+     * @returns string[] - Array con los nombres de campos válidos*/
+    getVerificarInformacionTipo() {
+        switch (this.cliente.tipo) {
+            case 'Persona':
+                return this.getCamposValidosPorTipo();
+            case 'Empresa':
+                return this.getCamposValidosPorTipo();
+            case 'Extranjero':
+                return this.getCamposValidosPorTipo();
+            default:
+                return '';
+        }
+    }
+
+    /** Verifica si un campo específico debe mostrarse para el tipo de cliente actual
+    * @param campo - Nombre del campo a verificar
+    * @returns boolean - true si debe mostrarse, false si no */
+    public mostrarCampo(campo: string): boolean {
+        if (!this.cliente?.tipo) return false;
+
+        const camposValidos = this.camposPorTipoCliente[this.cliente.tipo];
+        return camposValidos ? camposValidos.includes(campo) : false;
+    }
+
+    /**Verifica si múltiples campos deben mostrarse
+     * @param campos - Array de nombres de campos
+     * @returns boolean - true si al menos uno debe mostrarse*/
+    public mostrarAlgunCampo(campos: string[]): boolean {
+        return campos.some(campo => this.mostrarCampo(campo));
+    }
+
+    /**Verifica si la sección de contactos adicionales debe mostrarse
+     * @returns boolean - true si es tipo 'Empresa'*/
+    public mostrarContactosAdicionales(): boolean {
+        return this.cliente?.tipo === 'Empresa';
+    }
+
+    /**Obtiene la dirección correcta según el tipo de cliente
+     * @returns string - La dirección correspondiente*/
+    public obtenerDireccion(): string {
+        if (this.cliente?.tipo === 'Empresa') {
+            return this.cliente.empresa_direccion || '';
+        }
+        return this.cliente?.direccion || '';
+    }
+
+    /**Obtiene todos los campos válidos para el tipo actual
+     * @returns string[] - Array con los nombres de campos válidos*/
+    public getCamposValidosPorTipo(): string[] {
+        return this.camposPorTipoCliente[this.cliente?.tipo] || [];
+    }
+
+    /**Verifica si el cliente tiene un tipo válido configurado
+     * @returns boolean - true si el tipo está configurado*/
+    public tieneConfiguracionValida(): boolean {
+        return !!(this.cliente?.tipo && this.camposPorTipoCliente[this.cliente.tipo]);
+    }
+
+    /**Obtiene el nombre del tipo de documento
+     * @returns string - El nombre del tipo de documento*/
+    public obtenerNombreTipoDocumento(): string {
+        return this.tipoDocumento[this.cliente.tipo_documento] || '';
+    }
 
 }

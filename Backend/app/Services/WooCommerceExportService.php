@@ -13,6 +13,19 @@ class WooCommerceExportService
 {
     public function exportarProductos(User $user, $productos, $bodega, Empresa $empresa)
     {
+        // Obtener la empresa del usuario para acceder a la configuración de WooCommerce
+        $empresa = $user->empresa;
+        
+        if (!$empresa) {
+            throw new \Exception("El usuario no tiene una empresa asociada");
+        }
+        
+        if (empty($empresa->woocommerce_store_url) || 
+            empty($empresa->woocommerce_consumer_key) || 
+            empty($empresa->woocommerce_consumer_secret)) {
+            throw new \Exception("La configuración de WooCommerce no está completa en la empresa");
+        }
+        
         $client = new WooCommerceApiClient(
             $empresa->woocommerce_store_url,
             $empresa->woocommerce_consumer_key,
@@ -31,6 +44,7 @@ class WooCommerceExportService
             'total' => count($productos),
             'creados' => 0,
             'actualizados' => 0,
+            'omitidos' => 0,
             'errores' => 0,
             'detalles' => []
         ];
@@ -40,11 +54,24 @@ class WooCommerceExportService
                 $stock = $stocks[$producto->id] ?? 0;
                 $productData = $this->prepararDatosProducto($producto, $stock, $client);
 
+                $esImportadoWooCommerce = !empty($producto->imported_from_woocommerce_csv);
+
                 // Intentar actualizar primero si tenemos woocommerce_id
                 if (!empty($producto->woocommerce_id)) {
                     if ($this->actualizarProductoExistente($client, $producto, $productData, $resultados)) {
                         continue;
                     }
+                }
+
+                // Productos importados desde CSV de WooCommerce: NUNCA crear, solo actualizar
+                if ($esImportadoWooCommerce) {
+                    Log::info("Producto importado de WooCommerce sin woocommerce_id o actualización fallida - omitido", [
+                        'producto_id' => $producto->id,
+                        'nombre' => $producto->nombre,
+                        'woocommerce_id' => $producto->woocommerce_id
+                    ]);
+                    $resultados['omitidos'] = ($resultados['omitidos'] ?? 0) + 1;
+                    continue;
                 }
 
                 // Buscar por SKU solo si no se pudo actualizar por ID
@@ -66,13 +93,44 @@ class WooCommerceExportService
     private function actualizarProductoExistente($client, $producto, $productData, &$resultados)
     {
         try {
-            $client->put("products/{$producto->woocommerce_id}", $productData);
+            // Variaciones usan endpoint distinto: products/{parent_id}/variations/{variation_id}
+            if (!empty($producto->woocommerce_parent_id)) {
+                $endpoint = "products/{$producto->woocommerce_parent_id}/variations/{$producto->woocommerce_id}";
+                $productDataVariation = $this->prepararDatosVariacion($productData);
+                $client->put($endpoint, $productDataVariation);
+            } else {
+                $client->put("products/{$producto->woocommerce_id}", $productData);
+            }
+
+            $producto->last_woocommerce_sync = now();
+            $producto->saveQuietly();
+
             $this->registrarExito($resultados, $producto, 'actualizado', $producto->woocommerce_id);
             return true;
         } catch (\Exception $e) {
-            Log::warning("Error actualizando producto por ID en WooCommerce: " . $e->getMessage());
+            Log::warning("Error actualizando producto por ID en WooCommerce: " . $e->getMessage(), [
+                'producto_id' => $producto->id,
+                'woocommerce_id' => $producto->woocommerce_id,
+                'woocommerce_parent_id' => $producto->woocommerce_parent_id ?? null
+            ]);
             return false;
         }
+    }
+
+    /**
+     * Adapta datos de producto al formato de variación para la API de WooCommerce.
+     * Las variaciones solo permiten actualizar precio, stock, sku, etc.
+     */
+    private function prepararDatosVariacion(array $productData)
+    {
+        return array_filter([
+            'sku' => $productData['sku'] ?? null,
+            'regular_price' => $productData['regular_price'] ?? null,
+            'price' => $productData['price'] ?? null,
+            'manage_stock' => $productData['manage_stock'] ?? true,
+            'stock_quantity' => $productData['stock_quantity'] ?? 0,
+            'stock_status' => $productData['stock_status'] ?? 'outofstock',
+        ], fn($v) => $v !== null);
     }
 
     private function actualizarProductoPorSku($client, $producto, $existente, $productData, &$resultados)
@@ -180,6 +238,18 @@ class WooCommerceExportService
             ];
         }
 
+        // Calcular precio con IVA si está habilitado
+        $precio = $producto->precio;
+        $empresa = $producto->empresa;
+        
+        
+        if ($empresa && $empresa->cobra_iva === 'Si' && !empty($empresa->iva) && $empresa->iva > 0) {
+            $ivaDecimal = $empresa->iva / 100;
+            $precio = $producto->precio * (1 + $ivaDecimal);
+        }
+        
+        // Formatear el precio correctamente para WooCommerce
+        $precio = number_format($precio, 2, '.', '');
 
         $productData = [
             'name' => $producto->nombre,
@@ -188,8 +258,8 @@ class WooCommerceExportService
             'featured' => false,
             'catalog_visibility' => 'visible',
             'sku' => $producto->codigo ?: $producto->barcode,
-            'price' => (string)$producto->precio,
-            'regular_price' => (string)$producto->precio,
+            'price' => $precio,
+            'regular_price' => $precio,
             'manage_stock' => true,
             'stock_quantity' => $stock,
             'stock_status' => $stock > 0 ? 'instock' : 'outofstock'

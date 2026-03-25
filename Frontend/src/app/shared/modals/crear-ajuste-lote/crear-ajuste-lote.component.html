@@ -1,0 +1,44 @@
+<a class="btn btn-light btn-sm" (click)="openModalAjuste(majuste)" tooltip="Ajustar stock del lote">
+    <i class="fa fa-pencil-alt"></i>
+</a>
+
+<ng-template #majuste>
+  <div class="modal-header justify-content-between">
+    <h5 class="modal-title mb-0">Ajuste de stock del lote</h5>
+    <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="onSubmit()" autocomplete="off">
+        <div class="row">
+            <app-notificaciones-container></app-notificaciones-container>
+            <p><b>Producto:</b> {{ producto.nombre }}</p>
+            <p><b>Lote:</b> {{ lote.numero_lote || 'N/A' }}</p>
+            <p><b>Bodega:</b> {{ lote.nombre_bodega || lote.bodega?.nombre }}</p>
+            <p><span class="badge bg-info">{{ ajuste.stock_actual | number:'1.2' }} unidades</span></p>
+            <div class="form-group col-md-12">
+                <label for="stock_real">Ingrese la cantidad que debe haber en existencias:</label>
+                <input type="text" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" class="form-control text-center" [(ngModel)]="ajuste.stock_real" (change)="calAjuste()" (keyup)="calAjuste()" name="stock_real" focus="true">
+            </div>
+            
+            <div class="form-group col-xs-12" *ngIf="ajuste.stock_real">
+                <label for="ajuste">Se realizará un ajuste de:</label>
+                <p *ngIf="ajuste.stock_real"> {{ ajuste.ajuste }}</p>
+                <p *ngIf="!ajuste.stock_real"> 0</p>
+            </div>
+
+            <div class="form-group col-md-12">
+                <label for="concepto">Nota del ajuste:</label>
+                <input type="text" class="form-control" [(ngModel)]="ajuste.concepto" name="concepto">
+            </div>
+
+        </div>
+        <div class="d-grid mt-3">
+            <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !ajuste.stock_real">
+                <span *ngIf="!loading">Guardar</span>
+                <span *ngIf="loading">Guardando...</span>
+            </button>
+        </div>
+
+    </form>
+  </div>
+</ng-template>

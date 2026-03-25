@@ -9,6 +9,7 @@ class Detalle extends Model {
     protected $table = 'detalles_devolucion_venta';
     protected $fillable = array(
         'id_producto',
+        'lote_id',
         'descripcion',
         'cantidad',
         'precio',
@@ -20,7 +21,7 @@ class Detalle extends Model {
         'total',
         'id_devolucion_venta',
     );
-    protected $appends = ['nombre_producto', 'medida'];
+    protected $appends = ['nombre_producto', 'medida', 'codigo', 'marca'];
 
     public function getNombreProductoAttribute(){
         if ($this->descripcion) {
@@ -32,6 +33,14 @@ class Detalle extends Model {
 
     public function getMedidaAttribute(){
         return $this->producto()->pluck('medida')->first();
+    }
+
+    public function getCodigoAttribute(){
+        return $this->producto()->pluck('codigo')->first();
+    }
+
+    public function getMarcaAttribute(){
+        return $this->producto()->pluck('marca')->first();
     }
 
     public function producto(){
@@ -46,6 +55,8 @@ class Detalle extends Model {
         return $this->belongsTo('App\Models\Ventas\Devoluciones\Devolucion','id_devolucion_venta');
     }
 
-
+    public function lote(){
+        return $this->belongsTo('App\Models\Inventario\Lote','lote_id');
+    }
 
 }

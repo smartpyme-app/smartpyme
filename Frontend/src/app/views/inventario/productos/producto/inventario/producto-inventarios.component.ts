@@ -13,6 +13,8 @@ export class ProductoInventariosComponent implements OnInit {
 
     @Input() producto: any = {};
     public bodegas: any = [];
+    /** Bodegas que aún no tienen inventario asignado para este producto (evita duplicados) */
+    public bodegasDisponibles: any = [];
     public sucursal: any = {};
     public inventario: any = {};
     public sucursalSelected: any = {};
@@ -40,13 +42,17 @@ export class ProductoInventariosComponent implements OnInit {
         
         this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
+            const idsBodegasAsignadas = (this.producto?.inventarios || []).map((inv: any) => inv.id_bodega);
+            this.bodegasDisponibles = this.bodegas.filter((b: any) => 
+                !idsBodegasAsignadas.includes(b.id) || b.id === this.inventario?.id_bodega
+            );
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
         
         if(!this.inventario.id) {
             this.inventario.stock = 0;
-            this.inventario.id_sucursal = '';
             this.inventario.id_producto = this.producto.id;
+            this.inventario.id_bodega = this.inventario.id_bodega;
             this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente.');
         }else{
             this.alertService.success('Inventario guardado', 'El inventario fue guardado exitosamente.');

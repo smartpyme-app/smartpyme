@@ -6,8 +6,11 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
+use App\Models\Ventas\Venta;
 use App\Observers\InventarioObserver;
 use App\Observers\ProductoObserver;
+use App\Observers\ShopifyInventarioObserver;
+use App\Observers\ShopifyProductoObserver;
 use Illuminate\Support\Facades\Auth;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,6 +39,10 @@ class AppServiceProvider extends ServiceProvider
         if (config('services.woocommerce.enabled', false)) {
             Producto::observe(ProductoObserver::class);
         }
+
+
+        Inventario::observe(ShopifyInventarioObserver::class);
+        Producto::observe(ShopifyProductoObserver::class);
 
         // Registra este scope nuevamente para asegurarte de que se aplique después del observer
         Producto::addGlobalScope('empresa', function ($builder) {

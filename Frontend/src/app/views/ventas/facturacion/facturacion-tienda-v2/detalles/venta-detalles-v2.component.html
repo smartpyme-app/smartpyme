@@ -1,0 +1,263 @@
+<div class="d-flex justify-content-end mb-3">
+    <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
+        <app-tienda-venta-buscador-v2 class="w-100" [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-buscador-v2>
+        <app-tienda-venta-producto [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-producto>
+        <app-tienda-venta-paquetes-v2 *ngIf="usuario.empresa.modulo_paquetes && venta.cotizacion != 1" [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-paquetes-v2>
+        <app-tienda-venta-citas *ngIf="usuario.empresa.modulo_citas && venta.cotizacion != 1" [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-citas>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12 table-responsive">
+        <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th *ngIf="usuario.empresa.vendedor_detalle_venta">Vendedor</th>
+                    <th>Producto</th>
+                    <th style="width: 150px;">Cantidad</th>
+                    <th style="width: 150px;">Precio</th>
+                    <th style="width: 150px;">Descuento</th>
+                    <th style="width: 120px;" *ngIf="usuario.empresa.cambiar_tipo_impuesto_venta">Tipo</th>
+                    <th style="width: 100px;" class="text-right">Total</th>
+                    <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
+                </tr>
+            </thead>
+            <tbody class="align-top">
+                <!-- if no h ay ningun producto -->
+                <tr *ngIf="venta?.detalles?.length < 1">
+                    <td [attr.colspan]="6 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0) + (usuario.empresa.cambiar_tipo_impuesto_venta ? 1 : 0)" class="text-center">
+                        <p class="text-muted my-3">
+                            Agregue productos y servicios
+                        </p>
+                    </td>
+                </tr>
+                <tr *ngFor="let detalle of venta?.detalles; let i = index">
+                    <!-- detalle de vendedor  -->
+                    <td *ngIf="usuario.empresa.vendedor_detalle_venta">
+                        <select name="id_vendedor" [(ngModel)]="detalle.id_vendedor" class="form-select">
+                            <option [value]="usuario.id" *ngFor="let usuario of usuarios">
+                                {{ usuario.name }}
+                            </option>
+                        </select>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-3" *ngIf="!usuario.empresa.editar_descripcion_venta">
+                            <div>
+                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                            </div>
+                            <div>
+                                {{ detalle.descripcion }} <br>
+                                <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
+                                <br>
+                                <small class="text-muted" *ngIf="detalle.inventario_por_lotes">
+                                    <button class="btn btn-sm btn-outline-primary mt-1" 
+                                            (click)="abrirModalLoteVenta(mloteVenta, detalle)"
+                                            *ngIf="getLotesMetodologia() === 'Manual'">
+                                        <i class="fa fa-box"></i> 
+                                        {{ detalle.lote_id ? 'Lote: ' + (detalle.lote?.numero_lote || 'N/A') : 'Seleccionar lote' }}
+                                    </button>
+                                    <span *ngIf="getLotesMetodologia() !== 'Manual' && detalle.lote_id" class="badge bg-info">
+                                        Lote: {{ detalle.lote?.numero_lote || 'N/A' }}
+                                    </span>
+                                </small>
+                                <div style="font-size: 14px;" >
+                                    <ul>
+                                        <li class="mb-2" *ngFor="let composicion of detalle?.composiciones">
+                                            <a class="click text-dark text-decoration-none" (click)="openModalCompuesto(mcomposicion, composicion)">
+                                                {{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="usuario.empresa.editar_descripcion_venta">
+                            <input class="form-control" type="text" [(ngModel)]="detalle.descripcion" name="descripcion">
+                            <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
+                            <div style="font-size: 14px;" >
+                                <ul>
+                                    <li class="mb-2" *ngFor="let composicion of detalle?.composiciones">
+                                        <a class="click text-dark text-decoration-none" (click)="openModalCompuesto(mcomposicion, composicion)">
+                                            {{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="width: 150px;">
+                        <input type="number" tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }" name="cantidad">
+                    </td>
+                    <td style="width: 150px;">
+                        <div class="input-group" *ngIf="detalle?.precios?.length < 2">
+                            <!-- <span class="input-group-text">$</span> -->
+                            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                            <input type="number" step="0.000001" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio_iva" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio_iva">
+                        </div>
+                        <select [(ngModel)]="detalle.precio_iva" (change)="onPrecioSelectChange(detalle)" class="form-select" name="precio_iva" *ngIf="detalle?.precios?.length > 1">
+                            <option [value]="precio.precio" *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
+                                {{ precio.precio | currency:'USD':'symbol':'1.0-6'}}
+                            </option>
+                        </select>
+                    </td>
+                    <td style="width: 150px;">
+                        <div *ngIf="detalle.descuento_is_monto">
+                            <div class="input-group">
+                                <span tooltip="Cambiar a descuento en porcentaje" tooltipPosition="top" class="input-group-text click" style="cursor: pointer;" (click)="detalle.descuento_is_monto = false; detalle.descuento = 0; detalle.descuento_monto = 0; updateTotal(detalle)">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                                <input 
+                                    type="number" 
+                                    [(ngModel)]="detalle.descuento_monto" 
+                                    (change)="updateTotal(detalle)"
+                                    class="form-control" 
+                                    name="descuento_monto">
+                            </div>
+                        </div>
+                        <div *ngIf="!detalle.descuento_is_monto">
+                            <div class="input-group">
+                                <span tooltip="Cambiar a descuento en monto" tooltipPosition="top" class="input-group-text click" style="cursor: pointer;" (click)="detalle.descuento_is_monto = true; detalle.descuento = 0; detalle.descuento_porcentaje = 0; updateTotal(detalle)">%</span>
+                                <input 
+                                    type="number" 
+                                    [(ngModel)]="detalle.descuento_porcentaje" 
+                                    (change)="updateTotal(detalle)"
+                                    class="form-control" 
+                                    name="descuento_porcentaje">
+                            </div>
+                        </div>
+                    </td>
+                    <td style="width: 120px;" *ngIf="usuario.empresa.cambiar_tipo_impuesto_venta">
+                        <select class="form-select" [(ngModel)]="detalle.tipo_gravado" (change)="onTipoGravadoChange(detalle)" name="tipo_gravado">
+                            <option value="gravada">Gravada</option>
+                            <option value="exenta">Exenta</option>
+                            <option value="no_sujeta">No sujeta</option>
+                        </select>
+                    </td>
+                    <td style="width: 100px;" class="text-right">
+                        <div>{{ detalle.total_iva | currency:'USD':'symbol':'1.0-6'}}</div>
+                    </td>
+                    <td style="width: 50px;" class="text-center">
+                        <div class="btn-group">
+                            <button class="btn btn-light" (click)="delete(detalle)">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<ng-template #msupervisor>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Autorización</h4>
+  </div>
+  <div class="modal-body">
+    <div class="row text-center">
+        <form name="form" (ngSubmit)="supervisorCheck()">
+            <div class="form-group col-md-12">
+                <label for="codigo">Ingrese el código de supervisor:</label>
+                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center" focus="true">
+            </div>
+            <div class="d-grid mt-4">
+                <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Autorizar</span>
+                    <span *ngIf="loading">Autorizando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #mcomposicion>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Opciones</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+        <div class="col-12">
+            
+            <p>Seleccione el sustituto de <b>{{ composicion.nombre_compuesto }}</b>:</p>
+            <br>
+            <div *ngIf="composicion.opciones.length > 0" style="max-height: 300px; overflow: auto;">
+                <ul class="list-group">
+                    <button type="button" class="list-group-item text-start" *ngFor="let opcion of composicion.opciones" (click)="cambiarOpcion(composicion, opcion); modalRef.hide();" >
+                        {{ opcion.nombre_producto }}
+                    </button>
+                </ul>
+            </div>
+            <p class="alert bg-info" *ngIf="composicion.opciones.length == 0">No tiene productos sustitutos, puede agregarlos en la configuración del producto.</p>
+            <br>
+        </div>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Modal para seleccionar lote en ventas (facturación v2) -->
+<ng-template #mloteVenta>
+    <div class="modal-header">
+        <h4 class="modal-title">Seleccionar Lote - {{ detalleConLote?.descripcion }}</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i> 
+            Seleccione el lote del cual se descontará el stock para esta venta.
+        </div>
+        <div class="table-responsive" style="max-height: 400px;">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Stock disponible</th>
+                        <th>Vencimiento</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngIf="loading">
+                        <td colspan="5" class="text-center">Cargando...</td>
+                    </tr>
+                    <tr *ngIf="!loading && lotes.length == 0">
+                        <td colspan="5" class="text-center text-muted">No hay lotes disponibles con stock suficiente</td>
+                    </tr>
+                    <tr *ngFor="let lote of lotes">
+                        <td><strong>{{ lote.numero_lote || 'N/A' }}</strong></td>
+                        <td>
+                            <span class="badge" [ngClass]="lote.stock >= detalleConLote.cantidad ? 'bg-success' : 'bg-warning'">
+                                {{ lote.stock }}
+                            </span>
+                        </td>
+                        <td>
+                            {{ lote.fecha_vencimiento ? (lote.fecha_vencimiento | date:'dd/MM/yyyy') : 'Sin vencimiento' }}
+                            <br>
+                            <small class="text-muted" *ngIf="lote.dias_vencimiento !== null">
+                                ({{ lote.dias_vencimiento > 0 ? '+' : '' }}{{ lote.dias_vencimiento }} días)
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge" 
+                                  [ngClass]="{
+                                    'bg-danger': lote.dias_vencimiento < 0,
+                                    'bg-warning': lote.dias_vencimiento >= 0 && lote.dias_vencimiento <= 7,
+                                    'bg-success': lote.dias_vencimiento > 7 || lote.dias_vencimiento === null
+                                  }">
+                                {{ lote.dias_vencimiento < 0 ? 'Vencido' : (lote.dias_vencimiento <= 7 ? 'Vence pronto' : 'Vigente') }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" 
+                                    (click)="seleccionarLoteVenta(lote)"
+                                    [disabled]="lote.stock < detalleConLote.cantidad">
+                                Seleccionar
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</ng-template>
+

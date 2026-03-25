@@ -24,7 +24,7 @@ class MHFacturaExportacion extends Model
         $this->empresa = $this->venta->empresa()->first();
         $this->sucursal = $this->venta->sucursal()->first();
 
-        $this->caja_codigo = '0001';
+        $this->caja_codigo = $this->sucursal->codigo_punto_venta ?? 'P001';
         $this->venta->tipo_dte = '11';
         $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
 
@@ -112,11 +112,11 @@ class MHFacturaExportacion extends Model
     protected function emisor(){
 
         // Tipo Item
-        if ($this->venta->detalles()->first()->producto()->pluck('tipo')->first() == 'Servicio'){
-            $tipo_item = 2;
-        }else{
-            $tipo_item = 1;
-        }
+        // if ($this->venta->detalles()->first()->producto()->pluck('tipo')->first() == 'Servicio'){
+        //     $tipo_item = 2;
+        // }else{
+        //     $tipo_item = 1;
+        // }
         
         return [
             "nit" => str_replace('-', '', $this->empresa->nit),
@@ -137,15 +137,16 @@ class MHFacturaExportacion extends Model
             "codPuntoVentaMH" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "correo" => $this->empresa->correo,
-            "tipoItemExpor" => (int) $this->venta->tipo_item_export,
-            "recintoFiscal" => $this->venta->recinto_fiscal, //Punto de Aduana
-            "regimen" => $this->venta->regimen,
+            "tipoItemExpor" => $this->venta->detalles()->first()->producto()->pluck('tipo')->first() == 'Servicio' ? 2 : 1,
+            // "tipoItemExpor" => (int) $this->venta->tipo_item_export,
+            "recintoFiscal" => $this->venta->recinto_fiscal ?? NULL, //Punto de Aduana
+            "regimen" => $this->venta->regimen ?? NULL,
         ];
     }
 
     protected function receptor(){
 
-        if (!$this->venta->id_cliente) {
+        if (!$this->venta->id_cliente || !$this->venta->cliente) {
             return [
                 "tipoDocumento" => NULL, //36 NIT 13 DUI
                 "numDocumento" => NULL,
@@ -170,14 +171,21 @@ class MHFacturaExportacion extends Model
               "complemento" => $this->venta->cliente->direccion ? $this->venta->cliente->direccion : $this->venta->cliente->empresa_direccion,
               "tipoPersona" => ($this->venta->cliente->tipo_persona == 'Persona Natural') ? 1 : 2,
               "telefono" => $this->venta->cliente->telefono,
-              "correo" => $this->venta->cliente->correo
+              "correo" => $this->venta->cliente->correo ?: ($this->venta->ambiente == '00' ? "prueba@ejemplo.com" : NULL)
             ];
     }
 
     public function generarFactura(){
         $tributos = NULL;
 
-        $this->venta->gravada = $this->venta->sub_total;
+        if ($this->venta->ambiente == '00') {
+            $totalGravada = 0;
+            foreach ($this->venta->detalles as $detalle) {
+                $totalGravada += $detalle->total;
+            }
+        } else {
+            $totalGravada = $this->venta->total;
+        }
 
         return 
             [
@@ -188,21 +196,21 @@ class MHFacturaExportacion extends Model
                 "ventaTercero" => NULL,
                 "cuerpoDocumento" => $this->detalles(),
                 "resumen" => [
-                  "totalGravada" => floatval(number_format($this->venta->gravada + $this->venta->iva, 2, '.', '')),
-                  "descuento" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  "totalGravada" => floatval(number_format($totalGravada, 2, '.', '')),
+                  "descuento" => floatval(number_format(0, 2, '.', '')),
                   "porcentajeDescuento" => 0,
-                  "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  "totalDescu" => floatval(number_format(0, 2, '.', '')),
                   "seguro" => floatval(number_format($this->venta->seguro, 2, '.', '')),
                   "flete" => floatval(number_format($this->venta->flete, 2, '.', '')),
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total, 2, '.', '')),
+                  "montoTotalOperacion" => floatval(number_format($totalGravada, 2, '.', '')),
                   "totalNoGravado" => 0,
-                  "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
+                  "totalPagar" => floatval(number_format($totalGravada, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
                   "condicionOperacion" => $this->venta->cod_condicion,
                   "pagos" => [
                     [
                       "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
+                      "montoPago" => floatval(number_format($totalGravada, 2, '.', '')),
                       "referencia" => NULL,
                       "plazo" => $this->venta->cod_condicion == 2 ? $this->obtenerPlazo($this->venta->dias_credito) : NULL,
                       "periodo" => $this->venta->cod_condicion == 2 ? Carbon::parse($this->venta->fecha)->diffInDays(Carbon::parse($this->venta->fecha_pago), false) : NULL
@@ -246,13 +254,13 @@ class MHFacturaExportacion extends Model
 
             $detalle->codTributo = NULL;
 
-            if ($this->venta->iva > 0) {
-                $detalle->precio = $detalle->precio + ($detalle->precio * 0.13);
-                $detalle->iva = ($detalle->total * 0.13);
-                $detalle->total = $detalle->total + $detalle->iva;
-            }else{
+            // if ($this->venta->iva > 0) {
+            //     $detalle->precio = $detalle->precio + ($detalle->precio * 0.13);
+            //     $detalle->iva = ($detalle->total * 0.13);
+            //     $detalle->total = $detalle->total + $detalle->iva;
+            // }else{
                 $detalle->gravada = $detalle->total;
-            }
+            // }
 
             $detalles->push([
                 "numItem" => $index + 1,
@@ -260,9 +268,9 @@ class MHFacturaExportacion extends Model
                 "descripcion" => $detalle->nombre_producto,
                 "cantidad" => floatval($detalle->cantidad),
                 "uniMedida" => $detalle->cod_medida,
-                "precioUni" => floatval(number_format($detalle->precio + $detalle->iva,2, '.', '')),
+                "precioUni" => floatval(number_format($detalle->precio,2, '.', '')),
                 "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
-                "ventaGravada" => floatval(number_format($detalle->gravada + $detalle->iva,2, '.', '')),
+                "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
                 "tributos" => $tributos,
                 "noGravado" => 0,
               ]);

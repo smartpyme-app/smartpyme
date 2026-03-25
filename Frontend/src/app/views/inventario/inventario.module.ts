@@ -18,9 +18,11 @@ import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 import { InventarioRoutingModule } from './inventario.routing.module';
 
 import { ProductosComponent } from './productos/productos.component';
+import { DetalleProductoComponent } from './productos/detalle-producto/detalle-producto.component';
 import { ProductoComponent } from './productos/producto/producto.component';
 import { ProductoInformacionComponent } from './productos/producto/informacion/producto-informacion.component';
 import { ProductoInventariosComponent } from './productos/producto/inventario/producto-inventarios.component';
+import { ProductoLotesComponent } from './productos/producto/lotes/producto-lotes.component';
 import { ProductoSucursalesComponent } from './productos/producto/sucursales/producto-sucursales.component';
 import { ProductoProveedoresComponent } from './productos/producto/proveedores/producto-proveedores.component';
 import { ProductoComposicionComponent } from './productos/producto/composicion/producto-composicion.component';
@@ -41,6 +43,7 @@ import { MateriaPrimaInformacionComponent } from './materias-prima/materia-prima
 import { KardexComponent } from './kardex/kardex.component';
 import { TrasladosComponent } from './traslados/traslados.component';
 import { TrasladoComponent } from './traslados/traslado/traslado.component';
+import { TrasladoDetalleComponent } from './traslados/traslado-detalle/traslado-detalle.component';
 import { AjustesComponent } from './ajustes/ajustes.component';
 import { AjusteComponent } from './ajustes/ajuste/ajuste.component';
 
@@ -55,6 +58,15 @@ import { TrasladoMasivoComponent } from './productos/producto/traslado/traslado-
 import { ReactiveFormsModule } from '@angular/forms';
 
 import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo.component';
+
+// Nuevos componentes de entradas y salidas
+import { InventarioEntradasComponent } from './entradas/inventario-entradas.component';
+import { InventarioSalidasComponent } from './salidas/inventario-salidas.component';
+import { InventarioEntradaComponent } from './entradas/entrada/inventario-entrada.component';
+import { InventarioSalidaComponent } from './salidas/salida/inventario-salida.component';
+import { EntradaDetalleComponent } from './entradas/entrada-detalle/entrada-detalle.component';
+import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.component';
+import { LotesComponent } from './lotes/lotes.component';
 
 @NgModule({
   imports: [
@@ -78,11 +90,13 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
   ],
   declarations: [
   	ProductosComponent,
+    DetalleProductoComponent,
     ProductoComponent,
     KardexComponent,
     PromocionesComponent,
     ProductoInformacionComponent,
     ProductoInventariosComponent,
+    ProductoLotesComponent,
     ProductoSucursalesComponent,
     ProductoProveedoresComponent,
     ProductoComposicionComponent,
@@ -98,6 +112,7 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
     MateriaPrimaInformacionComponent,
     TrasladosComponent,
     TrasladoComponent,
+    TrasladoDetalleComponent,
     AjustesComponent,
     AjusteComponent,
     ServiciosComponent,
@@ -106,15 +121,25 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
     BodegaComponent,
     BodegasComponent,
     TrasladoMasivoComponent,
-    AjusteMasivoComponent
+    AjusteMasivoComponent,
+    // Nuevos componentes
+    InventarioEntradasComponent,
+    InventarioSalidasComponent,
+    InventarioEntradaComponent,
+    InventarioSalidaComponent,
+    EntradaDetalleComponent,
+    SalidaDetalleComponent,
+    LotesComponent
   ],
   exports: [
   	ProductosComponent,
+    DetalleProductoComponent,
     ProductoComponent,
     KardexComponent,
     PromocionesComponent,
     ProductoInformacionComponent,
     ProductoInventariosComponent,
+    ProductoLotesComponent,
     ProductoSucursalesComponent,
     ProductoProveedoresComponent,
     ProductoComposicionComponent,
@@ -130,6 +155,7 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
     MateriaPrimaInformacionComponent,
     TrasladosComponent,
     TrasladoComponent,
+    TrasladoDetalleComponent,
     AjustesComponent,
     AjusteComponent,
     ServiciosComponent,
@@ -138,7 +164,15 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
     BodegaComponent,
     BodegasComponent,
     TrasladoMasivoComponent,
-    AjusteMasivoComponent
+    AjusteMasivoComponent,
+    // Nuevos componentes
+    InventarioEntradasComponent,
+    InventarioSalidasComponent,
+    InventarioEntradaComponent,
+    InventarioSalidaComponent,
+    EntradaDetalleComponent,
+    SalidaDetalleComponent,
+    LotesComponent
   ]
 })
 export class InventarioModule { }

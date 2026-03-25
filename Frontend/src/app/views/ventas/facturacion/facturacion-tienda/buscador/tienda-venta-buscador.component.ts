@@ -28,6 +28,8 @@ export class TiendaVentaBuscadorComponent implements OnInit {
     public filtros:any = {};
     public buscador:any = '';
     public loading:boolean = false;
+    public tieneShopify: boolean = false;
+    public descripcionesExpandidas: { [key: number]: boolean } = {};
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
@@ -35,22 +37,30 @@ export class TiendaVentaBuscadorComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-
+        // Cachear verificación de Shopify una sola vez
+        const empresa = this.apiService.auth_user()?.empresa;
+        this.tieneShopify = !!empresa?.shopify_store_url;
 
         this.searchControl.valueChanges
           .pipe(
             debounceTime(500),
             filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
-            switchMap((query: any) => 
-              this.apiService.getAll(`productos/buscar-by-query?query=${encodeURIComponent(query)}`).pipe(
+            switchMap((query: any) => {
+              const params: any = { query: query };
+              if (this.venta?.id_bodega) {
+                params.id_bodega = this.venta.id_bodega;
+              } else if (this.venta?.id_sucursal) {
+                params.id_sucursal = this.venta.id_sucursal;
+              }
+              return this.apiService.getAll(`productos/buscar-by-query`, params).pipe(
                 catchError(error => {
                   console.error('Error en la búsqueda:', error);
                   this.productos = []; // Limpiar resultados en caso de error.
                   this.loading = false; // Asegurar que el estado de carga se actualice.
                   return of([]); // Retornar un observable vacío para que el flujo continúe.
                 })
-              )
-            )
+              );
+            })
           )
           .subscribe({
             next: (results: any[]) => {
@@ -59,8 +69,8 @@ export class TiendaVentaBuscadorComponent implements OnInit {
 
               if (
                 results &&
-                results.length === 1 &&
-                this.buscador === results[0].codigo
+                results.length == 1 &&
+                (this.searchControl.value == results[0].codigo || this.searchControl.value == results[0].barcode)
               ) {
                 this.selectProducto(results[0]);
               }
@@ -97,6 +107,12 @@ export class TiendaVentaBuscadorComponent implements OnInit {
 
     public filtrarProductos(){
         this.loading = true;
+        // Agregar id_bodega o id_sucursal a los filtros si están disponibles en la venta
+        if (this.venta?.id_bodega && !this.filtros.id_bodega) {
+            this.filtros.id_bodega = this.venta.id_bodega;
+        } else if (this.venta?.id_sucursal && !this.filtros.id_sucursal) {
+            this.filtros.id_sucursal = this.venta.id_sucursal;
+        }
         this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
             this.productosData = productos;
             this.loading = false;
@@ -126,9 +142,10 @@ export class TiendaVentaBuscadorComponent implements OnInit {
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
         this.detalle.id_producto    = producto.id;
-        this.detalle.descripcion    = producto.nombre;
+        this.detalle.descripcion    = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
+        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
         this.detalle.precios        = producto.precios;
         this.detalle.precios.unshift({
                 'precio' : this.detalle.precio
@@ -154,9 +171,17 @@ export class TiendaVentaBuscadorComponent implements OnInit {
             }
 
         producto.inventarios        = producto.inventarios.filter((item:any) => item.id_bodega == this.venta.id_bodega);
-        if(producto.inventarios.length > 0){
-            this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
-        }else{
+        
+        // Si el producto tiene inventario por lotes, calcular stock de lotes
+        if (producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0) {
+            // Filtrar lotes por bodega
+            const lotesBodega = producto.lotes.filter((lote: any) => lote.id_bodega == this.venta.id_bodega);
+            // Calcular stock total de lotes
+            const stockLotes = lotesBodega.reduce((sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0);
+            this.detalle.stock = stockLotes;
+        } else if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
+            this.detalle.stock = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+        } else {
             this.detalle.stock = null;
         }
         this.detalle.cantidad       = 1;
@@ -184,6 +209,64 @@ export class TiendaVentaBuscadorComponent implements OnInit {
         if(this.modalRef){
             this.modalRef.hide();
         }
+    }
+
+    /**
+     * Verifica si el componente químico está habilitado en la empresa
+     */
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
+    }
+
+    /**
+     * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
+     */
+    getNombreCompleto(producto: any): string {
+        if (this.tieneShopify && producto.nombre_variante) {
+            return `${producto.nombre} ${producto.nombre_variante}`;
+        }
+        return producto.nombre;
+    }
+
+    /**
+     * Obtiene la descripción del producto (completa o truncada según el estado)
+     */
+    getDescripcion(producto: any): string {
+        if (!producto.descripcion) {
+            return '';
+        }
+        const estaExpandida = this.descripcionesExpandidas[producto.id] || false;
+        if (estaExpandida || producto.descripcion.length <= 20) {
+            return producto.descripcion;
+        }
+        return producto.descripcion.substring(0, 20) + '...';
+    }
+
+    /**
+     * Verifica si la descripción está truncada (necesita "ver más")
+     */
+    necesitaVerMas(producto: any): boolean {
+        if (!producto.descripcion) {
+            return false;
+        }
+        const estaExpandida = this.descripcionesExpandidas[producto.id] || false;
+        return !estaExpandida && producto.descripcion.length > 20;
+    }
+
+    /**
+     * Verifica si la descripción está expandida (muestra "ver menos")
+     */
+    estaExpandida(producto: any): boolean {
+        return this.descripcionesExpandidas[producto.id] || false;
+    }
+
+    /**
+     * Alterna el estado de expansión de la descripción
+     */
+    toggleDescripcion(event: Event, producto: any): void {
+        event.stopPropagation(); // Previene que se seleccione el producto
+        const estadoActual = this.descripcionesExpandidas[producto.id] || false;
+        this.descripcionesExpandidas[producto.id] = !estadoActual;
     }
 
 }

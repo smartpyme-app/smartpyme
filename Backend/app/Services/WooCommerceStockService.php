@@ -38,7 +38,7 @@ class WooCommerceStockService
             }
 
 
-            $producto = Producto::with('imagenes')->find($productoId);
+            $producto = Producto::with(['imagenes', 'empresa'])->find($productoId);
 
             if (!$producto) {
                 Log::error("Producto no encontrado", ['producto_id' => $productoId]);
@@ -198,7 +198,22 @@ class WooCommerceStockService
     private function actualizarProductoExistente($client, $producto, $productData)
     {
         try {
-            $client->put("products/{$producto->woocommerce_id}", $productData);
+            if (!empty($producto->woocommerce_parent_id)) {
+                $endpoint = "products/{$producto->woocommerce_parent_id}/variations/{$producto->woocommerce_id}";
+                $variationData = array_filter([
+                    'sku' => $productData['sku'] ?? null,
+                    'regular_price' => $productData['regular_price'] ?? null,
+                    'price' => $productData['price'] ?? null,
+                    'manage_stock' => $productData['manage_stock'] ?? true,
+                    'stock_quantity' => $productData['stock_quantity'] ?? 0,
+                    'stock_status' => $productData['stock_status'] ?? 'outofstock',
+                ], fn($v) => $v !== null);
+                $client->put($endpoint, $variationData);
+            } else {
+                $client->put("products/{$producto->woocommerce_id}", $productData);
+            }
+            $producto->last_woocommerce_sync = now();
+            $producto->saveQuietly();
             return true;
         } catch (\Exception $e) {
             Log::warning("Error actualizando producto por ID en WooCommerce: " . $e->getMessage());
@@ -251,6 +266,17 @@ class WooCommerceStockService
             }
         }
 
+        // Calcular precio con IVA si está habilitado
+        $precio = $producto->precio;
+        $empresa = $producto->empresa;
+        
+        if ($empresa && $empresa->cobra_iva === 'Si' && !empty($empresa->iva) && $empresa->iva > 0) {
+            $ivaDecimal = $empresa->iva / 100;
+            $precio = $producto->precio * (1 + $ivaDecimal);
+        }
+        
+        // Formatear el precio correctamente para WooCommerce
+        $precio = number_format($precio, 2, '.', '');
 
         $productData = [
             'name' => $producto->nombre,
@@ -259,8 +285,8 @@ class WooCommerceStockService
             'featured' => false,
             'catalog_visibility' => 'visible',
             'sku' => $producto->codigo,
-            'price' => (string)$producto->precio,
-            'regular_price' => (string)$producto->precio,
+            'price' => $precio,
+            'regular_price' => $precio,
             'manage_stock' => true,
             'stock_quantity' => $stock,
             'stock_status' => $stock > 0 ? 'instock' : 'outofstock'

@@ -17,10 +17,33 @@ class WooCommerceApiClient
      */
     public function __construct($storeUrl, $consumerKey, $consumerSecret)
     {
+        // Validar que la URL de la tienda no esté vacía
+        if (empty($storeUrl)) {
+            throw new \InvalidArgumentException("La URL de la tienda WooCommerce no puede estar vacía");
+        }
+        
+        // Validar que la URL tenga el formato correcto (debe empezar con http:// o https://)
+        if (!preg_match('/^https?:\/\//', $storeUrl)) {
+            throw new \InvalidArgumentException("La URL de la tienda WooCommerce debe empezar con http:// o https://");
+        }
+        
+        // Validar que las credenciales no estén vacías
+        if (empty($consumerKey) || empty($consumerSecret)) {
+            throw new \InvalidArgumentException("Las credenciales de WooCommerce (consumer_key y consumer_secret) son requeridas");
+        }
+        
+        // Normalizar la URL: remover barra final si existe y agregar la ruta de la API
         $this->baseUrl = rtrim($storeUrl, '/') . '/wp-json/wc/v3/';
         $this->consumerKey = $consumerKey;
         $this->consumerSecret = $consumerSecret;
         $this->isHttps = strpos($storeUrl, 'https://') === 0;
+        
+        // Log para debugging
+        Log::debug("WooCommerceApiClient inicializado", [
+            'base_url' => $this->baseUrl,
+            'store_url' => $storeUrl,
+            'is_https' => $this->isHttps
+        ]);
     }
 
 

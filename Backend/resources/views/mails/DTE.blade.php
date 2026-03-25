@@ -10,7 +10,7 @@
     
     <section style="width: 95%; text-align: center; border-radius: 15px; background-color: #fff; margin: auto; padding: 10px;">
         <header>
-            <img src="{{ asset('img/logo.png') }}" width="150" alt="Logo Wgas">
+            <img src="{{ asset('img/logo.png') }}" width="150" alt="Logo SmartPyme">
         </header>
         <div class="margin" style="width: 75%; margin: 30px auto; border: .1px solid #eee;"></div>
         <article style="width: 95%; text-align: justify; margin: auto;">
@@ -43,7 +43,7 @@
         </article>
         <div class="margin" style="width: 75%; margin: 30px auto; border: .1px solid #eee;"></div>
         <footer>
-            <p style="margin: 5px;">{{ $DTE['emisor']['nombre'] }} &copy; {{ date('y') }}</p>
+            <p style="margin: 5px;">{{ $DTE['emisor']['nombre'] }} &copy; {{ date('Y') }}</p>
             <p><b>Teléfono: </b>{{ $DTE['emisor']['telefono'] }}</p>
             <p><b>Correo: </b>{{ $DTE['emisor']['correo'] }}</p>
         </footer>

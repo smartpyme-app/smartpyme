@@ -1,32 +1,33 @@
 <div class="d-flex" style="min-height: 100vh; background: #fdfbff">
 
   <app-sidebar-admin
-    *ngIf="usuario.id_empresa == 2 && !usuario.empresa.licencia"
+    *ngIf="usuario.id_empresa == 2"
   ></app-sidebar-admin>
   <app-sidebar
     *ngIf="
       usuario.id_empresa != 2 &&
-      !usuario.empresa.licencia &&
+      (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
       apiService.isAdmin()
     "
   ></app-sidebar>
   <app-sidebar-ventas
     *ngIf="
       usuario.id_empresa != 2 &&
-      !usuario.empresa.licencia &&
-      usuario.tipo == 'Ventas'
+      (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
+      usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado'
     "
   ></app-sidebar-ventas>
   <app-sidebar-servicios
     *ngIf="
       usuario.id_empresa != 2 &&
-      !usuario.empresa.licencia &&
+      (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
       usuario.tipo == 'Citas'
     "
   ></app-sidebar-servicios>
-  <app-sidebar-organizaciones
+
+  <!-- <app-sidebar-organizaciones
     *ngIf="usuario.id_empresa != 2 && usuario.empresa.licencia"
-  ></app-sidebar-organizaciones>
+  ></app-sidebar-organizaciones> -->
 
   <div class="content p-2 px-lg-4 py-lg-2 position-relative overflow-hidden">
     <div class="container-fluid p-0 m-0">

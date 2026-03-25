@@ -62,6 +62,7 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
             $productos = Producto::whereIn('id', $this->productIds)
                 ->where('enable', 1)
                 ->whereNotNull('codigo')
+                ->with('empresa')
                 ->get();
 
             if ($productos->isEmpty()) {

@@ -43,9 +43,9 @@
                 <option value="1">Activo</option>
                 <option value="0">Inactivo</option>
             </select>
-            <select name="id_sucursal" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
+            <select name="id_sucursal" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto" style="max-width: 150px;">
                 <option value="">Sucursal</option>
-                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id" title="{{sucursal.nombre}}">
                     {{sucursal.nombre}}
                 </option>
             </select>
@@ -60,7 +60,7 @@
                 <tr>
                     <th>Nombre</th>
                     <th>Tipo</th>
-                    <th>Sucursal</th>
+                    <th>Sucursal/Bodega</th>
                     <th>Activo</th>
                     <th>Último inicio de sesión</th>
                     <th *ngIf="apiService.canEdit()" class="text-center"><i class="fa fa-cog"></i></th>
@@ -76,10 +76,12 @@
                     </td>
                 </tr>
 
-                <tr *ngFor=" let usuario of usuarios.data">                    
+                <tr *ngFor=" let usuario of usuarios.data">
                     <td>{{usuario.name}}</td>
                     <td>{{usuario.tipo}}</td>
-                    <td>{{usuario.sucursal?.nombre}}</td>
+                    <td>{{usuario.sucursal?.nombre}}
+                        <small class="text-muted"> <br>{{usuario.bodega?.nombre ?? 'Sin bodega'}}</small>
+                    </td>
                     <td>
                         <select name="enable" class="form-select w-auto border-0" (change)="setEstado(usuario)" [(ngModel)]="usuario.enable" [ngClass]="{'bg-light-danger' : usuario?.enable == '0', 'bg-light-success' : usuario?.enable == '1'}">
                             <option value="1">Activo</option>
@@ -92,10 +94,15 @@
 <!--                             <a *ngIf="usuario.id != 1" class="btn btn-default" (click)="delete(usuario.id)" data-toggle="tooltip" title="Eliminar">
                                 <i class="fa fa-trash"></i>
                             </a> -->
-                            <a class="btn btn-default" (click)="openModal(musuario, usuario)" data-toggle="tooltip" title="Ver">
+
+                            <!-- <a class="btn btn-default" (click)="openModal(musuario, usuario)" data-toggle="tooltip" title="Ver">
+                                <i class="fa fa-pencil-alt"></i>
+                            </a> -->
+                            <!-- ir a usuario -->
+                            <a class="btn btn-default" (click)="editarUsuario(usuario)" data-toggle="tooltip" title="Editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>
-                        </div>  
+                        </div>
                     </td>
 
                 </tr>
@@ -122,7 +129,7 @@
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="onSubmit()">
-        <div class="row">   
+        <div class="row">
             <app-notificaciones-container></app-notificaciones-container>
             <div class="form-group col-md-6">
                 <label for="nombre">Nombre:</label>
@@ -152,6 +159,7 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="telefono">Teléfono:</label>
+                <div class="input-group">
                 <ngx-intl-tel-input
                     [cssClass]="'form-control'"
                     [preferredCountries]="preferredCountries"
@@ -169,6 +177,7 @@
                     name="telefono"
                     (countryChange)="changePhoneNumber($event)">
                 </ngx-intl-tel-input>
+                </div>
             </div>
             <div class="form-group col-12">
                 <div id="passwordHelpBlock" class="form-text">
@@ -183,12 +192,8 @@
                     <option value="Contador">Contador</option>
                     <option value="Citas">Citas</option>
                     <option value="Ventas">Ventas</option>
-                    <option value="Supervisor Limitado" *ngIf="authUser?.id_empresa == 396 || 
-                                                   authUser?.id_empresa == 397 || 
-                                                   authUser?.id_empresa == 398 || 
-                                                   authUser?.id_empresa == 13  || 
-                                                   authUser?.id_empresa == 432 || 
-                                                   authUser?.id_empresa == 438">Supervisor Limitado</option>
+                    <option value="Ventas Limitado">Ventas Limitado</option>
+                    <option value="Supervisor Limitado" *ngIf="empresas_supervisor_limitado.includes(authUser?.id_empresa)">Supervisor Limitado</option>
                 </select>
             </div>
             <div class="form-group col-md-6" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'">
@@ -256,7 +261,7 @@
                     <option value="">Todos</option>
                     <option value="Administrador">Administrador</option>
                     <option value="Supervisor">Supervisor</option>
-                    <option value="Vendedor">Vendedor</option>
+                    <option value="Ventas">Ventas</option>
                     <option value="Cajero">Cajero</option>
                 </select>
             </div>

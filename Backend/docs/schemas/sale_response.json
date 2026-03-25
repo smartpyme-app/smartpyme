@@ -1,0 +1,480 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Sale Response Schema",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Indica si la request fue exitosa"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Sale"
+      }
+    },
+    "pagination": {
+      "$ref": "#/definitions/Pagination"
+    },
+    "meta": {
+      "$ref": "#/definitions/Meta"
+    }
+  },
+  "required": ["success"],
+  "definitions": {
+    "Sale": {
+      "type": "object",
+      "properties": {
+        "tipo_dte": {
+          "type": ["string", "null"],
+          "description": "Tipo de documento tributario electrónico"
+        },
+        "numero_control": {
+          "type": ["string", "null"],
+          "description": "Número de control del DTE"
+        },
+        "codigo_generacion": {
+          "type": ["string", "null"],
+          "description": "Código de generación del DTE"
+        },
+        "sello_mh": {
+          "type": ["string", "null"],
+          "description": "Sello del Ministerio de Hacienda"
+        },
+        "prueba_masiva": {
+          "type": ["boolean", "null"],
+          "description": "Indica si es una prueba masiva"
+        },
+        "fecha": {
+          "type": "string",
+          "format": "date",
+          "description": "Fecha de la venta"
+        },
+        "correlativo": {
+          "type": ["string", "null"],
+          "description": "Número correlativo de la venta"
+        },
+        "num_identificacion": {
+          "type": ["string", "null"],
+          "description": "Número de identificación"
+        },
+        "estado": {
+          "type": "string",
+          "enum": ["Completada", "Pendiente", "Anulada", "Cotizacion"],
+          "description": "Estado de la venta"
+        },
+        "detalle_banco": {
+          "type": ["string", "null"],
+          "description": "Detalles bancarios"
+        },
+        "id_canal": {
+          "type": ["integer", "null"],
+          "description": "ID del canal de venta"
+        },
+        "id_documento": {
+          "type": ["integer", "null"],
+          "description": "ID del tipo de documento"
+        },
+        "forma_pago": {
+          "type": ["string", "null"],
+          "description": "Forma de pago utilizada"
+        },
+        "tipo_documento": {
+          "type": ["string", "null"],
+          "description": "Tipo de documento"
+        },
+        "num_cotizacion": {
+          "type": ["string", "null"],
+          "description": "Número de cotización asociada"
+        },
+        "num_orden": {
+          "type": ["string", "null"],
+          "description": "Número de orden"
+        },
+        "num_orden_exento": {
+          "type": ["string", "null"],
+          "description": "Número de orden exento"
+        },
+        "condicion": {
+          "type": ["string", "null"],
+          "description": "Condición de la venta"
+        },
+        "referencia": {
+          "type": ["string", "null"],
+          "description": "Referencia de la venta"
+        },
+        "fecha_pago": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "Fecha de pago"
+        },
+        "fecha_expiracion": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "Fecha de expiración"
+        },
+        "monto_pago": {
+          "type": ["number", "null"],
+          "description": "Monto del pago"
+        },
+        "cambio": {
+          "type": ["number", "null"],
+          "description": "Cambio devuelto"
+        },
+        "iva_percibido": {
+          "type": ["number", "null"],
+          "description": "IVA percibido"
+        },
+        "iva_retenido": {
+          "type": ["number", "null"],
+          "description": "IVA retenido"
+        },
+        "renta_retenida": {
+          "type": ["number", "null"],
+          "description": "Renta retenida"
+        },
+        "iva": {
+          "type": ["number", "null"],
+          "description": "Monto del IVA"
+        },
+        "total_costo": {
+          "type": ["number", "null"],
+          "description": "Costo total"
+        },
+        "descuento": {
+          "type": ["number", "null"],
+          "description": "Descuento aplicado"
+        },
+        "sub_total": {
+          "type": ["number", "null"],
+          "description": "Subtotal de la venta"
+        },
+        "no_sujeta": {
+          "type": ["number", "null"],
+          "description": "Monto no sujeto a impuestos"
+        },
+        "exenta": {
+          "type": ["number", "null"],
+          "description": "Monto exento de impuestos"
+        },
+        "gravada": {
+          "type": ["number", "null"],
+          "description": "Monto gravado con impuestos"
+        },
+        "cuenta_a_terceros": {
+          "type": ["number", "null"],
+          "description": "Cuenta a terceros"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total de la venta"
+        },
+        "propina": {
+          "type": ["number", "null"],
+          "description": "Propina incluida"
+        },
+        "observaciones": {
+          "type": ["string", "null"],
+          "description": "Observaciones de la venta"
+        },
+        "recurrente": {
+          "type": ["string", "null"],
+          "description": "Indica si es una venta recurrente"
+        },
+        "cotizacion": {
+          "type": ["boolean", "null"],
+          "description": "Indica si es una cotización"
+        },
+        "descripcion_personalizada": {
+          "type": ["string", "null"],
+          "description": "Descripción personalizada"
+        },
+        "descripcion_impresion": {
+          "type": ["string", "null"],
+          "description": "Descripción para impresión"
+        },
+        "id_caja": {
+          "type": ["integer", "null"],
+          "description": "ID de la caja"
+        },
+        "id_proyecto": {
+          "type": ["integer", "null"],
+          "description": "ID del proyecto asociado"
+        },
+        "id_bodega": {
+          "type": ["integer", "null"],
+          "description": "ID de la bodega"
+        },
+        "id_corte": {
+          "type": ["integer", "null"],
+          "description": "ID del corte de caja"
+        },
+        "id_cliente": {
+          "type": ["integer", "null"],
+          "description": "ID del cliente"
+        },
+        "id_usuario": {
+          "type": ["integer", "null"],
+          "description": "ID del usuario que creó la venta"
+        },
+        "id_vendedor": {
+          "type": ["integer", "null"],
+          "description": "ID del vendedor"
+        },
+        "id_empresa": {
+          "type": "integer",
+          "description": "ID de la empresa"
+        },
+        "id_sucursal": {
+          "type": ["integer", "null"],
+          "description": "ID de la sucursal"
+        },
+        "dte": {
+          "type": ["object", "null"],
+          "description": "Datos del DTE"
+        },
+        "dte_invalidacion": {
+          "type": ["object", "null"],
+          "description": "Datos de invalidación del DTE"
+        },
+        "tipo_item_export": {
+          "type": ["string", "null"],
+          "description": "Tipo de item para exportación"
+        },
+        "cod_incoterm": {
+          "type": ["string", "null"],
+          "description": "Código Incoterm"
+        },
+        "incoterm": {
+          "type": ["string", "null"],
+          "description": "Incoterm aplicado"
+        },
+        "recinto_fiscal": {
+          "type": ["string", "null"],
+          "description": "Recinto fiscal"
+        },
+        "regimen": {
+          "type": ["string", "null"],
+          "description": "Régimen aplicado"
+        },
+        "seguro": {
+          "type": ["number", "null"],
+          "description": "Monto del seguro"
+        },
+        "flete": {
+          "type": ["number", "null"],
+          "description": "Monto del flete"
+        },
+        "tipo_operacion": {
+          "type": ["string", "null"],
+          "description": "Tipo de operación"
+        },
+        "tipo_renta": {
+          "type": ["string", "null"],
+          "description": "Tipo de renta"
+        },
+        "nombre_cliente": {
+          "type": ["string", "null"],
+          "description": "Nombre del cliente"
+        },
+        "nombre_usuario": {
+          "type": ["string", "null"],
+          "description": "Nombre del usuario"
+        },
+        "nombre_vendedor": {
+          "type": ["string", "null"],
+          "description": "Nombre del vendedor"
+        },
+        "nombre_sucursal": {
+          "type": ["string", "null"],
+          "description": "Nombre de la sucursal"
+        },
+        "nombre_canal": {
+          "type": ["string", "null"],
+          "description": "Nombre del canal"
+        },
+        "nombre_documento": {
+          "type": ["string", "null"],
+          "description": "Nombre del documento"
+        },
+        "saldo": {
+          "type": ["number", "null"],
+          "description": "Saldo pendiente"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de creación"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de última actualización"
+        },
+        "detalles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SaleDetail"
+          },
+          "description": "Detalles de la venta"
+        }
+      },
+      "required": ["fecha", "estado", "total", "id_empresa"]
+    },
+    "SaleDetail": {
+      "type": "object",
+      "properties": {
+        "id_producto": {
+          "type": ["integer", "null"],
+          "description": "ID del producto"
+        },
+        "descripcion": {
+          "type": ["string", "null"],
+          "description": "Descripción del producto"
+        },
+        "cantidad": {
+          "type": "number",
+          "description": "Cantidad vendida"
+        },
+        "precio": {
+          "type": "number",
+          "description": "Precio unitario"
+        },
+        "costo": {
+          "type": ["number", "null"],
+          "description": "Costo unitario"
+        },
+        "descuento": {
+          "type": ["number", "null"],
+          "description": "Descuento aplicado"
+        },
+        "no_sujeta": {
+          "type": ["number", "null"],
+          "description": "Monto no sujeto a impuestos"
+        },
+        "exenta": {
+          "type": ["number", "null"],
+          "description": "Monto exento de impuestos"
+        },
+        "gravada": {
+          "type": ["number", "null"],
+          "description": "Monto gravado con impuestos"
+        },
+        "cuenta_a_terceros": {
+          "type": ["number", "null"],
+          "description": "Cuenta a terceros"
+        },
+        "total_costo": {
+          "type": ["number", "null"],
+          "description": "Costo total"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total del detalle"
+        },
+        "id_venta": {
+          "type": "integer",
+          "description": "ID de la venta"
+        },
+        "id_vendedor": {
+          "type": ["integer", "null"],
+          "description": "ID del vendedor"
+        },
+        "iva": {
+          "type": ["number", "null"],
+          "description": "Monto del IVA"
+        },
+        "nombre_producto": {
+          "type": ["string", "null"],
+          "description": "Nombre del producto"
+        },
+        "codigo_producto": {
+          "type": ["string", "null"],
+          "description": "Código interno del producto"
+        },
+        "marca_producto": {
+          "type": ["string", "null"],
+          "description": "Marca del producto"
+        },
+        "img": {
+          "type": ["string", "null"],
+          "description": "URL de la imagen del producto"
+        },
+        "codigo": {
+          "type": ["string", "null"],
+          "description": "Código del producto (legacy)"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de creación"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de última actualización"
+        }
+      },
+      "required": ["cantidad", "precio", "total", "id_venta"]
+    },
+    "Pagination": {
+      "type": "object",
+      "properties": {
+        "current_page": {
+          "type": "integer",
+          "description": "Página actual"
+        },
+        "per_page": {
+          "type": "integer",
+          "description": "Registros por página"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total de registros"
+        },
+        "total_pages": {
+          "type": "integer",
+          "description": "Total de páginas"
+        },
+        "has_next": {
+          "type": "boolean",
+          "description": "Indica si hay página siguiente"
+        },
+        "has_prev": {
+          "type": "boolean",
+          "description": "Indica si hay página anterior"
+        },
+        "from": {
+          "type": ["integer", "null"],
+          "description": "Primer registro de la página"
+        },
+        "to": {
+          "type": ["integer", "null"],
+          "description": "Último registro de la página"
+        }
+      },
+      "required": ["current_page", "per_page", "total", "total_pages", "has_next", "has_prev"]
+    },
+    "Meta": {
+      "type": "object",
+      "properties": {
+        "empresa": {
+          "type": "string",
+          "description": "Nombre de la empresa"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de la respuesta"
+        },
+        "filters_applied": {
+          "type": "object",
+          "description": "Filtros aplicados en la consulta"
+        }
+      },
+      "required": ["empresa", "timestamp"]
+    }
+  }
+}
+
+

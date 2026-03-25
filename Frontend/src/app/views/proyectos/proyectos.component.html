@@ -63,9 +63,10 @@
                         <th (click)="setOrden('fecha_inicio')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_inicio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_inicio' && filtros.direccion == 'desc'}" class="click">Inicio</th>
                         <th (click)="setOrden('fecha_fin')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_fin' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_fin' && filtros.direccion == 'desc'}" class="click">Finaliza</th>
                         <th>Estado</th>
-                        <th class="text-end">Ingresos Esperados</th>
-                        <th class="text-end">Gastos Esperados</th>
-                        <th class="text-end">Compras Esperadas</th>
+                        <th class="text-end">Ingresos</th>
+                        <th class="text-end">Gastos</th>
+                        <th class="text-end">Compras</th>
+                        <th class="text-end">Margen</th>
                         <th class="text-center">Más</th>
                     </tr>
                 </thead>
@@ -91,16 +92,19 @@
                             </span>
                         </td>
                         <td class="text-end">
-                            <span *ngIf="proyecto.ingresos_esperados">{{proyecto.ingresos_esperados | currency}}</span>
-                            <span *ngIf="!proyecto.ingresos_esperados">No definido</span>
+                            <span *ngIf="proyecto.ingresos_generados">{{proyecto.ingresos_generados | currency}}</span>
+                            <span *ngIf="!proyecto.ingresos_generados">No definido</span>
                         </td>
                         <td class="text-end">
-                            <span *ngIf="proyecto.gastos_esperados">{{proyecto.gastos_esperados | currency}}</span>
-                            <span *ngIf="!proyecto.gastos_esperados">No definido</span>
+                            <span *ngIf="proyecto.gastos_generados">{{proyecto.gastos_generados | currency}}</span>
+                            <span *ngIf="!proyecto.gastos_generados">No definido</span>
                         </td>
                         <td class="text-end">
-                            <span *ngIf="proyecto.compras_esperados">{{proyecto.compras_esperados | currency}}</span>
-                            <span *ngIf="!proyecto.compras_esperados">No definido</span>
+                            <span *ngIf="proyecto.compras_generados">{{proyecto.compras_generados | currency}}</span>
+                            <span *ngIf="!proyecto.compras_generados">No definido</span>
+                        </td>
+                        <td class="text-end">
+                            <span>{{proyecto.ingresos_generados - proyecto.gastos_generados - proyecto.compras_generados | currency }}</span>
                         </td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">

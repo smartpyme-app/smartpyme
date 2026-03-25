@@ -28,7 +28,7 @@
                   <!-- Plantilla normal para otros componentes -->
                   <span *ngIf="this.nombre !== 'ventas'">
                     Puede descargar la plantilla de Excel acá: 
-                    <a href="{{ apiService.baseUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Descargar plantilla</a>
+                    <a [href]="plantillaUrlConCache" target="_blank">Descargar plantilla</a>
                   </span>
                   
                   <!-- Plantillas específicas para ventas -->

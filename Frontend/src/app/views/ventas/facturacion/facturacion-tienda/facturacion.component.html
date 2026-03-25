@@ -41,15 +41,45 @@
     </div>
     <div class="row">
         <h6 class="mt-3">Detalles de la venta</h6>
-       <div class="form-group col-md-12 col-lg-4">
+        <!-- <div class="form-group col-md-12 col-lg-4">
             <label for="">Cliente</label>
-           <div class="input-group w-100">
-               <div class="flex-grow-1">
-                   <app-buscador-clientes [cliente]="venta?.cliente" (selectCliente)="setCliente($event)"></app-buscador-clientes>
-               </div>
-               <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
-           </div>
-       </div>
+            <div class="input-group flex-nowrap">
+                <ng-select name="id_cliente" placeholder="Consumidor Final" [(ngModel)]="venta.id_cliente" class="form-select p-0">
+                    <ng-option value=""> Consumidor final </ng-option>
+                    <ng-option value="" *ngIf="loading"> Cargando clientes... </ng-option>
+                    <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                        {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                    </ng-option>
+                </ng-select>
+                <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
+            </div>
+        </div> -->
+
+        <div class="form-group col-md-12 col-lg-4">
+            <label for="">Cliente</label>
+            <div class="input-group w-100">
+                <div class="flex-grow-1">
+                    <app-buscador-clientes [cliente]="venta?.cliente" (selectCliente)="setCliente($event)"></app-buscador-clientes>
+                </div>
+                <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
+                
+                <!-- Botón de Puntos (solo si la empresa tiene módulo de fidelización activo) -->
+                <button 
+                    *ngIf="tieneFidelizacionHabilitada && venta?.cliente && venta.cliente.id" 
+                    type="button"
+                    class="btn ms-2"
+                    [class.btn-success]="puntosCliente > 0"
+                    [class.btn-outline-secondary]="puntosCliente === 0"
+                    [disabled]="loadingPuntos"
+                    (click)="abrirModalPuntos()"
+                    [title]="puntosCliente > 0 ? 'Canjear puntos por descuento' : 'Ver información de puntos'">
+                    <i class="fas fa-coins me-1" *ngIf="!loadingPuntos"></i>
+                    <span class="spinner-border spinner-border-sm me-1" *ngIf="loadingPuntos"></span>
+                    {{ formatNumber(puntosCliente) }} pts
+                </button>
+            </div>
+        </div>
+
         <div class="form-group col-md-12 col-lg-5" *ngIf="venta.cotizacion != 1">
             <label for="observaciones">Observaciones:</label><br>
             <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones">
@@ -74,6 +104,25 @@
             class="form-control" 
             id="num_identificacion" 
             placeholder="Número de identificación">
+        </div>
+    </div>
+    <!-- Estado de cuenta: bloque unificado cuando pref habilitada, o solo crédito cuando pref deshabilitada y cliente tiene límite -->
+    <div class="row mt-2" *ngIf="((apiService.isEstadoCuentaEnFacturacionHabilitado() && venta.cliente?.id) || (!apiService.isEstadoCuentaEnFacturacionHabilitado() && venta.cliente?.limite_credito)) && venta.cotizacion != 1">
+        <div class="col-12">
+            <div class="alert alert-info py-2 mb-0 small d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <strong>{{ venta.cliente?.limite_credito ? 'Estado de cuenta y crédito del cliente:' : 'Estado de cuenta del cliente:' }}</strong>
+                    Saldo pendiente: {{ (venta.cliente?.saldo_pendiente ?? 0) | currency:'USD':'symbol':'1.2' }}
+                    <span *ngIf="venta.cliente?.limite_credito">
+                        • Límite permitido: {{ venta.cliente.limite_credito | currency:'USD':'symbol':'1.2' }}
+                        • Límite disponible: {{ ((venta.cliente.limite_credito ?? 0) - (venta.cliente.saldo_pendiente ?? 0)) | currency:'USD':'symbol':'1.2' }}
+                        <span *ngIf="venta.cliente.dias_credito"> • Días de crédito: {{ venta.cliente.dias_credito }}</span>
+                    </span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-info" (click)="abrirEstadoCuentaPdf()" title="Imprimir estado de cuenta">
+                    <i class="fa fa-print me-1"></i> Ver estado de cuenta
+                </button>
+            </div>
         </div>
     </div>
 </section>
@@ -105,7 +154,9 @@
         <div class="form-group col-md-6 col-lg-6">
             <label for="regimen">Régimen</label>
             <ng-select name="regimen" [(ngModel)]="venta.regimen" placeholder="Seleccione aquí" class="form-select p-0">
-                <ng-option [value]="item.cod" *ngFor="let item of regimenes">{{ item.nombre }}</ng-option>
+                <ng-option [value]="item.cod" *ngFor="let item of regimenes">
+                    <span title="{{ item.nombre }}">{{ item.nombre }}</span>
+                </ng-option>
             </ng-select>
         </div>   
         <div class="form-group col-md-4 col-lg-3">
@@ -116,6 +167,53 @@
             <label for="flete">Flete</label><br>
             <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.flete" name="flete">
         </div>   
+    </div>
+</section>
+
+<section class="card border-0 p-3 mb-3" *ngIf="venta.cotizacion != 1 && venta.nombre_documento == 'Factura comercial'">
+    <div class="row">
+        <h6 class="mt-3">Detalles de factura</h6>
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="proforma">Proforma</label>
+            <input type="text" class="form-control" id="proforma" [(ngModel)]="venta.proforma" name="proforma" placeholder="Ej: 029SV / 0038SV">
+        </div>
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="via">Vía</label>
+            <ng-select name="via" [(ngModel)]="venta.via" placeholder="Seleccione o escriba" class="form-select p-0">
+                <ng-option value="Marítimo">Marítimo</ng-option>
+                <ng-option value="Aéreo">Aéreo</ng-option>
+                <ng-option value="Terrestre">Terrestre</ng-option>
+                <ng-option value="Otro">Otro</ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="marcas">Marcas</label>
+            <input type="text" class="form-control" id="marcas" [(ngModel)]="venta.marcas" name="marcas" placeholder="Ej: N/M">
+        </div>
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="incoterm">Incoterm</label>
+            <input type="text" class="form-control" id="incoterm" [(ngModel)]="venta.incoterm" name="incoterm" placeholder="Ej: CIF">
+        </div>
+        <div class="form-group col-md-12 col-lg-3">
+            <label for="pais_origen">Pais de origen</label>
+            <input type="text" class="form-control" id="pais_origen" [(ngModel)]="venta.pais_origen" name="pais_origen" placeholder="Ej: Mexico">
+        </div>
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="cpt">CPT</label>
+            <input type="number" class="form-control" id="cpt" [(ngModel)]="venta.cpt" name="cpt" placeholder="Ej: 10.00">
+        </div>
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="fob">FOB</label>
+            <input type="number" class="form-control" id="fob" [(ngModel)]="venta.fob" name="fob" placeholder="Ej: 10.00">
+        </div>
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="flete">Flete</label>
+            <input type="number" class="form-control" id="flete" [(ngModel)]="venta.flete" name="flete" placeholder="Ej: 10.00">
+        </div>
+        <div class="form-group col-md-12 col-lg-9">
+            <label for="pago_descripcion">Descripción de pago</label>
+            <input type="text" class="form-control" id="pago_descripcion" [(ngModel)]="venta.pago_descripcion" name="pago_descripcion" placeholder="Ej: 50% ANTICIPO, 50% CONTRA ENTREGA">
+        </div>
     </div>
 </section>
 
@@ -138,22 +236,41 @@
                         <td style="width: 150px;" class="text-right"> {{ venta.descuento | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
-                    <tr>
+                    <tr *ngIf="descuentoPuntos > 0" class="text-success">
+                        <td class="text-right">
+                            <i class="fas fa-coins me-1"></i>
+                            <b>Descuento por puntos</b>
+                            <small class="d-block text-muted">{{ formatNumber(puntosCanjeados) }} puntos canjeados</small>
+                        </td>
+                        <td style="width: 150px;" class="text-right"> -{{ descuentoPuntos | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;">
+                            <button 
+                                type="button" 
+                                class="btn btn-sm btn-outline-warning"
+                                (click)="abrirModalPuntos()"
+                                title="Editar descuento por puntos">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- <tr>
                         <td class="text-right"> <b>Impuestos</b></td>
                         <td style="width: 150px;" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
-                    </tr>
+                    </tr> -->
                     <tr *ngFor="let impuesto of venta?.impuestos">
-                        <td class="text-right"> {{ impuesto.nombre }} </td>
-                        <td style="width: 150px;" class="text-right">
-                            <span *ngIf="!impuesto?.monto">%{{ impuesto.porcentaje }}</span>
-                            <span *ngIf="impuesto?.monto > 0" tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje }}</span>
-                        </td>
+                        <td class="text-right"> {{ impuesto.nombre }} <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small> </td>
+                        <td style="width: 150px;" class="text-right"> {{ (impuesto.monto ?? 0) | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngIf="venta.retencion">
                         <td class="text-right"> <b>Retención (1%)</b></td>
                         <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.renta">
+                        <td class="text-right"> <b>Renta (10%)</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.renta_retenida | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngIf="venta.exenta > 0">
@@ -171,9 +288,19 @@
                         <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
+                    <tr *ngIf="tieneAccesoPropina && venta.cobrar_propina">
+                        <td class="text-right"> <b>Propina ({{ apiService.auth_user().empresa.propina_porcentaje | number:'1.0-2' }}%)</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.propina | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="tieneAccesoPropina && venta.cobrar_propina">
+                        <td class="text-right"> <b>Total + Propina</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ getTotalConPropina() | currency:'USD':'symbol':'1.2'}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                 </tbody>
@@ -190,13 +317,13 @@
     <div class="row">
         <h6 class="mt-3">Detalles de facturación</h6>
         <!-- Estado: {{ venta.estado }} -->
-        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1">
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
             <div class="form-switch border rounded">
               <label for="credito">Venta al crédito</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="venta.credito" name="venta.credito">
             </div>
         </div>
-        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="apiService.auth_user().empresa.venta_consigna && venta.cotizacion != 1">
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="apiService.auth_user().empresa.venta_consigna && venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
             <div class="form-switch border rounded">
               <label for="consigna">Consigna</label>
               <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch" (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
@@ -206,9 +333,14 @@
             <label for="fecha_expiracion">Fecha de expiración:</label><br>
             <input type="date" class="form-control" [(ngModel)]="venta.fecha_expiracion" name="fecha_expiracion" id="fecha_expiracion">
         </div>
-        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
             <label for="fecha_pago">Fecha de pago:</label><br>
-            <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" name="fecha_pago" id="fecha_pago">
+            <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" (change)="validarFechaPago()" name="fecha_pago" id="fecha_pago"
+                [disabled]="apiService.auth_user().tipo === 'Ventas' && venta.cliente?.limite_credito"
+                [title]="apiService.auth_user().tipo === 'Ventas' && venta.cliente?.limite_credito ? 'La fecha está definida por el plazo del cliente' : ''">
+            <div class="text-danger mt-1" style="font-size: 11px;" *ngIf="mensajeValidacionFecha">
+                {{ mensajeValidacionFecha }}
+            </div>
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1">
             <div class="form-switch bg-light-info rounded">
@@ -218,14 +350,26 @@
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
-              <label for="cobrar_impuestos">Con IVA</label>
+              <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
-              <label for="percepcion">Retención</label>
+              <label for="percepcion">Retención (1%)</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="compra.retencion">
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-3 without-label ">
+            <div class="form-switch bg-light-info rounded">
+                <label for="renta">Renta (10%)</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.renta" name="renta">
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-3 without-label" *ngIf="tieneAccesoPropina">
+            <div class="form-switch bg-light-info rounded">
+                <label for="cobrar_propina">Propina ({{ apiService.auth_user().empresa.propina_porcentaje | number:'1.0-2' }}%)</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_propina" name="cobrar_propina">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
@@ -237,12 +381,20 @@
                 <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos" (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
             </div>
         </div>
-        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.forma_pago != 'Efectivo' && venta.forma_pago != 'Wompi'">
-            <label for="detalle_banco">Bancos</label>
-            <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" class="form-select">
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.forma_pago != 'Efectivo' && venta.forma_pago != 'Wompi' && venta.forma_pago != 'Multiple'">
+            <label for="detalle_banco">Bancos <span class="text-danger">*</span></label>
+            <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" (change)="mensajeErrorBanco = ''" class="form-select" [class.is-invalid]="mensajeErrorBanco" required>
                 <option value="">Seleccione aquí</option>
-                <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+                <ng-container *ngIf="apiService.isModuloBancos()">
+                    <option [value]="banco.nombre_banco" *ngFor="let banco of bancos">{{ banco.nombre_banco }} - {{ banco.numero }}</option>
+                </ng-container>
+                <ng-container *ngIf="!apiService.isModuloBancos()">
+                    <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+                </ng-container>
             </select>
+            <div class="text-danger mt-1" style="font-size: 11px;" *ngIf="mensajeErrorBanco">
+                {{ mensajeErrorBanco }}
+            </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
             <label for="id_canal">Canal</label>
@@ -281,20 +433,28 @@
                 <input type="number" class="form-control" disabled [(ngModel)]="venta.cambio" name="cambio" id="cambio">
             </div>
         </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras'">
+            <label for="num_orden">Número de orden:</label><br>
+            <input type="text" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden" id="num_orden">
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras'">
+            <label for="num_orden_exento">Número de orden exento:</label><br>
+            <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento" id="num_orden_exento">
+        </div>
     </div>
-    <div class="row" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta && venta.cotizacion != 1">
+    <div class="row" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta">
         <div class="form-group col-md-12 col-lg-6 without-label">
             <div class="form-switch bg-light-info rounded">
               <label for="descripcion_personalizada">Agrupar detalles de venta y personalizar descripción</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="compra.descripcion_personalizada">
             </div>
         </div>
-        <div class="form-group col-md-12 col-lg-6" *ngIf="venta.cotizacion != 1 && venta.descripcion_personalizada">
+        <div class="form-group col-md-12 col-lg-6" *ngIf="venta.descripcion_personalizada">
             <label for="descripcion_impresion">Descripción a mostrar el la impresión del documento:</label>
             <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
         </div>
     </div>
-    <div class="row">
+    <div class="row" *ngIf="(apiService.auth_user()?.empresa?.custom_empresa?.configuraciones?.mostrar_campos_contables ?? true)">
         <div class="form-group col-6 col-lg-4">
             <label for="tipo_operacion">Tipo de operación:</label>
             <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">
@@ -390,10 +550,10 @@
   </div>
   <div class="modal-body">
     <div class="row text-center">
-        <form name="form" (ngSubmit)="supervisorCheck()">
+        <form name="form" (ngSubmit)="supervisorCheck()" autocomplete="off">
             <div class="form-group col-md-12">
                 <label for="codigo">Ingrese el código de supervisor:</label>
-                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center">
+                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center" autocomplete="off">
             </div>
             <div class="col-md-12">
                 <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
@@ -403,5 +563,187 @@
             </div>
         </form>
     </div>
+  </div>
+</ng-template>
+
+<!-- Modal de Puntos de Fidelización -->
+<ng-template #modalPuntos>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <i class="fas fa-coins text-success me-2"></i>
+      Puntos de Fidelización
+    </h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="cerrarModalPuntos()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <!-- Loading State -->
+    <div *ngIf="loadingModalPuntos" class="text-center py-4">
+      <div class="spinner-border text-success" role="status">
+        <span class="visually-hidden">Cargando puntos...</span>
+      </div>
+      <p class="mt-2 text-muted">Consultando información de puntos...</p>
+    </div>
+
+    <!-- Contenido del Modal -->
+    <div *ngIf="!loadingModalPuntos && puntosInfoModal">
+      
+      <!-- Información del Cliente -->
+      <div class="alert alert-info mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ venta.cliente?.nombre_completo || venta.cliente?.nombre_empresa }}</strong>
+            <small class="d-block text-muted" *ngIf="puntosInfoModal.configuracion">
+              {{ puntosInfoModal.configuracion.tipo_cliente }} - Nivel {{ puntosInfoModal.configuracion.nivel }}
+            </small>
+          </div>
+          <span class="badge bg-success fs-6">{{ formatNumber(puntosInfoModal.puntos_disponibles) }} pts</span>
+        </div>
+      </div>
+
+      <!-- Resumen de Puntos -->
+      <div class="row text-center mb-4">
+        <div class="col-4">
+          <div class="card border-success">
+            <div class="card-body py-2">
+              <h6 class="card-title text-success mb-1">Disponibles</h6>
+              <h5 class="text-success mb-0">{{ formatNumber(puntosInfoModal.puntos_disponibles) }}</h5>
+            </div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="card border-info">
+            <div class="card-body py-2">
+              <h6 class="card-title text-info mb-1">Total Ganados</h6>
+              <h5 class="text-info mb-0">{{ formatNumber(puntosInfoModal.puntos_totales_ganados) }}</h5>
+            </div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="card border-warning">
+            <div class="card-body py-2">
+              <h6 class="card-title text-warning mb-1">Canjeados</h6>
+              <h5 class="text-warning mb-0">{{ formatNumber(puntosInfoModal.puntos_totales_canjeados) }}</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Puntos próximos a expirar -->
+      <div *ngIf="puntosProximosAExpirarModal.length > 0" class="alert alert-warning mb-3">
+        <h6><i class="fas fa-exclamation-triangle me-1"></i>Próximos a expirar:</h6>
+        <ul class="mb-0">
+          <li *ngFor="let punto of puntosProximosAExpirarModal">
+            {{ formatNumber(punto.puntos_disponibles) }} puntos - 
+            <span [class]="getDiasExpiracionClass(punto.dias_para_expirar)">
+              {{ punto.dias_para_expirar }} días
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Opción de Canje -->
+      <div *ngIf="puntosInfoModal.puntos_disponibles > 0" class="card border-primary">
+        <div class="card-header bg-primary bg-opacity-10">
+          <div class="form-check d-flex align-items-center">
+            <input 
+              class="form-check-input me-2 flex-shrink-0" 
+              type="checkbox" 
+              id="usarPuntosModal"
+              [(ngModel)]="usarPuntosModal"
+              (change)="onToggleUsarPuntosModal()">
+            <label class="form-check-label fw-bold mb-0 d-flex align-items-center flex-nowrap" for="usarPuntosModal" style="white-space: nowrap;">
+              <i class="fas fa-gift me-1 flex-shrink-0"></i>
+              <span>Usar puntos como descuento</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="card-body" *ngIf="usarPuntosModal">
+          <div class="row">
+            <div class="col-8">
+              <label class="form-label small mb-1">Puntos a canjear:</label>
+              <div class="input-group">
+                <input 
+                  type="number" 
+                  class="form-control text-center"
+                  [(ngModel)]="puntosACanjearModal"
+                  (ngModelChange)="onCambiarPuntosModal()"
+                  [min]="configuracionModal?.minimo_canje || 1"
+                  [max]="getMaximoCanje()"
+                  placeholder="0">
+                <span class="input-group-text">pts</span>
+              </div>
+              <small class="text-muted">
+                Límites: {{ configuracionModal?.minimo_canje || 1 }} - {{ getMaximoCanje() }} puntos
+              </small>
+            </div>
+            <div class="col-4">
+              <button 
+                type="button"
+                class="btn btn-outline-success btn-sm w-100 mt-4"
+                (click)="usarTodosPuntosModal()"
+                [disabled]="puntosInfoModal.puntos_disponibles === 0">
+                <i class="fas fa-coins me-1"></i>
+                Usar todos
+              </button>
+            </div>
+          </div>
+
+          <!-- Preview del Descuento -->
+          <div *ngIf="puntosACanjearModal > 0" class="alert alert-success mt-3 mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <span>
+                <i class="fas fa-calculator me-1"></i>
+                <strong>Descuento:</strong>
+              </span>
+              <span class="h6 text-success mb-0">
+                ${{ getDescuentoTotalModal().toFixed(2) }}
+              </span>
+            </div>
+            <small class="text-muted">
+              {{ formatNumber(puntosACanjearModal) }} puntos × ${{ getValorPunto() }} = ${{ getDescuentoTotalModal().toFixed(2) }}
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mensaje cuando no hay puntos -->
+      <div *ngIf="puntosInfoModal.puntos_disponibles === 0" class="text-center py-4">
+        <i class="fas fa-coins fa-3x text-muted mb-3"></i>
+        <p class="text-muted mb-0">Este cliente no tiene puntos disponibles para canjear.</p>
+      </div>
+
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="!loadingModalPuntos && !puntosInfoModal" class="text-center py-4">
+      <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
+      <p class="text-danger mb-0">No se pudo cargar la información de puntos.</p>
+    </div>
+  </div>
+  
+  <div class="modal-footer" *ngIf="!loadingModalPuntos && puntosInfoModal">
+    <button type="button" class="btn btn-secondary" (click)="cerrarModalPuntos()">
+      Cerrar
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-danger me-2" 
+      *ngIf="puntosCanjeados > 0"
+      (click)="quitarDescuentoPuntos()">
+      <i class="fas fa-times me-1"></i>
+      Quitar Descuento
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-success" 
+      *ngIf="puntosInfoModal.puntos_disponibles > 0"
+      [disabled]="!isCanjeValido()"
+      (click)="aplicarCanjeModal()">
+      <i class="fas fa-check me-1"></i>
+      {{ puntosCanjeados > 0 ? 'Actualizar Descuento' : 'Aplicar Descuento' }}
+    </button>
   </div>
 </ng-template>

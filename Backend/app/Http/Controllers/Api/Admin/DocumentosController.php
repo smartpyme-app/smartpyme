@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Documento;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -41,6 +42,23 @@ class DocumentosController extends Controller
         return Response()->json($documentos, 200);
     }
 
+    public function listNombre()
+    {
+        $documentos = DB::table('documentos as d1')
+            ->where('d1.activo', true)
+            ->where('d1.id_empresa', Auth::user()->id_empresa) // Filtrar por empresa
+            ->whereIn('d1.id', function($query) {
+                $query->select(DB::raw('MIN(id)'))
+                    ->from('documentos as d2')
+                    ->where('d2.activo', true)
+                    ->where('d2.id_empresa', Auth::user()->id_empresa) // Filtrar por empresa en subconsulta
+                    ->groupBy('d2.nombre');
+            })
+            ->orderBy('d1.nombre')
+            ->get();
+        return Response()->json($documentos, 200);
+    }
+
 
     public function read($id)
     {
@@ -57,7 +75,7 @@ class DocumentosController extends Controller
     //         'rangos'        => 'sometimes|max:255',
     //         'numero_autorizacion' => 'sometimes|max:255',
     //         'resolucion'    => 'sometimes|max:255',
-    //         'nota'          => 'sometimes|max:500',
+    //         'nota'          => 'sometimes|max:1000',
     //         'id_empresa'    => 'required|numeric',
     //         'id_sucursal'   => 'required|numeric',
     //         'nuevaResolucion' => 'sometimes|boolean',
@@ -149,7 +167,7 @@ class DocumentosController extends Controller
             'rangos' => 'sometimes|max:255',
             'numero_autorizacion' => 'sometimes|max:255',
             'resolucion' => 'sometimes|max:255',
-            'nota' => 'sometimes|max:500',
+            'nota' => 'sometimes|max:1000',
             'id_empresa' => 'required|numeric',
             'id_sucursal' => 'required|numeric',
             'nuevaResolucion' => 'sometimes|boolean',

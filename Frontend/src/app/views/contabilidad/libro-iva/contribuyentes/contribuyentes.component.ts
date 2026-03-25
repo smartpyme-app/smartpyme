@@ -20,53 +20,50 @@ export class ContribuyentesComponent implements OnInit {
     public filtros:any = {};
     modalRef!: BsModalRef;
 
-    constructor(
+    constructor( 
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
-    ngOnInit() {
-        const currentYear = new Date().getFullYear();
+    ngOnInit() {   
+        const currentYear = new Date().getFullYear(); // Obtener el año actual
         const currentMonth = new Date().getMonth() + 1;
-
+        // Crear un array con el año actual y los 10 años anteriores
         for (let i = 0; i <= 10; i++) {
           this.years.push(currentYear - i);
         }
 
-        // Recuperar filtros del localStorage si existen
-        const savedFilters = localStorage.getItem('contribuyentes_filtros');
-        if (savedFilters) {
-            this.filtros = JSON.parse(savedFilters);
-        } else {
-            // Valores por defecto si no hay filtros guardados
-            this.filtros.id_sucursal = '';
-            this.filtros.tipo_documento = 'Crédito fiscal';
-            this.filtros.anio = currentYear;
-            this.filtros.mes = currentMonth;
-            this.filtros.time = 'day';
-        }
 
+        this.filtros.id_sucursal = '';
+        this.filtros.tipo_documento = 'Crédito fiscal';
+        this.filtros.anio = currentYear;
+        this.filtros.mes = currentMonth;
+        this.filtros.time = 'day';
         this.setTime();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false;});
 
         this.loadAll();
     }
 
+    /** Solo para El Salvador: opciones de descarga ZIP y CSV (declaración MH) */
+    get isElSalvador(): boolean {
+        return this.apiService.auth_user()?.empresa?.pais === 'El Salvador';
+    }
+
     public loadAll() {
         this.loading = true;
-        // Guardar filtros en localStorage antes de cargar
-        localStorage.setItem('contribuyentes_filtros', JSON.stringify(this.filtros));
-
-        this.apiService.getAll('libro-iva/contribuyentes', this.filtros).subscribe(ivas => {
+        this.apiService.getAll('libro-iva/contribuyentes', this.filtros).subscribe(ivas => { 
             this.ivas = ivas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public setTime() {
+        // this.filtros.time = { this.filtros.anio, this.filtros.mes }; // Guardamos el mes y año en el filtro
         this.filtros.inicio = moment([this.filtros.anio, this.filtros.mes - 1]).startOf('month').format('YYYY-MM-DD');
         this.filtros.fin = moment([this.filtros.anio, this.filtros.mes - 1]).endOf('month').format('YYYY-MM-DD');
         this.loadAll();
@@ -74,22 +71,23 @@ export class ContribuyentesComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
-    }
+    } 
 
-    public limpiarFiltros() {
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1;
-
-        this.filtros = {
-            id_sucursal: '',
-            tipo_documento: 'Crédito fiscal',
-            anio: currentYear,
-            mes: currentMonth,
-            time: 'day'
-        };
-
-        localStorage.removeItem('contribuyentes_filtros');
-        this.setTime();
+    private manejarErrorDescarga(error: any): void {
+        if (error.error instanceof Blob) {
+            error.error.text().then((text: string) => {
+                try {
+                    const errorJson = JSON.parse(text);
+                    const msg = errorJson.message ?? errorJson.error ?? text;
+                    this.alertService.error({ status: error.status || 409, error: { error: msg } });
+                } catch (e) {
+                    this.alertService.error({ status: error.status || 409, error: { error: text } });
+                }
+            });
+        } else {
+            this.alertService.error(error);
+        }
+        this.downloading = false;
     }
 
     public descargarLibro(){
@@ -105,7 +103,7 @@ export class ContribuyentesComponent implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+          }, (error) => { this.manejarErrorDescarga(error); }
         );
     }
 
@@ -123,7 +121,7 @@ export class ContribuyentesComponent implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+          }, (error) => { this.manejarErrorDescarga(error); }
         );
     }
 
@@ -141,8 +139,7 @@ export class ContribuyentesComponent implements OnInit {
             window.URL.revokeObjectURL(url);
             this.downloading = false;
         }, (error) => {
-            this.alertService.error(error);
-            this.downloading = false;
+            this.manejarErrorDescarga(error);
         });
     }
 
@@ -160,51 +157,111 @@ export class ContribuyentesComponent implements OnInit {
             window.URL.revokeObjectURL(url);
             this.downloading = false;
         }, (error) => {
-            this.alertService.error(error);
-            this.downloading = false;
+            this.manejarErrorDescarga(error);
         });
     }
 
 
-    public descargarDTECreditoFiscal(): void {
+    public descargarNotasCredito(): void {
         this.downloading = true;
-        let typeDTE : string = '03';
-        this.filtros.typeDTE = typeDTE;
-        this.apiService.export('libro-iva/contribuyentes/descargar-dttes', this.filtros).subscribe(
-          (data: Blob) => {
-            // Si es texto plano, es un mensaje de error
-            if (data.type === 'text/plain') {
-              data.text().then((errorMessage: string) => {
-                this.alertService.error(errorMessage);
-              });
-              this.downloading = false;
-              return;
-            }
+        const filtros = { ...this.filtros, tipo_nota: '05' };
+        this.apiService.export('libro-iva/contribuyentes/descargar-notas-credito-debito', filtros).subscribe(
+            (data: Blob) => this.procesarDescargaNotas(data, 'NotasCredito'),
+            (error: any) => this.manejarErrorDescarga(error)
+        );
+    }
 
-            // Si no es texto plano, es un archivo ZIP
-            const url = window.URL.createObjectURL(data);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'DTEs_Export_' + new Date().toISOString().slice(0, 10) + '.zip';
-            document.body.appendChild(a);
-            a.click();
+    public descargarNotasDebito(): void {
+        this.downloading = true;
+        const filtros = { ...this.filtros, tipo_nota: '06' };
+        this.apiService.export('libro-iva/contribuyentes/descargar-notas-credito-debito', filtros).subscribe(
+            (data: Blob) => this.procesarDescargaNotas(data, 'NotasDebito'),
+            (error: any) => this.manejarErrorDescarga(error)
+        );
+    }
+
+    private procesarDescargaNotas(data: Blob, prefijo: string): void {
+        if (data.type === 'text/plain') {
+            data.text().then((errorMessage: string) => {
+                this.alertService.error({ status: 400, error: { error: errorMessage } });
+                this.downloading = false;
+            });
+            return;
+        }
+        if (data.size === 0) {
+            this.alertService.error('El archivo descargado está vacío');
+            this.downloading = false;
+            return;
+        }
+        const fechaInicio = this.filtros.inicio.replace(/-/g, '');
+        const fechaFin = this.filtros.fin.replace(/-/g, '');
+        const filename = `${prefijo}_${fechaInicio}_${fechaFin}.zip`;
+        const url = window.URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-            this.downloading = false;
+        }, 100);
+        this.downloading = false;
+        this.alertService.success('Éxito', 'Archivo descargado correctamente');
+    }
+
+    public descargarDTECreditoFiscal(): void {
+      this.downloading = true;
+      let typeDTE: string = '03';
+      this.filtros.typeDTE = typeDTE;
+      
+      this.apiService.export('libro-iva/contribuyentes/descargar-dttes', this.filtros).subscribe(
+          (data: Blob) => {
+              if (data.type === 'text/plain') {
+                  data.text().then((errorMessage: string) => {
+                      this.alertService.error(errorMessage);
+                      this.downloading = false;
+                  });
+                  return;
+              }
+              
+              if (data.size === 0) {
+                  this.alertService.error('El archivo descargado está vacío');
+                  this.downloading = false;
+                  return;
+              }
+              
+              const fechaInicio = this.filtros.inicio.replace(/-/g, '');
+              const fechaFin = this.filtros.fin.replace(/-/g, '');
+              const filename = `DTEs_${fechaInicio}_${fechaFin}.zip`;
+              
+              const url = window.URL.createObjectURL(data);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = filename;
+              document.body.appendChild(a);
+              a.click();
+              
+              setTimeout(() => {
+                  document.body.removeChild(a);
+                  window.URL.revokeObjectURL(url);
+              }, 100);
+              
+              this.downloading = false;
+              this.alertService.success('Exito', 'Archivo descargado correctamente');
           },
           (error: any) => {
-            // Para errores HTTP que no devuelven un Blob
-            if (error.error instanceof Blob && error.error.type === 'text/plain') {
-              error.error.text().then((errorMessage: string) => {
-                this.alertService.error(errorMessage);
-              });
-            } else {
-              this.alertService.error(error.message || 'Error desconocido');
-            }
-            this.downloading = false;
+              if (error.error instanceof Blob) {
+                  error.error.text().then((errorMessage: string) => {
+                      this.alertService.error(errorMessage || 'Error al descargar');
+                  });
+              } else {
+                  this.alertService.error(error.message || 'Error desconocido');
+              }
+              this.downloading = false;
           }
-        );
-      }
+      );
+  }
 
       public descargarLibroPDF(): void {
         this.filtros.formato = 'pdf';

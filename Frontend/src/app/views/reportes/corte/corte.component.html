@@ -7,16 +7,22 @@
         <div class="d-flex gap-2">
             <button tooltip="Descargar" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
             <input type="date" name="fecha" (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
-            <ng-select [(ngModel)]="filtros.id_usuario" (change)="filtrar()" class="form-select  p-0" name="filtros.id_usuario">
-                <ng-option value="">Usuario</ng-option>
+            <ng-select [(ngModel)]="filtros.id_usuario" (change)="filtrar()" (clear)="onUsuarioClear()" [clearable]="filtros.id_usuario !== ''" class="form-select  p-0" name="filtros.id_usuario">
+                <ng-option value="">Todos los usuarios</ng-option>
                 <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
                     {{ usuario.name }}
                 </ng-option>
             </ng-select>
-            <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default ">
-                <option value="" *ngIf="usuario.tipo != 'Ventas'">Todas las sucursal</option>
+            <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select">
+                <option value="" *ngIf="usuario.tipo != 'Ventas' && usuario.tipo != 'Ventas Limitado'">Todas las sucursal</option>
                 <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
+                </option>
+            </select>
+            <select name="id_canal" (change)="filtrar()" [(ngModel)]="filtros.id_canal" class="form-select">
+                <option value="">Todos los canales</option>
+                <option *ngFor="let canal of canales" [value]="canal.id">
+                    {{ canal.nombre }}
                 </option>
             </select>
         </div>
@@ -26,7 +32,7 @@
 <section class="d-flex justify-content-between gap-2">
     <div class="card p-3">
         <h3 class="text-center text-success">
-            {{ (indicadores.totalVentas ? indicadores.totalVentas : 0) | currency }}
+            {{ (indicadores.totalVentas ? (indicadores.totalVentas + indicadores.totalPropina) : 0) | currency }}
         </h3>
         <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
     </div>
@@ -48,7 +54,7 @@
         </h3>
         <p class="mb-0 text-center">TOTAL <br> DEVOLUCIONES</p>
     </div>
-    <div class="card p-3" *ngIf="usuario.tipo == 'Administrador'">
+    <div class="card p-3" *ngIf="usuario.tipo != 'Ventas'">
         <h3 class="text-center text-secondary">
             {{ (indicadores.totalGastosPagados ? indicadores.totalGastosPagados : 0) | currency }}
         </h3>
@@ -78,6 +84,11 @@
                         <td class="text-right">{{ indicadores.cantidadVentasPagadas }}</td>
                         <td class="text-right">{{ indicadores.totalVentasPagadas | currency}}</td>
                     </tr>
+                    <tr *ngIf="(indicadores.totalPropina || 0) > 0">
+                        <td>Propina</td>
+                        <td class="text-right">{{ indicadores.cantidadPropina }}</td>
+                        <td class="text-right">{{ indicadores.totalPropina | currency}}</td>
+                    </tr>
                     <tr>
                         <td>Ventas al crédito</td>
                         <td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td>
@@ -85,7 +96,7 @@
                     </tr>
                     <tr><td>Abonos</td><td class="text-right">{{ indicadores.cantidadRecibos }}</td><td class="text-right">{{ indicadores.totalRecibos | currency}}</td></tr>
                     <tr><td>Devoluciones</td><td class="text-right">{{ indicadores.cantidadDevolucionesVenta }}</td><td class="text-right">{{ indicadores.totalDevolucionesVenta | currency}}</td></tr>
-                    <tr *ngIf="usuario.tipo == 'Administrador'"><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastos }}</td><td class="text-right">{{ indicadores.totalGastos | currency}}</td></tr>
+                    <tr *ngIf="usuario.tipo == 'Administrador'"><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastosPagados }}</td><td class="text-right">{{ indicadores.totalGastosPagados | currency}}</td></tr>
                     <tr><td>Cuentas por cobrar</td><td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td><td class="text-right">{{ indicadores.totalVentasPendientes | currency}}</td></tr>
                     </tbody>
                 </table>

@@ -27,14 +27,14 @@
         </div>
     </div>
 
-    <div class="d-flex">
-        <div class="col-md-6 d-flex gap-2 mb-3">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <div class="d-flex gap-2 flex-wrap">
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"routerLink="/ventas">Todos</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/devoluciones/ventas">Devoluciones</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/abonos">Abonos</button>
             <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/recurrentes" (click)="loadAll()" >Recurrentes</button>
         </div>
-        <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
+        <div class="ms-auto d-flex gap-2">
             <select name="estado" (change)="filtrarVentas()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="Pendiente">Pendiente</option>
@@ -161,7 +161,7 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="id_documento">Documento:</label>
-                <select name="id_documento" [(ngModel)]="venta.id_documento" class="form-select">
+                <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
                     <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
                 </select>
             </div>

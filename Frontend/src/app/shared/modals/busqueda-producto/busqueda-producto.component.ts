@@ -26,6 +26,10 @@ export class BusquedaProductoComponent implements OnInit {
     ngOnInit() {
     }
 
+    public isComponenteQuimicoHabilitado(): boolean {
+        return this.apiService.isComponenteQuimicoHabilitado();
+    }
+
     openModal(template: TemplateRef<any>) {
         this.loading = true;
         this.apiService.getAll('productos/list').subscribe(productos => {

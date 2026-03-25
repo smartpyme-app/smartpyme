@@ -1,0 +1,636 @@
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+import { Router, ActivatedRoute } from '@angular/router';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { HttpCacheService } from '@services/http-cache.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+
+import * as moment from 'moment';
+import Swal from 'sweetalert2';
+
+@Component({
+    selector: 'app-partidas',
+    templateUrl: './partidas.component.html',
+    styleUrls: ['./partidas.component.scss'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule],
+    
+})
+export class PartidasComponent extends BasePaginatedModalComponent implements OnInit {
+  public partidas: any = {}; // Usar any porque tiene propiedades adicionales (total_anuladas, total_pendientes, totales_generales)
+  public partida: any = {};
+  public override saving: boolean = false;
+  public reporte = {
+    fecha_inicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    fecha_fin: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
+    concepto: '',
+    cuenta: '',
+    tipo_descarga: 'pdf',
+    tipo_cuenta: 'all',
+  };
+  public catalogo: any = [];
+  public months: Array<{ value: number; label: string }> = [];
+  public years: number[] = [];
+  public selectedMonth: number = new Date().getMonth() + 1;
+  public selectedYear: number = new Date().getFullYear();
+
+  // NUEVO: Para funcionalidad de reordenamiento
+  public reordenamiento = {
+    anio: new Date().getFullYear(), // Cambiar año por anio
+    mes: new Date().getMonth() + 1,
+    tipo: 'Ingreso'
+  };
+
+  // NUEVO: Para mostrar totales
+  public totalesGenerales: any = {
+    gran_total_debe: 0,
+    gran_total_haber: 0,
+    total_registros_filtrados: 0
+  };
+
+  // NUEVO: Clave para persistir filtros
+  private readonly FILTROS_STORAGE_KEY = 'partidas_filtros_v1';
+
+  constructor(
+    protected override apiService: ApiService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
+    private cacheService: HttpCacheService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {
+    super(apiService, alertService, modalManager);
+  }
+
+  protected getPaginatedData(): PaginatedResponse | null {
+    return this.partidas;
+  }
+
+  protected setPaginatedData(data: PaginatedResponse): void {
+    this.partidas = data as any; // Cast a any para mantener propiedades adicionales
+  }
+
+  protected override onPaginateSuccess(response: PaginatedResponse): void {
+    // Actualizar totales al paginar
+    this.totalesGenerales = (response as any).totales_generales || this.totalesGenerales;
+  }
+
+  ngOnInit() {
+    this.apiService.getAll('catalogo/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
+      (catalogo) => {
+        this.catalogo = catalogo;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+
+    // NUEVO: Cargar filtros persistidos antes de loadAll
+    this.cargarFiltrosPersistidos();
+    this.loadAll();
+    this.generateMonths();
+    this.generateYears();
+  }
+
+  generateMonths() {
+    this.months = [
+      { value: 1, label: 'Enero' },
+      { value: 2, label: 'Febrero' },
+      { value: 3, label: 'Marzo' },
+      { value: 4, label: 'Abril' },
+      { value: 5, label: 'Mayo' },
+      { value: 6, label: 'Junio' },
+      { value: 7, label: 'Julio' },
+      { value: 8, label: 'Agosto' },
+      { value: 9, label: 'Septiembre' },
+      { value: 10, label: 'Octubre' },
+      { value: 11, label: 'Noviembre' },
+      { value: 12, label: 'Diciembre' }
+    ];
+  }
+
+  generateYears() {
+    const currentYear = new Date().getFullYear();
+    for (let i = currentYear - 5; i <= currentYear + 2; i++) {
+      this.years.push(i);
+    }
+  }
+
+  public onYearChange() {
+    // Método llamado cuando cambia el año en los formularios
+    // Puede implementarse lógica adicional aquí si es necesario
+  }
+
+  /**
+   * NUEVO: Cargar filtros desde sessionStorage
+   */
+  private cargarFiltrosPersistidos() {
+    try {
+      const filtrosGuardados = sessionStorage.getItem(this.FILTROS_STORAGE_KEY);
+      if (filtrosGuardados) {
+        this.filtros = JSON.parse(filtrosGuardados);
+      } else {
+        this.inicializarFiltrosDefault();
+      }
+    } catch (error) {
+      console.error('Error cargando filtros:', error);
+      this.inicializarFiltrosDefault();
+    }
+  }
+
+  /**
+   * NUEVO: Guardar filtros en sessionStorage
+   */
+  private guardarFiltros() {
+    try {
+      sessionStorage.setItem(this.FILTROS_STORAGE_KEY, JSON.stringify(this.filtros));
+    } catch (error) {
+      console.error('Error guardando filtros:', error);
+    }
+  }
+
+  /**
+   * NUEVO: Filtros por defecto
+   */
+  private inicializarFiltrosDefault() {
+    this.filtros = {
+      tipo: '',
+      buscador: '',
+      orden: 'correlativo', // NUEVO: Orden por correlativo por defecto
+      direccion: 'desc',
+      paginate: 10,
+      estado: '',
+      incluir_anuladas: false // NUEVO: No mostrar anuladas por defecto
+    };
+  }
+
+  public setOrden(columna: string) {
+    if (this.filtros.columna == columna) {
+      this.filtros.orden = this.filtros.orden == 'asc' ? 'desc' : 'asc';
+    } else {
+      this.filtros.orden = 'asc';
+    }
+    this.filtros.columna = columna;
+    this.filtrarPartidas();
+  }
+
+  public loadAll() {
+    if (!this.filtros.orden) {
+      this.inicializarFiltrosDefault();
+    }
+
+    this.filtrarPartidas();
+
+    const today = new Date();
+    this.reporte.fecha_inicio = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    this.reporte.fecha_fin = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+    this.reporte.tipo_descarga = 'pdf';
+    this.reporte.tipo_cuenta = 'all';
+    this.reporte.concepto = '';
+  }
+
+  public filtrarPartidas() {
+    this.loading = true;
+
+    this.guardarFiltros();
+
+    this.apiService.getAll('partidas', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+      (response) => {
+        this.partidas = response;
+
+        // NUEVO: Guardar totales generales
+        this.totalesGenerales = response.totales_generales || {
+          gran_total_debe: 0,
+          gran_total_haber: 0,
+          total_registros_filtrados: 0
+        };
+
+        this.loading = false;
+        if (this.modalRef) {
+          this.closeModal();
+        }
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
+  }
+
+  public override openModal(template: TemplateRef<any>, partida: any) {
+    this.partida = partida;
+    super.openModal(template, {
+      class: 'modal-lg',
+      backdrop: 'static',
+    });
+  }
+
+  public openFilter(template: TemplateRef<any>) {
+    // Configuración específica para el modal de reportes
+    this.openModal(template, {
+      class: 'modal-xl',
+      backdrop: 'static' as 'static',
+      keyboard: false
+    });
+  }
+
+  /**
+   * NUEVO: Modal para reordenar correlativos
+   */
+  public openReordenarModal(template: TemplateRef<any>) {
+    this.openModal(template, {
+      class: 'modal-md',
+      backdrop: 'static',
+    });
+  }
+
+  public setEstado(partida: any, estado: any) {
+    this.apiService.read('partida/', partida.id)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+      (partidaCompleta) => {
+        partidaCompleta.estado = estado;
+        this.onSubmit(partidaCompleta);
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+  }
+
+  public async setEstadoChange(partida: any) {
+    try {
+      await this.apiService.store('partida', partida)
+        .pipe(this.untilDestroyed())
+        .toPromise();
+      
+      // Invalidar cache del item específico y listas relacionadas
+      if (partida?.id) {
+        this.cacheService.delete(`/partida/${partida.id}`);
+      }
+      this.cacheService.invalidatePattern('/partidas');
+      this.cacheService.invalidatePattern('/partida');
+      
+      this.alertService.success(
+        'Partida actualizada',
+        'El estado de la partida fue actualizado.'
+      );
+    } catch (error: any) {
+      this.alertService.error(error);
+    }
+  }
+
+  // setPagination() ahora se hereda de BasePaginatedComponent
+
+  public async delete(partida: any) {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: '¡No podrás revertir esto!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminarlo',
+      cancelButtonText: 'Cancelar',
+    });
+    
+    if (result.isConfirmed) {
+      try {
+        const data = await this.apiService.delete('partida/', partida.id)
+          .pipe(this.untilDestroyed())
+          .toPromise();
+        
+        // Invalidar cache del item eliminado y listas relacionadas
+        if (partida?.id) {
+          this.cacheService.delete(`/partida/${partida.id}`);
+        }
+        this.cacheService.invalidatePattern('/partidas');
+        this.cacheService.invalidatePattern('/partida');
+        
+        for (let i = 0; i < this.partidas.data.length; i++) {
+          if (this.partidas.data[i].id == data.id)
+            this.partidas.data.splice(i, 1);
+        }
+      } catch (error: any) {
+        this.alertService.error(error);
+      }
+    }
+  }
+
+  public async onSubmit(partidaData?: any) {
+    this.saving = true;
+    try {
+      const partidaToSave = partidaData || this.partida;
+      const partidaGuardada = await this.apiService.store('partida', partidaToSave)
+        .pipe(this.untilDestroyed())
+        .toPromise();
+      
+      // Invalidar cache del item específico si se está editando
+      const isNew = !partidaToSave.id;
+      if (!isNew && partidaGuardada?.id) {
+        this.cacheService.delete(`/partida/${partidaGuardada.id}`);
+      }
+      // Invalidar cache de listas relacionadas
+      this.cacheService.invalidatePattern('/partidas');
+      this.cacheService.invalidatePattern('/partida');
+      
+      if (isNew) {
+        this.loadAll();
+        this.alertService.success(
+          'Partida creada',
+          'El partida fue añadida exitosamente.'
+        );
+      } else {
+        this.alertService.success(
+          'Partida guardada',
+          'El partida fue guardada exitosamente.'
+        );
+      }
+      
+      if (this.modalRef) {
+        this.closeModal();
+      }
+    } catch (error: any) {
+      this.alertService.error(error);
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  /**
+   * NUEVO: Reordenar correlativos
+   */
+  public reordenarCorrelativos() {
+    this.saving = true;
+
+    this.apiService.store('partidas/reordenar-correlativos', this.reordenamiento)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+      next: (response) => {
+        this.saving = false;
+        this.alertService.success(
+          'Correlativos reordenados',
+          `Se reordenaron ${response.partidas_reordenadas} partidas exitosamente`
+        );
+        this.filtrarPartidas(); // Refrescar listado
+        if (this.modalRef) {
+          this.closeModal();
+        }
+      },
+      error: (error) => {
+        this.saving = false;
+        this.alertService.error(error.error?.error || 'Error al reordenar correlativos');
+      }
+    });
+  }
+
+  /**
+   * NUEVO: Limpiar filtros y resetear
+   */
+  public limpiarFiltros() {
+    sessionStorage.removeItem(this.FILTROS_STORAGE_KEY);
+    this.inicializarFiltrosDefault();
+    this.filtrarPartidas();
+  }
+
+  /**
+   * NUEVO: Toggle para mostrar/ocultar anuladas
+   */
+  public toggleMostrarAnuladas() {
+    this.filtros.incluir_anuladas = !this.filtros.incluir_anuladas;
+    this.filtrarPartidas();
+  }
+
+  // Métodos existentes sin cambios...
+  public imprimirDiarioAux() {
+    if (
+      this.reporte.fecha_inicio &&
+      this.reporte.fecha_fin &&
+      this.reporte.tipo_descarga &&
+      this.reporte.tipo_cuenta
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/libro/diario/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_cuenta +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirMayor() {
+    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.concepto) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/libro/diario/mayor/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_cuenta +
+          '/' +
+          this.reporte.concepto +
+          '?token=' +
+          this.apiService.auth_token()
+      );
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirDiarioMayor() {
+    if (
+      this.reporte.fecha_inicio &&
+      this.reporte.fecha_fin &&
+      this.reporte.tipo_descarga &&
+      this.reporte.tipo_cuenta
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/libro/diario/mayor/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_cuenta +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
+    } else {
+      console.error('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirMovCuenta() {
+    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.cuenta) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/movimiento/cuenta/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.cuenta +
+          '?token=' +
+          this.apiService.auth_token()
+      );
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirBalanceComprobacion() {
+    if (
+      this.reporte.fecha_inicio &&
+      this.reporte.fecha_fin &&
+      this.reporte.tipo_descarga &&
+      this.reporte.tipo_cuenta
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/balance/comprobacion/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_cuenta +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirBalanceGeneral() {
+    if (
+      this.reporte.fecha_inicio &&
+      this.reporte.fecha_fin &&
+      this.reporte.tipo_descarga
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/balance/general/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirEstadoResultados() {
+    if (
+      this.reporte.fecha_inicio &&
+      this.reporte.fecha_fin &&
+      this.reporte.tipo_descarga
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/estado/resultados/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public abrirPartida(partida: any) {
+    this.apiService.store('partidas/abrir', { id: partida.id })
+      .pipe(this.untilDestroyed())
+      .subscribe({
+      next: (response) => {
+        this.alertService.success('Partida abierta', 'La partida ha sido reabierta exitosamente.');
+        this.filtrarPartidas();
+      },
+      error: (error) => {
+        this.alertService.error(error.error.error || 'Error al abrir la partida');
+      }
+    });
+  }
+
+  public imprimirPartida(partida: any) {
+    window.open(
+      this.apiService.baseUrl + '/api/partidas/descargar/' + partida.id + '?token=' + this.apiService.auth_token(),
+      '_blank'
+    );
+  }
+
+  public reordenarTodosLosCorrelativos() {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esto reordenará TODAS las partidas de la empresa. Esta acción puede tomar varios minutos.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, reordenar todo',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f39c12'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.saving = true;
+
+        this.apiService.store('partidas/reordenar-correlativos', { todos: true })
+          .pipe(this.untilDestroyed())
+          .subscribe({
+          next: (response) => {
+            this.saving = false;
+            this.alertService.success(
+              'Reordenamiento completo',
+              `Se reordenaron ${response.partidas_reordenadas} partidas de toda la empresa`
+            );
+            this.filtrarPartidas();
+            if (this.modalRef) {
+              this.closeModal();
+            }
+          },
+          error: (error) => {
+            this.saving = false;
+            this.alertService.error(error.error?.error || 'Error al reordenar todos los correlativos');
+          }
+        });
+      }
+    });
+  }
+
+  public toggleAnuladas() {
+    this.filtros.incluir_anuladas = !this.filtros.incluir_anuladas;
+
+    if (this.filtros.incluir_anuladas) {
+      this.filtros.estado = '';
+    }
+
+    this.filtrarPartidas();
+  }
+
+}

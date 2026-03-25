@@ -20,7 +20,9 @@ class Traslado extends Model
         'id_empresa',
         'id_usuario',
         'concepto',
-        'estado'
+        'estado',
+        'lote_id',
+        'lote_id_destino'
     ];
 
     protected $appends = ['nombre_producto', 'nombre_origen', 'nombre_destino'];
@@ -69,6 +71,14 @@ class Traslado extends Model
 
     public function usuario(){
         return $this->belongsTo('App\Models\User', 'id_usuario');
+    }
+
+    public function lote(){
+        return $this->belongsTo('App\Models\Inventario\Lote', 'lote_id');
+    }
+
+    public function loteDestino(){
+        return $this->belongsTo('App\Models\Inventario\Lote', 'lote_id_destino');
     }
 
 }

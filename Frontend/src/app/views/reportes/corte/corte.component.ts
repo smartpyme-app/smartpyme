@@ -12,6 +12,7 @@ export class CorteComponent implements OnInit {
     public indicadores:any = {};
     public sucursales:any = [];
     public usuarios:any = [];
+    public canales:any = [];
     public filtros:any = {};
 
     constructor(public apiService: ApiService, public alertService: AlertService) {}
@@ -19,13 +20,14 @@ export class CorteComponent implements OnInit {
     ngOnInit(){
         this.usuario = this.apiService.auth_user();
 
-        if(this.usuario.tipo != 'Ventas'){
+        if(this.usuario.tipo != 'Ventas' && this.usuario.tipo != 'Ventas Limitado'){
             this.filtros.id_sucursal = '';
             this.filtros.id_usuario = '';
         }else{
             this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
             this.filtros.id_usuario = this.apiService.auth_user().id;
         }
+        this.filtros.id_canal = '';
         this.filtros.fecha = this.apiService.date();
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
@@ -42,6 +44,9 @@ export class CorteComponent implements OnInit {
             }
         }, error => {this.alertService.error(error);});
 
+        this.apiService.getAll('canales/list').subscribe(canales => {
+            this.canales = canales;
+        }, error => {this.alertService.error(error);});
 
         this.filtrar();
         
@@ -55,6 +60,11 @@ export class CorteComponent implements OnInit {
         this.apiService.getAll('corte', this.filtros).subscribe(indicadores => { 
             this.indicadores = indicadores;
         }, error => {this.alertService.error(error); });
+    }
+
+    public onUsuarioClear(){
+        this.filtros.id_usuario = '';
+        this.filtrar();
     }
     
 }

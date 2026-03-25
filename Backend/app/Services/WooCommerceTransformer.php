@@ -5,22 +5,27 @@ namespace App\Services;
 class WooCommerceTransformer
 {
     /**
-     * Transforma datos de cliente de WooCommerce al formato de tu sistema
+     * Transforma datos de cliente de WooCommerce al formato de tu sistema.
+     * Soporta 'billing' (REST API) y 'billing_address' (algunos webhooks).
      */
     public function transformarCliente($wooData)
     {
+        $billing = $wooData['billing'] ?? $wooData['billing_address'] ?? [];
+
+        $correo = $billing['email'] ?? $wooData['email'] ?? 'woocommerce-' . ($wooData['id'] ?? uniqid()) . '@cliente.temp';
+
         return [
-            'nombre' => $wooData['billing']['first_name'],
-            'apellido' => $wooData['billing']['last_name'],
-            'nombre_empresa' => $wooData['billing']['company'],
-            'telefono' => $wooData['billing']['phone'],
-            'correo' => $wooData['billing']['email'],
-            'direccion' => $wooData['billing']['address_1'],
-            'pais' => $wooData['billing']['country'],
-            'cod_pais' => $wooData['billing']['country'],
+            'nombre' => $billing['first_name'] ?? '',
+            'apellido' => $billing['last_name'] ?? '',
+            'nombre_empresa' => $billing['company'] ?? '',
+            'telefono' => $billing['phone'] ?? '',
+            'correo' => $correo,
+            'direccion' => $billing['address_1'] ?? '',
+            'pais' => $billing['country'] ?? '',
+            'cod_pais' => $billing['country'] ?? '',
             'tipo' => 'Persona',
-            'empresa_telefono' => $wooData['billing']['phone'],
-            'empresa_direccion' => $wooData['billing']['address_1'],
+            'empresa_telefono' => $billing['phone'] ?? '',
+            'empresa_direccion' => $billing['address_1'] ?? '',
             'enable' => 1,
             'id_empresa' => $wooData['id_empresa'],
             'id_usuario' => $wooData['id_usuario'],
@@ -30,26 +35,30 @@ class WooCommerceTransformer
     /**
      * Transforma datos de venta de WooCommerce
      */
-    public function transformarVenta($wooData, $clienteId, $documentoId)
+    public function transformarVenta($wooData, $clienteId, $documentoId, $correlativo)
     {
+        $total = (float) ($wooData['total'] ?? 0);
+        $totalTax = (float) ($wooData['total_tax'] ?? 0);
+        $discountTotal = (float) ($wooData['discount_total'] ?? 0);
+
         return [
-            'codigo_generacion' => null, // para DTE si es necesario
+            'codigo_generacion' => null,
             'estado' => 'Pagada',
             'forma_pago' => 'Tarjeta de crédito/débito',
-            'observaciones' => $wooData['customer_note'],
-            'fecha' => $wooData['date_created'],
-            'fecha_pago' => $wooData['date_created'],
-            'total_costo' => 0, // calcular basado en detalles
-            'total' => $wooData['total'],
-            'sub_total' => $wooData['total'],
-            'gravada' => $wooData['total'] - $wooData['total_tax'],
+            'observaciones' => $wooData['customer_note'] ?? '',
+            'fecha' => $wooData['date_created'] ?? now()->toISOString(),
+            'fecha_pago' => $wooData['date_paid'] ?? $wooData['date_created'] ?? now()->toISOString(),
+            'total_costo' => 0,
+            'total' => $total,
+            'sub_total' => $total,
+            'gravada' => $total - $totalTax,
             'cuenta_a_terceros' => 0,
-            'iva' => $wooData['total_tax'],
+            'iva' => $totalTax,
             'iva_retenido' => 0,
             'iva_percibido' => 0,
-            'descuento' => $wooData['discount_total'],
+            'descuento' => $discountTotal,
             'id_cliente' => $clienteId,
-            'correlativo' => $wooData['number'],
+            'correlativo' => $correlativo,
             'id_documento' => $documentoId,
             'id_bodega' => $wooData['id_bodega'],
             'id_empresa' => $wooData['id_empresa'],
@@ -64,21 +73,25 @@ class WooCommerceTransformer
      */
     public function transformarDetallesVenta($lineItem, $ventaId)
     {
+        $subtotal = (float) ($lineItem['subtotal'] ?? 0);
+        $total = (float) ($lineItem['total'] ?? 0);
+        $totalTax = (float) ($lineItem['total_tax'] ?? 0);
+
         return [
-            'cantidad' => $lineItem['quantity'],
-            'costo' => 0, // obtener del producto en tu sistema
-            'precio' => $lineItem['price'],
-            'total' => $lineItem['total'],
-            'total_costo' => 0, // calcular
-            'descuento' => $lineItem['subtotal'] - $lineItem['total'],
+            'cantidad' => (float) ($lineItem['quantity'] ?? 0),
+            'costo' => 0,
+            'precio' => (float) ($lineItem['price'] ?? 0),
+            'total' => $total,
+            'total_costo' => 0,
+            'descuento' => max(0, $subtotal - $total),
             'no_sujeta' => 0,
             'exenta' => 0,
             'cuenta_a_terceros' => 0,
-            'subtotal' => $lineItem['subtotal'],
-            'gravada' => $lineItem['total'],
-            'iva' => $lineItem['total_tax'],
-            'descripcion' => $lineItem['name'],
-            'id_producto' => null, // buscar por SKU en tu sistema
+            'subtotal' => $subtotal,
+            'gravada' => $total,
+            'iva' => $totalTax,
+            'descripcion' => $lineItem['name'] ?? '',
+            'id_producto' => null,
             'id_venta' => $ventaId
         ];
     }

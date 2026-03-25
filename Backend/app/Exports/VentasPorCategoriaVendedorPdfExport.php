@@ -5,7 +5,6 @@ namespace App\Exports;
 use App\Models\Admin\Sucursal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use PDF;
 
 class VentasPorCategoriaVendedorPdfExport
 {
@@ -45,7 +44,7 @@ class VentasPorCategoriaVendedorPdfExport
             $titulo = 'Ventas por Categoría y Vendedor - ' . $this->fechaInicio . ' al ' . $this->fechaFin;
             
             // Generar el PDF a través de una vista
-            $pdf = PDF::loadView('exports.ventas_categoria_vendedor_pdf', [
+            $pdf = app('dompdf.wrapper')->loadView('exports.ventas_categoria_vendedor_pdf', [
                 'datos' => $datos,
                 'encabezados' => $encabezados,
                 'titulo' => $titulo

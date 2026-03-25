@@ -14,7 +14,7 @@ class InventariosController extends Controller
 
     public function index($bodega) {
        
-        $inventarios = Inventario::where('bodega_id', $bodega)->with('producto')->orderBy('created_at','desc')->paginate(10);
+        $inventarios = Inventario::where('id_bodega', $bodega)->with('producto')->orderBy('created_at','desc')->paginate(10);
 
         return Response()->json($inventarios, 200);
 
@@ -22,14 +22,14 @@ class InventariosController extends Controller
 
     public function productos($id) {
 
-            $productos = Inventario::where('bodega_id', $id)->with('producto')->paginate(50);
+            $productos = Inventario::where('id_bodega', $id)->with('producto')->paginate(50);
 
             return Response()->json($productos, 200);
     }
 
-    public function search($bodega_id, $txt) {
+    public function search($id_bodega, $txt) {
 
-        $productos = Inventario::where('bodega_id', $bodega_id)->with('producto')
+        $productos = Inventario::where('id_bodega', $id_bodega)->with('producto')
                                     ->whereHas('producto', function($query) use ($txt){
                                         return $query->where('nombre', 'like' ,'%' . $txt . '%');
                                     })->paginate(30);
@@ -40,7 +40,7 @@ class InventariosController extends Controller
 
     public function productosFiltrar(Request $request) {
 
-            $productos = Inventario::where('bodega_id', $request->bodega_id)
+            $productos = Inventario::where('id_bodega', $request->id_bodega)
                                 ->with('producto')
                                 ->when($request->subcategorias_id, function($query) use ($request){
                                     $query->whereHas('producto', function($query) use ($request){
@@ -66,7 +66,7 @@ class InventariosController extends Controller
     	
         $request->validate([
             'id_producto'    => 'required|numeric',
-            'id_sucursal'    => 'required|numeric',
+            'id_bodega'    => 'required|numeric',
             'stock'          => 'required|numeric',
             'stock_minimo'      => 'required|numeric',
             'stock_maximo'      => 'required|numeric',
@@ -79,7 +79,7 @@ class InventariosController extends Controller
         else{
 
             $inventario = new Inventario;
-            $existe = Inventario::where('id_producto', $request->id_producto)->where('id_sucursal', $request->id_sucursal)->first();
+            $existe = Inventario::where('id_producto', $request->id_producto)->where('id_bodega', $request->id_bodega)->first();
 
             if($existe)
                 return  Response()->json(['error' => 'Ya ha sido configurado el producto en esta sucursal', 'code' => 400], 400);
@@ -103,7 +103,7 @@ class InventariosController extends Controller
     }
 
     public function bodegaSearch($txt) {
-        $productoInventario = Inventario::where('bodega_id', 1)->whereHas('producto', function($query) use ($txt)
+        $productoInventario = Inventario::where('id_bodega', 1)->whereHas('producto', function($query) use ($txt)
                     {
                         $query->where('nombre', 'like' ,'%' . $txt . '%')
                         ->orWhere('codigo', 'like' ,'%' . $txt . '%');
@@ -117,7 +117,7 @@ class InventariosController extends Controller
 
     public function ventaSearch($txt) {
 
-    	$productoVenta = Inventario::where('bodega_id', 2)->whereHas('producto', function($query) use ($txt)
+    	$productoVenta = Inventario::where('id_bodega', 2)->whereHas('producto', function($query) use ($txt)
                     {
                         $query->where('nombre', 'like' ,'%' . $txt . '%')
                         ->orWhere('codigo', 'like' ,'%' . $txt . '%');
@@ -131,13 +131,22 @@ class InventariosController extends Controller
 
     public function export(Request $request){
        $request->validate([
-           'fecha'    => 'required|date',
+           'id_empresa' => 'required|numeric',
+           'fecha'      => 'required|date',
        ]);
 
-        $inventario = new InventarioAFechaExport();
-        $inventario->filter($request);
+        try {
+            $inventario = new InventarioAFechaExport();
+            $inventario->filter($request);
 
-        return Excel::download($inventario, 'inventario.xlsx');
+            return Excel::download($inventario, 'inventario.xlsx');
+        } catch (\Throwable $e) {
+            \Log::error('Error al exportar inventario: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+            ]);
+            throw $e;
+        }
     }
 
 

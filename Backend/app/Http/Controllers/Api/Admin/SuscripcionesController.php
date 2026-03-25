@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exports\SuscripcionesExport;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Models\OrdenPago;
@@ -12,7 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use JWTAuth;
-
+use Maatwebsite\Excel\Facades\Excel;
 
 class SuscripcionesController extends Controller
 {
@@ -41,50 +42,68 @@ class SuscripcionesController extends Controller
                         ->orWhere('nombre_propietario', 'like', '%' . $request->buscador . '%');
                 });
             })
-            ->when($request->suscripcion_inicio, function ($q) use ($request) {
-                return $q->whereHas('suscripcion', function ($query) use ($request) {
-                    $query->whereDate('created_at', '>=', $request->suscripcion_inicio);
+                ->when($request->suscripcion_inicio, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('created_at', '>=', $request->suscripcion_inicio);
+                    });
+                })
+                ->when($request->suscripcion_fin, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('created_at', '<=', $request->suscripcion_fin);
+                    });
+                })
+                ->when($request->pago_inicio, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('fecha_ultimo_pago', '>=', $request->pago_inicio);
+                    });
+                })
+                ->when($request->pago_fin, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('fecha_ultimo_pago', '<=', $request->pago_fin);
+                    });
+                })
+                ->when($request->fecha_pago_inicio, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('fecha_proximo_pago', '>=', $request->fecha_pago_inicio);
+                    });
+                })
+                ->when($request->fecha_pago_fin, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('fecha_proximo_pago', '<=', $request->fecha_pago_fin);
+                    });
+                })
+                ->when($request->plan, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion.plan', function ($query) use ($request) {
+                        $query->where('nombre', $request->plan);
+                    });
+                })
+                ->when($request->forma_pago, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->where('metodo_pago', $request->forma_pago);
+                    });
+                })
+                ->when($request->campania, function ($q) use ($request) {
+                    return $q->where('campania', 'like', '%' . $request->campania . '%');
                 });
-            })
-            ->when($request->suscripcion_fin, function ($q) use ($request) {
-                return $q->whereHas('suscripcion', function ($query) use ($request) {
-                    $query->whereDate('created_at', '<=', $request->suscripcion_fin);
-                });
-            })
-            ->when($request->pago_inicio, function ($q) use ($request) {
-                return $q->whereHas('suscripcion', function ($query) use ($request) {
-                    $query->whereDate('fecha_ultimo_pago', '>=', $request->pago_inicio);
-                });
-            })
-            ->when($request->pago_fin, function ($q) use ($request) {
-                return $q->whereHas('suscripcion', function ($query) use ($request) {
-                    $query->whereDate('fecha_ultimo_pago', '<=', $request->pago_fin);
-                });
-            })
-            ->when($request->plan, function ($q) use ($request) {
-                return $q->whereHas('suscripcion.plan', function ($query) use ($request) {
-                    $query->where('nombre', $request->plan);
-                });
-            })
-            ->when($request->forma_pago, function ($q) use ($request) {
-                return $q->where('metodo_pago', $request->forma_pago);
-            });
 
             if (!$request->estado) {
                 $query->withCount('suscripcion');
             }
 
-            $empresas = $query->orderBy($request->orden ?? 'created_at', $request->direccion ?? 'desc')
-                ->paginate($request->paginate ?? 10);
+            $orden = $request->orden ?? 'created_at';
+            $direccion = $request->direccion ?? 'desc';
 
-            // Obtener el tipo de plan para cada empresa
-            $empresas->getCollection()->transform(function ($empresa) {
+            $query = $this->ordenamiento($query, $orden, $direccion);
+
+            $empresas = $query->paginate($request->paginate ?? 10);
+
+            $empresas->through(function ($empresa) {
                 if ($empresa->suscripcion && $empresa->suscripcion->plan) {
                     $empresa->suscripcion->plan->tipo_plan = $empresa->suscripcion->plan->getTipoPlanAttribute();
                 }
                 return $empresa;
             });
-            
+
             return response()->json($empresas, 200);
         } catch (\Exception $e) {
             Log::error('Error en SuscripcionesController@index: ' . $e->getMessage());
@@ -111,6 +130,58 @@ class SuscripcionesController extends Controller
         return response()->json($suscripcion, 200);
     }
 
+    public function ordenamiento($query, $orden, $direccion)
+    {
+        switch ($orden) {
+            case 'estado_suscripcion':
+                $query->leftJoin('suscripciones as s1', 'empresas.id', '=', 's1.empresa_id')
+                    ->orderBy('s1.estado', $direccion)
+                    ->select('empresas.*');
+                break;
+
+            case 'estado_pago':
+                $query->leftJoin('suscripciones as s2', 'empresas.id', '=', 's2.empresa_id')
+                    ->orderBy('s2.estado_ultimo_pago', $direccion)
+                    ->select('empresas.*');
+                break;
+
+            case 'fecha_proximo_pago':
+                $query->leftJoin('suscripciones as s3', 'empresas.id', '=', 's3.empresa_id')
+                    ->orderBy('s3.fecha_proximo_pago', $direccion)
+                    ->select('empresas.*');
+                break;
+
+            case 'fecha_ultimo_pago':
+                $query->leftJoin('suscripciones as s4', 'empresas.id', '=', 's4.empresa_id')
+                    ->orderBy('s4.fecha_ultimo_pago', $direccion)
+                    ->select('empresas.*');
+                break;
+
+            case 'plan':
+                $query->leftJoin('suscripciones as s5', 'empresas.id', '=', 's5.empresa_id')
+                    ->leftJoin('planes as p1', 's5.plan_id', '=', 'p1.id')
+                    ->orderBy('p1.nombre', $direccion)
+                    ->select('empresas.*');
+                break;
+
+            case 'tipo_plan':
+                $query->leftJoin('suscripciones as s6', 'empresas.id', '=', 's6.empresa_id')
+                    ->orderBy('s6.tipo_plan', $direccion)
+                    ->select('empresas.*');
+                break;
+
+            case 'metodo_pago':
+                $query->orderBy('metodo_pago', $direccion);
+                break;
+
+            default:
+                $query->orderBy($orden, $direccion);
+                break;
+        }
+
+        return $query;
+    }
+
     public function createSuscription(Request $request)
     {
         try {
@@ -123,12 +194,13 @@ class SuscripcionesController extends Controller
                 'monto' => 'required|numeric|min:0',
                 'fecha_proximo_pago' => 'required|date',
                 'fin_periodo_prueba' => 'required|date',
-                // Campos opcionales
                 'nit' => 'nullable|string|max:20',
                 'nombre_factura' => 'nullable|string|max:255',
                 'direccion_factura' => 'nullable|string|max:500',
                 'requiere_factura' => 'boolean',
-                'motivo_cancelacion' => 'nullable|string|max:500'
+                'motivo_cancelacion' => 'nullable|string|max:500',
+                'monto_mensual' => 'nullable|numeric|min:0',
+                'monto_anual' => 'nullable|numeric|min:0'
             ]);
 
             $existingSuscripcion = Suscripcion::where('empresa_id', $request->empresa_id)
@@ -178,6 +250,20 @@ class SuscripcionesController extends Controller
 
             $suscripcion->save();
 
+            // Actualizar campos monto_mensual y monto_anual en la empresa
+            $empresa = Empresa::findOrFail($validated['empresa_id']);
+            if ($request->has('monto_mensual')) {
+                $empresa->monto_mensual = $request->input('monto_mensual');
+            }
+            if ($request->has('monto_anual')) {
+                $empresa->monto_anual = $request->input('monto_anual');
+            }
+            // Actualizar frecuencia_pago si viene en el request
+            if ($request->has('frecuencia_pago')) {
+                $empresa->frecuencia_pago = $request->input('frecuencia_pago');
+            }
+            $empresa->save();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Suscripción creada exitosamente',
@@ -214,7 +300,9 @@ class SuscripcionesController extends Controller
                 'nombre_factura' => 'nullable|string',
                 'direccion_factura' => 'nullable|string',
                 'motivo_cancelacion' => 'nullable|string',
-                'nit' => 'nullable|string'
+                'nit' => 'nullable|string',
+                'monto_mensual' => 'nullable|numeric|min:0',
+                'monto_anual' => 'nullable|numeric|min:0'
             ]);
 
             $suscripcion = Suscripcion::findOrFail($validated['id']);
@@ -244,6 +332,20 @@ class SuscripcionesController extends Controller
                 'direccion_factura' => $request->input('direccion_factura'),
                 'motivo_cancelacion' => $request->input('motivo_cancelacion'),
             ]);
+
+            // Actualizar campos monto_mensual y monto_anual en la empresa
+            $empresa = Empresa::findOrFail($suscripcion->empresa_id);
+            if ($request->has('monto_mensual')) {
+                $empresa->monto_mensual = $request->input('monto_mensual');
+            }
+            if ($request->has('monto_anual')) {
+                $empresa->monto_anual = $request->input('monto_anual');
+            }
+            // Actualizar frecuencia_pago si viene en el request
+            if ($request->has('frecuencia_pago')) {
+                $empresa->frecuencia_pago = $request->input('frecuencia_pago');
+            }
+            $empresa->save();
 
             // if ($request->input('estado_ultimo_pago') === config('constants.ESTADO_ORDEN_PAGO_COMPLETADO')) {
             //    $this->addOrderPayment($suscripcion);
@@ -311,7 +413,7 @@ class SuscripcionesController extends Controller
             if ($request->input('empresa.suscripcion.id')) {
                 $suscripcion = Suscripcion::find($request->input('empresa.suscripcion.id'));
             }
-            
+
             if (!$suscripcion) {
                 $user = User::where('id_empresa', $request->input('empresa.id'))->first();
                 if ($user) {
@@ -329,6 +431,13 @@ class SuscripcionesController extends Controller
 
                     $suscripcion->estado = config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO');
                     $suscripcion->save();
+
+                    // Desactivar la empresa
+                    $empresa = Empresa::find($request->input('empresa.id'));
+                    if ($empresa) {
+                        $empresa->activo = false;
+                        $empresa->save();
+                    }
                 }
             } else {
                 $suscripcion->estado = config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO');
@@ -339,10 +448,16 @@ class SuscripcionesController extends Controller
                     $user->enable = false;
                     $user->save();
                 }
+
+                // Desactivar la empresa
+                $empresa = Empresa::find($suscripcion->empresa_id);
+                if ($empresa) {
+                    $empresa->activo = false;
+                    $empresa->save();
+                }
             }
 
             return response()->json($suscripcion ?? ['message' => 'Sistema suspendido'], 200);
-
         } catch (\Throwable $th) {
             Log::error('Error en SuscripcionesController@suspendSystem: ' . $th->getMessage());
             return response()->json([
@@ -355,7 +470,7 @@ class SuscripcionesController extends Controller
     public function getHistorialPagos($id)
     {
         $suscripcion = Suscripcion::findOrFail($id);
-        
+
         return $suscripcion->ordenesPago()
             ->select([
                 'id',
@@ -381,7 +496,8 @@ class SuscripcionesController extends Controller
             ->get();
     }
 
-    private function addOrderPayment(Suscripcion $suscripcion){
+    private function addOrderPayment(Suscripcion $suscripcion)
+    {
         try {
             $ordenPago = new OrdenPago();
             $ordenPago->id_usuario = $suscripcion->usuario_id;
@@ -391,11 +507,59 @@ class SuscripcionesController extends Controller
             $ordenPago->save();
 
             return $ordenPago;
-
         } catch (\Throwable $th) {
             Log::error('Error en SuscripcionesController@addOrderPayment: ' . $th->getMessage());
             return null;
         }
-       
+    }
+
+    // public function export(Request $request)
+    // {
+    //     $suscripciones = new SuscripcionesExport();
+    //     $suscripciones->filter($request);
+
+    //     return Excel::download($suscripciones, 'suscripciones_'.date('Y-m-d').'.xlsx');
+    // }
+
+    public function export(Request $request)
+    {
+        try {
+            $export = new SuscripcionesExport();
+            $export->filter($request);
+
+            $filename = 'suscripciones_empresas_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+            return Excel::download($export, $filename);
+        } catch (\Exception $e) {
+            Log::error('Error en export de suscripciones: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al exportar datos'], 500);
+        }
+    }
+
+    public function getCampanias(Request $request)
+    {
+        try {
+            $searchTerm = $request->input('search', '');
+
+            $query = Empresa::select('campania')
+                ->whereNotNull('campania')
+                ->where('campania', '!=', '');
+
+            if ($searchTerm) {
+                $query->where('campania', 'like', '%' . $searchTerm . '%');
+            }
+
+            $campanias = $query->distinct()
+                ->orderBy('campania', 'asc')
+                ->limit(50)
+                ->pluck('campania')
+                ->filter()
+                ->values();
+
+            return response()->json($campanias, 200);
+        } catch (\Exception $e) {
+            Log::error('Error en SuscripcionesController@getCampanias: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al obtener campañas'], 500);
+        }
     }
 }

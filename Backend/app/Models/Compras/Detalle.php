@@ -9,26 +9,33 @@ class Detalle extends Model {
     protected $table = 'detalles_compra';
     protected $fillable = array(
         'id_producto',
+        'lote_id',
         'cantidad',
         'costo',
         'descuento',
         'no_sujeta',
         'exenta',
         'iva',
+        'porcentaje_impuesto',
         'subtotal',
         'total',
         'id_compra'
 
     );
 
-    protected $appends = ['nombre_producto', 'img'];
+    protected $appends = ['nombre_producto', 'img', 'codigo'];
 
     public function getNombreProductoAttribute(){
         return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first();
     }
 
     public function getImgAttribute(){
-        return $this->producto()->withoutGlobalScopes()->first()->img;
+        $producto = $this->producto()->withoutGlobalScopes()->first();
+        return $producto ? $producto->img : 'productos/default.jpg';
+    }
+
+    public function getcodigoAttribute(){
+        return $this->producto()->withoutGlobalScopes()->pluck('codigo')->first();
     }
 
     public function producto(){
@@ -37,6 +44,10 @@ class Detalle extends Model {
 
     public function compra(){
         return $this->belongsTo('App\Models\Compras\Compra','id_compra');
+    }
+
+    public function lote(){
+        return $this->belongsTo('App\Models\Inventario\Lote','lote_id');
     }
 
 

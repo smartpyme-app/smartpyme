@@ -1,5 +1,16 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Cliente</h2>
+    <div class="d-flex align-items-center">
+        <h2 class="page-heading">Cliente</h2>
+        <span class="badge bg-primary ms-2">{{ cliente.tipo }}</span>
+        <span *ngIf="cliente.habilita_credito" class="badge bg-info ms-2" [title]="'Límite: ' + (cliente.limite_credito ? ('$' + cliente.limite_credito) : 'Sin límite')">
+            Crédito {{ cliente.dias_credito }} días
+        </span>
+    </div>
+    <div class="d-flex align-items-center">
+        <button class="btn btn-default" routerLink="/clientes">
+            <i class="fa fa-arrow-left"></i> Regresar
+        </button>
+    </div>
 </section>
 
 <div class="row mb-5">
@@ -7,73 +18,90 @@
         <div class="card">
             <div class="card-body"> 
                 <div class="row">
-                    <h6 class="col-12 pb-2 mb-3">Información de contacto</h6>
-                    <div class="form-group col-lg-3">
+                    <h6 class="col-12 pb-2 mb-3">Información del cliente</h6>
+                    <div class="form-group col-lg-3" *ngIf="mostrarCampo('nombre')">
                         <label class="fw-medium">Nombre:</label>
                         <p>{{ cliente.nombre }}</p>
                     </div>
-                    <div class="form-group col-lg-3">
+                    <div class="form-group col-lg-3" *ngIf="mostrarCampo('apellido')">
                         <label class="fw-medium">Apellido:</label>
                         <p>{{ cliente.apellido }}</p>
                     </div>
-                    <div class="form-group col-6 col-lg-3">
+                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('dui')">
+                        <label class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI:' : 'Número de identificación:' }}</label>
+                        <p>{{ cliente.dui }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('correo')">
                         <label class="fw-medium">Correo:</label>
                         <p>{{ cliente.correo }}</p>
                     </div>
-                    <div class="form-group col-6 col-lg-3">
-                        <label class="fw-medium">DUI:</label>
-                        <p>{{ cliente.dui }}</p>
-                    </div>
-                    <div class="form-group col-md-6 col-lg-3">
+                    <div class="form-group col-md-6 col-lg-3" *ngIf="mostrarCampo('tipo_contribuyente')">
                         <label class="fw-medium">Tipo de contribuyente:</label>
                         <p>{{ cliente.tipo_contribuyente }}</p>
                     </div>
-                    <!-- <div class="form-group col-lg-6">
+                    <!-- <div class="form-group col-lg-6" *ngIf="mostrarCampo('etiquetas')">
                         <label class="fw-medium">Etiquetas:</label>
                         <p><tag-input theme='bootstrap' seconda</p>ryPlaceholder="Etiquetas" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="cliente.etiquetas" name="etiquetas"></tag-input>
                     </div> -->
-                    <div class="form-group col-lg-9">
+                    <!-- <h6 class="col-12 pb-2 my-3">Información de la empresa (Opcional)</h6> -->
+                    
+                    <div class="form-group col-6 col-lg-6" *ngIf="mostrarCampo('nombre_empresa')">
+                        <label class="fw-medium">Empresa:</label>
+                        <p>{{ cliente.nombre_empresa }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('ncr')">
+                        <label class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NCR:' : 'Registro tributario:' }}</label>
+                        <p>{{ cliente.ncr }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('nit')">
+                        <label class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT:' : 'Identificación fiscal:' }}</label>
+                        <p>{{ cliente.nit }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-6" *ngIf="mostrarCampo('giro')">
+                        <label class="fw-medium">Giro:</label>
+                        <p>{{ cliente.giro }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('telefono')">
+                        <label class="fw-medium">Teléfono:</label>
+                        <p>{{ cliente.telefono }}</p>
+                    </div>
+
+                    <div class="form-group col-12 col-md-3" *ngIf="mostrarCampo('tipo_documento')">
+                        <label class="fw-medium">Tipo de documento:</label>
+                        <p>{{ obtenerNombreTipoDocumento() }}</p>
+                    </div>
+
+                    <div class="form-group col-12 col-md-3" *ngIf="mostrarCampo('numero_identificacion')">
+                        <label class="fw-medium">Número de identificación:</label>
+                        <p>{{ cliente.dui }}</p>
+                    </div>
+
+                    <div class="form-group col-12 col-md-3" *ngIf="mostrarCampo('tipo_persona')">
+                        <label class="fw-medium">Tipo persona:</label>
+                        <p>{{ cliente.tipo_persona }}</p>
+                    </div>
+
+                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('municipio')">
+                        <label class="fw-medium">Municipio:</label>
+                        <p>{{ cliente.municipio }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('departamento')">
+                        <label class="fw-medium">Departamento:</label>
+                        <p>{{ cliente.departamento }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarAlgunCampo(['direccion', 'empresa_direccion'])">
+                        <label class="fw-medium">Dirección:</label>
+                        <p>{{ obtenerDireccion() }}</p>
+                    </div>
+
+                    <div class="form-group col-lg-9" *ngIf="mostrarCampo('nota')">
                         <label class="fw-medium">Observaciones:</label>
                         <p>{{ cliente.nota }}</p>
                     </div>
 
-                    <h6 class="col-12 pb-2 my-3">Información de la empresa (Opcional)</h6>
-                    
-                    <div class="form-group col-6 col-lg-6">
-                        <label class="fw-medium">Empresa:</label>
-                        <p>{{ cliente.nombre_empresa }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3">
-                        <label class="fw-medium">NRC:</label>
-                        <p>{{ cliente.ncr }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3">
-                        <label class="fw-medium">NIT:</label>
-                        <p>{{ cliente.nit }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-6">
-                        <label class="fw-medium">Giro:</label>
-                        <p>{{ cliente.giro }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3">
-                        <label class="fw-medium">Teléfono:</label>
-                        <p>{{ cliente.telefono }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3">
-                        <label class="fw-medium">Municipio:</label>
-                        <p>{{ cliente.municipio }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3">
-                        <label class="fw-medium">Departamento:</label>
-                        <p>{{ cliente.departamento }}</p>
-                    </div>
-                    <div class="form-group col-12 col-md-9">
-                        <label class="fw-medium">Dirección:</label>
-                        <p>{{ cliente.direccion }}</p>
-                    </div>
                     
                 </div>
-                <div class="row mt-4" *ngIf="cliente.tipo == 'Empresa'">
+                <div class="row mt-4" *ngIf="mostrarContactosAdicionales()">
                     <div class="col-12 d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0">Contactos adicionales</h6>
                     </div>

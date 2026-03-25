@@ -107,6 +107,11 @@ const routes: Routes = [
         {
           path: '',
           loadChildren: () => import('./views/organizaciones-admin/organizaciones-admin.module').then(m => m.OrganizacionesAdminModule),
+        },
+        // Fidelización
+        {
+          path: '',
+          loadChildren: () => import('./views/fidelizacion/fidelizacion.module').then(m => m.FidelizacionModule),
         }
       ]
     },

@@ -135,7 +135,7 @@
                 <label for="">Dirección:</label>
                 <input type="text" class="form-control" name="sucursal.direccion" [(ngModel)]="sucursal.direccion"/>
             </div>
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-4">
                 <label for="tipo_establecimiento ">Tipo establecimiento:</label>
                 <select class="form-select" [(ngModel)]="sucursal.tipo_establecimiento" name="tipo_establecimiento ">
                     <option value="01">Sucursal</option>
@@ -143,9 +143,13 @@
                     <option value="04">Bodega</option>
                 </select>
             </div>
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-4">
                 <label for="cod_estable_mh">Cod Establecimiento MH:</label>
                 <input type="text" class="form-control" [(ngModel)]="sucursal.cod_estable_mh" name="cod_estable_mh" placeholder="xxxx">
+            </div>
+            <div class="form-group col-md-4">
+                <label for="codigo_punto_venta">Código Punto Venta:</label>
+                <input type="text" class="form-control" [(ngModel)]="sucursal.codigo_punto_venta" name="codigo_punto_venta" placeholder="xxxx">
             </div>
             <div class="form-group col-md-12">
                 <div class="form-switch bg-light-info rounded">

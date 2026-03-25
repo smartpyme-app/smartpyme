@@ -3,8 +3,11 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <script language="javascript">setTimeout("self.close();",2000)</script>
-  <title>Ticket</title>
+  <title>{{ $DTE['identificacion']['codigoGeneracion'] }}</title>
   <style media="all">
+    @if ($venta->pdf)
+        body{ width: 80mm; margin: 0;}
+    @endif
     h1, h2, h3{
         margin: 3pt;
     }
@@ -36,15 +39,14 @@
 <body onload="javascript:print();">
   
     <div class="header">
-        <p class="no-print">
-            <button onClick="window.print();" autofocus>Imprimir</button>
-            <button onClick="window.close();" autofocus>Cerrar</button>
-            <br><br>
-        </p>
-        <br>
-        {{--        @if ($venta->empresa->logo)--}}
-        {{--            <img src="{{ asset('img/'.$venta->empresa->logo) }}" alt="Logo">--}}
-        {{--        @endif--}}
+        @if (!$venta->pdf)
+            <p class="no-print">
+                <button onClick="window.print();" autofocus>Imprimir</button>
+                <button onClick="window.close();" autofocus>Cerrar</button>
+                <br><br>
+            </p>
+            <br>
+        @endif
         @if ($venta->sucursal()->first())
             <h3>{{ $venta->sucursal()->pluck('nombre')->first() }}</h3>
         @else
@@ -110,23 +112,23 @@
     
     <hr>
 
-    <table style="width: 100%; margin: auto;">
+    <table style="width: 80mm; max-width: 80mm; margin: auto;">
         <thead>
             <tr>
-                <th class="text-left">DETALLE</th>
-                <th width="50px" class="text-center">
+                <th style="max-width: 50%" class="text-left">DETALLE</th>
+                <th width="10%" class="text-center">
                     @if ($venta->empresa->modulo_paquetes)
                         LB/FT
                     @else
                         CANT
                     @endif
                 </th>
-                <th width="50px" class="text-center">P.U.</th>
-                <th width="50px" class="text-right">TOTAL</th>
+                <th width="10%" class="text-center">P.U.</th>
+                <th width="10%" class="text-right">TOTAL</th>
             </tr>
         </thead>
         <tbody>
-            @php($iva = 13 / 100);
+            @php($iva = 13 / 100)
             
             @if ($venta->descripcion_personalizada)
                 <tr>
@@ -142,7 +144,7 @@
                 <tr>
                     <td>
                         {{ $detalle->nombre_producto }}
-                        @if ($detalle->producto()->first()->promocion()->first())
+                        @if ($detalle->producto()->first() && $detalle->producto()->first()->promocion()->first())
                           @foreach ($detalle->producto()->first()->promocion()->first()->detalles()->get() as $det)
                             <p style="font-size: 8px !important; margin: 0px;">{{ $det->nombre_producto }} x {{ $det->cantidad }}</p>
                           @endforeach
@@ -195,10 +197,25 @@
                     <td class="text-right">${{number_format($venta->costo_envio,2)}}</td>
                 </tr>
             @endif
-            <tr>
-                <td class="text-right" colspan="3"><b>TOTAL</b>:</td>
-                <td class="text-right"><b>${{number_format($venta->total + $venta->costo_envio,2)}}</b></td>
-            </tr>
+            @if(isset($venta->propina) && floatval($venta->propina) > 0)
+                <tr>
+                    <td class="text-right" colspan="3">Propina:</td>
+                    <td class="text-right">${{number_format(floatval($venta->propina),2)}}</td>
+                </tr>
+                <tr>
+                    <td class="text-right" colspan="3"><b>Total:</b></td>
+                    <td class="text-right"><b>${{number_format($venta->total + $venta->costo_envio,2)}}</b></td>
+                </tr>
+                <tr>
+                    <td class="text-right" colspan="3"><b>Total + Propina:</b></td>
+                    <td class="text-right"><b>${{number_format($venta->total + $venta->costo_envio + floatval($venta->propina),2)}}</b></td>
+                </tr>
+            @else
+                <tr>
+                    <td class="text-right" colspan="3"><b>TOTAL</b>:</td>
+                    <td class="text-right"><b>${{number_format($venta->total + $venta->costo_envio,2)}}</b></td>
+                </tr>
+            @endif
         </tfoot>
     </table>
     <br>

@@ -38,12 +38,17 @@
                                 <tr>
                                     <td>{{ user.empresa.plan }}</td>
                                     <td>{{ user.empresa.tipo_plan }}</td>
-                                    <td class="text-end">{{ user.empresa.total | currency:'USD':'symbol':'1.2' }}</td>
+                                    <td class="text-end">
+                                        <span *ngIf="tieneDescuento && totalOriginal > 0" style="text-decoration: line-through; color: red; margin-right: 8px;">
+                                            {{ totalOriginal | currency:'USD':'symbol':'1.2'}}
+                                        </span>
+                                        {{ user.empresa.total | currency:'USD':'symbol':'1.2' }}
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <p *ngIf="!showDirectPayment" class="text-center">
+                    <p *ngIf="!showDirectPayment && !tieneCodigoPromocional" class="text-center">
                         <b>Puedes pagar en este momento o después de 3 días de prueba</b>. <br>
                             <!-- Puedes desactivar tu suscripción en cualquier momento. -->
                     </p>
@@ -61,7 +66,7 @@
                                             Pagar con tarjeta
                                         </button>
                                     </div>
-                                    <div class="d-grid gap-3">
+                                    <div class="d-grid gap-3" *ngIf="!tieneCodigoPromocional">
                                         <button class="btn btn-link text-decoration-none text-dark" (click)="backToHome()">
                                             Pagar después
                                         </button>
@@ -299,6 +304,7 @@
 <app-threeds-modal 
     *ngIf="mostrar3DSModal"
     [authUrl]="urlAutenticacion"
-    (close)="mostrar3DSModal = false">
+    (close)="mostrar3DSModal = false"
+    (messageReceived)="on3DSMessageReceived($event)">
 </app-threeds-modal>
 

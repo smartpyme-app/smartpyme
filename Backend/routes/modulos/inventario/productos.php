@@ -17,9 +17,12 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/productos',         		    [ProductosController::class, 'index']);
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
+    Route::get('/producto/buscar-by-code/{codigo}', [ProductosController::class, 'searchByCode']);
     Route::get('/productos/list',               [ProductosController::class, 'list']);
+    Route::get('/productos/search',        [ProductosController::class, 'searchProductos']);
     Route::get('/productos/buscar/{txt}',       [ProductosController::class, 'search']);
     Route::get('/productos/buscar-by-query',    [ProductosController::class, 'searchByQuery']);
+    Route::get('/productos/buscar-by-query-bodega', [ProductosController::class, 'searchByQueryWithBodega']);
     Route::get('/productos-all/buscar/{text}',  [ProductosController::class, 'searchAll']);
     Route::post('/producto',                    [ProductosController::class, 'store']);
     Route::delete('/producto/{id}',  		    [ProductosController::class, 'delete']);
@@ -30,9 +33,18 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/productos/kardex',  	        [KardexController::class, 'index']);
     Route::get('/productos/kardex/exportar',    [KardexController::class, 'export']);
+    Route::get('/productos/kardex/exportar-filtrado', [KardexController::class, 'exportFiltrado']);
+    Route::post('/productos/kardex/solicitar-masivo', [KardexController::class, 'solicitarMasivo']);
+Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCola']);
 
     Route::post('/productos/analisis',          [ProductosController::class, 'analisis']);
     Route::get('/producto/precios/historicos/{id}', [ProductosController::class, 'precios']);
+
+    // Rutas para búsqueda dinámica en facturación de compras
+    Route::post('/productos/buscar-modal',      [ProductosController::class, 'buscarModal']);
+    Route::post('/productos/buscar-por-codigo-proveedor', [ProductosController::class, 'buscarPorCodigoProveedor']);
+    Route::post('/productos/buscar-por-nombre', [ProductosController::class, 'buscarPorNombre']);
+    Route::post('/productos/buscar-sugerencias', [ProductosController::class, 'buscarSugerencias']);
 
 // Composisiones
     Route::post('/producto/composicion',        [ComposicionesController::class, 'store']);
@@ -84,10 +96,16 @@ use Illuminate\Support\Facades\Route;
     Route::post('/productos/ajuste-masivo/importar', [ProductosController::class, 'importarAjustes']);
     //productos/ajuste-masivo
     Route::post('/productos/ajuste-masivo', [ProductosController::class, 'ajusteMasivo']);
+    Route::post('/productos/habilitar-lotes-masivo', [ProductosController::class, 'habilitarLotesMasivo']);
 
     Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
+    Route::post('/productos/importar-woocommerce',        [ProductosController::class, 'importarWooCommerce']);
     //productos/exportar/woocommerce
     Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
+    //productos/exportar-shopify
+    Route::get('/productos/exportar/shopify',          [ProductosController::class, 'exportarShopifyTemplate']);
+    //productos/importar-shopify
+    Route::post('/producto/importar-shopify',          [ProductosController::class, 'importarShopify']);
     //productos/exportar-traslado
     Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
     //productos/traslado-masivo/importar
@@ -96,4 +114,9 @@ use Illuminate\Support\Facades\Route;
     Route::post('/productos/traslado-masivo',          [ProductosController::class, 'trasladoMasivo']);
 
     Route::get('productos/marca-productos', [ProductosController::class, 'getMarcas']);
+    
+    // Rutas para sistema de cola de Shopify (compatible con Hostinger)
+    Route::post('/productos/shopify/cola/iniciar', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'iniciarImportacion']);
+    Route::post('/productos/shopify/cola/continuar', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'continuarImportacion']);
+    Route::get('/productos/shopify/cola/estado', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'verificarEstado']);
 ?>

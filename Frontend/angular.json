@@ -23,8 +23,10 @@
             "allowedCommonJsDependencies": [
               "chart.js",
               "sweetalert2",
-              "moment"
-           ],
+              "moment",
+              "google-libphonenumber",
+              "pdfjs-dist"
+            ],
             "assets": [
               "src/favicon.ico",
               "src/assets",
@@ -65,8 +67,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kb",
-                  "maximumError": "19kb"
+                  "maximumWarning": "22kb",
+                  "maximumError": "25kb"
                 }
               ],
               "fileReplacements": [

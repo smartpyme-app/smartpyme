@@ -11,6 +11,7 @@ class MHSujetoExcluidoGasto extends Model
 
     public $gasto;
     public $empresa;
+    public $caja_codigo;
     public $sucursal;
 
     public function generarDTE($gasto){
@@ -19,7 +20,8 @@ class MHSujetoExcluidoGasto extends Model
         $this->sucursal = $this->gasto->sucursal()->first();
 
         $this->gasto->tipo_dte = '14';
-        $this->gasto->numero_control = 'DTE-'. $this->gasto->tipo_dte . '-' . $this->sucursal->cod_estable_mh . '0001-' .str_pad($this->gasto->referencia, 15, '0', STR_PAD_LEFT);
+        $this->caja_codigo = $this->sucursal->codigo_punto_venta ?? 'P001';
+        $this->gasto->numero_control = 'DTE-'. $this->gasto->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->gasto->referencia, 15, '0', STR_PAD_LEFT);
 
         if (!$this->gasto->codigo_generacion) {
             $this->gasto->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
@@ -134,7 +136,7 @@ class MHSujetoExcluidoGasto extends Model
             $this->gasto->proveedor->num_documento = $this->gasto->proveedor->nit ? str_replace('-', '', $this->gasto->proveedor->nit) : NULL;
         }
         if ($this->gasto->proveedor->dui) {
-            $this->gasto->proveedor->tipo_documento = '13';
+            $this->gasto->proveedor->tipo_documento = $this->gasto->proveedor->tipo_documento ?? '13';
             $this->gasto->proveedor->num_documento = $this->gasto->proveedor->dui ? str_replace('-', '', $this->gasto->proveedor->dui) : NULL;
         }
 
@@ -184,27 +186,48 @@ class MHSujetoExcluidoGasto extends Model
 
     protected function detalles(){
         $detalles = collect();
+        $codMedida = 59;
+        $tipoItem = 2; // Servicio
+        $this->gasto->cod_medida = $codMedida;
+        $this->gasto->tipo_item = $tipoItem;
 
-        // foreach ($this->gasto->detalles as $index => $detalle) {
+        $itemsDetalle = $this->gasto->detalles()->orderBy('numero_item')->get();
 
-            //Unidad
-            $this->gasto->cod_medida = 59;
-            // Tipo Item
-            $this->gasto->tipo_item = 2; //Servicio
-            // $detalle->tipo_item = 1; //Producto
-
+        if ($itemsDetalle->isNotEmpty()) {
+            foreach ($itemsDetalle as $index => $detalle) {
+                $esGravada = ($detalle->tipo_gravado ?? '') === 'gravada' || $detalle->aplica_iva;
+                $precioUni = $esGravada
+                    ? floatval($detalle->sub_total) + floatval($detalle->iva)
+                    : floatval($detalle->sub_total);
+                $compra = floatval($detalle->sub_total + $detalle->iva);
+                $descuento = 0;
+                $detalles->push([
+                    "numItem" => $index + 1,
+                    "tipoItem" => $tipoItem,
+                    "cantidad" => floatval(number_format($detalle->cantidad ?? 1, 4, '.', '')),
+                    "codigo" => $this->gasto->codigo ?? null,
+                    "uniMedida" => $codMedida,
+                    "descripcion" => $detalle->concepto,
+                    "precioUni" => floatval(number_format($precioUni, 4, '.', '')),
+                    "montoDescu" => floatval(number_format($descuento, 2, '.', '')),
+                    "compra" => floatval(number_format($compra, 2, '.', '')),
+                ]);
+            }
+        } else {
+            $subIva = floatval($this->gasto->sub_total ?? 0) + floatval($this->gasto->iva ?? 0);
+            $descuento = floatval($this->gasto->descuento ?? 0);
             $detalles->push([
                 "numItem" => 1,
-                "tipoItem" => $this->gasto->tipo_item,
-                "cantidad" => floatval(number_format(1,4, '.', '')),
-                "codigo" => $this->gasto->codigo,
-                "uniMedida" => $this->gasto->cod_medida,
+                "tipoItem" => $tipoItem,
+                "cantidad" => floatval(number_format(1, 4, '.', '')),
+                "codigo" => $this->gasto->codigo ?? null,
+                "uniMedida" => $codMedida,
                 "descripcion" => $this->gasto->concepto,
-                "precioUni" => floatval(number_format($this->gasto->sub_total + $this->gasto->iva,4, '.', '')),
-                "montoDescu" => floatval(number_format($this->gasto->descuento,2, '.', '')),
-                "compra" => floatval(number_format($this->gasto->sub_total + $this->gasto->iva,2, '.', '')),
-              ]);
-        // }
+                "precioUni" => floatval(number_format($subIva, 4, '.', '')),
+                "montoDescu" => floatval(number_format($descuento, 2, '.', '')),
+                "compra" => floatval(number_format($subIva, 2, '.', '')),
+            ]);
+        }
 
         return $detalles;
     }

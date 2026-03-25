@@ -1,0 +1,317 @@
+<section class="bg-white p-4 rounded mb-3" *ngIf="isLotesActivo()">
+    <style>
+        .cursor-pointer {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .cursor-pointer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+        }
+    </style>
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+        <h2 class="page-heading mb-0">Lotes</h2>
+        <!-- <div class="d-flex gap-2">
+            <button [disabled]="downloading" tooltip="Descargar lotes" (click)="descargar()" class="btn btn-default tcla-F6">
+                <img src="/assets/icons/download.png" class="icon">
+            </button>
+        </div> -->
+    </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3" *ngIf="isLotesActivo()">
+    <div class="row mb-3">
+        <div class="col">
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="lotes?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarLotes()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ lotes?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col">
+            <div class="d-flex gap-2">
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarLotes()" autocomplete="off">
+                    <div class="input-group">
+                        <div class="input-group-text bg-white border-end-0">
+                            <i class="fa fa-search text-muted"></i>
+                        </div>
+                        <input type="search" name="numero_lote" class="form-control pull-right border-start-0" 
+                               placeholder="Buscar por número de lote" [(ngModel)]="filtros.numero_lote">
+                    </div>
+                </form>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3">
+                    <img src="/assets/icons/filter.png" class="icon">
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex flex-wrap gap-2">
+                <div class="flex-fill" style="min-width: 150px;">
+                    <div class="card border-0 shadow-sm mb-0 cursor-pointer" 
+                         [style.background]="!filtros.vencidos && !filtros.vencimiento_proximo && !filtros.con_stock && !filtros.sin_stock ? 'rgba(13, 110, 253, 0.1)' : '#fff'"
+                         [class.border-primary]="!filtros.vencidos && !filtros.vencimiento_proximo && !filtros.con_stock && !filtros.sin_stock"
+                         [class.border-2]="!filtros.vencidos && !filtros.vencimiento_proximo && !filtros.con_stock && !filtros.sin_stock"
+                         (click)="filtrarPorEstadistica('todos')">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-1 text-primary small fw-normal"><img src="/assets/icons/package.png" class="icon me-1" style="width: 16px; height: 16px;">Total</h6>
+                                    <h4 class="mb-0 text-primary fw-bold">{{ estadisticas.total || 0 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-fill" style="min-width: 150px;">
+                    <div class="card border-0 shadow-sm mb-0 cursor-pointer"
+                         [style.background]="filtros.vencidos ? 'rgba(220, 53, 69, 0.1)' : '#fff'"
+                         [class.border-danger]="filtros.vencidos"
+                         [class.border-2]="filtros.vencidos"
+                         (click)="filtrarPorEstadistica('vencidos')">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-1 text-danger small fw-normal"><img src="/assets/icons/alert-triangle.png" class="icon me-1" style="width: 16px; height: 16px;">Vencidos</h6>
+                                    <h4 class="mb-0 text-danger fw-bold">{{ estadisticas.vencidos || 0 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-fill" style="min-width: 150px;">
+                    <div class="card border-0 shadow-sm mb-0 cursor-pointer"
+                         [style.background]="filtros.vencimiento_proximo ? 'rgba(255, 193, 7, 0.1)' : '#fff'"
+                         [class.border-warning]="filtros.vencimiento_proximo"
+                         [class.border-2]="filtros.vencimiento_proximo"
+                         (click)="filtrarPorEstadistica('proximos_a_vencer')">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-1 text-warning small fw-normal"><img src="/assets/icons/clock.png" class="icon me-1" style="width: 16px; height: 16px;">Próximos</h6>
+                                    <h4 class="mb-0 text-warning fw-bold">{{ estadisticas.proximos_a_vencer || 0 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-fill" style="min-width: 150px;">
+                    <div class="card border-0 shadow-sm mb-0 cursor-pointer"
+                         [style.background]="filtros.con_stock ? 'rgba(25, 135, 84, 0.1)' : '#fff'"
+                         [class.border-success]="filtros.con_stock"
+                         [class.border-2]="filtros.con_stock"
+                         (click)="filtrarPorEstadistica('con_stock')">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-1 text-success small fw-normal"><img src="/assets/icons/check-circle.png" class="icon me-1" style="width: 16px; height: 16px;">Con Stock</h6>
+                                    <h4 class="mb-0 text-success fw-bold">{{ estadisticas.con_stock || 0 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-fill" style="min-width: 150px;">
+                    <div class="card border-0 shadow-sm mb-0 cursor-pointer"
+                         [style.background]="filtros.sin_stock ? 'rgba(108, 117, 125, 0.1)' : '#fff'"
+                         [class.border-secondary]="filtros.sin_stock"
+                         [class.border-2]="filtros.sin_stock"
+                         (click)="filtrarPorEstadistica('sin_stock')">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-1 text-secondary small fw-normal"><img src="/assets/icons/x-circle.png" class="icon me-1" style="width: 16px; height: 16px;">Sin Stock</h6>
+                                    <h4 class="mb-0 text-secondary fw-bold">{{ estadisticas.sin_stock || 0 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center gap-2">
+                <button *ngIf="filtros.vencidos || filtros.vencimiento_proximo || filtros.con_stock || filtros.sin_stock" 
+                        class="btn btn-sm btn-outline-secondary" (click)="loadAll()">
+                    <i class="fa fa-times"></i> Limpiar filtros
+                </button>
+                <div class="ms-auto d-flex gap-2">
+                    <select name="id_bodega" (change)="filtrarLotes()" [(ngModel)]="filtros.id_bodega" class="form-select bg-default select-width">
+                        <option value="">Todas las bodegas</option>
+                        <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-borderless table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th (click)="setOrden('numero_lote')"
+                            [ngClass]="{'sorted-asc': filtros.orden == 'numero_lote' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'numero_lote' && filtros.direccion == 'desc'}"
+                            class="click">Número de lote</th>
+                        <th>Producto</th>
+                        <th>Bodega</th>
+                        <th class="text-center d-none d-lg-table-cell">Stock inicial</th>
+                        <th (click)="setOrden('fecha_fabricacion')"
+                            [ngClass]="{'sorted-asc': filtros.orden == 'fecha_fabricacion' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_fabricacion' && filtros.direccion == 'desc'}"
+                            class="click text-center d-none d-md-table-cell">Fecha fabricación</th>
+                        <th (click)="setOrden('fecha_vencimiento')"
+                            [ngClass]="{'sorted-asc': filtros.orden == 'fecha_vencimiento' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_vencimiento' && filtros.direccion == 'desc'}"
+                            class="click text-center">Fecha vencimiento</th>
+                        <th class="text-center">Estado</th>
+                        <th (click)="setOrden('stock')"
+                            [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}"
+                            class="click text-center">Stock</th>
+                        <th width="100" class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="9" class="text-center" *ngIf="lotes?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene lotes registrados</span>
+                        </td>
+                        <td colspan="9" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let lote of lotes?.data">
+                        <td>
+                            <strong>{{ lote.numero_lote || 'N/A' }}</strong>
+                        </td>
+                        <td>
+                            <a routerLink="/producto/editar/{{lote.id_producto}}" class="text-dark text-decoration-none">
+                                {{ lote.nombre_producto || lote.producto?.nombre }}
+                            </a>
+                        </td>
+                        <td>{{ lote.nombre_bodega || lote.bodega?.nombre }}</td>
+                        <td class="text-center d-none d-lg-table-cell">{{ lote.stock_inicial | number:'1.2' }}</td>
+                        <td class="text-center d-none d-md-table-cell">
+                            {{ lote.fecha_fabricacion ? (lote.fecha_fabricacion | date:'dd/MM/yyyy') : 'N/A' }}
+                        </td>
+                        <td class="text-center">
+                            <span *ngIf="lote.fecha_vencimiento">
+                                {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }}
+                                <br>
+                                <small [ngClass]="getClaseVencimiento(lote.fecha_vencimiento)">
+                                    {{ getDiasVencimiento(lote.fecha_vencimiento) }}
+                                </small>
+                            </span>
+                            <span *ngIf="!lote.fecha_vencimiento" class="text-muted">Sin vencimiento</span>
+                        </td>
+                        <td class="text-center">
+                            <span [ngClass]="getClaseEstado(getEstadoVencimiento(lote))">
+                                {{ getTextoEstado(getEstadoVencimiento(lote)) }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge" [ngClass]="lote.stock > 0 ? 'bg-success' : 'bg-secondary'">
+                                {{ lote.stock | number:'1.2' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a class="btn btn-light btn-sm" routerLink="/producto/editar/{{lote.id_producto}}" tooltip="Ver producto">
+                                <i class="fa fa-eye"></i>
+                            </a>
+                            <a class="btn btn-light btn-sm text-danger" (click)="delete(lote.id)" 
+                               tooltip="Eliminar lote" *ngIf="lote.stock == 0">
+                                <i class="fa fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="lotes?.last_page > 1">
+            <app-pagination [items]="lotes" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="filtrarLotes()">
+        <div class="row mb-3">
+            <div class="form-group col-md-6">
+                <label for="id_producto">Producto:</label>
+                <ng-select name="id_producto" [(ngModel)]="filtros.id_producto" class="form-select p-0">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
+                        {{ producto.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="id_bodega">Bodega:</label>
+                <select [(ngModel)]="filtros.id_bodega" class="form-select" name="id_bodega">
+                    <option value="">Todas</option>
+                    <option *ngFor="let bodega of bodegas" [ngValue]="bodega.id">
+                        {{ bodega.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="numero_lote">Número de lote:</label>
+                <input type="text" [(ngModel)]="filtros.numero_lote" class="form-control" name="numero_lote" placeholder="Buscar por número">
+            </div>
+            <div class="form-group col-md-12">
+                <label>Filtros rápidos:</label>
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" [(ngModel)]="filtros.vencimiento_proximo" 
+                               id="filtro_proximo" name="vencimiento_proximo">
+                        <label class="form-check-label" for="filtro_proximo">Próximos a vencer</label>
+                    </div>
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" [(ngModel)]="filtros.vencidos" 
+                               id="filtro_vencidos" name="vencidos">
+                        <label class="form-check-label" for="filtro_vencidos">Vencidos</label>
+                    </div>
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" [(ngModel)]="filtros.con_stock" 
+                               id="filtro_con_stock" name="con_stock">
+                        <label class="form-check-label" for="filtro_con_stock">Con stock</label>
+                    </div>
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" [(ngModel)]="filtros.sin_stock" 
+                               id="filtro_sin_stock" name="sin_stock">
+                        <label class="form-check-label" for="filtro_sin_stock">Sin stock</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="d-grid">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<div class="bg-white p-4 rounded mb-3" *ngIf="!isLotesActivo()">
+    <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle"></i> 
+        El módulo de lotes no está activado. Actívalo en <a routerLink="/cuenta">Configuraciones de la empresa</a>.
+    </div>
+</div>

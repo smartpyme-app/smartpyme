@@ -15,6 +15,7 @@ export class CrearEmpresaComponent implements OnInit {
     public empresa:any = {};
     public clientes:any = [];
     public documentos:any = [];
+    public vendedores:any = [];
     public loading:boolean = false;
     public saving:boolean = false;
     public licencia:boolean = false;
@@ -26,7 +27,7 @@ export class CrearEmpresaComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
+        public apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService
     ) { }
 
@@ -45,6 +46,19 @@ export class CrearEmpresaComponent implements OnInit {
             this.documentos = documentos;
             this.loading = false;
         }, (error) => {this.alertService.error(error); this.loading = false; } );
+
+        this.apiService.getAll('admin-usuarios/list-vendedores').subscribe((response) => {
+            let usuarios = [];
+            if (response && response.data) {
+                usuarios = response.data;
+            } else if (Array.isArray(response)) {
+                usuarios = response;
+            }
+            this.vendedores = usuarios.map((usuario: any) => ({
+                id: usuario.id,
+                nombre: usuario.name
+            }));
+        }, (error) => {this.alertService.error(error); } );
 
     }
 
@@ -153,6 +167,10 @@ export class CrearEmpresaComponent implements OnInit {
         if(this.empresa.pais == 'Panamá'){
             this.empresa.moneda = 'PAB';
             this.empresa.iva = 7;
+        }
+        if(this.empresa.pais == 'México'){
+            this.empresa.moneda = 'MXN';
+            this.empresa.iva = 16;
         }
         console.log(this.empresa);
     }

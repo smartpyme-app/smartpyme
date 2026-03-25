@@ -21,7 +21,15 @@
                 <label for="referencia">Correlativo</label>
                 <input type="number" class="form-control" [(ngModel)]="devolucion.referencia" name="referencia" id="referencia">
             </div>
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="tipo">Tipo</label>
+                <select name="tipo" [(ngModel)]="devolucion.tipo" class="form-select" required>
+                    <option value="devolucion">Devolución</option>
+                    <option value="descuento_ajuste">Descuento o Ajuste</option>
+                    <option value="anulacion_factura">Anulación de Factura</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4">
                 <div class="form-group">
                     <label for="">Observaciones:</label>
                     <input type="text" class="form-control" [(ngModel)]="devolucion.observaciones" name="observaciones" placeholder="Escribe aquí" required>
@@ -34,6 +42,7 @@
                 <tr>
                     <th>Fecha</th>
                     <th>Proveedor</th>
+                    <th>Sucursal</th>
                     <th>Usuario</th>
                     <th>Estado</th>
                     <th>Forma de pago</th>
@@ -42,13 +51,14 @@
                 <tr>
                     <td>{{ compra.fecha | date:'dd/MM/yyyy'}}</td>
                     <td>{{ compra.nombre_proveedor }}</td>
+                    <td>{{ compra.nombre_sucursal }}</td>
                     <td>{{ compra.nombre_usuario }}</td>
                     <td>{{ compra.estado }}</td>
                     <td>{{ compra.forma_pago }}</td>
                     <td>{{ compra.tipo_documento }} #{{ compra.referencia }}</td>
                 </tr>
             </table>
-        </div>    
+        </div>
     </div>
 
     <div class="card-body">
@@ -65,18 +75,13 @@
                             <td class="text-right"> IVA: </td>
                             <td width="70px" class="text-right"> {{ devolucion.iva | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
-                       <tr>
-                            <td class="text-right">
-                                <div class="form-check form-switch w-100">
-                                    <label class="form-check-label" for="devolucion.iva_percibido">
-                                        <!-- <input id="devolucion.percepcion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="devolucion.cobrar_percepcion" name="devolucion.cobrar_percepcion" *ngIf="!loading"> -->
-                                        IVA percibido:
-                                    </label>
-                                </div>
-                            </td>
-                            <td  width="70px" class="text-right">
-                               {{ (devolucion.iva_percibido ) | currency:'USD':'symbol':'1.2'}}
-                            </td>
+                        <tr *ngIf="devolucion.cobrar_percepcion">
+                            <td class="text-right"> <b>Percepción (1%)</b></td>
+                            <td width="70px" class="text-right"> {{ devolucion.iva_percibido | currency:'USD':'symbol':'1.2'}} </td>
+                        </tr>
+                        <tr *ngIf="compra.tipo_documento == 'Sujeto excluido' && devolucion.renta">
+                            <td class="text-right"> <b>Ret. Renta (10%)</b></td>
+                            <td width="70px" class="text-right"> {{ devolucion.renta_retenida | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
                         <!--  <tr>
                             <td class="text-right">
@@ -110,9 +115,32 @@
                     </tbody>
                 </table>
             </div>
-            
         </div>
-
+    </div>
+    <section class="card border-0 p-3 mb-3">
+        <div class="row">
+            <h6 class="mt-3">Detalles de facturación</h6>
+            <div class="form-group col-md-6 col-lg-3 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="devolucion.cobrar_impuestos" name="devolucion.cobrar_impuestos">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-3 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="percepcion">Percepción</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="devolucion.cobrar_percepcion" name="devolucion.cobrar_percepcion">
+                </div>
+            </div>
+            <div *ngIf="compra.tipo_documento == 'Sujeto excluido'" class="form-group col-md-6 col-lg-3 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="renta">Renta</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="devolucion.renta" name="devolucion.renta">
+                </div>
+            </div>
+        </div>
+    </section>
+    <div class="card-body">
         <div class="row mt-4">
             <div class="col-md-12">
                 <button type="submit" class="btn btn-primary float-end" id="submit" [disabled]="saving">

@@ -45,11 +45,11 @@
                     <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion" placeholder="Escriba aquí">
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="nit">NIT</label>
+                    <label for="nit">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT' : 'Identificación fiscal' }}</label>
                     <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" mask='0000-000000-000-0'>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="ncr">NCR</label>
+                    <label for="ncr">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NCR' : 'Registro tributario' }}</label>
                     <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí">
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
@@ -88,6 +88,7 @@
                         <option value="Nicaragua">+505 Nicaragua</option>
                         <option value="Costa Rica">+506 Costa Rica</option>
                         <option value="Panamá">+507 Panamá</option>
+                        <option value="México">+52 México</option>
                     </select>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
@@ -101,6 +102,7 @@
                         <option value="BZD">BZD</option>
                         <option value="NIO">NIO</option>
                         <option value="PAB">PAB</option>
+                        <option value="MXN">MXN</option>
                     </select>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
@@ -117,6 +119,16 @@
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="fecha_ultimo_pago">Fecha de último pago</label>
                     <input type="date" class="form-control" [(ngModel)]="empresa.fecha_ultimo_pago" name="fecha_ultimo_pago" placeholder="Escriba aquí">
+                </div>
+
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="vendedor_asignado">Vendedor asignado</label>
+                    <select class="form-select" [(ngModel)]="empresa.vendedor_asignado" name="vendedor_asignado">
+                            <option value="">Seleccione aquí</option>
+                            <option *ngFor="let vendedor of vendedores" [value]="vendedor.id">
+                                {{ vendedor.nombre }}
+                            </option>
+                    </select>
                 </div>
                 
                 <h5 class="mt-3">Facturación</h5>
@@ -227,7 +239,7 @@
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="total">Pago de plan</label>
                     <div class="input-group">
-                        <span class="input-group-text">$</span>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" [(ngModel)]="empresa.total" name="total" placeholder="Escriba aquí">
                     </div>
                 </div>

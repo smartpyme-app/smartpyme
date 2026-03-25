@@ -31,14 +31,14 @@
         </div>
     </div>
 
-    <div class="d-flex">
-        <div class="col-md-6 d-flex gap-2 mb-3">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <div class="d-flex gap-2 flex-wrap">
             <button class="btn "routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"routerLink="/ventas">Todos</button>
             <button class="tcla-F5 btn " tooltip="Actualizar (F5)"  routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()"  routerLink="/devoluciones/ventas">Devoluciones</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/abonos">Abonos</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/recurrentes">Recurrentes</button>
         </div>
-        <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
+        <div class="ms-auto d-flex gap-2">
             <select name="estado" (change)="filtrarVentas()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="0">Anulada</option>
@@ -79,7 +79,7 @@
                     <tr class="animated fadeIn" *ngFor=" let venta of ventas?.data">
                         
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>
                             <a class="text-decoration-none text-dark"  tooltip="Ver información de la devolución" routerLink="/devolucion/venta/{{venta.id}}">
                                 {{ (venta.nombre_documento || 'Devolución') + (venta.correlativo ? ' #' + venta.correlativo : '') }}
@@ -107,6 +107,11 @@
                                     <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
                                     </a>
+                                    <a *ngIf="venta.enable == '1' && apiService.canEdit()" 
+                                    (click)="editarDevolucion(mEditarDevolucion, venta)" 
+                                    class="list-group-item list-group-item-action border-0 click">
+                                     <i class="fa fa-fw fa-edit"></i> Editar devolución
+                                 </a>
                                     <a *ngIf="venta.enable == '1' && apiService.canEdit()" (click)="anularDTE(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular devolución
                                     </a>
@@ -258,4 +263,111 @@
 
         </div>
   </div>
+</ng-template>
+
+<!-- Modal editar devolucion -->
+<ng-template #mEditarDevolucion>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">Editar Devolución</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+    </div>
+    
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        
+        <form #editarForm="ngForm" (ngSubmit)="actualizarDevolucion()">
+            
+            <!-- Fecha -->
+            <div class="mb-3">
+                <label for="fecha" class="form-label">Fecha <span class="text-danger">*</span></label>
+                <input 
+                    type="date" 
+                    class="form-control" 
+                    id="fecha"
+                    name="fecha"
+                    [(ngModel)]="devolucionEditar.fecha" 
+                    required>
+            </div>
+
+            <!-- Documento -->
+            <div class="mb-3">
+                <label for="documento" class="form-label">Documento</label>
+                <select 
+                    class="form-select" 
+                    id="documento"
+                    name="id_documento"
+                    [(ngModel)]="devolucionEditar.id_documento">
+                    <option value="">Seleccionar documento</option>
+                    <option *ngFor="let documento of documentos" [value]="documento.id">
+                        {{documento.nombre}}
+                    </option>
+                </select>
+            </div>
+
+            <!-- Correlativo -->
+            <div class="mb-3">
+                <label for="correlativo" class="form-label">Correlativo</label>
+                <input 
+                    type="number" 
+                    class="form-control" 
+                    id="correlativo"
+                    name="correlativo"
+                    [(ngModel)]="devolucionEditar.correlativo"
+                    min="1">
+            </div>
+
+            <!-- Usuario -->
+            <div class="mb-3">
+                <label for="usuario" class="form-label">Usuario <span class="text-danger">*</span></label>
+                <select 
+                    class="form-select" 
+                    id="usuario"
+                    name="id_usuario"
+                    [(ngModel)]="devolucionEditar.id_usuario" 
+                    required>
+                    <option value="">Seleccionar usuario</option>
+                    <option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{usuario.name}}
+                    </option>
+                </select>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="mb-3">
+                <label for="observaciones" class="form-label">Observaciones <span class="text-danger">*</span></label>
+                <textarea 
+                    class="form-control" 
+                    id="observaciones"
+                    name="observaciones"
+                    rows="3"
+                    [(ngModel)]="devolucionEditar.observaciones" 
+                    required
+                    maxlength="255"
+                    placeholder="Ingrese las observaciones"></textarea>
+                <div class="form-text">Máximo 255 caracteres</div>
+            </div>
+
+            <!-- Botones -->
+            <div class="d-grid gap-2">
+                <button 
+                    type="submit" 
+                    class="btn btn-primary" 
+                    [disabled]="!editarForm.valid || saving">
+                    <span *ngIf="!saving">Actualizar Devolución</span>
+                    <span *ngIf="saving">
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Actualizando...
+                    </span>
+                </button>
+                
+                <button 
+                    type="button" 
+                    class="btn btn-secondary" 
+                    (click)="modalRef.hide(); alertService.modal = false;">
+                    Cancelar
+                </button>
+            </div>
+
+        </form>
+    </div>
 </ng-template>

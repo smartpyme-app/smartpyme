@@ -21,9 +21,12 @@ class PlanillaDetalle extends Model
         'dias_laborados',
         'horas_extra',
         'monto_horas_extra',
+        'detalle_horas_extra',
         'comisiones',
         'bonificaciones',
         'otros_ingresos',
+        'abonos',
+        'abonos_sin_retencion',
         'isss_empleado',
         'isss_patronal',
         'afp_empleado',
@@ -32,12 +35,20 @@ class PlanillaDetalle extends Model
         'prestamos',
         'anticipos',
         'otros_descuentos',
+        'conceptos_personalizados',
+        'pais_configuracion',
         'descuentos_judiciales',
         'detalle_otras_deducciones',
         'total_ingresos',
         'total_descuentos',
         'sueldo_neto',
         'estado'
+    ];
+
+    protected $casts = [
+        'conceptos_personalizados' => 'array',
+        'detalle_horas_extra' => 'array',
+        'abonos_sin_retencion' => 'boolean',
     ];
 
     public function planilla()
@@ -48,6 +59,12 @@ class PlanillaDetalle extends Model
     public function empleado()
     {
         return $this->belongsTo(Empleado::class, 'id_empleado');
+    }
+
+    public function abonosPrestamo()
+    {
+        return $this->hasMany(PrestamoMovimiento::class, 'id_planilla_detalle')
+            ->where('tipo', PrestamoMovimiento::TIPO_ABONO_PLANILLA);
     }
 
     // Métodos de cálculo
@@ -89,24 +106,127 @@ class PlanillaDetalle extends Model
 
     public function calcularTotales()
     {
-        // Calcular total de ingresos
         $this->total_ingresos = $this->salario_devengado +
             $this->monto_horas_extra +
             $this->comisiones +
             $this->bonificaciones +
-            $this->otros_ingresos;
+            $this->otros_ingresos +
+            ($this->abonos ?? 0);
 
-        // Calcular deducciones (ISSS, AFP, ISR)
-        $this->calcularISSSAfp();
-        $this->calcularISR();
+        $this->total_descuentos = $this->getTotalDeduccionesCombinado();
+        $this->sueldo_neto = $this->total_ingresos - $this->total_descuentos;
+    }
 
-        // Calcular total de descuentos
-        $this->total_descuentos = $this->isss +
-            $this->afp +
-            $this->isr +
-            $this->otros_descuentos;
+    public function getConceptoPersonalizado($codigo)
+    {
+        $conceptos = $this->conceptos_personalizados ?? [];
+        return $conceptos[$codigo] ?? null;
+    }
 
-        // Calcular salario neto
-        $this->salario_neto = $this->total_ingresos - $this->total_descuentos;
+    public function setConceptoPersonalizado($codigo, $valor, $tipo = 'deduccion')
+    {
+        $conceptos = $this->conceptos_personalizados ?? [];
+        $conceptos[$codigo] = [
+            'valor' => $valor,
+            'tipo' => $tipo,
+            'fecha_calculo' => now()->toISOString()
+        ];
+        $this->conceptos_personalizados = $conceptos;
+    }
+
+    public function getDeduccionesPersonalizadas()
+    {
+        $conceptos = $this->conceptos_personalizados ?? [];
+        return array_filter($conceptos, function ($concepto) {
+            return ($concepto['tipo'] ?? '') === 'deduccion';
+        });
+    }
+
+    public function getAportesPatronalesPersonalizados()
+    {
+        $conceptos = $this->conceptos_personalizados ?? [];
+        return array_filter($conceptos, function ($concepto) {
+            return ($concepto['tipo'] ?? '') === 'aporte_patronal';
+        });
+    }
+
+    public function getTotalDeduccionesPersonalizadas()
+    {
+        $deducciones = $this->getDeduccionesPersonalizadas();
+        return array_sum(array_column($deducciones, 'valor'));
+    }
+
+    public function getTotalAportesPatronalesPersonalizados()
+    {
+        $aportes = $this->getAportesPatronalesPersonalizados();
+        return array_sum(array_column($aportes, 'valor'));
+    }
+
+    public function usaConfiguracionPersonalizada()
+    {
+        return $this->pais_configuracion !== 'SV';
+    }
+
+    public function getTotalDeduccionesCombinado()
+    {
+        if ($this->usaConfiguracionPersonalizada()) {
+            // Para países con configuración personalizada
+            return $this->getTotalDeduccionesPersonalizadas() +
+                $this->prestamos +
+                $this->anticipos +
+                $this->otros_descuentos +
+                $this->descuentos_judiciales;
+        } else {
+            // Para El Salvador (campos fijos)
+            return $this->isss_empleado +
+                $this->afp_empleado +
+                $this->renta +
+                $this->prestamos +
+                $this->anticipos +
+                $this->otros_descuentos +
+                $this->descuentos_judiciales;
+        }
+    }
+
+    public function getIsssEmpleadoAttribute($value)
+    {
+        if ($this->usaConfiguracionPersonalizada()) {
+            $igss = $this->getConceptoPersonalizado('IGSS_EMP') ?:
+                $this->getConceptoPersonalizado('ISSS_EMP');
+            return $igss['valor'] ?? 0;
+        }
+        return $value;
+    }
+
+    public function getAfpEmpleadoAttribute($value)
+    {
+        if ($this->usaConfiguracionPersonalizada()) {
+            $concepto = $this->getConceptoPersonalizado('AFP_EMP');
+            return $concepto['valor'] ?? 0;
+        }
+        return $value;
+    }
+
+    public function getRentaAttribute($value)
+    {
+        if ($this->usaConfiguracionPersonalizada()) {
+            $conceptos = $this->conceptos_personalizados ?? [];
+
+            // Buscar cualquier concepto de renta/impuesto
+            foreach ($conceptos as $codigo => $concepto) {
+                $codigoUpper = strtoupper($codigo);
+                if (
+                    str_contains($codigoUpper, 'ISR') ||
+                    str_contains($codigoUpper, 'RENTA') ||
+                    str_contains($codigoUpper, 'IR_') ||
+                    ($concepto['tipo'] ?? '') === 'deduccion' &&
+                    str_contains(strtoupper($concepto['nombre'] ?? ''), 'IMPUESTO')
+                ) {
+                    return $concepto['valor'] ?? 0;
+                }
+            }
+            return 0;
+        }
+        return $value;
     }
 }

@@ -1,10 +1,12 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { TypeaheadModule } from 'ngx-bootstrap/typeahead';
+import { ModalModule } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { MultimediaComponent } from './multimedia/multimedia.component';
 import { PipesModule } from '@pipes/pipes.module';
@@ -28,8 +30,10 @@ import { CrearCargoEmpleadoComponent } from './modals/crear-cargo-empleado/crear
 import { CrearProveedorComponent } from './modals/crear-proveedor/crear-proveedor.component';
 import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.component';
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
+import { CrearAjusteLoteComponent } from './modals/crear-ajuste-lote/crear-ajuste-lote.component';
 import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
+import { CrearAbonoGastoComponent } from './modals/crear-abono-gasto/crear-abono-gasto.component';
 import { CrearEventoComponent } from './modals/crear-evento/crear-evento.component';
 import { CrearProyectoComponent } from './modals/crear-proyecto/crear-proyecto.component';
 import { CrearImpuestoComponent } from './modals/crear-impuesto/crear-impuesto.component';
@@ -44,23 +48,28 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
 import { DescargarInventarioComponent } from './parts/descargar-inventario/descargar-inventario.component';
 import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados/shared/ver-historial-button.component';
+
 import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
-import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
-import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
 
+import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda.component';
 
+import { SelectSearchComponent } from './parts/select-search/select-search.component';
+import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activar-lotes-masivo.component';
 
 @NgModule({
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     RouterModule,
     PipesModule,
     TagInputModule,
     NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
     TooltipModule.forRoot(),
-    FocusModule.forRoot()
+    FocusModule.forRoot(),
+    TypeaheadModule.forRoot(),
+    ModalModule.forRoot()
   ],
   declarations: [
     BusquedaClienteComponent,
@@ -86,16 +95,19 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     CrearProveedorComponent,
     CrearClienteComponent,
     CrearAjusteComponent,
+    CrearAjusteLoteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
+    CrearAbonoGastoComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
     CrearImpuestoComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
     ThreedsModalComponent,
-    CrearDepartamentoComponent,
-    CrearAreaEmpresaComponent
+    AlertsHaciendaComponent,
+    SelectSearchComponent,
+    ActivarLotesMasivoComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -121,16 +133,19 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     CrearProveedorComponent,
     CrearClienteComponent,
     CrearAjusteComponent,
+    CrearAjusteLoteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
+    CrearAbonoGastoComponent,
     CrearEventoComponent,
     CrearImpuestoComponent,
     CrearProyectoComponent,
     ThreedsModalComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
-    CrearDepartamentoComponent,
-    CrearAreaEmpresaComponent
+    AlertsHaciendaComponent,
+    SelectSearchComponent,
+    ActivarLotesMasivoComponent
   ],
   providers: [AlertService],
 })

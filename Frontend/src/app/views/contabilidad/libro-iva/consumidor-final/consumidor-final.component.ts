@@ -55,6 +55,11 @@ export class ConsumidorFinalComponent implements OnInit {
         this.loadAll();
     }
 
+    /** Solo para El Salvador: opciones de descarga ZIP y CSV (declaración MH) */
+    get isElSalvador(): boolean {
+        return this.apiService.auth_user()?.empresa?.pais === 'El Salvador';
+    }
+
     public loadAll() {
         this.loading = true;
         // Guardar filtros en localStorage antes de cargar
@@ -92,6 +97,23 @@ export class ConsumidorFinalComponent implements OnInit {
         this.setTime();
     }
 
+    private manejarErrorDescarga(error: any): void {
+        // Si el error viene como Blob (JSON convertido a Blob), leerlo y mostrar el mensaje
+        if (error.error instanceof Blob) {
+            error.error.text().then((text: string) => {
+                try {
+                    const errorJson = JSON.parse(text);
+                    this.alertService.error({ status: error.status || 409, error: { message: errorJson.message } });
+                } catch (e) {
+                    this.alertService.error({ status: error.status || 409, error: { message: text } });
+                }
+            });
+        } else {
+            this.alertService.error(error);
+        }
+        this.downloading = false;
+    }
+
     public descargarLibro(){
         this.downloading = true;
         this.apiService.export('libro-iva/consumidores/descargar-libro', this.filtros).subscribe((data:Blob) => {
@@ -105,7 +127,7 @@ export class ConsumidorFinalComponent implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+          }, (error) => { this.manejarErrorDescarga(error); }
         );
     }
 
@@ -123,8 +145,7 @@ export class ConsumidorFinalComponent implements OnInit {
             window.URL.revokeObjectURL(url);
             this.downloading = false;
         }, (error) => {
-            this.alertService.error(error);
-            this.downloading = false;
+            this.manejarErrorDescarga(error);
         });
     }
 

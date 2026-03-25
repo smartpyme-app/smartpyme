@@ -21,29 +21,62 @@ class MHAnulacion extends Model
         $this->sucursal = $this->venta->sucursal()->first();
 
         $codigoGeneracion = strtoupper(Uuid::uuid4()->toString());
-        $this->caja_codigo = '0001';
+        $this->caja_codigo = 'P001';
 
         $identificacion = [
             "version" => 2,
             "ambiente" => $DTE['identificacion']['ambiente'],
             "codigoGeneracion" => $codigoGeneracion,
-            "fecAnula" => \Carbon\Carbon::now()->format('Y-m-d'),
+            "fecAnula" => $this->venta->fecha_anulacion ? \Carbon\Carbon::parse($this->venta->fecha_anulacion)->format('Y-m-d') : \Carbon\Carbon::now()->format('Y-m-d'),
             "horAnula" => \Carbon\Carbon::now()->format('H:i:s'),
         ];
 
         $tipo_documento = NULL;
         $num_documento = NULL;
+        $nombre = NULL;
+        $correo = NULL;
+        $telefono = NULL;
 
 
-        if ($DTE['receptor'] && $DTE['identificacion']['tipoDte'] == '01') {
+        if (isset($DTE['receptor']) && $DTE['identificacion']['tipoDte'] == '01') {
             $tipo_documento = $DTE['receptor']['tipoDocumento'];
             $num_documento = $DTE['receptor']['numDocumento'];
+            $nombre = $DTE['receptor']['nombre'];
+            $correo = $DTE['receptor']['correo'];
+            $telefono = $DTE['receptor']['telefono'];
         }
 
-        if ($DTE['receptor'] && (($DTE['identificacion']['tipoDte'] == '03') || $DTE['identificacion']['tipoDte'] == '05')) {
+
+        if (isset($DTE['sujetoExcluido']) && $DTE['identificacion']['tipoDte'] == '14') {
+            $tipo_documento = $DTE['sujetoExcluido']['tipoDocumento'];
+            $num_documento = $DTE['sujetoExcluido']['numDocumento'];
+            $nombre = $DTE['sujetoExcluido']['nombre'];
+            $correo = $DTE['sujetoExcluido']['correo'];
+            $telefono = $DTE['sujetoExcluido']['telefono'];
+        }
+
+        if ($DTE['identificacion']['tipoDte'] == '11') {
+            $tipo_documento = $DTE['receptor']['tipoDocumento'];
+            $num_documento = $DTE['receptor']['numDocumento'];
+            $nombre = $DTE['receptor']['nombre'];
+            $correo = $DTE['receptor']['correo'];
+            $telefono = $DTE['receptor']['telefono'];
+        }
+
+        if (isset($DTE['receptor']) && (($DTE['identificacion']['tipoDte'] == '03') || $DTE['identificacion']['tipoDte'] == '05') || $DTE['identificacion']['tipoDte'] == '06') {
             $tipo_documento = '36';
             $num_documento = $DTE['receptor']['nit'];
+            $nombre = $DTE['receptor']['nombre'];
+            $correo = $DTE['receptor']['correo'];
+            $telefono = $DTE['receptor']['telefono'];
         }
+
+        // 1. Error en la Información del Documento Tributario Electrónico a invalidar.
+        // 2. Rescindir de la operación realizada.
+        // 3. Otro.
+
+        // Usar valores directamente de la venta (ya están guardados)
+        $tipoAnulacion = $this->venta->tipo_anulacion ? +$this->venta->tipo_anulacion : 2;
 
         $documento = [
             "tipoDte" => $DTE['identificacion']['tipoDte'],
@@ -52,21 +85,41 @@ class MHAnulacion extends Model
             "numeroControl" => $DTE['identificacion']['numeroControl'],
             "fecEmi" => $DTE['identificacion']['fecEmi'],
             "montoIva" => isset($DTE['resumen']['totalIva']) ? $DTE['resumen']['totalIva'] : NULL,
-            "codigoGeneracionR" => NULL, // Solo si el motivo es error, hay que mandar el que sustituye
+            "codigoGeneracionR" => ($tipoAnulacion == 1 || $tipoAnulacion == 3) && $this->venta->codigo_generacion_remplazo 
+                ? $this->venta->codigo_generacion_remplazo 
+                : NULL, // Solo si el motivo es error (1) u otro (3), hay que mandar el que sustituye
             "tipoDocumento" => $tipo_documento,
             "numDocumento" => $num_documento,
-            "nombre" => $DTE['receptor'] ? $DTE['receptor']['nombre'] : NULL,
-            "correo" => $DTE['receptor'] ? $DTE['receptor']['correo'] : NULL,
-            "telefono" => $DTE['receptor'] ? $DTE['receptor']['telefono'] : NULL,
+            "nombre" => $nombre,
+            "correo" => $correo,
+            "telefono" => $telefono,
         ];
-
-        // 1. Error en la Información del Documento Tributario Electrónico a invalidar.
-        // 2. Rescindir de la operación realizada.
-        // 3. Otro.
+        
+        // Si la venta tiene motivo_anulacion guardado, usarlo directamente
+        // Si no, usar el texto predeterminado según el tipo
+        if ($this->venta->motivo_anulacion) {
+            $motivoTexto = $this->venta->motivo_anulacion;
+        } else {
+            // Textos predeterminados según el tipo de anulación
+            switch ($tipoAnulacion) {
+                case 1:
+                    $motivoTexto = 'Error en la Información del Documento Tributario Electrónico a invalidar.';
+                    break;
+                case 2:
+                    $motivoTexto = 'Se rescinde la operación.';
+                    break;
+                case 3:
+                    $motivoTexto = 'Otro.';
+                    break;
+                default:
+                    $motivoTexto = 'Se rescinde la operación.';
+                    break;
+            }
+        }
 
         $motivo = [
-            "tipoAnulacion" => 2,
-            "motivoAnulacion" => 'Se rescinde la operación.',
+            "tipoAnulacion" => $tipoAnulacion,
+            "motivoAnulacion" => $motivoTexto,
             "nombreResponsable" => $DTE['emisor']['nombre'],
             "tipDocResponsable" => '36',
             "numDocResponsable" => $DTE['emisor']['nit'],

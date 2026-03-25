@@ -90,7 +90,7 @@
                             ATENCION: {{ $venta->cliente->nombre  }} <br>
                             TEL: {{ $venta->cliente->telefono  }}
                         </p>
-                        <p>Comentarios o instrucciones especiales: {{ $venta->observaciones }}</p>
+                        {{-- <p>Comentarios o instrucciones especiales: {{ $venta->observaciones }}</p> --}}
                     </td>
                     <td>
                         <p class="text-right">Fecha: {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
@@ -122,7 +122,7 @@
                     <td></td>
                     <td>
                         {{-- {{ \Carbon\Carbon::parse($venta->fecha)->diffInDays(\Carbon\Carbon::parse($venta->fecha_expiracion), false) }} --}}
-                        31 días
+                        {{ $venta->observaciones }}
                     </td>
                 </tr>
             </tbody>
@@ -144,7 +144,7 @@
                 @foreach($venta->detalles as $detalle)
                 <tr>
                     <td class="border-bottom"> {{ number_format($detalle->cantidad, 0) }}</td>
-                    <td class="border-bottom"> {{ $detalle->producto->codigo  }}</td>
+                    <td class="border-bottom">{{ optional($detalle->producto)->codigo }}</td>
                     <td class="border-bottom"> {{ $detalle->nombre_producto  }}</td>
                     <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{number_format($detalle->precio , 2) }}</td>
                     <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</th>

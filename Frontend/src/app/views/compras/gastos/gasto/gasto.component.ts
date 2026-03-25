@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -9,7 +10,6 @@ import * as moment from 'moment';
 @Component({
   selector: 'app-gasto',
   templateUrl: './gasto.component.html',
-  styleUrls: ['./gasto.component.css'],
 })
 export class GastoComponent implements OnInit {
   public gasto: any = {};
@@ -28,31 +28,32 @@ export class GastoComponent implements OnInit {
   public impuestos: any = [];
   public mostrar_otros_impuestos = false;
   public impuestos_seleccionados: any[] = [];
-  public iva_active: boolean = false;
-  public percepcion_active: boolean = false;
-  public renta_active: boolean = false;
-  public opciones_avanzadas_active: boolean = false;
-
-  public areasDisponibles: any[] = [];
-  public loadingAreas: boolean = false;
-  public departamentos: any[] = [];
 
   public jsonContent: string = '';
   public processingJson: boolean = false;
 
+  public varios_items = false;
+  public detalles: any[] = [];
+
   modalRef?: BsModalRef;
+
+  readonly TIPOS_CATEGORIA = [
+    'Alquiler', 'Combustible', 'Costo de venta', 'Gastos varios', 'Insumos',
+    'Impuestos', 'Gastos Administrativos', 'Mantenimiento', 'Marketing',
+    'Materia Prima', 'Servicios', 'Pago comisión', 'Planilla', 'Préstamos', 'Publicidad'
+  ];
 
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
     private route: ActivatedRoute,
     private router: Router,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private location: Location
   ) {}
 
   ngOnInit() {
     this.loadAll();
-    this.loadDepartamentos();
 
     this.mostrar_otros_impuestos = false;
     this.impuestos_seleccionados = [];
@@ -75,22 +76,29 @@ export class GastoComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('bancos/list').subscribe(
-      (bancos) => {
-        this.bancos = bancos;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    if (this.apiService.isModuloBancos()) {
+      this.apiService.getAll('banco/cuentas/list').subscribe(
+        (bancos) => { this.bancos = bancos; },
+        (error) => { this.alertService.error(error); }
+      );
+    } else {
+      this.apiService.getAll('bancos/list').subscribe(
+        (bancos) => { this.bancos = bancos; },
+        (error) => { this.alertService.error(error); }
+      );
+    }
 
     this.apiService.getAll('formas-de-pago/list').subscribe(
       (formaspago) => {
         this.formaspago = formaspago;
+        if (this.apiService.isModuloBancos() && this.gasto.forma_pago && this.gasto.forma_pago !== 'Efectivo' && this.gasto.forma_pago !== 'Wompi') {
+          const formaPagoSeleccionada = formaspago.find((fp: any) => fp.nombre === this.gasto.forma_pago);
+          if (formaPagoSeleccionada?.banco?.nombre_banco && !this.gasto.detalle_banco) {
+            this.gasto.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+          }
+        }
       },
-      (error) => {
-        this.alertService.error(error);
-      }
+      (error) => { this.alertService.error(error); }
     );
 
     this.apiService.getAll('gastos/categorias').subscribe(
@@ -128,9 +136,10 @@ export class GastoComponent implements OnInit {
 
 
     this.apiService.getAll('impuestos').subscribe(impuestos => {
-      this.impuestos = impuestos;
+      // Filtrar solo los impuestos que aplican a gastos
+      this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_gastos !== false && impuesto.aplica_gastos !== 0);
       this.loading = false;
-
+    
       if (this.gasto && this.gasto.otros_impuestos && this.gasto.otros_impuestos.length > 0) {
           this.cargarImpuestosSeleccionados();
           this.mostrar_otros_impuestos = true;
@@ -147,37 +156,34 @@ export class GastoComponent implements OnInit {
         (gasto) => {
           this.gasto = gasto;
 
-          // Convertir IDs a string para que coincidan con los selects
-          if (this.gasto.id_departamento) {
-            this.gasto.id_departamento = this.gasto.id_departamento.toString();
-          }
-          if (this.gasto.id_area_empresa) {
-            this.gasto.id_area_empresa = this.gasto.id_area_empresa.toString();
-          }
+          // console.log('Gasto completo:', this.gasto);
+          // console.log('otros_impuestos raw:', this.gasto.otros_impuestos);
+          // console.log('Tipo de otros_impuestos:', typeof this.gasto.otros_impuestos);
+      
 
           if (this.gasto.iva > 0) this.gasto.impuesto = true;
 
-          if (this.gasto.iva_percibido > 0) this.percepcion_active = true;
+          if (this.gasto.iva_percibido > 0) this.gasto.percepcion = true;
 
           if (this.gasto.renta_retenida > 0)
             this.gasto.renta = true;
 
           if (this.gasto.otros_impuestos) {
-            if (typeof this.gasto.otros_impuestos === 'object' &&
-              this.gasto.otros_impuestos.seleccionados) {
-
-              const valoresGuardados = this.gasto.otros_impuestos.valores || [];
-              this.gasto.otros_impuestos = this.gasto.otros_impuestos.seleccionados;
-              this.gasto.impuestos_valores = valoresGuardados;
+            if (typeof this.gasto.otros_impuestos === 'object' && 
+                this.gasto.otros_impuestos.seleccionados) {
+                
+                const valoresGuardados = this.gasto.otros_impuestos.valores || [];
+                this.gasto.otros_impuestos = this.gasto.otros_impuestos.seleccionados;
+                this.gasto.impuestos_valores = valoresGuardados;
             }
-
+            
             // Activar switch SIEMPRE que hay otros_impuestos (aunque sea array simple)
             if (this.gasto.otros_impuestos && this.gasto.otros_impuestos.length > 0) {
               this.mostrar_otros_impuestos = true;
               // console.log('Switch activado para:', this.gasto.otros_impuestos);
             }
           }
-
+          
           if (Array.isArray(this.gasto.otros_impuestos) && this.gasto.otros_impuestos.length > 0) {
             this.mostrar_otros_impuestos = true;
             // console.log('Switch activado:', this.mostrar_otros_impuestos);
@@ -188,19 +194,28 @@ export class GastoComponent implements OnInit {
 
           if (this.tieneOtrosImpuestos(this.gasto.otros_impuestos)) {
               this.mostrar_otros_impuestos = true;
-
+              
               if (this.impuestos && this.impuestos.length > 0) {
                   this.cargarImpuestosSeleccionados();
               }
           }
 
-          if (!this.gasto.id_area_empresa) {
-            this.gasto.id_area_empresa = '';
+          if (!this.gasto.area_empresa) {
+            this.gasto.area_empresa = '';
           }
 
-          // Cargar áreas si existe id_departamento
-          if (this.gasto.id_departamento) {
-            this.loadAreasPorDepartamento(this.gasto.id_departamento);
+          if (this.gasto.detalles && this.gasto.detalles.length > 1) {
+            this.varios_items = true;
+            this.detalles = this.gasto.detalles.map((d: any) => ({
+              ...d,
+              tipo_gravado: d.tipo_gravado || (d.aplica_iva ? 'gravada' : 'no_sujeta'),
+            }));
+          } else if (this.gasto.detalles && this.gasto.detalles.length === 1) {
+            this.varios_items = false;
+            this.detalles = [];
+          } else {
+            this.varios_items = false;
+            this.detalles = [];
           }
 
           this.loading = false;
@@ -217,23 +232,32 @@ export class GastoComponent implements OnInit {
       this.gasto.tipo_documento = 'Factura';
       this.gasto.detalle_banco = '';
       this.gasto.tipo = '';
+      this.gasto.tipo_clasificacion = 'Gasto';
+      this.gasto.tipo_operacion = 'Gravada';
+      this.gasto.tipo_costo_gasto = 'Gastos de venta sin donación';
+      this.gasto.tipo_sector = this.apiService.auth_user().empresa.tipo_sector ?? null;
       this.gasto.id_categoria = '';
       this.gasto.id_proveedor = '';
+      // this.gasto.fecha_pago = this.apiService.date();
       this.gasto.fecha = this.apiService.date();
       this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
       this.gasto.id_sucursal = this.apiService.auth_user().id_sucursal;
       this.gasto.id_usuario = this.apiService.auth_user().id;
-      this.gasto.otros_impuestos = [];
+      this.gasto.otros_impuestos = []; 
       this.gasto.impuestos_valores = [];
-      this.gasto.id_area_empresa = '';
+      this.gasto.area_empresa = '';
+      this.varios_items = false;
+      this.detalles = [];
 
       if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
         this.gasto.id_proyecto =
           +this.route.snapshot.queryParamMap.get('id_proyecto')!;
       }
+      this.setTotal();
     }
 
     // Duplicar gasto
+
     if (
       this.route.snapshot.queryParamMap.get('recurrente')! &&
       this.route.snapshot.queryParamMap.get('id_gasto')!
@@ -247,22 +271,9 @@ export class GastoComponent implements OnInit {
             this.gasto.fecha = this.apiService.date();
             this.gasto.id = null;
 
-            // Convertir IDs a string también para gastos duplicados
-            if (this.gasto.id_departamento) {
-              this.gasto.id_departamento = this.gasto.id_departamento.toString();
-            }
-            if (this.gasto.id_area_empresa) {
-              this.gasto.id_area_empresa = this.gasto.id_area_empresa.toString();
-            }
-
             if(this.gasto.otros_impuestos) {
               this.mostrar_otros_impuestos = true;
               this.cargarImpuestosSeleccionados();
-            }
-
-            // Cargar áreas para gasto duplicado
-            if (this.gasto.id_departamento) {
-              this.loadAreasPorDepartamento(this.gasto.id_departamento);
             }
           },
           (error) => {
@@ -279,39 +290,40 @@ export class GastoComponent implements OnInit {
     if (!Array.isArray(this.gasto.otros_impuestos)) {
         if (this.gasto.otros_impuestos !== null && this.gasto.otros_impuestos !== undefined && this.gasto.otros_impuestos !== false) {
             this.gasto.otros_impuestos = [this.gasto.otros_impuestos];
-          } else {
-              this.gasto.otros_impuestos = [];
-          }
-      }
-
-      this.impuestos_seleccionados = [];
-
-      this.gasto.otros_impuestos.forEach((impuestoId: number) => {
-          const impuesto = this.impuestos.find((imp: any) => imp.id === impuestoId);
-          if (impuesto) {
-              this.impuestos_seleccionados.push(impuesto);
-          }
-      });
-
+        } else {
+            this.gasto.otros_impuestos = [];
+        }
+    }
+    
+    this.impuestos_seleccionados = [];
+    
+    this.gasto.otros_impuestos.forEach((impuestoId: number) => {
+        const impuesto = this.impuestos.find((imp: any) => imp.id === impuestoId);
+        if (impuesto) {
+            this.impuestos_seleccionados.push(impuesto);
+        }
+    });
+    
     // Si no hay impuestos_valores, crearlos
     if (!this.gasto.impuestos_valores || this.gasto.impuestos_valores.length === 0) {
-      this.gasto.impuestos_valores = [];
-      this.impuestos_seleccionados.forEach(impuesto => {
-        const subtotal = parseFloat(this.gasto.sub_total) || 0;
-        const valor = (subtotal * (impuesto.porcentaje / 100)).toFixed(2);
-
-        this.gasto.impuestos_valores.push({
-          id_impuesto: impuesto.id,
-          nombre: impuesto.nombre,
-          porcentaje: impuesto.porcentaje,
-          valor: valor
+        this.gasto.impuestos_valores = [];
+        this.impuestos_seleccionados.forEach(impuesto => {
+            const subtotal = parseFloat(this.gasto.sub_total) || 0;
+            const valor = (subtotal * (impuesto.porcentaje / 100)).toFixed(2);
+            
+            this.gasto.impuestos_valores.push({
+                id_impuesto: impuesto.id,
+                nombre: impuesto.nombre,
+                porcentaje: impuesto.porcentaje,
+                valor: valor
+            });
         });
-      });
     }
-
+      
     if (!this.gasto.impuestos_valores || this.gasto.impuestos_valores.length === 0) {
       this.calcularValoresImpuestos();
     }
+      // this.calcularValoresImpuestos();
     }
 
     private calcularValoresImpuestos() {
@@ -324,7 +336,7 @@ export class GastoComponent implements OnInit {
       this.impuestos_seleccionados.forEach(impuesto => {
           const subtotal = parseFloat(this.gasto.sub_total) || 0;
           const valor = (subtotal * (impuesto.porcentaje / 100)).toFixed(2);
-
+          
           this.gasto.impuestos_valores.push({
               id_impuesto: impuesto.id,
               nombre: impuesto.nombre,
@@ -385,20 +397,25 @@ export class GastoComponent implements OnInit {
     }
   }
 
+  public cambioMetodoDePago() {
+    if (this.apiService.isModuloBancos() && this.gasto.forma_pago && this.gasto.forma_pago !== 'Efectivo' && this.gasto.forma_pago !== 'Wompi') {
+      const formaPagoSeleccionada = this.formaspago.find((fp: any) => fp.nombre === this.gasto.forma_pago);
+      if (formaPagoSeleccionada?.banco?.nombre_banco) {
+        this.gasto.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+      } else {
+        this.gasto.detalle_banco = '';
+      }
+    } else if (this.gasto.forma_pago === 'Efectivo' || this.gasto.forma_pago === 'Wompi') {
+      this.gasto.detalle_banco = '';
+    }
+  }
+
   public setCredito() {
     if (this.gasto.credito) {
       this.gasto.estado = 'Pendiente';
     } else {
       this.gasto.estado = 'Confirmado';
     }
-  }
-
-  public setPercepcion() {
-    this.setTotal();
-  }
-
-  public setRenta() {
-    this.setTotal();
   }
 
   // public setTotal() {
@@ -448,8 +465,7 @@ export class GastoComponent implements OnInit {
     const subtotal = parseFloat(this.gasto.sub_total) || 0;
     let total = subtotal;
 
-    // Calcular IVA si está habilitado
-    if(this.iva_active){
+    if(this.gasto.impuesto){
         const ivaRate = this.apiService.auth_user().empresa.iva / 100;
         const ivaValue = subtotal * ivaRate;
         this.gasto.iva = ivaValue.toFixed(2);
@@ -458,16 +474,14 @@ export class GastoComponent implements OnInit {
         this.gasto.iva = 0;
     }
 
-    // Calcular renta si está habilitada
-    if(this.renta_active) {
+    if(this.gasto.renta) {
         this.gasto.renta_retenida = (subtotal * 0.10).toFixed(2);
         total -= parseFloat(this.gasto.renta_retenida);
     } else {
         this.gasto.renta_retenida = 0;
     }
 
-    // Calcular percepción si está habilitada
-    if(this.percepcion_active) {
+    if(this.gasto.percepcion) {
         this.gasto.iva_percibido = (subtotal * 0.01).toFixed(2);
         total += parseFloat(this.gasto.iva_percibido);
     } else {
@@ -476,33 +490,126 @@ export class GastoComponent implements OnInit {
 
     // USAR calcularTotalConImpuestosEditados en lugar de calcularValoresImpuestos
     if (this.mostrar_otros_impuestos && Array.isArray(this.gasto.otros_impuestos) && this.gasto.otros_impuestos.length > 0) {
-        // Recalcular valores de impuestos
-        this.calcularValoresImpuestos();
-
-        // Sumar al total
+        // Sumar valores existentes sin recalcular
         this.gasto.impuestos_valores.forEach((impValue: any) => {
-            total += parseFloat(impValue.valor);
+            total += parseFloat(impValue.valor) || 0;
         });
     }
-
-    // Establecer el total final
+    
     this.gasto.total = total.toFixed(2);
-  }
 
+    // Asignar tipoOperacion según los detalles
+        if (this.gasto.impuesto) {
+          this.gasto.tipo_operacion = 'Gravada'; // Aplica IVA
+        } else {
+          this.gasto.tipo_operacion = 'No Gravada'; // No aplica IVA
+        }
+}
+  
   public setSubTotal(){
-    if(this.iva_active){
+    if(this.gasto.impuesto){
         this.gasto.sub_total = (parseFloat(this.gasto.total) / (1 + (this.apiService.auth_user().empresa.iva / 100))).toFixed(2);
         this.gasto.iva = (parseFloat(this.gasto.total) - parseFloat(this.gasto.sub_total)).toFixed(2);
     }else{
         this.gasto.iva = 0;
         this.gasto.sub_total = this.gasto.total;
     }
-
+    
     this.setTotal();
+  } 
+
+  public toggleVariosItems() {
+    if (this.varios_items && this.detalles.length === 0) {
+      this.addDetalle();
+    } else if (!this.varios_items) {
+      this.detalles = [];
+    }
   }
 
-  public onIvaChange() {
-      this.setTotal();
+  public addDetalle() {
+    this.detalles.push({
+      concepto: '',
+      tipo: 'Gastos varios',
+      tipo_gravado: 'gravada',
+      cantidad: 1,
+      precio_unitario: 0,
+      sub_total: 0,
+      iva: 0,
+      renta_retenida: 0,
+      iva_percibido: 0,
+      total: 0,
+      aplica_iva: true,
+      aplica_renta: false,
+      aplica_percepcion: false,
+      area_empresa: null,
+      id_proyecto: this.gasto.id_proyecto || null,
+    });
+  }
+
+  public removeDetalle(idx: number) {
+    this.detalles.splice(idx, 1);
+    this.recalcularTotalesDetalles();
+  }
+
+  public recalcularDetalleLinea(idx: number) {
+    const d = this.detalles[idx];
+    const sub = parseFloat(d.sub_total) || 0;
+    let total = sub;
+    const ivaRate = this.apiService.auth_user()?.empresa?.iva || 13;
+    const esGravada = d.tipo_gravado === 'gravada' || (!d.tipo_gravado && d.aplica_iva);
+    if (esGravada) {
+      d.iva = parseFloat((sub * (ivaRate / 100)).toFixed(2));
+      d.aplica_iva = true;
+      total += d.iva;
+    } else {
+      d.iva = 0;
+      d.aplica_iva = false;
+    }
+    if (d.aplica_renta) {
+      d.renta_retenida = parseFloat((sub * 0.1).toFixed(2));
+      total -= d.renta_retenida;
+    } else {
+      d.renta_retenida = 0;
+    }
+    if (d.aplica_percepcion) {
+      d.iva_percibido = parseFloat((sub * 0.01).toFixed(2));
+      total += d.iva_percibido;
+    } else {
+      d.iva_percibido = 0;
+    }
+    d.total = parseFloat(total.toFixed(2));
+    this.recalcularTotalesDetalles();
+  }
+
+  public recalcularDesdeSubtotal(idx: number) {
+    const d = this.detalles[idx];
+    const sub = parseFloat(d.sub_total) || 0;
+    d.precio_unitario = d.cantidad ? sub / d.cantidad : sub;
+    this.recalcularDetalleLinea(idx);
+  }
+
+  public recalcularDesdePrecio(idx: number) {
+    const d = this.detalles[idx];
+    const cant = parseFloat(d.cantidad) || 1;
+    const precio = parseFloat(d.precio_unitario) || 0;
+    d.sub_total = parseFloat((cant * precio).toFixed(2));
+    this.recalcularDetalleLinea(idx);
+  }
+
+  public recalcularTotalesDetalles() {
+    let st = 0, iv = 0, rr = 0, ip = 0, tot = 0;
+    this.detalles.forEach(d => {
+      st += parseFloat(d.sub_total) || 0;
+      iv += parseFloat(d.iva) || 0;
+      rr += parseFloat(d.renta_retenida) || 0;
+      ip += parseFloat(d.iva_percibido) || 0;
+      tot += parseFloat(d.total) || 0;
+    });
+    this.gasto.sub_total = parseFloat(st.toFixed(2));
+    this.gasto.iva = parseFloat(iv.toFixed(2));
+    this.gasto.renta_retenida = parseFloat(rr.toFixed(2));
+    this.gasto.iva_percibido = parseFloat(ip.toFixed(2));
+    this.gasto.total = parseFloat(tot.toFixed(2));
   }
 
   public selectTipoDocumento() {
@@ -522,21 +629,48 @@ export class GastoComponent implements OnInit {
       this.gasto.recurrente = false;
     }
 
-    if (this.mostrar_otros_impuestos &&
-      Array.isArray(this.gasto.otros_impuestos) &&
+    if (this.mostrar_otros_impuestos && 
+      Array.isArray(this.gasto.otros_impuestos) && 
       this.gasto.otros_impuestos.length > 0) {
-
+      
       const datosImpuestos = {
           seleccionados: this.gasto.otros_impuestos,
           valores: this.gasto.impuestos_valores
       };
-
+      
       this.gasto.otros_impuestos = datosImpuestos;
     } else if (!this.mostrar_otros_impuestos) {
         this.gasto.otros_impuestos = [];
     }
 
-    this.apiService.store('gasto', this.gasto).subscribe(
+    const payload: any = { ...this.gasto };
+    if (this.varios_items && this.detalles.length > 0) {
+      payload.varios_items = true;
+      payload.detalles = this.detalles.map(d => {
+        const tg = d.tipo_gravado || (d.aplica_iva ? 'gravada' : 'no_sujeta');
+        return {
+          concepto: d.concepto,
+          tipo: d.tipo || 'Gastos varios',
+          tipo_gravado: ['gravada', 'exenta', 'no_sujeta'].includes(tg) ? tg : 'gravada',
+          cantidad: parseFloat(d.cantidad) || 1,
+          precio_unitario: parseFloat(d.precio_unitario) || parseFloat(d.sub_total) || 0,
+          sub_total: parseFloat(d.sub_total) || 0,
+          iva: parseFloat(d.iva) || 0,
+          renta_retenida: parseFloat(d.renta_retenida) || 0,
+          iva_percibido: parseFloat(d.iva_percibido) || 0,
+          total: parseFloat(d.total) || 0,
+          aplica_iva: tg === 'gravada',
+          aplica_renta: !!d.aplica_renta,
+          aplica_percepcion: !!d.aplica_percepcion,
+          area_empresa: d.area_empresa || null,
+          id_proyecto: d.id_proyecto || null,
+        };
+      });
+    } else {
+      payload.varios_items = false;
+    }
+
+    this.apiService.store('gasto', payload).subscribe(
       (gasto) => {
         if (!this.gasto.id) {
           this.alertService.success(
@@ -562,11 +696,11 @@ export class GastoComponent implements OnInit {
   public setOtrosImpuestos() {
 
     if (this.mostrar_otros_impuestos) {
-
+        
         if (!Array.isArray(this.gasto.otros_impuestos)) {
             this.gasto.otros_impuestos = [];
         }
-
+        
         if (!this.gasto.impuestos_valores) {
             this.gasto.impuestos_valores = [];
         }
@@ -577,46 +711,47 @@ export class GastoComponent implements OnInit {
             this.gasto.impuestos_valores = [];
         }
     }
-
+    
     this.setTotal();
   }
 
   public onImpuestosChange() {
-    if (!Array.isArray(this.gasto.otros_impuestos)) {
-        this.gasto.otros_impuestos = [];
-    }
-
-    this.impuestos_seleccionados = [];
-
-    if (this.gasto.otros_impuestos && this.gasto.otros_impuestos.length > 0) {
-        this.gasto.otros_impuestos.forEach((impuestoId: number) => {
-            const impuesto = this.impuestos.find((imp: any) => imp.id === impuestoId);
-            if (impuesto) {
-                this.impuestos_seleccionados.push(impuesto);
-            }
-        });
-      // Solo agregar valores para impuestos nuevos, no recalcular existentes
-      this.agregarValoresImpuestosNuevos();
-    } else {
-        this.gasto.impuestos_valores = [];
-    }
-
-    this.setTotal();
+      if (!Array.isArray(this.gasto.otros_impuestos)) {
+          this.gasto.otros_impuestos = [];
+      }
+      
+      this.impuestos_seleccionados = [];
+      
+      if (this.gasto.otros_impuestos && this.gasto.otros_impuestos.length > 0) {
+          this.gasto.otros_impuestos.forEach((impuestoId: number) => {
+              const impuesto = this.impuestos.find((imp: any) => imp.id === impuestoId);
+              if (impuesto) {
+                  this.impuestos_seleccionados.push(impuesto);
+              }
+          });
+          
+          // Solo agregar valores para impuestos nuevos, no recalcular existentes
+          this.agregarValoresImpuestosNuevos();
+      } else {
+          this.gasto.impuestos_valores = [];
+      }
+      
+      this.setTotal();
   }
 
   private agregarValoresImpuestosNuevos() {
       if (!this.gasto.impuestos_valores) {
           this.gasto.impuestos_valores = [];
       }
-
+      
       this.impuestos_seleccionados.forEach(impuesto => {
           // Solo agregar si no existe ya
           const existe = this.gasto.impuestos_valores.find((iv: any) => iv.id_impuesto === impuesto.id);
-
+          
           if (!existe) {
               const subtotal = parseFloat(this.gasto.sub_total) || 0;
               const valor = (subtotal * (impuesto.porcentaje / 100)).toFixed(2);
-
+              
               this.gasto.impuestos_valores.push({
                   id_impuesto: impuesto.id,
                   nombre: impuesto.nombre,
@@ -625,34 +760,34 @@ export class GastoComponent implements OnInit {
               });
           }
       });
-
+      
       // Eliminar valores de impuestos deseleccionados
-      this.gasto.impuestos_valores = this.gasto.impuestos_valores.filter((iv: any) =>
+      this.gasto.impuestos_valores = this.gasto.impuestos_valores.filter((iv: any) => 
           this.gasto.otros_impuestos.includes(iv.id_impuesto)
       );
   }
 
   public setImpuesto(impuesto:any) {
     this.impuestos.push(impuesto);
-
+    
     if (!Array.isArray(this.gasto.otros_impuestos)) {
         this.gasto.otros_impuestos = [];
     }
-
+    
     this.gasto.otros_impuestos.push(impuesto.id);
-
+    
     this.impuestos_seleccionados.push(impuesto);
-
+    
     this.setTotal();
   }
 
   private tieneOtrosImpuestos(otrosImpuestos: any): boolean {
     if (!otrosImpuestos) return false;
-
+    
     if (Array.isArray(otrosImpuestos)) {
         return otrosImpuestos.length > 0;
     }
-
+    
     return otrosImpuestos !== false && otrosImpuestos !== null && otrosImpuestos !== undefined;
   }
 
@@ -764,23 +899,44 @@ export class GastoComponent implements OnInit {
         // Usar la primera descripción como concepto principal
         this.gasto.concepto = jsonData.cuerpoDocumento[0].descripcion;
 
-        // Si hay más de un ítem, añadirlos como nota
+        // Si hay más de un ítem, usar modo varios ítems
         if (jsonData.cuerpoDocumento.length > 1) {
-          const itemsAdicionales = jsonData.cuerpoDocumento
-            .slice(1)
-            .map(
-              (item: any, index: number) =>
-                `${index + 2}. ${item.descripcion} (${item.cantidad} x $${
-                  item.precioUni
-                })`
-            )
-            .join('\n');
-
-          this.gasto.nota = `Detalle adicional:\n${itemsAdicionales}`;
+          this.varios_items = true;
+          const items = jsonData.cuerpoDocumento;
+          const ivaRate = (this.apiService.auth_user()?.empresa?.iva || 13) / 100;
+          this.detalles = items.map((item: any) => {
+            const cant = parseFloat(item.cantidad) || 1;
+            const precio = parseFloat(item.precioUni) || 0;
+            const compra = parseFloat(item.compra) || cant * precio;
+            const sub = ivaRate > 0 ? compra / (1 + ivaRate) : compra;
+            const iva = compra - sub;
+            const esGravada = iva > 0;
+            return {
+              concepto: item.descripcion || '',
+              tipo: 'Gastos varios',
+              tipo_gravado: esGravada ? 'gravada' : 'no_sujeta',
+              cantidad: cant,
+              precio_unitario: precio,
+              sub_total: parseFloat(sub.toFixed(2)),
+              iva: parseFloat(iva.toFixed(2)),
+              renta_retenida: 0,
+              iva_percibido: 0,
+              total: parseFloat(compra.toFixed(2)),
+              aplica_iva: esGravada,
+              aplica_renta: false,
+              aplica_percepcion: false,
+              area_empresa: null,
+              id_proyecto: this.gasto.id_proyecto || null,
+            };
+          });
+          this.recalcularTotalesDetalles();
+          this.gasto.concepto = items[0].descripcion;
+          this.gasto.tipo = this.determinarCategoria(items);
+        } else {
+          this.varios_items = false;
+          this.detalles = [];
+          this.gasto.tipo = this.determinarCategoria(jsonData.cuerpoDocumento);
         }
-
-        // Intentar determinar categoría basada en las descripciones
-        this.determinarCategoria(jsonData.cuerpoDocumento);
       }
 
       // Mapear totales financieros
@@ -799,7 +955,7 @@ export class GastoComponent implements OnInit {
           );
           if (iva) {
             this.gasto.iva = parseFloat(iva.valor);
-            this.iva_active = true;
+            this.gasto.impuesto = true;
           }
         }
 
@@ -818,7 +974,7 @@ export class GastoComponent implements OnInit {
           parseFloat(jsonData.resumen.ivaPerci1) > 0
         ) {
           this.gasto.iva_percibido = parseFloat(jsonData.resumen.ivaPerci1);
-          this.percepcion_active = true;
+          this.gasto.percepcion = true;
         }
 
         // Total
@@ -992,61 +1148,6 @@ export class GastoComponent implements OnInit {
     }
   }
 
-  private loadDepartamentos(): Promise<any> {
-    return new Promise((resolve, reject) => {
-        this.apiService.getAll('departamentosEmpresa/list').subscribe(departamentos => {
-            this.departamentos = departamentos;
-            resolve(departamentos);
-        }, error => {
-            this.alertService.error(error);
-            reject(error);
-        });
-    });
-}
-
-  public onDepartamentoChangeGasto() {
-      // Limpiar área seleccionada
-      this.gasto.id_area_empresa = '';
-      this.areasDisponibles = [];
-
-      if (this.gasto.id_departamento) {
-          this.loadAreasPorDepartamento(this.gasto.id_departamento);
-      }
-  }
-
-  // Cargar áreas por departamento
-  private loadAreasPorDepartamento(idDepartamento: string) {
-      this.loadingAreas = true;
-
-      this.apiService.getAll('area-empresa', { id_departamento: idDepartamento, estado: 1 })
-          .subscribe(response => {
-              this.areasDisponibles = response.data || response;
-              this.loadingAreas = false;
-          }, error => {
-              this.alertService.error(error);
-              this.loadingAreas = false;
-              this.areasDisponibles = [];
-          });
-  }
-
-
-public setDepartamento(departamento: any) {
-  this.departamentos.push(departamento);
-  this.gasto.id_departamento = departamento.id.toString();
-  // Limpiar área seleccionada y cargar nuevas áreas
-  this.gasto.id_area_empresa = '';
-  this.loadAreasPorDepartamento(departamento.id);
-}
-
-public setArea(area: any) {
-  this.areasDisponibles.push(area);
-  this.gasto.id_area_empresa = area.id.toString();
-}
-
-  onOpcionesAvanzadasChange() {
-    this.opciones_avanzadas_active = !this.opciones_avanzadas_active;
-  }
-
   public onImpuestoValorChange() {
     this.calcularTotalConImpuestosEditados();
   }
@@ -1054,7 +1155,7 @@ public setArea(area: any) {
   private calcularTotalConImpuestosEditados() {
     const subtotal = parseFloat(this.gasto.sub_total) || 0;
     let total = subtotal;
-
+  
     // IVA
     if (this.gasto.impuesto) {
       const ivaRate = this.apiService.auth_user().empresa.iva / 100;
@@ -1064,7 +1165,7 @@ public setArea(area: any) {
     } else {
       this.gasto.iva = 0;
     }
-
+  
     // Renta
     if (this.gasto.renta) {
       this.gasto.renta_retenida = (subtotal * 0.10).toFixed(2);
@@ -1072,7 +1173,7 @@ public setArea(area: any) {
     } else {
       this.gasto.renta_retenida = 0;
     }
-
+  
     // Percepción
     if (this.gasto.percepcion) {
       this.gasto.iva_percibido = (subtotal * 0.01).toFixed(2);
@@ -1080,18 +1181,22 @@ public setArea(area: any) {
     } else {
       this.gasto.iva_percibido = 0;
     }
-
+  
     // Sumar otros impuestos (valores editados)
     if (this.gasto.impuestos_valores && this.gasto.impuestos_valores.length > 0) {
       this.gasto.impuestos_valores.forEach((impValue: any) => {
         total += parseFloat(impValue.valor) || 0;
       });
     }
-
+  
     this.gasto.total = total.toFixed(2);
   }
 
   public isColumnEnabled(columnName: string): boolean {
       return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+  }
+
+  public goBack() {
+    this.location.back();
   }
 }

@@ -26,15 +26,23 @@
                 </ng-option>
             </ng-select>
         </div>
+        <div class="form-group col-md-12 col-lg-4" *ngIf="isComponenteQuimicoHabilitado()">
+            <label for="componente_quimico">Componente químico</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.componente_quimico" name="componente_quimico" placeholder="Escribe aquí">
+        </div>
 
         <h6 class="my-3 font-weight-bold">Organización</h6>
         <div class="form-group col-md-6 col-lg-3">
             <label for="subcategoria_id" class="w-100">Categoria</label>
             <div class="input-group">
-                <ng-select name="id_categoria" [(ngModel)]="producto.id_categoria" class="form-select p-0">
-                    <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
-                        {{categoria.nombre}}
-                    </ng-option>
+                <ng-select 
+                    name="id_categoria" 
+                    [(ngModel)]="producto.id_categoria" 
+                    class="form-select p-0" 
+                    [items]="categorias"
+                    bindLabel="nombre" 
+                    bindValue="id"
+                    placeholder="Seleccione una categoría">
                 </ng-select>
                 <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
             </div>
@@ -50,7 +58,7 @@
 
         <h6 class="my-3 font-weight-bold">Precio</h6>
         <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
-            <label for="precio">Precio sin IVA</label>
+            <label for="precio">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
                 <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
@@ -88,28 +96,37 @@
                 <span class="input-group-text">%</span>
             </div>
         </div>
-        <div *ngIf="usuario.empresa.iva > 0" class="form-group col-md-4 col-lg-2">
-            <label class="fw-bold" for="precio_final">Precio con IVA:</label>
+        <div class="form-group col-md-4 col-lg-2">
+            <label for="porcentaje_impuesto">Impuesto</label>
+            <ng-select class="form-select p-0" [(ngModel)]="producto.porcentaje_impuesto" name="porcentaje_impuesto" (change)="calPrecioFinal()">
+                <ng-option [value]="0">Sin impuesto (0%)</ng-option>
+                <ng-option *ngFor="let impuesto of impuestos" [value]="impuesto.porcentaje">
+                    {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-4 col-lg-2">
+            <label class="fw-bold" for="precio_final">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA:' : 'Precio con Impuesto:' }}</label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
                 <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                 <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">
             </div>
         </div>
-
-<!--         <div class="row" *ngIf="producto.id">
+        
+        <!--         <div class="row" *ngIf="producto.id">
             <h6 class="my-3 font-weight-bold">Costo</h6>
             <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
                 <label for="costo_anterior">Costo anterior</label>
                 <div class="input-group">
-                    <span class="input-group-text">$</span>
+                    <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                     <input type="number" disabled class="form-control" [(ngModel)]="producto.costo_anterior" name="costo_anterior" placeholder="$0.00" required>
                 </div>
             </div>
             <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
                 <label for="costo_promedio">Costo promedio</label>
                 <div class="input-group">
-                    <span class="input-group-text">$</span>
+                    <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                     <input type="number" disabled class="form-control" [(ngModel)]="producto.costo_promedio" name="costo_promedio" placeholder="$0.00" required>
                 </div>
             </div>
@@ -122,10 +139,22 @@
             <textarea class="form-control" [(ngModel)]="producto.descripcion" name="Descripcion" placeholder="Escribe aquí" cols="30" rows="2"></textarea>
         </div>
 
+        <div class="form-group col-lg-12" *ngIf="apiService.auth_user().empresa.shopify_store_url">
+            <label for="descripcion_completa">Descripción completa <small class="text-muted">(Shopify)</small></label>
+            <textarea class="form-control" [(ngModel)]="producto.descripcion_completa" name="descripcion_completa" placeholder="Descripción completa del producto que se sincronizará con Shopify..." cols="30" rows="5"></textarea>
+        </div>
+
         <div class="form-group col-md-6 col-lg-5 without-label " *ngIf="producto.tipo != 'Servicio'">
             <div class="form-switch bg-light-info rounded">
               <label>¿Es producto compuesto?</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCompuesto()" [checked]="producto.tipo == 'Compuesto'" name="compuesto">
+            </div>
+        </div>
+
+        <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.tipo != 'Servicio' && isLotesActivo()">
+            <div class="form-switch bg-light-info rounded">
+                <label>¿El inventario se maneja por lotes?</label>
+                <input class="form-check-input float-end" type="checkbox" role="switch" (change)=" producto.id ? onSubmit() : '' " [(ngModel)]="producto.inventario_por_lotes" name="inventario_por_lotes">
             </div>
         </div>
 
