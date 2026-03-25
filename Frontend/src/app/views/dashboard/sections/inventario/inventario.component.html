@@ -43,52 +43,52 @@
                         <div class="row g-3">
                             <div class="col">
                                 <label for="categoria" class="text-primary fw-medium small mb-1">Categoría</label>
-                                <select 
+                                <select
                                     id="categoria"
                                     class="form-select"
                                     [(ngModel)]="filtroCategoria"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let categoria of categorias" [value]="categoria.id">
+                                    <option *ngFor="let categoria of categorias; trackBy: trackById" [value]="categoria.id">
                                         {{ categoria.nombre }}
                                     </option>
                                 </select>
                             </div>
                             <div class="col">
                                 <label for="producto" class="text-primary fw-medium small mb-1">Producto</label>
-                                <select 
+                                <select
                                     id="producto"
                                     class="form-select"
                                     [(ngModel)]="filtroProducto"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let producto of productos" [value]="producto.id">
+                                    <option *ngFor="let producto of productos; trackBy: trackById" [value]="producto.id">
                                         {{ producto.nombre }}
                                     </option>
                                 </select>
                             </div>
                             <div class="col">
                                 <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
-                                <select 
+                                <select
                                     id="sucursal"
                                     class="form-select"
                                     [(ngModel)]="filtroSucursal"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                                    <option *ngFor="let sucursal of sucursales; trackBy: trackById" [value]="sucursal.id">
                                         {{ sucursal.nombre }}
                                     </option>
                                 </select>
                             </div>
                             <div class="col">
                                 <label for="proveedor" class="text-primary fw-medium small mb-1">Proveedor</label>
-                                <select 
+                                <select
                                     id="proveedor"
                                     class="form-select"
                                     [(ngModel)]="filtroProveedor"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                                    <option *ngFor="let proveedor of proveedores; trackBy: trackById" [value]="proveedor.id">
                                         {{ proveedor.nombre }}
                                     </option>
                                 </select>

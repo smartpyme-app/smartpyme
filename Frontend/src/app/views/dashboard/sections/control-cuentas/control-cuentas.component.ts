@@ -1,10 +1,11 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 
 @Component({
   selector: 'app-control-cuentas',
   templateUrl: './control-cuentas.component.html',
-  styleUrls: ['./control-cuentas.component.css']
+  styleUrls: ['./control-cuentas.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ControlCuentasComponent implements OnInit, OnChanges {
   @Input() datos: any = {};
@@ -60,9 +61,165 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   // Datos filtrados (se muestran en la vista)
   datosFiltrados: any = {};
 
+  // Propiedades cacheadas para evitar recálculos
+  private _detalleCuentasRowsCache: any[] = [];
+  private _totalesDetalleCuentasCache: any = { ventasConIVA: 0, montoAbonado: 0, saldoPendiente: 0 };
+  private _resumenCuentasPagarRowsCache: any[] = [];
+  private _totalesResumenCuentasPagarCache: any = { gastosTotalesConIVA: 0, totalAbonado: 0, saldoPendiente: 0 };
+  private _lastDatosHash: string = '';
+
   private inicializado: boolean = false;
 
-  constructor() { }
+  constructor(private cdr: ChangeDetectorRef) { }
+
+  /**
+   * Método eficiente de clonación profunda
+   */
+  private clonarDatos(obj: any): any {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (obj instanceof Date) return new Date(obj.getTime());
+    if (Array.isArray(obj)) return obj.map(item => this.clonarDatos(item));
+
+    const clonado: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        clonado[key] = this.clonarDatos(obj[key]);
+      }
+    }
+    return clonado;
+  }
+
+  /**
+   * Genera un hash simple de los datos para detectar cambios
+   */
+  private generarHashDatos(datos: any): string {
+    if (!datos) return '';
+    try {
+      const str = JSON.stringify(datos);
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return hash.toString();
+    } catch {
+      return Math.random().toString();
+    }
+  }
+
+  /**
+   * Formateador con caché
+   */
+  private currencyFormatter = new Intl.NumberFormat('es-GT', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  /**
+   * Recalcula todas las filas cacheadas
+   */
+  private recalcularRowsCache(): void {
+    const currentHash = this.generarHashDatos(this.datos);
+    if (currentHash === this._lastDatosHash) {
+      return; // No hay cambios
+    }
+    this._lastDatosHash = currentHash;
+
+    // Recalcular detalle de cuentas por cobrar
+    if (this.datos.detalleCuentasPorCobrar) {
+      const rows = this.datos.detalleCuentasPorCobrar.map((item: any) => ({
+        cliente: item.cliente || '-',
+        factura: item.factura || '-',
+        fechaVenta: item.fechaVenta || '-',
+        fechaPago: item.fechaPago || '-',
+        diasVencimiento: item.diasVencimiento || 0,
+        estado: item.estado || '-',
+        ventasConIVA: item.ventasConIVA || 0,
+        montoAbonado: item.montoAbonado || 0,
+        diasAbono: item.diasAbono || null,
+        saldoPendiente: item.saldoPendiente || 0,
+        isTotal: false
+      }));
+
+      // Calcular totales
+      const totales = this.datos.detalleCuentasPorCobrar.reduce((totals: any, item: any) => ({
+        ventasConIVA: totals.ventasConIVA + (item.ventasConIVA || 0),
+        montoAbonado: totals.montoAbonado + (item.montoAbonado || 0),
+        saldoPendiente: totals.saldoPendiente + (item.saldoPendiente || 0)
+      }), { ventasConIVA: 0, montoAbonado: 0, saldoPendiente: 0 });
+
+      this._totalesDetalleCuentasCache = totales;
+
+      // Agregar fila de totales
+      if (totales.ventasConIVA > 0 || totales.montoAbonado > 0) {
+        rows.push({
+          cliente: 'Total',
+          factura: '',
+          fechaVenta: '',
+          fechaPago: '',
+          diasVencimiento: '',
+          estado: '',
+          ventasConIVA: totales.ventasConIVA,
+          montoAbonado: totales.montoAbonado,
+          diasAbono: '',
+          saldoPendiente: totales.saldoPendiente,
+          isTotal: true
+        });
+      }
+
+      this._detalleCuentasRowsCache = rows;
+    } else {
+      this._detalleCuentasRowsCache = [];
+      this._totalesDetalleCuentasCache = { ventasConIVA: 0, montoAbonado: 0, saldoPendiente: 0 };
+    }
+
+    // Recalcular resumen de cuentas por pagar
+    if (this.datos.resumenCuentasPorPagar) {
+      const rows = this.datos.resumenCuentasPorPagar.map((item: any) => ({
+        fechaCompra: item.fechaCompra || '-',
+        vencimiento: item.vencimiento || '-',
+        diasVencimiento: item.diasVencimiento || 0,
+        estado: item.estado || '-',
+        gastosTotalesConIVA: item.gastosTotalesConIVA || 0,
+        totalAbonado: item.totalAbonado || 0,
+        ultimoAbono: item.ultimoAbono || '-',
+        saldoPendiente: item.saldoPendiente || 0,
+        isTotal: false
+      }));
+
+      // Calcular totales
+      const totales = this.datos.resumenCuentasPorPagar.reduce((totals: any, item: any) => ({
+        gastosTotalesConIVA: totals.gastosTotalesConIVA + (item.gastosTotalesConIVA || 0),
+        totalAbonado: totals.totalAbonado + (item.totalAbonado || 0),
+        saldoPendiente: totals.saldoPendiente + (item.saldoPendiente || 0)
+      }), { gastosTotalesConIVA: 0, totalAbonado: 0, saldoPendiente: 0 });
+
+      this._totalesResumenCuentasPagarCache = totales;
+
+      // Agregar fila de totales
+      if (totales.gastosTotalesConIVA > 0 || totales.totalAbonado > 0) {
+        rows.push({
+          fechaCompra: 'Total',
+          vencimiento: '',
+          diasVencimiento: '',
+          estado: '',
+          gastosTotalesConIVA: totales.gastosTotalesConIVA,
+          totalAbonado: totales.totalAbonado,
+          ultimoAbono: '',
+          saldoPendiente: totales.saldoPendiente,
+          isTotal: true
+        });
+      }
+
+      this._resumenCuentasPagarRowsCache = rows;
+    } else {
+      this._resumenCuentasPagarRowsCache = [];
+      this._totalesResumenCuentasPagarCache = { gastosTotalesConIVA: 0, totalAbonado: 0, saldoPendiente: 0 };
+    }
+  }
 
   ngOnInit(): void {
     this.cargarOpcionesFiltros();
@@ -70,12 +227,14 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     this.configurarAGGridResumenPagar();
     // Guardar datos originales si existen
     if (this.datos && Object.keys(this.datos).length > 0) {
-      this.datosOriginales = JSON.parse(JSON.stringify(this.datos));
-      this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+      this.datosOriginales = this.clonarDatos(this.datos);
+      this.datosFiltrados = this.clonarDatos(this.datos);
+      this.recalcularRowsCache();
     }
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
+      this.cdr.markForCheck();
     }, 100);
   }
 
@@ -83,14 +242,16 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     if (changes['datos']) {
       // Actualizar datos originales cuando cambian
       if (this.datos && Object.keys(this.datos).length > 0) {
-        this.datosOriginales = JSON.parse(JSON.stringify(this.datos));
+        this.datosOriginales = this.clonarDatos(this.datos);
         // Aplicar filtros interactivos si existen
         if (Object.keys(this.filtrosInteractivos).length > 0) {
           this.aplicarFiltrosInteractivos();
         } else {
-          this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+          this.datosFiltrados = this.clonarDatos(this.datos);
           this.datos = this.datosFiltrados;
+          this.recalcularRowsCache();
         }
+        this.cdr.markForCheck();
       }
     }
   }
@@ -106,10 +267,12 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
 
   toggleFiltrosAdicionalesPagar(): void {
     this.mostrarFiltrosAdicionalesPagar = !this.mostrarFiltrosAdicionalesPagar;
+    this.cdr.markForCheck();
   }
 
   toggleFiltrosAdicionales(): void {
     this.mostrarFiltrosAdicionales = !this.mostrarFiltrosAdicionales;
+    this.cdr.markForCheck();
   }
 
   limpiarFiltros(): void {
@@ -178,12 +341,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
+    return this.currencyFormatter.format(value);
   }
 
   // Métodos para filtros interactivos
@@ -227,12 +385,12 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
 
   aplicarFiltrosInteractivos(): void {
     // Si no hay datos originales, usar los datos actuales
-    const datosBase = Object.keys(this.datosOriginales).length > 0 
-      ? this.datosOriginales 
+    const datosBase = Object.keys(this.datosOriginales).length > 0
+      ? this.datosOriginales
       : (this.datos || {});
 
     // Crear una copia profunda de los datos para filtrar
-    this.datosFiltrados = JSON.parse(JSON.stringify(datosBase));
+    this.datosFiltrados = this.clonarDatos(datosBase);
 
     // Filtrar datos según los filtros activos
     this.filtrarDatos();
@@ -244,7 +402,11 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     this.recalcularMetricas();
 
     // Actualizar los datos que se muestran (crear nueva referencia para que Angular detecte cambios)
-    this.datos = JSON.parse(JSON.stringify(this.datosFiltrados));
+    this.datos = this.clonarDatos(this.datosFiltrados);
+
+    // Recalcular cache y forzar detección de cambios
+    this.recalcularRowsCache();
+    this.cdr.markForCheck();
   }
 
   filtrarDatos(): void {
@@ -485,13 +647,15 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     this.filtrosInteractivos = {};
     // Restaurar datos originales
     if (Object.keys(this.datosOriginales).length > 0) {
-      this.datosFiltrados = JSON.parse(JSON.stringify(this.datosOriginales));
+      this.datosFiltrados = this.clonarDatos(this.datosOriginales);
       this.datos = this.datosFiltrados;
     } else if (this.datos) {
       // Si no hay datos originales guardados, recargar desde el input
-      this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+      this.datosFiltrados = this.clonarDatos(this.datos);
       this.datos = this.datosFiltrados;
     }
+    this.recalcularRowsCache();
+    this.cdr.markForCheck();
   }
 
   tieneFiltrosInteractivos(): boolean {
@@ -687,47 +851,11 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   get resumenCuentasPagarRows(): any[] {
-    if (!this.datos.resumenCuentasPorPagar) return [];
-    const rows = this.datos.resumenCuentasPorPagar.map((item: any) => ({
-      fechaCompra: item.fechaCompra || '-',
-      vencimiento: item.vencimiento || '-',
-      diasVencimiento: item.diasVencimiento || 0,
-      estado: item.estado || '-',
-      gastosTotalesConIVA: item.gastosTotalesConIVA || 0,
-      totalAbonado: item.totalAbonado || 0,
-      ultimoAbono: item.ultimoAbono || '-',
-      saldoPendiente: item.saldoPendiente || 0,
-      isTotal: false
-    }));
-    
-    // Agregar fila de totales al final
-    const totales = this.totalesResumenCuentasPagar;
-    if (totales.gastosTotalesConIVA > 0 || totales.totalAbonado > 0) {
-      rows.push({
-        fechaCompra: 'Total',
-        vencimiento: '',
-        diasVencimiento: '',
-        estado: '',
-        gastosTotalesConIVA: totales.gastosTotalesConIVA,
-        totalAbonado: totales.totalAbonado,
-        ultimoAbono: '',
-        saldoPendiente: totales.saldoPendiente,
-        isTotal: true
-      });
-    }
-    
-    return rows;
+    return this._resumenCuentasPagarRowsCache;
   }
 
   get totalesResumenCuentasPagar(): any {
-    if (!this.datos.resumenCuentasPorPagar || this.datos.resumenCuentasPorPagar.length === 0) {
-      return { gastosTotalesConIVA: 0, totalAbonado: 0, saldoPendiente: 0 };
-    }
-    return this.datos.resumenCuentasPorPagar.reduce((totals: any, item: any) => ({
-      gastosTotalesConIVA: totals.gastosTotalesConIVA + (item.gastosTotalesConIVA || 0),
-      totalAbonado: totals.totalAbonado + (item.totalAbonado || 0),
-      saldoPendiente: totals.saldoPendiente + (item.saldoPendiente || 0)
-    }), { gastosTotalesConIVA: 0, totalAbonado: 0, saldoPendiente: 0 });
+    return this._totalesResumenCuentasPagarCache;
   }
 
   onQuickFilterChangeResumen(): void {
@@ -1075,51 +1203,11 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   get detalleCuentasRows(): any[] {
-    if (!this.datos.detalleCuentasPorCobrar) return [];
-    const rows = this.datos.detalleCuentasPorCobrar.map((item: any) => ({
-      cliente: item.cliente || '-',
-      factura: item.factura || '-',
-      fechaVenta: item.fechaVenta || '-',
-      fechaPago: item.fechaPago || '-',
-      diasVencimiento: item.diasVencimiento || 0,
-      estado: item.estado || '-',
-      ventasConIVA: item.ventasConIVA || 0,
-      montoAbonado: item.montoAbonado || 0,
-      diasAbono: item.diasAbono || null,
-      saldoPendiente: item.saldoPendiente || 0,
-      isTotal: false
-    }));
-    
-    // Agregar fila de totales al final
-    const totales = this.totalesDetalleCuentas;
-    if (totales.ventasConIVA > 0 || totales.montoAbonado > 0) {
-      rows.push({
-        cliente: 'Total',
-        factura: '',
-        fechaVenta: '',
-        fechaPago: '',
-        diasVencimiento: '',
-        estado: '',
-        ventasConIVA: totales.ventasConIVA,
-        montoAbonado: totales.montoAbonado,
-        diasAbono: '',
-        saldoPendiente: totales.saldoPendiente,
-        isTotal: true
-      });
-    }
-    
-    return rows;
+    return this._detalleCuentasRowsCache;
   }
 
   get totalesDetalleCuentas(): any {
-    if (!this.datos.detalleCuentasPorCobrar || this.datos.detalleCuentasPorCobrar.length === 0) {
-      return { ventasConIVA: 0, montoAbonado: 0, saldoPendiente: 0 };
-    }
-    return this.datos.detalleCuentasPorCobrar.reduce((totals: any, item: any) => ({
-      ventasConIVA: totals.ventasConIVA + (item.ventasConIVA || 0),
-      montoAbonado: totals.montoAbonado + (item.montoAbonado || 0),
-      saldoPendiente: totals.saldoPendiente + (item.saldoPendiente || 0)
-    }), { ventasConIVA: 0, montoAbonado: 0, saldoPendiente: 0 });
+    return this._totalesDetalleCuentasCache;
   }
 
   onQuickFilterChange(): void {
@@ -1163,9 +1251,9 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   copiarAlPortapapeles(texto: string): void {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(texto).then(() => {
-        console.log('Valor copiado al portapapeles');
+        // console.log('Valor copiado al portapapeles');
       }).catch(err => {
-        console.error('Error al copiar:', err);
+        // console.error('Error al copiar:', err);
         this.copiarAlPortapapelesFallback(texto);
       });
     } else {
@@ -1184,9 +1272,9 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     textArea.select();
     try {
       document.execCommand('copy');
-      console.log('Valor copiado al portapapeles (fallback)');
+      // console.log('Valor copiado al portapapeles (fallback)');
     } catch (err) {
-      console.error('Error al copiar:', err);
+      // console.error('Error al copiar:', err);
     }
     document.body.removeChild(textArea);
   }
@@ -1285,5 +1373,28 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         this.copiarAlPortapapeles(texto);
       }
     }
+  }
+
+  /**
+   * TrackBy functions para optimización de *ngFor
+   */
+  trackByIndex(index: number, item: any): number {
+    return index;
+  }
+
+  trackByCliente(index: number, item: any): string | number {
+    return item.cliente ? `${item.cliente}_${item.factura || ''}` : index;
+  }
+
+  trackByFecha(index: number, item: any): string | number {
+    return item.fechaCompra ? `${item.fechaCompra}_${item.vencimiento || ''}` : index;
+  }
+
+  trackById(index: number, item: any): string | number {
+    return item.id || index;
+  }
+
+  trackByName(index: number, item: any): string | number {
+    return item.name || item.nombre || index;
   }
 }

@@ -1,35 +1,92 @@
-<div class="d-flex align-items-end gap-3">
-    <div class="d-flex flex-column">
-        <label [attr.for]="idAnio" [class]="labelClass" [style.color]="labelColor || null">Año</label>
-        <select
-            [id]="idAnio"
-            class="form-select"
-            [ngModel]="anio"
-            (ngModelChange)="onAnioChange($event)">
-            <option value="">Seleccionar</option>
-            <option *ngFor="let a of aniosDisponibles; trackBy: trackByAnio" [value]="a">{{ a }}</option>
-        </select>
+<div class="filtro-fecha-root">
+    <!-- Modo simple: botones Bootstrap (como antes) -->
+    <div *ngIf="!modoAvanzado" class="filtro-fecha-simple">
+        <div class="d-flex flex-wrap align-items-center gap-2" role="group" [attr.aria-label]="'Atajos de período'">
+            <button
+                type="button"
+                class="btn btn-sm filtro-fecha-preset"
+                [ngClass]="{ 'btn-primary': presetActivo === 'este-mes', 'btn-default': presetActivo !== 'este-mes' }"
+                (click)="presetEsteMes()">
+                Este mes
+            </button>
+            <button
+                type="button"
+                class="btn btn-sm filtro-fecha-preset"
+                [ngClass]="{ 'btn-primary': presetActivo === 'mes-anterior', 'btn-default': presetActivo !== 'mes-anterior' }"
+                (click)="presetMesAnterior()">
+                Mes anterior
+            </button>
+            <button
+                type="button"
+                class="btn btn-sm filtro-fecha-preset"
+                [ngClass]="{ 'btn-primary': presetActivo === 'este-anio', 'btn-default': presetActivo !== 'este-anio' }"
+                (click)="presetEsteAnio()">
+                Este año
+            </button>
+            <button
+                type="button"
+                class="btn btn-sm filtro-fecha-preset"
+                [ngClass]="{ 'btn-primary': presetActivo === 'anio-pasado', 'btn-default': presetActivo !== 'anio-pasado' }"
+                (click)="presetAnioPasado()">
+                Año pasado
+            </button>
+        </div>
+        <button
+            type="button"
+            class="filtro-fecha-link"
+            (click)="alternarModoAvanzado()">
+            Rango personalizado
+        </button>
     </div>
-    <div class="d-flex flex-column">
-        <label [attr.for]="idMes" [class]="labelClass" [style.color]="labelColor || null">Mes</label>
-        <select
-            [id]="idMes"
-            class="form-select"
-            [ngModel]="mes"
-            (ngModelChange)="onMesChange($event)">
-            <option value="">Todos</option>
-            <option value="1">Enero</option>
-            <option value="2">Febrero</option>
-            <option value="3">Marzo</option>
-            <option value="4">Abril</option>
-            <option value="5">Mayo</option>
-            <option value="6">Junio</option>
-            <option value="7">Julio</option>
-            <option value="8">Agosto</option>
-            <option value="9">Septiembre</option>
-            <option value="10">Octubre</option>
-            <option value="11">Noviembre</option>
-            <option value="12">Diciembre</option>
-        </select>
+
+    <!-- Modo avanzado: etiquetas con icono + selects redondeados -->
+    <div *ngIf="modoAvanzado" class="filtro-fecha-avanzado">
+        <div class="filtro-fecha-fields d-flex align-items-end gap-3 flex-wrap">
+            <div class="filtro-fecha-field d-flex flex-column">
+                <label [attr.for]="idAnio" class="filtro-fecha-field-label" [style.color]="labelColor || null">
+                    <i class="fas fa-calendar-day filtro-fecha-field-label__icon" aria-hidden="true" [style.color]="labelColor || null"></i>
+                    <span class="filtro-fecha-field-label__text">Año</span>
+                </label>
+                <select
+                    [id]="idAnio"
+                    class="form-select filtro-fecha-select"
+                    [ngModel]="anio"
+                    (ngModelChange)="onAnioChange($event)">
+                    <option value="">Seleccionar</option>
+                    <option *ngFor="let a of aniosDisponibles; trackBy: trackByAnio" [value]="a">{{ a }}</option>
+                </select>
+            </div>
+            <div class="filtro-fecha-field d-flex flex-column">
+                <label [attr.for]="idMes" class="filtro-fecha-field-label" [style.color]="labelColor || null">
+                    <i class="fas fa-calendar-day filtro-fecha-field-label__icon" aria-hidden="true" [style.color]="labelColor || null"></i>
+                    <span class="filtro-fecha-field-label__text">Mes</span>
+                </label>
+                <select
+                    [id]="idMes"
+                    class="form-select filtro-fecha-select"
+                    [ngModel]="mes"
+                    (ngModelChange)="onMesChange($event)">
+                    <option value="">Todos</option>
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7">Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                </select>
+            </div>
+            <button
+                type="button"
+                class="filtro-fecha-link filtro-fecha-link--inline align-self-end mb-2"
+                (click)="alternarModoAvanzado()">
+                ← Filtros rápidos
+            </button>
+        </div>
     </div>
 </div>

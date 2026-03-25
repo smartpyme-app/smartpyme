@@ -1,10 +1,11 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 
 @Component({
   selector: 'app-inventario',
   templateUrl: './inventario.component.html',
-  styleUrls: ['./inventario.component.css']
+  styleUrls: ['./inventario.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InventarioComponent implements OnInit, OnChanges {
   @Input() datos: any = {};
@@ -60,13 +61,72 @@ export class InventarioComponent implements OnInit, OnChanges {
   
   // Datos originales (sin filtrar)
   datosOriginales: any = {};
-  
+
   // Datos filtrados (se muestran en la vista)
   datosFiltrados: any = {};
 
+  // Propiedades cacheadas para evitar recálculos
+  private _inventarioProductosRowsCache: any[] = [];
+  private _totalInventarioProductosCache: any = { stock: 0, inversionPromedio: 0, precio: 0, ventasEsperadas: 0 };
+  private _entradasSalidasRowsCache: any[] = [];
+  private _ajustesRowsCache: any[] = [];
+  private _totalAjustesCache: any = { costoTotal: 0 };
+  private _lastDatosHash: string = '';
+
   private inicializado: boolean = false;
 
-  constructor() { }
+  constructor(private cdr: ChangeDetectorRef) { }
+
+  /**
+   * Método eficiente de clonación profunda
+   */
+  private clonarDatos(obj: any): any {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (obj instanceof Date) return new Date(obj.getTime());
+    if (Array.isArray(obj)) return obj.map(item => this.clonarDatos(item));
+
+    const clonado: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        clonado[key] = this.clonarDatos(obj[key]);
+      }
+    }
+    return clonado;
+  }
+
+  /**
+   * Genera un hash simple de los datos para detectar cambios
+   */
+  private generarHashDatos(datos: any): string {
+    if (!datos) return '';
+    try {
+      const str = JSON.stringify(datos);
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return hash.toString();
+    } catch {
+      return Math.random().toString();
+    }
+  }
+
+  /**
+   * Formateadores con caché
+   */
+  private currencyFormatter = new Intl.NumberFormat('es-GT', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  private numberFormatter = new Intl.NumberFormat('es-GT', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  });
 
   ngOnInit(): void {
     this.cargarOpcionesFiltros();
@@ -75,14 +135,16 @@ export class InventarioComponent implements OnInit, OnChanges {
     this.configurarAGGridAjustes();
     // Guardar datos originales si existen
     if (this.datos && Object.keys(this.datos).length > 0) {
-      this.datosOriginales = JSON.parse(JSON.stringify(this.datos));
-      this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+      this.datosOriginales = this.clonarDatos(this.datos);
+      this.datosFiltrados = this.clonarDatos(this.datos);
       // Asegurar que los arrays estén ordenados de mayor a menor
       this.ordenarArraysIniciales();
+      this.recalcularRowsCache();
     }
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
+      this.cdr.markForCheck();
     }, 100);
   }
 
@@ -90,15 +152,17 @@ export class InventarioComponent implements OnInit, OnChanges {
     if (changes['datos']) {
       // Actualizar datos originales cuando cambian
       if (this.datos && Object.keys(this.datos).length > 0) {
-        this.datosOriginales = JSON.parse(JSON.stringify(this.datos));
+        this.datosOriginales = this.clonarDatos(this.datos);
         // Aplicar filtros interactivos si existen
         if (Object.keys(this.filtrosInteractivos).length > 0) {
           this.aplicarFiltrosInteractivos();
         } else {
-          this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+          this.datosFiltrados = this.clonarDatos(this.datos);
           this.ordenarArraysIniciales();
           this.datos = this.datosFiltrados;
+          this.recalcularRowsCache();
         }
+        this.cdr.markForCheck();
       }
     }
   }
@@ -114,6 +178,7 @@ export class InventarioComponent implements OnInit, OnChanges {
 
   toggleFiltrosAdicionales(): void {
     this.mostrarFiltrosAdicionales = !this.mostrarFiltrosAdicionales;
+    this.cdr.markForCheck();
   }
 
   limpiarFiltros(): void {
@@ -163,19 +228,11 @@ export class InventarioComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
+    return this.currencyFormatter.format(value);
   }
 
   formatNumber(value: number): string {
-    return new Intl.NumberFormat('es-GT', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
+    return this.numberFormatter.format(value);
   }
 
   configurarAGGrid(): void {
@@ -333,51 +390,123 @@ export class InventarioComponent implements OnInit, OnChanges {
     };
   }
 
-  get inventarioProductosRows(): any[] {
-    const datos = this.datosFiltrados && Object.keys(this.datosFiltrados).length > 0 
-      ? this.datosFiltrados 
+  /**
+   * Recalcula todas las filas cacheadas
+   */
+  private recalcularRowsCache(): void {
+    const datos = this.datosFiltrados && Object.keys(this.datosFiltrados).length > 0
+      ? this.datosFiltrados
       : this.datos;
-    if (!datos.detalleInventario) return [];
-    const rows = datos.detalleInventario.map((item: any) => ({
-      producto: item.producto || '-',
-      stock: item.stock || 0,
-      costo: item.costo || 0,
-      inversionPromedio: item.inversionPromedio || 0,
-      precio: item.precio || 0,
-      ventasEsperadas: item.ventasEsperadas || 0,
-      isTotal: false
-    }));
-    
-    // Agregar fila de totales al final
-    const totales = this.totalInventarioProductos;
-    if (totales.stock !== 0 || totales.inversionPromedio !== 0) {
-      rows.push({
-        producto: 'Total',
-        stock: totales.stock,
-        costo: '',
-        inversionPromedio: totales.inversionPromedio,
-        precio: totales.precio,
-        ventasEsperadas: totales.ventasEsperadas,
-        isTotal: true
-      });
+    const currentHash = this.generarHashDatos(datos);
+    if (currentHash === this._lastDatosHash) {
+      return; // No hay cambios
     }
-    
-    return rows;
+    this._lastDatosHash = currentHash;
+
+    // Recalcular inventario productos
+    if (datos.detalleInventario) {
+      const rows = datos.detalleInventario.map((item: any) => ({
+        producto: item.producto || '-',
+        stock: item.stock || 0,
+        costo: item.costo || 0,
+        inversionPromedio: item.inversionPromedio || 0,
+        precio: item.precio || 0,
+        ventasEsperadas: item.ventasEsperadas || 0,
+        isTotal: false
+      }));
+
+      // Calcular totales
+      const totales = datos.detalleInventario.reduce((totals: any, item: any) => ({
+        stock: totals.stock + (item.stock || 0),
+        inversionPromedio: totals.inversionPromedio + (item.inversionPromedio || 0),
+        precio: totals.precio + (item.precio || 0),
+        ventasEsperadas: totals.ventasEsperadas + (item.ventasEsperadas || 0)
+      }), { stock: 0, inversionPromedio: 0, precio: 0, ventasEsperadas: 0 });
+
+      this._totalInventarioProductosCache = totales;
+
+      // Agregar fila de totales
+      if (totales.stock !== 0 || totales.inversionPromedio !== 0) {
+        rows.push({
+          producto: 'Total',
+          stock: totales.stock,
+          costo: '',
+          inversionPromedio: totales.inversionPromedio,
+          precio: totales.precio,
+          ventasEsperadas: totales.ventasEsperadas,
+          isTotal: true
+        });
+      }
+
+      this._inventarioProductosRowsCache = rows;
+    } else {
+      this._inventarioProductosRowsCache = [];
+      this._totalInventarioProductosCache = { stock: 0, inversionPromedio: 0, precio: 0, ventasEsperadas: 0 };
+    }
+
+    // Recalcular entradas y salidas
+    if (datos.detalleEntradasSalidas) {
+      this._entradasSalidasRowsCache = datos.detalleEntradasSalidas.map((item: any) => ({
+        fecha: item.fecha || '-',
+        producto: item.producto || '-',
+        concepto: item.concepto || '-',
+        referencia: item.referencia || '-',
+        entradas: item.entradas || null,
+        valorEntradas: item.valorEntradas || null,
+        salidas: item.salidas || null,
+        valorSalidas: item.valorSalidas || null
+      }));
+    } else {
+      this._entradasSalidasRowsCache = [];
+    }
+
+    // Recalcular ajustes
+    if (datos.detalleAjustes) {
+      const rows = datos.detalleAjustes.map((item: any) => ({
+        fecha: item.fecha || '-',
+        producto: item.producto || '-',
+        concepto: item.concepto || '-',
+        stockInicial: item.stockInicial || 0,
+        stockReal: item.stockReal || 0,
+        ajuste: item.ajuste || 0,
+        costoTotal: item.costoTotal || 0,
+        isTotal: false
+      }));
+
+      // Calcular total de ajustes
+      const totales = datos.detalleAjustes.reduce((totals: any, item: any) => ({
+        costoTotal: totals.costoTotal + (item.costoTotal || 0)
+      }), { costoTotal: 0 });
+
+      this._totalAjustesCache = totales;
+
+      // Agregar fila de totales
+      if (totales.costoTotal !== 0) {
+        rows.push({
+          fecha: 'Total',
+          producto: '',
+          concepto: '',
+          stockInicial: '',
+          stockReal: '',
+          ajuste: '',
+          costoTotal: totales.costoTotal,
+          isTotal: true
+        });
+      }
+
+      this._ajustesRowsCache = rows;
+    } else {
+      this._ajustesRowsCache = [];
+      this._totalAjustesCache = { costoTotal: 0 };
+    }
+  }
+
+  get inventarioProductosRows(): any[] {
+    return this._inventarioProductosRowsCache;
   }
 
   get totalInventarioProductos(): any {
-    const datos = this.datosFiltrados && Object.keys(this.datosFiltrados).length > 0 
-      ? this.datosFiltrados 
-      : this.datos;
-    if (!datos.detalleInventario || datos.detalleInventario.length === 0) {
-      return { stock: 0, inversionPromedio: 0, precio: 0, ventasEsperadas: 0 };
-    }
-    return datos.detalleInventario.reduce((totals: any, item: any) => ({
-      stock: totals.stock + (item.stock || 0),
-      inversionPromedio: totals.inversionPromedio + (item.inversionPromedio || 0),
-      precio: totals.precio + (item.precio || 0),
-      ventasEsperadas: totals.ventasEsperadas + (item.ventasEsperadas || 0)
-    }), { stock: 0, inversionPromedio: 0, precio: 0, ventasEsperadas: 0 });
+    return this._totalInventarioProductosCache;
   }
 
   onQuickFilterChange(): void {
@@ -422,9 +551,9 @@ export class InventarioComponent implements OnInit, OnChanges {
   copiarAlPortapapeles(texto: string): void {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(texto).then(() => {
-        console.log('Valor copiado al portapapeles');
+        // console.log('Valor copiado al portapapeles');
       }).catch(err => {
-        console.error('Error al copiar:', err);
+        // console.error('Error al copiar:', err);
         this.copiarAlPortapapelesFallback(texto);
       });
     } else {
@@ -443,9 +572,9 @@ export class InventarioComponent implements OnInit, OnChanges {
     textArea.select();
     try {
       document.execCommand('copy');
-      console.log('Valor copiado al portapapeles (fallback)');
+      // console.log('Valor copiado al portapapeles (fallback)');
     } catch (err) {
-      console.error('Error al copiar:', err);
+      // console.error('Error al copiar:', err);
     }
     document.body.removeChild(textArea);
   }
@@ -688,20 +817,7 @@ export class InventarioComponent implements OnInit, OnChanges {
   }
 
   get entradasSalidasRows(): any[] {
-    const datos = this.datosFiltrados && Object.keys(this.datosFiltrados).length > 0 
-      ? this.datosFiltrados 
-      : this.datos;
-    if (!datos.detalleEntradasSalidas) return [];
-    return datos.detalleEntradasSalidas.map((item: any) => ({
-      fecha: item.fecha || '-',
-      producto: item.producto || '-',
-      concepto: item.concepto || '-',
-      referencia: item.referencia || '-',
-      entradas: item.entradas || null,
-      valorEntradas: item.valorEntradas || null,
-      salidas: item.salidas || null,
-      valorSalidas: item.valorSalidas || null
-    }));
+    return this._entradasSalidasRowsCache;
   }
 
   onQuickFilterChangeEntradasSalidas(): void {
@@ -863,7 +979,7 @@ export class InventarioComponent implements OnInit, OnChanges {
       : (this.datos || {});
 
     // Crear una copia profunda de los datos para filtrar
-    this.datosFiltrados = JSON.parse(JSON.stringify(datosBase));
+    this.datosFiltrados = this.clonarDatos(datosBase);
 
     // Aplicar filtros según los filtros interactivos activos
     this.filtrarDatosInventario();
@@ -875,7 +991,11 @@ export class InventarioComponent implements OnInit, OnChanges {
     this.recalcularMetricas();
 
     // Actualizar los datos que se muestran (crear nueva referencia para que Angular detecte cambios)
-    this.datos = JSON.parse(JSON.stringify(this.datosFiltrados));
+    this.datos = this.clonarDatos(this.datosFiltrados);
+
+    // Recalcular cache y forzar detección de cambios
+    this.recalcularRowsCache();
+    this.cdr.markForCheck();
   }
 
   filtrarDatosInventario(): void {
@@ -961,11 +1081,11 @@ export class InventarioComponent implements OnInit, OnChanges {
         };
       } else {
         // Si no se encuentra la categoría, usar la configuración original
-        this.datosFiltrados.stockPorCategoriaConfig = JSON.parse(JSON.stringify(configOriginal));
+        this.datosFiltrados.stockPorCategoriaConfig = this.clonarDatos(configOriginal);
       }
     } else {
       // Si no hay filtro, usar la configuración original
-      this.datosFiltrados.stockPorCategoriaConfig = JSON.parse(JSON.stringify(configOriginal));
+      this.datosFiltrados.stockPorCategoriaConfig = this.clonarDatos(configOriginal);
     }
   }
 
@@ -1075,13 +1195,15 @@ export class InventarioComponent implements OnInit, OnChanges {
     this.filtrosInteractivos = {};
     // Restaurar datos originales
     if (Object.keys(this.datosOriginales).length > 0) {
-      this.datosFiltrados = JSON.parse(JSON.stringify(this.datosOriginales));
+      this.datosFiltrados = this.clonarDatos(this.datosOriginales);
       this.datos = this.datosFiltrados;
     } else if (this.datos) {
       // Si no hay datos originales guardados, recargar desde el input
-      this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+      this.datosFiltrados = this.clonarDatos(this.datos);
       this.datos = this.datosFiltrados;
     }
+    this.recalcularRowsCache();
+    this.cdr.markForCheck();
   }
 
   tieneFiltrosInteractivos(): boolean {
@@ -1244,49 +1366,11 @@ export class InventarioComponent implements OnInit, OnChanges {
   }
 
   get ajustesRows(): any[] {
-    const datos = this.datosFiltrados && Object.keys(this.datosFiltrados).length > 0 
-      ? this.datosFiltrados 
-      : this.datos;
-    if (!datos.detalleAjustes) return [];
-    const rows = datos.detalleAjustes.map((item: any) => ({
-      fecha: item.fecha || '-',
-      producto: item.producto || '-',
-      concepto: item.concepto || '-',
-      stockInicial: item.stockInicial || 0,
-      stockReal: item.stockReal || 0,
-      ajuste: item.ajuste || 0,
-      costoTotal: item.costoTotal || 0,
-      isTotal: false
-    }));
-    
-    // Agregar fila de totales al final
-    const totales = this.totalAjustes;
-    if (totales.costoTotal !== 0) {
-      rows.push({
-        fecha: 'Total',
-        producto: '',
-        concepto: '',
-        stockInicial: '',
-        stockReal: '',
-        ajuste: '',
-        costoTotal: totales.costoTotal,
-        isTotal: true
-      });
-    }
-    
-    return rows;
+    return this._ajustesRowsCache;
   }
 
   get totalAjustes(): any {
-    const datos = this.datosFiltrados && Object.keys(this.datosFiltrados).length > 0 
-      ? this.datosFiltrados 
-      : this.datos;
-    if (!datos.detalleAjustes || datos.detalleAjustes.length === 0) {
-      return { costoTotal: 0 };
-    }
-    return datos.detalleAjustes.reduce((totals: any, item: any) => ({
-      costoTotal: totals.costoTotal + (item.costoTotal || 0)
-    }), { costoTotal: 0 });
+    return this._totalAjustesCache;
   }
 
   onQuickFilterChangeAjustes(): void {
@@ -1451,5 +1535,28 @@ export class InventarioComponent implements OnInit, OnChanges {
       this.filtrosInteractivos.producto = producto;
     }
     this.aplicarFiltrosInteractivos();
+  }
+
+  /**
+   * TrackBy functions para optimización de *ngFor
+   */
+  trackByIndex(index: number, item: any): number {
+    return index;
+  }
+
+  trackByProducto(index: number, item: any): string | number {
+    return item.producto ? `${item.producto}_${item.fecha || ''}` : index;
+  }
+
+  trackByFecha(index: number, item: any): string | number {
+    return item.fecha ? `${item.fecha}_${item.producto || ''}` : index;
+  }
+
+  trackById(index: number, item: any): string | number {
+    return item.id || index;
+  }
+
+  trackByName(index: number, item: any): string | number {
+    return item.name || index;
   }
 }

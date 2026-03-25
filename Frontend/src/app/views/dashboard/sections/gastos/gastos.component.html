@@ -51,7 +51,7 @@
                                     [(ngModel)]="filtroSucursal"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                                    <option *ngFor="let sucursal of sucursales; trackBy: trackByIndex" [value]="sucursal.id">
                                         {{ sucursal.nombre }}
                                     </option>
                                 </select>
@@ -64,7 +64,7 @@
                                     [(ngModel)]="filtroCliente"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let cliente of clientes" [value]="cliente.id">
+                                    <option *ngFor="let cliente of clientes; trackBy: trackByIndex" [value]="cliente.id">
                                         {{ cliente.nombre }}
                                     </option>
                                 </select>

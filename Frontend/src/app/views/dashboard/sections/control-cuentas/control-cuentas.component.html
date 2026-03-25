@@ -51,7 +51,7 @@
                                     [(ngModel)]="filtroSucursal"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                                    <option *ngFor="let sucursal of sucursales; trackBy: trackById" [value]="sucursal.id">
                                         {{ sucursal.nombre }}
                                     </option>
                                 </select>
@@ -64,7 +64,7 @@
                                     [(ngModel)]="filtroCliente"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let cliente of clientes" [value]="cliente.id">
+                                    <option *ngFor="let cliente of clientes; trackBy: trackById" [value]="cliente.id">
                                         {{ cliente.nombre }}
                                     </option>
                                 </select>
@@ -345,7 +345,7 @@
                                         [(ngModel)]="filtroProveedor"
                                         (change)="aplicarFiltros()">
                                         <option value="">Todas</option>
-                                        <option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                                        <option *ngFor="let proveedor of proveedores; trackBy: trackById" [value]="proveedor.id">
                                             {{ proveedor.nombre }}
                                         </option>
                                     </select>
@@ -380,7 +380,7 @@
                                     [(ngModel)]="filtroCategoriaGasto"
                                     (change)="aplicarFiltros()">
                                     <option value="">Todas</option>
-                                    <option *ngFor="let categoria of categoriasGasto" [value]="categoria.id">
+                                    <option *ngFor="let categoria of categoriasGasto; trackBy: trackById" [value]="categoria.id">
                                         {{ categoria.nombre }}
                                     </option>
                                 </select>

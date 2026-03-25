@@ -1,11 +1,12 @@
-import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 
 @Component({
   selector: 'app-gastos',
   templateUrl: './gastos.component.html',
-  styleUrls: ['./gastos.component.css']
+  styleUrls: ['./gastos.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GastosComponent implements OnInit, OnChanges {
   @Input() datos: any = {};
@@ -13,9 +14,14 @@ export class GastosComponent implements OnInit, OnChanges {
 
   // Datos originales (sin filtrar)
   datosOriginales: any = {};
-  
+
   // Datos filtrados (se muestran en la vista)
   datosFiltrados: any = {};
+
+  // Propiedades cacheadas para evitar recálculos
+  private _detalleGastosRowsCache: any[] = [];
+  private _totalDetalleGastosCache: string = '';
+  private _lastDatosHash: string = '';
 
   public inicializado: boolean = false;
   private filtrosListosParaEmitir = false;
@@ -105,6 +111,52 @@ export class GastosComponent implements OnInit, OnChanges {
 
   constructor(private cdr: ChangeDetectorRef) { }
 
+  /**
+   * Método eficiente de clonación profunda
+   */
+  private clonarDatos(obj: any): any {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (obj instanceof Date) return new Date(obj.getTime());
+    if (Array.isArray(obj)) return obj.map(item => this.clonarDatos(item));
+
+    const clonado: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        clonado[key] = this.clonarDatos(obj[key]);
+      }
+    }
+    return clonado;
+  }
+
+  /**
+   * Genera un hash simple de los datos para detectar cambios
+   */
+  private generarHashDatos(datos: any): string {
+    if (!datos) return '';
+    try {
+      const str = JSON.stringify(datos);
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return hash.toString();
+    } catch {
+      return Math.random().toString();
+    }
+  }
+
+  /**
+   * Formateador de moneda con caché
+   */
+  private currencyFormatter = new Intl.NumberFormat('es-GT', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
   ngOnInit(): void {
     // Configurar AG Grid
     this.configurarAGGrid();
@@ -145,6 +197,7 @@ export class GastosComponent implements OnInit, OnChanges {
   onQuickFilterChangeGastos(): void {
     if (this.detalleGastosGridApi) {
       this.detalleGastosGridApi.setQuickFilter(this.quickFilterTextGastos);
+      this.cdr.markForCheck();
     }
   }
 
@@ -175,13 +228,13 @@ export class GastosComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    console.log('GastosComponent - ngOnChanges llamado', {
-      hasChanges: !!changes['datos'],
-      firstChange: changes['datos']?.firstChange,
-      currentValue: changes['datos']?.currentValue ? Object.keys(changes['datos'].currentValue) : [],
-      tieneDetalleGastos: !!(changes['datos']?.currentValue && changes['datos'].currentValue.detalleGastos)
-    });
-    
+    // console.log('GastosComponent - ngOnChanges llamado', {
+    //   hasChanges: !!changes['datos'],
+    //   firstChange: changes['datos']?.firstChange,
+    //   currentValue: changes['datos']?.currentValue ? Object.keys(changes['datos'].currentValue) : [],
+    //   tieneDetalleGastos: !!(changes['datos']?.currentValue && changes['datos'].currentValue.detalleGastos)
+    // });
+
     if (changes['datos']) {
       const datosActuales = changes['datos'].currentValue;
       if (datosActuales && Object.keys(datosActuales).length > 0) {
@@ -192,27 +245,28 @@ export class GastosComponent implements OnInit, OnChanges {
   }
 
   inicializarDatos(): void {
-    console.log('GastosComponent - inicializarDatos llamado', {
-      tieneDatos: !!this.datos,
-      keysDatos: this.datos ? Object.keys(this.datos) : [],
-      tieneDetalleGastos: !!(this.datos && this.datos.detalleGastos),
-      detalleGastos: this.datos?.detalleGastos,
-      datosCompletos: this.datos
-    });
-    
+    // console.log('GastosComponent - inicializarDatos llamado', {
+    //   tieneDatos: !!this.datos,
+    //   keysDatos: this.datos ? Object.keys(this.datos) : [],
+    //   tieneDetalleGastos: !!(this.datos && this.datos.detalleGastos),
+    //   detalleGastos: this.datos?.detalleGastos,
+    //   datosCompletos: this.datos
+    // });
+
     if (this.datos && Object.keys(this.datos).length > 0) {
       // Verificar si detalleGastos existe, si no, intentar usar datos originales del servicio
       if (!this.datos.detalleGastos) {
         console.warn('GastosComponent - detalleGastos no existe en datos, verificando estructura completa');
-        console.log('Estructura completa de datos:', JSON.stringify(this.datos, null, 2));
+        // console.log('Estructura completa de datos:', JSON.stringify(this.datos, null, 2));
       }
       
       // Guardar datos originales
-      this.datosOriginales = JSON.parse(JSON.stringify(this.datos));
+      this.datosOriginales = this.clonarDatos(this.datos);
       // Inicializar datos filtrados
-      this.datosFiltrados = JSON.parse(JSON.stringify(this.datos));
+      this.datosFiltrados = this.clonarDatos(this.datos);
       this.datos = this.datosFiltrados;
       this.inicializado = true;
+      this.recalcularRowsCache();
       
       // Recalcular todos los gráficos con los datos iniciales
       if (this.datosFiltrados.detalleGastos) {
@@ -225,12 +279,12 @@ export class GastosComponent implements OnInit, OnChanges {
         this.recalcularGastosPorProveedor();
         this.recalcularGastosPorFormaPago();
       } else {
-        console.error('GastosComponent - No se puede inicializar: falta detalleGastos');
+        // console.error('GastosComponent - No se puede inicializar: falta detalleGastos');
       }
-      
-      this.cdr.detectChanges();
+
+      this.cdr.markForCheck();
     } else {
-      console.warn('GastosComponent - No hay datos para inicializar');
+      // console.warn('GastosComponent - No hay datos para inicializar');
     }
   }
 
@@ -244,7 +298,7 @@ export class GastosComponent implements OnInit, OnChanges {
     } else {
       this.recalcularGastosPorMes();
     }
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
   getTituloGraficoGastos(): string {
@@ -259,12 +313,7 @@ export class GastosComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
+    return this.currencyFormatter.format(value);
   }
 
   tieneFiltrosInteractivos(): boolean {
@@ -314,7 +363,7 @@ export class GastosComponent implements OnInit, OnChanges {
     this.filtrosInteractivos = {};
     // Restaurar datos originales
     if (Object.keys(this.datosOriginales).length > 0) {
-      this.datosFiltrados = JSON.parse(JSON.stringify(this.datosOriginales));
+      this.datosFiltrados = this.clonarDatos(this.datosOriginales);
       
       // Recalcular todos los gráficos con datos originales
       this.recalcularMetricas();
@@ -326,12 +375,14 @@ export class GastosComponent implements OnInit, OnChanges {
       
       // Actualizar referencia - crear nuevo objeto para forzar detección de cambios
       this.datos = { ...this.datosFiltrados };
-      this.cdr.detectChanges();
+      this.recalcularRowsCache();
+      this.cdr.markForCheck();
     }
   }
 
   toggleFiltrosAdicionales() {
     this.mostrarFiltrosAdicionales = !this.mostrarFiltrosAdicionales;
+    this.cdr.markForCheck();
   }
 
   onMesClick(event: { name: string; value: any; index: number }): void {
@@ -372,7 +423,7 @@ export class GastosComponent implements OnInit, OnChanges {
 
   onFormaPagoClick(event: { name: string; value: any; index: number }): void {
     // Por ahora no hay filtro de forma de pago, pero se puede agregar
-    console.log('Forma de pago seleccionada:', event);
+    // console.log('Forma de pago seleccionada:', event);
   }
 
   onProveedorClick(event: { name: string; value: any; index: number }): void {
@@ -393,7 +444,7 @@ export class GastosComponent implements OnInit, OnChanges {
     }
 
     // Restaurar datos originales
-    this.datosFiltrados = JSON.parse(JSON.stringify(this.datosOriginales));
+    this.datosFiltrados = this.clonarDatos(this.datosOriginales);
     
     // Filtrar detalle de gastos
     let gastosFiltrados = [...this.datosOriginales.detalleGastos];
@@ -439,9 +490,10 @@ export class GastosComponent implements OnInit, OnChanges {
 
     // Actualizar referencia - crear nuevo objeto para forzar detección de cambios
     this.datos = { ...this.datosFiltrados };
-    
-    // Forzar detección de cambios
-    this.cdr.detectChanges();
+
+    // Recalcular cache y forzar detección de cambios
+    this.recalcularRowsCache();
+    this.cdr.markForCheck();
   }
 
   recalcularMetricas(): void {
@@ -515,7 +567,7 @@ export class GastosComponent implements OnInit, OnChanges {
             gastosPorMes[mesNombre] = (gastosPorMes[mesNombre] || 0) + (g.gastosConIVA || 0);
           }
         } catch (e) {
-          console.warn('Fecha inválida:', g.fecha);
+          // console.warn('Fecha inválida:', g.fecha);
         }
       }
     });
@@ -639,7 +691,7 @@ export class GastosComponent implements OnInit, OnChanges {
     // Por ahora mantener los datos originales del treemap si existen
     // En el futuro se puede implementar filtrado por forma de pago si se agrega ese campo a detalleGastos
     if (!this.datosFiltrados.gastosPorFormaPagoConfig && this.datosOriginales.gastosPorFormaPagoConfig) {
-      this.datosFiltrados.gastosPorFormaPagoConfig = JSON.parse(JSON.stringify(this.datosOriginales.gastosPorFormaPagoConfig));
+      this.datosFiltrados.gastosPorFormaPagoConfig = this.clonarDatos(this.datosOriginales.gastosPorFormaPagoConfig);
     }
   }
 
@@ -661,7 +713,7 @@ export class GastosComponent implements OnInit, OnChanges {
             gastosPorMes[mesNombre] = (gastosPorMes[mesNombre] || 0) + (g.gastosConIVA || 0);
           }
         } catch (e) {
-          console.warn('Fecha inválida:', g.fecha);
+          // console.warn('Fecha inválida:', g.fecha);
         }
       }
     });
@@ -713,7 +765,7 @@ export class GastosComponent implements OnInit, OnChanges {
             gastosPorMes[mesNombre] = (gastosPorMes[mesNombre] || 0) + (g.gastosConIVA || 0);
           }
         } catch (e) {
-          console.warn('Fecha inválida:', g.fecha);
+          // console.warn('Fecha inválida:', g.fecha);
         }
       }
     });
@@ -744,29 +796,46 @@ export class GastosComponent implements OnInit, OnChanges {
     };
   }
 
-  get detalleGastosRows(): any[] {
+  /**
+   * Recalcula todas las filas cacheadas
+   */
+  private recalcularRowsCache(): void {
     const datos = this.datosFiltrados && Object.keys(this.datosFiltrados).length > 0 ? this.datosFiltrados : this.datos;
-    if (!datos.detalleGastos) return [];
-    const rows = datos.detalleGastos.map((gasto: any) => ({
-      fecha: gasto.fecha || '-',
-      proveedor: gasto.proveedor || '-',
-      concepto: gasto.concepto || '-',
-      documento: gasto.documento || '-',
-      correlativo: gasto.correlativo || '-',
-      gastosConIVA: gasto.gastosConIVA || 0, // Mantener como número para AG Grid
-      isTotal: false
-    }));
-    
-    return rows;
+    const currentHash = this.generarHashDatos(datos);
+    if (currentHash === this._lastDatosHash) {
+      return; // No hay cambios
+    }
+    this._lastDatosHash = currentHash;
+
+    // Recalcular detalle de gastos
+    if (datos.detalleGastos) {
+      this._detalleGastosRowsCache = datos.detalleGastos.map((gasto: any) => ({
+        fecha: gasto.fecha || '-',
+        proveedor: gasto.proveedor || '-',
+        concepto: gasto.concepto || '-',
+        documento: gasto.documento || '-',
+        correlativo: gasto.correlativo || '-',
+        gastosConIVA: gasto.gastosConIVA || 0, // Mantener como número para AG Grid
+        isTotal: false
+      }));
+
+      // Calcular total
+      const total = datos.detalleGastos.reduce((sum: number, gasto: any) => {
+        return sum + (gasto.gastosConIVA || 0);
+      }, 0);
+      this._totalDetalleGastosCache = this.formatCurrency(total);
+    } else {
+      this._detalleGastosRowsCache = [];
+      this._totalDetalleGastosCache = this.formatCurrency(0);
+    }
+  }
+
+  get detalleGastosRows(): any[] {
+    return this._detalleGastosRowsCache;
   }
 
   get totalDetalleGastos(): string {
-    const datos = this.datosFiltrados && Object.keys(this.datosFiltrados).length > 0 ? this.datosFiltrados : this.datos;
-    if (!datos.detalleGastos) return this.formatCurrency(0);
-    const total = datos.detalleGastos.reduce((sum: number, gasto: any) => {
-      return sum + (gasto.gastosConIVA || 0);
-    }, 0);
-    return this.formatCurrency(total);
+    return this._totalDetalleGastosCache;
   }
 
   // Getter para obtener los datos correctos (filtrados o originales)
@@ -776,10 +845,26 @@ export class GastosComponent implements OnInit, OnChanges {
 
   // Helper para verificar si hay datos disponibles
   tieneDatos(): boolean {
-    return !!(this.datos && 
-              this.datos.detalleGastos && 
-              Array.isArray(this.datos.detalleGastos) && 
+    return !!(this.datos &&
+              this.datos.detalleGastos &&
+              Array.isArray(this.datos.detalleGastos) &&
               this.datos.detalleGastos.length > 0);
+  }
+
+  // ─────────────────────────────────────────────
+  // TrackBy functions para optimizar ngFor
+  // ─────────────────────────────────────────────
+
+  trackByIndex(index: number, item: any): number {
+    return index;
+  }
+
+  trackByName(index: number, item: any): string | number {
+    return item.name || index;
+  }
+
+  trackByProveedor(index: number, item: any): string | number {
+    return item.proveedor || index;
   }
 
 }
