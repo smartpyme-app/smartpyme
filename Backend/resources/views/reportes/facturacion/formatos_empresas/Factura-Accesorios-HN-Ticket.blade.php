@@ -68,10 +68,37 @@
 
     <div class="cen">
         @php
-            $logoFile = ($venta->empresa && $venta->empresa->logo) ? $venta->empresa->logo : ($empresa->logo ?? null);
-            $logoSrc = $logoFile
-                ? (!empty($venta->pdf) ? public_path('img/'.$logoFile) : asset('img/'.$logoFile))
-                : null;
+            $logoRaw = ($venta->empresa && $venta->empresa->logo) ? $venta->empresa->logo : ($empresa->logo ?? null);
+            $logoRel = null;
+            if ($logoRaw) {
+                $logoRel = ltrim(str_replace('\\', '/', (string) $logoRaw), '/');
+                if ($logoRel === '' || strpos($logoRel, '..') !== false) {
+                    $logoRel = null;
+                }
+            }
+            $logoSrc = null;
+            if ($logoRel) {
+                $fullLogo = public_path('img'.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $logoRel));
+                if (is_file($fullLogo) && is_readable($fullLogo)) {
+                    if (!empty($venta->pdf)) {
+                        $ext = strtolower(pathinfo($fullLogo, PATHINFO_EXTENSION));
+                        if ($ext === 'png') {
+                            $mime = 'image/png';
+                        } elseif ($ext === 'gif') {
+                            $mime = 'image/gif';
+                        } elseif ($ext === 'webp') {
+                            $mime = 'image/webp';
+                        } elseif ($ext === 'svg') {
+                            $mime = 'image/svg+xml';
+                        } else {
+                            $mime = 'image/jpeg';
+                        }
+                        $logoSrc = 'data:'.$mime.';base64,'.base64_encode(file_get_contents($fullLogo));
+                    } else {
+                        $logoSrc = asset('img/'.$logoRel);
+                    }
+                }
+            }
         @endphp
         @if ($logoSrc)
             <img class="logo" src="{{ $logoSrc }}" alt="">
