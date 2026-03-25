@@ -1129,10 +1129,28 @@ class VentasController extends Controller
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
 
-        if ($documento->nombre == 'Ticket') {
+        if ($documento->nombre == 'Ticket' || $documento->nombre == 'Recibo') {
             $documento = Documento::findOrfail($venta->id_documento);
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+            if (
+                (isset($empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn']) &&
+                    $empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn'] == true)
+                || Auth::user()->id_empresa == 716
+            ) {
+                $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+                $venta->load('detalles.producto');
+                $formatter = new NumeroALetras();
+                $n = explode('.', number_format((float) $venta->total, 2, '.', ''));
+                $dolares = $formatter->toWords((float) $n[0]);
+                $centavosNum = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
+                $venta->pdf = false;
+                return view(
+                    'reportes.facturacion.formatos_empresas.Factura-Accesorios-HN-Ticket',
+                    compact('venta', 'empresa', 'documento', 'cliente', 'dolares', 'centavosNum')
+                );
+            }
 
             return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
         }
@@ -1141,6 +1159,33 @@ class VentasController extends Controller
             $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+            // Accesorios HN (716) o flag en custom_empresa
+            if (
+                (isset($empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn']) &&
+                    $empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn'] == true)
+                || Auth::user()->id_empresa == 716
+            ) {
+                $venta->load('detalles.producto');
+                $formatter = new NumeroALetras();
+                $n = explode('.', number_format((float) $venta->total, 2, '.', ''));
+                $dolares = $formatter->toWords((float) $n[0]);
+                $centavosNum = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
+                $venta->pdf = true;
+                $pdf = app('dompdf.wrapper')->loadView(
+                    'reportes.facturacion.formatos_empresas.Factura-Accesorios-HN-Ticket',
+                    compact('venta', 'empresa', 'documento', 'cliente', 'dolares', 'centavosNum')
+                );
+                $alto_base = 300;
+                $alto_por_producto = 24;
+                $total_lineas = max(1, $venta->detalles->count());
+                $notaExtra = $documento->nota ? min(45, (substr_count((string) $documento->nota, "\n") + 1) * 5) : 0;
+                $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto) + $notaExtra;
+                $alto_total_pt = $alto_total_mm * 2.83465;
+                $ancho_pt = 80 * 2.83465;
+                $pdf->setPaper([0, 0, $ancho_pt, $alto_total_pt]);
+                return $pdf->stream($empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
+            }
 
             $formatter = new NumeroALetras();
             $n = explode(".", number_format($venta->total, 2));
