@@ -51,9 +51,14 @@ Route::prefix('restaurante')
         Route::put('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
         Route::put('/reservas/{id}/convertir-sesion', [ReservaController::class, 'convertirEnSesion']);
 
-        // Pedidos de canal (Spoties / manual; Fase 1: CRUD) — `pedidos` en API REST; no confundir con ventas
+        // Pedidos de canal (Spoties / manual) — `pedidos` en API REST; no confundir con ventas
         Route::get('/pedidos', [PedidoRestauranteController::class, 'index']);
         Route::post('/pedidos', [PedidoRestauranteController::class, 'store']);
+        Route::get('/pedidos/{id}/imprimir', [PedidoRestauranteController::class, 'imprimir']);
+        Route::post('/pedidos/{id}/preparar-factura', [PedidoRestauranteController::class, 'prepararFactura']);
+        Route::put('/pedidos/{id}/marcar-facturado', [PedidoRestauranteController::class, 'marcarFacturado']);
+        Route::put('/pedidos/{id}/confirmar', [PedidoRestauranteController::class, 'confirmar']);
+        Route::put('/pedidos/{id}/anular', [PedidoRestauranteController::class, 'anular']);
         Route::get('/pedidos/{id}', [PedidoRestauranteController::class, 'show']);
         Route::put('/pedidos/{id}', [PedidoRestauranteController::class, 'update']);
         Route::delete('/pedidos/{id}', [PedidoRestauranteController::class, 'destroy']);

@@ -121,9 +121,31 @@ export class RestauranteService {
     return this.api.putToUrl(`restaurante/reservas/${id}/convertir-sesion`, {});
   }
 
-  // Pedidos de canal (Spoties / manual)
-  getPedidos(params?: Record<string, string | number>): Observable<PedidoCanal[]> {
+  // Pedidos de canal (Spoties / manual); respuesta paginada (Laravel paginator)
+  getPedidos(params?: Record<string, string | number>): Observable<any> {
     return this.api.getAll(BASE + 'pedidos', params || {});
+  }
+
+  imprimirPedidoCanal(id: number): Observable<string> {
+    return this.api.getAsText(BASE + `pedidos/${id}/imprimir`);
+  }
+
+  confirmarPedidoCanal(id: number): Observable<PedidoCanal> {
+    return this.api.putToUrl(`restaurante/pedidos/${id}/confirmar`, {});
+  }
+
+  anularPedidoCanal(id: number): Observable<PedidoCanal> {
+    return this.api.putToUrl(`restaurante/pedidos/${id}/anular`, {});
+  }
+
+  prepararFacturaPedidoCanal(id: number): Observable<any> {
+    return this.api.store(BASE + `pedidos/${id}/preparar-factura`, {});
+  }
+
+  marcarPedidoCanalFacturado(pedidoId: number, ventaId: number): Observable<PedidoCanal> {
+    return this.api.putToUrl(`restaurante/pedidos/${pedidoId}/marcar-facturado`, {
+      venta_id: ventaId
+    });
   }
 
   getPedido(id: number): Observable<PedidoCanal> {

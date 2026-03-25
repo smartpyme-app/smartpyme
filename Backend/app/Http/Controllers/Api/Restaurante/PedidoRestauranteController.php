@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Api\Restaurante;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto;
 use App\Models\Restaurante\PedidoRestaurante;
 use App\Models\Restaurante\PedidoRestauranteDetalle;
 use App\Models\Ventas\Clientes\Cliente;
+use App\Models\Ventas\Venta as VentaModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 
 class PedidoRestauranteController extends Controller
 {
@@ -20,19 +23,198 @@ class PedidoRestauranteController extends Controller
             return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
         }
 
-        $query = PedidoRestaurante::where('id_empresa', $user->id_empresa)
-            ->with(['cliente', 'usuario'])
-            ->when($request->estado, fn ($q) => $q->where('estado', $request->estado))
-            ->when($request->canal, fn ($q) => $q->where('canal', 'like', '%' . $request->canal . '%'))
-            ->when($request->fecha_desde, fn ($q) => $q->whereDate('fecha', '>=', $request->fecha_desde))
-            ->when($request->fecha_hasta, fn ($q) => $q->whereDate('fecha', '<=', $request->fecha_hasta))
-            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
-            ->orderByDesc('fecha')
-            ->orderByDesc('id');
+        $paginate = (int) $request->get('paginate', 10);
+        if ($paginate < 1) {
+            $paginate = 10;
+        }
+        if ($paginate > 100) {
+            $paginate = 100;
+        }
 
-        $pedidos = $query->limit(500)->get();
+        $page = max(1, (int) $request->get('page', 1));
+
+        $orden = $request->get('orden', 'fecha');
+        $allowedOrden = ['fecha', 'id', 'total', 'estado'];
+        if (! in_array($orden, $allowedOrden, true)) {
+            $orden = 'fecha';
+        }
+        $direccion = strtolower((string) $request->get('direccion', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $query = PedidoRestaurante::where('restaurante_pedidos.id_empresa', $user->id_empresa)
+            ->with(['cliente', 'usuario'])
+            ->when($request->estado, fn ($q) => $q->where('restaurante_pedidos.estado', $request->estado))
+            ->when($request->filled('canal'), fn ($q) => $q->where('restaurante_pedidos.canal', 'like', '%' . $request->canal . '%'))
+            ->when($request->fecha_desde, fn ($q) => $q->whereDate('restaurante_pedidos.fecha', '>=', $request->fecha_desde))
+            ->when($request->fecha_hasta, fn ($q) => $q->whereDate('restaurante_pedidos.fecha', '<=', $request->fecha_hasta))
+            ->when($request->id_sucursal, fn ($q) => $q->where('restaurante_pedidos.id_sucursal', $request->id_sucursal))
+            ->when($request->filled('buscador'), function ($q) use ($request) {
+                $term = trim((string) $request->buscador);
+                if ($term === '') {
+                    return;
+                }
+                $like = '%' . $term . '%';
+                $q->where(function ($qq) use ($term, $like) {
+                    if (ctype_digit($term)) {
+                        $qq->where('restaurante_pedidos.id', (int) $term);
+                    }
+                    $qq->orWhere('restaurante_pedidos.canal', 'like', $like)
+                        ->orWhere('restaurante_pedidos.referencia_externa', 'like', $like)
+                        ->orWhereHas('cliente', function ($cq) use ($like) {
+                            $cq->where('nombre_completo', 'like', $like)
+                                ->orWhere('nombre_empresa', 'like', $like);
+                        });
+                });
+            })
+            ->orderBy('restaurante_pedidos.' . $orden, $direccion)
+            ->orderByDesc('restaurante_pedidos.id');
+
+        $pedidos = $query->paginate($paginate, ['restaurante_pedidos.*'], 'page', $page);
 
         return response()->json($pedidos);
+    }
+
+    public function imprimir(int $id): Response
+    {
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response('Usuario sin empresa asociada', 400);
+        }
+
+        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)
+            ->with(['detalles.producto', 'cliente', 'usuario'])
+            ->findOrFail($id);
+
+        $empresa = Empresa::find($user->id_empresa);
+
+        return response()
+            ->view('restaurante.pedido-canal-ticket', [
+                'pedido' => $pedido,
+                'empresa' => $empresa,
+            ])
+            ->header('Content-Type', 'text/html; charset=utf-8');
+    }
+
+    public function confirmar(int $id): JsonResponse
+    {
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
+        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)->findOrFail($id);
+
+        if ($pedido->estado !== 'borrador') {
+            return response()->json(['error' => 'Solo se pueden confirmar pedidos en borrador'], 422);
+        }
+
+        $pedido->update(['estado' => 'pendiente_facturar']);
+        $pedido->load(['cliente', 'usuario']);
+
+        return response()->json($pedido->fresh(['detalles.producto', 'cliente', 'usuario']));
+    }
+
+    public function anular(int $id): JsonResponse
+    {
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
+        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)->findOrFail($id);
+
+        if (! in_array($pedido->estado, ['borrador', 'pendiente_facturar'], true)) {
+            return response()->json(['error' => 'Solo se pueden anular pedidos en borrador o pendiente de facturar'], 422);
+        }
+
+        $pedido->update(['estado' => 'anulado']);
+        $pedido->load(['cliente', 'usuario']);
+
+        return response()->json($pedido->fresh(['detalles.producto', 'cliente', 'usuario']));
+    }
+
+    /**
+     * Payload para pantalla de facturación (productos, precios, cliente opcional), igual que pre-cuenta mesa.
+     */
+    public function prepararFactura(int $id): JsonResponse
+    {
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
+        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)
+            ->with(['detalles.producto', 'cliente'])
+            ->findOrFail($id);
+
+        if ($pedido->estado !== 'pendiente_facturar') {
+            return response()->json(['error' => 'Solo se puede facturar un pedido en estado pendiente de facturar'], 422);
+        }
+
+        if ($pedido->id_venta) {
+            return response()->json(['error' => 'Este pedido ya tiene una venta asociada'], 422);
+        }
+
+        if ($pedido->detalles->isEmpty()) {
+            return response()->json(['error' => 'El pedido no tiene líneas de detalle'], 422);
+        }
+
+        $detalles = $pedido->detalles->map(fn ($d) => [
+            'id_producto' => $d->producto_id,
+            'cantidad' => (float) $d->cantidad,
+            'precio' => (float) $d->precio,
+            'descripcion' => $d->producto->nombre ?? '',
+            'descuento' => (float) ($d->descuento ?? 0),
+        ])->values()->toArray();
+
+        return response()->json([
+            'pedido_id' => $pedido->id,
+            'cliente_id' => $pedido->cliente_id,
+            'id_sucursal' => $pedido->id_sucursal,
+            'fecha' => $pedido->fecha?->format('Y-m-d'),
+            'subtotal' => (float) $pedido->subtotal,
+            'total' => (float) $pedido->total,
+            'canal' => $pedido->canal,
+            'referencia_externa' => $pedido->referencia_externa,
+            'observaciones' => $pedido->observaciones,
+            'detalles' => $detalles,
+        ]);
+    }
+
+    public function marcarFacturado(Request $request, int $id): JsonResponse
+    {
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
+        $validated = $request->validate([
+            'venta_id' => 'required|integer|exists:ventas,id',
+        ]);
+
+        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)->findOrFail($id);
+
+        if ($pedido->estado !== 'pendiente_facturar') {
+            return response()->json(['error' => 'El pedido no está pendiente de facturar'], 422);
+        }
+
+        if ($pedido->id_venta) {
+            return response()->json(['error' => 'Este pedido ya fue vinculado a una venta'], 422);
+        }
+
+        $ventaOk = VentaModel::where('id', $validated['venta_id'])
+            ->where('id_empresa', $user->id_empresa)
+            ->exists();
+
+        if (! $ventaOk) {
+            return response()->json(['error' => 'La venta no pertenece a esta empresa'], 422);
+        }
+
+        $pedido->update([
+            'id_venta' => $validated['venta_id'],
+            'estado' => 'facturado',
+        ]);
+
+        return response()->json($pedido->fresh(['detalles.producto', 'cliente', 'usuario', 'venta']));
     }
 
     public function show(int $id): JsonResponse
