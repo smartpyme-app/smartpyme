@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Restaurante\OrdenDetalleController;
 use App\Http\Controllers\Api\Restaurante\ComandaController;
 use App\Http\Controllers\Api\Restaurante\PreCuentaController;
 use App\Http\Controllers\Api\Restaurante\ReservaController;
+use App\Http\Controllers\Api\Restaurante\PedidoRestauranteController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('restaurante')
@@ -49,4 +50,11 @@ Route::prefix('restaurante')
         Route::put('/reservas/{id}', [ReservaController::class, 'update']);
         Route::put('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
         Route::put('/reservas/{id}/convertir-sesion', [ReservaController::class, 'convertirEnSesion']);
+
+        // Pedidos de canal (Spoties / manual; Fase 1: CRUD) — `pedidos` en API REST; no confundir con ventas
+        Route::get('/pedidos', [PedidoRestauranteController::class, 'index']);
+        Route::post('/pedidos', [PedidoRestauranteController::class, 'store']);
+        Route::get('/pedidos/{id}', [PedidoRestauranteController::class, 'show']);
+        Route::put('/pedidos/{id}', [PedidoRestauranteController::class, 'update']);
+        Route::delete('/pedidos/{id}', [PedidoRestauranteController::class, 'destroy']);
     });

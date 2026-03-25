@@ -50,6 +50,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public showpassword2: boolean = false;
     public canales: any = [];
     public tieneAccesoPropina: boolean = false;
+    public tieneAccesoModuloRestaurantePedidos: boolean = false;
 
     public customConfig: any = {
         columnas: {
@@ -71,6 +72,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
         this.loadAll();
         this.verificarAccesoPropina();
+        this.verificarAccesoModuloRestaurantePedidos();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
@@ -1144,7 +1146,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 lotes_dias_anticipacion: 30, // Días para alerta de vencimiento
                 componente_quimico_activo: false, // Habilitar campo componente químico en productos
                 modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
-                estado_cuenta_en_facturacion: false // Mostrar estado de cuenta del cliente al facturar
+                estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
+                vista_modulo_restaurante_pedidos: 'ambos' as 'restaurante' | 'pedidos' | 'ambos' // Menú lateral: restaurante, pedidos o ambos
             },
             campos_personalizados: {}
         };
@@ -1609,6 +1612,31 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 this.tieneAccesoPropina = false;
             }
         );
+    }
+
+    public verificarAccesoModuloRestaurantePedidos() {
+        this.funcionalidadesService.verificarAcceso('modulo-restaurante').subscribe({
+            next: (acceso) => {
+                this.tieneAccesoModuloRestaurantePedidos = acceso;
+            },
+            error: () => {
+                this.tieneAccesoModuloRestaurantePedidos = false;
+            }
+        });
+    }
+
+    public getVistaModuloRestaurantePedidos(): 'restaurante' | 'pedidos' | 'ambos' {
+        const v = this.getCustomConfig('configuraciones', 'vista_modulo_restaurante_pedidos', 'ambos');
+        if (v === 'restaurante' || v === 'pedidos' || v === 'ambos') {
+            return v;
+        }
+        return 'ambos';
+    }
+
+    public setVistaModuloRestaurantePedidos(vista: 'restaurante' | 'pedidos' | 'ambos') {
+        this.addCustomConfig('configuraciones', 'vista_modulo_restaurante_pedidos', vista);
+        this.empresa.custom_empresa = this.customConfig;
+        this.onSubmit();
     }
 
     public limpiarCacheYLogout() {

@@ -112,6 +112,11 @@ const routes: Routes = [
         {
           path: '',
           loadChildren: () => import('./views/restaurante/restaurante.module').then(m => m.RestauranteModule),
+        },
+        // Pedidos (misma licencia que restaurante; visibilidad por custom_empresa)
+        {
+          path: '',
+          loadChildren: () => import('./views/pedidos/pedidos.module').then(m => m.PedidosModule),
         }
       ]
     },

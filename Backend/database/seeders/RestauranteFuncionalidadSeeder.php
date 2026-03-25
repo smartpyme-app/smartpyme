@@ -19,9 +19,9 @@ class RestauranteFuncionalidadSeeder extends Seeder
 
         try {
             $funcionalidad = [
-                'nombre' => 'Módulo Restaurante',
+                'nombre' => 'Restaurantes y pedidos',
                 'slug' => 'modulo-restaurante',
-                'descripcion' => 'Gestión de mesas, órdenes, comandas a cocina, pre-cuentas e integración con facturación para establecimientos tipo restaurante',
+                'descripcion' => 'Mapa de mesas, comandas, pre-cuentas y facturación (restaurante), y gestión de pedidos. En configuración de la empresa puede elegir mostrar solo restaurante, solo pedidos o ambos.',
                 'orden' => 11
             ];
 

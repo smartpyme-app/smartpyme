@@ -120,6 +120,27 @@ export class RestauranteService {
   convertirReservaEnSesion(id: number): Observable<SesionMesa> {
     return this.api.putToUrl(`restaurante/reservas/${id}/convertir-sesion`, {});
   }
+
+  // Pedidos de canal (Spoties / manual)
+  getPedidos(params?: Record<string, string | number>): Observable<PedidoCanal[]> {
+    return this.api.getAll(BASE + 'pedidos', params || {});
+  }
+
+  getPedido(id: number): Observable<PedidoCanal> {
+    return this.api.read(BASE + 'pedidos/', id);
+  }
+
+  crearPedido(data: PedidoCanalPayload): Observable<PedidoCanal> {
+    return this.api.store(BASE + 'pedidos', data);
+  }
+
+  actualizarPedido(id: number, data: Partial<PedidoCanalPayload>): Observable<PedidoCanal> {
+    return this.api.update(BASE + 'pedidos', id, data);
+  }
+
+  eliminarPedido(id: number): Observable<{ ok: boolean }> {
+    return this.api.delete(BASE + 'pedidos/', id);
+  }
 }
 
 export interface Reserva {
@@ -132,4 +153,55 @@ export interface Reserva {
   observaciones?: string;
   estado: 'pendiente' | 'confirmada' | 'cumplida' | 'cancelada' | 'no_show';
   mesa?: Mesa;
+}
+
+export type PedidoCanalEstado = 'borrador' | 'pendiente_facturar' | 'facturado' | 'anulado';
+
+export interface PedidoCanalDetalle {
+  id?: number;
+  pedido_id?: number;
+  producto_id: number;
+  cantidad: number;
+  precio: number;
+  descuento?: number;
+  subtotal?: number;
+  total?: number;
+  notas?: string;
+  producto?: { id: number; nombre?: string; codigo?: string };
+}
+
+export interface PedidoCanal {
+  id: number;
+  id_empresa: number;
+  id_sucursal?: number;
+  usuario_id: number;
+  fecha: string;
+  canal?: string;
+  referencia_externa?: string;
+  estado: PedidoCanalEstado;
+  id_venta?: number;
+  cliente_id?: number;
+  observaciones?: string;
+  subtotal: number;
+  descuento: number;
+  total: number;
+  detalles?: PedidoCanalDetalle[];
+  cliente?: { id: number; nombre_completo?: string; nombre_empresa?: string };
+  usuario?: { nombre?: string; name?: string; email?: string };
+}
+
+export interface PedidoCanalPayload {
+  fecha: string;
+  canal?: string;
+  referencia_externa?: string;
+  cliente_id?: number;
+  observaciones?: string;
+  id_sucursal?: number;
+  detalles: Array<{
+    producto_id: number;
+    cantidad: number;
+    precio: number;
+    descuento?: number;
+    notas?: string;
+  }>;
 }

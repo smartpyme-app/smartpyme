@@ -199,6 +199,25 @@ export class ApiService {
         return customConfig?.configuraciones?.estado_cuenta_en_facturacion === true;
     }
 
+    /**
+     * Vista del menú lateral cuando la funcionalidad "Restaurantes y pedidos" está activa:
+     * restaurante | pedidos | ambos (por defecto ambos = comportamiento anterior).
+     */
+    getVistaModuloRestaurantePedidos(): 'restaurante' | 'pedidos' | 'ambos' {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return 'ambos';
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        const v = customConfig?.configuraciones?.vista_modulo_restaurante_pedidos;
+        if (v === 'restaurante' || v === 'pedidos' || v === 'ambos') {
+            return v;
+        }
+        return 'ambos';
+    }
+
 
     auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
 
