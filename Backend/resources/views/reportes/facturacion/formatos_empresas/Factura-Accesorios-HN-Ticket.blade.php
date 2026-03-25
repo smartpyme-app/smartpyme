@@ -111,14 +111,26 @@
         @if ($empresa->nit)
             <p class="mt1"><span class="b">RTN:</span> {{ $empresa->nit }}</p>
         @endif
-        @if ($empresa->telefono)
-            <p class="mt1"><span class="b">TEL.</span> {{ $empresa->telefono }}</p>
+        @php
+            $sucursalVenta = $venta->sucursal ?? $venta->sucursal()->first();
+            $telefonoFactura = ($sucursalVenta && trim((string) ($sucursalVenta->telefono ?? '')) !== '')
+                ? $sucursalVenta->telefono
+                : ($empresa->telefono ?? null);
+            $direccionFactura = ($sucursalVenta && trim((string) ($sucursalVenta->direccion ?? '')) !== '')
+                ? $sucursalVenta->direccion
+                : ($empresa->direccion ?? null);
+            $correoFactura = ($sucursalVenta && trim((string) ($sucursalVenta->correo ?? '')) !== '')
+                ? $sucursalVenta->correo
+                : ($empresa->correo ?? null);
+        @endphp
+        @if ($telefonoFactura)
+            <p class="mt1"><span class="b">TEL.</span> {{ $telefonoFactura }}</p>
         @endif
-        @if ($empresa->direccion)
-            <p class="mt1 up" style="font-size: 7pt;">{{ $empresa->direccion }}</p>
+        @if ($direccionFactura)
+            <p class="mt1 up" style="font-size: 7pt;">{{ $direccionFactura }}</p>
         @endif
-        @if (!empty($empresa->correo))
-            <p class="mt1" style="font-size: 7pt;">{{ strtoupper($empresa->correo) }}</p>
+        @if (!empty($correoFactura))
+            <p class="mt1" style="font-size: 7pt;">{{ strtoupper($correoFactura) }}</p>
         @endif
         @php
             $redes = data_get($empresa->custom_empresa, 'configuraciones.accesorios_redes_sociales');
