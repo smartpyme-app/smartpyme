@@ -143,9 +143,25 @@
     <hr class="s">
 
     @php
-        $pref = trim((string) ($documento->prefijo ?? ''));
         $corr = str_pad((string) $venta->correlativo, 8, '0', STR_PAD_LEFT);
-        $numFacturaDisplay = $pref !== '' ? $pref . $corr : $corr;
+        $prefijosSucursalPorDefectoAccesorios = [
+            '868' => '000-003-01-',
+            '897' => '000-002-01-',
+            '898' => '000-003-01-',
+        ];
+        $prefPorSucursalJson = data_get($empresa->custom_empresa, 'configuraciones.prefijo_factura_accesorios_por_sucursal', []);
+        $prefPorSucursal = (is_array($prefPorSucursalJson) ? $prefPorSucursalJson : []) + $prefijosSucursalPorDefectoAccesorios;
+        $idSucVenta = $venta->id_sucursal;
+        $prefFijoSucursal = null;
+        if (is_array($prefPorSucursal) && $idSucVenta !== null) {
+            $prefFijoSucursal = $prefPorSucursal[(string) $idSucVenta] ?? $prefPorSucursal[$idSucVenta] ?? null;
+        }
+        if ($prefFijoSucursal !== null && trim((string) $prefFijoSucursal) !== '') {
+            $numFacturaDisplay = trim((string) $prefFijoSucursal).' '.$corr;
+        } else {
+            $pref = trim((string) ($documento->prefijo ?? ''));
+            $numFacturaDisplay = $pref !== '' ? $pref.$corr : $corr;
+        }
         $codCliente = $venta->id_cliente && $cliente && $cliente->codigo_cliente !== null && $cliente->codigo_cliente !== ''
             ? $cliente->codigo_cliente
             : '0';
