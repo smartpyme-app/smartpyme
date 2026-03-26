@@ -114,14 +114,26 @@
         @if ($empresa->nit)
             <p class="mt1"><span class="b">RTN:</span> {{ $empresa->nit }}</p>
         @endif
-        @if ($empresa->telefono)
-            <p class="mt1"><span class="b">TEL.</span> {{ $empresa->telefono }}</p>
+        @php
+            $sucursalVenta = $venta->sucursal ?? $venta->sucursal()->first();
+            $telefonoFactura = ($sucursalVenta && trim((string) ($sucursalVenta->telefono ?? '')) !== '')
+                ? $sucursalVenta->telefono
+                : ($empresa->telefono ?? null);
+            $direccionFactura = ($sucursalVenta && trim((string) ($sucursalVenta->direccion ?? '')) !== '')
+                ? $sucursalVenta->direccion
+                : ($empresa->direccion ?? null);
+            $correoFactura = ($sucursalVenta && trim((string) ($sucursalVenta->correo ?? '')) !== '')
+                ? $sucursalVenta->correo
+                : ($empresa->correo ?? null);
+        @endphp
+        @if ($telefonoFactura)
+            <p class="mt1"><span class="b">TEL.</span> {{ $telefonoFactura }}</p>
         @endif
-        @if ($empresa->direccion)
-            <p class="mt1 up" style="font-size: 7pt;">{{ $empresa->direccion }}</p>
+        @if ($direccionFactura)
+            <p class="mt1 up" style="font-size: 7pt;">{{ $direccionFactura }}</p>
         @endif
-        @if (!empty($empresa->correo))
-            <p class="mt1" style="font-size: 7pt;">{{ strtoupper($empresa->correo) }}</p>
+        @if (!empty($correoFactura))
+            <p class="mt1" style="font-size: 7pt;">{{ strtoupper($correoFactura) }}</p>
         @endif
         @php
             $redes = data_get($empresa->custom_empresa, 'configuraciones.accesorios_redes_sociales');
@@ -134,9 +146,25 @@
     <hr class="s">
 
     @php
-        $pref = trim((string) ($documento->prefijo ?? ''));
         $corr = str_pad((string) $venta->correlativo, 8, '0', STR_PAD_LEFT);
-        $numFacturaDisplay = $pref !== '' ? $pref . $corr : $corr;
+        $prefijosSucursalPorDefectoAccesorios = [
+            '868' => '000-003-01-',
+            '897' => '000-002-01-',
+            '898' => '000-003-01-',
+        ];
+        $prefPorSucursalJson = data_get($empresa->custom_empresa, 'configuraciones.prefijo_factura_accesorios_por_sucursal', []);
+        $prefPorSucursal = (is_array($prefPorSucursalJson) ? $prefPorSucursalJson : []) + $prefijosSucursalPorDefectoAccesorios;
+        $idSucVenta = $venta->id_sucursal;
+        $prefFijoSucursal = null;
+        if (is_array($prefPorSucursal) && $idSucVenta !== null) {
+            $prefFijoSucursal = $prefPorSucursal[(string) $idSucVenta] ?? $prefPorSucursal[$idSucVenta] ?? null;
+        }
+        if ($prefFijoSucursal !== null && trim((string) $prefFijoSucursal) !== '') {
+            $numFacturaDisplay = trim((string) $prefFijoSucursal).' '.$corr;
+        } else {
+            $pref = trim((string) ($documento->prefijo ?? ''));
+            $numFacturaDisplay = $pref !== '' ? $pref.$corr : $corr;
+        }
         $codCliente = $venta->id_cliente && $cliente && $cliente->codigo_cliente !== null && $cliente->codigo_cliente !== ''
             ? $cliente->codigo_cliente
             : '0';

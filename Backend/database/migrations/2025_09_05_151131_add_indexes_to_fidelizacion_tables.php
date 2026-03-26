@@ -55,7 +55,7 @@ class AddIndexesToFidelizacionTables extends Migration
         Schema::table('consumo_puntos', function (Blueprint $table) {
             $table->index(['id_cliente', 'created_at']);
             $table->index('id_canje_tx');
-            $table->index('ganancia_tx_id');
+            $table->index('id_ganancia_tx');
         });
 
         // Índices para ventas

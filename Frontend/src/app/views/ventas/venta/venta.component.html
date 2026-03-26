@@ -124,7 +124,7 @@
                         <th width="100">Cantidad</th>
                         <th width="100">Precio</th>
                         <th width="100">Descuento</th>
-                        <th *ngIf="usuario.empresa.cambiar_tipo_impuesto_venta" width="100">Tipo</th>
+                        <th width="100">Tipo</th>
                         <th width="100" class="text-end">Total</th>
                     </tr>
                 </thead>
@@ -192,6 +192,13 @@
                     <tr *ngIf="venta.cuenta_a_terceros > 0">
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"> <b>Cuenta a terceros</b> </td>
                         <td class="text-end"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                    </tr>
+                    <tr *ngIf="(venta?.descuento_puntos && +venta.descuento_puntos > 0) || (venta?.puntos_canjeados && +venta.puntos_canjeados > 0)">
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Descuento por puntos</b>
+                            <small class="text-muted d-block" *ngIf="venta?.puntos_canjeados">{{ venta.puntos_canjeados }} pts canjeados</small>
+                        </td>
+                        <td class="text-end text-success"><b>{{ venta?.descuento_puntos | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="venta.propina > 0">
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Propina:</b></td>
