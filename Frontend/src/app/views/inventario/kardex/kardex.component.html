@@ -136,7 +136,7 @@
                 <tr *ngFor="let movimiento of producto?.movimientos; let i = index">
                     <td class="text-center">{{ i + 1 }}</td>
                     <td>{{ movimiento.fecha | date:'dd/MM/yyyy' }}</td>
-                    <td> <a class="text-decoration-none text-dark click" routerLink="/{{ movimiento.modelo }}/{{ movimiento.referencia }}" target="_blank">{{ movimiento.modelo_detalle }}</a></td>
+                    <td> <a tooltip="Hacer click para ver los detalles del movimiento" class="text-decoration-none text-dark click" routerLink="/{{ movimiento.modelo }}/{{ movimiento.referencia }}" target="_blank">{{ movimiento.modelo_detalle }}</a></td>
                     <td class="text-center" *ngIf="mostrarLote">{{ movimiento.numero_lote || '—' }}</td>
                     <td>{{ movimiento.nombre_proveedor_origen || '—' }}</td>
                     <td>{{ movimiento.nacionalidad_proveedor || '—' }}</td>
