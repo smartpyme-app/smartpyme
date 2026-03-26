@@ -1,0 +1,231 @@
+<section class="bg-white p-4 rounded mb-3">
+  <h2 class="mb-0">Libros fiscales</h2>
+</section>
+
+<div class="bg-white p-4 rounded mb-3">
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <div class="d-flex gap-2 flex-wrap">
+      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'ventas'}" (click)="activoSeccion = 'ventas'; loadAll()">
+        Ventas
+      </button>
+      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'compras'}" (click)="activoSeccion = 'compras'; loadAll()">
+        Compras
+      </button>
+      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'retenciones'}" (click)="activoSeccion = 'retenciones'; loadAll()">
+        Retenciones
+      </button>
+    </div>
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      <ng-container>
+        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="onFiltroChange()">
+          <option value="">Todas las sucursales</option>
+          <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+        </select>
+        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.mes" name="mes" (change)="onFiltroChange()">
+          <option [value]="1">Enero</option>
+          <option [value]="2">Febrero</option>
+          <option [value]="3">Marzo</option>
+          <option [value]="4">Abril</option>
+          <option [value]="5">Mayo</option>
+          <option [value]="6">Junio</option>
+          <option [value]="7">Julio</option>
+          <option [value]="8">Agosto</option>
+          <option [value]="9">Septiembre</option>
+          <option [value]="10">Octubre</option>
+          <option [value]="11">Noviembre</option>
+          <option [value]="12">Diciembre</option>
+        </select>
+        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.anio" name="anio" (change)="onFiltroChange()">
+          <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+        </select>
+      </ng-container>
+      <div class="dropdown" *ngIf="activoSeccion === 'ventas' || activoSeccion === 'compras' || activoSeccion === 'retenciones'">
+        <button class="btn btn-default dropdown-toggle" type="button" data-bs-toggle="dropdown" [disabled]="downloading">
+          Descargas
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li *ngIf="activoSeccion === 'ventas'">
+            <button class="dropdown-item" (click)="descargarVentasExcel()">Libro fiscal - Ventas (Excel)</button>
+            <button class="dropdown-item" (click)="descargarVentasPDF()">Libro fiscal - Ventas (PDF)</button>
+          </li>
+          <li *ngIf="activoSeccion === 'compras'">
+            <button class="dropdown-item" (click)="descargarComprasExcel()">Libro fiscal - Compras (Excel)</button>
+            <button class="dropdown-item" (click)="descargarComprasPDF()">Libro fiscal - Compras (PDF)</button>
+          </li>
+          <li *ngIf="activoSeccion === 'retenciones'">
+            <button class="dropdown-item" (click)="descargarRetencionesExcel()">Libro fiscal - Retenciones (Excel)</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección Ventas -->
+  <div *ngIf="activoSeccion === 'ventas'">
+    <div class="row">
+      <div class="col-12">
+        <div class="table-responsive bg-white">
+          <table class="table table-bordered table-hover mr-top" id="tablaVentas">
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>RTN del Cliente</th>
+                <th>Descripción</th>
+                <th>No. de Factura que respalda la venta</th>
+                <th class="text-end">Importe Venta Exenta</th>
+                <th class="text-end">Importe Venta Gravada</th>
+                <th class="text-end">Importe Venta Exonerada</th>
+                <th class="text-end">Impuesto Sobre Ventas</th>
+                <th class="text-end">Importe Exportación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="9" class="text-center" *ngIf="(ventas?.length ?? 0) === 0 && !loading">
+                  <span class="badge bg-primary">No tiene registros</span>
+                </td>
+                <td colspan="9" class="text-center" *ngIf="loading">
+                  <span class="badge bg-primary">Cargando...</span>
+                </td>
+              </tr>
+              <tr class="animated fadeIn" *ngFor="let row of ventas; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ row.rtn }}</td>
+                <td>{{ row.descripcion }}</td>
+                <td>{{ row.no_factura }}</td>
+                <td class="text-end">{{ row.importe_exenta | currency }}</td>
+                <td class="text-end">{{ row.importe_gravada | currency }}</td>
+                <td class="text-end">{{ (row.importe_exonerada ?? 0) | currency }}</td>
+                <td class="text-end">{{ row.impuesto_ventas | currency }}</td>
+                <td class="text-end">{{ (row.importe_exportacion ?? 0) | currency }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección Compras -->
+  <div *ngIf="activoSeccion === 'compras'">
+    <div class="row">
+      <div class="col-12">
+        <div class="table-responsive bg-white">
+          <table class="table table-bordered table-hover mr-top" id="tablaCompras">
+            <thead>
+              <tr>
+                <th>Fecha de Documento</th>
+                <th>Fecha de Contabilización</th>
+                <th>Documento / DUA Importación</th>
+                <th>Documento de adquisiciones FYDUCA</th>
+                <th>Proveedor</th>
+                <th>Registro Tributario Nacional del proveedor</th>
+                <th>Descripción de la compra</th>
+                <th>No. de Factura de la compra</th>
+                <th class="text-end">Importe Compra Exenta</th>
+                <th class="text-end">Importe Compra Gravada</th>
+                <th class="text-end">Impuesto Sobre Ventas</th>
+                <th class="text-end">Importe Importación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="12" class="text-center" *ngIf="(compras?.length ?? 0) === 0 && !loading">
+                  <span class="badge bg-primary">No tiene registros</span>
+                </td>
+                <td colspan="12" class="text-center" *ngIf="loading">
+                  <span class="badge bg-primary">Cargando...</span>
+                </td>
+              </tr>
+              <tr class="animated fadeIn" *ngFor="let row of compras">
+                <td>{{ row.fecha_documento | date:'dd/MM/yyyy' }}</td>
+                <td>{{ row.fecha_contabilizacion | date:'dd/MM/yyyy' }}</td>
+                <td>{{ row.documento_dua_importacion }}</td>
+                <td>{{ row.documento_fyduca }}</td>
+                <td>{{ row.proveedor }}</td>
+                <td>{{ row.rtn_proveedor }}</td>
+                <td>{{ row.descripcion_compra }}</td>
+                <td>{{ row.no_factura_compra }}</td>
+                <td class="text-end">{{ row.importe_exenta | currency }}</td>
+                <td class="text-end">{{ row.importe_gravada | currency }}</td>
+                <td class="text-end">{{ row.impuesto_ventas | currency }}</td>
+                <td class="text-end">{{ (row.importe_importacion ?? 0) | currency }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección Retenciones -->
+  <div *ngIf="activoSeccion === 'retenciones'">
+    <div class="row">
+      <div class="col-12">
+        <div class="table-responsive bg-white">
+          <table class="table table-bordered table-hover mr-top" id="tablaRetenciones">
+            <thead>
+              <tr>
+                <th>Fecha de Comprobante de Retención</th>
+                <th>Número de Comprobante de Retención</th>
+                <th>Fecha de Factura</th>
+                <th>Factura relacionada con Comprobante</th>
+                <th>Nombre del Agente Retenedor</th>
+                <th>Registro Tributario Nacional</th>
+                <th class="text-end">Importe Base de Retención</th>
+                <th class="text-end">Impuesto Retenido</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="8" class="text-center" *ngIf="(retenciones?.length ?? 0) === 0 && !loading">
+                  <span class="badge bg-primary">No tiene registros</span>
+                </td>
+                <td colspan="8" class="text-center" *ngIf="loading">
+                  <span class="badge bg-primary">Cargando...</span>
+                </td>
+              </tr>
+              <tr class="animated fadeIn" *ngFor="let row of retenciones">
+                <td>{{ row.fecha_comprobante | date:'dd/MM/yyyy' }}</td>
+                <td>{{ row.numero_comprobante }}</td>
+                <td>{{ row.fecha_factura | date:'dd/MM/yyyy' }}</td>
+                <td>{{ row.factura_relacionada }}</td>
+                <td>{{ row.nombre_agente_retenedor }}</td>
+                <td>{{ row.registro_tributario_nacional }}</td>
+                <td class="text-end">{{ row.importe_base_retencion | currency }}</td>
+                <td class="text-end">{{ row.impuesto_retenido | currency }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <h5 class="modal-title">Filtros</h5>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="loadAll(); modalRef.hide()">
+      <div class="mb-3">
+        <label class="form-label">Del</label>
+        <input type="date" class="form-control" [(ngModel)]="filtros.inicio" name="inicio" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Al</label>
+        <input type="date" class="form-control" [(ngModel)]="filtros.fin" name="fin" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Sucursal</label>
+        <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal">
+          <option value="">Todas</option>
+          <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">{{ sucursal.nombre }}</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Filtrar</button>
+    </form>
+  </div>
+</ng-template>
