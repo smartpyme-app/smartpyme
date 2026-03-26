@@ -7,6 +7,7 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
@@ -46,6 +47,13 @@ export class FacturacionComponent implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  /** Pre-cuenta restaurante: al facturar desde cuenta-mesa */
+  preCuentaId: number | null = null;
+  sesionId: number | null = null;
+
+  /** Pedido canal (Spoties / manual): al facturar desde listado de pedidos */
+  pedidoCanalId: number | null = null;
+
   // Información de puntos canjeados
   public puntosCanjeados: number = 0;
   public descuentoPuntos: number = 0;
@@ -84,7 +92,8 @@ export class FacturacionComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private fidelizacionService: FidelizacionService,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private restauranteService: RestauranteService
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
@@ -331,6 +340,75 @@ export class FacturacionComponent implements OnInit {
       this.venta.cotizacion = 1;
       this.venta.estado = 'Pendiente';
         this.venta.observaciones = this.venta.id_empresa == 2 ? 'Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \nPagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \nDisponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \nPropiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \nLimitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \nDuración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \nSituaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \nRenovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \nPolítica de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \nBrindar capacitaciones y soporte técnico a usuarios de negocios. \nGarantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \nOfrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\nBrindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
+    }
+
+    // Pre-cuenta restaurante: state o queryParams (respaldo por si state se pierde)
+    const navState = history.state as any;
+    const qp = this.route.snapshot.queryParamMap;
+    const preCuentaIdFromState = navState?.preCuentaId;
+    const preCuentaIdFromQuery = qp.get('pre_cuenta');
+    const preCuentaIdVal = preCuentaIdFromState ?? (preCuentaIdFromQuery ? +preCuentaIdFromQuery : null);
+    if (preCuentaIdVal) {
+      this.preCuentaId = preCuentaIdVal;
+      this.sesionId = navState?.sesionId ?? (qp.get('sesion') ? +qp.get('sesion')! : null);
+      const detalles = navState?.preCuentaData?.detalles ?? [];
+      if (detalles.length) {
+        const iva = this.apiService.auth_user()?.empresa?.iva ?? 0;
+        this.venta.observaciones = ((this.venta.observaciones || '') + ' Mesa ' + (navState.preCuentaData.mesa_numero || '')).trim();
+        this.venta.detalles = detalles.map((d: any) => {
+          const sub = (d.cantidad || 0) * (parseFloat(d.precio) || 0);
+          return {
+            id_producto: d.id_producto,
+            cantidad: d.cantidad,
+            precio: parseFloat(d.precio).toFixed(4),
+            descripcion: d.descripcion || '',
+            costo: 0,
+            descuento: 0,
+            descuento_porcentaje: 0,
+            sub_total: sub.toFixed(4),
+            total: sub.toFixed(4),
+            tipo_gravado: 'gravada',
+            porcentaje_impuesto: iva,
+            gravada: 0,
+            exenta: 0,
+            no_sujeta: 0,
+            iva: 0,
+          };
+        });
+        this.normalizarDetallesTipoGravado(this.venta);
+        this.sumTotal();
+        const pctPropinaEmpresa = parseFloat(String(this.apiService.auth_user()?.empresa?.propina_porcentaje ?? '')) || 0;
+        if (pctPropinaEmpresa > 0) {
+          this.venta.cobrar_propina = true;
+          this.sumTotal();
+        }
+      }
+    } else {
+      const pedidoCanalFromState = navState?.pedidoCanalId;
+      const pedidoCanalFromQuery = qp.get('pedido_canal');
+      const pedidoCanalIdVal =
+        pedidoCanalFromState ?? (pedidoCanalFromQuery ? +pedidoCanalFromQuery : null);
+      if (pedidoCanalIdVal) {
+        this.pedidoCanalId = pedidoCanalIdVal;
+        const pdata = navState?.pedidoCanalData;
+        if (pdata?.detalles?.length) {
+          this.aplicarPedidoCanalAFactura({
+            pedido_id: pedidoCanalIdVal,
+            cliente_id: pdata.cliente_id,
+            id_sucursal: pdata.id_sucursal,
+            fecha: pdata.fecha,
+            canal: pdata.canal,
+            referencia_externa: pdata.referencia_externa,
+            observaciones: pdata.observaciones,
+            detalles: pdata.detalles
+          });
+        } else {
+          this.restauranteService.prepararFacturaPedidoCanal(pedidoCanalIdVal).subscribe({
+            next: (data) => this.aplicarPedidoCanalAFactura(data),
+            error: (e) => this.alertService.error(e)
+          });
+        }
+      }
     }
 
     // Para editar cotizaciones Pre-venta
@@ -1040,6 +1118,113 @@ export class FacturacionComponent implements OnInit {
         });
     }
 
+  private navegarPostFacturaPreCuenta(ventaId: number) {
+    if (!this.preCuentaId) {
+      this.alertService.warning('No se pudo vincular la pre-cuenta', 'ID de pre-cuenta no disponible.');
+      this.router.navigate(['/restaurante']);
+      return;
+    }
+    this.restauranteService.marcarPreCuentaFacturada(this.preCuentaId, ventaId).subscribe({
+      next: (res: any) => {
+        const dest = res?.sesion_cerrada ? ['/restaurante'] : (this.sesionId ? ['/restaurante/cuenta', this.sesionId] : ['/restaurante']);
+        this.router.navigate(dest);
+        this.alertService.success('Factura creada', res?.sesion_cerrada ? 'Pre-cuenta facturada. Mesa liberada.' : 'Pre-cuenta marcada como facturada.');
+      },
+      error: (err) => {
+        const msg = err?.error?.error || err?.error?.message || err?.message || err;
+        this.alertService.error(msg ?? 'Error al marcar pre-cuenta como facturada');
+        this.router.navigate(['/restaurante']);
+      }
+    });
+  }
+
+  private aplicarPedidoCanalAFactura(data: {
+    pedido_id: number;
+    cliente_id?: number | null;
+    id_sucursal?: number | null;
+    fecha?: string | null;
+    canal?: string | null;
+    referencia_externa?: string | null;
+    observaciones?: string | null;
+    detalles: any[];
+  }): void {
+    this.pedidoCanalId = data.pedido_id;
+    if (data.id_sucursal) {
+      this.venta.id_sucursal = data.id_sucursal;
+    }
+    if (data.fecha) {
+      this.venta.fecha = data.fecha;
+      this.venta.fecha_pago = data.fecha;
+    }
+    const partes: string[] = [`Pedido canal #${data.pedido_id}`];
+    if (data.canal) {
+      partes.push(`Canal: ${data.canal}`);
+    }
+    if (data.referencia_externa) {
+      partes.push(`Ref: ${data.referencia_externa}`);
+    }
+    if (data.observaciones) {
+      partes.push(String(data.observaciones));
+    }
+    this.venta.observaciones = partes.join('. ');
+
+    const detalles = data.detalles || [];
+    if (detalles.length) {
+      const iva = this.apiService.auth_user()?.empresa?.iva ?? 0;
+      this.venta.detalles = detalles.map((d: any) => {
+        const precio = parseFloat(String(d.precio)) || 0;
+        const cant = parseFloat(String(d.cantidad)) || 0;
+        const descLine = parseFloat(String(d.descuento ?? 0)) || 0;
+        const sub = Math.max(0, cant * precio - descLine);
+        return {
+          id_producto: d.id_producto,
+          cantidad: cant,
+          precio: precio.toFixed(4),
+          descripcion: d.descripcion || '',
+          costo: 0,
+          descuento: descLine.toFixed(4),
+          descuento_porcentaje: 0,
+          sub_total: sub.toFixed(4),
+          total: sub.toFixed(4),
+          tipo_gravado: 'gravada',
+          porcentaje_impuesto: iva,
+          gravada: 0,
+          exenta: 0,
+          no_sujeta: 0,
+          iva: 0,
+        };
+      });
+      this.normalizarDetallesTipoGravado(this.venta);
+      this.sumTotal();
+    }
+
+    if (data.cliente_id) {
+      this.apiService.read('cliente/', data.cliente_id as number).subscribe({
+        next: (c) => this.setCliente(c),
+        error: () => {},
+      });
+    }
+  }
+
+  private navegarPostFacturaPedidoCanal(ventaId: number) {
+    if (!this.pedidoCanalId) {
+      this.alertService.warning('No se pudo vincular el pedido', 'ID de pedido no disponible.');
+      this.router.navigate(['/pedidos']);
+      return;
+    }
+    this.restauranteService.marcarPedidoCanalFacturado(this.pedidoCanalId, ventaId).subscribe({
+      next: () => {
+        this.router.navigate(['/pedidos']);
+        this.alertService.success('Factura creada', 'El pedido quedó marcado como facturado.');
+      },
+      error: (err) => {
+        const msg = err?.error?.error || err?.error?.message || err?.message || err;
+        this.alertService.error(msg ?? 'Error al vincular la venta con el pedido');
+        this.router.navigate(['/pedidos']);
+      },
+    });
+  }
+
   public onFacturar() {
     // Validar que si el método de pago requiere banco, este esté seleccionado
     this.mensajeErrorBanco = '';
@@ -1142,9 +1327,15 @@ export class FacturacionComponent implements OnInit {
               'Impresión',
               'width=400'
             );
-            this.cargarDatosIniciales();
-            this.loadData();
-            this.router.navigate(['/venta/crear']);
+            if (this.preCuentaId && this.venta.id) {
+              this.navegarPostFacturaPreCuenta(this.venta.id);
+            } else if (this.pedidoCanalId && this.venta.id) {
+              this.navegarPostFacturaPedidoCanal(this.venta.id);
+            } else {
+              this.cargarDatosIniciales();
+              this.loadData();
+              this.router.navigate(['/venta/crear']);
+            }
           }
         } else {
           if (this.venta.cotizacion == 1) {
@@ -1153,6 +1344,10 @@ export class FacturacionComponent implements OnInit {
               'Cotización creada',
               'La cotizacion fue añadida exitosamente.'
             );
+          } else if (this.preCuentaId && this.venta.id) {
+            this.navegarPostFacturaPreCuenta(this.venta.id);
+          } else if (this.pedidoCanalId && this.venta.id) {
+            this.navegarPostFacturaPedidoCanal(this.venta.id);
           } else {
             this.router.navigate(['/ventas']);
             this.alertService.success(
@@ -1224,8 +1419,14 @@ export class FacturacionComponent implements OnInit {
           'Impresión',
           'width=400'
         );
-        this.cargarDatosIniciales();
-        this.router.navigate(['/venta/crear']);
+        if (this.preCuentaId && this.venta.id) {
+          this.navegarPostFacturaPreCuenta(this.venta.id);
+        } else if (this.pedidoCanalId && this.venta.id) {
+          this.navegarPostFacturaPedidoCanal(this.venta.id);
+        } else {
+          this.cargarDatosIniciales();
+          this.router.navigate(['/venta/crear']);
+        }
       })
       .catch((error) => {
         this.cargarDatosIniciales();
