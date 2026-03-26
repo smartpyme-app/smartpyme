@@ -64,6 +64,14 @@
 
   <hr>
   <div class="text-right">
+    @php
+      $pctProp = (float) ($preCuenta->propina_porcentaje_aplicado ?? 0);
+      $montoProp = (float) ($preCuenta->propina_monto ?? 0);
+    @endphp
+    <p>Subtotal consumo: {{ number_format($preCuenta->subtotal ?? 0, 2) }}</p>
+    @if($pctProp > 0)
+    <p>Propina ({{ number_format($pctProp, 2) }}%): {{ number_format($montoProp, 2) }}</p>
+    @endif
     <p><strong>TOTAL: {{ number_format($preCuenta->total ?? 0, 2) }}</strong></p>
   </div>
   <hr>

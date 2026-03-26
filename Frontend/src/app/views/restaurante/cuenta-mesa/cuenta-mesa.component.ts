@@ -4,6 +4,7 @@ import * as moment from 'moment';
 
 import { RestauranteService } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-cuenta-mesa',
@@ -29,7 +30,8 @@ export class CuentaMesaComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private restauranteService: RestauranteService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private apiService: ApiService
   ) {}
 
   ngOnInit(): void {
@@ -240,6 +242,8 @@ export class CuentaMesaComponent implements OnInit {
           preCuentaData: {
             mesa_numero: data.mesa_numero,
             subtotal: data.subtotal,
+            propina_monto: data.propina_monto,
+            propina_porcentaje_aplicado: data.propina_porcentaje_aplicado,
             total: data.total,
             detalles: data.detalles
           }
@@ -267,5 +271,22 @@ export class CuentaMesaComponent implements OnInit {
   subtotal(): number {
     const items = this.sesion?.orden_detalle || [];
     return items.reduce((sum: number, i: any) => sum + (i.cantidad * (i.precio_unitario || 0)), 0);
+  }
+
+  /** Propina según porcentaje de empresa (misma base que la pre-cuenta). */
+  propinaMontoOrdenAbierta(): number {
+    const pct = parseFloat(String(this.apiService.auth_user()?.empresa?.propina_porcentaje ?? '')) || 0;
+    if (pct <= 0) {
+      return 0;
+    }
+    return Math.round(this.subtotal() * (pct / 100) * 100) / 100;
+  }
+
+  totalConPropinaOrdenAbierta(): number {
+    return Math.round((this.subtotal() + this.propinaMontoOrdenAbierta()) * 100) / 100;
+  }
+
+  propinaPorcentajeEmpresa(): number {
+    return parseFloat(String(this.apiService.auth_user()?.empresa?.propina_porcentaje ?? '')) || 0;
   }
 }

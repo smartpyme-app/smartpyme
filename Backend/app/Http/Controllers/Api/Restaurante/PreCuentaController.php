@@ -15,6 +15,25 @@ use Illuminate\Support\Facades\DB;
 
 class PreCuentaController extends Controller
 {
+    /**
+     * Propina según porcentaje de empresa (sin override por mesa). Base: subtotal de consumo.
+     *
+     * @return array{subtotal: float, propina_monto: float, propina_porcentaje_aplicado: float, total: float}
+     */
+    private function totalesPreCuentaConPropina(float $subtotalConsumo, ?Empresa $empresa): array
+    {
+        $sub = round($subtotalConsumo, 2);
+        $pct = $empresa ? max(0, (float) ($empresa->propina_porcentaje ?? 0)) : 0;
+        $propina = round($sub * ($pct / 100), 2);
+
+        return [
+            'subtotal' => $sub,
+            'propina_monto' => $propina,
+            'propina_porcentaje_aplicado' => $pct,
+            'total' => round($sub + $propina, 2),
+        ];
+    }
+
     public function generar(Request $request, int $id): JsonResponse
     {
         $user = auth()->user();
@@ -31,15 +50,19 @@ class PreCuentaController extends Controller
             return response()->json(['error' => 'No hay ítems en la orden'], 422);
         }
 
-        $subtotal = $items->sum(fn ($i) => $i->cantidad * $i->precio_unitario);
+        $subtotal = (float) $items->sum(fn ($i) => $i->cantidad * $i->precio_unitario);
+        $empresa = Empresa::find($user->id_empresa);
+        $t = $this->totalesPreCuentaConPropina($subtotal, $empresa);
         $numero = PreCuenta::where('sesion_id', $sesion->id)->count() + 1;
 
         $preCuenta = PreCuenta::create([
             'sesion_id' => $sesion->id,
-            'subtotal' => $subtotal,
+            'subtotal' => $t['subtotal'],
             'descuento' => 0,
             'impuesto' => 0,
-            'total' => $subtotal,
+            'propina_monto' => $t['propina_monto'],
+            'propina_porcentaje_aplicado' => $t['propina_porcentaje_aplicado'],
+            'total' => $t['total'],
             'estado' => 'pendiente',
             'numero_pre_cuenta' => "PC-{$sesion->mesa->numero}-{$numero}",
         ]);
@@ -77,6 +100,7 @@ class PreCuentaController extends Controller
         $items = $sesion->ordenDetalle;
         $total = $items->sum(fn ($i) => $i->cantidad * $i->precio_unitario);
         $n = $validated['num_pagadores'];
+        $empresa = Empresa::find($user->id_empresa);
 
         DB::beginTransaction();
         try {
@@ -91,14 +115,17 @@ class PreCuentaController extends Controller
             if ($validated['tipo'] === 'equitativa') {
                 $montoPorPersona = round($total / $n, 2);
                 for ($i = 0; $i < $n; $i++) {
-                    $subtotal = $i === $n - 1 ? round($total - ($montoPorPersona * ($n - 1)), 2) : $montoPorPersona;
+                    $sub = $i === $n - 1 ? round($total - ($montoPorPersona * ($n - 1)), 2) : $montoPorPersona;
+                    $t = $this->totalesPreCuentaConPropina((float) $sub, $empresa);
                     PreCuenta::create([
                         'sesion_id' => $sesion->id,
                         'division_cuenta_id' => $division->id,
-                        'subtotal' => $subtotal,
+                        'subtotal' => $t['subtotal'],
                         'descuento' => 0,
                         'impuesto' => 0,
-                        'total' => $subtotal,
+                        'propina_monto' => $t['propina_monto'],
+                        'propina_porcentaje_aplicado' => $t['propina_porcentaje_aplicado'],
+                        'total' => $t['total'],
                         'estado' => 'pendiente',
                         'numero_pre_cuenta' => "PC-{$sesion->mesa->numero}-" . ($i + 1),
                     ]);
@@ -139,9 +166,12 @@ class PreCuentaController extends Controller
                 }
 
                 foreach ($preCuentasCreadas as $i => $pc) {
+                    $t = $this->totalesPreCuentaConPropina((float) $totales[$i], $empresa);
                     $pc->update([
-                        'subtotal' => round($totales[$i], 2),
-                        'total' => round($totales[$i], 2),
+                        'subtotal' => $t['subtotal'],
+                        'propina_monto' => $t['propina_monto'],
+                        'propina_porcentaje_aplicado' => $t['propina_porcentaje_aplicado'],
+                        'total' => $t['total'],
                     ]);
                 }
             }
@@ -186,6 +216,8 @@ class PreCuentaController extends Controller
             'sesion_id' => $preCuenta->sesion_id,
             'mesa_numero' => $preCuenta->sesion->mesa->numero,
             'subtotal' => $preCuenta->subtotal,
+            'propina_monto' => (float) ($preCuenta->propina_monto ?? 0),
+            'propina_porcentaje_aplicado' => (float) ($preCuenta->propina_porcentaje_aplicado ?? 0),
             'total' => $preCuenta->total,
             'detalles' => $detalles,
         ]);

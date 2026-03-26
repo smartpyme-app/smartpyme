@@ -15,10 +15,21 @@ class PreCuenta extends Model
         'subtotal',
         'descuento',
         'impuesto',
+        'propina_monto',
+        'propina_porcentaje_aplicado',
         'total',
         'estado',
         'factura_id',
         'numero_pre_cuenta',
+    ];
+
+    protected $casts = [
+        'subtotal' => 'decimal:2',
+        'descuento' => 'decimal:2',
+        'impuesto' => 'decimal:2',
+        'propina_monto' => 'decimal:2',
+        'propina_porcentaje_aplicado' => 'decimal:2',
+        'total' => 'decimal:2',
     ];
 
     public function sesion()

@@ -377,6 +377,11 @@ export class FacturacionComponent implements OnInit {
         });
         this.normalizarDetallesTipoGravado(this.venta);
         this.sumTotal();
+        const pctPropinaEmpresa = parseFloat(String(this.apiService.auth_user()?.empresa?.propina_porcentaje ?? '')) || 0;
+        if (pctPropinaEmpresa > 0) {
+          this.venta.cobrar_propina = true;
+          this.sumTotal();
+        }
       }
     } else {
       const pedidoCanalFromState = navState?.pedidoCanalId;
