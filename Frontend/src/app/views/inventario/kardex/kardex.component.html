@@ -102,7 +102,7 @@
         <table class="table table-bordered table-sm">
             <thead>
                 <tr class="table-light">
-                    <th rowspan="2" class="align-middle text-center">N° Correlativo</th>
+                    <th rowspan="2" class="align-middle text-center">N°</th>
                     <th rowspan="2" class="align-middle">Fecha</th>
                     <th rowspan="2" class="align-middle">N° del Documento</th>
                     <th rowspan="2" class="align-middle" *ngIf="mostrarLote">Lote</th>
@@ -136,7 +136,7 @@
                 <tr *ngFor="let movimiento of producto?.movimientos; let i = index">
                     <td class="text-center">{{ i + 1 }}</td>
                     <td>{{ movimiento.fecha | date:'dd/MM/yyyy' }}</td>
-                    <td>{{ movimiento.modelo_detalle || '—' }}</td>
+                    <td> <a class="text-decoration-none text-dark click" routerLink="/{{ movimiento.modelo }}/{{ movimiento.referencia }}" target="_blank">{{ movimiento.modelo_detalle }}</a></td>
                     <td class="text-center" *ngIf="mostrarLote">{{ movimiento.numero_lote || '—' }}</td>
                     <td>{{ movimiento.nombre_proveedor_origen || '—' }}</td>
                     <td>{{ movimiento.nacionalidad_proveedor || '—' }}</td>
