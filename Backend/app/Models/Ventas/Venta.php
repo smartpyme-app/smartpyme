@@ -254,6 +254,15 @@ class Venta extends Model {
         return $this->hasMany(TransaccionPuntos::class, 'id_venta');
     }
 
+    /**
+     * Si en la venta se canjearon puntos (descuento por fidelización), no se acumulan puntos en la misma operación.
+     */
+    public function tieneCanjeDePuntosEnVenta(): bool
+    {
+        return ((int) ($this->puntos_canjeados ?? 0)) > 0
+            || ((float) ($this->descuento_puntos ?? 0)) > 0.00001;
+    }
+
     public function getMontoFinalAttribute()
     {
         return $this->total - ($this->descuento_puntos ?? 0);
@@ -272,6 +281,10 @@ class Venta extends Model {
 
     public function calcularPuntosEsperados()
     {
+        if ($this->tieneCanjeDePuntosEnVenta()) {
+            return 0;
+        }
+
         $tipoCliente = $this->cliente->getTipoClienteEfectivo();
         if (!$tipoCliente) return 0;
 
@@ -288,6 +301,10 @@ class Venta extends Model {
     {
         if ($this->tienePuntosGenerados()) {
             return false; // Ya tiene puntos generados
+        }
+
+        if ($this->tieneCanjeDePuntosEnVenta()) {
+            return false;
         }
 
         $puntosCalculados = $this->calcularPuntosEsperados();

@@ -367,30 +367,19 @@ export class ClienteDetallesFidelizacionComponent implements OnInit {
       beneficios.push('Soporte prioritario');
     }
 
-    // Beneficios exclusivos - solo para ULTRAVIP según el seeder
-    if (config.beneficios_exclusivos && typeof config.beneficios_exclusivos === 'object') {
-      const exclusivos = config.beneficios_exclusivos;
-      
-      if (exclusivos.descuento_maximo_adicional && exclusivos.descuento_maximo_adicional > 0) {
-        beneficios.push(`Descuento adicional ${exclusivos.descuento_maximo_adicional}%`);
-      }
-
-      if (exclusivos.puntos_bienvenida_anual && exclusivos.puntos_bienvenida_anual > 0) {
-        beneficios.push(`${exclusivos.puntos_bienvenida_anual} puntos de bienvenida anual`);
-      }
-
-      if (exclusivos.acceso_eventos_vip === true) {
-        beneficios.push('Acceso a eventos VIP');
-      }
-
-      if (exclusivos.entrega_express_gratis === true) {
-        beneficios.push('Entrega express gratis');
-      }
-
-      if (exclusivos.asistente_personal === true) {
-        beneficios.push('Asistente personal');
-      }
-    }
+    // TODO: BENEFICIOS_EXCLUSIVOS - Descomentar cuando el backend implemente la lógica
+    // if (config.beneficios_exclusivos && typeof config.beneficios_exclusivos === 'object') {
+    //   const exclusivos = config.beneficios_exclusivos;
+    //   if (exclusivos.descuento_maximo_adicional && exclusivos.descuento_maximo_adicional > 0) {
+    //     beneficios.push(`Descuento adicional ${exclusivos.descuento_maximo_adicional}%`);
+    //   }
+    //   if (exclusivos.puntos_bienvenida_anual && exclusivos.puntos_bienvenida_anual > 0) {
+    //     beneficios.push(`${exclusivos.puntos_bienvenida_anual} puntos de bienvenida anual`);
+    //   }
+    //   if (exclusivos.acceso_eventos_vip === true) beneficios.push('Acceso a eventos VIP');
+    //   if (exclusivos.entrega_express_gratis === true) beneficios.push('Entrega express gratis');
+    //   if (exclusivos.asistente_personal === true) beneficios.push('Asistente personal');
+    // }
 
     return beneficios;
   }
