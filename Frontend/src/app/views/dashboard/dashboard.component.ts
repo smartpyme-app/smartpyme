@@ -61,20 +61,16 @@ export class DashboardComponent implements OnInit {
           tieneDetalleGastos: !!(data && (data as any).detalleGastos),
           cantidadGastos: data && (data as any).detalleGastos ? (data as any).detalleGastos.length : 0
         });
-        this.datos = data || {};
+        // Crear nueva referencia para que OnPush detecte cambios
+        this.datos = { ...(data || {}) };
         this.loading = false;
-        // Usar setTimeout para evitar ExpressionChangedAfterItHasBeenCheckedError
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error al cargar datos del dashboard:', error);
         this.datos = {};
         this.loading = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -86,27 +82,25 @@ export class DashboardComponent implements OnInit {
   onFiltrosResultadosCambiados(filtros: any): void {
     // Recargar datos con los filtros específicos de resultados
     this.loading = true;
-    
+
     const filtrosCompletos = {
       seccion: 'Resultados',
       ...filtros // Filtros específicos de resultados (anio, sucursal, presupuesto)
     };
-    
+
     this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
       next: (data) => {
-        this.datos = data || {};
+        // Crear una nueva referencia del objeto para que OnPush detecte el cambio
+        this.datos = { ...(data || {}) };
+        console.log('Dashboard - Datos de Resultados actualizados:', this.datos);
         this.loading = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error al cargar datos de resultados:', error);
         this.datos = {};
         this.loading = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -121,19 +115,16 @@ export class DashboardComponent implements OnInit {
 
     this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
       next: (data) => {
-        this.datos = data || {};
+        // Crear nueva referencia para que OnPush detecte cambios
+        this.datos = { ...(data || {}) };
         this.loading = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error al cargar datos de gastos:', error);
         this.datos = {};
         this.loading = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -141,27 +132,24 @@ export class DashboardComponent implements OnInit {
   onFiltrosVentasCambiados(filtros: any): void {
     // Recargar datos con los filtros específicos de ventas
     this.loading = true;
-    
+
     const filtrosCompletos = {
       seccion: 'Ventas',
       ...filtros // Filtros específicos de ventas (fechaInicio, fechaFin, vendedor, etc.)
     };
-    
+
     this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
       next: (data) => {
-        this.datos = data || {};
+        // Crear nueva referencia para que OnPush detecte cambios
+        this.datos = { ...(data || {}) };
         this.loading = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error al cargar datos de ventas:', error);
         this.datos = {};
         this.loading = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -169,27 +157,24 @@ export class DashboardComponent implements OnInit {
   onFiltrosControlCuentasCambiados(filtros: any): void {
     // Recargar datos con los filtros específicos de control de cuentas
     this.loading = true;
-    
+
     const filtrosCompletos = {
       seccion: 'Control de cuentas',
       ...filtros // Filtros específicos de control de cuentas (fechaInicio, fechaFin, tipoCuenta, etc.)
     };
-    
+
     this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
       next: (data) => {
-        this.datos = data || {};
+        // Crear nueva referencia para que OnPush detecte cambios
+        this.datos = { ...(data || {}) };
         this.loading = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error al cargar datos de control de cuentas:', error);
         this.datos = {};
         this.loading = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -197,27 +182,24 @@ export class DashboardComponent implements OnInit {
   onFiltrosInventarioCambiados(filtros: any): void {
     // Recargar datos con los filtros específicos de inventario
     this.loading = true;
-    
+
     const filtrosCompletos = {
       seccion: 'Inventario',
       ...filtros // Filtros específicos de inventario (fechaInicio, fechaFin, sucursal, etc.)
     };
-    
+
     this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
       next: (data) => {
-        this.datos = data || {};
+        // Crear nueva referencia para que OnPush detecte cambios
+        this.datos = { ...(data || {}) };
         this.loading = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error al cargar datos de inventario:', error);
         this.datos = {};
         this.loading = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.markForCheck();
       }
     });
   }

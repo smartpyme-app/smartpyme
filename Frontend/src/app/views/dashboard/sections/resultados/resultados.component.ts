@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CashFlowItem } from '../../models/chart-config.model';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
@@ -6,11 +6,21 @@ import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogri
 @Component({
   selector: 'app-resultados',
   templateUrl: './resultados.component.html',
-  styleUrls: ['./resultados.component.css']
+  styleUrls: ['./resultados.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ResultadosComponent implements OnInit {
+export class ResultadosComponent implements OnInit, OnChanges {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
+
+  // Propiedades cacheadas para evitar recálculos
+  private _ventasRowsCache: any[] = [];
+  private _gastosRowsCache: any[] = [];
+  private _cobrar30RowsCache: any[] = [];
+  private _pagar30RowsCache: any[] = [];
+  private _totalCobrar30Cache: number = 0;
+  private _totalPagar30Cache: number = 0;
+  private _lastDatosHash: string = '';
 
   private inicializado: boolean = false;
 
@@ -33,8 +43,8 @@ export class ResultadosComponent implements OnInit {
 
   // Filtros
   anios = [2024, 2025, 2026];
-  anioSeleccionado: number = 2024;
-  
+  anioSeleccionado: number = new Date().getFullYear();
+
   sucursales = [
     { id: 'todas', nombre: 'Todas' },
     { id: '1', nombre: 'Sucursal 1' },
@@ -42,13 +52,106 @@ export class ResultadosComponent implements OnInit {
   ];
   sucursalSeleccionada: string = 'todas';
 
-  constructor() { }
+  constructor(private cdr: ChangeDetectorRef) { }
+
+  /**
+   * Método eficiente de clonación profunda
+   */
+  private clonarDatos(obj: any): any {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (obj instanceof Date) return new Date(obj.getTime());
+    if (Array.isArray(obj)) return obj.map(item => this.clonarDatos(item));
+
+    const clonado: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        clonado[key] = this.clonarDatos(obj[key]);
+      }
+    }
+    return clonado;
+  }
+
+  /**
+   * Genera un hash simple de los datos para detectar cambios
+   */
+  private generarHashDatos(datos: any): string {
+    if (!datos) return '';
+    try {
+      const str = JSON.stringify(datos);
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return hash.toString();
+    } catch {
+      return Math.random().toString();
+    }
+  }
+
+  /**
+   * Formateador con caché
+   */
+  private currencyFormatter = new Intl.NumberFormat('es-GT', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  /**
+   * Recalcula todas las filas cacheadas
+   */
+  private recalcularRowsCache(): void {
+    const currentHash = this.generarHashDatos(this.datos);
+    console.log('Resultados - Hash actual:', currentHash);
+    console.log('Resultados - Hash anterior:', this._lastDatosHash);
+
+    if (currentHash === this._lastDatosHash && this._lastDatosHash !== '') {
+      console.log('Resultados - Hash igual, saltando recalculo');
+      return; // No hay cambios
+    }
+    this._lastDatosHash = currentHash;
+    console.log('Resultados - Recalculando cache con nuevos datos');
+
+    // Por ahora las grillas no se usan en el template actual
+    // Si en el futuro se necesitan, se pueden implementar aquí
+    this._ventasRowsCache = [];
+    this._gastosRowsCache = [];
+    this._cobrar30RowsCache = [];
+    this._pagar30RowsCache = [];
+    this._totalCobrar30Cache = 0;
+    this._totalPagar30Cache = 0;
+  }
 
   ngOnInit(): void {
+    // Recalcular cache si hay datos
+    if (this.datos && Object.keys(this.datos).length > 0) {
+      this.recalcularRowsCache();
+    }
     // Marcar como inicializado después de un pequeño delay
     setTimeout(() => {
       this.inicializado = true;
+      this.cdr.markForCheck();
     }, 100);
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['datos']) {
+      console.log('Resultados - ngOnChanges ejecutado');
+      console.log('Resultados - ESTRUCTURA COMPLETA DE DATOS:', JSON.stringify(this.datos, null, 2));
+      console.log('Resultados - Propiedades disponibles:', Object.keys(this.datos || {}));
+
+      if (this.datos && Object.keys(this.datos).length > 0) {
+        // Recalcular cache cuando los datos cambien
+        this.recalcularRowsCache();
+        console.log('Resultados - cache recalculado');
+        console.log('Resultados - ventasRows:', this._ventasRowsCache);
+        console.log('Resultados - gastosRows:', this._gastosRowsCache);
+        this.cdr.markForCheck();
+      }
+    }
   }
 
   cambiarAnio(anio: number): void {
@@ -65,23 +168,18 @@ export class ResultadosComponent implements OnInit {
     if (!this.inicializado) {
       return;
     }
-    
+
     const filtros = {
       anio: this.anioSeleccionado,
       sucursal: this.sucursalSeleccionada
     };
-    
+
     // Emitir evento al componente padre para recargar datos
     this.filtrosCambiados.emit(filtros);
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
+    return this.currencyFormatter.format(value);
   }
 
   ventasColumns = [
@@ -133,25 +231,11 @@ export class ResultadosComponent implements OnInit {
   ];
 
   get ventasRows(): any[] {
-    if (!this.datos.cashFlow) return [];
-    const rows = this.datos.cashFlow.ventasDelMes.map((v: CashFlowItem) => ({
-      cliente: v.cliente || '-',
-      factura: v.factura,
-      monto: this.formatCurrency(v.monto),
-      montoOriginal: v.monto
-    }));
-    return this.filtrarVentas(rows);
+    return this.filtrarVentas(this._ventasRowsCache);
   }
 
   get gastosRows(): any[] {
-    if (!this.datos.cashFlow) return [];
-    const rows = this.datos.cashFlow.gastosDelMes.map((g: CashFlowItem) => ({
-      proveedor: g.proveedor || '-',
-      factura: g.factura || '-',
-      monto: this.formatCurrency(g.monto),
-      montoOriginal: g.monto
-    }));
-    return this.filtrarGastos(rows);
+    return this.filtrarGastos(this._gastosRowsCache);
   }
 
   filtrarVentas(rows: any[]): any[] {
@@ -296,25 +380,11 @@ export class ResultadosComponent implements OnInit {
   ];
 
   get cobrar30Rows(): any[] {
-    if (!this.datos.cuentasPorCobrar30Dias) return [];
-    const rows = this.datos.cuentasPorCobrar30Dias.map((item: any) => ({
-      factura: item.factura || '-',
-      cliente: item.cliente || '-',
-      vence: item.vence || '-',
-      diasVencimiento: item.diasVencimiento || 0
-    }));
-    return this.filtrarCobrar30(rows);
+    return this.filtrarCobrar30(this._cobrar30RowsCache);
   }
 
   get pagar30Rows(): any[] {
-    if (!this.datos.cuentasPorPagar30Dias) return [];
-    const rows = this.datos.cuentasPorPagar30Dias.map((item: any) => ({
-      factura: item.factura || '-',
-      proveedor: item.proveedor || '-',
-      vence: item.vence || '-',
-      diasVencimiento: item.diasVencimiento || 0
-    }));
-    return this.filtrarPagar30(rows);
+    return this.filtrarPagar30(this._pagar30RowsCache);
   }
 
   filtrarCobrar30(rows: any[]): any[] {
@@ -364,12 +434,25 @@ export class ResultadosComponent implements OnInit {
   }
 
   get totalCobrar30(): number {
-    if (!this.datos.cuentasPorCobrar30Dias) return 0;
-    return this.datos.cuentasPorCobrar30Dias.reduce((sum: number, item: any) => sum + (item.monto || 0), 0);
+    return this._totalCobrar30Cache;
   }
 
   get totalPagar30(): number {
-    if (!this.datos.cuentasPorPagar30Dias) return 0;
-    return this.datos.cuentasPorPagar30Dias.reduce((sum: number, item: any) => sum + (item.monto || 0), 0);
+    return this._totalPagar30Cache;
+  }
+
+  /**
+   * TrackBy functions para optimización de *ngFor
+   */
+  trackByIndex(index: number, item: any): number {
+    return index;
+  }
+
+  trackById(index: number, item: any): string | number {
+    return item.id || index;
+  }
+
+  trackByName(index: number, item: any): string | number {
+    return item.nombre || item.name || index;
   }
 }

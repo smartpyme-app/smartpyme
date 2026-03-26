@@ -69,35 +69,84 @@ export class DashboardDataService {
       cxc:      this.get(`${this.api}/api/resultados/cxc-clientes?${p}&limite=10`),
       cxp:      this.get(`${this.api}/api/resultados/cxp-proveedores?${p}&limite=10`),
     }).pipe(
-      map(({ cards, porMes, cxc, cxp }) => ({
-        // Cards
-        ventasTotalesConIVA: cards?.ventasTotalesConIVA ?? 0,
-        gastosTotalesConIVA: cards?.gastosTotalesConIVA ?? 0,
-        resultados:          cards?.resultados          ?? 0,
-        margen:              cards?.margen              ?? 0,
-        cuentasPorCobrar:    cards?.cuentasPorCobrar    ?? 0,
-        cuentasPorPagar:     cards?.cuentasPorPagar     ?? 0,
+      map(({ cards, porMes, cxc, cxp }) => {
+        const ventasTotales = cards?.ventasTotalesConIVA ?? 0;
+        const gastosTotales = cards?.gastosTotalesConIVA ?? 0;
+        const resultados = cards?.resultados ?? 0;
+        const margen = cards?.margen ?? 0;
+        const cxcTotal = cards?.cuentasPorCobrar ?? 0;
+        const cxpTotal = cards?.cuentasPorPagar ?? 0;
 
-        // Gráfico ventas vs gastos por mes
-        ventasGastosPorMes: (porMes ?? []).map((f: any) => ({
-          mes:              f.mes,
-          anioMes:          f.anioMes,
-          ventasConIva:     f.ventasConIva,
-          egresosConIva:    f.egresosConIva,
-          resultado:        f.resultado,
-          margenPorcentaje: f.margenPorcentaje,
-        })),
+        return {
+          // Cards - Formato para app-chart-card
+          metrics: [
+            {
+              title: 'Ventas totales',
+              value: ventasTotales,
+              type: 'currency',
+              icon: 'trending-up',
+              color: '#28a745'
+            },
+            {
+              title: 'Gastos totales',
+              value: gastosTotales,
+              type: 'currency',
+              icon: 'trending-down',
+              color: '#dc3545'
+            },
+            {
+              title: 'Resultados',
+              value: resultados,
+              type: 'currency',
+              icon: 'dollar-sign',
+              color: resultados >= 0 ? '#28a745' : '#dc3545'
+            },
+            {
+              title: 'Margen',
+              value: margen,
+              type: 'percentage',
+              icon: 'percent',
+              color: '#007bff'
+            }
+          ],
 
-        // Top clientes CXC
-        cuentasPorCobrarClientes: (cxc ?? []).map((i: any) => ({
-          name: i.name, amount: i.amount
-        })),
+          // Gráfico ventas vs gastos por mes - Formato para app-bar-chart
+          ventasGastosConfig: {
+            type: 'bar',
+            labels: (porMes ?? []).map((f: any) => f.anioMes || f.mes),
+            data: [
+              {
+                name: 'Ventas',
+                data: (porMes ?? []).map((f: any) => f.ventasConIva || 0)
+              },
+              {
+                name: 'Gastos',
+                data: (porMes ?? []).map((f: any) => f.egresosConIva || 0)
+              }
+            ]
+          },
 
-        // Top proveedores CXP
-        cuentasPorPagarProveedores: (cxp ?? []).map((i: any) => ({
-          name: i.name, amount: i.amount
-        })),
-      }))
+          // Top clientes CXC - Formato para app-accounts-list
+          cuentasPorCobrar: (cxc ?? []).map((i: any) => ({
+            name: i.name,
+            amount: i.amount
+          })),
+
+          // Top proveedores CXP - Formato para app-accounts-list
+          cuentasPorPagar: (cxp ?? []).map((i: any) => ({
+            name: i.name,
+            amount: i.amount
+          })),
+
+          // Valores originales por si se necesitan
+          ventasTotalesConIVA: ventasTotales,
+          gastosTotalesConIVA: gastosTotales,
+          resultados: resultados,
+          margen: margen,
+          cuentasPorCobrarTotal: cxcTotal,
+          cuentasPorPagarTotal: cxpTotal,
+        };
+      })
     );
   }
 

@@ -14,8 +14,8 @@
             <div class="d-flex align-items-end gap-3 flex-wrap">
                 <!-- Selector de año -->
                 <div class="btn-group" role="group">
-                    <button 
-                        *ngFor="let anio of anios" 
+                    <button
+                        *ngFor="let anio of anios; trackBy: trackByIndex"
                         type="button"
                         class="btn"
                         [ngClass]="anioSeleccionado === anio ? 'btn-default' : 'btn-light border'"
@@ -32,7 +32,7 @@
                         class="form-select"
                         [(ngModel)]="sucursalSeleccionada"
                         (change)="cambiarSucursal()">
-                        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        <option *ngFor="let sucursal of sucursales; trackBy: trackById" [value]="sucursal.id">
                             {{ sucursal.nombre }}
                         </option>
                     </select>
@@ -43,7 +43,7 @@
 
     <div class="row g-3 mb-4">
         <!-- Tarjetas de métricas -->
-        <div class="col-md-3 col-sm-6" *ngFor="let metric of datos.metrics">
+        <div class="col-md-3 col-sm-6" *ngFor="let metric of datos.metrics; trackBy: trackByIndex">
             <app-chart-card [data]="metric"></app-chart-card>
         </div>
     </div>
@@ -369,7 +369,7 @@
                         class="form-select"
                         style="width: auto; min-width: 120px;"
                         [(ngModel)]="presupuestoSeleccionado">
-                        <option *ngFor="let presupuesto of presupuestos" [value]="presupuesto.id">
+                        <option *ngFor="let presupuesto of presupuestos; trackBy: trackById" [value]="presupuesto.id">
                             {{ presupuesto.nombre }}
                         </option>
                     </select>
@@ -377,7 +377,7 @@
             </div>
         </div>
 
-        <div class="col-md-4 mb-4" *ngFor="let metric of datos.budgetMetrics">
+        <div class="col-md-4 mb-4" *ngFor="let metric of datos.budgetMetrics; trackBy: trackByIndex">
             <app-budget-card [data]="metric"></app-budget-card>
         </div>
     </div>

@@ -30,11 +30,12 @@ export class AccountsListComponent implements OnInit, OnChanges {
   }
 
   get sortedAccounts(): AccountItem[] {
+    if (!this.accounts || !Array.isArray(this.accounts)) return []; // ← agregar
     return [...this.accounts].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
   }
 
   initChart(): void {
-    if (!this.accounts || this.accounts.length === 0) {
+    if (!this.accounts || !Array.isArray(this.accounts) || this.accounts.length === 0) { 
       return;
     }
 
