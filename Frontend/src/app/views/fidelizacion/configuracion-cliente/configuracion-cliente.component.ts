@@ -116,13 +116,13 @@ export class ConfiguracionClienteComponent implements OnInit {
       next: (response: PaginatedResponse<TipoClienteEmpresa>) => {
         if (response.success && response.data) {
           // Formatear los datos para limitar decimales
-          this.tiposCliente = response.data.data.map(tipo => ({
+          this.tiposCliente = response.data.data.map((tipo) => ({
             ...tipo,
             puntos_por_dolar: this.formatDecimal(parseFloat(tipo.puntos_por_dolar.toString())),
             configuracion_avanzada: {
               ...tipo.configuracion_avanzada,
-              valor_punto: this.formatValorPuntoDecimal(parseFloat(tipo.configuracion_avanzada?.valor_punto?.toString() || '0'))
-            }
+              valor_punto: this.resolveValorPuntoFromTipo(tipo),
+            },
           }));
           this.pagination = {
             current_page: response.data.current_page,
@@ -209,7 +209,10 @@ export class ConfiguracionClienteComponent implements OnInit {
       maximo_canje: tipo.maximo_canje,
       expiracion_meses: tipo.expiracion_meses,
       is_default: tipo.is_default,
-      configuracion_avanzada: this.ensureAdvancedConfig(tipo.configuracion_avanzada)
+      configuracion_avanzada: this.ensureAdvancedConfig({
+        ...tipo.configuracion_avanzada,
+        valor_punto: this.resolveValorPuntoFromTipo(tipo),
+      }),
     };
     this.nivelSeleccionado = tipo.is_personalizado ? 'personalizado' : (tipo.tipo_base?.id ?? null);
     this.showModal = true;
@@ -929,5 +932,29 @@ export class ConfiguracionClienteComponent implements OnInit {
       return 0;
     }
     return Math.round(value * 10000) / 10000;
+  }
+
+  /**
+   * El API expone `valor_punto` en el tipo y a veces también en `configuracion_avanzada`.
+   * Si solo se lee configuracion_avanzada y ahí no viene la clave, antes se caía a 0.
+   */
+  private resolveValorPuntoFromTipo(tipo: any): number {
+    const tryParse = (raw: unknown): number | null => {
+      if (raw === undefined || raw === null) return null;
+      const s = String(raw).trim();
+      if (s === '') return null;
+      const n = parseFloat(s);
+      return isNaN(n) ? null : n;
+    };
+
+    const fromRoot = tryParse(tipo?.valor_punto);
+    if (fromRoot !== null) {
+      return this.formatValorPuntoDecimal(fromRoot);
+    }
+    const fromAdv = tryParse(tipo?.configuracion_avanzada?.valor_punto);
+    if (fromAdv !== null) {
+      return this.formatValorPuntoDecimal(fromAdv);
+    }
+    return 0.01;
   }
 }
