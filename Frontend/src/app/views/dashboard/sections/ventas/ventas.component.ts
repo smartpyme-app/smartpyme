@@ -306,7 +306,9 @@ export class VentasComponent implements OnInit, OnChanges {
     const usdFmt = (params: any): string => {
       const v = params.value;
       if (v == null || v === '') return '';
-      return this.currencyFormatter.format(Number(v));
+      const n = Number(v);
+      if (Number.isNaN(n)) return '';
+      return this.currencyFormatter.format(n);
     };
 
     this.ventasPorProductoColumnDefs = [
@@ -385,9 +387,11 @@ export class VentasComponent implements OnInit, OnChanges {
       paginationPageSize: 20,
       suppressMenuHide: true,
       quickFilterText: '',
+      getRowClass: (params: any) => (params.data?.isTotal ? 'ag-row-total' : ''),
       onGridReady: (params: any) => {
         this.gridApi = params.api;
         this.gridColumnApi = params.columnApi;
+        setTimeout(() => params.api.sizeColumnsToFit(), 0);
       },
     };
   }
@@ -609,6 +613,38 @@ export class VentasComponent implements OnInit, OnChanges {
         this.cdr.markForCheck();
       },
     });
+
+    this.filtrosCatalogo.categoriasParaFiltro().subscribe({
+      next: (items) => {
+        this.categoriasProductos = items;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /**
+   * Opciones del combo "Producto" a partir del detalle que ya trae el dashboard (sin endpoint extra).
+   */
+  private sincronizarProductosDesdeDatosVentas(): void {
+    const detalle = this.datos?.ventasPorProducto;
+    if (!Array.isArray(detalle) || detalle.length === 0) {
+      this.productos = [];
+      return;
+    }
+    const nombres = new Set<string>();
+    for (const row of detalle) {
+      const n = String(row?.producto ?? '').trim();
+      if (n) nombres.add(n);
+    }
+    this.productos = [...nombres]
+      .sort((a, b) => a.localeCompare(b, 'es'))
+      .map((nombre) => ({ id: nombre, nombre }));
+    if (
+      this.filtroProducto &&
+      !this.productos.some((p) => String(p.id) === String(this.filtroProducto))
+    ) {
+      this.filtroProducto = '';
+    }
   }
 
   /** Usuario con una sola sucursal asignada no puede cambiar el filtro (como Resultados). */
@@ -872,6 +908,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
     // Recalcular ventas por producto
     this._ventasPorProductoRowsCache = this.calcularVentasPorProductoRows();
+    this.sincronizarProductosDesdeDatosVentas();
 
     // Recalcular ventas por cliente
     this._ventasPorClienteRowsCache = this.calcularVentasPorClienteRows();
@@ -918,20 +955,14 @@ export class VentasComponent implements OnInit, OnChanges {
       producto: item.producto || '-',
       formaPago: item.formaPago || '-',
       cantidad: item.cantidad || 0,
-      precioUnitario: this.formatCurrency(item.precioUnitario || 0),
-      precioUnitarioOriginal: item.precioUnitario || 0,
-      descuento: this.formatCurrency(item.descuento || 0),
-      descuentoOriginal: item.descuento || 0,
-      ventasSinIVA: this.formatCurrency(item.ventasSinIVA || 0),
-      ventasSinIVAOriginal: item.ventasSinIVA || 0,
-      costoTotal: this.formatCurrency(item.costoTotal || 0),
-      costoTotalOriginal: item.costoTotal || 0,
-      utilidad: this.formatCurrency(item.utilidad || 0),
-      utilidadOriginal: item.utilidad || 0,
-      isTotal: false
+      precioUnitario: item.precioUnitario || 0,
+      descuento: item.descuento || 0,
+      ventasSinIVA: item.ventasSinIVA || 0,
+      costoTotal: item.costoTotal || 0,
+      utilidad: item.utilidad || 0,
+      isTotal: false,
     }));
 
-    // Agregar fila de totales al final
     const totales = this.totalVentasPorProducto;
     if (totales.cantidad > 0) {
       rows.push({
@@ -939,17 +970,12 @@ export class VentasComponent implements OnInit, OnChanges {
         producto: '',
         formaPago: '',
         cantidad: totales.cantidad,
-        precioUnitario: '',
-        precioUnitarioOriginal: 0,
-        descuento: '',
-        descuentoOriginal: 0,
-        ventasSinIVA: this.formatCurrency(totales.ventasSinIVA),
-        ventasSinIVAOriginal: totales.ventasSinIVA,
-        costoTotal: this.formatCurrency(totales.costoTotal),
-        costoTotalOriginal: totales.costoTotal,
-        utilidad: this.formatCurrency(totales.utilidad),
-        utilidadOriginal: totales.utilidad,
-        isTotal: true
+        precioUnitario: null,
+        descuento: null,
+        ventasSinIVA: totales.ventasSinIVA,
+        costoTotal: totales.costoTotal,
+        utilidad: totales.utilidad,
+        isTotal: true,
       });
     }
 
@@ -957,7 +983,7 @@ export class VentasComponent implements OnInit, OnChanges {
   }
 
   get ventasPorProductoRows(): any[] {
-    return this.datos?.ventasPorProducto ?? [];
+    return this._ventasPorProductoRowsCache;
   }
 
   get totalVentasPorProducto(): any {

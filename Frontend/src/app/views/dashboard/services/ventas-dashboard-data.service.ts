@@ -101,7 +101,6 @@ export class VentasDashboardDataService {
   obtenerVentasProgresivo(filtros: any = {}): Observable<any> {
     const api = this.analytics.baseUrl;
     const p = this.analytics.params(filtros);
-    const pVendedor = filtros?.vendedor ? `&vendedor=${filtros.vendedor}` : '';
     const safe = (path: string) => this.analytics.getSafe(`${api}${path}`);
 
     const critico$ = forkJoin({
@@ -113,7 +112,7 @@ export class VentasDashboardDataService {
 
     const pesado$ = forkJoin({
       porCanal: safe(`/api/ventas/por-canal?${p}`),
-      porVendedor: safe(`/api/ventas/por-vendedor?${p}${pVendedor}`),
+      porVendedor: safe(`/api/ventas/por-vendedor?${p}`),
       porFormaPago: safe(`/api/ventas/por-forma-pago?${p}`),
       porCategoria: safe(`/api/ventas/por-categoria?${p}`),
       topProductos: safe(`/api/ventas/top-productos?${p}&limite=15`),
@@ -150,7 +149,6 @@ export class VentasDashboardDataService {
   obtenerVentas(filtros: any = {}): Observable<any> {
     const api = this.analytics.baseUrl;
     const p = this.analytics.params(filtros);
-    const pVendedor = filtros?.vendedor ? `&vendedor=${filtros.vendedor}` : '';
     const safe = (path: string) => this.analytics.getSafe(`${api}${path}`);
 
     return forkJoin({
@@ -159,7 +157,7 @@ export class VentasDashboardDataService {
       vsPresupuesto: safe(`/api/ventas/vs-presupuesto?${p}`),
       vsAnioAnterior: safe(`/api/ventas/vs-anio-anterior?${p}`),
       porCanal: safe(`/api/ventas/por-canal?${p}`),
-      porVendedor: safe(`/api/ventas/por-vendedor?${p}${pVendedor}`),
+      porVendedor: safe(`/api/ventas/por-vendedor?${p}`),
       porFormaPago: safe(`/api/ventas/por-forma-pago?${p}`),
       porCategoria: safe(`/api/ventas/por-categoria?${p}`),
       topProductos: safe(`/api/ventas/top-productos?${p}&limite=15`),

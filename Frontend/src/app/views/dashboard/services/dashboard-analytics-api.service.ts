@@ -71,6 +71,30 @@ export class DashboardAnalyticsApiService {
     return s || null;
   }
 
+  /** IDs o listas CSV para query (ventas y otros dashboards). */
+  private csvQueryParam(value: any): string | null {
+    if (value == null || value === '') return null;
+    if (Array.isArray(value)) {
+      const parts = value.map((s: any) => String(s).trim()).filter(Boolean);
+      return parts.length ? parts.join(',') : null;
+    }
+    const s = String(value).trim();
+    return s || null;
+  }
+
+  private appendFiltrosOpcionalesVentas(filtros: any, p: string): string {
+    let out = p;
+    const estado = this.csvQueryParam(filtros?.estado);
+    if (estado) out += `&estado=${estado}`;
+    const canal = this.csvQueryParam(filtros?.canal);
+    if (canal) out += `&canal=${canal}`;
+    const cliente = this.csvQueryParam(filtros?.cliente);
+    if (cliente) out += `&cliente=${cliente}`;
+    const vendedor = this.csvQueryParam(filtros?.vendedor);
+    if (vendedor) out += `&vendedor=${vendedor}`;
+    return out;
+  }
+
   params(filtros: any, extras: string[] = []): string {
     const empresa = this.idEmpresa;
     const anio = filtros?.anio ?? new Date().getFullYear();
@@ -78,6 +102,7 @@ export class DashboardAnalyticsApiService {
     if (filtros?.mes) p += `&mes=${filtros.mes}`;
     const sv = this.sucursalQueryParam(filtros?.sucursal);
     if (sv) p += `&sucursal=${sv}`;
+    p = this.appendFiltrosOpcionalesVentas(filtros, p);
     extras.forEach((e) => {
       if (e) p += `&${e}`;
     });
@@ -90,6 +115,7 @@ export class DashboardAnalyticsApiService {
     let p = `empresa=${empresa}&anio=${anio}`;
     const sv = this.sucursalQueryParam(filtros?.sucursal);
     if (sv) p += `&sucursal=${sv}`;
+    p = this.appendFiltrosOpcionalesVentas(filtros, p);
     extras.forEach((e) => {
       if (e) p += `&${e}`;
     });
