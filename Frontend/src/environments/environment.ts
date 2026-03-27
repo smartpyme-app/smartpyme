@@ -10,6 +10,8 @@ export const environment = {
   // API_URL: 'https://apiconta.smartpyme.site',
   // API_URL: 'https://apitest.smartpyme.site',
   APP_URL: 'http://localhost:4200',
+  /** API pública Hacienda CR (CABYS); CORS *. El buscador CABYS llama aquí desde el navegador para evitar bloqueo al IP del backend. */
+  haciendaPublicApiUrl: 'https://api.hacienda.go.cr',
 };
 
 /*

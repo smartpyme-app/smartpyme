@@ -1,6 +1,8 @@
 import {
   Component,
   OnInit,
+  OnChanges,
+  SimpleChanges,
   TemplateRef,
   Input,
   ViewChild,
@@ -20,8 +22,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { finalize } from 'rxjs/operators';
+import { Observable, Subject, of } from 'rxjs';
+import { map, debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { mapCabysApiResponseToOptions, CabysSelectOption } from '@services/facturacion-electronica/cabys-hacienda.mapper';
+import { HaciendaCabysClientService } from '@services/facturacion-electronica/hacienda-cabys-client.service';
 
 @Component({
     selector: 'app-producto-informacion',
@@ -31,7 +37,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
-export class ProductoInformacionComponent extends BaseModalComponent implements OnInit {
+export class ProductoInformacionComponent extends BaseModalComponent implements OnInit, OnChanges {
   @ViewChild('modalAtributo') modalAtributo!: TemplateRef<any>;
   @Input() producto: any = {};
   public categorias: any = [];
@@ -54,6 +60,22 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   nuevoAtributo: any = {};
   guardandoAtributo: boolean = false;
 
+  /** CABYS Costa Rica: búsqueda vía API Hacienda (proxy backend). */
+  cabysInput$ = new Subject<string>();
+  cabysItems$!: Observable<CabysSelectOption[]>;
+  cabysLoading = false;
+  cabysSeleccionado: CabysSelectOption | null = null;
+  cabysCodigoManual = '';
+  cabysConsultandoCodigo = false;
+
+  readonly compareCabys = (a: CabysSelectOption, b: CabysSelectOption): boolean => {
+    if (!a || !b) {
+      return false;
+    }
+
+    return a.codigo === b.codigo;
+  };
+
   constructor(
     public apiService: ApiService,
     protected override alertService: AlertService,
@@ -62,7 +84,8 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private zone: NgZone
+    private zone: NgZone,
+    private haciendaCabys: HaciendaCabysClientService,
   ) {
     super(modalManager, alertService);
     // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -72,6 +95,30 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   ngOnInit() {
     this.loadAtributes();
     this.usuario = this.apiService.auth_user();
+
+    this.cabysItems$ = this.cabysInput$.pipe(
+      debounceTime(400),
+      distinctUntilChanged(),
+      switchMap((term: string) => {
+        const t = (term ?? '').trim();
+        if (t.length < 3) {
+          return of([]);
+        }
+        this.cabysLoading = true;
+        this.cdr.markForCheck();
+
+        return this.haciendaCabys.getCabysByQuery(t, 20).pipe(
+          map((body) => mapCabysApiResponseToOptions(body)),
+          catchError(() => of([])),
+          finalize(() => {
+            this.cabysLoading = false;
+            this.cdr.markForCheck();
+          }),
+        );
+      }),
+    );
+
+    this.syncCabysSeleccionFromProducto();
 
     this.apiService.getAll('categorias/padre')
       .pipe(this.untilDestroyed())
@@ -129,6 +176,76 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     // );
 
     this.cdr.detectChanges();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['producto']) {
+      this.syncCabysSeleccionFromProducto();
+    }
+  }
+
+  esEmpresaCostaRica(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+  }
+
+  onCabysSelectChange(item: CabysSelectOption | null): void {
+    if (item) {
+      this.producto.codigo_cabys = item.codigo;
+      this.producto.descripcion_cabys = item.descripcion;
+    } else {
+      this.producto.codigo_cabys = null;
+      this.producto.descripcion_cabys = null;
+    }
+    this.cdr.markForCheck();
+  }
+
+  consultarCabysPorCodigo(): void {
+    const d = (this.cabysCodigoManual || '').replace(/\D/g, '');
+    if (d.length !== 13) {
+      this.alertService.warning('CABYS', 'Ingrese exactamente 13 dígitos.');
+      return;
+    }
+    this.cabysConsultandoCodigo = true;
+    this.cdr.markForCheck();
+    this.haciendaCabys
+      .getCabysByCodigo(d)
+      .pipe(
+        this.untilDestroyed(),
+        finalize(() => {
+          this.cabysConsultandoCodigo = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe({
+        next: (body) => {
+          const opts = mapCabysApiResponseToOptions(body);
+          const hit = opts.find((o) => o.codigo === d) ?? opts[0];
+          if (hit) {
+            this.cabysSeleccionado = hit;
+            this.onCabysSelectChange(hit);
+            this.cabysCodigoManual = '';
+          } else {
+            this.alertService.warning('CABYS', 'No se encontró información para ese código en Hacienda.');
+          }
+        },
+        error: (e) => this.alertService.error(e),
+      });
+  }
+
+  private syncCabysSeleccionFromProducto(): void {
+    const raw = this.producto?.codigo_cabys;
+    const digits = raw != null && raw !== '' ? String(raw).replace(/\D/g, '') : '';
+    if (digits.length === 13) {
+      const desc = String(this.producto?.descripcion_cabys ?? '').trim();
+      this.cabysSeleccionado = {
+        codigo: digits,
+        descripcion: desc,
+        label: desc ? `${digits} — ${desc}` : digits,
+      };
+    } else {
+      this.cabysSeleccionado = null;
+    }
+    this.cdr.markForCheck();
   }
 
   public loadAtributes() {

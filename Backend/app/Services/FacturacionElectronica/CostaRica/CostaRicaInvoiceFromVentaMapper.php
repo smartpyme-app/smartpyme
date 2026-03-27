@@ -17,7 +17,8 @@ use InvalidArgumentException;
  *
  * Reutiliza campos de empresa ya usados para FE (y formularios): cod_actividad_economica, giro,
  * cod_departamento / cod_municipio / cod_distrito (ubicación FE según país), cod_estable, cod_estable_mh,
- * mh_*. CABYS por línea: producto.codigo (13 dígitos), o columna codigo_cabys si existe en BD legada, o custom_empresa.facturacion_fe.cabys_default.
+ * mh_*. CABYS por línea: producto.codigo_cabys, producto.codigo (13 dígitos); fallback empresa:
+ * custom_empresa.facturacion_fe.cabys_default o cod_actividad_economica (13 dígitos) + descripción en giro.
  * Actividad receptor opcional: custom_empresa.facturacion_fe.receptor_actividad_codigo (6 dígitos).
  */
 final class CostaRicaInvoiceFromVentaMapper
@@ -125,7 +126,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $cabys = $this->resolverCabysLinea($producto, $empresa);
         if (strlen($cabys) !== 13) {
             throw new InvalidArgumentException(
-                'Código CABYS inválido o faltante en línea de devolución. Revise producto o cabys_default en configuración.'
+                'Código CABYS inválido o faltante en línea de devolución. Revise CABYS del producto, código 13 dígitos en producto, CABYS por defecto en cuenta (actividad económica) o cabys_default en configuración.'
             );
         }
 
@@ -377,8 +378,14 @@ final class CostaRicaInvoiceFromVentaMapper
     private function cabysPorDefecto(Empresa $empresa): string
     {
         $raw = $empresa->getCustomConfigValue('facturacion_fe', 'cabys_default', null);
+        $digits = preg_replace('/\D/', '', (string) $raw);
+        if (strlen($digits) === 13) {
+            return $digits;
+        }
 
-        return preg_replace('/\D/', '', (string) $raw) ?? '';
+        $digits = preg_replace('/\D/', '', (string) ($empresa->cod_actividad_economica ?? ''));
+
+        return strlen($digits) === 13 ? $digits : '';
     }
 
     private function resolverCabysLinea(?Producto $producto, Empresa $empresa): string
@@ -409,7 +416,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $cabys = $this->resolverCabysLinea($producto, $empresa);
         if (strlen($cabys) !== 13) {
             throw new InvalidArgumentException(
-                'Código CABYS inválido o faltante. Use producto.codigo con 13 dígitos (CABYS), o custom_empresa.facturacion_fe.cabys_default.'
+                'Código CABYS inválido o faltante. Asigne CABYS en el producto, producto.codigo 13 dígitos, o CABYS por defecto en empresa (actividad económica / giro) o cabys_default.'
             );
         }
 

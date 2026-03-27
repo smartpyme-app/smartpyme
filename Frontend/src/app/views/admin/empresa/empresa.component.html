@@ -150,20 +150,58 @@
                         <label for="cod_estable">Cod Establecimiento:</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.cod_estable" name="cod_estable" placeholder="xxxx">
                     </div> -->
-                    <div class="form-group col-md-6">
+                    <div class="form-group col-md-8">
+                        @if (!esCostaRicaFe()) {
                         <label for="actividad_economica">Actividad económica:</label>
+                        }
+                        @if (esCostaRicaFe()) {
+                        <label for="actividad_economica">Actividad económica de la empresa (CABYS)</label>
+                        }
                         @if (apiService.auth_user().empresa.pais == 'El Salvador') {
-                          <ng-select [(ngModel)]="empresa.cod_actividad_economica" (change)="setGiro()" class="form-select p-0" name="empresa.cod_actividad_economica">
-                            @for (actividad_economica of actividad_economicas; track $index) {
-                              <ng-option [value]="actividad_economica.cod">
-                                {{ actividad_economica.nombre }}
-                              </ng-option>
-                            }
+                          <ng-select
+                            [(ngModel)]="empresa.cod_actividad_economica"
+                            (change)="setGiro()"
+                            class="form-select p-0"
+                            name="empresa.cod_actividad_economica"
+                            [items]="actividad_economicas"
+                            bindLabel="nombre"
+                            bindValue="cod"
+                            placeholder="Seleccione actividad económica">
+                            <ng-template ng-label-tmp let-item="item">
+                              <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item?.nombre">{{ item?.nombre }}</span>
+                            </ng-template>
+                            <ng-template ng-option-tmp let-item="item">
+                              <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item.nombre">{{ item.nombre }}</span>
+                            </ng-template>
                           </ng-select>
                         }
 
-                        @if (apiService.auth_user().empresa.pais != 'El Salvador') {
-                          <input type="text" class="form-control" [(ngModel)]="empresa.giro" name="empresa.cod_actividad_economica" placeholder="Escriba aquí">
+                        @if (esCostaRicaFe()) {
+                          <ng-select
+                            class="form-select p-0"
+                            name="cabys_empresa_buscar"
+                            [items]="cabysEmpresaItems$ | async"
+                            bindLabel="label"
+                            [loading]="cabysEmpresaLoading"
+                            [typeahead]="cabysEmpresaInput$"
+                            [compareWith]="compareCabysEmpresa"
+                            [(ngModel)]="cabysEmpresaSeleccionado"
+                            (change)="onCabysEmpresaSelectChange($event)"
+                            [clearable]="true"
+                            notFoundText="Sin resultados"
+                            placeholder="Buscar por descripción (mín. 3 letras)..."
+                            id="cabys_empresa_buscar">
+                            <ng-template ng-label-tmp let-item="item">
+                              <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item?.label">{{ item?.label }}</span>
+                            </ng-template>
+                            <ng-template ng-option-tmp let-item="item">
+                              <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item.label">{{ item.label }}</span>
+                            </ng-template>
+                          </ng-select>
+                        }
+
+                        @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
+                          <input type="text" class="form-control" [(ngModel)]="empresa.giro" name="empresa_giro_otros" placeholder="Escriba aquí">
                         }
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
@@ -740,16 +778,6 @@
     @if (empresa.facturacion_electronica) {
       <tab heading="Facturación electrónica">
         <section class="bg-white rounded p-3 mb-3">
-            @if (esCostaRicaFe()) {
-              <div class="alert alert-secondary mb-3">
-                <strong>Facturación electrónica en Costa Rica</strong><br>
-                Use el mismo usuario y contraseña con los que entra al portal de Hacienda (ATV).
-                La contraseña del certificado es la que usted definió al descargar o recibir su certificado digital.
-                Elija <em>Pruebas</em> mientras valida todo y <em>Producción</em> cuando vaya a facturar de verdad.
-                Suba su certificado más abajo y, si aplica, complete los datos opcionales (código de producto y tipo de cambio).
-                Para guardar cambios use el botón <strong>Guardar</strong> en la pestaña «Datos de mi empresa» o el botón <strong>Comprobar conexión con Hacienda</strong>.
-              </div>
-            }
             <div class="row">
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="mh_usuario">{{ esCostaRicaFe() ? 'Usuario en Hacienda (ATV):' : 'Usuario:' }}</label>
@@ -800,6 +828,11 @@
             </div>
             @if (esCostaRicaFe()) {
             <div class="row mt-2">
+                <div class="col-12 mb-3">
+                    <p class="small text-muted mb-0">
+                        El <strong>CABYS por defecto</strong> de la empresa se configura en la pestaña <strong>Datos de mi empresa</strong>, campo <em>Actividad económica de la empresa (CABYS)</em>.
+                    </p>
+                </div>
                 <div class="form-group col-md-8 col-lg-6">
                     <label for="fe_cr_certificado_p12">Archivo de certificado digital</label>
                     <input id="fe_cr_certificado_p12" type="file" class="form-control" accept=".p12,application/x-pkcs12"
@@ -813,33 +846,6 @@
                             Suba el certificado que le entregó su banco o asesor (archivo con extensión .p12) antes de probar la conexión o emitir facturas electrónicas.
                         }
                     </small>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-12">
-                    <h6 class="mb-2">Datos opcionales</h6>
-                    <p class="small text-muted mb-3">
-                        Solo si lo necesita: si un producto no tiene código de clasificación de Hacienda, puede usar uno por defecto aquí.
-                        Si deja vacío el tipo de cambio, el sistema intentará usar el del Banco Central.
-                    </p>
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="fe_cr_cabys_default">Código de producto por defecto</label>
-                    <input type="text" class="form-control" id="fe_cr_cabys_default" name="fe_cr_cabys_default"
-                        [(ngModel)]="customConfig.facturacion_fe.cabys_default" maxlength="13" inputmode="numeric"
-                        placeholder="13 dígitos, si aplica" autocomplete="off" />
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="fe_cr_tipo_cambio">Tipo de cambio (1 dólar en colones)</label>
-                    <input type="number" class="form-control" id="fe_cr_tipo_cambio" name="fe_cr_tipo_cambio"
-                        [(ngModel)]="customConfig.facturacion_fe.tipo_cambio_usd_crc" step="0.01" min="0"
-                        placeholder="Ej. 520" />
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="fe_cr_receptor_actividad">Actividad económica del cliente (opcional, 6 dígitos)</label>
-                    <input type="text" class="form-control" id="fe_cr_receptor_actividad" name="fe_cr_receptor_actividad"
-                        [(ngModel)]="customConfig.facturacion_fe.receptor_actividad_codigo" maxlength="6" inputmode="numeric"
-                        placeholder="Si Hacienda lo exige en su caso" autocomplete="off" />
                 </div>
             </div>
             }

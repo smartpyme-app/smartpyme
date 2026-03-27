@@ -157,10 +157,14 @@ final class CostaRicaFeEmitService
         $claveFactura = (string) $venta->codigo_generacion;
         $fechaFactura = \Carbon\Carbon::parse($venta->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
 
-        $cabysDefault = $empresa->getCustomConfigValue('facturacion_fe', 'cabys_default', null);
-        $cabys = preg_replace('/\D/', '', (string) $cabysDefault);
+        $cabys = preg_replace('/\D/', '', (string) $empresa->getCustomConfigValue('facturacion_fe', 'cabys_default', null));
         if (strlen($cabys) !== 13) {
-            throw new RuntimeException('Configure custom_empresa.facturacion_fe.cabys_default (13 dígitos) para notas de débito.');
+            $cabys = preg_replace('/\D/', '', (string) ($empresa->cod_actividad_economica ?? ''));
+        }
+        if (strlen($cabys) !== 13) {
+            throw new RuntimeException(
+                'Configure CABYS por defecto en la empresa: pestaña Datos → actividad económica (búsqueda CABYS), o custom_empresa.facturacion_fe.cabys_default (13 dígitos), para notas de débito.'
+            );
         }
 
         $sub = round($montoLinea / 1.13, 5);

@@ -16,6 +16,10 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { mapCabysApiResponseToOptions, CabysSelectOption } from '@services/facturacion-electronica/cabys-hacienda.mapper';
+import { HaciendaCabysClientService } from '@services/facturacion-electronica/hacienda-cabys-client.service';
+import { Observable, Subject, of } from 'rxjs';
+import { map, debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
 
 @Component({
     selector: 'app-empresa',
@@ -72,6 +76,20 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         }
     };
 
+    /** CABYS por defecto (CR): cod_actividad_economica = código 13 dígitos, giro = descripción oficial. */
+    cabysEmpresaInput$ = new Subject<string>();
+    cabysEmpresaItems$!: Observable<CabysSelectOption[]>;
+    cabysEmpresaLoading = false;
+    cabysEmpresaSeleccionado: CabysSelectOption | null = null;
+
+    readonly compareCabysEmpresa = (a: CabysSelectOption, b: CabysSelectOption): boolean => {
+        if (!a || !b) {
+            return false;
+        }
+
+        return a.codigo === b.codigo;
+    };
+
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
@@ -79,10 +97,33 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
         private cdr: ChangeDetectorRef,
-        private funcionalidadesService: FuncionalidadesService
+        private funcionalidadesService: FuncionalidadesService,
+        private haciendaCabys: HaciendaCabysClientService,
     ) { }
 
     ngOnInit() {
+
+        this.cabysEmpresaItems$ = this.cabysEmpresaInput$.pipe(
+            debounceTime(400),
+            distinctUntilChanged(),
+            switchMap((term: string) => {
+                const t = (term ?? '').trim();
+                if (t.length < 3) {
+                    return of([]);
+                }
+                this.cabysEmpresaLoading = true;
+                this.cdr.markForCheck();
+
+                return this.haciendaCabys.getCabysByQuery(t, 20).pipe(
+                    map((body) => mapCabysApiResponseToOptions(body)),
+                    catchError(() => of([])),
+                    finalize(() => {
+                        this.cabysEmpresaLoading = false;
+                        this.cdr.markForCheck();
+                    }),
+                );
+            }),
+        );
 
         this.apiService.getAll('canales')
             .pipe(this.untilDestroyed())
@@ -129,6 +170,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
             if (resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR) {
                 this.refreshEstadoCertificadoFeCr();
+                this.syncCabysEmpresaSeleccionDesdeEmpresa();
             } else {
                 this.tieneCertificadoFeCr = false;
             }
@@ -163,6 +205,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.empresa = empresaGuardada;
 
             this.initializeCustomConfig();
+            if (resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR) {
+                this.syncCabysEmpresaSeleccionDesdeEmpresa();
+            }
 
             let user: any = {};
             user = JSON.parse(localStorage.getItem('SP_auth_user')!);
@@ -434,6 +479,33 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     public esCostaRicaFe(): boolean {
         return resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR;
+    }
+
+    onCabysEmpresaSelectChange(item: CabysSelectOption | null): void {
+        if (item) {
+            this.empresa.cod_actividad_economica = item.codigo;
+            this.empresa.giro = item.descripcion;
+        } else {
+            this.empresa.cod_actividad_economica = null;
+            this.empresa.giro = '';
+        }
+        this.cdr.markForCheck();
+    }
+
+    private syncCabysEmpresaSeleccionDesdeEmpresa(): void {
+        const raw = this.empresa?.cod_actividad_economica;
+        const digits = raw != null && raw !== '' ? String(raw).replace(/\D/g, '') : '';
+        if (digits.length === 13) {
+            const desc = String(this.empresa?.giro ?? '').trim();
+            this.cabysEmpresaSeleccionado = {
+                codigo: digits,
+                descripcion: desc,
+                label: desc ? `${digits} — ${desc}` : digits,
+            };
+        } else {
+            this.cabysEmpresaSeleccionado = null;
+        }
+        this.cdr.markForCheck();
     }
 
     public subirCertificadoFeCr(event: Event): void {

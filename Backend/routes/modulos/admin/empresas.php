@@ -12,17 +12,17 @@ use Illuminate\Support\Facades\Route;
     Route::get('/empresa/isvisible-alert', [EmpresasController::class, 'isVisibleAlertSuscription']);
 
     Route::post('/empresa',                 [EmpresasController::class, 'store']);
-    Route::get('/empresa/{id}',             [EmpresasController::class, 'read']);
-
     Route::post('/empresa/eliminar/datos',   [EmpresasController::class, 'eliminarDatos'])->middleware('role:admin');
 
-    Route::get('/suscripcion',             [EmpresasController::class, 'suscripcion']);
-    Route::get('/suscripcion/recibo/pdf/{id}',             [EmpresasController::class, 'printRecibo']);
-
     Route::post('/empresa/imagenes',             [EmpresasController::class, 'storeImagenes']);
+    /** Deben ir antes de /empresa/{id} para que no capturen "fe-cr-*" como id numérico. */
     Route::post('/empresa/fe-cr-certificado',         [EmpresasController::class, 'uploadFeCrCertificado']);
     Route::get('/empresa/fe-cr-certificado-estado',   [EmpresasController::class, 'estadoFeCrCertificado']);
     Route::post('/empresa/fe-cr-probar-conexion',     [EmpresasController::class, 'probarConexionFeCr']);
+    Route::get('/empresa/{id}',             [EmpresasController::class, 'read']);
+
+    Route::get('/suscripcion',             [EmpresasController::class, 'suscripcion']);
+    Route::get('/suscripcion/recibo/pdf/{id}',             [EmpresasController::class, 'printRecibo']);
     Route::get('/dashboards',                 [DashboardsController::class, 'index']);
     Route::get('/dashboards/list',                 [DashboardsController::class, 'list']);
     Route::post('/dashboard',                 [DashboardsController::class, 'store']);

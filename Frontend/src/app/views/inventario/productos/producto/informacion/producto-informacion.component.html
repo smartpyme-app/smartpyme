@@ -104,6 +104,44 @@
         placeholder="Escribe aquí" mask='0*'>
     </div>
 
+    @if (esEmpresaCostaRica()) {
+    <div class="form-group col-12">
+      <hr style="width: 95%; border-top: 2px solid #d7e2ff; margin: 16px auto 12px;">
+      <h6 class="mb-2 font-weight-bold">Código CABYS (Costa Rica)</h6>
+      <p class="small text-muted mb-0">Busque en el catálogo del Ministerio de Hacienda (mínimo 3 letras) y elija la fila correcta. Se guardan el código de 13 dígitos y la descripción oficial.</p>
+    </div>
+    <div class="form-group col-md-12 col-lg-7">
+      <label for="cabys_buscar">Buscar CABYS</label>
+      <ng-select
+        id="cabys_buscar"
+        name="cabys_buscar"
+        [items]="cabysItems$ | async"
+        bindLabel="label"
+        [loading]="cabysLoading"
+        [typeahead]="cabysInput$"
+        [compareWith]="compareCabys"
+        [(ngModel)]="cabysSeleccionado"
+        (change)="onCabysSelectChange($event)"
+        [clearable]="true"
+        notFoundText="Sin resultados"
+        placeholder="Ej. café, arroz, servicio…"
+        class="form-select p-0">
+      </ng-select>
+    </div>
+    <div class="form-group col-md-12 col-lg-5">
+      <label for="cabys_codigo_manual">¿Ya conoce el código de 13 dígitos?</label>
+      <div class="input-group">
+        <input type="text" class="form-control" id="cabys_codigo_manual" name="cabys_codigo_manual"
+          [(ngModel)]="cabysCodigoManual" maxlength="13" inputmode="numeric" placeholder="13 dígitos" autocomplete="off" />
+        <button type="button" class="btn btn-outline-secondary" (click)="consultarCabysPorCodigo()"
+          [disabled]="cabysConsultandoCodigo">
+          @if (!cabysConsultandoCodigo) { <span>Consultar en Hacienda</span> }
+          @if (cabysConsultandoCodigo) { <span>…</span> }
+        </button>
+      </div>
+    </div>
+    }
+
         <h6 class="my-3 font-weight-bold">Precio</h6>
         @if (!loading && producto.tipo != 'Materia prima') {
         <div class="form-group col-md-4 col-lg-2">

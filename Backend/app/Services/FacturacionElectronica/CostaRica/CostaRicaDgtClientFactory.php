@@ -36,9 +36,11 @@ final class CostaRicaDgtClientFactory
             throw new \InvalidArgumentException('No se puede leer el archivo de certificado FE Costa Rica.');
         }
 
+        $p12Password = trim((string) ($empresa->mh_pwd_certificado ?? ''));
+
         $client->setCertificate([
             'path' => $certPath,
-            'password' => (string) ($empresa->mh_pwd_certificado ?? ''),
+            'password' => $p12Password,
         ]);
 
         $usuario = $empresa->mh_usuario;
