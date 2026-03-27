@@ -278,9 +278,14 @@
                                 <h4>{{ transaction.title }}</h4>
                                 <div class="transaction-date">{{ transaction.date }} • {{ transaction.reference }}</div>
                             </div>
-                            <div class="transaction-amount">${{ formatNumber(transaction.amount) }}</div>
+                            <div class="transaction-amount">
+                                <ng-container *ngIf="transaction.amountKind === 'points'; else montoCompra">
+                                    {{ formatPuntosHistorial(transaction) }}
+                                </ng-container>
+                                <ng-template #montoCompra>{{ formatCurrency(transaction.amount) }}</ng-template>
+                            </div>
                             <div class="transaction-status" [ngClass]="transaction.status">
-                                {{ transaction.status === 'completed' ? 'Completada' : 'Descuento' }}
+                                {{ transactionStatusLabel(transaction) }}
                             </div>
                         </div>
                     </div>

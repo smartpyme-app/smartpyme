@@ -14,6 +14,22 @@ use Illuminate\Support\Facades\Queue;
 class ConsumoPuntosService
 {
     /**
+     * Tipo de fidelización a aplicar al cliente: el asignado en `id_tipo_cliente` o el default
+     * de la empresa efectiva (empresa padre si el cliente es de una sucursal con licencia).
+     * Debe coincidir con `Cliente::getTipoClienteEfectivo()` para que mínimo/máximo de canje
+     * y reglas de puntos no diverjan del CRM ni de la facturación.
+     */
+    private function resolveTipoClienteParaCliente(\App\Models\Ventas\Clientes\Cliente $cliente): ?TipoClienteEmpresa
+    {
+        $tipo = $cliente->getTipoClienteEfectivo();
+        if ($tipo && !$tipo->relationLoaded('tipoBase')) {
+            $tipo->load('tipoBase');
+        }
+
+        return $tipo;
+    }
+
+    /**
      * Procesar la acumulación de puntos para una venta
      *
      * @param Venta $venta
@@ -91,28 +107,15 @@ class ConsumoPuntosService
             return false;
         }
 
-        // 5. Obtener el cliente con su tipo de cliente (eager loading)
-        $cliente = $venta->cliente()->with('tipoCliente.tipoBase')->first();
+        // 5. Obtener el cliente (empresa: necesaria para default vía empresa padre en licencias)
+        $cliente = $venta->cliente()->with(['tipoCliente.tipoBase', 'empresa'])->first();
         if (!$cliente) {
             Log::warning('Cliente no encontrado para venta', ['venta_id' => $venta->id, 'cliente_id' => $venta->id_cliente]);
             return false;
         }
 
-        // 6. Obtener tipo de cliente efectivo (optimizado)
-        $tipoCliente = $cliente->tipoCliente;
-        if (!$tipoCliente) {
-            // Obtener tipo por defecto de la empresa (con cache)
-            $tipoCliente = cache()->remember(
-                "empresa_tipo_default_{$empresaId}",
-                now()->addMinutes(60),
-                function () use ($empresaId) {
-                    return TipoClienteEmpresa::where('id_empresa', $empresaId)
-                        ->where('is_default', true)
-                        ->with('tipoBase')
-                        ->first();
-                }
-            );
-        }
+        // 6. Tipo efectivo = asignado o default de empresa padre (no `id_empresa` solo de la venta)
+        $tipoCliente = $this->resolveTipoClienteParaCliente($cliente);
 
         if (!$tipoCliente) {
             Log::warning('No se pudo determinar tipo de cliente efectivo', [
@@ -292,20 +295,15 @@ class ConsumoPuntosService
                 return ['success' => false, 'error' => 'La empresa no tiene habilitado el módulo de fidelización'];
             }
 
-            // 2. Obtener el cliente y su tipo
-            $cliente = \App\Models\Ventas\Clientes\Cliente::with('tipoCliente')->find($clienteId);
+            // 2. Cliente + empresa (misma resolución de tipo que CRM / getTipoClienteEfectivo)
+            $cliente = \App\Models\Ventas\Clientes\Cliente::with(['tipoCliente.tipoBase', 'empresa'])
+                ->find($clienteId);
             if (!$cliente) {
                 return ['success' => false, 'error' => 'Cliente no encontrado'];
             }
 
-            // 3. Obtener configuración del tipo de cliente
-            $tipoCliente = $cliente->tipoCliente;
-            if (!$tipoCliente) {
-                // Obtener tipo por defecto de la empresa
-                $tipoCliente = TipoClienteEmpresa::where('id_empresa', $empresaId)
-                    ->where('is_default', true)
-                    ->first();
-            }
+            // 3. Configuración de canje según tipo efectivo (no el default de id_empresa de la sucursal)
+            $tipoCliente = $this->resolveTipoClienteParaCliente($cliente);
 
             if (!$tipoCliente) {
                 return ['success' => false, 'error' => 'No se pudo determinar la configuración del cliente'];
@@ -543,16 +541,9 @@ class ConsumoPuntosService
             ];
         }
 
-        // Obtener el cliente y su tipo
-        $cliente = \App\Models\Ventas\Clientes\Cliente::with('tipoCliente')->find($clienteId);
-        $tipoCliente = $cliente ? $cliente->tipoCliente : null;
-        
-        if (!$tipoCliente) {
-            // Obtener tipo por defecto de la empresa
-            $tipoCliente = TipoClienteEmpresa::where('id_empresa', $empresaId)
-                ->where('is_default', true)
-                ->first();
-        }
+        $cliente = \App\Models\Ventas\Clientes\Cliente::with(['tipoCliente.tipoBase', 'empresa'])
+            ->find($clienteId);
+        $tipoCliente = $cliente ? $this->resolveTipoClienteParaCliente($cliente) : null;
 
         $puntosCliente = PuntosCliente::where('id_cliente', $clienteId)
             ->where('id_empresa', $empresaId)
