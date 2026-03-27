@@ -1,5 +1,33 @@
 <div class="gastos-section">
-    <ng-container *ngIf="tieneDatos()">
+    <ng-template #gastosChartLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 200px; color: #F19447;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando gráfico…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #gastosMetricasLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 100px; color: #F19447;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Cargando métricas…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #gastosListLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 280px; color: #F19447;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #gastosTableLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 420px; color: #F19447;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando tabla…</span>
+            </div>
+        </div>
+    </ng-template>
+
     <div class="row mb-4">
         <div class="col-12">
             
@@ -143,7 +171,7 @@
                         </div>
 
                         <!-- Cards de métricas a la derecha -->
-                        <div class="row g-3 flex-grow-1">
+                        <div class="row g-3 flex-grow-1" *ngIf="datos?.metricasGastos; else gastosMetricasLoader">
                             <div class="col">
                                 <div class="card border-0 h-100 d-flex" style="background-color: #ffe6d4; border-radius: 12px;">
                                     <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
@@ -220,26 +248,27 @@
                     <h5 class="mb-0 fw-bold">{{ getTituloGraficoGastos() }}</h5>
                 </div>
                 <div class="card-body">
-                    <!-- Gráfico de línea para "Gastos por mes" -->
-                    <app-line-chart 
-                        [config]="datos.gastosPorMesConfig" 
-                        (itemClick)="onMesClick($event)"
-                        *ngIf="vistaMetricas === 'mes' && datos.gastosPorMesConfig">
-                    </app-line-chart>
-                    
-                    <!-- Gráfico de barras para "vs Presupuesto" -->
-                    <app-bar-chart 
-                        [config]="datos.gastosVsPresupuestoConfig" 
-                        (itemClick)="onMesClick($event)"
-                        *ngIf="vistaMetricas === 'presupuesto' && datos.gastosVsPresupuestoConfig">
-                    </app-bar-chart>
-                    
-                    <!-- Gráfico de barras para "vs Año anterior" -->
-                    <app-bar-chart 
-                        [config]="datos.gastosVsAnioAnteriorConfig" 
-                        (itemClick)="onMesClick($event)"
-                        *ngIf="vistaMetricas === 'anio' && datos.gastosVsAnioAnteriorConfig">
-                    </app-bar-chart>
+                    <ng-container *ngIf="vistaMetricas === 'mes'">
+                        <app-line-chart 
+                            *ngIf="datos.gastosPorMesConfig; else gastosChartLoader"
+                            [config]="datos.gastosPorMesConfig" 
+                            (itemClick)="onMesClick($event)">
+                        </app-line-chart>
+                    </ng-container>
+                    <ng-container *ngIf="vistaMetricas === 'presupuesto'">
+                        <app-bar-chart 
+                            *ngIf="datos.gastosVsPresupuestoConfig; else gastosChartLoader"
+                            [config]="datos.gastosVsPresupuestoConfig" 
+                            (itemClick)="onMesClick($event)">
+                        </app-bar-chart>
+                    </ng-container>
+                    <ng-container *ngIf="vistaMetricas === 'anio'">
+                        <app-bar-chart 
+                            *ngIf="datos.gastosVsAnioAnteriorConfig; else gastosChartLoader"
+                            [config]="datos.gastosVsAnioAnteriorConfig" 
+                            (itemClick)="onMesClick($event)">
+                        </app-bar-chart>
+                    </ng-container>
                 </div>
             </div>
         </div>
@@ -252,9 +281,9 @@
                 </div>
                 <div class="card-body">
                     <app-bar-chart 
+                        *ngIf="datos.gastosPorCategoriaConfig !== undefined; else gastosChartLoader"
                         [config]="datos.gastosPorCategoriaConfig" 
-                        (itemClick)="onCategoriaClick($event)"
-                        *ngIf="datos.gastosPorCategoriaConfig">
+                        (itemClick)="onCategoriaClick($event)">
                     </app-bar-chart>
                 </div>
             </div>
@@ -271,9 +300,9 @@
                 </div>
                 <div class="card-body">
                     <app-bar-chart 
+                        *ngIf="datos.gastosPorConceptoConfig !== undefined; else gastosChartLoader"
                         [config]="datos.gastosPorConceptoConfig" 
-                        (itemClick)="onConceptoClick($event)"
-                        *ngIf="datos.gastosPorConceptoConfig">
+                        (itemClick)="onConceptoClick($event)">
                     </app-bar-chart>
                 </div>
             </div>
@@ -287,9 +316,9 @@
                 </div>
                 <div class="card-body">
                     <app-treemap-chart 
+                        *ngIf="datos.gastosPorFormaPagoConfig !== undefined; else gastosChartLoader"
                         [config]="datos.gastosPorFormaPagoConfig" 
-                        (itemClick)="onFormaPagoClick($event)"
-                        *ngIf="datos.gastosPorFormaPagoConfig">
+                        (itemClick)="onFormaPagoClick($event)">
                     </app-treemap-chart>
                 </div>
             </div>
@@ -304,7 +333,7 @@
                 <div class="card-header bg-white border-0 py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 fw-bold">Detalle de gastos</h5>
-                        <div class="d-flex gap-2 align-items-center">
+                        <div class="d-flex gap-2 align-items-center" *ngIf="datos.detalleGastos !== undefined">
                             <!-- Buscador global -->
                             <div class="input-group" style="width: 200px;">
                                 <span class="input-group-text bg-white border-end-0">
@@ -340,29 +369,31 @@
                     </div>
                 </div>
                 <div class="card-body px-3 py-0" style="height: 500px; display: flex; flex-direction: column;">
-                    <ag-grid-angular
-                        #detalleGastosGrid
-                        class="ag-theme-alpine detalle-gastos-grid"
-                        [rowData]="detalleGastosRows"
-                        [columnDefs]="detalleGastosColumnDefs"
-                        [gridOptions]="detalleGastosGridOptions"
-                        [defaultColDef]="{
-                            resizable: true,
-                            sortable: true,
-                            filter: true
-                        }"
-                        style="width: 100%; flex: 1; min-height: 0;"
-                        [domLayout]="'normal'"
-                        (gridReady)="onGridReadyGastos($event)">
-                    </ag-grid-angular>
-                    <div class="p-3" style="background-color: #ffe6d4; border-top: 1px solid #F19447;">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold" style="color: #F19447;">Total</span>
-                            <span class="fw-bold" style="color: #F19447;">
-                                {{ totalDetalleGastos }}
-                            </span>
+                    <ng-container *ngIf="datos.detalleGastos !== undefined; else gastosTableLoader">
+                        <ag-grid-angular
+                            #detalleGastosGrid
+                            class="ag-theme-alpine detalle-gastos-grid"
+                            [rowData]="detalleGastosRows"
+                            [columnDefs]="detalleGastosColumnDefs"
+                            [gridOptions]="detalleGastosGridOptions"
+                            [defaultColDef]="{
+                                resizable: true,
+                                sortable: true,
+                                filter: true
+                            }"
+                            style="width: 100%; flex: 1; min-height: 0;"
+                            [domLayout]="'normal'"
+                            (gridReady)="onGridReadyGastos($event)">
+                        </ag-grid-angular>
+                        <div class="p-3" style="background-color: #ffe6d4; border-top: 1px solid #F19447;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold" style="color: #F19447;">Total</span>
+                                <span class="fw-bold" style="color: #F19447;">
+                                    {{ totalDetalleGastos }}
+                                </span>
+                            </div>
                         </div>
-                    </div>
+                    </ng-container>
                 </div>
             </div>
         </div>
@@ -374,15 +405,16 @@
                     <h5 class="mb-0 fw-bold">Gastos por proveedor</h5>
                 </div>
                 <div class="card-body">
-                    <app-accounts-list 
-                        title=""
-                        [accounts]="datos.gastosPorProveedor || []"
-                        type="payable"
-                        (itemClick)="onProveedorClick($event)">
-                    </app-accounts-list>
+                    <ng-container *ngIf="datos.gastosPorProveedor !== undefined; else gastosListLoader">
+                        <app-accounts-list 
+                            title=""
+                            [accounts]="datos.gastosPorProveedor || []"
+                            type="payable"
+                            (itemClick)="onProveedorClick($event)">
+                        </app-accounts-list>
+                    </ng-container>
                 </div>
             </div>
         </div>
     </div>
-    </ng-container>
 </div>

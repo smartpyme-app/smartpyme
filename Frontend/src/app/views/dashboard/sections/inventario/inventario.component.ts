@@ -361,7 +361,6 @@ export class InventarioComponent implements OnInit, OnChanges {
       },
       enableCellTextSelection: true,
       ensureDomOrder: true,
-      enableRangeSelection: true,
       onCellDoubleClicked: (params: any) => {
         if (params.value !== null && params.value !== undefined) {
           const cellValue = params.value.toString();
@@ -787,7 +786,6 @@ export class InventarioComponent implements OnInit, OnChanges {
       },
       enableCellTextSelection: true,
       ensureDomOrder: true,
-      enableRangeSelection: true,
       onCellDoubleClicked: (params: any) => {
         if (params.value !== null && params.value !== undefined) {
           const cellValue = params.value.toString();
@@ -1336,7 +1334,6 @@ export class InventarioComponent implements OnInit, OnChanges {
       },
       enableCellTextSelection: true,
       ensureDomOrder: true,
-      enableRangeSelection: true,
       onCellDoubleClicked: (params: any) => {
         if (params.value !== null && params.value !== undefined) {
           const cellValue = params.value.toString();

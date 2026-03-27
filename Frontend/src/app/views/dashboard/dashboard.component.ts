@@ -110,27 +110,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosGastosCambiados(filtros: any): void {
-    this.loading = true;
-
     const filtrosCompletos = {
       seccion: 'Gastos',
-      ...filtros
+      ...filtros,
     };
 
-    this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
-      next: (data) => {
-        // Crear nueva referencia para que OnPush detecte cambios
-        this.datos = { ...(data || {}) };
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error al cargar datos de gastos:', error);
-        this.datos = {};
-        this.loading = false;
-        this.cdr.markForCheck();
-      }
-    });
+    this.dashboardDataService
+      .obtenerGastosProgresivo(filtrosCompletos)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.datos = { ...data };
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          console.error('Error al cargar datos de gastos:', error);
+          this.datos = {};
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   onFiltrosVentasCambiados(filtros: any): void {
@@ -156,53 +154,47 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosControlCuentasCambiados(filtros: any): void {
-    // Recargar datos con los filtros específicos de control de cuentas
-    this.loading = true;
-
     const filtrosCompletos = {
       seccion: 'Control de cuentas',
-      ...filtros // Filtros específicos de control de cuentas (fechaInicio, fechaFin, tipoCuenta, etc.)
+      ...filtros,
     };
 
-    this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
-      next: (data) => {
-        // Crear nueva referencia para que OnPush detecte cambios
-        this.datos = { ...(data || {}) };
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error al cargar datos de control de cuentas:', error);
-        this.datos = {};
-        this.loading = false;
-        this.cdr.markForCheck();
-      }
-    });
+    this.dashboardDataService
+      .obtenerCuentasProgresivo(filtrosCompletos)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.datos = { ...data };
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          console.error('Error al cargar datos de control de cuentas:', error);
+          this.datos = {};
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   onFiltrosInventarioCambiados(filtros: any): void {
-    // Recargar datos con los filtros específicos de inventario
-    this.loading = true;
-
     const filtrosCompletos = {
       seccion: 'Inventario',
-      ...filtros // Filtros específicos de inventario (fechaInicio, fechaFin, sucursal, etc.)
+      ...filtros,
     };
 
-    this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
-      next: (data) => {
-        // Crear nueva referencia para que OnPush detecte cambios
-        this.datos = { ...(data || {}) };
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error al cargar datos de inventario:', error);
-        this.datos = {};
-        this.loading = false;
-        this.cdr.markForCheck();
-      }
-    });
+    this.dashboardDataService
+      .obtenerInventarioProgresivo(filtrosCompletos)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.datos = { ...data };
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          console.error('Error al cargar datos de inventario:', error);
+          this.datos = {};
+          this.cdr.markForCheck();
+        },
+      });
   }
 }
 

@@ -27,7 +27,7 @@
                     label="Sucursal"
                     pluralLabel="sucursales"
                     [items]="filtroAdSucursalesItems"
-                    [disabled]="false"
+                    [disabled]="filtroAdSucursalMultiDisabled"
                     [todasImplicitas]="filtroAdSucursalTodasImplicitas"
                     [seleccionados]="filtroAdSucursalSeleccionadas"
                     (selectionChange)="onFiltroAdSucursalChange($event)">
@@ -61,6 +61,9 @@
                     pluralLabel="clientes"
                     [items]="filtroAdClientesItems"
                     [disabled]="false"
+                    [mostrarBuscador]="true"
+                    [limiteVistaInicial]="100"
+                    buscadorPlaceholder="Buscar"
                     [todasImplicitas]="filtroAdClienteTodasImplicitas"
                     [seleccionados]="filtroAdClienteSeleccionadas"
                     (selectionChange)="onFiltroAdClienteChange($event)">

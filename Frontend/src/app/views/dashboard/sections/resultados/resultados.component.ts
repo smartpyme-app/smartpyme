@@ -14,8 +14,8 @@ import { CashFlowItem } from '../../models/chart-config.model';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
 import { ApiService } from '@services/api.service';
-import { AlertService } from '@services/alert.service';
 import { DropdownMultiFiltroSelection } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
+import { DashboardFiltrosCatalogoService } from '../../services/dashboard-filtros-catalogo.service';
 
 @Component({
   selector: 'app-resultados',
@@ -81,26 +81,18 @@ export class ResultadosComponent implements OnInit, OnChanges {
   constructor(
     private cdr: ChangeDetectorRef,
     private apiService: ApiService,
-    private alertService: AlertService
+    private filtrosCatalogo: DashboardFiltrosCatalogoService
   ) { }
 
   private cargarSucursales(): void {
-    this.apiService.getAll('sucursales/list').subscribe({
-      next: (list: any[]) => {
-        let items = (list || []).map((s: any) => ({
-          id: String(s.id),
-          nombre: s.nombre ?? ''
-        }));
-
-        const user = this.apiService.auth_user();
-        if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
-          const sid = String(user.id_sucursal);
-          items = items.filter(s => s.id === sid);
-        }
-
+    this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
+      next: (items) => {
         this.sucursales = items;
-
-        if (user?.tipo !== 'Administrador' && user?.id_sucursal != null && items.length > 0) {
+        const user = this.apiService.auth_user();
+        if (items.length === 0) {
+          this.sucursalesSeleccionadas = [];
+          this.sucursalesTodasImplicitas = true;
+        } else if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
           this.sucursalesTodasImplicitas = false;
           this.sucursalesSeleccionadas = [String(user.id_sucursal)];
           setTimeout(() => {
@@ -112,16 +104,8 @@ export class ResultadosComponent implements OnInit, OnChanges {
           this.sucursalesSeleccionadas = [];
           this.sucursalesTodasImplicitas = true;
         }
-
         this.cdr.markForCheck();
       },
-      error: (err) => {
-        this.alertService.error(err);
-        this.sucursales = [];
-        this.sucursalesSeleccionadas = [];
-        this.sucursalesTodasImplicitas = true;
-        this.cdr.markForCheck();
-      }
     });
   }
 

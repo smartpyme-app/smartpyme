@@ -1,4 +1,54 @@
 <div class="control-cuentas-section">
+    <ng-template #cuentasCxcChartLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 200px; color: #3366cc;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando gráfico…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxcMetricasLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 100px; color: #3366cc;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Cargando métricas…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxcListLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 280px; color: #3366cc;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxcTableLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 420px; color: #3366cc;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando tabla…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxpChartLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 200px; color: #F19447;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando gráfico…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxpListLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 280px; color: #F19447;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxpTableLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 420px; color: #F19447;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando tabla…</span>
+            </div>
+        </div>
+    </ng-template>
+
     <!-- Filtros específicos de Control de Cuentas -->
     <div class="row mb-4">
         <div class="col-12">
@@ -90,8 +140,8 @@
         </div>
     </div>
 
-    <!-- Sección de cards de métricas -->
-    <div class="row mb-4">
+    <!-- Sección de cards de métricas (CXC — bloque crítico) -->
+    <div class="row mb-4" *ngIf="datos?.metricasCuentas; else cuentasCxcMetricasLoader">
         <div class="col-12">
             <div class="row g-3">
                 <!-- Card: Cuentas por cobrar (Total) -->
@@ -184,13 +234,10 @@
                 </div>
                 <div class="card-body">
                     <app-pie-chart 
+                        *ngIf="datos.cuentasPorVigenciaConfig; else cuentasCxcChartLoader"
                         [config]="datos.cuentasPorVigenciaConfig"
-                        (itemClick)="onVigenciaClick($event)"
-                        *ngIf="datos.cuentasPorVigenciaConfig">
+                        (itemClick)="onVigenciaClick($event)">
                     </app-pie-chart>
-                    <div *ngIf="!datos.cuentasPorVigenciaConfig" class="text-center p-4 text-muted">
-                        <p class="mb-0">No hay datos disponibles para mostrar</p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -216,12 +263,14 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <app-accounts-list 
-                        title=""
-                        [accounts]="datos.cuentasPorCobrarClientes || []"
-                        type="receivable"
-                        (itemClick)="onClienteCuentaClick($event)">
-                    </app-accounts-list>
+                    <ng-container *ngIf="datos.cuentasPorCobrarClientes !== undefined; else cuentasCxcListLoader">
+                        <app-accounts-list 
+                            title=""
+                            [accounts]="datos.cuentasPorCobrarClientes || []"
+                            type="receivable"
+                            (itemClick)="onClienteCuentaClick($event)">
+                        </app-accounts-list>
+                    </ng-container>
                 </div>
             </div>
         </div>
@@ -234,7 +283,7 @@
                 <div class="card-header bg-white border-0 py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 fw-bold">Detalle de cuentas por cobrar</h5>
-                        <div class="d-flex gap-2 align-items-center">
+                        <div class="d-flex gap-2 align-items-center" *ngIf="datos.detalleCuentasPorCobrar !== undefined">
                             <!-- Buscador global -->
                             <div class="input-group" style="width: 250px;">
                                 <span class="input-group-text bg-white border-end-0">
@@ -270,20 +319,22 @@
                     </div>
                 </div>
                 <div class="card-body px-3 py-0">
-                    <ag-grid-angular
-                        #detalleCuentasGrid
-                        class="ag-theme-alpine detalle-cuentas-grid"
-                        [rowData]="detalleCuentasRows"
-                        [columnDefs]="detalleCuentasColumnDefs"
-                        [gridOptions]="detalleCuentasGridOptions"
-                        [defaultColDef]="{
-                            resizable: true,
-                            sortable: true,
-                            filter: true
-                        }"
-                        style="width: 100%; height: 450px;"
-                        [domLayout]="'normal'">
-                    </ag-grid-angular>
+                    <ng-container *ngIf="datos.detalleCuentasPorCobrar !== undefined; else cuentasCxcTableLoader">
+                        <ag-grid-angular
+                            #detalleCuentasGrid
+                            class="ag-theme-alpine detalle-cuentas-grid"
+                            [rowData]="detalleCuentasRows"
+                            [columnDefs]="detalleCuentasColumnDefs"
+                            [gridOptions]="detalleCuentasGridOptions"
+                            [defaultColDef]="{
+                                resizable: true,
+                                sortable: true,
+                                filter: true
+                            }"
+                            style="width: 100%; height: 450px;"
+                            [domLayout]="'normal'">
+                        </ag-grid-angular>
+                    </ng-container>
                 </div>
             </div>
         </div>
@@ -486,13 +537,10 @@
                 </div>
                 <div class="card-body">
                     <app-pie-chart 
+                        *ngIf="datos.cuentasPorPagarVigenciaConfig !== undefined; else cuentasCxpChartLoader"
                         [config]="datos.cuentasPorPagarVigenciaConfig"
-                        (itemClick)="onVigenciaPagarClick($event)"
-                        *ngIf="datos.cuentasPorPagarVigenciaConfig">
+                        (itemClick)="onVigenciaPagarClick($event)">
                     </app-pie-chart>
-                    <div *ngIf="!datos.cuentasPorPagarVigenciaConfig" class="text-center p-4 text-muted">
-                        <p class="mb-0">No hay datos disponibles para mostrar</p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -518,12 +566,14 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <app-accounts-list 
-                        title=""
-                        [accounts]="datos.cuentasPorPagarProveedores || []"
-                        type="payable"
-                        (itemClick)="onProveedorCuentaClick($event)">
-                    </app-accounts-list>
+                    <ng-container *ngIf="datos.cuentasPorPagarProveedores !== undefined; else cuentasCxpListLoader">
+                        <app-accounts-list 
+                            title=""
+                            [accounts]="datos.cuentasPorPagarProveedores || []"
+                            type="payable"
+                            (itemClick)="onProveedorCuentaClick($event)">
+                        </app-accounts-list>
+                    </ng-container>
                 </div>
             </div>
         </div>
@@ -536,7 +586,7 @@
                 <div class="card-header bg-white border-0 py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 fw-bold" style="color: #F19447;">Resumen de cuentas por pagar</h5>
-                        <div class="d-flex gap-2 align-items-center">
+                        <div class="d-flex gap-2 align-items-center" *ngIf="datos.resumenCuentasPorPagar !== undefined">
                             <!-- Buscador global -->
                             <div class="input-group" style="width: 250px;">
                                 <span class="input-group-text bg-white border-end-0">
@@ -572,20 +622,22 @@
                     </div>
                 </div>
                 <div class="card-body px-3 py-0">
-                    <ag-grid-angular
-                        #resumenCuentasPagarGrid
-                        class="ag-theme-alpine resumen-cuentas-pagar-grid"
-                        [rowData]="resumenCuentasPagarRows"
-                        [columnDefs]="resumenCuentasPagarColumnDefs"
-                        [gridOptions]="resumenCuentasPagarGridOptions"
-                        [defaultColDef]="{
-                            resizable: true,
-                            sortable: true,
-                            filter: true
-                        }"
-                        style="width: 100%; height: 450px;"
-                        [domLayout]="'normal'">
-                    </ag-grid-angular>
+                    <ng-container *ngIf="datos.resumenCuentasPorPagar !== undefined; else cuentasCxpTableLoader">
+                        <ag-grid-angular
+                            #resumenCuentasPagarGrid
+                            class="ag-theme-alpine resumen-cuentas-pagar-grid"
+                            [rowData]="resumenCuentasPagarRows"
+                            [columnDefs]="resumenCuentasPagarColumnDefs"
+                            [gridOptions]="resumenCuentasPagarGridOptions"
+                            [defaultColDef]="{
+                                resizable: true,
+                                sortable: true,
+                                filter: true
+                            }"
+                            style="width: 100%; height: 450px;"
+                            [domLayout]="'normal'">
+                        </ag-grid-angular>
+                    </ng-container>
                 </div>
             </div>
         </div>

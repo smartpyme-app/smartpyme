@@ -119,7 +119,23 @@ export class VentasDashboardDataService {
       topProductos: safe(`/api/ventas/top-productos?${p}&limite=15`),
       topClientes: safe(`/api/ventas/top-clientes?${p}&limite=25`),
       detalleClientes: safe(`/api/ventas/detalle-clientes?${p}`),
-    }).pipe(map((r) => this.mapearVentasPesado(r)));
+      detalleProductos: safe(`/api/ventas/detalle-productos?${p}`),
+    }).pipe(
+      map((r) => ({
+        ...this.mapearVentasPesado(r),
+        ventasPorProducto: (r.detalleProductos ?? []).map((i: any) => ({
+          categoria: i.categoria,
+          producto: i.producto,
+          formaPago: i.formaPago,
+          cantidad: i.cantidad,
+          precioUnitario: i.precioUnitario,
+          descuento: i.descuento,
+          ventasSinIVA: i.ventasConIva,
+          costoTotal: i.costoTotal,
+          utilidad: i.utilidad,
+        })),
+      })),
+    );
 
     return critico$.pipe(
       switchMap((c) =>
@@ -149,6 +165,7 @@ export class VentasDashboardDataService {
       topProductos: safe(`/api/ventas/top-productos?${p}&limite=15`),
       topClientes: safe(`/api/ventas/top-clientes?${p}&limite=25`),
       detalleClientes: safe(`/api/ventas/detalle-clientes?${p}`),
+      detalleProductos: safe(`/api/ventas/detalle-productos?${p}`),
     }).pipe(
       map((all) => ({
         ...this.mapearVentasCritico({
@@ -166,6 +183,17 @@ export class VentasDashboardDataService {
           topClientes: all.topClientes,
           detalleClientes: all.detalleClientes,
         }),
+        ventasPorProducto: (all.detalleProductos ?? []).map((i: any) => ({
+          categoria: i.categoria,
+          producto: i.producto,
+          formaPago: i.formaPago,
+          cantidad: i.cantidad,
+          precioUnitario: i.precioUnitario,
+          descuento: i.descuento,
+          ventasSinIVA: i.ventasConIva,
+          costoTotal: i.costoTotal,
+          utilidad: i.utilidad,
+        })),
       })),
     );
   }

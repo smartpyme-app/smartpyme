@@ -254,12 +254,6 @@ export class GastosComponent implements OnInit, OnChanges {
     // });
 
     if (this.datos && Object.keys(this.datos).length > 0) {
-      // Verificar si detalleGastos existe, si no, intentar usar datos originales del servicio
-      if (!this.datos.detalleGastos) {
-        console.warn('GastosComponent - detalleGastos no existe en datos, verificando estructura completa');
-        // console.log('Estructura completa de datos:', JSON.stringify(this.datos, null, 2));
-      }
-      
       // Guardar datos originales
       this.datosOriginales = this.clonarDatos(this.datos);
       // Inicializar datos filtrados
@@ -841,14 +835,6 @@ export class GastosComponent implements OnInit, OnChanges {
   // Getter para obtener los datos correctos (filtrados o originales)
   get datosParaVista(): any {
     return this.datosFiltrados && Object.keys(this.datosFiltrados).length > 0 ? this.datosFiltrados : this.datos;
-  }
-
-  // Helper para verificar si hay datos disponibles
-  tieneDatos(): boolean {
-    return !!(this.datos &&
-              this.datos.detalleGastos &&
-              Array.isArray(this.datos.detalleGastos) &&
-              this.datos.detalleGastos.length > 0);
   }
 
   // ─────────────────────────────────────────────

@@ -1,4 +1,9 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { ApiService } from '@services/api.service';
+import {
+  DashboardFiltrosCatalogoService,
+  DashboardFiltroCatalogoItem,
+} from '../../services/dashboard-filtros-catalogo.service';
 import { DropdownMultiFiltroSelection } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
@@ -57,11 +62,10 @@ export class VentasComponent implements OnInit, OnChanges {
   filtroAdVendedorTodasImplicitas = true;
   filtroAdVendedorSeleccionadas: string[] = [];
 
-  // Opciones para filtros
-  sucursales: any[] = [];
-  canales: any[] = [];
-  clientes: any[] = [];
-  vendedores: any[] = [];
+  sucursales: DashboardFiltroCatalogoItem[] = [];
+  canales: DashboardFiltroCatalogoItem[] = [];
+  clientes: DashboardFiltroCatalogoItem[] = [];
+  vendedores: DashboardFiltroCatalogoItem[] = [];
 
   // Vista de métricas
   vistaMetricas: string = 'mes';
@@ -206,7 +210,11 @@ export class VentasComponent implements OnInit, OnChanges {
     }
   ];
 
-  constructor(private cdr: ChangeDetectorRef) { }
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private apiService: ApiService,
+    private filtrosCatalogo: DashboardFiltrosCatalogoService
+  ) { }
 
   private inicializado: boolean = false;
 
@@ -295,165 +303,92 @@ export class VentasComponent implements OnInit, OnChanges {
   }
 
   configurarAGGrid(): void {
+    const usdFmt = (params: any): string => {
+      const v = params.value;
+      if (v == null || v === '') return '';
+      return this.currencyFormatter.format(Number(v));
+    };
+
     this.ventasPorProductoColumnDefs = [
-      { 
-        field: 'categoria', 
+      {
+        field: 'categoria',
         headerName: 'Categoría',
-        width: 150,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'left' };
-          }
-          return { textAlign: 'left' } as any;
-        }
       },
-      { 
-        field: 'producto', 
+      {
+        field: 'producto',
         headerName: 'Producto',
-        width: 400,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'left' };
-          }
-          return { textAlign: 'left' } as any;
-        }
       },
-      { 
-        field: 'formaPago', 
-        headerName: 'Forma de pago',
-        width: 150,
+      {
+        field: 'formaPago',
+        headerName: 'Forma de Pago',
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'left' };
-          }
-          return { textAlign: 'left' } as any;
-        }
       },
-      { 
-        field: 'cantidad', 
+      {
+        field: 'cantidad',
         headerName: 'Cantidad',
-        width: 100,
         sortable: true,
-        filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
-        valueFormatter: (params: any) => {
-          if (params.data?.isTotal) {
-            return params.value ? params.value.toLocaleString('es-GT') : '';
-          }
-          return params.value ? params.value.toLocaleString('es-GT') : '';
-        }
+        filter: 'agNumberColumnFilter',
       },
-      { 
-        field: 'precioUnitario', 
-        headerName: 'Precio unitario',
-        width: 130,
+      {
+        field: 'precioUnitario',
+        headerName: 'Precio Unitario',
         sortable: true,
-        filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        }
+        filter: 'agNumberColumnFilter',
+        valueFormatter: usdFmt,
       },
-      { 
-        field: 'descuento', 
+      {
+        field: 'descuento',
         headerName: 'Descuento',
-        width: 120,
         sortable: true,
-        filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        }
+        filter: 'agNumberColumnFilter',
+        valueFormatter: usdFmt,
       },
-      { 
-        field: 'ventasSinIVA', 
-        headerName: 'Ventas totales sin IVA',
-        width: 180,
+      {
+        field: 'ventasSinIVA',
+        headerName: 'Ventas',
         sortable: true,
-        filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        }
+        filter: 'agNumberColumnFilter',
+        valueFormatter: usdFmt,
       },
-      { 
-        field: 'costoTotal', 
-        headerName: 'Costo total',
-        width: 130,
+      {
+        field: 'costoTotal',
+        headerName: 'Costo Total',
         sortable: true,
-        filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        }
+        filter: 'agNumberColumnFilter',
+        valueFormatter: usdFmt,
       },
-      { 
-        field: 'utilidad', 
+      {
+        field: 'utilidad',
         headerName: 'Utilidad',
-        width: 120,
         sortable: true,
-        filter: true,
+        filter: 'agNumberColumnFilter',
+        valueFormatter: usdFmt,
         cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        }
-      }
+          const base = { textAlign: 'right' as const };
+          const v = params.value;
+          if (v == null || v === '') return base;
+          const n = Number(v);
+          if (n > 0) return { ...base, color: 'green' };
+          if (n < 0) return { ...base, color: 'red' };
+          return base;
+        },
+      },
     ];
 
     this.ventasPorProductoGridOptions = {
-      defaultColDef: {
-        resizable: true,
-        sortable: true,
-        filter: true
-      },
-      getRowClass: (params: any) => {
-        if (params.data?.isTotal) {
-          return 'ag-row-total';
-        }
-        return '';
-      },
-      // Habilitar selección de texto en celdas
-      enableCellTextSelection: true,
-      ensureDomOrder: true,
-      // Habilitar rangos de celdas (selección múltiple)
-      enableRangeSelection: true,
-      // Eventos de celda
-      onCellClicked: (params: any) => {
-        this.onCellClicked(params);
-      },
-      onCellDoubleClicked: (params: any) => {
-        this.onCellDoubleClicked(params);
-      },
-      onCellKeyDown: (params: any) => {
-        this.onCellKeyDown(params);
-      },
+      pagination: true,
+      paginationPageSize: 20,
+      suppressMenuHide: true,
+      quickFilterText: '',
       onGridReady: (params: any) => {
         this.gridApi = params.api;
         this.gridColumnApi = params.columnApi;
       },
-      suppressExcelExport: false,
-      suppressCsvExport: false
     };
   }
 
@@ -552,7 +487,6 @@ export class VentasComponent implements OnInit, OnChanges {
       },
       enableCellTextSelection: true,
       ensureDomOrder: true,
-      enableRangeSelection: true,
       suppressScrollOnNewData: false,
       onCellDoubleClicked: (params: any) => {
         if (params.value !== null && params.value !== undefined) {
@@ -625,15 +559,62 @@ export class VentasComponent implements OnInit, OnChanges {
     }
   }
 
+  /**
+   * Catálogos vía `DashboardFiltrosCatalogoService` (una petición por recurso en la sesión).
+   */
   cargarOpcionesFiltros(): void {
-    // Aquí cargarías las opciones desde el servicio
-    // Por ahora valores de ejemplo
-    this.sucursales = [];
-    this.canales = [];
-    this.clientes = [];
-    this.vendedores = [];
     this.categoriasProductos = [];
     this.productos = [];
+
+    this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
+      next: (items) => {
+        this.sucursales = items;
+        const user = this.apiService.auth_user();
+        if (items.length === 0) {
+          this.filtroAdSucursalSeleccionadas = [];
+          this.filtroAdSucursalTodasImplicitas = true;
+        } else if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
+          this.filtroAdSucursalTodasImplicitas = false;
+          this.filtroAdSucursalSeleccionadas = [String(user.id_sucursal)];
+          setTimeout(() => {
+            if (this.inicializado) {
+              this.aplicarFiltros();
+            }
+          }, 150);
+        } else if (user?.tipo === 'Administrador') {
+          this.filtroAdSucursalSeleccionadas = [];
+          this.filtroAdSucursalTodasImplicitas = true;
+        }
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.canalesParaFiltro().subscribe({
+      next: (items) => {
+        this.canales = items;
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.clientesParaFiltro().subscribe({
+      next: (items) => {
+        this.clientes = items;
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.vendedoresParaFiltro().subscribe({
+      next: (items) => {
+        this.vendedores = items;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Usuario con una sola sucursal asignada no puede cambiar el filtro (como Resultados). */
+  get filtroAdSucursalMultiDisabled(): boolean {
+    const user = this.apiService.auth_user();
+    return user?.tipo !== 'Administrador' && this.sucursales.length <= 1;
   }
 
   private idsDeListaFiltro(items: any[]): string[] {
@@ -976,7 +957,7 @@ export class VentasComponent implements OnInit, OnChanges {
   }
 
   get ventasPorProductoRows(): any[] {
-    return this._ventasPorProductoRowsCache;
+    return this.datos?.ventasPorProducto ?? [];
   }
 
   get totalVentasPorProducto(): any {

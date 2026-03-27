@@ -1,4 +1,40 @@
 <div class="inventario-section">
+    <ng-template #invMetricasLoader>
+        <div class="d-flex align-items-center justify-content-center w-100 py-4" style="min-height: 100px; color: #38528f;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Cargando métricas…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #invChartLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 280px; color: #38528f;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando gráfico…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #invProductosTableLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 450px; color: #38528f;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando detalle de productos…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #invEsBlockLoader>
+        <div class="d-flex align-items-center justify-content-center rounded shadow-sm bg-white" style="min-height: 720px; color: #38528f;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando entradas y salidas…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #invAjustesBlockLoader>
+        <div class="d-flex align-items-center justify-content-center rounded shadow-sm bg-white" style="min-height: 520px; color: #38528f;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando ajustes…</span>
+            </div>
+        </div>
+    </ng-template>
+
     <!-- Filtros específicos de Inventario -->
     <div class="row mb-4">
         <div class="col-12">
@@ -124,6 +160,7 @@
                         </div>
 
                         <!-- Cards de métricas -->
+                        <ng-container *ngIf="datos?.metricasInventario; else invMetricasLoader">
                         <div class="row g-3 flex-grow-1">
                             <!-- Productos en stock -->
                             <div class="col-md-3">
@@ -178,6 +215,7 @@
                                 </div>
                             </div>
                         </div>
+                        </ng-container>
                     </div>
                 </div>
             </div>
@@ -193,17 +231,19 @@
                     <h5 class="mb-0 fw-bold">Stock por Categoría</h5>
                 </div>
                 <div class="card-body">
+                    <ng-container *ngIf="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) || datos.stockPorCategoriaConfig; else invChartLoader">
                     <app-bar-chart 
                         [config]="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) ? datosFiltrados.stockPorCategoriaConfig : datos.stockPorCategoriaConfig" 
-                        (itemClick)="onCategoriaStockClick($event)"
-                        *ngIf="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) || datos.stockPorCategoriaConfig">
+                        (itemClick)="onCategoriaStockClick($event)">
                     </app-bar-chart>
+                    </ng-container>
                 </div>
             </div>
         </div>
 
         <!-- Tabla de detalle de inventario (derecha) -->
         <div class="col-md-6 mb-4">
+            <ng-container *ngIf="datos?.detalleInventario !== undefined; else invProductosTableLoader">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 py-3">
                     <div class="d-flex justify-content-between align-items-center">
@@ -260,10 +300,12 @@
                     </ag-grid-angular>
                 </div>
             </div>
+            </ng-container>
         </div>
     </div>
 
     <!-- Sección Entradas y salidas -->
+    <ng-container *ngIf="datos?.entradasSalidas !== undefined; else invEsBlockLoader">
     <div class="row mb-4">
         <div class="col-12">
             <!-- Título de la sección -->
@@ -410,8 +452,10 @@
             </div>
         </div>
     </div>
+    </ng-container>
 
     <!-- Sección Ajustes -->
+    <ng-container *ngIf="datos?.ajustes !== undefined; else invAjustesBlockLoader">
     <div class="row mb-4">
         <div class="col-12">
             <!-- Título de la sección -->
@@ -540,4 +584,5 @@
             </div>
         </div>
     </div>
+    </ng-container>
 </div>

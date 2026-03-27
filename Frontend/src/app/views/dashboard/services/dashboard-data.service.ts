@@ -28,11 +28,11 @@ export class DashboardDataService {
       case 'Ventas':
         return this.ventasData.obtenerVentasProgresivo(filtros);
       case 'Gastos':
-        return this.gastosData.obtenerGastos(filtros);
+        return this.gastosData.obtenerGastosProgresivo(filtros);
       case 'Control de cuentas':
-        return this.cuentasData.obtenerCuentas(filtros);
+        return this.cuentasData.obtenerCuentasProgresivo(filtros);
       case 'Inventario':
-        return this.inventarioData.obtenerInventario(filtros);
+        return this.inventarioData.obtenerInventarioProgresivo(filtros);
       default:
         return this.resultadosData.obtenerResultadosProgresivo(filtros);
     }
@@ -54,12 +54,24 @@ export class DashboardDataService {
     return this.ventasData.obtenerVentas(filtros);
   }
 
+  obtenerGastosProgresivo(filtros: any): Observable<any> {
+    return this.gastosData.obtenerGastosProgresivo(filtros);
+  }
+
   obtenerGastos(filtros: any): Observable<any> {
     return this.gastosData.obtenerGastos(filtros);
   }
 
+  obtenerCuentasProgresivo(filtros: any): Observable<any> {
+    return this.cuentasData.obtenerCuentasProgresivo(filtros);
+  }
+
   obtenerCuentas(filtros: any): Observable<any> {
     return this.cuentasData.obtenerCuentas(filtros);
+  }
+
+  obtenerInventarioProgresivo(filtros: any): Observable<any> {
+    return this.inventarioData.obtenerInventarioProgresivo(filtros);
   }
 
   obtenerInventario(filtros: any): Observable<any> {
