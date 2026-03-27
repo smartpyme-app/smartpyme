@@ -48,15 +48,15 @@
             <button class="tcla-F3 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()"
                 routerLink="/productos">Todos</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Ajustes</button>
+                    *ngIf="apiService.canAccederOperacionesInventario()">Ajustes</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Traslados</button>
+                    *ngIf="apiService.canAccederOperacionesInventario()">Traslados</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Consignas</button>
+                    *ngIf="apiService.canAccederOperacionesInventario()">Consignas</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Entradas</button>
+                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Entradas</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Salidas</button>
+                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Salidas</button>
         </div>
         <div class="ms-auto d-flex gap-2">
             <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" 
