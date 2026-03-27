@@ -43,7 +43,7 @@
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/servicios">Servicios</a></li>
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/promociones">Promociones</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/traslados">Traslados</a></li>
+            <li *ngIf="apiService.esSoloAdministrador()"><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/traslados">Traslados</a></li>
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/bodegas">Bodegas</a></li>
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/categorias">Categorias</a></li>
             <li><hr class="dropdown-divider"></li>

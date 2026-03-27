@@ -482,6 +482,16 @@ export class ApiService {
     return false;
   }
 
+  /** Rol estricto Administrador (p. ej. ajustes y traslados de inventario). */
+  esSoloAdministrador(): boolean {
+    return this.auth_user()?.tipo === 'Administrador';
+  }
+
+  /** Ajustes, traslados, consignas, entradas y salidas de inventario. */
+  canAccederOperacionesInventario(): boolean {
+    return this.esSoloAdministrador();
+  }
+
   canDelete() {
     let usuario = this.auth_user();
     if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')

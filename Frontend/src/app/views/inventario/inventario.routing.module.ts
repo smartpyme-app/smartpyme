@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '@layout/layout.component';
 import { CitasGuard } from '@guards/citas.guard';
-import { AdminGuard } from '@guards/admin.guard';
+import { SoloAdministradorGuard } from '@guards/solo-administrador.guard';
 
 import { ProductosComponent } from '@views/inventario/productos/productos.component';
 import { ProductoComponent } from '@views/inventario/productos/producto/producto.component';
@@ -82,6 +82,7 @@ const routes: Routes = [
 
       {
         path: 'consignas',
+        canActivate: [SoloAdministradorGuard],
         component: ProductosConsignasComponent,
         title: 'Productos en consigna',
       },
@@ -117,8 +118,8 @@ const routes: Routes = [
       { path: 'kardex/:id', component: KardexComponent },
       { path: 'promociones', component: PromocionesComponent },
 
-      { path: 'traslados', component: TrasladosComponent, title: 'Traslados' },
-      { path: 'traslado/:id', component: TrasladoComponent, title: 'Traslado' },
+      { path: 'traslados', canActivate: [SoloAdministradorGuard], component: TrasladosComponent, title: 'Traslados' },
+      { path: 'traslado/:id', canActivate: [SoloAdministradorGuard], component: TrasladoComponent, title: 'Traslado' },
 
       {
         path: 'categorias',
@@ -126,8 +127,8 @@ const routes: Routes = [
         title: 'Categorias',
       },
 
-      { path: 'ajustes', component: AjustesComponent, title: 'Ajustes' },
-      { path: 'ajuste/:id', component: AjusteComponent, title: 'Ajuste' },
+      { path: 'ajustes', canActivate: [SoloAdministradorGuard], component: AjustesComponent, title: 'Ajustes' },
+      { path: 'ajuste/:id', canActivate: [SoloAdministradorGuard], component: AjusteComponent, title: 'Ajuste' },
 
       {
         path: 'servicios',
@@ -170,12 +171,12 @@ const routes: Routes = [
         title: 'Campos personalizados',
       },
        // Nuevas rutas para entradas y salidas
-       { path: 'entradas', component: InventarioEntradasComponent, title: 'Entradas de Inventario' },
-       { path: 'entrada/:id', component: InventarioEntradaComponent, title: 'Entrada de Inventario' },
-       { path: 'entrada/detalle/:id', component: EntradaDetalleComponent, title: 'Detalle de entrada' },
-       { path: 'salidas', component: InventarioSalidasComponent, title: 'Salidas de Inventario' },
-       { path: 'salida/:id', component: InventarioSalidaComponent, title: 'Salida de Inventario' },
-       { path: 'salida/detalle/:id', component: SalidaDetalleComponent, title: 'Detalle de salida' },
+       { path: 'entradas', canActivate: [SoloAdministradorGuard], component: InventarioEntradasComponent, title: 'Entradas de Inventario' },
+       { path: 'entrada/:id', canActivate: [SoloAdministradorGuard], component: InventarioEntradaComponent, title: 'Entrada de Inventario' },
+       { path: 'entrada/detalle/:id', canActivate: [SoloAdministradorGuard], component: EntradaDetalleComponent, title: 'Detalle de entrada' },
+       { path: 'salidas', canActivate: [SoloAdministradorGuard], component: InventarioSalidasComponent, title: 'Salidas de Inventario' },
+       { path: 'salida/:id', canActivate: [SoloAdministradorGuard], component: InventarioSalidaComponent, title: 'Salida de Inventario' },
+       { path: 'salida/detalle/:id', canActivate: [SoloAdministradorGuard], component: SalidaDetalleComponent, title: 'Detalle de salida' },
     ],
   },
 ];
