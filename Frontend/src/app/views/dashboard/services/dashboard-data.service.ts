@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, forkJoin, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, switchMap, startWith } from 'rxjs/operators';
 import { ApiService } from '@services/api.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
@@ -206,123 +206,201 @@ export class DashboardDataService {
   // DASHBOARD 2 — VENTAS
   // ─────────────────────────────────────────────
 
+  /** Petición HTTP con fallback; no propaga error al forkJoin. */
+  private ventasGetSafe(url: string): Observable<any> {
+    return this.get(url).pipe(catchError(() => of(null)));
+  }
+
+  private mapearVentasCritico(raw: {
+    cards: any;
+    porMes: any;
+    vsPresupuesto: any;
+    vsAnioAnterior: any;
+  }): Record<string, unknown> {
+    const { cards, porMes, vsPresupuesto, vsAnioAnterior } = raw;
+    return {
+      metricasVentas: {
+        ventasConIVA: cards?.ventasConIva ?? 0,
+        ventasSinIVA: cards?.ventasSinIva ?? 0,
+        transacciones: cards?.transacciones ?? 0,
+        ticketPromedio: cards?.ticketPromedio ?? 0,
+      },
+      ventasPorMesConfig: {
+        type: 'line',
+        labels: (porMes ?? []).map((f: any) => f.anioMes),
+        data: (porMes ?? []).map((f: any) => f.ventas),
+      },
+      ventasVsPresupuestoConfig: {
+        type: 'bar',
+        labels: (vsPresupuesto ?? []).map((f: any) => f.anioMes),
+        data: (vsPresupuesto ?? []).map((f: any) => f.ventas),
+        dataExtra: (vsPresupuesto ?? []).map((f: any) => f.presupuesto),
+      },
+      ventasVsAnioAnteriorConfig: {
+        type: 'bar',
+        labels: (vsAnioAnterior ?? []).map((f: any) => f.anioMes),
+        data: (vsAnioAnterior ?? []).map((f: any) => f.anioActual),
+        dataExtra: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior),
+      },
+    };
+  }
+
+  private mapearVentasPesado(raw: {
+    porCanal: any;
+    porVendedor: any;
+    porFormaPago: any;
+    porCategoria: any;
+    topProductos: any;
+    topClientes: any;
+    detalleClientes: any;
+  }): Record<string, unknown> {
+    const {
+      porCanal,
+      porVendedor,
+      porFormaPago,
+      porCategoria,
+      topProductos,
+      topClientes,
+      detalleClientes,
+    } = raw;
+    return {
+      ventasPorCanal: (porCanal ?? []).map((i: any) => ({
+        name: i.name,
+        amount: i.amount,
+      })),
+      ventasPorVendedorChartConfig: {
+        type: 'bar',
+        labels: (porVendedor ?? []).map((i: any) => i.name),
+        data: (porVendedor ?? []).map((i: any) => i.amount),
+      },
+      ventasPorFormaPagoConfig: {
+        type: 'doughnut',
+        labels: (porFormaPago ?? []).map((i: any) => i.formaPago),
+        data: (porFormaPago ?? []).map((i: any) => i.ventas),
+      },
+      ventasPorCategoria: (porCategoria ?? []).map((i: any) => ({
+        name: i.categoria,
+        amount: i.ventasConIva,
+      })),
+      topProductosVendidos: (topProductos ?? []).map((i: any) => ({
+        name: i.producto,
+        amount: i.ventasConIva,
+      })),
+      topClientes: (topClientes ?? []).map((i: any) => ({
+        name: i.name,
+        amount: i.amount,
+      })),
+      ventasPorCliente: (detalleClientes ?? []).map((i: any) => ({
+        cliente: i.cliente,
+        ultimaVenta: i.ultimaVentaMes,
+        dias: 0,
+        transacciones: i.transacciones,
+        ventas: i.ventasConIva,
+      })),
+    };
+  }
+
+  /**
+   * Carga en dos fases: métricas y gráficos principales primero; listas y detalle después.
+   * Cada emisión es un objeto nuevo (spread) para OnPush.
+   */
+  obtenerVentasProgresivo(filtros: any = {}): Observable<any> {
+    const p = this.params(filtros);
+    const pVendedor = filtros?.vendedor ? `&vendedor=${filtros.vendedor}` : '';
+
+    const critico$ = forkJoin({
+      cards: this.ventasGetSafe(`${this.api}/api/ventas/cards?${p}`),
+      porMes: this.ventasGetSafe(`${this.api}/api/ventas/por-mes?${p}`),
+      vsPresupuesto: this.ventasGetSafe(
+        `${this.api}/api/ventas/vs-presupuesto?${p}`,
+      ),
+      vsAnioAnterior: this.ventasGetSafe(
+        `${this.api}/api/ventas/vs-anio-anterior?${p}`,
+      ),
+    }).pipe(map((r) => this.mapearVentasCritico(r)));
+
+    const pesado$ = forkJoin({
+      porCanal: this.ventasGetSafe(`${this.api}/api/ventas/por-canal?${p}`),
+      porVendedor: this.ventasGetSafe(
+        `${this.api}/api/ventas/por-vendedor?${p}${pVendedor}`,
+      ),
+      porFormaPago: this.ventasGetSafe(
+        `${this.api}/api/ventas/por-forma-pago?${p}`,
+      ),
+      porCategoria: this.ventasGetSafe(
+        `${this.api}/api/ventas/por-categoria?${p}`,
+      ),
+      topProductos: this.ventasGetSafe(
+        `${this.api}/api/ventas/top-productos?${p}&limite=15`,
+      ),
+      topClientes: this.ventasGetSafe(
+        `${this.api}/api/ventas/top-clientes?${p}&limite=25`,
+      ),
+      detalleClientes: this.ventasGetSafe(
+        `${this.api}/api/ventas/detalle-clientes?${p}`,
+      ),
+    }).pipe(map((r) => this.mapearVentasPesado(r)));
+
+    return critico$.pipe(
+      switchMap((c) =>
+        pesado$.pipe(
+          map((p) => ({ ...c, ...p })),
+          startWith(c),
+        ),
+      ),
+    );
+  }
+
   obtenerVentas(filtros: any = {}): Observable<any> {
     const p = this.params(filtros);
     const pVendedor = filtros?.vendedor ? `&vendedor=${filtros.vendedor}` : '';
-    const pCanal = filtros?.canal ? `&canal=${filtros.canal}` : '';
 
     return forkJoin({
-      cards: this.get(`${this.api}/api/ventas/cards?${p}`),
-      porMes: this.get(`${this.api}/api/ventas/por-mes?${p}`),
-      vsPresupuesto: this.get(`${this.api}/api/ventas/vs-presupuesto?${p}`),
-      vsAnioAnterior: this.get(`${this.api}/api/ventas/vs-anio-anterior?${p}`),
-      porCanal: this.get(`${this.api}/api/ventas/por-canal?${p}`),
-      porVendedor: this.get(
+      cards: this.ventasGetSafe(`${this.api}/api/ventas/cards?${p}`),
+      porMes: this.ventasGetSafe(`${this.api}/api/ventas/por-mes?${p}`),
+      vsPresupuesto: this.ventasGetSafe(
+        `${this.api}/api/ventas/vs-presupuesto?${p}`,
+      ),
+      vsAnioAnterior: this.ventasGetSafe(
+        `${this.api}/api/ventas/vs-anio-anterior?${p}`,
+      ),
+      porCanal: this.ventasGetSafe(`${this.api}/api/ventas/por-canal?${p}`),
+      porVendedor: this.ventasGetSafe(
         `${this.api}/api/ventas/por-vendedor?${p}${pVendedor}`,
       ),
-      porFormaPago: this.get(`${this.api}/api/ventas/por-forma-pago?${p}`),
-      porCategoria: this.get(`${this.api}/api/ventas/por-categoria?${p}`),
-      topProductos: this.get(
+      porFormaPago: this.ventasGetSafe(
+        `${this.api}/api/ventas/por-forma-pago?${p}`,
+      ),
+      porCategoria: this.ventasGetSafe(
+        `${this.api}/api/ventas/por-categoria?${p}`,
+      ),
+      topProductos: this.ventasGetSafe(
         `${this.api}/api/ventas/top-productos?${p}&limite=15`,
       ),
-      topClientes: this.get(
+      topClientes: this.ventasGetSafe(
         `${this.api}/api/ventas/top-clientes?${p}&limite=25`,
       ),
-      detalleClientes: this.get(`${this.api}/api/ventas/detalle-clientes?${p}`),
-    }).pipe(
-      map(
-        ({
-          cards,
-          porMes,
-          vsPresupuesto,
-          vsAnioAnterior,
-          porCanal,
-          porVendedor,
-          porFormaPago,
-          porCategoria,
-          topProductos,
-          topClientes,
-          detalleClientes,
-        }) => ({
-          // Cards
-          metricasVentas: {
-            ventasConIVA: cards?.ventasConIva ?? 0,
-            ventasSinIVA: cards?.ventasSinIva ?? 0,
-            transacciones: cards?.transacciones ?? 0,
-            ticketPromedio: cards?.ticketPromedio ?? 0,
-          },
-
-          // Gráfico por mes (línea)
-          ventasPorMesConfig: {
-            type: 'line',
-            labels: (porMes ?? []).map((f: any) => f.anioMes),
-            data: (porMes ?? []).map((f: any) => f.ventas),
-          },
-
-          // Vs presupuesto (barras agrupadas)
-          ventasVsPresupuestoConfig: {
-            type: 'bar',
-            labels: (vsPresupuesto ?? []).map((f: any) => f.anioMes),
-            data: (vsPresupuesto ?? []).map((f: any) => f.ventas),
-            dataExtra: (vsPresupuesto ?? []).map((f: any) => f.presupuesto),
-          },
-
-          // Vs año anterior
-          ventasVsAnioAnteriorConfig: {
-            type: 'bar',
-            labels: (vsAnioAnterior ?? []).map((f: any) => f.anioMes),
-            data: (vsAnioAnterior ?? []).map((f: any) => f.anioActual),
-            dataExtra: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior),
-          },
-
-          // Por canal
-          ventasPorCanal: (porCanal ?? []).map((i: any) => ({
-            name: i.name,
-            amount: i.amount,
-          })),
-
-          // Por vendedor (barras)
-          ventasPorVendedorChartConfig: {
-            type: 'bar',
-            labels: (porVendedor ?? []).map((i: any) => i.name),
-            data: (porVendedor ?? []).map((i: any) => i.amount),
-          },
-
-          // Por forma de pago
-          ventasPorFormaPagoConfig: {
-            type: 'doughnut',
-            labels: (porFormaPago ?? []).map((i: any) => i.formaPago),
-            data: (porFormaPago ?? []).map((i: any) => i.ventas),
-          },
-
-          // Por categoría
-          ventasPorCategoria: (porCategoria ?? []).map((i: any) => ({
-            name: i.categoria,
-            amount: i.ventasConIva,
-          })),
-
-          // Top productos
-          topProductosVendidos: (topProductos ?? []).map((i: any) => ({
-            name: i.producto,
-            amount: i.ventasConIva,
-          })),
-
-          // Top clientes
-          topClientes: (topClientes ?? []).map((i: any) => ({
-            name: i.name,
-            amount: i.amount,
-          })),
-
-          // Detalle clientes
-          ventasPorCliente: (detalleClientes ?? []).map((i: any) => ({
-            cliente: i.cliente,
-            ultimaVenta: i.ultimaVentaMes,
-            dias: 0,
-            transacciones: i.transacciones,
-            ventas: i.ventasConIva,
-          })),
-        }),
+      detalleClientes: this.ventasGetSafe(
+        `${this.api}/api/ventas/detalle-clientes?${p}`,
       ),
+    }).pipe(
+      map((all) => ({
+        ...this.mapearVentasCritico({
+          cards: all.cards,
+          porMes: all.porMes,
+          vsPresupuesto: all.vsPresupuesto,
+          vsAnioAnterior: all.vsAnioAnterior,
+        }),
+        ...this.mapearVentasPesado({
+          porCanal: all.porCanal,
+          porVendedor: all.porVendedor,
+          porFormaPago: all.porFormaPago,
+          porCategoria: all.porCategoria,
+          topProductos: all.topProductos,
+          topClientes: all.topClientes,
+          detalleClientes: all.detalleClientes,
+        }),
+      })),
     );
   }
 
@@ -696,7 +774,7 @@ export class DashboardDataService {
     const seccion = filtros?.seccion ?? 'Resultados';
     switch (seccion) {
       case 'Ventas':
-        return this.obtenerVentas(filtros);
+        return this.obtenerVentasProgresivo(filtros);
       case 'Gastos':
         return this.obtenerGastos(filtros);
       case 'Control de cuentas':

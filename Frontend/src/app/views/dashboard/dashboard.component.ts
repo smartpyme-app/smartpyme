@@ -1,4 +1,6 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from './services/dashboard-data.service';
 
 @Component({
@@ -6,7 +8,8 @@ import { DashboardDataService } from './services/dashboard-data.service';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   
   loading = false;
   datos: any = {};
@@ -29,6 +32,11 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarDatos();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   cambiarSeccion(seccion: any): void {
@@ -130,28 +138,25 @@ export class DashboardComponent implements OnInit {
   }
 
   onFiltrosVentasCambiados(filtros: any): void {
-    // Recargar datos con los filtros específicos de ventas
-    this.loading = true;
-
     const filtrosCompletos = {
       seccion: 'Ventas',
-      ...filtros // Filtros específicos de ventas (fechaInicio, fechaFin, vendedor, etc.)
+      ...filtros,
     };
 
-    this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
-      next: (data) => {
-        // Crear nueva referencia para que OnPush detecte cambios
-        this.datos = { ...(data || {}) };
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error al cargar datos de ventas:', error);
-        this.datos = {};
-        this.loading = false;
-        this.cdr.markForCheck();
-      }
-    });
+    this.dashboardDataService
+      .obtenerVentasProgresivo(filtrosCompletos)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.datos = { ...data };
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          console.error('Error al cargar datos de ventas:', error);
+          this.datos = {};
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   onFiltrosControlCuentasCambiados(filtros: any): void {

@@ -1,4 +1,13 @@
 <div class="ventas-dashboard">
+    <ng-template #ventasChartPlaceholder>
+        <div class="placeholder-glow"><div class="placeholder col-12" style="height: 200px;"></div></div>
+    </ng-template>
+    <ng-template #ventasListPlaceholder>
+        <div class="placeholder-glow"><div class="placeholder col-12" style="height: 280px;"></div></div>
+    </ng-template>
+    <ng-template #ventasMetricasPlaceholder>
+        <div class="placeholder-glow"><div class="placeholder col-12" style="height: 96px;"></div></div>
+    </ng-template>
     <ng-template #filtrosAdicionalesVentasTpl>
         <div class="row g-3">
             <div class="col-12 col-md-6 col-xl-4">
@@ -158,8 +167,8 @@
                             </div>
                         </div>
 
-                        <!-- Cards de métricas a la derecha -->
-                        <div class="row g-3 flex-grow-1">
+                        <!-- Cards de métricas a la derecha (bloque crítico) -->
+                        <div class="row g-3 flex-grow-1" *ngIf="datos?.metricasVentas; else ventasMetricasPlaceholder">
                             <div class="col">
                                 <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
                                     <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
@@ -224,26 +233,27 @@
                     <h5 class="mb-0 fw-bold">{{ getTituloGraficoVentas() }}</h5>
                 </div>
                 <div class="card-body">
-                    <!-- Gráfico de línea para "Ventas por mes" -->
-                    <app-line-chart 
-                        [config]="datos.ventasPorMesConfig" 
-                        (itemClick)="onMesClick($event)"
-                        *ngIf="vistaMetricas === 'mes' && datos.ventasPorMesConfig">
-                    </app-line-chart>
-                    
-                    <!-- Gráfico de barras para "vs Presupuesto" -->
-                    <app-bar-chart 
-                        [config]="datos.ventasVsPresupuestoConfig" 
-                        (itemClick)="onMesClick($event)"
-                        *ngIf="vistaMetricas === 'presupuesto' && datos.ventasVsPresupuestoConfig">
-                    </app-bar-chart>
-                    
-                    <!-- Gráfico de barras para "vs Año anterior" -->
-                    <app-bar-chart 
-                        [config]="datos.ventasVsAnioAnteriorConfig" 
-                        (itemClick)="onMesClick($event)"
-                        *ngIf="vistaMetricas === 'anio' && datos.ventasVsAnioAnteriorConfig">
-                    </app-bar-chart>
+                    <ng-container *ngIf="vistaMetricas === 'mes'">
+                        <app-line-chart 
+                            *ngIf="datos.ventasPorMesConfig; else ventasChartPlaceholder"
+                            [config]="datos.ventasPorMesConfig" 
+                            (itemClick)="onMesClick($event)">
+                        </app-line-chart>
+                    </ng-container>
+                    <ng-container *ngIf="vistaMetricas === 'presupuesto'">
+                        <app-bar-chart 
+                            *ngIf="datos.ventasVsPresupuestoConfig; else ventasChartPlaceholder"
+                            [config]="datos.ventasVsPresupuestoConfig" 
+                            (itemClick)="onMesClick($event)">
+                        </app-bar-chart>
+                    </ng-container>
+                    <ng-container *ngIf="vistaMetricas === 'anio'">
+                        <app-bar-chart 
+                            *ngIf="datos.ventasVsAnioAnteriorConfig; else ventasChartPlaceholder"
+                            [config]="datos.ventasVsAnioAnteriorConfig" 
+                            (itemClick)="onMesClick($event)">
+                        </app-bar-chart>
+                    </ng-container>
                 </div>
             </div>
         </div>
@@ -255,12 +265,14 @@
                     <h5 class="mb-0 fw-bold">Ventas por canal</h5>
                 </div>
                 <div class="card-body">
-                    <app-accounts-list 
-                        title=""
-                        [accounts]="(datosFiltrados.ventasPorCanal || datos.ventasPorCanal || [])"
-                        type="receivable"
-                        (itemClick)="onCanalClick($event)">
-                    </app-accounts-list>
+                    <ng-container *ngIf="datos.ventasPorCanal !== undefined; else ventasListPlaceholder">
+                        <app-accounts-list 
+                            title=""
+                            [accounts]="(datosFiltrados.ventasPorCanal || datos.ventasPorCanal || [])"
+                            type="receivable"
+                            (itemClick)="onCanalClick($event)">
+                        </app-accounts-list>
+                    </ng-container>
                 </div>
             </div>
         </div>
@@ -273,9 +285,10 @@
                 </div>
                 <div class="card-body">
                     <app-bar-chart 
+                        *ngIf="datos.ventasPorVendedorChartConfig; else ventasChartPlaceholder"
                         [config]="datos.ventasPorVendedorChartConfig" 
-                        (itemClick)="onVendedorClick($event)"
-                        *ngIf="datos.ventasPorVendedorChartConfig"></app-bar-chart>
+                        (itemClick)="onVendedorClick($event)">
+                    </app-bar-chart>
                 </div>
             </div>
         </div>
@@ -288,9 +301,10 @@
                 </div>
                 <div class="card-body">
                     <app-bar-chart 
+                        *ngIf="datos.ventasPorFormaPagoConfig; else ventasChartPlaceholder"
                         [config]="datos.ventasPorFormaPagoConfig" 
-                        (itemClick)="onFormaPagoClick($event)"
-                        *ngIf="datos.ventasPorFormaPagoConfig"></app-bar-chart>
+                        (itemClick)="onFormaPagoClick($event)">
+                    </app-bar-chart>
                 </div>
             </div>
         </div>
@@ -357,12 +371,14 @@
                     <h5 class="mb-0 fw-bold">Ventas totales por categoría</h5>
                 </div>
                 <div class="card-body">
-                    <app-accounts-list 
-                        title=""
-                        [accounts]="datos.ventasPorCategoria || []"
-                        type="receivable"
-                        (itemClick)="onCategoriaClick($event)">
-                    </app-accounts-list>
+                    <ng-container *ngIf="datos.ventasPorCategoria !== undefined; else ventasListPlaceholder">
+                        <app-accounts-list 
+                            title=""
+                            [accounts]="datos.ventasPorCategoria || []"
+                            type="receivable"
+                            (itemClick)="onCategoriaClick($event)">
+                        </app-accounts-list>
+                    </ng-container>
                 </div>
             </div>
         </div>
@@ -374,12 +390,14 @@
                     <h5 class="mb-0 fw-bold">Top 15 productos más vendidos</h5>
                 </div>
                 <div class="card-body">
-                    <app-accounts-list 
-                        title=""
-                        [accounts]="datos.topProductosVendidos || []"
-                        type="receivable"
-                        (itemClick)="onProductoClick($event)">
-                    </app-accounts-list>
+                    <ng-container *ngIf="datos.topProductosVendidos !== undefined; else ventasListPlaceholder">
+                        <app-accounts-list 
+                            title=""
+                            [accounts]="datos.topProductosVendidos || []"
+                            type="receivable"
+                            (itemClick)="onProductoClick($event)">
+                        </app-accounts-list>
+                    </ng-container>
                 </div>
             </div>
         </div>
@@ -428,20 +446,22 @@
                     </div>
                 </div>
                 <div class="card-body px-3 py-0">
-                    <ag-grid-angular
-                        #ventasPorProductoGrid
-                        class="ag-theme-alpine ventas-producto-grid"
-                        [rowData]="ventasPorProductoRows"
-                        [columnDefs]="ventasPorProductoColumnDefs"
-                        [gridOptions]="ventasPorProductoGridOptions"
-                        [defaultColDef]="{
-                            resizable: true,
-                            sortable: true,
-                            filter: true
-                        }"
-                        style="width: 100%; height: 450px;"
-                        [domLayout]="'normal'">
-                    </ag-grid-angular>
+                    <ng-container *ngIf="datos.topProductosVendidos !== undefined; else ventasListPlaceholder">
+                        <ag-grid-angular
+                            #ventasPorProductoGrid
+                            class="ag-theme-alpine ventas-producto-grid"
+                            [rowData]="ventasPorProductoRows"
+                            [columnDefs]="ventasPorProductoColumnDefs"
+                            [gridOptions]="ventasPorProductoGridOptions"
+                            [defaultColDef]="{
+                                resizable: true,
+                                sortable: true,
+                                filter: true
+                            }"
+                            style="width: 100%; height: 450px;"
+                            [domLayout]="'normal'">
+                        </ag-grid-angular>
+                    </ng-container>
                 </div>
             </div>
         </div>
@@ -456,12 +476,14 @@
                     <h5 class="mb-0 fw-bold text-center">Top 25 clientes</h5>
                 </div>
                 <div class="card-body">
-                    <app-accounts-list 
-                        title=""
-                        [accounts]="datos.topClientes || []"
-                        type="receivable"
-                        (itemClick)="onClienteClick($event)">
-                    </app-accounts-list>
+                    <ng-container *ngIf="datos.topClientes !== undefined; else ventasListPlaceholder">
+                        <app-accounts-list 
+                            title=""
+                            [accounts]="datos.topClientes || []"
+                            type="receivable"
+                            (itemClick)="onClienteClick($event)">
+                        </app-accounts-list>
+                    </ng-container>
                 </div>
             </div>
         </div>
@@ -473,20 +495,22 @@
                     <h5 class="mb-0 fw-bold text-center">Detalle de ventas por cliente</h5>
                 </div>
                 <div class="card-body p-0" style="height: 450px; overflow: hidden;">
-                    <ag-grid-angular
-                        #ventasPorClienteGrid
-                        class="ag-theme-alpine ventas-cliente-grid"
-                        [rowData]="ventasPorClienteRows"
-                        [columnDefs]="ventasPorClienteColumnDefs"
-                        [gridOptions]="ventasPorClienteGridOptions"
-                        [defaultColDef]="{
-                            resizable: true,
-                            sortable: true,
-                            filter: true
-                        }"
-                        style="width: 100%; height: 100%;"
-                        [domLayout]="'normal'">
-                    </ag-grid-angular>
+                    <ng-container *ngIf="datos.ventasPorCliente !== undefined; else ventasListPlaceholder">
+                        <ag-grid-angular
+                            #ventasPorClienteGrid
+                            class="ag-theme-alpine ventas-cliente-grid"
+                            [rowData]="ventasPorClienteRows"
+                            [columnDefs]="ventasPorClienteColumnDefs"
+                            [gridOptions]="ventasPorClienteGridOptions"
+                            [defaultColDef]="{
+                                resizable: true,
+                                sortable: true,
+                                filter: true
+                            }"
+                            style="width: 100%; height: 100%;"
+                            [domLayout]="'normal'">
+                        </ag-grid-angular>
+                    </ng-container>
                 </div>
             </div>
         </div>
