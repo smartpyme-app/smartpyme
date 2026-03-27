@@ -88,29 +88,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosResultadosCambiados(filtros: any): void {
-    // Recargar datos con los filtros específicos de resultados
-    this.loading = true;
-
     const filtrosCompletos = {
       seccion: 'Resultados',
-      ...filtros // Filtros específicos de resultados (anio, sucursal, presupuesto)
+      ...filtros,
     };
 
-    this.dashboardDataService.obtenerDatosPorFiltro(filtrosCompletos).subscribe({
-      next: (data) => {
-        // Crear una nueva referencia del objeto para que OnPush detecte el cambio
-        this.datos = { ...(data || {}) };
-        console.log('Dashboard - Datos de Resultados actualizados:', this.datos);
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error al cargar datos de resultados:', error);
-        this.datos = {};
-        this.loading = false;
-        this.cdr.markForCheck();
-      }
-    });
+    this.dashboardDataService
+      .obtenerResultadosProgresivo(filtrosCompletos)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.datos = { ...data };
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          console.error('Error al cargar datos de resultados:', error);
+          this.datos = {};
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   onFiltrosGastosCambiados(filtros: any): void {

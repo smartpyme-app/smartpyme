@@ -1,4 +1,32 @@
 <div class="resultados-section">
+    <ng-template #resultadosChartLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 220px;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando gráfico…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #resultadosMetricasLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 100px;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Cargando métricas…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #resultadosListLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 280px;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #resultadosCashflowBlockLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary my-4" style="min-height: 480px;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando flujo de efectivo…</span>
+            </div>
+        </div>
+    </ng-template>
     <!-- Filtros específicos de Resultados -->
     <div class="bg-white p-4 rounded mb-3">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
@@ -37,8 +65,7 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
-        <!-- Tarjetas de métricas -->
+    <div class="row g-3 mb-4" *ngIf="datos?.metrics; else resultadosMetricasLoader">
         <div class="col-md-3 col-sm-6" *ngFor="let metric of datos.metrics; trackBy: trackByIndex">
             <app-chart-card [data]="metric"></app-chart-card>
         </div>
@@ -50,38 +77,40 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title mb-3">Ventas y gastos totales por mes</h5>
-                    <app-bar-chart [config]="datos.ventasGastosConfig"></app-bar-chart>
+                    <app-bar-chart
+                        *ngIf="datos.ventasGastosConfig; else resultadosChartLoader"
+                        [config]="datos.ventasGastosConfig">
+                    </app-bar-chart>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="row mt-4">
-        <!-- Cuentas por cobrar clientes -->
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <app-accounts-list 
-                        title="Cuentas por cobrar clientes"
-                        [accounts]="datos.cuentasPorCobrar || []"
-                        type="receivable">
-                    </app-accounts-list>
+        <ng-container *ngIf="datos.cuentasPorCobrar !== undefined && datos.cuentasPorPagar !== undefined; else resultadosListLoader">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <app-accounts-list 
+                            title="Cuentas por cobrar clientes"
+                            [accounts]="datos.cuentasPorCobrar || []"
+                            type="receivable">
+                        </app-accounts-list>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Cuentas por pagar proveedores -->
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <app-accounts-list 
-                        title="Cuentas por pagar proveedores"
-                        [accounts]="datos.cuentasPorPagar || []"
-                        type="payable">
-                    </app-accounts-list>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <app-accounts-list 
+                            title="Cuentas por pagar proveedores"
+                            [accounts]="datos.cuentasPorPagar || []"
+                            type="payable">
+                        </app-accounts-list>
+                    </div>
                 </div>
             </div>
-        </div>
+        </ng-container>
     </div>
 
     <!-- Sección Flujo de Efectivo -->
@@ -115,41 +144,40 @@
         </div>
     </div>
 
-    <!-- Tarjetas de resumen Flujo de Efectivo (datos.cashflow desde DashboardDataService) -->
-    <div class="row mb-4" *ngIf="datos.cashflow as cf">
-        <div class="col-md-3 mb-3">
-            <div class="card" style="background-color: #e3f2fd; border: none;">
-                <div class="card-body text-center">
-                    <div class="fw-bold text-dark" style="font-size: 1.5rem;">
-                        {{ formatCurrency(cf.ingresosTotales || 0) }}
+    <!-- Resumen + tablas Flujo de Efectivo (bloque pesado) -->
+    <ng-container *ngIf="datos.cashflow !== undefined; else resultadosCashflowBlockLoader">
+        <div class="row mb-4" *ngIf="datos.cashflow as cf">
+            <div class="col-md-3 mb-3">
+                <div class="card" style="background-color: #e3f2fd; border: none;">
+                    <div class="card-body text-center">
+                        <div class="fw-bold text-dark" style="font-size: 1.5rem;">
+                            {{ formatCurrency(cf.ingresosTotales || 0) }}
+                        </div>
+                        <div class="text-muted small mt-1">Ingresos percibidos</div>
                     </div>
-                    <div class="text-muted small mt-1">Ingresos percibidos</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card" style="background-color: #fff3e0; border: none;">
+                    <div class="card-body text-center">
+                        <div class="fw-bold text-dark" style="font-size: 1.5rem;">
+                            {{ formatCurrency(cf.egresosTotales || 0) }}
+                        </div>
+                        <div class="text-muted small mt-1">Egresos realizados</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card" style="background-color: #e8f5e9; border: none;">
+                    <div class="card-body text-center">
+                        <div class="fw-bold text-dark" style="font-size: 1.5rem;">
+                            {{ formatCurrency((cf.ingresosTotales || 0) - (cf.egresosTotales || 0)) }}
+                        </div>
+                        <div class="text-muted small mt-1">Resultados (neto)</div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card" style="background-color: #fff3e0; border: none;">
-                <div class="card-body text-center">
-                    <div class="fw-bold text-dark" style="font-size: 1.5rem;">
-                        {{ formatCurrency(cf.egresosTotales || 0) }}
-                    </div>
-                    <div class="text-muted small mt-1">Egresos realizados</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card" style="background-color: #e8f5e9; border: none;">
-                <div class="card-body text-center">
-                    <div class="fw-bold text-dark" style="font-size: 1.5rem;">
-                        {{ formatCurrency((cf.ingresosTotales || 0) - (cf.egresosTotales || 0)) }}
-                    </div>
-                    <div class="text-muted small mt-1">Resultados (neto)</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tablas de Ventas y Gastos del mes (revo-grid + datos en caché vía ventasRows / gastosRows) -->
     <div class="row" *ngIf="datos.cashflow">
         <div class="col-md-6 mb-4">
             <div class="card">
@@ -248,8 +276,10 @@
             </div>
         </div>
     </div>
+    </ng-container>
 
-    <!-- Tablas de Cuentas por cobrar/pagar a 30 días (datos.cuentas30 desde DashboardDataService) -->
+    <!-- Tablas CXC / CXP próximos 30 días -->
+    <ng-container *ngIf="datos.cuentas30 !== undefined; else resultadosListLoader">
     <div class="row" *ngIf="datos.cuentas30">
         <div class="col-md-6 mb-4">
             <div class="card">
@@ -348,6 +378,7 @@
             </div>
         </div>
     </div>
+    </ng-container>
 
     <!-- Sección Resultados vs presupuesto -->
     <div class="row mt-4" *ngIf="datos.budgetMetrics">

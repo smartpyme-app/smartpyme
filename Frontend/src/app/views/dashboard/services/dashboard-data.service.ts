@@ -93,123 +93,205 @@ export class DashboardDataService {
   // DASHBOARD 1 — RESULTADOS
   // ─────────────────────────────────────────────
 
+  /** Petición con fallback para forkJoin (compartido con Ventas y otros dashboards). */
+  private apiGetSafe(url: string): Observable<any> {
+    return this.get(url).pipe(catchError(() => of(null)));
+  }
+
+  private mapearResultadosCritico(raw: {
+    cards: any;
+    porMes: any;
+    cxc: any;
+    cxp: any;
+  }): Record<string, unknown> {
+    const { cards, porMes, cxc, cxp } = raw;
+    const ventasTotales = cards?.ventasTotalesConIVA ?? 0;
+    const gastosTotales = cards?.gastosTotalesConIVA ?? 0;
+    const resultados = cards?.resultados ?? 0;
+    const margen = cards?.margen ?? 0;
+    const cxcTotal = cards?.cuentasPorCobrar ?? 0;
+    const cxpTotal = cards?.cuentasPorPagar ?? 0;
+
+    return {
+      metrics: [
+        {
+          title: 'Ventas totales',
+          value: ventasTotales,
+          type: 'currency',
+          icon: 'trending-up',
+          color: '#28a745',
+        },
+        {
+          title: 'Gastos totales',
+          value: gastosTotales,
+          type: 'currency',
+          icon: 'trending-down',
+          color: '#dc3545',
+        },
+        {
+          title: 'Resultados',
+          value: resultados,
+          type: 'currency',
+          icon: 'dollar-sign',
+          color: resultados >= 0 ? '#28a745' : '#dc3545',
+        },
+        {
+          title: 'Margen',
+          value: margen,
+          type: 'percentage',
+          icon: 'percent',
+          color: '#007bff',
+        },
+      ],
+      ventasGastosConfig: {
+        type: 'bar',
+        labels: (porMes ?? []).map((f: any) => f.anioMes || f.mes),
+        data: [
+          {
+            name: 'Ventas',
+            data: (porMes ?? []).map((f: any) => f.ventasConIva || 0),
+          },
+          {
+            name: 'Gastos',
+            data: (porMes ?? []).map((f: any) => f.egresosConIva || 0),
+          },
+        ],
+      },
+      cuentasPorCobrar: (cxc ?? []).map((i: any) => ({
+        name: i.name,
+        amount: i.amount,
+      })),
+      cuentasPorPagar: (cxp ?? []).map((i: any) => ({
+        name: i.name,
+        amount: i.amount,
+      })),
+      ventasTotalesConIVA: ventasTotales,
+      gastosTotalesConIVA: gastosTotales,
+      resultados: resultados,
+      margen: margen,
+      cuentasPorCobrarTotal: cxcTotal,
+      cuentasPorPagarTotal: cxpTotal,
+    };
+  }
+
+  private mapearResultadosPesado(raw: {
+    cashflow: any;
+    cashflowVentas: any;
+    cashflowGastos: any;
+    cxc30: any;
+    cxp30: any;
+  }): Record<string, unknown> {
+    const { cashflow, cashflowVentas, cashflowGastos, cxc30, cxp30 } = raw;
+    return {
+      cashflow: {
+        ventas: cashflowVentas || [],
+        gastos: cashflowGastos || [],
+        ingresosTotales: cashflow?.ingresosPercibidos || 0,
+        egresosTotales: cashflow?.egresosRealizados || 0,
+      },
+      cuentas30: {
+        cobrar: cxc30 || [],
+        pagar: cxp30 || [],
+      },
+    };
+  }
+
+  /**
+   * Métricas, gráfico por mes y tops CXC/CXP primero; flujo de efectivo y +30 días después.
+   */
+  obtenerResultadosProgresivo(filtros: any = {}): Observable<any> {
+    const p = this.params(filtros);
+    const pAnual = this.paramsAnual(filtros);
+
+    const critico$ = forkJoin({
+      cards: this.apiGetSafe(`${this.api}/api/resultados/cards?${pAnual}`),
+      porMes: this.apiGetSafe(
+        `${this.api}/api/resultados/ventas-gastos-mes?${p}`,
+      ),
+      cxc: this.apiGetSafe(
+        `${this.api}/api/resultados/cxc-clientes?${pAnual}&limite=10`,
+      ),
+      cxp: this.apiGetSafe(
+        `${this.api}/api/resultados/cxp-proveedores?${pAnual}&limite=10`,
+      ),
+    }).pipe(map((r) => this.mapearResultadosCritico(r)));
+
+    const pesado$ = forkJoin({
+      cashflow: this.apiGetSafe(`${this.api}/api/resultados/cashflow?${p}`),
+      cashflowVentas: this.apiGetSafe(
+        `${this.api}/api/resultados/cashflow-ventas-detalle?${p}`,
+      ),
+      cashflowGastos: this.apiGetSafe(
+        `${this.api}/api/resultados/cashflow-gastos-detalle?${p}`,
+      ),
+      cxc30: this.apiGetSafe(
+        `${this.api}/api/resultados/cxc-30dias?${pAnual}`,
+      ),
+      cxp30: this.apiGetSafe(
+        `${this.api}/api/resultados/cxp-30dias?${pAnual}`,
+      ),
+    }).pipe(map((r) => this.mapearResultadosPesado(r)));
+
+    return critico$.pipe(
+      switchMap((c) =>
+        pesado$.pipe(
+          map((p) => ({ ...c, ...p })),
+          startWith(c),
+        ),
+      ),
+    );
+  }
+
   obtenerResultados(filtros: any = {}): Observable<any> {
-    const p = this.params(filtros); // con mes — para cashflow/porMes
-    const pAnual = this.paramsAnual(filtros); // sin mes  — para cards, cxc, cxp
-  
+    const p = this.params(filtros);
+    const pAnual = this.paramsAnual(filtros);
+
     return forkJoin({
-      cards: this.get(`${this.api}/api/resultados/cards?${pAnual}`),
-      porMes: this.get(`${this.api}/api/resultados/ventas-gastos-mes?${p}`),
-      cxc: this.get(`${this.api}/api/resultados/cxc-clientes?${pAnual}&limite=10`),
-      cxp: this.get(`${this.api}/api/resultados/cxp-proveedores?${pAnual}&limite=10`),
-      cashflow: this.get(`${this.api}/api/resultados/cashflow?${p}`),
-      cashflowVentas: this.get(`${this.api}/api/resultados/cashflow-ventas-detalle?${p}`),  // ✅ NUEVO
-      cashflowGastos: this.get(`${this.api}/api/resultados/cashflow-gastos-detalle?${p}`),  // ✅ NUEVO
-      cxc30: this.get(`${this.api}/api/resultados/cxc-30dias?${pAnual}`),
-      cxp30: this.get(`${this.api}/api/resultados/cxp-30dias?${pAnual}`),
+      cards: this.apiGetSafe(`${this.api}/api/resultados/cards?${pAnual}`),
+      porMes: this.apiGetSafe(
+        `${this.api}/api/resultados/ventas-gastos-mes?${p}`,
+      ),
+      cxc: this.apiGetSafe(
+        `${this.api}/api/resultados/cxc-clientes?${pAnual}&limite=10`,
+      ),
+      cxp: this.apiGetSafe(
+        `${this.api}/api/resultados/cxp-proveedores?${pAnual}&limite=10`,
+      ),
+      cashflow: this.apiGetSafe(`${this.api}/api/resultados/cashflow?${p}`),
+      cashflowVentas: this.apiGetSafe(
+        `${this.api}/api/resultados/cashflow-ventas-detalle?${p}`,
+      ),
+      cashflowGastos: this.apiGetSafe(
+        `${this.api}/api/resultados/cashflow-gastos-detalle?${p}`,
+      ),
+      cxc30: this.apiGetSafe(
+        `${this.api}/api/resultados/cxc-30dias?${pAnual}`,
+      ),
+      cxp30: this.apiGetSafe(
+        `${this.api}/api/resultados/cxp-30dias?${pAnual}`,
+      ),
     }).pipe(
-      map(({ cards, porMes, cxc, cxp, cashflow, cashflowVentas, cashflowGastos, cxc30, cxp30 }) => {
-        const ventasTotales = cards?.ventasTotalesConIVA ?? 0;
-        const gastosTotales = cards?.gastosTotalesConIVA ?? 0;
-        const resultados = cards?.resultados ?? 0;
-        const margen = cards?.margen ?? 0;
-        const cxcTotal = cards?.cuentasPorCobrar ?? 0;
-        const cxpTotal = cards?.cuentasPorPagar ?? 0;
-  
-        return {
-          // Cards - Formato para app-chart-card
-          metrics: [
-            {
-              title: 'Ventas totales',
-              value: ventasTotales,
-              type: 'currency',
-              icon: 'trending-up',
-              color: '#28a745',
-            },
-            {
-              title: 'Gastos totales',
-              value: gastosTotales,
-              type: 'currency',
-              icon: 'trending-down',
-              color: '#dc3545',
-            },
-            {
-              title: 'Resultados',
-              value: resultados,
-              type: 'currency',
-              icon: 'dollar-sign',
-              color: resultados >= 0 ? '#28a745' : '#dc3545',
-            },
-            {
-              title: 'Margen',
-              value: margen,
-              type: 'percentage',
-              icon: 'percent',
-              color: '#007bff',
-            },
-          ],
-  
-          // Gráfico ventas vs gastos por mes - Formato para app-bar-chart
-          ventasGastosConfig: {
-            type: 'bar',
-            labels: (porMes ?? []).map((f: any) => f.anioMes || f.mes),
-            data: [
-              {
-                name: 'Ventas',
-                data: (porMes ?? []).map((f: any) => f.ventasConIva || 0),
-              },
-              {
-                name: 'Gastos',
-                data: (porMes ?? []).map((f: any) => f.egresosConIva || 0),
-              },
-            ],
-          },
-  
-          // Top clientes CXC - Formato para app-accounts-list
-          cuentasPorCobrar: (cxc ?? []).map((i: any) => ({
-            name: i.name,
-            amount: i.amount,
-          })),
-  
-          // Top proveedores CXP - Formato para app-accounts-list
-          cuentasPorPagar: (cxp ?? []).map((i: any) => ({
-            name: i.name,
-            amount: i.amount,
-          })),
-  
-          // Valores originales por si se necesitan
-          ventasTotalesConIVA: ventasTotales,
-          gastosTotalesConIVA: gastosTotales,
-          resultados: resultados,
-          margen: margen,
-          cuentasPorCobrarTotal: cxcTotal,
-          cuentasPorPagarTotal: cxpTotal,
-  
-          // ✅ DETALLE DEL CASHFLOW - Ahora con datos reales
-          cashflow: {
-            ventas: cashflowVentas || [],
-            gastos: cashflowGastos || [],
-            ingresosTotales: cashflow?.ingresosPercibidos || 0,
-            egresosTotales: cashflow?.egresosRealizados || 0,
-          },
-  
-          cuentas30: {
-            cobrar: cxc30 || [],
-            pagar: cxp30 || [],
-          },
-        };
-      }),
+      map((all) => ({
+        ...this.mapearResultadosCritico({
+          cards: all.cards,
+          porMes: all.porMes,
+          cxc: all.cxc,
+          cxp: all.cxp,
+        }),
+        ...this.mapearResultadosPesado({
+          cashflow: all.cashflow,
+          cashflowVentas: all.cashflowVentas,
+          cashflowGastos: all.cashflowGastos,
+          cxc30: all.cxc30,
+          cxp30: all.cxp30,
+        }),
+      })),
     );
   }
 
   // ─────────────────────────────────────────────
   // DASHBOARD 2 — VENTAS
   // ─────────────────────────────────────────────
-
-  /** Petición HTTP con fallback; no propaga error al forkJoin. */
-  private ventasGetSafe(url: string): Observable<any> {
-    return this.get(url).pipe(catchError(() => of(null)));
-  }
 
   private mapearVentasCritico(raw: {
     cards: any;
@@ -309,34 +391,34 @@ export class DashboardDataService {
     const pVendedor = filtros?.vendedor ? `&vendedor=${filtros.vendedor}` : '';
 
     const critico$ = forkJoin({
-      cards: this.ventasGetSafe(`${this.api}/api/ventas/cards?${p}`),
-      porMes: this.ventasGetSafe(`${this.api}/api/ventas/por-mes?${p}`),
-      vsPresupuesto: this.ventasGetSafe(
+      cards: this.apiGetSafe(`${this.api}/api/ventas/cards?${p}`),
+      porMes: this.apiGetSafe(`${this.api}/api/ventas/por-mes?${p}`),
+      vsPresupuesto: this.apiGetSafe(
         `${this.api}/api/ventas/vs-presupuesto?${p}`,
       ),
-      vsAnioAnterior: this.ventasGetSafe(
+      vsAnioAnterior: this.apiGetSafe(
         `${this.api}/api/ventas/vs-anio-anterior?${p}`,
       ),
     }).pipe(map((r) => this.mapearVentasCritico(r)));
 
     const pesado$ = forkJoin({
-      porCanal: this.ventasGetSafe(`${this.api}/api/ventas/por-canal?${p}`),
-      porVendedor: this.ventasGetSafe(
+      porCanal: this.apiGetSafe(`${this.api}/api/ventas/por-canal?${p}`),
+      porVendedor: this.apiGetSafe(
         `${this.api}/api/ventas/por-vendedor?${p}${pVendedor}`,
       ),
-      porFormaPago: this.ventasGetSafe(
+      porFormaPago: this.apiGetSafe(
         `${this.api}/api/ventas/por-forma-pago?${p}`,
       ),
-      porCategoria: this.ventasGetSafe(
+      porCategoria: this.apiGetSafe(
         `${this.api}/api/ventas/por-categoria?${p}`,
       ),
-      topProductos: this.ventasGetSafe(
+      topProductos: this.apiGetSafe(
         `${this.api}/api/ventas/top-productos?${p}&limite=15`,
       ),
-      topClientes: this.ventasGetSafe(
+      topClientes: this.apiGetSafe(
         `${this.api}/api/ventas/top-clientes?${p}&limite=25`,
       ),
-      detalleClientes: this.ventasGetSafe(
+      detalleClientes: this.apiGetSafe(
         `${this.api}/api/ventas/detalle-clientes?${p}`,
       ),
     }).pipe(map((r) => this.mapearVentasPesado(r)));
@@ -356,31 +438,31 @@ export class DashboardDataService {
     const pVendedor = filtros?.vendedor ? `&vendedor=${filtros.vendedor}` : '';
 
     return forkJoin({
-      cards: this.ventasGetSafe(`${this.api}/api/ventas/cards?${p}`),
-      porMes: this.ventasGetSafe(`${this.api}/api/ventas/por-mes?${p}`),
-      vsPresupuesto: this.ventasGetSafe(
+      cards: this.apiGetSafe(`${this.api}/api/ventas/cards?${p}`),
+      porMes: this.apiGetSafe(`${this.api}/api/ventas/por-mes?${p}`),
+      vsPresupuesto: this.apiGetSafe(
         `${this.api}/api/ventas/vs-presupuesto?${p}`,
       ),
-      vsAnioAnterior: this.ventasGetSafe(
+      vsAnioAnterior: this.apiGetSafe(
         `${this.api}/api/ventas/vs-anio-anterior?${p}`,
       ),
-      porCanal: this.ventasGetSafe(`${this.api}/api/ventas/por-canal?${p}`),
-      porVendedor: this.ventasGetSafe(
+      porCanal: this.apiGetSafe(`${this.api}/api/ventas/por-canal?${p}`),
+      porVendedor: this.apiGetSafe(
         `${this.api}/api/ventas/por-vendedor?${p}${pVendedor}`,
       ),
-      porFormaPago: this.ventasGetSafe(
+      porFormaPago: this.apiGetSafe(
         `${this.api}/api/ventas/por-forma-pago?${p}`,
       ),
-      porCategoria: this.ventasGetSafe(
+      porCategoria: this.apiGetSafe(
         `${this.api}/api/ventas/por-categoria?${p}`,
       ),
-      topProductos: this.ventasGetSafe(
+      topProductos: this.apiGetSafe(
         `${this.api}/api/ventas/top-productos?${p}&limite=15`,
       ),
-      topClientes: this.ventasGetSafe(
+      topClientes: this.apiGetSafe(
         `${this.api}/api/ventas/top-clientes?${p}&limite=25`,
       ),
-      detalleClientes: this.ventasGetSafe(
+      detalleClientes: this.apiGetSafe(
         `${this.api}/api/ventas/detalle-clientes?${p}`,
       ),
     }).pipe(
@@ -782,7 +864,7 @@ export class DashboardDataService {
       case 'Inventario':
         return this.obtenerInventario(filtros);
       default:
-        return this.obtenerResultados(filtros);
+        return this.obtenerResultadosProgresivo(filtros);
     }
   }
 }
