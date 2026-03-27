@@ -24,19 +24,15 @@
                     </button>
                 </div>
 
-                <!-- Selector de sucursal -->
-                <div class="d-flex flex-column">
-                    <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
-                    <select 
-                        id="sucursal"
-                        class="form-select"
-                        [(ngModel)]="sucursalSeleccionada"
-                        (change)="cambiarSucursal()">
-                        <option *ngFor="let sucursal of sucursales; trackBy: trackById" [value]="sucursal.id">
-                            {{ sucursal.nombre }}
-                        </option>
-                    </select>
-                </div>
+                <app-dropdown-multi-filtro
+                    label="Sucursales"
+                    pluralLabel="sucursales"
+                    [items]="sucursales"
+                    [disabled]="sucursalesMultiDisabled"
+                    [todasImplicitas]="sucursalesTodasImplicitas"
+                    [seleccionados]="sucursalesSeleccionadas"
+                    (selectionChange)="onSucursalesMultiFiltroChange($event)">
+                </app-dropdown-multi-filtro>
             </div>
         </div>
     </div>
@@ -100,27 +96,32 @@
                 </button>
                 <div class="d-flex align-items-center gap-2">
                     <label for="mesFiltro" class="mb-0 fw-medium">Mes:</label>
-                    <select 
+                    <select
                         id="mesFiltro"
+                        name="mesFlujoEfectivo"
                         class="form-select"
-                        style="width: auto; min-width: 120px;">
-                        <option value="todas">Todas</option>
-                        <option value="enero">Enero</option>
-                        <option value="febrero">Febrero</option>
-                        <option value="marzo">Marzo</option>
+                        style="width: auto; min-width: 160px;"
+                        [(ngModel)]="mesFlujoEfectivo"
+                        (ngModelChange)="onMesFlujoEfectivoChange()">
+                        <option [ngValue]="null">Todo el año</option>
+                        <option
+                            *ngFor="let m of opcionesMesFlujo; trackBy: trackByMesValor"
+                            [ngValue]="m.valor">
+                            {{ m.etiqueta }}
+                        </option>
                     </select>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tarjetas de resumen Flujo de Efectivo -->
-    <div class="row mb-4" *ngIf="datos.cashFlow">
+    <!-- Tarjetas de resumen Flujo de Efectivo (datos.cashflow desde DashboardDataService) -->
+    <div class="row mb-4" *ngIf="datos.cashflow as cf">
         <div class="col-md-3 mb-3">
             <div class="card" style="background-color: #e3f2fd; border: none;">
                 <div class="card-body text-center">
                     <div class="fw-bold text-dark" style="font-size: 1.5rem;">
-                        {{ formatCurrency(datos.cashFlow.ingresosPercibidos) }}
+                        {{ formatCurrency(cf.ingresosTotales || 0) }}
                     </div>
                     <div class="text-muted small mt-1">Ingresos percibidos</div>
                 </div>
@@ -130,7 +131,7 @@
             <div class="card" style="background-color: #fff3e0; border: none;">
                 <div class="card-body text-center">
                     <div class="fw-bold text-dark" style="font-size: 1.5rem;">
-                        {{ formatCurrency(datos.cashFlow.egresosRealizados) }}
+                        {{ formatCurrency(cf.egresosTotales || 0) }}
                     </div>
                     <div class="text-muted small mt-1">Egresos realizados</div>
                 </div>
@@ -140,16 +141,16 @@
             <div class="card" style="background-color: #e8f5e9; border: none;">
                 <div class="card-body text-center">
                     <div class="fw-bold text-dark" style="font-size: 1.5rem;">
-                        {{ formatCurrency(datos.cashFlow.resultados) }}
+                        {{ formatCurrency((cf.ingresosTotales || 0) - (cf.egresosTotales || 0)) }}
                     </div>
-                    <div class="text-muted small mt-1">Resultados</div>
+                    <div class="text-muted small mt-1">Resultados (neto)</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tablas de Ventas y Gastos -->
-    <div class="row" *ngIf="datos.cashFlow">
+    <!-- Tablas de Ventas y Gastos del mes (revo-grid + datos en caché vía ventasRows / gastosRows) -->
+    <div class="row" *ngIf="datos.cashflow">
         <div class="col-md-6 mb-4">
             <div class="card">
                 <div class="card-body p-0">
@@ -176,11 +177,10 @@
                     <revo-grid
                         #ventasGrid
                         class="cash-flow-grid ventas-grid"
-                        [source]="ventasRows"
                         [columns]="ventasColumns"
+                        [source]="ventasRows"
                         [plugins]="ventasPlugins"
-                        [rowDefinitions]="[]"
-                        [theme]="'default'"
+                        theme="material"
                         [range]="true"
                         [editable]="false"
                         [resize]="true"
@@ -193,7 +193,7 @@
                     <div class="p-3 table-footer-ventas">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="fw-bold text-white">Total</span>
-                            <span class="fw-bold text-white">{{ formatCurrency(datos.cashFlow.ingresosPercibidos) }}</span>
+                            <span class="fw-bold text-white">{{ formatCurrency(datos.cashflow?.ingresosTotales || 0) }}</span>
                         </div>
                     </div>
                 </div>
@@ -225,11 +225,10 @@
                     <revo-grid
                         #gastosGrid
                         class="cash-flow-grid gastos-grid"
-                        [source]="gastosRows"
                         [columns]="gastosColumns"
+                        [source]="gastosRows"
                         [plugins]="gastosPlugins"
-                        [rowDefinitions]="[]"
-                        [theme]="'default'"
+                        theme="material"
                         [range]="true"
                         [editable]="false"
                         [resize]="true"
@@ -242,7 +241,7 @@
                     <div class="p-3 table-footer-gastos">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="fw-bold text-white">Total</span>
-                            <span class="fw-bold text-white">{{ formatCurrency(datos.cashFlow.egresosRealizados) }}</span>
+                            <span class="fw-bold text-white">{{ formatCurrency(datos.cashflow?.egresosTotales || 0) }}</span>
                         </div>
                     </div>
                 </div>
@@ -250,13 +249,13 @@
         </div>
     </div>
 
-    <!-- Tablas de Cuentas por cobrar/pagar a 30 días -->
-    <div class="row" *ngIf="datos.cuentasPorCobrar30Dias || datos.cuentasPorPagar30Dias">
+    <!-- Tablas de Cuentas por cobrar/pagar a 30 días (datos.cuentas30 desde DashboardDataService) -->
+    <div class="row" *ngIf="datos.cuentas30">
         <div class="col-md-6 mb-4">
             <div class="card">
                 <div class="card-body p-0">
                     <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
-                        <h6 class="card-title mb-0 fw-bold">Cuentas por cobrar a 30 días</h6>
+                        <h6 class="card-title mb-0 fw-bold">CXC próximos 30 días</h6>
                         <div class="d-flex gap-2 align-items-center">
                             <div class="input-group" style="width: 200px;">
                                 <input 
@@ -278,11 +277,10 @@
                     <revo-grid
                         #cobrar30Grid
                         class="cash-flow-grid ventas-grid"
-                        [source]="cobrar30Rows"
                         [columns]="cobrar30Columns"
+                        [source]="cobrar30Rows"
                         [plugins]="cobrar30Plugins"
-                        [rowDefinitions]="[]"
-                        [theme]="'default'"
+                        theme="compact"
                         [range]="true"
                         [editable]="false"
                         [resize]="true"
@@ -292,7 +290,7 @@
                         [exporting]="true"
                         style="height: 400px;">
                     </revo-grid>
-                    <div class="p-3 table-footer-ventas" *ngIf="totalCobrar30 > 0">
+                    <div class="p-3 table-footer-ventas">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="fw-bold text-white">Total</span>
                             <span class="fw-bold text-white">{{ formatCurrency(totalCobrar30) }}</span>
@@ -305,7 +303,7 @@
             <div class="card">
                 <div class="card-body p-0">
                     <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
-                        <h6 class="card-title mb-0 fw-bold">Cuentas por pagar a 30 días</h6>
+                        <h6 class="card-title mb-0 fw-bold">CXP próximos 30 días</h6>
                         <div class="d-flex gap-2 align-items-center">
                             <div class="input-group" style="width: 200px;">
                                 <input 
@@ -327,11 +325,10 @@
                     <revo-grid
                         #pagar30Grid
                         class="cash-flow-grid gastos-grid"
-                        [source]="pagar30Rows"
                         [columns]="pagar30Columns"
+                        [source]="pagar30Rows"
                         [plugins]="pagar30Plugins"
-                        [rowDefinitions]="[]"
-                        [theme]="'default'"
+                        theme="compact"
                         [range]="true"
                         [editable]="false"
                         [resize]="true"
@@ -341,7 +338,7 @@
                         [exporting]="true"
                         style="height: 400px;">
                     </revo-grid>
-                    <div class="p-3 table-footer-gastos" *ngIf="totalPagar30 > 0">
+                    <div class="p-3 table-footer-gastos">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="fw-bold text-white">Total</span>
                             <span class="fw-bold text-white">{{ formatCurrency(totalPagar30) }}</span>

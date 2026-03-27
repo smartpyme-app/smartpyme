@@ -17,6 +17,7 @@ import { AccountsListComponent } from './components/accounts-list/accounts-list.
 import { CashFlowGaugeComponent } from './components/cash-flow-gauge/cash-flow-gauge.component';
 import { BudgetCardComponent } from './components/budget-card/budget-card.component';
 import { FiltroFechaComponent } from './components/filtro-fecha/filtro-fecha.component';
+import { DropdownMultiFiltroComponent } from './components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 
 // Componentes de secciones
 import { ResultadosComponent } from './sections/resultados/resultados.component';
@@ -51,6 +52,7 @@ import { PipesModule } from '@pipes/pipes.module';
     CashFlowGaugeComponent,
     BudgetCardComponent,
     FiltroFechaComponent,
+    DropdownMultiFiltroComponent,
     ResultadosComponent,
     VentasComponent,
     FinanzasComponent,
@@ -69,6 +71,7 @@ import { PipesModule } from '@pipes/pipes.module';
     CashFlowGaugeComponent,
     BudgetCardComponent,
     FiltroFechaComponent,
+    DropdownMultiFiltroComponent,
     RevoGrid
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]

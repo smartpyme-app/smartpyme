@@ -1,0 +1,39 @@
+<div class="d-flex flex-column dropdown-multi-filtro-outer" #wrap>
+    <span class="text-primary fw-medium small mb-1">{{ label }}</span>
+    <div class="dropdown-multi-filtro position-relative">
+        <button
+            type="button"
+            class="dropdown-multi-filtro-trigger"
+            [disabled]="disabled || items.length === 0"
+            (click)="togglePanel($event)">
+            <span class="dropdown-multi-filtro-trigger-label text-truncate">{{ etiquetaResumen }}</span>
+            <i
+                class="fas fa-chevron-down dropdown-multi-filtro-chevron"
+                [class.dropdown-multi-filtro-chevron--open]="panelAbierto"
+                aria-hidden="true"></i>
+        </button>
+        <div
+            class="dropdown-multi-filtro-panel"
+            *ngIf="panelAbierto && !disabled && items.length > 0"
+            (click)="$event.stopPropagation()">
+            <label class="dropdown-multi-filtro-row">
+                <input
+                    type="checkbox"
+                    class="form-check-input flex-shrink-0"
+                    [checked]="seleccionarTodoChecked"
+                    (change)="onSeleccionarTodoChange($event)">
+                <span>Seleccionar todo</span>
+            </label>
+            <label
+                *ngFor="let s of items; trackBy: trackById"
+                class="dropdown-multi-filtro-row">
+                <input
+                    type="checkbox"
+                    class="form-check-input flex-shrink-0"
+                    [checked]="isItemChecked(s.id)"
+                    (change)="onItemChange(s.id, $any($event.target).checked)">
+                <span class="text-truncate" [title]="s.nombre">{{ s.nombre }}</span>
+            </label>
+        </div>
+    </div>
+</div>

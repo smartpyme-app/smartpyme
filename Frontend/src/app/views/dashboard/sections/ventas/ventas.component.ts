@@ -1,4 +1,5 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { DropdownMultiFiltroSelection } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
@@ -38,12 +39,24 @@ export class VentasComponent implements OnInit, OnChanges {
   
   // Filtros adicionales
   mostrarFiltrosAdicionales: boolean = false;
-  filtroSucursal: string = '';
-  filtroEstado: string = '';
-  filtroCanal: string = '';
-  filtroCliente: string = '';
-  filtroVendedor: string = '';
-  
+
+  readonly ventasEstadosFiltroItems: { id: string; nombre: string }[] = [
+    { id: 'completada', nombre: 'Completada' },
+    { id: 'pendiente', nombre: 'Pendiente' },
+    { id: 'cancelada', nombre: 'Cancelada' },
+  ];
+
+  filtroAdSucursalTodasImplicitas = true;
+  filtroAdSucursalSeleccionadas: string[] = [];
+  filtroAdEstadoTodasImplicitas = true;
+  filtroAdEstadoSeleccionadas: string[] = [];
+  filtroAdCanalTodasImplicitas = true;
+  filtroAdCanalSeleccionadas: string[] = [];
+  filtroAdClienteTodasImplicitas = true;
+  filtroAdClienteSeleccionadas: string[] = [];
+  filtroAdVendedorTodasImplicitas = true;
+  filtroAdVendedorSeleccionadas: string[] = [];
+
   // Opciones para filtros
   sucursales: any[] = [];
   canales: any[] = [];
@@ -623,6 +636,114 @@ export class VentasComponent implements OnInit, OnChanges {
     this.productos = [];
   }
 
+  private idsDeListaFiltro(items: any[]): string[] {
+    return (items || []).map((x: any) => String(x.id));
+  }
+
+  /**
+   * Convierte selección múltiple a un string para query (vacío = sin filtro / todas).
+   */
+  private filtroAdMultiAString(
+    todasImplicitas: boolean,
+    seleccionados: string[],
+    todosIds: string[]
+  ): string {
+    if (todasImplicitas || seleccionados.length === 0) {
+      return '';
+    }
+    if (
+      todosIds.length > 0 &&
+      seleccionados.length === todosIds.length &&
+      todosIds.every((id) => seleccionados.includes(id))
+    ) {
+      return '';
+    }
+    return seleccionados.join(',');
+  }
+
+  private filtroAdSucursalParaApi(): string | string[] {
+    const todosIds = this.idsDeListaFiltro(this.sucursales);
+    const sel = this.filtroAdSucursalSeleccionadas;
+    if (this.filtroAdSucursalTodasImplicitas || sel.length === 0) {
+      return '';
+    }
+    if (
+      todosIds.length > 0 &&
+      sel.length === todosIds.length &&
+      todosIds.every((id) => sel.includes(id))
+    ) {
+      return '';
+    }
+    return sel.length === 1 ? sel[0] : [...sel];
+  }
+
+  private filtroAdicionalEstaActivo(todasImplicitas: boolean, seleccionados: string[]): boolean {
+    return !todasImplicitas || seleccionados.length > 0;
+  }
+
+  get filtroAdSucursalesItems(): { id: string; nombre: string }[] {
+    return (this.sucursales || []).map((s: any) => ({
+      id: String(s.id),
+      nombre: s.nombre ?? '',
+    }));
+  }
+
+  get filtroAdCanalesItems(): { id: string; nombre: string }[] {
+    return (this.canales || []).map((c: any) => ({
+      id: String(c.id),
+      nombre: c.nombre ?? '',
+    }));
+  }
+
+  get filtroAdClientesItems(): { id: string; nombre: string }[] {
+    return (this.clientes || []).map((c: any) => ({
+      id: String(c.id),
+      nombre: c.nombre ?? '',
+    }));
+  }
+
+  get filtroAdVendedoresItems(): { id: string; nombre: string }[] {
+    return (this.vendedores || []).map((v: any) => ({
+      id: String(v.id),
+      nombre: v.nombre ?? '',
+    }));
+  }
+
+  onFiltroAdSucursalChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroAdSucursalTodasImplicitas = ev.todasImplicitas;
+    this.filtroAdSucursalSeleccionadas = [...ev.seleccionados];
+    this.aplicarFiltros();
+    this.cdr.markForCheck();
+  }
+
+  onFiltroAdEstadoChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroAdEstadoTodasImplicitas = ev.todasImplicitas;
+    this.filtroAdEstadoSeleccionadas = [...ev.seleccionados];
+    this.aplicarFiltros();
+    this.cdr.markForCheck();
+  }
+
+  onFiltroAdCanalChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroAdCanalTodasImplicitas = ev.todasImplicitas;
+    this.filtroAdCanalSeleccionadas = [...ev.seleccionados];
+    this.aplicarFiltros();
+    this.cdr.markForCheck();
+  }
+
+  onFiltroAdClienteChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroAdClienteTodasImplicitas = ev.todasImplicitas;
+    this.filtroAdClienteSeleccionadas = [...ev.seleccionados];
+    this.aplicarFiltros();
+    this.cdr.markForCheck();
+  }
+
+  onFiltroAdVendedorChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroAdVendedorTodasImplicitas = ev.todasImplicitas;
+    this.filtroAdVendedorSeleccionadas = [...ev.seleccionados];
+    this.aplicarFiltros();
+    this.cdr.markForCheck();
+  }
+
   toggleFiltrosAdicionales(): void {
     this.mostrarFiltrosAdicionales = !this.mostrarFiltrosAdicionales;
     this.cdr.markForCheck();
@@ -658,11 +779,16 @@ export class VentasComponent implements OnInit, OnChanges {
   limpiarFiltros(): void {
     this.anio = new Date().getFullYear().toString();
     this.mes = '';
-    this.filtroSucursal = '';
-    this.filtroEstado = '';
-    this.filtroCanal = '';
-    this.filtroCliente = '';
-    this.filtroVendedor = '';
+    this.filtroAdSucursalTodasImplicitas = true;
+    this.filtroAdSucursalSeleccionadas = [];
+    this.filtroAdEstadoTodasImplicitas = true;
+    this.filtroAdEstadoSeleccionadas = [];
+    this.filtroAdCanalTodasImplicitas = true;
+    this.filtroAdCanalSeleccionadas = [];
+    this.filtroAdClienteTodasImplicitas = true;
+    this.filtroAdClienteSeleccionadas = [];
+    this.filtroAdVendedorTodasImplicitas = true;
+    this.filtroAdVendedorSeleccionadas = [];
     this.aplicarFiltros();
   }
 
@@ -676,13 +802,30 @@ export class VentasComponent implements OnInit, OnChanges {
       this.anio = new Date().getFullYear().toString();
     }
 
+    const idsEstado = this.ventasEstadosFiltroItems.map((e) => e.id);
     const filtros: any = {
       anio: this.anio,
-      sucursal: this.filtroSucursal,
-      estado: this.filtroEstado,
-      canal: this.filtroCanal,
-      cliente: this.filtroCliente,
-      vendedor: this.filtroVendedor
+      sucursal: this.filtroAdSucursalParaApi(),
+      estado: this.filtroAdMultiAString(
+        this.filtroAdEstadoTodasImplicitas,
+        this.filtroAdEstadoSeleccionadas,
+        idsEstado
+      ),
+      canal: this.filtroAdMultiAString(
+        this.filtroAdCanalTodasImplicitas,
+        this.filtroAdCanalSeleccionadas,
+        this.idsDeListaFiltro(this.canales)
+      ),
+      cliente: this.filtroAdMultiAString(
+        this.filtroAdClienteTodasImplicitas,
+        this.filtroAdClienteSeleccionadas,
+        this.idsDeListaFiltro(this.clientes)
+      ),
+      vendedor: this.filtroAdMultiAString(
+        this.filtroAdVendedorTodasImplicitas,
+        this.filtroAdVendedorSeleccionadas,
+        this.idsDeListaFiltro(this.vendedores)
+      ),
     };
     if (this.mes) {
       filtros.mes = this.mes;
@@ -693,15 +836,28 @@ export class VentasComponent implements OnInit, OnChanges {
 
   get puedeLimpiarFiltrosVentas(): boolean {
     const anioActual = new Date().getFullYear().toString();
-    return (
-      !!this.mes ||
-      this.anio !== anioActual ||
-      !!this.filtroSucursal ||
-      !!this.filtroEstado ||
-      !!this.filtroCanal ||
-      !!this.filtroCliente ||
-      !!this.filtroVendedor
-    );
+    const filtrosAdicionales =
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdSucursalTodasImplicitas,
+        this.filtroAdSucursalSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdEstadoTodasImplicitas,
+        this.filtroAdEstadoSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdCanalTodasImplicitas,
+        this.filtroAdCanalSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdClienteTodasImplicitas,
+        this.filtroAdClienteSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdVendedorTodasImplicitas,
+        this.filtroAdVendedorSeleccionadas
+      );
+    return !!this.mes || this.anio !== anioActual || filtrosAdicionales;
   }
 
   formatCurrency(value: number): string {

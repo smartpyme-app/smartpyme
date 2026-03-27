@@ -1,4 +1,63 @@
 <div class="ventas-dashboard">
+    <ng-template #filtrosAdicionalesVentasTpl>
+        <div class="row g-3">
+            <div class="col-12 col-md-6 col-xl-4">
+                <app-dropdown-multi-filtro
+                    label="Sucursal"
+                    pluralLabel="sucursales"
+                    [items]="filtroAdSucursalesItems"
+                    [disabled]="false"
+                    [todasImplicitas]="filtroAdSucursalTodasImplicitas"
+                    [seleccionados]="filtroAdSucursalSeleccionadas"
+                    (selectionChange)="onFiltroAdSucursalChange($event)">
+                </app-dropdown-multi-filtro>
+            </div>
+            <div class="col-12 col-md-6 col-xl-4">
+                <app-dropdown-multi-filtro
+                    label="Estado"
+                    pluralLabel="estados"
+                    [items]="ventasEstadosFiltroItems"
+                    [disabled]="false"
+                    [todasImplicitas]="filtroAdEstadoTodasImplicitas"
+                    [seleccionados]="filtroAdEstadoSeleccionadas"
+                    (selectionChange)="onFiltroAdEstadoChange($event)">
+                </app-dropdown-multi-filtro>
+            </div>
+            <div class="col-12 col-md-6 col-xl-4">
+                <app-dropdown-multi-filtro
+                    label="Canal"
+                    pluralLabel="canales"
+                    [items]="filtroAdCanalesItems"
+                    [disabled]="false"
+                    [todasImplicitas]="filtroAdCanalTodasImplicitas"
+                    [seleccionados]="filtroAdCanalSeleccionadas"
+                    (selectionChange)="onFiltroAdCanalChange($event)">
+                </app-dropdown-multi-filtro>
+            </div>
+            <div class="col-12 col-md-6 col-xl-4">
+                <app-dropdown-multi-filtro
+                    label="Cliente"
+                    pluralLabel="clientes"
+                    [items]="filtroAdClientesItems"
+                    [disabled]="false"
+                    [todasImplicitas]="filtroAdClienteTodasImplicitas"
+                    [seleccionados]="filtroAdClienteSeleccionadas"
+                    (selectionChange)="onFiltroAdClienteChange($event)">
+                </app-dropdown-multi-filtro>
+            </div>
+            <div class="col-12 col-md-6 col-xl-4">
+                <app-dropdown-multi-filtro
+                    label="Vendedor"
+                    pluralLabel="vendedores"
+                    [items]="filtroAdVendedoresItems"
+                    [disabled]="false"
+                    [todasImplicitas]="filtroAdVendedorTodasImplicitas"
+                    [seleccionados]="filtroAdVendedorSeleccionadas"
+                    (selectionChange)="onFiltroAdVendedorChange($event)">
+                </app-dropdown-multi-filtro>
+            </div>
+        </div>
+    </ng-template>
     <!-- Filtros específicos de Ventas -->
     <div class="row mb-4">
         <div class="col-12">
@@ -40,80 +99,14 @@
                     
                     <!-- Filtros adicionales (colapsables) -->
                     <div class="mt-3" *ngIf="mostrarFiltrosAdicionales">
-                        <div class="row g-3">
-                            <div class="col">
-                                <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
-                                <select 
-                                    id="sucursal"
-                                    class="form-select"
-                                    [(ngModel)]="filtroSucursal"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let sucursal of sucursales; trackBy: trackByIndex" [value]="sucursal.id">
-                                        {{ sucursal.nombre }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col">
-                                <label for="estado" class="text-primary fw-medium small mb-1">Estado</label>
-                                <select 
-                                    id="estado"
-                                    class="form-select"
-                                    [(ngModel)]="filtroEstado"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option value="completada">Completada</option>
-                                    <option value="pendiente">Pendiente</option>
-                                    <option value="cancelada">Cancelada</option>
-                                </select>
-                            </div>
-                            <div class="col">
-                                <label for="canal" class="text-primary fw-medium small mb-1">Canal</label>
-                                <select 
-                                    id="canal"
-                                    class="form-select"
-                                    [(ngModel)]="filtroCanal"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let canal of canales; trackBy: trackByIndex" [value]="canal.id">
-                                        {{ canal.nombre }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col">
-                                <label for="cliente" class="text-primary fw-medium small mb-1">Cliente</label>
-                                <select 
-                                    id="cliente"
-                                    class="form-select"
-                                    [(ngModel)]="filtroCliente"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let cliente of clientes; trackBy: trackByIndex" [value]="cliente.id">
-                                        {{ cliente.nombre }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col">
-                                <label for="vendedor" class="text-primary fw-medium small mb-1">Vendedor</label>
-                                <select 
-                                    id="vendedor"
-                                    class="form-select"
-                                    [(ngModel)]="filtroVendedor"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let vendedor of vendedores; trackBy: trackByIndex" [value]="vendedor.id">
-                                        {{ vendedor.nombre }}
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
+                        <ng-container *ngTemplateOutlet="filtrosAdicionalesVentasTpl"></ng-container>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Sección de botones y cards de métricas -->
+    <!-- Sección de métricas (misma estructura que Gastos) -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
@@ -149,17 +142,25 @@
                                 vs Año anterior
                             </button>
                             <!-- Indicador de filtros activos -->
-                            <div *ngIf="tieneFiltrosInteractivos()" class="mt-2 p-2" style="background-color: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
+                            <div *ngIf="tieneFiltrosInteractivos()" class="mt-2 p-2 d-flex justify-content-between align-items-center" style="background-color: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
                                 <small class="text-dark fw-medium">
                                     <i class="fas fa-info-circle me-1"></i>
                                     Filtros activos: {{ getFiltrosInteractivosTexto() }}
                                 </small>
+                                <button 
+                                    type="button"
+                                    class="btn btn-sm btn-outline-warning"
+                                    (click)="limpiarFiltrosInteractivos()"
+                                    title="Limpiar filtros interactivos">
+                                    <i class="fas fa-times me-1"></i>
+                                    Limpiar
+                                </button>
                             </div>
                         </div>
 
                         <!-- Cards de métricas a la derecha -->
                         <div class="row g-3 flex-grow-1">
-                            <div class="col-md-3">
+                            <div class="col">
                                 <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
                                     <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
                                         <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
@@ -171,7 +172,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col">
                                 <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
                                     <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
                                         <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
@@ -183,7 +184,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col">
                                 <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
                                     <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
                                         <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
@@ -195,7 +196,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col">
                                 <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
                                     <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
                                         <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
@@ -531,73 +532,7 @@
                     
                     <!-- Filtros adicionales (colapsables) -->
                     <div class="mt-3" *ngIf="mostrarFiltrosAdicionales">
-                        <div class="row g-3">
-                            <div class="col">
-                                <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
-                                <select 
-                                    id="sucursal"
-                                    class="form-select"
-                                    [(ngModel)]="filtroSucursal"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let sucursal of sucursales; trackBy: trackByIndex" [value]="sucursal.id">
-                                        {{ sucursal.nombre }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col">
-                                <label for="estado" class="text-primary fw-medium small mb-1">Estado</label>
-                                <select 
-                                    id="estado"
-                                    class="form-select"
-                                    [(ngModel)]="filtroEstado"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option value="completada">Completada</option>
-                                    <option value="pendiente">Pendiente</option>
-                                    <option value="cancelada">Cancelada</option>
-                                </select>
-                            </div>
-                            <div class="col">
-                                <label for="canal" class="text-primary fw-medium small mb-1">Canal</label>
-                                <select 
-                                    id="canal"
-                                    class="form-select"
-                                    [(ngModel)]="filtroCanal"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let canal of canales; trackBy: trackByIndex" [value]="canal.id">
-                                        {{ canal.nombre }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col">
-                                <label for="cliente" class="text-primary fw-medium small mb-1">Cliente</label>
-                                <select 
-                                    id="cliente"
-                                    class="form-select"
-                                    [(ngModel)]="filtroCliente"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let cliente of clientes; trackBy: trackByIndex" [value]="cliente.id">
-                                        {{ cliente.nombre }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col">
-                                <label for="vendedor" class="text-primary fw-medium small mb-1">Vendedor</label>
-                                <select 
-                                    id="vendedor"
-                                    class="form-select"
-                                    [(ngModel)]="filtroVendedor"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let vendedor of vendedores; trackBy: trackByIndex" [value]="vendedor.id">
-                                        {{ vendedor.nombre }}
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
+                        <ng-container *ngTemplateOutlet="filtrosAdicionalesVentasTpl"></ng-container>
                     </div>
                 </div>
             </div>
