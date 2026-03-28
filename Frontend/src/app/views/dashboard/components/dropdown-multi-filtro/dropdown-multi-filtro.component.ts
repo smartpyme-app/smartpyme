@@ -245,6 +245,16 @@ export class DropdownMultiFiltroComponent {
       if (idsScope.length === 0) {
         return;
       }
+      /**
+       * Con “todas” implícitas, el conjunto efectivo es la lista completa. Si el usuario
+       * desmarca “Seleccionar todo” solo sobre la vista (primeros N o resultado de búsqueda),
+       * antes se hacía `all − visible` y quedaban seleccionados casi todos los ítems.
+       * Lo correcto es pasar a selección explícita vacía y volver a sumar desde cero.
+       */
+      if (!cb.checked && this.todasImplicitas) {
+        this.emit({ todasImplicitas: false, seleccionados: [] });
+        return;
+      }
       const set = this.idsSeleccionEfectivos();
       if (cb.checked) {
         idsScope.forEach((id) => set.add(id));
@@ -261,40 +271,18 @@ export class DropdownMultiFiltroComponent {
     }
   }
 
+  /**
+   * Un solo camino vía conjunto efectivo + `emitDesdeSet` evita estados raros con buscador
+   * (p. ej. `seleccionados` vacío pero distinto del conjunto implícito “todas”).
+   */
   onItemChange(id: string, checked: boolean): void {
-    const allIds = this.items.map(s => s.id);
-
-    if (this.todasImplicitas) {
-      if (!checked) {
-        const seleccionados = allIds.filter(x => x !== id);
-        this.emit({ todasImplicitas: false, seleccionados });
-      }
-      return;
-    }
-
-    let sel = [...this.seleccionados];
-
-    if (sel.length === 0) {
-      if (checked) {
-        sel = [id];
-      } else {
-        return;
-      }
+    const set = this.idsSeleccionEfectivos();
+    if (checked) {
+      set.add(id);
     } else {
-      if (checked) {
-        if (!sel.includes(id)) {
-          sel.push(id);
-        }
-        if (sel.length === allIds.length) {
-          this.emit({ todasImplicitas: true, seleccionados: [] });
-          return;
-        }
-      } else {
-        sel = sel.filter(x => x !== id);
-      }
+      set.delete(id);
     }
-
-    this.emit({ todasImplicitas: false, seleccionados: sel });
+    this.emitDesdeSet(set);
   }
 
   private emit(next: DropdownMultiFiltroSelection): void {

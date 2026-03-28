@@ -82,6 +82,18 @@ export class DashboardAnalyticsApiService {
     return s || null;
   }
 
+  /**
+   * Valor CSV en query: codifica cada segmento pero deja las comas literales.
+   * Así el servidor recibe `id_producto=1,2,3` y no `1%2C2%2C3` (algunos parsers no lo tratan como lista).
+   */
+  private csvQueryParamEncoded(csv: string): string {
+    return csv
+      .split(',')
+      .map((s) => encodeURIComponent(s.trim()))
+      .filter(Boolean)
+      .join(',');
+  }
+
   private appendFiltrosOpcionalesVentas(filtros: any, p: string): string {
     let out = p;
     const estado = this.csvQueryParam(filtros?.estado);
@@ -95,7 +107,7 @@ export class DashboardAnalyticsApiService {
     const categoria = this.csvQueryParam(filtros?.categoria);
     if (categoria) out += `&categoria=${categoria}`;
     const idProducto = this.csvQueryParam(filtros?.idProducto);
-    if (idProducto) out += `&id_producto=${encodeURIComponent(idProducto)}`;
+    if (idProducto) out += `&id_producto=${this.csvQueryParamEncoded(idProducto)}`;
     return out;
   }
 
