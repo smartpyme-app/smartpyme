@@ -95,7 +95,7 @@ class Devolucion extends Model {
 
     public function sucursal()
     {
-        return $this->venta ? $this->venta->sucursal : null;
+        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
     public function documento(){
