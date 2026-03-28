@@ -336,6 +336,7 @@ class PlanillasImport implements ToCollection, WithHeadingRow, WithEvents
             'comisiones' => round($comisiones, 2),
             'bonificaciones' => round($bonificaciones, 2),
             'otros_ingresos' => round($otros_ingresos, 2),
+            'viaticos' => round($this->limpiarMonto($row['viaticos'] ?? 0), 2),
             'total_ingresos' => round($total_ingresos, 2),
             'isss_empleado' => round($isss, 2),
             'isss_patronal' => round($isss_patronal, 2),
@@ -449,6 +450,7 @@ class PlanillasImport implements ToCollection, WithHeadingRow, WithEvents
                 COALESCE(SUM(total_ingresos), 0) as total_ingresos,
                 COALESCE(SUM(total_descuentos), 0) as total_deducciones,
                 COALESCE(SUM(sueldo_neto), 0) as total_neto,
+                COALESCE(SUM(viaticos), 0) as total_viaticos,
                 COALESCE(SUM(isss_patronal), 0) as total_isss_patronal,
                 COALESCE(SUM(afp_patronal), 0) as total_afp_patronal
             ')
@@ -462,6 +464,7 @@ class PlanillasImport implements ToCollection, WithHeadingRow, WithEvents
             'total_salarios' => round($totales->total_ingresos ?? 0, 2),
             'total_deducciones' => round($totales->total_deducciones ?? 0, 2),
             'total_neto' => round($totales->total_neto ?? 0, 2),
+            'total_viaticos' => round($totales->total_viaticos ?? 0, 2),
             'total_aportes_patronales' => round($total_aportes_patronales, 2)
         ]);
 

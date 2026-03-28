@@ -46,7 +46,8 @@ export class TiendaVentaBuscadorComponent implements OnInit {
             debounceTime(500),
             filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
             switchMap((query: any) => {
-              const params: any = { query: query };
+              const q = this.normalizeBusqueda(query);
+              const params: any = { query: q };
               if (this.venta?.id_bodega) {
                 params.id_bodega = this.venta.id_bodega;
               } else if (this.venta?.id_sucursal) {
@@ -67,12 +68,30 @@ export class TiendaVentaBuscadorComponent implements OnInit {
               this.productos = Array.isArray(results) ? results : [];
               this.loading = false;
 
+              const busqueda = this.normalizeBusqueda(this.searchControl.value);
+              if (!busqueda || !this.productos.length) {
+                return;
+              }
+
+              // Coincidencia exacta por SKU o código de barras (puede haber >1 fila por LIKE en nombre/etiquetas).
+              const porCodigoExacto = this.productos.filter((p: any) => {
+                const cod = this.normalizeBusqueda(p?.codigo);
+                const bar = this.normalizeBusqueda(p?.barcode);
+                return cod === busqueda || bar === busqueda;
+              });
+
+              if (porCodigoExacto.length === 1) {
+                this.selectProducto(porCodigoExacto[0]);
+                return;
+              }
+
+              // Un solo resultado y el término coincide con código o barcode (comportamiento anterior, con valores normalizados).
               if (
-                results &&
-                results.length == 1 &&
-                (this.searchControl.value == results[0].codigo || this.searchControl.value == results[0].barcode)
+                this.productos.length === 1 &&
+                (this.normalizeBusqueda(this.productos[0].codigo) === busqueda ||
+                  this.normalizeBusqueda(this.productos[0].barcode) === busqueda)
               ) {
-                this.selectProducto(results[0]);
+                this.selectProducto(this.productos[0]);
               }
             },
             error: (err) => {
@@ -209,6 +228,17 @@ export class TiendaVentaBuscadorComponent implements OnInit {
         if(this.modalRef){
             this.modalRef.hide();
         }
+    }
+
+    /**
+     * Normaliza texto de búsqueda / escaneo: trim, saltos del lector, compara como string.
+     * Quita ~ final: a veces lo envía el lector (sufijo programado) o un desajuste teclado ES vs emulación US.
+     */
+    private normalizeBusqueda(val: any): string {
+        return String(val ?? '')
+            .trim()
+            .replace(/[\r\n\u0000]+/g, '')
+            .replace(/~+$/g, '');
     }
 
     /**

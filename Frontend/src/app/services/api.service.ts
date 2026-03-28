@@ -301,6 +301,12 @@ export class ApiService {
         return false;
     }
 
+    /** Ajustes, traslados, consignas, entradas/salidas y operaciones masivas de inventario. */
+    canAccederOperacionesInventario(): boolean {
+        const usuario = this.auth_user();
+        return usuario?.tipo === 'Administrador';
+    }
+
     canEdit(){
         let usuario = this.auth_user();
         if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')

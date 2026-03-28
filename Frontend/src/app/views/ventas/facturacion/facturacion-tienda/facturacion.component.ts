@@ -655,18 +655,18 @@ export class FacturacionComponent implements OnInit {
       this.venta.impuestos = [];
     }
 
-    // Redondear a 2 decimales para evitar diferencias de 1 centavo entre subtotal, IVA y total
+    // 4 decimales en agregados para cuadrar con líneas (precio sin IVA + IVA por línea); el total final sigue en 2
     const rawSubTotal = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'));
-    this.venta.sub_total = (Math.round(rawSubTotal * 100) / 100).toFixed(2);
+    this.venta.sub_total = Number(rawSubTotal).toFixed(4);
 
     const rawExenta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'));
-    this.venta.exenta = (Math.round(rawExenta * 100) / 100).toFixed(2);
+    this.venta.exenta = Number(rawExenta).toFixed(4);
     const rawNoSujeta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'));
-    this.venta.no_sujeta = (Math.round(rawNoSujeta * 100) / 100).toFixed(2);
+    this.venta.no_sujeta = Number(rawNoSujeta).toFixed(4);
     const rawGravada = parseFloat(this.sumPipe.transform(this.venta.detalles, 'gravada'));
-    this.venta.gravada = (Math.round(rawGravada * 100) / 100).toFixed(2);
+    this.venta.gravada = Number(rawGravada).toFixed(4);
     const rawCuentaTerceros = parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'));
-    this.venta.cuenta_a_terceros = (Math.round(rawCuentaTerceros * 100) / 100).toFixed(2);
+    this.venta.cuenta_a_terceros = Number(rawCuentaTerceros).toFixed(4);
 
     const subTotalNum = parseFloat(this.venta.sub_total);
     this.venta.iva_percibido = this.venta.percepcion
@@ -728,18 +728,18 @@ export class FacturacionComponent implements OnInit {
           impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
         }
       }
-      this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto')) || 0).toFixed(2);
+      this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto')) || 0).toFixed(4);
     } else {
-      this.venta.iva = (0).toFixed(2);
+      this.venta.iva = (0).toFixed(4);
       this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
     }
 
     const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
-    this.venta.descuento = (Math.round(rawDescuento * 100) / 100).toFixed(2);
+    this.venta.descuento = Number(rawDescuento).toFixed(4);
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
-    this.venta.total_costo = (Math.round(rawTotalCosto * 100) / 100).toFixed(4);
+    this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    // El total NO incluye la propina; calcular con 2 decimales para que cuadre con subtotal + IVA
+    // El total NO incluye la propina; subtotal e IVA en 4 decimales, total redondeado a moneda (2)
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const totalNum =
       parseFloat(this.venta.sub_total) +
