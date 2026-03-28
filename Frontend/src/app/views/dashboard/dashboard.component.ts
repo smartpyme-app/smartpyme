@@ -12,7 +12,7 @@ import { FiltrosConsultaVentasDashboard } from './models/filtros-consulta-ventas
 export class DashboardComponent implements OnInit, OnDestroy {
   private static readonly SECCION_GUARDADA_KEY = 'smartpyme.dashboard.seccionActiva';
 
-  /** Pestañas que tienen vista en el `ngSwitch` (Finanzas u otras sin componente no entran). */
+  /** Pestañas con vista en `ngSwitch` y persistencia en localStorage. */
   private readonly seccionesConVista = new Set<string>([
     'Resultados',
     'Ventas',
@@ -26,11 +26,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   loading = false;
   datos: any = {};
 
-  // Configuración de secciones - fácil de extender
+  // Finanzas: oculta hasta estar lista — añadir de nuevo `{ nombre: 'Finanzas', ... }` aquí y el *ngSwitchCase* en el HTML.
   secciones = [
     { nombre: 'Resultados', activo: true, componente: 'Resultados' },
     { nombre: 'Ventas', activo: false, componente: 'Ventas' },
-    { nombre: 'Finanzas', activo: false, componente: 'Finanzas' },
     { nombre: 'Gastos', activo: false, componente: 'Gastos' },
     { nombre: 'Control de cuentas', activo: false, componente: 'Control de cuentas' },
     { nombre: 'Inventario', activo: false, componente: 'Inventario' }
