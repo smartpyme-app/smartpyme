@@ -94,8 +94,8 @@ export class DashboardAnalyticsApiService {
     if (vendedor) out += `&vendedor=${vendedor}`;
     const categoria = this.csvQueryParam(filtros?.categoria);
     if (categoria) out += `&categoria=${categoria}`;
-    const producto = this.csvQueryParam(filtros?.producto);
-    if (producto) out += `&producto=${producto}`;
+    const idProducto = this.csvQueryParam(filtros?.idProducto);
+    if (idProducto) out += `&id_producto=${encodeURIComponent(idProducto)}`;
     return out;
   }
 

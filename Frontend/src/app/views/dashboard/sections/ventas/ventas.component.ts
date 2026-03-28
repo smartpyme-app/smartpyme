@@ -4,7 +4,11 @@ import {
   DashboardFiltrosCatalogoService,
   DashboardFiltroCatalogoItem,
 } from '../../services/dashboard-filtros-catalogo.service';
-import { DropdownMultiFiltroSelection } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
+import { FiltrosConsultaVentasDashboard } from '../../models/filtros-consulta-ventas-dashboard.model';
+import {
+  DropdownMultiFiltroItem,
+  DropdownMultiFiltroSelection,
+} from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
@@ -17,7 +21,7 @@ import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 })
 export class VentasComponent implements OnInit, OnChanges {
   @Input() datos: any = {};
-  @Output() filtrosCambiados = new EventEmitter<any>();
+  @Output() filtrosCambiados = new EventEmitter<FiltrosConsultaVentasDashboard>();
 
   @ViewChild('ventasDetalladasGrid') ventasDetalladasGrid!: RevoGrid;
   @ViewChild('ventasPorProductoGrid') ventasPorProductoGrid: any;
@@ -69,8 +73,14 @@ export class VentasComponent implements OnInit, OnChanges {
   filtroAdClienteSeleccionadasAplicado: string[] = [];
   filtroAdVendedorTodasImplicitasAplicado = true;
   filtroAdVendedorSeleccionadasAplicado: string[] = [];
-  filtroCategoriaProductoAplicado = '';
-  filtroProductoAplicado = '';
+  filtroCatTodasImplicitas = true;
+  filtroCatSeleccionadas: string[] = [];
+  filtroCatTodasImplicitasAplicado = true;
+  filtroCatSeleccionadasAplicado: string[] = [];
+  filtroProdTodasImplicitas = true;
+  filtroProdSeleccionadas: string[] = [];
+  filtroProdTodasImplicitasAplicado = true;
+  filtroProdSeleccionadasAplicado: string[] = [];
 
   sucursales: DashboardFiltroCatalogoItem[] = [];
   canales: DashboardFiltroCatalogoItem[] = [];
@@ -80,11 +90,10 @@ export class VentasComponent implements OnInit, OnChanges {
   // Vista de métricas
   vistaMetricas: string = 'mes';
 
-  // Filtros de productos
-  filtroCategoriaProducto: string = '';
-  filtroProducto: string = '';
-  categoriasProductos: any[] = [];
-  productos: any[] = [];
+  // Filtros de categoría / producto (multi; producto con buscador en plantilla)
+  categoriasProductos: DashboardFiltroCatalogoItem[] = [];
+  /** Catálogo desde `GET /api/dimensiones/productos` (`id` → query, `nombre` → UI). */
+  productos: DashboardFiltroCatalogoItem[] = [];
 
   // Filtros interactivos (se aplican localmente sin recargar)
   filtrosInteractivos: {
@@ -92,7 +101,10 @@ export class VentasComponent implements OnInit, OnChanges {
     vendedor?: string;
     formaPago?: string;
     categoria?: string;
-    producto?: string;
+    /** ID de producto (misma semántica que en la consulta API). */
+    idProducto?: string | number;
+    /** Nombre para chips / etiquetas; no se envía al API. */
+    productoNombre?: string;
     cliente?: string;
     mes?: string;
   } = {};
@@ -298,8 +310,6 @@ export class VentasComponent implements OnInit, OnChanges {
       // Actualizar datos originales cuando cambian
       if (this.datos && Object.keys(this.datos).length > 0) {
         this.datosOriginales = this.clonarDatos(this.datos);
-        // Sincronizar productos desde los datos de ventas
-        this.sincronizarProductosDesdeDatosVentas();
         // Aplicar filtros interactivos si existen
         if (Object.keys(this.filtrosInteractivos).length > 0) {
           this.aplicarFiltrosInteractivos();
@@ -580,7 +590,6 @@ export class VentasComponent implements OnInit, OnChanges {
    */
   cargarOpcionesFiltros(): void {
     this.categoriasProductos = [];
-    this.productos = [];
 
     this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
       next: (items) => {
@@ -642,39 +651,66 @@ export class VentasComponent implements OnInit, OnChanges {
     this.filtrosCatalogo.categoriasParaFiltro().subscribe({
       next: (items) => {
         this.categoriasProductos = items;
+        this.validarSeleccionesCatYProdContraCatalogo();
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.productosParaFiltro().subscribe({
+      next: (items) => {
+        this.productos = [...(items || [])].sort((a, b) =>
+          a.nombre.localeCompare(b.nombre, 'es'),
+        );
+        this.validarSeleccionesCatYProdContraCatalogo();
         this.cdr.markForCheck();
       },
     });
   }
 
   /**
-   * Opciones del combo "Producto" a partir del detalle que ya trae el dashboard (sin endpoint extra).
+   * Quita IDs que ya no existen en los catálogos de dimensiones (borrador y aplicado).
+   * Con catálogo vacío no altera la selección (p. ej. error de red).
    */
-  private sincronizarProductosDesdeDatosVentas(): void {
-    const detalle = this.datos?.ventasPorProducto;
-    if (!Array.isArray(detalle) || detalle.length === 0) {
-      this.productos = [];
-      return;
+  private validarSeleccionesCatYProdContraCatalogo(): void {
+    let limpio = false;
+    if (this.categoriasProductos.length > 0) {
+      const idsCat = new Set(
+        this.categoriasProductos.map((c) => String(c.id)),
+      );
+      const f1 = this.filtroCatSeleccionadas.filter((id) =>
+        idsCat.has(String(id)),
+      );
+      const f2 = this.filtroCatSeleccionadasAplicado.filter((id) =>
+        idsCat.has(String(id)),
+      );
+      if (f1.length !== this.filtroCatSeleccionadas.length) {
+        this.filtroCatSeleccionadas = f1;
+        limpio = true;
+      }
+      if (f2.length !== this.filtroCatSeleccionadasAplicado.length) {
+        this.filtroCatSeleccionadasAplicado = f2;
+        limpio = true;
+      }
     }
-    const nombres = new Set<string>();
-    for (const row of detalle) {
-      const n = String(row?.producto ?? '').trim();
-      if (n) nombres.add(n);
+    if (this.productos.length > 0) {
+      const idsProd = new Set(this.productos.map((p) => String(p.id)));
+      const p1 = this.filtroProdSeleccionadas.filter((id) =>
+        idsProd.has(String(id)),
+      );
+      const p2 = this.filtroProdSeleccionadasAplicado.filter((id) =>
+        idsProd.has(String(id)),
+      );
+      if (p1.length !== this.filtroProdSeleccionadas.length) {
+        this.filtroProdSeleccionadas = p1;
+        limpio = true;
+      }
+      if (p2.length !== this.filtroProdSeleccionadasAplicado.length) {
+        this.filtroProdSeleccionadasAplicado = p2;
+        limpio = true;
+      }
     }
-    this.productos = [...nombres]
-      .sort((a, b) => a.localeCompare(b, 'es'))
-      .map((nombre) => ({ id: nombre, nombre }));
-    if (
-      this.filtroProducto &&
-      !this.productos.some((p) => String(p.id) === String(this.filtroProducto))
-    ) {
-      this.filtroProducto = '';
-    }
-    if (
-      this.filtroProductoAplicado &&
-      !this.productos.some((p) => String(p.id) === String(this.filtroProductoAplicado))
-    ) {
-      this.filtroProductoAplicado = '';
+    if (limpio && this.inicializado) {
+      this.emitirFiltrosAlPadre();
     }
   }
 
@@ -746,8 +782,10 @@ export class VentasComponent implements OnInit, OnChanges {
     this.filtroAdClienteSeleccionadas = [...this.filtroAdClienteSeleccionadasAplicado];
     this.filtroAdVendedorTodasImplicitas = this.filtroAdVendedorTodasImplicitasAplicado;
     this.filtroAdVendedorSeleccionadas = [...this.filtroAdVendedorSeleccionadasAplicado];
-    this.filtroCategoriaProducto = this.filtroCategoriaProductoAplicado;
-    this.filtroProducto = this.filtroProductoAplicado;
+    this.filtroCatTodasImplicitas = this.filtroCatTodasImplicitasAplicado;
+    this.filtroCatSeleccionadas = [...this.filtroCatSeleccionadasAplicado];
+    this.filtroProdTodasImplicitas = this.filtroProdTodasImplicitasAplicado;
+    this.filtroProdSeleccionadas = [...this.filtroProdSeleccionadasAplicado];
   }
 
   private copiarFiltrosAdicionalesBorradorAAplicado(): void {
@@ -761,8 +799,10 @@ export class VentasComponent implements OnInit, OnChanges {
     this.filtroAdClienteSeleccionadasAplicado = [...this.filtroAdClienteSeleccionadas];
     this.filtroAdVendedorTodasImplicitasAplicado = this.filtroAdVendedorTodasImplicitas;
     this.filtroAdVendedorSeleccionadasAplicado = [...this.filtroAdVendedorSeleccionadas];
-    this.filtroCategoriaProductoAplicado = this.filtroCategoriaProducto;
-    this.filtroProductoAplicado = this.filtroProducto;
+    this.filtroCatTodasImplicitasAplicado = this.filtroCatTodasImplicitas;
+    this.filtroCatSeleccionadasAplicado = [...this.filtroCatSeleccionadas];
+    this.filtroProdTodasImplicitasAplicado = this.filtroProdTodasImplicitas;
+    this.filtroProdSeleccionadasAplicado = [...this.filtroProdSeleccionadas];
   }
 
   private filtroAdicionalEstaActivo(todasImplicitas: boolean, seleccionados: string[]): boolean {
@@ -827,6 +867,44 @@ export class VentasComponent implements OnInit, OnChanges {
     this.cdr.markForCheck();
   }
 
+  onFiltroCatProductoChange(
+    ev: DropdownMultiFiltroSelection,
+    aplicar = false,
+  ): void {
+    this.filtroCatTodasImplicitas = ev.todasImplicitas;
+    this.filtroCatSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+    if (aplicar) {
+      this.aplicarFiltrosProductos();
+    }
+  }
+
+  onFiltroProdListaChange(
+    ev: DropdownMultiFiltroSelection,
+    aplicar = false,
+  ): void {
+    this.filtroProdTodasImplicitas = ev.todasImplicitas;
+    this.filtroProdSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+    if (aplicar) {
+      this.aplicarFiltrosProductos();
+    }
+  }
+
+  get filtroAdCategoriasItems(): DropdownMultiFiltroItem[] {
+    return (this.categoriasProductos || []).map((c) => ({
+      id: String(c.id),
+      nombre: c.nombre ?? '',
+    }));
+  }
+
+  get filtroAdProductosItems(): DropdownMultiFiltroItem[] {
+    return (this.productos || []).map((p) => ({
+      id: String(p.id),
+      nombre: p.nombre ?? '',
+    }));
+  }
+
   toggleFiltrosAdicionales(): void {
     this.mostrarFiltrosAdicionales = !this.mostrarFiltrosAdicionales;
     this.copiarFiltrosAdicionalesAplicadoABorrador();
@@ -868,8 +946,10 @@ export class VentasComponent implements OnInit, OnChanges {
     this.filtroAdClienteSeleccionadas = [];
     this.filtroAdVendedorTodasImplicitas = true;
     this.filtroAdVendedorSeleccionadas = [];
-    this.filtroCategoriaProducto = '';
-    this.filtroProducto = '';
+    this.filtroCatTodasImplicitas = true;
+    this.filtroCatSeleccionadas = [];
+    this.filtroProdTodasImplicitas = true;
+    this.filtroProdSeleccionadas = [];
     this.filtroAdSucursalTodasImplicitasAplicado = true;
     this.filtroAdSucursalSeleccionadasAplicado = [];
     this.filtroAdEstadoTodasImplicitasAplicado = true;
@@ -880,8 +960,10 @@ export class VentasComponent implements OnInit, OnChanges {
     this.filtroAdClienteSeleccionadasAplicado = [];
     this.filtroAdVendedorTodasImplicitasAplicado = true;
     this.filtroAdVendedorSeleccionadasAplicado = [];
-    this.filtroCategoriaProductoAplicado = '';
-    this.filtroProductoAplicado = '';
+    this.filtroCatTodasImplicitasAplicado = true;
+    this.filtroCatSeleccionadasAplicado = [];
+    this.filtroProdTodasImplicitasAplicado = true;
+    this.filtroProdSeleccionadasAplicado = [];
     this.emitirFiltrosAlPadre();
   }
 
@@ -906,7 +988,7 @@ export class VentasComponent implements OnInit, OnChanges {
     }
 
     const idsEstado = this.estadosVenta.map((e) => e.id);
-    const filtros: any = {
+    const filtros: FiltrosConsultaVentasDashboard = {
       anio: this.anio,
       sucursal: this.filtroAdSucursalParaApiAplicado(),
       estado: this.filtroAdMultiAString(
@@ -934,10 +1016,29 @@ export class VentasComponent implements OnInit, OnChanges {
       filtros.mes = this.mes;
     }
 
-    const cat = String(this.filtroCategoriaProductoAplicado ?? '').trim();
-    if (cat) filtros.categoria = cat;
-    const prod = String(this.filtroProductoAplicado ?? '').trim();
-    if (prod) filtros.producto = prod;
+    const catCsv = this.filtroAdMultiAString(
+      this.filtroCatTodasImplicitasAplicado,
+      this.filtroCatSeleccionadasAplicado,
+      this.idsDeListaFiltro(this.categoriasProductos),
+    );
+    if (catCsv) filtros.categoria = catCsv;
+
+    const prodCsv = this.filtroAdMultiAString(
+      this.filtroProdTodasImplicitasAplicado,
+      this.filtroProdSeleccionadasAplicado,
+      this.idsDeListaFiltro(this.productos),
+    );
+    if (prodCsv) {
+      const partes = prodCsv.split(',').map((s) => s.trim()).filter(Boolean);
+      if (partes.length === 1) {
+        const one = partes[0];
+        const n = Number(one);
+        filtros.idProducto =
+          Number.isFinite(n) && String(n) === one ? n : one;
+      } else {
+        filtros.idProducto = prodCsv;
+      }
+    }
 
     this.filtrosCambiados.emit(filtros);
   }
@@ -987,10 +1088,22 @@ export class VentasComponent implements OnInit, OnChanges {
         this.filtroAdVendedorSeleccionadasAplicado
       );
     const hayCatProd =
-      !!String(this.filtroCategoriaProducto ?? '').trim() ||
-      !!String(this.filtroProducto ?? '').trim() ||
-      !!String(this.filtroCategoriaProductoAplicado ?? '').trim() ||
-      !!String(this.filtroProductoAplicado ?? '').trim();
+      this.filtroAdicionalEstaActivo(
+        this.filtroCatTodasImplicitas,
+        this.filtroCatSeleccionadas,
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroProdTodasImplicitas,
+        this.filtroProdSeleccionadas,
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroCatTodasImplicitasAplicado,
+        this.filtroCatSeleccionadasAplicado,
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroProdTodasImplicitasAplicado,
+        this.filtroProdSeleccionadasAplicado,
+      );
     return (
       !!this.mes ||
       this.anio !== anioActual ||
@@ -1031,7 +1144,6 @@ export class VentasComponent implements OnInit, OnChanges {
 
     // Recalcular ventas por producto
     this._ventasPorProductoRowsCache = this.calcularVentasPorProductoRows();
-    this.sincronizarProductosDesdeDatosVentas();
 
     // Recalcular ventas por cliente
     this._ventasPorClienteRowsCache = this.calcularVentasPorClienteRows();
@@ -1487,10 +1599,28 @@ export class VentasComponent implements OnInit, OnChanges {
   }
 
   onProductoClick(event: { name: string; amount: number }): void {
-    if (this.filtrosInteractivos.producto === event.name) {
-      delete this.filtrosInteractivos.producto;
+    const entry = this.productos.find((p) => p.nombre === event.name);
+    const id = entry?.id;
+    const idStr = id != null ? String(id) : '';
+    const activeId =
+      this.filtrosInteractivos.idProducto != null
+        ? String(this.filtrosInteractivos.idProducto)
+        : '';
+    if (idStr && activeId === idStr) {
+      delete this.filtrosInteractivos.idProducto;
+      delete this.filtrosInteractivos.productoNombre;
+    } else if (
+      !idStr &&
+      this.filtrosInteractivos.productoNombre === event.name
+    ) {
+      delete this.filtrosInteractivos.productoNombre;
+      delete this.filtrosInteractivos.idProducto;
+    } else if (id != null) {
+      this.filtrosInteractivos.idProducto = id;
+      this.filtrosInteractivos.productoNombre = event.name;
     } else {
-      this.filtrosInteractivos.producto = event.name;
+      this.filtrosInteractivos.productoNombre = event.name;
+      delete this.filtrosInteractivos.idProducto;
     }
     this.aplicarFiltrosInteractivos();
   }
@@ -1574,8 +1704,19 @@ export class VentasComponent implements OnInit, OnChanges {
     if (this.filtrosInteractivos.categoria) {
       ventasFiltradas = ventasFiltradas.filter((v: any) => v.categoria === this.filtrosInteractivos.categoria);
     }
-    if (this.filtrosInteractivos.producto) {
-      ventasFiltradas = ventasFiltradas.filter((v: any) => v.producto === this.filtrosInteractivos.producto);
+    if (
+      this.filtrosInteractivos.idProducto != null &&
+      String(this.filtrosInteractivos.idProducto).trim() !== ''
+    ) {
+      ventasFiltradas = ventasFiltradas.filter(
+        (v: any) =>
+          v.idProducto != null &&
+          String(v.idProducto) === String(this.filtrosInteractivos.idProducto),
+      );
+    } else if (this.filtrosInteractivos.productoNombre) {
+      ventasFiltradas = ventasFiltradas.filter(
+        (v: any) => v.producto === this.filtrosInteractivos.productoNombre,
+      );
     }
 
     this.datosFiltrados.ventasDetalladas = ventasFiltradas;
@@ -1772,9 +1913,14 @@ export class VentasComponent implements OnInit, OnChanges {
     const ventasPorProductoMap: { [key: string]: any } = {};
     
     ventas.forEach((v: any) => {
-      const key = `${v.producto || 'Sin producto'}_${v.formaPago || 'Sin forma de pago'}`;
+      const prodKey =
+        v.idProducto != null && String(v.idProducto).trim() !== ''
+          ? `id:${v.idProducto}`
+          : v.producto || 'Sin producto';
+      const key = `${prodKey}_${v.formaPago || 'Sin forma de pago'}`;
       if (!ventasPorProductoMap[key]) {
         ventasPorProductoMap[key] = {
+          idProducto: v.idProducto,
           categoria: v.categoria || 'Sin categoría',
           producto: v.producto || 'Sin producto',
           formaPago: v.formaPago || 'Sin forma de pago',
@@ -1877,7 +2023,16 @@ export class VentasComponent implements OnInit, OnChanges {
     if (this.filtrosInteractivos.vendedor) filtros.push(`Vendedor: ${this.filtrosInteractivos.vendedor}`);
     if (this.filtrosInteractivos.formaPago) filtros.push(`Forma de pago: ${this.filtrosInteractivos.formaPago}`);
     if (this.filtrosInteractivos.categoria) filtros.push(`Categoría: ${this.filtrosInteractivos.categoria}`);
-    if (this.filtrosInteractivos.producto) filtros.push(`Producto: ${this.filtrosInteractivos.producto}`);
+    if (this.filtrosInteractivos.productoNombre) {
+      filtros.push(`Producto: ${this.filtrosInteractivos.productoNombre}`);
+    } else if (this.filtrosInteractivos.idProducto != null) {
+      const nom = this.productos.find(
+        (p) => String(p.id) === String(this.filtrosInteractivos.idProducto),
+      )?.nombre;
+      filtros.push(
+        `Producto: ${nom ?? String(this.filtrosInteractivos.idProducto)}`,
+      );
+    }
     if (this.filtrosInteractivos.cliente) filtros.push(`Cliente: ${this.filtrosInteractivos.cliente}`);
     if (this.filtrosInteractivos.mes) filtros.push(`Mes: ${this.filtrosInteractivos.mes}`);
     return filtros.join(', ');

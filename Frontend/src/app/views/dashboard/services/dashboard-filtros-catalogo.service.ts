@@ -14,7 +14,7 @@ export interface DashboardFiltroCatalogoItem {
 
 /**
  * Catálogos para filtros del dashboard: sucursales vía Laravel (permisos por rol);
- * canales, clientes, vendedores, categorías y proveedores vía API Go.
+ * canales, clientes, vendedores, categorías, productos, proveedores y estados vía API Go.
  */
 @Injectable({ providedIn: 'root' })
 export class DashboardFiltrosCatalogoService {
@@ -23,6 +23,7 @@ export class DashboardFiltrosCatalogoService {
   private clientes$?: Observable<DashboardFiltroCatalogoItem[]>;
   private vendedores$?: Observable<DashboardFiltroCatalogoItem[]>;
   private categorias$?: Observable<DashboardFiltroCatalogoItem[]>;
+  private productos$?: Observable<DashboardFiltroCatalogoItem[]>;
   private proveedores$?: Observable<DashboardFiltroCatalogoItem[]>;
   private estadosVenta$?: Observable<DashboardFiltroCatalogoItem[]>;
 
@@ -67,6 +68,7 @@ export class DashboardFiltrosCatalogoService {
     this.clientes$ = undefined;
     this.vendedores$ = undefined;
     this.categorias$ = undefined;
+    this.productos$ = undefined;
     this.proveedores$ = undefined;
     this.estadosVenta$ = undefined;
   }
@@ -134,6 +136,19 @@ export class DashboardFiltrosCatalogoService {
       );
     }
     return this.categorias$;
+  }
+
+  /**
+   * Catálogo de productos para filtros del dashboard (valor = `id`, etiqueta = `nombre`).
+   * GET /api/dimensiones/productos?empresa={idEmpresa}
+   */
+  productosParaFiltro(): Observable<DashboardFiltroCatalogoItem[]> {
+    if (!this.productos$) {
+      this.productos$ = this.getFromGo('/api/dimensiones/productos').pipe(
+        shareReplay(1)
+      );
+    }
+    return this.productos$;
   }
 
   proveedoresParaFiltro(): Observable<DashboardFiltroCatalogoItem[]> {

@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from './services/dashboard-data.service';
+import { FiltrosConsultaVentasDashboard } from './models/filtros-consulta-ventas-dashboard.model';
 
 @Component({
   selector: 'app-dashboard',
@@ -177,9 +178,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
   }
 
-  onFiltrosVentasCambiados(filtros: any): void {
+  onFiltrosVentasCambiados(filtros: FiltrosConsultaVentasDashboard): void {
     const filtrosCompletos = {
-      seccion: 'Ventas',
+      seccion: 'Ventas' as const,
       ...filtros,
     };
 

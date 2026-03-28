@@ -133,6 +133,7 @@ export class VentasDashboardDataService {
       map((r) => ({
         ...this.mapearVentasPesado(r),
         ventasPorProducto: (r.detalleProductos ?? []).map((i: any) => ({
+          idProducto: i.idProducto ?? i.id_producto,
           categoria: i.categoria,
           producto: i.producto,
           formaPago: i.formaPago,
@@ -192,6 +193,7 @@ export class VentasDashboardDataService {
           detalleClientes: all.detalleClientes,
         }),
         ventasPorProducto: (all.detalleProductos ?? []).map((i: any) => ({
+          idProducto: i.idProducto ?? i.id_producto,
           categoria: i.categoria,
           producto: i.producto,
           formaPago: i.formaPago,

@@ -152,6 +152,26 @@ export class BarChartComponent implements OnInit, OnChanges {
       }];
     }
 
+    const formatBarTooltipValue = (value: number) =>
+      value < 0
+        ? `(${Math.abs(value).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
+        : value.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const barTooltipFormatter = (params: any) => {
+      if (Array.isArray(params)) {
+        let result = params[0].name + '<br/>';
+        params.forEach((item: any) => {
+          const value = item.value;
+          const formattedValue = formatBarTooltipValue(value);
+          result += `${item.marker} ${item.seriesName}: $${formattedValue}<br/>`;
+        });
+        return result;
+      }
+      const item = params;
+      const formattedValue = formatBarTooltipValue(item.value);
+      return `${item.name}<br/>${item.marker} ${item.seriesName}: $${formattedValue}`;
+    };
+
     this.chartOption = {
       title: this.config.title ? {
         text: this.config.title,
@@ -161,26 +181,17 @@ export class BarChartComponent implements OnInit, OnChanges {
           fontWeight: 'normal'
         }
       } : undefined,
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'shadow'
-        },
-        formatter: (params: any) => {
-          if (Array.isArray(params)) {
-            let result = params[0].name + '<br/>';
-            params.forEach((item: any) => {
-              const value = item.value;
-              const formattedValue = value < 0 
-                ? `(${Math.abs(value).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
-                : value.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-              result += `${item.marker} ${item.seriesName}: $${formattedValue}<br/>`;
-            });
-            return result;
+      tooltip: isMultiSeries
+        ? {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' },
+            formatter: barTooltipFormatter,
           }
-          return '';
-        }
-      },
+        : {
+            trigger: 'item',
+            axisPointer: { type: 'none' },
+            formatter: barTooltipFormatter,
+          },
       legend: isMultiSeries ? {
         data: (this.config.data as any[]).map((s: any) => s.name),
         top: this.config.title ? 30 : 10,
@@ -299,6 +310,8 @@ export class BarChartComponent implements OnInit, OnChanges {
       } : undefined,
       tooltip: {
         trigger: 'item',
+        triggerOn: 'mousemove',
+        axisPointer: { type: 'none' },
         formatter: (params: any) => {
           const idx = params.dataIndex;
           const pct = pctLabel(idx, params);
@@ -329,18 +342,19 @@ export class BarChartComponent implements OnInit, OnChanges {
             borderWidth: 2,
           },
           label: {
-            show: true,
-            formatter: (params: any) => {
-              const idx = params.dataIndex;
-              const pct = pctLabel(idx, params);
-              return pct ? `${params.name}\n${pct}` : params.name;
-            },
+            show: false,
+          },
+          labelLine: {
+            show: false,
           },
           emphasis: {
+            scale: true,
+            scaleSize: 4,
             label: {
-              show: true,
-              fontSize: 13,
-              fontWeight: 'bold',
+              show: false,
+            },
+            labelLine: {
+              show: false,
             },
           },
           data: pieData,

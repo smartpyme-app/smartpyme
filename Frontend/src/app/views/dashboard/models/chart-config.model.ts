@@ -91,6 +91,7 @@ export interface DashboardData {
     ventasPorCategoria?: AccountItem[];
     topProductosVendidos?: AccountItem[];
     ventasPorProducto?: Array<{
+      idProducto?: string | number;
       categoria: string;
       producto: string;
       formaPago: string;
@@ -120,6 +121,7 @@ export interface DashboardData {
       vendedor?: string;
       formaPago?: string;
       categoria?: string;
+      idProducto?: string | number;
       producto?: string;
       cantidad?: number;
       precioUnitario?: number;
