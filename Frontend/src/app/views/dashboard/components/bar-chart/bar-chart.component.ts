@@ -28,6 +28,12 @@ export class BarChartComponent implements OnInit, OnChanges {
       return;
     }
 
+    if (this.config.type === 'doughnut' || this.config.type === 'pie') {
+      this.initPieLikeChart();
+      this.attachItemClickHandler();
+      return;
+    }
+
     // Verificar si es un gráfico de múltiples series (ventas y gastos)
     const isMultiSeries = Array.isArray(this.config.data) && 
                          this.config.data.length > 0 && 
@@ -243,34 +249,127 @@ export class BarChartComponent implements OnInit, OnChanges {
       })
     };
 
-    // Agregar evento de clic
-    if (this.echartsInstance) {
-      this.echartsInstance.off('click');
-      this.echartsInstance.on('click', (params: any) => {
-        if (params && params.name !== undefined) {
-          this.itemClick.emit({
-            name: params.name,
-            value: params.value,
-            index: params.dataIndex
-          });
-        }
+    this.attachItemClickHandler();
+  }
+
+  /**
+   * Rosca / pastel: `labels` + `data` numéricos; `porcentajes` opcional (p. ej. desde API).
+   */
+  private initPieLikeChart(): void {
+    const labels = this.config.labels || [];
+    const rawData = (this.config.data || []) as number[];
+    const porcentajes = this.config.porcentajes;
+    const colors = this.config.colors || [
+      '#5470c6', '#91cc75', '#fac858', '#ee6666',
+      '#73c0de', '#3ba272', '#fc8452', '#9a60b4'
+    ];
+
+    const pieData = labels.map((name, index) => ({
+      name: (name && String(name).trim()) ? name : `Ítem ${index + 1}`,
+      value: rawData[index] ?? 0,
+    }));
+
+    const formatMoney = (value: number) => {
+      const v = Number(value);
+      const formatted = Math.abs(v).toLocaleString('es-GT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
       });
+      return v < 0 ? `(${formatted})` : formatted;
+    };
+
+    const pctLabel = (dataIndex: number, params: any): string => {
+      const p = porcentajes?.[dataIndex];
+      if (p != null && Number.isFinite(p)) {
+        return `${Number(p).toFixed(1)}%`;
+      }
+      const d = params?.percent;
+      if (d != null && Number.isFinite(d)) {
+        return `${Number(d).toFixed(1)}%`;
+      }
+      return '';
+    };
+
+    this.chartOption = {
+      title: this.config.title ? {
+        text: this.config.title,
+        left: 'center',
+        top: 0,
+        textStyle: { fontSize: 14, fontWeight: 'normal' },
+      } : undefined,
+      tooltip: {
+        trigger: 'item',
+        formatter: (params: any) => {
+          const idx = params.dataIndex;
+          const pct = pctLabel(idx, params);
+          const val = formatMoney(params.value);
+          const pctLine = pct ? `Participación: ${pct}` : '';
+          return [
+            `${params.marker} <b>${params.name}</b>`,
+            `Importe: $${val}`,
+            pctLine,
+          ].filter(Boolean).join('<br/>');
+        },
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'left',
+        top: 'middle',
+      },
+      series: [
+        {
+          name: this.config.title || 'Distribución',
+          type: 'pie',
+          radius:
+            this.config.type === 'doughnut' ? ['42%', '72%'] : [0, '72%'],
+          avoidLabelOverlap: true,
+          itemStyle: {
+            borderRadius: 8,
+            borderColor: '#fff',
+            borderWidth: 2,
+          },
+          label: {
+            show: true,
+            formatter: (params: any) => {
+              const idx = params.dataIndex;
+              const pct = pctLabel(idx, params);
+              return pct ? `${params.name}\n${pct}` : params.name;
+            },
+          },
+          emphasis: {
+            label: {
+              show: true,
+              fontSize: 13,
+              fontWeight: 'bold',
+            },
+          },
+          data: pieData,
+          color: colors,
+        },
+      ],
+    };
+  }
+
+  private attachItemClickHandler(): void {
+    if (!this.echartsInstance) {
+      return;
     }
+    this.echartsInstance.off('click');
+    this.echartsInstance.on('click', (params: any) => {
+      if (params && params.name !== undefined) {
+        this.itemClick.emit({
+          name: params.name,
+          value: params.value,
+          index: params.dataIndex,
+        });
+      }
+    });
   }
 
   onChartInit(ec: any): void {
     this.echartsInstance = ec;
-    // Configurar evento de clic después de inicializar
     if (this.echartsInstance && this.chartOption) {
-      this.echartsInstance.on('click', (params: any) => {
-        if (params && params.name !== undefined) {
-          this.itemClick.emit({
-            name: params.name,
-            value: params.value,
-            index: params.dataIndex
-          });
-        }
-      });
+      this.attachItemClickHandler();
     }
   }
 }

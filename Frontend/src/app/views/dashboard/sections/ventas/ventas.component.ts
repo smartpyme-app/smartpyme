@@ -45,11 +45,7 @@ export class VentasComponent implements OnInit, OnChanges {
   // Filtros adicionales
   mostrarFiltrosAdicionales: boolean = false;
 
-  readonly ventasEstadosFiltroItems: { id: string; nombre: string }[] = [
-    { id: 'completada', nombre: 'Completada' },
-    { id: 'pendiente', nombre: 'Pendiente' },
-    { id: 'cancelada', nombre: 'Cancelada' },
-  ];
+  estadosVenta: DashboardFiltroCatalogoItem[] = [];
 
   filtroAdSucursalTodasImplicitas = true;
   filtroAdSucursalSeleccionadas: string[] = [];
@@ -61,6 +57,20 @@ export class VentasComponent implements OnInit, OnChanges {
   filtroAdClienteSeleccionadas: string[] = [];
   filtroAdVendedorTodasImplicitas = true;
   filtroAdVendedorSeleccionadas: string[] = [];
+
+  /** Copia de los filtros adicionales ya enviados al API (año/mes usan siempre el valor actual del control). */
+  filtroAdSucursalTodasImplicitasAplicado = true;
+  filtroAdSucursalSeleccionadasAplicado: string[] = [];
+  filtroAdEstadoTodasImplicitasAplicado = true;
+  filtroAdEstadoSeleccionadasAplicado: string[] = [];
+  filtroAdCanalTodasImplicitasAplicado = true;
+  filtroAdCanalSeleccionadasAplicado: string[] = [];
+  filtroAdClienteTodasImplicitasAplicado = true;
+  filtroAdClienteSeleccionadasAplicado: string[] = [];
+  filtroAdVendedorTodasImplicitasAplicado = true;
+  filtroAdVendedorSeleccionadasAplicado: string[] = [];
+  filtroCategoriaProductoAplicado = '';
+  filtroProductoAplicado = '';
 
   sucursales: DashboardFiltroCatalogoItem[] = [];
   canales: DashboardFiltroCatalogoItem[] = [];
@@ -288,6 +298,8 @@ export class VentasComponent implements OnInit, OnChanges {
       // Actualizar datos originales cuando cambian
       if (this.datos && Object.keys(this.datos).length > 0) {
         this.datosOriginales = this.clonarDatos(this.datos);
+        // Sincronizar productos desde los datos de ventas
+        this.sincronizarProductosDesdeDatosVentas();
         // Aplicar filtros interactivos si existen
         if (Object.keys(this.filtrosInteractivos).length > 0) {
           this.aplicarFiltrosInteractivos();
@@ -577,18 +589,31 @@ export class VentasComponent implements OnInit, OnChanges {
         if (items.length === 0) {
           this.filtroAdSucursalSeleccionadas = [];
           this.filtroAdSucursalTodasImplicitas = true;
+          this.filtroAdSucursalSeleccionadasAplicado = [];
+          this.filtroAdSucursalTodasImplicitasAplicado = true;
         } else if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
           this.filtroAdSucursalTodasImplicitas = false;
           this.filtroAdSucursalSeleccionadas = [String(user.id_sucursal)];
+          this.filtroAdSucursalTodasImplicitasAplicado = false;
+          this.filtroAdSucursalSeleccionadasAplicado = [String(user.id_sucursal)];
           setTimeout(() => {
             if (this.inicializado) {
-              this.aplicarFiltros();
+              this.refrescarDatosPorFecha();
             }
           }, 150);
         } else if (user?.tipo === 'Administrador') {
           this.filtroAdSucursalSeleccionadas = [];
           this.filtroAdSucursalTodasImplicitas = true;
+          this.filtroAdSucursalSeleccionadasAplicado = [];
+          this.filtroAdSucursalTodasImplicitasAplicado = true;
         }
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.estadosVentaParaFiltro().subscribe({
+      next: (items) => {
+        this.estadosVenta = items;
         this.cdr.markForCheck();
       },
     });
@@ -645,6 +670,12 @@ export class VentasComponent implements OnInit, OnChanges {
     ) {
       this.filtroProducto = '';
     }
+    if (
+      this.filtroProductoAplicado &&
+      !this.productos.some((p) => String(p.id) === String(this.filtroProductoAplicado))
+    ) {
+      this.filtroProductoAplicado = '';
+    }
   }
 
   /** Usuario con una sola sucursal asignada no puede cambiar el filtro (como Resultados). */
@@ -678,10 +709,13 @@ export class VentasComponent implements OnInit, OnChanges {
     return seleccionados.join(',');
   }
 
-  private filtroAdSucursalParaApi(): string | string[] {
+  private filtroAdSucursalParaApiDesde(
+    todasImplicitas: boolean,
+    seleccionados: string[]
+  ): string | string[] {
     const todosIds = this.idsDeListaFiltro(this.sucursales);
-    const sel = this.filtroAdSucursalSeleccionadas;
-    if (this.filtroAdSucursalTodasImplicitas || sel.length === 0) {
+    const sel = seleccionados;
+    if (todasImplicitas || sel.length === 0) {
       return '';
     }
     if (
@@ -692,6 +726,43 @@ export class VentasComponent implements OnInit, OnChanges {
       return '';
     }
     return sel.length === 1 ? sel[0] : [...sel];
+  }
+
+  private filtroAdSucursalParaApiAplicado(): string | string[] {
+    return this.filtroAdSucursalParaApiDesde(
+      this.filtroAdSucursalTodasImplicitasAplicado,
+      this.filtroAdSucursalSeleccionadasAplicado
+    );
+  }
+
+  private copiarFiltrosAdicionalesAplicadoABorrador(): void {
+    this.filtroAdSucursalTodasImplicitas = this.filtroAdSucursalTodasImplicitasAplicado;
+    this.filtroAdSucursalSeleccionadas = [...this.filtroAdSucursalSeleccionadasAplicado];
+    this.filtroAdEstadoTodasImplicitas = this.filtroAdEstadoTodasImplicitasAplicado;
+    this.filtroAdEstadoSeleccionadas = [...this.filtroAdEstadoSeleccionadasAplicado];
+    this.filtroAdCanalTodasImplicitas = this.filtroAdCanalTodasImplicitasAplicado;
+    this.filtroAdCanalSeleccionadas = [...this.filtroAdCanalSeleccionadasAplicado];
+    this.filtroAdClienteTodasImplicitas = this.filtroAdClienteTodasImplicitasAplicado;
+    this.filtroAdClienteSeleccionadas = [...this.filtroAdClienteSeleccionadasAplicado];
+    this.filtroAdVendedorTodasImplicitas = this.filtroAdVendedorTodasImplicitasAplicado;
+    this.filtroAdVendedorSeleccionadas = [...this.filtroAdVendedorSeleccionadasAplicado];
+    this.filtroCategoriaProducto = this.filtroCategoriaProductoAplicado;
+    this.filtroProducto = this.filtroProductoAplicado;
+  }
+
+  private copiarFiltrosAdicionalesBorradorAAplicado(): void {
+    this.filtroAdSucursalTodasImplicitasAplicado = this.filtroAdSucursalTodasImplicitas;
+    this.filtroAdSucursalSeleccionadasAplicado = [...this.filtroAdSucursalSeleccionadas];
+    this.filtroAdEstadoTodasImplicitasAplicado = this.filtroAdEstadoTodasImplicitas;
+    this.filtroAdEstadoSeleccionadasAplicado = [...this.filtroAdEstadoSeleccionadas];
+    this.filtroAdCanalTodasImplicitasAplicado = this.filtroAdCanalTodasImplicitas;
+    this.filtroAdCanalSeleccionadasAplicado = [...this.filtroAdCanalSeleccionadas];
+    this.filtroAdClienteTodasImplicitasAplicado = this.filtroAdClienteTodasImplicitas;
+    this.filtroAdClienteSeleccionadasAplicado = [...this.filtroAdClienteSeleccionadas];
+    this.filtroAdVendedorTodasImplicitasAplicado = this.filtroAdVendedorTodasImplicitas;
+    this.filtroAdVendedorSeleccionadasAplicado = [...this.filtroAdVendedorSeleccionadas];
+    this.filtroCategoriaProductoAplicado = this.filtroCategoriaProducto;
+    this.filtroProductoAplicado = this.filtroProducto;
   }
 
   private filtroAdicionalEstaActivo(todasImplicitas: boolean, seleccionados: string[]): boolean {
@@ -729,40 +800,36 @@ export class VentasComponent implements OnInit, OnChanges {
   onFiltroAdSucursalChange(ev: DropdownMultiFiltroSelection): void {
     this.filtroAdSucursalTodasImplicitas = ev.todasImplicitas;
     this.filtroAdSucursalSeleccionadas = [...ev.seleccionados];
-    this.aplicarFiltros();
     this.cdr.markForCheck();
   }
 
   onFiltroAdEstadoChange(ev: DropdownMultiFiltroSelection): void {
     this.filtroAdEstadoTodasImplicitas = ev.todasImplicitas;
     this.filtroAdEstadoSeleccionadas = [...ev.seleccionados];
-    this.aplicarFiltros();
     this.cdr.markForCheck();
   }
 
   onFiltroAdCanalChange(ev: DropdownMultiFiltroSelection): void {
     this.filtroAdCanalTodasImplicitas = ev.todasImplicitas;
     this.filtroAdCanalSeleccionadas = [...ev.seleccionados];
-    this.aplicarFiltros();
     this.cdr.markForCheck();
   }
 
   onFiltroAdClienteChange(ev: DropdownMultiFiltroSelection): void {
     this.filtroAdClienteTodasImplicitas = ev.todasImplicitas;
     this.filtroAdClienteSeleccionadas = [...ev.seleccionados];
-    this.aplicarFiltros();
     this.cdr.markForCheck();
   }
 
   onFiltroAdVendedorChange(ev: DropdownMultiFiltroSelection): void {
     this.filtroAdVendedorTodasImplicitas = ev.todasImplicitas;
     this.filtroAdVendedorSeleccionadas = [...ev.seleccionados];
-    this.aplicarFiltros();
     this.cdr.markForCheck();
   }
 
   toggleFiltrosAdicionales(): void {
     this.mostrarFiltrosAdicionales = !this.mostrarFiltrosAdicionales;
+    this.copiarFiltrosAdicionalesAplicadoABorrador();
     this.cdr.markForCheck();
   }
 
@@ -785,12 +852,7 @@ export class VentasComponent implements OnInit, OnChanges {
   }
 
   aplicarFiltrosProductos(): void {
-    // Aquí puedes aplicar los filtros de productos
-    // Por ejemplo, recargar datos o emitir un evento
-    console.log('Filtros de productos:', {
-      categoria: this.filtroCategoriaProducto,
-      producto: this.filtroProducto
-    });
+    this.confirmarOtrosFiltrosVentas();
   }
 
   limpiarFiltros(): void {
@@ -806,11 +868,35 @@ export class VentasComponent implements OnInit, OnChanges {
     this.filtroAdClienteSeleccionadas = [];
     this.filtroAdVendedorTodasImplicitas = true;
     this.filtroAdVendedorSeleccionadas = [];
-    this.aplicarFiltros();
+    this.filtroCategoriaProducto = '';
+    this.filtroProducto = '';
+    this.filtroAdSucursalTodasImplicitasAplicado = true;
+    this.filtroAdSucursalSeleccionadasAplicado = [];
+    this.filtroAdEstadoTodasImplicitasAplicado = true;
+    this.filtroAdEstadoSeleccionadasAplicado = [];
+    this.filtroAdCanalTodasImplicitasAplicado = true;
+    this.filtroAdCanalSeleccionadasAplicado = [];
+    this.filtroAdClienteTodasImplicitasAplicado = true;
+    this.filtroAdClienteSeleccionadasAplicado = [];
+    this.filtroAdVendedorTodasImplicitasAplicado = true;
+    this.filtroAdVendedorSeleccionadasAplicado = [];
+    this.filtroCategoriaProductoAplicado = '';
+    this.filtroProductoAplicado = '';
+    this.emitirFiltrosAlPadre();
   }
 
-  aplicarFiltros(): void {
-    // No emitir durante la inicialización
+  /** Recarga datos con año/mes actuales y los filtros adicionales ya confirmados (sin leer el borrador). */
+  refrescarDatosPorFecha(): void {
+    this.emitirFiltrosAlPadre();
+  }
+
+  /** Confirma el borrador de “otros filtros” y luego pide datos al padre. */
+  confirmarOtrosFiltrosVentas(): void {
+    this.copiarFiltrosAdicionalesBorradorAAplicado();
+    this.emitirFiltrosAlPadre();
+  }
+
+  private emitirFiltrosAlPadre(): void {
     if (!this.inicializado) {
       return;
     }
@@ -819,28 +905,28 @@ export class VentasComponent implements OnInit, OnChanges {
       this.anio = new Date().getFullYear().toString();
     }
 
-    const idsEstado = this.ventasEstadosFiltroItems.map((e) => e.id);
+    const idsEstado = this.estadosVenta.map((e) => e.id);
     const filtros: any = {
       anio: this.anio,
-      sucursal: this.filtroAdSucursalParaApi(),
+      sucursal: this.filtroAdSucursalParaApiAplicado(),
       estado: this.filtroAdMultiAString(
-        this.filtroAdEstadoTodasImplicitas,
-        this.filtroAdEstadoSeleccionadas,
+        this.filtroAdEstadoTodasImplicitasAplicado,
+        this.filtroAdEstadoSeleccionadasAplicado,
         idsEstado
       ),
       canal: this.filtroAdMultiAString(
-        this.filtroAdCanalTodasImplicitas,
-        this.filtroAdCanalSeleccionadas,
+        this.filtroAdCanalTodasImplicitasAplicado,
+        this.filtroAdCanalSeleccionadasAplicado,
         this.idsDeListaFiltro(this.canales)
       ),
       cliente: this.filtroAdMultiAString(
-        this.filtroAdClienteTodasImplicitas,
-        this.filtroAdClienteSeleccionadas,
+        this.filtroAdClienteTodasImplicitasAplicado,
+        this.filtroAdClienteSeleccionadasAplicado,
         this.idsDeListaFiltro(this.clientes)
       ),
       vendedor: this.filtroAdMultiAString(
-        this.filtroAdVendedorTodasImplicitas,
-        this.filtroAdVendedorSeleccionadas,
+        this.filtroAdVendedorTodasImplicitasAplicado,
+        this.filtroAdVendedorSeleccionadasAplicado,
         this.idsDeListaFiltro(this.vendedores)
       ),
     };
@@ -848,12 +934,17 @@ export class VentasComponent implements OnInit, OnChanges {
       filtros.mes = this.mes;
     }
 
+    const cat = String(this.filtroCategoriaProductoAplicado ?? '').trim();
+    if (cat) filtros.categoria = cat;
+    const prod = String(this.filtroProductoAplicado ?? '').trim();
+    if (prod) filtros.producto = prod;
+
     this.filtrosCambiados.emit(filtros);
   }
 
   get puedeLimpiarFiltrosVentas(): boolean {
     const anioActual = new Date().getFullYear().toString();
-    const filtrosAdicionales =
+    const hayAdicionalesEnBorrador =
       this.filtroAdicionalEstaActivo(
         this.filtroAdSucursalTodasImplicitas,
         this.filtroAdSucursalSeleccionadas
@@ -874,7 +965,39 @@ export class VentasComponent implements OnInit, OnChanges {
         this.filtroAdVendedorTodasImplicitas,
         this.filtroAdVendedorSeleccionadas
       );
-    return !!this.mes || this.anio !== anioActual || filtrosAdicionales;
+    const hayAdicionalesAplicados =
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdSucursalTodasImplicitasAplicado,
+        this.filtroAdSucursalSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdEstadoTodasImplicitasAplicado,
+        this.filtroAdEstadoSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdCanalTodasImplicitasAplicado,
+        this.filtroAdCanalSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdClienteTodasImplicitasAplicado,
+        this.filtroAdClienteSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdVendedorTodasImplicitasAplicado,
+        this.filtroAdVendedorSeleccionadasAplicado
+      );
+    const hayCatProd =
+      !!String(this.filtroCategoriaProducto ?? '').trim() ||
+      !!String(this.filtroProducto ?? '').trim() ||
+      !!String(this.filtroCategoriaProductoAplicado ?? '').trim() ||
+      !!String(this.filtroProductoAplicado ?? '').trim();
+    return (
+      !!this.mes ||
+      this.anio !== anioActual ||
+      hayAdicionalesEnBorrador ||
+      hayAdicionalesAplicados ||
+      hayCatProd
+    );
   }
 
   formatCurrency(value: number): string {
@@ -1555,12 +1678,17 @@ export class VentasComponent implements OnInit, OnChanges {
 
     const labels = Object.keys(ventasPorFormaPago);
     const data = labels.map(fp => ventasPorFormaPago[fp]);
+    const total = data.reduce((s, x) => s + x, 0);
+    const porcentajes = data.map((v) =>
+      total > 0 ? (v / total) * 100 : 0
+    );
 
     if (this.datosFiltrados.ventasPorFormaPagoConfig) {
       this.datosFiltrados.ventasPorFormaPagoConfig = {
         ...this.datosFiltrados.ventasPorFormaPagoConfig,
         labels,
-        data
+        data,
+        porcentajes,
       };
     }
   }

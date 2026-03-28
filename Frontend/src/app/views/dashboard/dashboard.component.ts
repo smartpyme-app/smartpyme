@@ -9,6 +9,17 @@ import { DashboardDataService } from './services/dashboard-data.service';
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  private static readonly SECCION_GUARDADA_KEY = 'smartpyme.dashboard.seccionActiva';
+
+  /** Pestañas que tienen vista en el `ngSwitch` (Finanzas u otras sin componente no entran). */
+  private readonly seccionesConVista = new Set<string>([
+    'Resultados',
+    'Ventas',
+    'Gastos',
+    'Control de cuentas',
+    'Inventario',
+  ]);
+
   private destroy$ = new Subject<void>();
   
   loading = false;
@@ -31,6 +42,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    this.restaurarSeccionDesdeAlmacenamiento();
     this.cargarDatos();
   }
 
@@ -42,9 +54,43 @@ export class DashboardComponent implements OnInit, OnDestroy {
   cambiarSeccion(seccion: any): void {
     this.secciones.forEach(s => s.activo = false);
     seccion.activo = true;
+    this.persistirSeccionActivaSiAplica();
     // Cargar datos iniciales para la nueva sección
     // Cada sección manejará sus propios filtros después
     this.cargarDatos();
+  }
+
+  private restaurarSeccionDesdeAlmacenamiento(): void {
+    try {
+      const guardada = localStorage.getItem(
+        DashboardComponent.SECCION_GUARDADA_KEY
+      )?.trim();
+      if (!guardada || !this.seccionesConVista.has(guardada)) {
+        return;
+      }
+      const destino = this.secciones.find((s) => s.nombre === guardada);
+      if (!destino) {
+        return;
+      }
+      this.secciones.forEach((s) => (s.activo = false));
+      destino.activo = true;
+    } catch {
+      /* sin localStorage o quota */
+    }
+  }
+
+  private persistirSeccionActivaSiAplica(): void {
+    const nombre = this.seccionActiva;
+    try {
+      if (this.seccionesConVista.has(nombre)) {
+        localStorage.setItem(
+          DashboardComponent.SECCION_GUARDADA_KEY,
+          nombre
+        );
+      }
+    } catch {
+      /* sin localStorage o quota */
+    }
   }
 
   get seccionActiva(): string {

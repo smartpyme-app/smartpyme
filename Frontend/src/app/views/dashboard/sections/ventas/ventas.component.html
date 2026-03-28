@@ -37,7 +37,7 @@
                 <app-dropdown-multi-filtro
                     label="Estado"
                     pluralLabel="estados"
-                    [items]="ventasEstadosFiltroItems"
+                    [items]="estadosVenta"
                     [disabled]="false"
                     [todasImplicitas]="filtroAdEstadoTodasImplicitas"
                     [seleccionados]="filtroAdEstadoSeleccionadas"
@@ -80,6 +80,31 @@
                     (selectionChange)="onFiltroAdVendedorChange($event)">
                 </app-dropdown-multi-filtro>
             </div>
+            <!-- Filtros globales de Categoría y Producto -->
+            <div class="col-12 col-md-6 col-xl-4">
+                <label for="categoriaProductoGlobal" class="form-label text-primary fw-medium">Categoría</label>
+                <select
+                    id="categoriaProductoGlobal"
+                    class="form-select"
+                    [(ngModel)]="filtroCategoriaProducto">
+                    <option value="">Todas</option>
+                    <option *ngFor="let categoria of categoriasProductos; trackBy: trackByIndex" [value]="categoria.id">
+                        {{ categoria.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="col-12 col-md-6 col-xl-4">
+                <label for="productoGlobal" class="form-label text-primary fw-medium">Producto</label>
+                <select
+                    id="productoGlobal"
+                    class="form-select"
+                    [(ngModel)]="filtroProducto">
+                    <option value="">Todos</option>
+                    <option *ngFor="let producto of productos; trackBy: trackByIndex" [value]="producto.id">
+                        {{ producto.nombre }}
+                    </option>
+                </select>
+            </div>
         </div>
     </ng-template>
     <!-- Filtros específicos de Ventas -->
@@ -91,7 +116,7 @@
                         <app-filtro-fecha
                             [(anio)]="anio"
                             [(mes)]="mes"
-                            (filtroChange)="aplicarFiltros()"
+                            (filtroChange)="refrescarDatosPorFecha()"
                             controlId="ventas-filtro-principal">
                         </app-filtro-fecha>
                         
@@ -107,7 +132,8 @@
                                 type="button"
                                 class="btn btn-primary"
                                 tooltip="Aplicar filtros"
-                                (click)="aplicarFiltros()">
+                                *ngIf="mostrarFiltrosAdicionales"
+                                (click)="confirmarOtrosFiltrosVentas()">
                                 <i class="fa fa-check"></i> Aplicar
                             </button>
                             <button 
@@ -342,7 +368,7 @@
                         <!-- Filtros alineados a la derecha -->
                         <div class="d-flex align-items-end gap-3 flex-wrap">
                             <!-- Dropdown Categoría -->
-                            <div class="d-flex flex-column">
+                            <!-- <div class="d-flex flex-column">
                                 <label for="categoriaProducto" class="text-primary fw-medium small mb-1">Categoría</label>
                                 <select 
                                     id="categoriaProducto"
@@ -354,10 +380,10 @@
                                         {{ categoria.nombre }}
                                     </option>
                                 </select>
-                            </div>
+                            </div> -->
 
                             <!-- Dropdown Producto -->
-                            <div class="d-flex flex-column">
+                            <!-- <div class="d-flex flex-column">
                                 <label for="producto" class="text-primary fw-medium small mb-1">Producto</label>
                                 <select 
                                     id="producto"
@@ -369,7 +395,7 @@
                                         {{ producto.nombre }}
                                     </option>
                                 </select>
-                            </div>
+                            </div> -->
                         </div>
                     </div>
                 </div>
@@ -539,7 +565,7 @@
                         <app-filtro-fecha
                             [(anio)]="anio"
                             [(mes)]="mes"
-                            (filtroChange)="aplicarFiltros()"
+                            (filtroChange)="refrescarDatosPorFecha()"
                             controlId="ventas-filtro-tablas">
                         </app-filtro-fecha>
                         
@@ -555,7 +581,8 @@
                                 type="button"
                                 class="btn btn-primary"
                                 tooltip="Aplicar filtros"
-                                (click)="aplicarFiltros()">
+                                *ngIf="mostrarFiltrosAdicionales"
+                                (click)="confirmarOtrosFiltrosVentas()">
                                 <i class="fa fa-check"></i> Aplicar
                             </button>
                             <button 

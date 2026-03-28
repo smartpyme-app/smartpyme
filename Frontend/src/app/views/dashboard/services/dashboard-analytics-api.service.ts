@@ -92,6 +92,10 @@ export class DashboardAnalyticsApiService {
     if (cliente) out += `&cliente=${cliente}`;
     const vendedor = this.csvQueryParam(filtros?.vendedor);
     if (vendedor) out += `&vendedor=${vendedor}`;
+    const categoria = this.csvQueryParam(filtros?.categoria);
+    if (categoria) out += `&categoria=${categoria}`;
+    const producto = this.csvQueryParam(filtros?.producto);
+    if (producto) out += `&producto=${producto}`;
     return out;
   }
 

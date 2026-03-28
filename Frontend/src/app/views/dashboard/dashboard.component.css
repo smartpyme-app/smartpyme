@@ -46,6 +46,21 @@
     color: white !important;
 }
 
+/* Pestañas de sección: reparten el ancho en la fila y envuelven si no caben */
+.dashboard-section-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.dashboard-section-tabs .btn {
+    /* Crece para llenar la fila; base mínima para decidir el salto de línea */
+    flex: 1 1 10rem;
+    min-width: min(10rem, 100%);
+    text-align: center;
+}
+
 /* Estilos para los botones de año */
 .btn-group .btn {
     border-radius: 0;

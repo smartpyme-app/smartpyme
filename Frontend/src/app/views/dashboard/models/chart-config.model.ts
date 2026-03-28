@@ -2,6 +2,8 @@ export interface ChartConfig {
     title?: string;
     data: any[];
     labels?: string[];
+    /** Opcional: porcentaje por segmento (p. ej. API ventas por forma de pago). Si falta, el gráfico usa el % calculado por ECharts. */
+    porcentajes?: number[];
     options?: any;
     colors?: string[];
     type?: 'line' | 'bar' | 'pie' | 'doughnut';

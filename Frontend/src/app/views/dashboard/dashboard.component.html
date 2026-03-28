@@ -1,10 +1,10 @@
 <!-- Sección de navegación -->
 <div class="bg-white p-4 rounded mb-3">
-    <div class="d-flex gap-2 flex-wrap">
+    <div class="dashboard-section-tabs" role="tablist">
         <button 
             *ngFor="let seccion of secciones" 
             type="button"
-            class="btn rounded-pill px-4 py-2 fw-medium"
+            class="btn rounded-3 px-3 px-sm-4 py-3 fw-medium text-center text-wrap"
             [ngClass]="seccion.activo ? 'btn-section-active' : 'btn-section-inactive'"
             (click)="cambiarSeccion(seccion)">
             {{ seccion.nombre }}

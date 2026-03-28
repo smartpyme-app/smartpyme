@@ -24,6 +24,7 @@ export class DashboardFiltrosCatalogoService {
   private vendedores$?: Observable<DashboardFiltroCatalogoItem[]>;
   private categorias$?: Observable<DashboardFiltroCatalogoItem[]>;
   private proveedores$?: Observable<DashboardFiltroCatalogoItem[]>;
+  private estadosVenta$?: Observable<DashboardFiltroCatalogoItem[]>;
 
   constructor(
     private api: ApiService,
@@ -67,6 +68,7 @@ export class DashboardFiltrosCatalogoService {
     this.vendedores$ = undefined;
     this.categorias$ = undefined;
     this.proveedores$ = undefined;
+    this.estadosVenta$ = undefined;
   }
 
   /**
@@ -141,5 +143,14 @@ export class DashboardFiltrosCatalogoService {
       );
     }
     return this.proveedores$;
+  }
+
+  estadosVentaParaFiltro(): Observable<DashboardFiltroCatalogoItem[]> {
+    if (!this.estadosVenta$) {
+      this.estadosVenta$ = this.getFromGo('/api/dimensiones/estados-venta').pipe(
+        shareReplay(1)
+      );
+    }
+    return this.estadosVenta$;
   }
 }

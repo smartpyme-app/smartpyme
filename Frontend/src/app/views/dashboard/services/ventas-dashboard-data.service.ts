@@ -73,8 +73,18 @@ export class VentasDashboardDataService {
       },
       ventasPorFormaPagoConfig: {
         type: 'doughnut',
-        labels: (porFormaPago ?? []).map((i: any) => i.formaPago),
-        data: (porFormaPago ?? []).map((i: any) => i.ventas),
+        labels: (porFormaPago ?? []).map(
+          (i: any) => i.formaPago ?? i.name ?? ''
+        ),
+        data: (porFormaPago ?? []).map((i: any) =>
+          Number(i.ventas ?? i.amount ?? 0)
+        ),
+        porcentajes: (porFormaPago ?? []).map((i: any) => {
+          const p = i.porcentaje;
+          if (p == null || p === '') return Number.NaN;
+          const n = Number(p);
+          return Number.isFinite(n) ? n : Number.NaN;
+        }),
       },
       ventasPorCategoria: (porCategoria ?? []).map((i: any) => ({
         name: i.categoria,
