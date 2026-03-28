@@ -155,3 +155,8 @@ a.fc-col-header-cell-cushion{
     border: none !important;
   }
 
+/* ng-select: el panel usa z-index 1050 por defecto y queda detrás del modal Bootstrap (1055) */
+.ng-dropdown-panel {
+  z-index: 1060 !important;
+}
+
