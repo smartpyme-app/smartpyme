@@ -48,6 +48,28 @@ export class PartidasComponent implements OnInit {
 
   modalRef!: BsModalRef;
 
+  /**
+   * Catálogo para reportes: "Todas" + cuentas con etiqueta "código — nombre".
+   * Se usa con ng-select (mismo patrón que partida-detalles) para búsqueda integrada.
+   */
+  get opcionesTipoCuentaReporte(): Array<{ value: string | number; label: string }> {
+    const opciones: Array<{ value: string | number; label: string }> = [
+      { value: 'all', label: 'Todas las cuentas' },
+    ];
+    if (!Array.isArray(this.catalogo)) {
+      return opciones;
+    }
+    for (const c of this.catalogo) {
+      const codigo = c?.codigo ?? '';
+      const nombre = c?.nombre ?? '';
+      opciones.push({
+        value: c.id,
+        label: codigo ? `${codigo} — ${nombre}` : nombre || String(c.id),
+      });
+    }
+    return opciones;
+  }
+
   // NUEVO: Clave para persistir filtros
   private readonly FILTROS_STORAGE_KEY = 'partidas_filtros_v1';
 

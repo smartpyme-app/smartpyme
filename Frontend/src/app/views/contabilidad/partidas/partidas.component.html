@@ -330,12 +330,19 @@
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Tipo de cuenta:</label>
-                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
-                    <option value="all" selected>Todas las cuentas</option>
-                    <option *ngFor="let cat of catalogo" [value]="cat.id">
-                      {{cat.nombre}}
-                    </option>
-                  </select>
+                  <ng-select
+                    name="tipo_cuenta_diario"
+                    class="form-select p-0"
+                    [(ngModel)]="reporte.tipo_cuenta"
+                    [items]="opcionesTipoCuentaReporte"
+                    bindLabel="label"
+                    bindValue="value"
+                    placeholder="Buscar por código o nombre…"
+                    [searchable]="true"
+                    [clearable]="false"
+                    appendTo="body"
+                    notFoundText="Sin coincidencias">
+                  </ng-select>
                 </div>
               </div>
               <div class="row mt-4">
@@ -380,12 +387,19 @@
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Tipo de cuenta:</label>
-                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
-                    <option value="all" selected>Todas las cuentas</option>
-                    <option *ngFor="let cat of catalogo" [value]="cat.id">
-                      {{cat.nombre}}
-                    </option>
-                  </select>
+                  <ng-select
+                    name="tipo_cuenta_mayor"
+                    class="form-select p-0"
+                    [(ngModel)]="reporte.tipo_cuenta"
+                    [items]="opcionesTipoCuentaReporte"
+                    bindLabel="label"
+                    bindValue="value"
+                    placeholder="Buscar por código o nombre…"
+                    [searchable]="true"
+                    [clearable]="false"
+                    appendTo="body"
+                    notFoundText="Sin coincidencias">
+                  </ng-select>
                 </div>
               </div>
               <div class="row mt-4">
@@ -430,12 +444,19 @@
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Tipo de cuenta:</label>
-                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
-                    <option value="all" selected>Todas las cuentas</option>
-                    <option *ngFor="let cat of catalogo" [value]="cat.id">
-                      {{cat.nombre}}
-                    </option>
-                  </select>
+                  <ng-select
+                    name="tipo_cuenta_balance"
+                    class="form-select p-0"
+                    [(ngModel)]="reporte.tipo_cuenta"
+                    [items]="opcionesTipoCuentaReporte"
+                    bindLabel="label"
+                    bindValue="value"
+                    placeholder="Buscar por código o nombre…"
+                    [searchable]="true"
+                    [clearable]="false"
+                    appendTo="body"
+                    notFoundText="Sin coincidencias">
+                  </ng-select>
                 </div>
               </div>
               <div class="row mt-4">

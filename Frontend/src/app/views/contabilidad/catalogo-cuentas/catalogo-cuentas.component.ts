@@ -89,6 +89,8 @@ export class CatalogoCuentasComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
+        // Sincronizar con la URL: HttpClient fusiona params y el `page` de filtros pisa ?page= de la URL.
+        this.filtros.page = event.page;
         this.apiService.paginate(this.cuentas.path + '?page='+ event.page, this.filtros).subscribe(cuentas => {
             this.cuentas = cuentas;
             this.loading = false;
@@ -111,7 +113,7 @@ export class CatalogoCuentasComponent implements OnInit {
                         if (this.cuentas.data[i].id == data.id )
                             this.cuentas.data.splice(i, 1);
                     }
-                }, error => {this.alertService.error(error); });4
+                }, error => {this.alertService.error(error); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
