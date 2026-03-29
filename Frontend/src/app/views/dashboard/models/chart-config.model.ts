@@ -174,7 +174,8 @@ export interface DashboardData {
     // Datos para la sección de Gastos
     metricasGastos?: {
       gastosConIVA: number;
-      gastosSinIVA: number;
+      /** Gastos del mes de referencia (API `gastosMesActual`). */
+      gastosMesActual: number;
       gastosMesAnterior: number;
       variacionGastos: number;
       aumentoCostosPorcentaje: number;

@@ -27,13 +27,26 @@ export class GastosDashboardDataService {
     vsAnioAnterior: any;
   }): Record<string, unknown> {
     const { cards, porMes, vsPresupuesto, vsAnioAnterior } = raw;
+    const c = cards ?? {};
     return {
       metricasGastos: {
-        gastosConIVA: cards?.gastosTotales ?? 0,
-        gastosSinIVA: 0,
-        gastosMesAnterior: cards?.gastosMesAnterior ?? 0,
-        variacionGastos: cards?.variacion ?? 0,
-        aumentoCostosPorcentaje: cards?.variacionPct ?? 0,
+        gastosConIVA: Number(
+          c.gastosTotales ?? c.gastos_totales ?? c.total ?? 0,
+        ),
+        gastosMesActual: Number(
+          c.gastosMesActual ??
+            c.gastos_mes_actual ??
+            c.gastosSinIva ??
+            c.gastos_sin_iva ??
+            0,
+        ),
+        gastosMesAnterior: Number(
+          c.gastosMesAnterior ?? c.gastos_mes_anterior ?? 0,
+        ),
+        variacionGastos: Number(c.variacion ?? c.variacion_gastos ?? 0),
+        aumentoCostosPorcentaje: Number(
+          c.variacionPct ?? c.variacion_pct ?? 0,
+        ),
       },
       gastosPorMesConfig: {
         type: 'line',

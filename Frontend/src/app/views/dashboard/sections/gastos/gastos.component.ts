@@ -254,6 +254,8 @@ export class GastosComponent implements OnInit, OnChanges {
     // });
 
     if (this.datos && Object.keys(this.datos).length > 0) {
+      // Nuevo lote desde el padre (otro año, etc.): no reutilizar hash ni filas cacheadas.
+      this._lastDatosHash = '';
       // Guardar datos originales
       this.datosOriginales = this.clonarDatos(this.datos);
       // Inicializar datos filtrados
@@ -490,50 +492,83 @@ export class GastosComponent implements OnInit, OnChanges {
     this.cdr.markForCheck();
   }
 
+  /**
+   * Año seleccionado en el filtro (número). Fallback: año calendario actual.
+   */
+  private anioFiltroNumerico(): number {
+    const n = parseInt(String(this.anio || '').trim(), 10);
+    return Number.isFinite(n) ? n : new Date().getFullYear();
+  }
+
   recalcularMetricas(): void {
     if (!this.datosFiltrados.detalleGastos) return;
 
+    /**
+     * Sin filtros interactivos (clics en gráficos), las cards deben reflejar el JSON de
+     * `/api/gastos/cards` (`metricasGastos`). Recalcular desde detalle pisaba esos valores
+     * y además usaba siempre el año/mes calendario actual → en 2024/2025 las cards quedaban en 0.
+     */
+    if (
+      !this.tieneFiltrosInteractivos() &&
+      this.datosOriginales?.metricasGastos &&
+      Object.keys(this.datosOriginales.metricasGastos).length > 0
+    ) {
+      this.datosFiltrados.metricasGastos = this.clonarDatos(
+        this.datosOriginales.metricasGastos,
+      );
+      return;
+    }
+
     const gastos = this.datosFiltrados.detalleGastos;
-    const gastosConIVA = gastos.reduce((sum: number, g: any) => sum + (g.gastosConIVA || 0), 0);
-    const gastosSinIVA = gastosConIVA / 1.12; // Asumiendo IVA del 12%
+    const gastosConIVA = gastos.reduce(
+      (sum: number, g: any) => sum + (g.gastosConIVA || 0),
+      0,
+    );
 
-    // Calcular gastos del mes actual
-    const hoy = new Date();
-    const mesActual = hoy.getMonth();
-    const añoActual = hoy.getFullYear();
-    const gastosMesActual = gastos
-      .filter((g: any) => {
-        if (g.fecha) {
-          const fecha = new Date(g.fecha);
-          return fecha.getMonth() === mesActual && fecha.getFullYear() === añoActual;
-        }
-        return false;
-      })
-      .reduce((sum: number, g: any) => sum + (g.gastosConIVA || 0), 0);
+    const anioRef = this.anioFiltroNumerico();
+    const mesStr = String(this.mes || '').trim();
+    /** Mes de referencia 0–11: explícito en filtro, o mes calendario actual (misma “posición” en el año elegido). */
+    const mesRef = mesStr
+      ? Math.min(11, Math.max(0, parseInt(mesStr, 10) - 1))
+      : new Date().getMonth();
 
-    // Calcular gastos del mes anterior
-    const mesAnterior = mesActual === 0 ? 11 : mesActual - 1;
-    const añoAnterior = mesActual === 0 ? añoActual - 1 : añoActual;
-    const gastosMesAnterior = this.datosOriginales.detalleGastos
-      ?.filter((g: any) => {
-        if (g.fecha) {
-          const fecha = new Date(g.fecha);
-          return fecha.getMonth() === mesAnterior && fecha.getFullYear() === añoAnterior;
+    const gastoEnMesRef = (lista: any[]): number =>
+      lista.reduce((sum: number, g: any) => {
+        if (!g?.fecha) return sum;
+        const fecha = new Date(g.fecha);
+        if (Number.isNaN(fecha.getTime())) return sum;
+        if (fecha.getFullYear() !== anioRef || fecha.getMonth() !== mesRef) {
+          return sum;
         }
-        return false;
-      })
-      .reduce((sum: number, g: any) => sum + (g.gastosConIVA || 0), 0) || 0;
+        return sum + (g.gastosConIVA || 0);
+      }, 0);
+
+    const gastosMesActual = gastoEnMesRef(gastos);
+
+    const mesAnt = mesRef === 0 ? 11 : mesRef - 1;
+    const anioAnt = mesRef === 0 ? anioRef - 1 : anioRef;
+    const gastosMesAnterior =
+      this.datosOriginales.detalleGastos?.reduce((sum: number, g: any) => {
+        if (!g?.fecha) return sum;
+        const fecha = new Date(g.fecha);
+        if (Number.isNaN(fecha.getTime())) return sum;
+        if (fecha.getFullYear() !== anioAnt || fecha.getMonth() !== mesAnt) {
+          return sum;
+        }
+        return sum + (g.gastosConIVA || 0);
+      }, 0) ?? 0;
 
     const variacion = gastosMesActual - gastosMesAnterior;
-    const aumentoPorcentaje = gastosMesAnterior > 0 
-      ? Math.round((variacion / gastosMesAnterior) * 100) 
-      : 0;
+    const aumentoPorcentaje =
+      gastosMesAnterior > 0
+        ? Math.round((variacion / gastosMesAnterior) * 100)
+        : 0;
 
     if (!this.datosFiltrados.metricasGastos) {
       this.datosFiltrados.metricasGastos = {};
     }
     this.datosFiltrados.metricasGastos.gastosConIVA = gastosConIVA;
-    this.datosFiltrados.metricasGastos.gastosSinIVA = gastosMesActual;
+    this.datosFiltrados.metricasGastos.gastosMesActual = gastosMesActual;
     this.datosFiltrados.metricasGastos.gastosMesAnterior = gastosMesAnterior;
     this.datosFiltrados.metricasGastos.variacionGastos = variacion;
     this.datosFiltrados.metricasGastos.aumentoCostosPorcentaje = aumentoPorcentaje;
