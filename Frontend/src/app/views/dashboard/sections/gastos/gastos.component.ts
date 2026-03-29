@@ -1,6 +1,15 @@
 import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
+import { ApiService } from '@services/api.service';
+import {
+  DashboardFiltrosCatalogoService,
+  DashboardFiltroCatalogoItem,
+} from '../../services/dashboard-filtros-catalogo.service';
+import {
+  DropdownMultiFiltroItem,
+  DropdownMultiFiltroSelection,
+} from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 
 @Component({
   selector: 'app-gastos',
@@ -39,10 +48,17 @@ export class GastosComponent implements OnInit, OnChanges {
 
   anio: string = new Date().getFullYear().toString();
   mes: string = '';
-  filtroSucursal: string = '';
-  filtroEstado: string = '';
-  filtroCliente: string = '';
   mostrarFiltrosAdicionales: boolean = false;
+
+  /** Otros filtros (multi-select como en Ventas). */
+  filtroGastoSucTodasImplicitas = true;
+  filtroGastoSucSeleccionadas: string[] = [];
+  filtroGastoProvTodasImplicitas = true;
+  filtroGastoProvSeleccionadas: string[] = [];
+  filtroGastoTipoTodasImplicitas = true;
+  filtroGastoTipoSeleccionadas: string[] = [];
+  filtroGastoEstTodasImplicitas = true;
+  filtroGastoEstSeleccionadas: string[] = [];
 
   // Vista de métricas
   vistaMetricas: string = 'mes';
@@ -54,9 +70,19 @@ export class GastosComponent implements OnInit, OnChanges {
     mes?: string;
   } = {};
 
-  // Opciones para filtros
-  sucursales: any[] = [];
-  clientes: any[] = [];
+  /** Catálogos vía `DashboardFiltrosCatalogoService` (mismo origen que Ventas). */
+  sucursales: DashboardFiltroCatalogoItem[] = [];
+  proveedores: DashboardFiltroCatalogoItem[] = [];
+  tiposGasto: DashboardFiltroCatalogoItem[] = [];
+  estadosGasto: DashboardFiltroCatalogoItem[] = [];
+
+  /** Si la API aún no expone `estados-gasto`, se usan estas opciones (compat. query `estado_gasto`). */
+  private static readonly ESTADOS_GASTO_FALLBACK: DashboardFiltroCatalogoItem[] = [
+    { id: 'pagada', nombre: 'Pagada' },
+    { id: 'pendiente', nombre: 'Pendiente' },
+    { id: 'vencida', nombre: 'Vencida' },
+    { id: 'cancelada', nombre: 'Cancelada' },
+  ];
 
   // Columnas para la tabla de detalle de gastos (AG Grid)
   detalleGastosColumnDefs: ColDef[] = [
@@ -109,7 +135,11 @@ export class GastosComponent implements OnInit, OnChanges {
     }
   ];
 
-  constructor(private cdr: ChangeDetectorRef) { }
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private apiService: ApiService,
+    private filtrosCatalogo: DashboardFiltrosCatalogoService,
+  ) {}
 
   /**
    * Método eficiente de clonación profunda
@@ -160,7 +190,8 @@ export class GastosComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     // Configurar AG Grid
     this.configurarAGGrid();
-    
+    this.cargarOpcionesFiltros();
+
     // Intentar inicializar si ya hay datos
     if (this.datos && Object.keys(this.datos).length > 0) {
       this.inicializarDatos();
@@ -169,6 +200,169 @@ export class GastosComponent implements OnInit, OnChanges {
     setTimeout(() => {
       this.filtrosListosParaEmitir = true;
     }, 100);
+  }
+
+  /**
+   * Sucursales (Laravel); proveedores, tipos y estados de gasto (Go dimensiones).
+   */
+  cargarOpcionesFiltros(): void {
+    this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
+      next: (items) => {
+        this.sucursales = items;
+        this.aplicarRestriccionSucursalGastosPorRol();
+        setTimeout(() => {
+          if (this.filtrosListosParaEmitir) {
+            this.aplicarFiltros();
+          }
+        }, 150);
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.proveedoresParaFiltro().subscribe({
+      next: (items) => {
+        this.proveedores = items;
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.tiposGastoParaFiltro().subscribe({
+      next: (items) => {
+        this.tiposGasto = items;
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.estadosGastoParaFiltro().subscribe({
+      next: (items) => {
+        this.estadosGasto =
+          items.length > 0 ? items : GastosComponent.ESTADOS_GASTO_FALLBACK;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Usuario con una sola sucursal no puede cambiar el filtro (como Ventas/Resultados). */
+  get filtroSucursalGastosDisabled(): boolean {
+    const user = this.apiService.auth_user();
+    return user?.tipo !== 'Administrador' && this.sucursales.length <= 1;
+  }
+
+  private aplicarRestriccionSucursalGastosPorRol(): void {
+    const user = this.apiService.auth_user();
+    const items = this.sucursales;
+    if (items.length === 0) {
+      this.filtroGastoSucTodasImplicitas = true;
+      this.filtroGastoSucSeleccionadas = [];
+      return;
+    }
+    if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
+      this.filtroGastoSucTodasImplicitas = false;
+      this.filtroGastoSucSeleccionadas = [String(user.id_sucursal)];
+    } else {
+      this.filtroGastoSucTodasImplicitas = true;
+      this.filtroGastoSucSeleccionadas = [];
+    }
+  }
+
+  private idsDeListaFiltro(items: DashboardFiltroCatalogoItem[]): string[] {
+    return (items || []).map((x) => String(x.id));
+  }
+
+  private filtroGastoMultiAString(
+    todasImplicitas: boolean,
+    seleccionados: string[],
+    todosIds: string[],
+  ): string {
+    if (todasImplicitas || seleccionados.length === 0) {
+      return '';
+    }
+    if (
+      todosIds.length > 0 &&
+      seleccionados.length === todosIds.length &&
+      todosIds.every((id) => seleccionados.includes(id))
+    ) {
+      return '';
+    }
+    return seleccionados.join(',');
+  }
+
+  private filtroGastoSucursalParaApiDesde(
+    todasImplicitas: boolean,
+    seleccionados: string[],
+  ): string | string[] {
+    const todosIds = this.idsDeListaFiltro(this.sucursales);
+    const sel = seleccionados;
+    if (todasImplicitas || sel.length === 0) {
+      return '';
+    }
+    if (
+      todosIds.length > 0 &&
+      sel.length === todosIds.length &&
+      todosIds.every((id) => sel.includes(id))
+    ) {
+      return '';
+    }
+    return sel.length === 1 ? sel[0] : [...sel];
+  }
+
+  private filtroGastoSucursalParaApi(): string | string[] {
+    return this.filtroGastoSucursalParaApiDesde(
+      this.filtroGastoSucTodasImplicitas,
+      this.filtroGastoSucSeleccionadas,
+    );
+  }
+
+  get filtroGastoSucursalesItems(): DropdownMultiFiltroItem[] {
+    return (this.sucursales || []).map((s) => ({
+      id: String(s.id),
+      nombre: s.nombre ?? '',
+    }));
+  }
+
+  get filtroGastoProveedoresItems(): DropdownMultiFiltroItem[] {
+    return (this.proveedores || []).map((x) => ({
+      id: String(x.id),
+      nombre: x.nombre ?? '',
+    }));
+  }
+
+  get filtroGastoTiposItems(): DropdownMultiFiltroItem[] {
+    return (this.tiposGasto || []).map((x) => ({
+      id: String(x.id),
+      nombre: x.nombre ?? '',
+    }));
+  }
+
+  get filtroGastoEstadosItems(): DropdownMultiFiltroItem[] {
+    return (this.estadosGasto || []).map((e) => ({
+      id: String(e.id),
+      nombre: e.nombre ?? '',
+    }));
+  }
+
+  onFiltroGastoSucursalChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroGastoSucTodasImplicitas = ev.todasImplicitas;
+    this.filtroGastoSucSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+  }
+
+  onFiltroGastoProveedorChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroGastoProvTodasImplicitas = ev.todasImplicitas;
+    this.filtroGastoProvSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+  }
+
+  onFiltroGastoTipoChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroGastoTipoTodasImplicitas = ev.todasImplicitas;
+    this.filtroGastoTipoSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+  }
+
+  onFiltroGastoEstadoChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroGastoEstTodasImplicitas = ev.todasImplicitas;
+    this.filtroGastoEstSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
   }
 
   configurarAGGrid(): void {
@@ -333,14 +527,37 @@ export class GastosComponent implements OnInit, OnChanges {
     }
     const filtros: any = {
       anio: this.anio,
-      sucursal: this.filtroSucursal,
-      cliente: this.filtroCliente
     };
+    const suc = this.filtroGastoSucursalParaApi();
+    if (suc !== '' && suc != null) {
+      filtros.sucursal = suc;
+    }
+    const prov = this.filtroGastoMultiAString(
+      this.filtroGastoProvTodasImplicitas,
+      this.filtroGastoProvSeleccionadas,
+      this.idsDeListaFiltro(this.proveedores),
+    );
+    if (prov) {
+      filtros.proveedor = prov;
+    }
+    const tipo = this.filtroGastoMultiAString(
+      this.filtroGastoTipoTodasImplicitas,
+      this.filtroGastoTipoSeleccionadas,
+      this.idsDeListaFiltro(this.tiposGasto),
+    );
+    if (tipo) {
+      filtros.tipoGasto = tipo;
+    }
+    const est = this.filtroGastoMultiAString(
+      this.filtroGastoEstTodasImplicitas,
+      this.filtroGastoEstSeleccionadas,
+      this.idsDeListaFiltro(this.estadosGasto),
+    );
+    if (est) {
+      filtros.estadoGasto = est;
+    }
     if (this.mes) {
       filtros.mes = this.mes;
-    }
-    if (this.filtroEstado) {
-      filtros.estadoGasto = this.filtroEstado;
     }
     this.filtrosCambiados.emit(filtros);
   }
@@ -348,9 +565,13 @@ export class GastosComponent implements OnInit, OnChanges {
   limpiarFiltros(): void {
     this.anio = new Date().getFullYear().toString();
     this.mes = '';
-    this.filtroSucursal = '';
-    this.filtroEstado = '';
-    this.filtroCliente = '';
+    this.filtroGastoProvTodasImplicitas = true;
+    this.filtroGastoProvSeleccionadas = [];
+    this.filtroGastoTipoTodasImplicitas = true;
+    this.filtroGastoTipoSeleccionadas = [];
+    this.filtroGastoEstTodasImplicitas = true;
+    this.filtroGastoEstSeleccionadas = [];
+    this.aplicarRestriccionSucursalGastosPorRol();
     this.limpiarFiltrosInteractivos();
     this.aplicarFiltros();
   }

@@ -2,6 +2,10 @@
     display: block;
 }
 
+.dropdown-multi-filtro-label {
+    color: var(--bs-primary, #0d6efd);
+}
+
 .dropdown-multi-filtro-outer {
     min-width: 200px;
     max-width: min(280px, 100%);
@@ -143,4 +147,57 @@
 
 .dropdown-multi-filtro-row span {
     min-width: 0;
+}
+
+/* Tema con acento (ej. dashboard gastos) */
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-label {
+    color: var(--dmf-accent);
+}
+
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-trigger {
+    border-color: color-mix(in srgb, var(--dmf-accent) 42%, #ced4da);
+}
+
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-trigger:hover:not(:disabled) {
+    border-color: var(--dmf-accent);
+}
+
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-trigger:focus {
+    border-color: var(--dmf-accent);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--dmf-accent) 28%, transparent);
+}
+
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-chevron {
+    color: var(--dmf-accent);
+}
+
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-panel {
+    border-color: color-mix(in srgb, var(--dmf-accent) 32%, #dee2e6);
+    box-shadow:
+        0 0.35rem 0.85rem color-mix(in srgb, var(--dmf-accent) 14%, rgba(0, 0, 0, 0.08)),
+        0 0.5rem 1rem rgba(0, 0, 0, 0.06);
+}
+
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-buscar {
+    background: color-mix(in srgb, var(--dmf-accent) 7%, #fff);
+    border-bottom-color: color-mix(in srgb, var(--dmf-accent) 22%, #e9ecef);
+}
+
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-buscar-icon {
+    border-color: color-mix(in srgb, var(--dmf-accent) 35%, #ced4da);
+    color: var(--dmf-accent);
+}
+
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-row:hover {
+    background-color: color-mix(in srgb, var(--dmf-accent) 9%, #fff);
+}
+
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-row .form-check-input:focus {
+    border-color: var(--dmf-accent);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--dmf-accent) 22%, transparent);
+}
+
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-row .form-check-input:checked {
+    background-color: var(--dmf-accent);
+    border-color: var(--dmf-accent);
 }

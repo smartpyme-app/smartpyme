@@ -26,6 +26,8 @@ export class DashboardFiltrosCatalogoService {
   private productos$?: Observable<DashboardFiltroCatalogoItem[]>;
   private proveedores$?: Observable<DashboardFiltroCatalogoItem[]>;
   private estadosVenta$?: Observable<DashboardFiltroCatalogoItem[]>;
+  private estadosGasto$?: Observable<DashboardFiltroCatalogoItem[]>;
+  private tiposGasto$?: Observable<DashboardFiltroCatalogoItem[]>;
 
   constructor(
     private api: ApiService,
@@ -71,6 +73,8 @@ export class DashboardFiltrosCatalogoService {
     this.productos$ = undefined;
     this.proveedores$ = undefined;
     this.estadosVenta$ = undefined;
+    this.estadosGasto$ = undefined;
+    this.tiposGasto$ = undefined;
   }
 
   /**
@@ -167,5 +171,25 @@ export class DashboardFiltrosCatalogoService {
       );
     }
     return this.estadosVenta$;
+  }
+
+  /** Estados de gasto para dashboard (query `estado_gasto`). GET /api/dimensiones/estados-gasto */
+  estadosGastoParaFiltro(): Observable<DashboardFiltroCatalogoItem[]> {
+    if (!this.estadosGasto$) {
+      this.estadosGasto$ = this.getFromGo('/api/dimensiones/estados-gasto').pipe(
+        shareReplay(1),
+      );
+    }
+    return this.estadosGasto$;
+  }
+
+  /** Tipos de gasto (query `tipo_gasto`). GET /api/dimensiones/tipos-gasto */
+  tiposGastoParaFiltro(): Observable<DashboardFiltroCatalogoItem[]> {
+    if (!this.tiposGasto$) {
+      this.tiposGasto$ = this.getFromGo('/api/dimensiones/tipos-gasto').pipe(
+        shareReplay(1),
+      );
+    }
+    return this.tiposGasto$;
   }
 }

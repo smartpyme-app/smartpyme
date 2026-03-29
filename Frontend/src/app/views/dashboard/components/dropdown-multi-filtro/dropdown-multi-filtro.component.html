@@ -1,8 +1,10 @@
 <div
     class="d-flex flex-column dropdown-multi-filtro-outer"
     [class.dropdown-multi-filtro-outer--open]="panelAbierto"
+    [class.dropdown-multi-filtro-outer--accent]="!!accentColor"
+    [style.--dmf-accent]="accentColor || null"
     #wrap>
-    <span class="text-primary fw-medium small mb-1">{{ label }}</span>
+    <span class="dropdown-multi-filtro-label fw-medium small mb-1">{{ label }}</span>
     <div class="dropdown-multi-filtro position-relative">
         <button
             type="button"

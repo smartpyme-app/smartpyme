@@ -32,12 +32,12 @@
 }
 
 ::ng-deep .detalle-gastos-grid .ag-header {
-    background-color: #66A3FF !important;
+    background-color: #F19447 !important;
     border-bottom: none !important;
 }
 
 ::ng-deep .detalle-gastos-grid .ag-header-cell {
-    background-color: #66A3FF !important;
+    background-color: #F19447 !important;
     color: white !important;
     font-weight: 600 !important;
 }

@@ -1,7 +1,21 @@
 /* Alineado con admin-dash / template.min.css: btn-primary #005CBB, btn-default #D7E2FF */
 :host {
-    --filtro-fecha-link: #005cbb;
+    --filtro-fecha-accent: #005cbb;
+    --filtro-fecha-link: var(--filtro-fecha-accent);
     --filtro-fecha-label: #1e293b;
+}
+
+/* Preset activo cuando el padre pasa accentColor (sustituye btn-primary) */
+.filtro-fecha-preset--active {
+    color: #fff;
+    background-color: var(--filtro-fecha-accent);
+    border-color: var(--filtro-fecha-accent);
+}
+
+.filtro-fecha-preset--active:hover,
+.filtro-fecha-preset--active:focus-visible {
+    color: #fff;
+    filter: brightness(0.92);
 }
 
 .filtro-fecha-root {
@@ -33,8 +47,9 @@
     text-align: left;
 }
 
-.filtro-fecha-link:hover {
-    color: #004a9a;
+.filtro-fecha-link:hover,
+.filtro-fecha-link:focus-visible {
+    filter: brightness(0.88);
 }
 
 .filtro-fecha-link--inline {
@@ -77,6 +92,28 @@
 }
 
 .filtro-fecha-select:focus {
-    border-color: #005cbb;
-    box-shadow: 0 0 0 0.2rem rgba(0, 92, 187, 0.18);
+    border-color: var(--filtro-fecha-accent);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--filtro-fecha-accent) 22%, transparent);
+}
+
+/* Con acento de sección (ej. gastos #F19447): presets inactivos como outline del dashboard, no btn-default azul */
+:host.filtro-fecha--accent .filtro-fecha-preset.btn-default {
+    color: var(--filtro-fecha-accent) !important;
+    background-color: #fff !important;
+    border: 1px solid var(--filtro-fecha-accent) !important;
+}
+
+:host.filtro-fecha--accent .filtro-fecha-preset.btn-default:hover,
+:host.filtro-fecha--accent .filtro-fecha-preset.btn-default:focus-visible {
+    color: #fff !important;
+    background-color: var(--filtro-fecha-accent) !important;
+    border-color: var(--filtro-fecha-accent) !important;
+}
+
+:host.filtro-fecha--accent .filtro-fecha-select {
+    border-color: color-mix(in srgb, var(--filtro-fecha-accent) 32%, #e2e8f0);
+}
+
+:host.filtro-fecha--accent .filtro-fecha-select:hover:not(:focus) {
+    border-color: color-mix(in srgb, var(--filtro-fecha-accent) 48%, #e2e8f0);
 }

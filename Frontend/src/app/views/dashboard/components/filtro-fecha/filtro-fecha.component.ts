@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, HostBinding, Input, OnInit, Output } from '@angular/core';
 
 @Component({
   selector: 'app-filtro-fecha',
@@ -28,6 +28,46 @@ export class FiltroFechaComponent implements OnInit {
 
   /** Color CSS opcional de los labels (p. ej. `#F19447` para variantes por sección). */
   @Input() labelColor = '';
+
+  /**
+   * Acento de la sección: botones de atajo activos, enlaces, focus de selects y labels (si no hay `labelColor`).
+   * Vacío = estilo por defecto (Bootstrap `btn-primary` / azul del dashboard).
+   */
+  @Input() accentColor = '';
+
+  @HostBinding('style.--filtro-fecha-accent')
+  get hostAccentCssVar(): string | null {
+    const v = this.accentColor?.trim();
+    return v || null;
+  }
+
+  /** Aplica estilos coherentes con el acento (presets inactivos, bordes de selects). */
+  @HostBinding('class.filtro-fecha--accent')
+  get hostAccentClass(): boolean {
+    return !!this.accentColor?.trim();
+  }
+
+  /** Labels en modo avanzado: `labelColor` o, si falta, `accentColor`. */
+  get effectiveLabelColor(): string {
+    return this.labelColor?.trim() || this.accentColor?.trim() || '';
+  }
+
+  /** Si hay acento personalizado, los presets dejan de usar `btn-primary`. */
+  get usaAcentoPersonalizado(): boolean {
+    return !!this.accentColor?.trim();
+  }
+
+  /** Clases para cada botón de atajo (Bootstrap o acento vía CSS). */
+  clasePreset(preset: 'este-mes' | 'mes-anterior' | 'este-anio' | 'anio-pasado'): string | Record<string, boolean> {
+    const active = this.presetActivo === preset;
+    if (this.usaAcentoPersonalizado) {
+      return active ? 'filtro-fecha-preset--active' : 'btn-default';
+    }
+    return {
+      'btn-primary': active,
+      'btn-default': !active,
+    };
+  }
 
   /** Si es true, al cargar se muestran año/mes; si false, los atajos. */
   @Input() iniciarEnModoAvanzado = false;

@@ -5,28 +5,28 @@
             <button
                 type="button"
                 class="btn btn-sm filtro-fecha-preset"
-                [ngClass]="{ 'btn-primary': presetActivo === 'este-mes', 'btn-default': presetActivo !== 'este-mes' }"
+                [ngClass]="clasePreset('este-mes')"
                 (click)="presetEsteMes()">
                 Este mes
             </button>
             <button
                 type="button"
                 class="btn btn-sm filtro-fecha-preset"
-                [ngClass]="{ 'btn-primary': presetActivo === 'mes-anterior', 'btn-default': presetActivo !== 'mes-anterior' }"
+                [ngClass]="clasePreset('mes-anterior')"
                 (click)="presetMesAnterior()">
                 Mes anterior
             </button>
             <button
                 type="button"
                 class="btn btn-sm filtro-fecha-preset"
-                [ngClass]="{ 'btn-primary': presetActivo === 'este-anio', 'btn-default': presetActivo !== 'este-anio' }"
+                [ngClass]="clasePreset('este-anio')"
                 (click)="presetEsteAnio()">
                 Este año
             </button>
             <button
                 type="button"
                 class="btn btn-sm filtro-fecha-preset"
-                [ngClass]="{ 'btn-primary': presetActivo === 'anio-pasado', 'btn-default': presetActivo !== 'anio-pasado' }"
+                [ngClass]="clasePreset('anio-pasado')"
                 (click)="presetAnioPasado()">
                 Año pasado
             </button>
@@ -43,8 +43,8 @@
     <div *ngIf="modoAvanzado" class="filtro-fecha-avanzado">
         <div class="filtro-fecha-fields d-flex align-items-end gap-3 flex-wrap">
             <div class="filtro-fecha-field d-flex flex-column">
-                <label [attr.for]="idAnio" class="filtro-fecha-field-label" [style.color]="labelColor || null">
-                    <i class="fas fa-calendar-day filtro-fecha-field-label__icon" aria-hidden="true" [style.color]="labelColor || null"></i>
+                <label [attr.for]="idAnio" class="filtro-fecha-field-label" [style.color]="effectiveLabelColor || null">
+                    <i class="fas fa-calendar-day filtro-fecha-field-label__icon" aria-hidden="true" [style.color]="effectiveLabelColor || null"></i>
                     <span class="filtro-fecha-field-label__text">Año</span>
                 </label>
                 <select
@@ -57,8 +57,8 @@
                 </select>
             </div>
             <div class="filtro-fecha-field d-flex flex-column">
-                <label [attr.for]="idMes" class="filtro-fecha-field-label" [style.color]="labelColor || null">
-                    <i class="fas fa-calendar-day filtro-fecha-field-label__icon" aria-hidden="true" [style.color]="labelColor || null"></i>
+                <label [attr.for]="idMes" class="filtro-fecha-field-label" [style.color]="effectiveLabelColor || null">
+                    <i class="fas fa-calendar-day filtro-fecha-field-label__icon" aria-hidden="true" [style.color]="effectiveLabelColor || null"></i>
                     <span class="filtro-fecha-field-label__text">Mes</span>
                 </label>
                 <select

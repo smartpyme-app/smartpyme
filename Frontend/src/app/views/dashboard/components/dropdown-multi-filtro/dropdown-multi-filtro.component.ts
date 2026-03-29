@@ -69,6 +69,12 @@ export class DropdownMultiFiltroComponent {
   /** Si se informa, sustituye el texto por defecto bajo el buscador cuando aplica límite. */
   @Input() textoAyudaLimite = '';
 
+  /**
+   * Color de acento (hex o CSS). Vacío = estilo por defecto (primary del tema).
+   * Útil para alinear filtros con la paleta de una sección (ej. gastos #F19447).
+   */
+  @Input() accentColor = '';
+
   @Output() selectionChange = new EventEmitter<DropdownMultiFiltroSelection>();
 
   panelAbierto = false;

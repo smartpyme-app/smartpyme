@@ -40,7 +40,8 @@
                             [(mes)]="mes"
                             (filtroChange)="aplicarFiltros()"
                             controlId="gastos-filtro-principal"
-                            labelClass="fw-medium small mb-1">
+                            labelClass="fw-medium small mb-1"
+                            accentColor="#F19447">
                         </app-filtro-fecha>
                         
                         <!-- Botones y controles a la derecha -->
@@ -68,48 +69,61 @@
                         </div>
                     </div>
                     
-                    <!-- Filtros adicionales (colapsables) -->
+                    <!-- Filtros adicionales (colapsables), mismo patrón que Ventas -->
                     <div class="mt-3" *ngIf="mostrarFiltrosAdicionales">
                         <div class="row g-3">
-                            <div class="col">
-                                <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
-                                <select 
-                                    id="sucursal"
-                                    class="form-select"
-                                    [(ngModel)]="filtroSucursal"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let sucursal of sucursales; trackBy: trackByIndex" [value]="sucursal.id">
-                                        {{ sucursal.nombre }}
-                                    </option>
-                                </select>
+                            <div class="col-12 col-md-6 col-xl-3">
+                                <app-dropdown-multi-filtro
+                                    label="Sucursal"
+                                    pluralLabel="sucursales"
+                                    accentColor="#F19447"
+                                    [items]="filtroGastoSucursalesItems"
+                                    [disabled]="filtroSucursalGastosDisabled"
+                                    [todasImplicitas]="filtroGastoSucTodasImplicitas"
+                                    [seleccionados]="filtroGastoSucSeleccionadas"
+                                    (selectionChange)="onFiltroGastoSucursalChange($event)">
+                                </app-dropdown-multi-filtro>
                             </div>
-                            <div class="col">
-                                <label for="cliente" class="text-primary fw-medium small mb-1">Cliente</label>
-                                <select 
-                                    id="cliente"
-                                    class="form-select"
-                                    [(ngModel)]="filtroCliente"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let cliente of clientes; trackBy: trackByIndex" [value]="cliente.id">
-                                        {{ cliente.nombre }}
-                                    </option>
-                                </select>
+                            <div class="col-12 col-md-6 col-xl-3">
+                                <app-dropdown-multi-filtro
+                                    label="Proveedor"
+                                    pluralLabel="proveedores"
+                                    accentColor="#F19447"
+                                    [items]="filtroGastoProveedoresItems"
+                                    [disabled]="false"
+                                    [mostrarBuscador]="true"
+                                    [limiteVistaInicial]="100"
+                                    buscadorPlaceholder="Buscar proveedor"
+                                    [todasImplicitas]="filtroGastoProvTodasImplicitas"
+                                    [seleccionados]="filtroGastoProvSeleccionadas"
+                                    (selectionChange)="onFiltroGastoProveedorChange($event)">
+                                </app-dropdown-multi-filtro>
                             </div>
-                            <div class="col">
-                                <label for="estado" class="text-primary fw-medium small mb-1">Estado</label>
-                                <select 
-                                    id="estado"
-                                    class="form-select"
-                                    [(ngModel)]="filtroEstado"
-                                    (change)="aplicarFiltros()">
-                                    <option value="">Todas</option>
-                                    <option value="pagada">Pagada</option>
-                                    <option value="pendiente">Pendiente</option>
-                                    <option value="vencida">Vencida</option>
-                                    <option value="cancelada">Cancelada</option>
-                                </select>
+                            <!-- <div class="col-12 col-md-6 col-xl-3">
+                                <app-dropdown-multi-filtro
+                                    label="Tipo de gasto"
+                                    pluralLabel="tipos de gasto"
+                                    [items]="filtroGastoTiposItems"
+                                    [disabled]="false"
+                                    [mostrarBuscador]="true"
+                                    [limiteVistaInicial]="100"
+                                    buscadorPlaceholder="Buscar tipo"
+                                    [todasImplicitas]="filtroGastoTipoTodasImplicitas"
+                                    [seleccionados]="filtroGastoTipoSeleccionadas"
+                                    (selectionChange)="onFiltroGastoTipoChange($event)">
+                                </app-dropdown-multi-filtro>
+                            </div> -->
+                            <div class="col-12 col-md-6 col-xl-3">
+                                <app-dropdown-multi-filtro
+                                    label="Estado de gasto"
+                                    pluralLabel="estados de gasto"
+                                    accentColor="#F19447"
+                                    [items]="filtroGastoEstadosItems"
+                                    [disabled]="false"
+                                    [todasImplicitas]="filtroGastoEstTodasImplicitas"
+                                    [seleccionados]="filtroGastoEstSeleccionadas"
+                                    (selectionChange)="onFiltroGastoEstadoChange($event)">
+                                </app-dropdown-multi-filtro>
                             </div>
                         </div>
                     </div>
