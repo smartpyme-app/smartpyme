@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Models\Admin\Empresa;
 use App\Models\Ventas\Detalle;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -16,13 +17,18 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
     */
     public $request;
 
+    /** @var bool */
+    protected $incluirPaquetes = false;
+
     public function filter(Request $request)
     {
         $this->request = $request;
+        $empresa = Empresa::find(Auth::user()->id_empresa);
+        $this->incluirPaquetes = $empresa && !empty($empresa->modulo_paquetes);
     }
 
     public function headings():array{
-        return[
+        $headings = [
             'Fecha',
             'Cliente',
             'Telefono',
@@ -51,15 +57,31 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             'Observaciones', 
             'Usuario',
             'Vendedor',
-            'Sucursal'
+            'Sucursal',
         ];
+        if ($this->incluirPaquetes) {
+            $headings = array_merge($headings, [
+                'WR',
+                'Núm. guía',
+                'Núm. seguimiento',
+                'Estado paquete',
+                'Transportista',
+            ]);
+        }
+
+        return $headings;
     }
 
     public function collection()
     {
         $request = $this->request;
-        
-        $detalles = Detalle::whereHas('venta', function($query) use ($request) {
+
+        $detallesQuery = Detalle::query();
+        if ($this->incluirPaquetes) {
+            $detallesQuery->with('paquete');
+        }
+
+        $detalles = $detallesQuery->whereHas('venta', function($query) use ($request) {
                               $query->when($request->inicio, function ($query) use ($request) {
                                     return $query->where('fecha', '>=', $request->inicio);
                                 })
@@ -215,8 +237,16 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
               $row->venta()->pluck('observaciones')->first(),
               $venta ? $venta->usuario()->pluck('name')->first() : null,
               $row->vendedor()->pluck('name')->first(),
-              $venta ? $venta->sucursal()->pluck('nombre')->first() : null
+              $venta ? $venta->sucursal()->pluck('nombre')->first() : null,
          ];
+        if ($this->incluirPaquetes) {
+            $paquete = $row->relationLoaded('paquete') ? $row->paquete : $row->paquete()->first();
+            $fields[] = $paquete ? $paquete->wr : '';
+            $fields[] = $paquete ? $paquete->num_guia : '';
+            $fields[] = $paquete ? $paquete->num_seguimiento : '';
+            $fields[] = $paquete ? $paquete->estado : '';
+            $fields[] = $paquete ? $paquete->transportista : '';
+        }
         return $fields;
     }
 }
