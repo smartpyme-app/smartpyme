@@ -39,17 +39,13 @@ export class RetaceosListComponent implements OnInit {
 
     if (filtrosGuardados) {
       this.filtros = JSON.parse(filtrosGuardados);
-      console.log(this.filtros);
     } else {
-
-    const hoy = new Date();
-    const mesAnterior = new Date();
-    mesAnterior.setMonth(hoy.getMonth() - 1);
     this.filtros.id_sucursal = '';
-  //  this.filtros.id_cliente = '';
     this.filtros.id_usuario = '';
-    this.filtros.inicio = this.formatDate(mesAnterior);
-    this.filtros.fin = this.formatDate(hoy);
+    // Sin rango por defecto: el API solo filtra por fecha si inicio/fin vienen con valor.
+    // Antes se limitaba al último mes y los retaceos más antiguos no aparecían en el listado.
+    this.filtros.inicio = '';
+    this.filtros.fin = '';
     this.filtros.busqueda = '';
     this.filtros.paginate = 10;
     this.filtros.estado = '';
@@ -58,15 +54,6 @@ export class RetaceosListComponent implements OnInit {
     }
 
     this.cargarRetaceos();
-  }
-
-
-
-  formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
   }
 
   cargarRetaceos() {
@@ -113,6 +100,23 @@ export class RetaceosListComponent implements OnInit {
   filtrarRetaceos() {
     this.cargarRetaceos();
   }
+
+  public setPagination(event: { page: number }): void {
+    this.loading = true;
+    this.apiService
+      .paginate(this.retaceos.path + '?page=' + event.page, this.filtros)
+      .subscribe(
+        (retaceos) => {
+          this.retaceos = retaceos;
+          this.loading = false;
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
+  }
+
   openFilter(template: TemplateRef<any>) {
     if(!this.clientes.length){
       this.apiService.getAll('clientes/list').subscribe(clientes => {
@@ -161,22 +165,37 @@ export class RetaceosListComponent implements OnInit {
     window.open(this.apiService.baseUrl + '/api/retaceo/imprimir/' + retaceo.id + '?token=' + this.apiService.auth_token());
   }
 
-  cambiarEstado(retaceo: any) {
-    const estadoAnterior = retaceo.estado;
-    
-    // Validar transiciones de estado
-    if (retaceo.estado === 'Anulado') {
-      this.alertService.warning('Un retaceo anulado no puede cambiar de estado', 'Cambio de estado');
-      retaceo.estado = estadoAnterior;
+  solicitarCambioEstado(retaceo: any, nuevoEstado: string) {
+    const estadoActual = retaceo.estado;
+
+    if (estadoActual === 'Anulado') {
+      this.alertService.warning(
+        'Un retaceo anulado no puede cambiar de estado',
+        'Cambio de estado'
+      );
+      return;
+    }
+    if (estadoActual === 'Aplicado' && nuevoEstado === 'Pendiente') {
+      this.alertService.warning(
+        'No se puede cambiar de aplicado a pendiente',
+        'Cambio de estado'
+      );
+      return;
+    }
+    if (estadoActual === nuevoEstado) {
       return;
     }
 
-    // Confirmar el cambio de estado
     let mensaje = '';
-    if (retaceo.estado === 'Aplicado') {
-      mensaje = 'Esta acción aplicará el retaceo y los costos serán aplicados. ¿Desea continuar?';
-    } else if (retaceo.estado === 'Anulado') {
-      mensaje = 'Esta acción anulará el retaceo y los costos no serán aplicados. ¿Desea continuar?';
+    if (nuevoEstado === 'Aplicado') {
+      mensaje =
+        'Esta acción aplicará el retaceo y los costos quedarán aplicados. ¿Desea continuar?';
+    } else if (nuevoEstado === 'Anulado' && estadoActual === 'Aplicado') {
+      mensaje =
+        'Esta acción anulará el retaceo y restaurará los costos originales de productos y detalle de compra. ¿Desea continuar?';
+    } else if (nuevoEstado === 'Anulado') {
+      mensaje =
+        'Esta acción anulará el retaceo. ¿Desea continuar?';
     } else {
       mensaje = '¿Desea cambiar el estado del retaceo?';
     }
@@ -186,37 +205,27 @@ export class RetaceosListComponent implements OnInit {
       text: mensaje,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Sí, cambiar',
+      confirmButtonText: 'Sí, continuar',
       cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.actualizarEstado(retaceo);
-      } else {
-        // Revertir el cambio si el usuario cancela
-        retaceo.estado = estadoAnterior;
+        this.actualizarEstado(retaceo.id, nuevoEstado);
       }
     });
   }
 
-  actualizarEstado(retaceo: any) {
+  actualizarEstado(id: number, estado: string) {
     this.loading = true;
 
-    const datosActualizacion = {
-      id: retaceo.id,
-      estado: retaceo.estado,
-    };
-
-    this.apiService.store('retaceo/estado', datosActualizacion).subscribe(
-      (response) => {
+    this.apiService.store('retaceo/estado', { id, estado }).subscribe(
+      () => {
         this.alertService.success('Estado actualizado correctamente', 'Cambio de estado');
         this.loading = false;
-        // Recargar los retaceos para asegurar que los datos estén actualizados
         this.cargarRetaceos();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
-        // Revertir el estado en caso de error
         this.cargarRetaceos();
       }
     );
