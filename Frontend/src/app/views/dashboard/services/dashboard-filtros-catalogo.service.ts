@@ -28,6 +28,7 @@ export class DashboardFiltrosCatalogoService {
   private estadosVenta$?: Observable<DashboardFiltroCatalogoItem[]>;
   private estadosGasto$?: Observable<DashboardFiltroCatalogoItem[]>;
   private tiposGasto$?: Observable<DashboardFiltroCatalogoItem[]>;
+  private estadosVigenciaCuentas$?: Observable<DashboardFiltroCatalogoItem[]>;
 
   constructor(
     private api: ApiService,
@@ -75,6 +76,7 @@ export class DashboardFiltrosCatalogoService {
     this.estadosVenta$ = undefined;
     this.estadosGasto$ = undefined;
     this.tiposGasto$ = undefined;
+    this.estadosVigenciaCuentas$ = undefined;
   }
 
   /**
@@ -191,5 +193,18 @@ export class DashboardFiltrosCatalogoService {
       );
     }
     return this.tiposGasto$;
+  }
+
+  /**
+   * Estados de vigencia de cartera (CXC/CXP, query `estado_vigencia`).
+   * Si el backend aún no expone el endpoint, devuelve [] y la UI completa con etiquetas de los gráficos.
+   */
+  estadosVigenciaCuentasParaFiltro(): Observable<DashboardFiltroCatalogoItem[]> {
+    if (!this.estadosVigenciaCuentas$) {
+      this.estadosVigenciaCuentas$ = this.getFromGo(
+        '/api/dimensiones/estados-vigencia-cuentas',
+      ).pipe(shareReplay(1));
+    }
+    return this.estadosVigenciaCuentas$;
   }
 }

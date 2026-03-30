@@ -10,21 +10,54 @@ import { DashboardAnalyticsApiService } from './dashboard-analytics-api.service'
 export class CuentasDashboardDataService {
   constructor(private analytics: DashboardAnalyticsApiService) {}
 
+  private static num(v: unknown): number {
+    if (v == null || v === '') {
+      return 0;
+    }
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  /**
+   * Cards CXC: la API puede devolver `cuentasPorCobrar` + `cxc0a30`… (legacy) o
+   * buckets `cxcCorriente`, `cxc1a30`, `cxc31a60`, `cxc61a90`, `cxcMas90`.
+   */
+  private totalCxcCards(c: any): number {
+    if (c == null) {
+      return 0;
+    }
+    if (c.cuentasPorCobrar != null) {
+      return CuentasDashboardDataService.num(c.cuentasPorCobrar);
+    }
+    return (
+      CuentasDashboardDataService.num(c.cxcCorriente) +
+      CuentasDashboardDataService.num(c.cxc1a30) +
+      CuentasDashboardDataService.num(c.cxc31a60) +
+      CuentasDashboardDataService.num(c.cxc61a90) +
+      CuentasDashboardDataService.num(c.cxcMas90)
+    );
+  }
+
+  /**
+   * `analytics.params(filtros)` ya incluye `cliente`, `categoria`, `sucursal`, etc.
+   * Solo añadimos aquí lo que no va en ese helper (proveedor CXP, estado_vigencia).
+   */
   private querySuffix(filtros: any): {
     p: string;
-    pCXC: string;
     pCXP: string;
     pEst: string;
-    pCat: string;
   } {
     const p = this.analytics.params(filtros);
-    const pCXC = filtros?.cliente ? `&cliente=${filtros.cliente}` : '';
     const pCXP = filtros?.proveedor ? `&proveedor=${filtros.proveedor}` : '';
-    const pEst = filtros?.estadoVigencia
-      ? `&estado_vigencia=${filtros.estadoVigencia}`
-      : '';
-    const pCat = filtros?.categoria ? `&categoria=${filtros.categoria}` : '';
-    return { p, pCXC, pCXP, pEst, pCat };
+    const estadoVig =
+      filtros?.estadoVigencia ??
+      filtros?.estado ??
+      filtros?.estadoPagar;
+    const pEst =
+      estadoVig != null && String(estadoVig).trim() !== ''
+        ? `&estado_vigencia=${estadoVig}`
+        : '';
+    return { p, pCXP, pEst };
   }
 
   private mapearCuentasCritico(raw: {
@@ -36,10 +69,16 @@ export class CuentasDashboardDataService {
     const { cxcCards, cxcVigencia, cxcClientes, cxcDetalle } = raw;
     return {
       metricasCuentas: {
-        cuentasPorCobrarTotal: cxcCards?.cuentasPorCobrar ?? 0,
-        cuentasPorCobrar30Dias: cxcCards?.cxc0a30 ?? 0,
-        cuentasPorCobrar60Dias: cxcCards?.cxc31a60 ?? 0,
-        cuentasPorCobrar90Dias: cxcCards?.cxc61a90 ?? 0,
+        cuentasPorCobrarTotal: this.totalCxcCards(cxcCards),
+        cuentasPorCobrar30Dias: CuentasDashboardDataService.num(
+          cxcCards?.cxc1a30 ?? cxcCards?.cxc0a30,
+        ),
+        cuentasPorCobrar60Dias: CuentasDashboardDataService.num(
+          cxcCards?.cxc31a60,
+        ),
+        cuentasPorCobrar90Dias:
+          CuentasDashboardDataService.num(cxcCards?.cxc61a90) +
+          CuentasDashboardDataService.num(cxcCards?.cxcMas90),
         cuentasPorPagarTotal: 0,
         cuentasPorPagar30Dias: 0,
         cuentasPorPagar60Dias: 0,
@@ -101,6 +140,8 @@ export class CuentasDashboardDataService {
         amount: i.amount,
       })),
       resumenCuentasPorPagar: (cxpDetalle ?? []).map((i: any) => ({
+        proveedor: i.proveedor != null ? String(i.proveedor).trim() : '',
+        correlativo: i.correlativo != null ? String(i.correlativo).trim() : '',
         fechaCompra: i.fechaDocumento,
         vencimiento: i.fechaVencimiento,
         diasVencimiento: i.diasVencimiento,
@@ -129,24 +170,24 @@ export class CuentasDashboardDataService {
 
   obtenerCuentasProgresivo(filtros: any = {}): Observable<any> {
     const api = this.analytics.baseUrl;
-    const { p, pCXC, pCXP, pEst, pCat } = this.querySuffix(filtros);
+    const { p, pCXP, pEst } = this.querySuffix(filtros);
     const safe = (path: string) => this.analytics.getSafe(`${api}${path}`);
 
     const critico$ = forkJoin({
-      cxcCards: safe(`/api/cuentas/cxc/cards?${p}${pCXC}${pEst}`),
-      cxcVigencia: safe(`/api/cuentas/cxc/vigencia?${p}${pCXC}${pEst}`),
-      cxcClientes: safe(`/api/cuentas/cxc/clientes?${p}${pCXC}&limite=10`),
-      cxcDetalle: safe(`/api/cuentas/cxc/detalle?${p}${pCXC}${pEst}`),
+      cxcCards: safe(`/api/cuentas/cxc/cards?${p}${pEst}`),
+      cxcVigencia: safe(`/api/cuentas/cxc/vigencia?${p}${pEst}`),
+      cxcClientes: safe(`/api/cuentas/cxc/clientes?${p}&limite=10`),
+      cxcDetalle: safe(`/api/cuentas/cxc/detalle?${p}${pEst}`),
     }).pipe(map((r) => this.mapearCuentasCritico(r)));
 
     const pesado$ = forkJoin({
-      cxpCards: safe(`/api/cuentas/cxp/cards?${p}${pCXP}${pEst}${pCat}`),
-      cxpVigencia: safe(`/api/cuentas/cxp/vigencia?${p}${pCXP}${pEst}${pCat}`),
+      cxpCards: safe(`/api/cuentas/cxp/cards?${p}${pCXP}${pEst}`),
+      cxpVigencia: safe(`/api/cuentas/cxp/vigencia?${p}${pCXP}${pEst}`),
       cxpProveedores: safe(
         `/api/cuentas/cxp/proveedores?${p}${pCXP}&limite=10`,
       ),
-      cxpCategorias: safe(`/api/cuentas/cxp/categorias?${p}${pCXP}${pCat}`),
-      cxpDetalle: safe(`/api/cuentas/cxp/detalle?${p}${pCXP}${pEst}${pCat}`),
+      cxpCategorias: safe(`/api/cuentas/cxp/categorias?${p}${pCXP}`),
+      cxpDetalle: safe(`/api/cuentas/cxp/detalle?${p}${pCXP}${pEst}`),
     }).pipe(map((r) => this.mapearCuentasPesado(r)));
 
     return critico$.pipe(
@@ -161,21 +202,21 @@ export class CuentasDashboardDataService {
 
   obtenerCuentas(filtros: any = {}): Observable<any> {
     const api = this.analytics.baseUrl;
-    const { p, pCXC, pCXP, pEst, pCat } = this.querySuffix(filtros);
+    const { p, pCXP, pEst } = this.querySuffix(filtros);
     const safe = (path: string) => this.analytics.getSafe(`${api}${path}`);
 
     return forkJoin({
-      cxcCards: safe(`/api/cuentas/cxc/cards?${p}${pCXC}${pEst}`),
-      cxcVigencia: safe(`/api/cuentas/cxc/vigencia?${p}${pCXC}${pEst}`),
-      cxcClientes: safe(`/api/cuentas/cxc/clientes?${p}${pCXC}&limite=10`),
-      cxcDetalle: safe(`/api/cuentas/cxc/detalle?${p}${pCXC}${pEst}`),
-      cxpCards: safe(`/api/cuentas/cxp/cards?${p}${pCXP}${pEst}${pCat}`),
-      cxpVigencia: safe(`/api/cuentas/cxp/vigencia?${p}${pCXP}${pEst}${pCat}`),
+      cxcCards: safe(`/api/cuentas/cxc/cards?${p}${pEst}`),
+      cxcVigencia: safe(`/api/cuentas/cxc/vigencia?${p}${pEst}`),
+      cxcClientes: safe(`/api/cuentas/cxc/clientes?${p}&limite=10`),
+      cxcDetalle: safe(`/api/cuentas/cxc/detalle?${p}${pEst}`),
+      cxpCards: safe(`/api/cuentas/cxp/cards?${p}${pCXP}${pEst}`),
+      cxpVigencia: safe(`/api/cuentas/cxp/vigencia?${p}${pCXP}${pEst}`),
       cxpProveedores: safe(
         `/api/cuentas/cxp/proveedores?${p}${pCXP}&limite=10`,
       ),
-      cxpCategorias: safe(`/api/cuentas/cxp/categorias?${p}${pCXP}${pCat}`),
-      cxpDetalle: safe(`/api/cuentas/cxp/detalle?${p}${pCXP}${pEst}${pCat}`),
+      cxpCategorias: safe(`/api/cuentas/cxp/categorias?${p}${pCXP}`),
+      cxpDetalle: safe(`/api/cuentas/cxp/detalle?${p}${pCXP}${pEst}`),
     }).pipe(
       map((all) =>
         this.mergeCuentasPayload(

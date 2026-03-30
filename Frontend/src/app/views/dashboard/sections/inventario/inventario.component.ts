@@ -446,14 +446,15 @@ export class InventarioComponent implements OnInit, OnChanges {
     // Recalcular entradas y salidas
     if (datos.detalleEntradasSalidas) {
       this._entradasSalidasRowsCache = datos.detalleEntradasSalidas.map((item: any) => ({
-        fecha: item.fecha || '-',
+        fecha: String(item.fecha ?? '').trim() || '-',
+        mes: item.mes ?? null,
         producto: item.producto || '-',
         concepto: item.concepto || '-',
         referencia: item.referencia || '-',
-        entradas: item.entradas || null,
-        valorEntradas: item.valorEntradas || null,
-        salidas: item.salidas || null,
-        valorSalidas: item.valorSalidas || null
+        entradas: item.entradas ?? null,
+        valorEntradas: item.valorEntradas ?? null,
+        salidas: item.salidas ?? null,
+        valorSalidas: item.valorSalidas ?? null,
       }));
     } else {
       this._entradasSalidasRowsCache = [];
@@ -692,7 +693,7 @@ export class InventarioComponent implements OnInit, OnChanges {
     this.entradasSalidasColumnDefs = [
       { 
         field: 'fecha', 
-        headerName: 'Fecha',
+        headerName: 'Mes',
         width: 120,
         sortable: true,
         filter: true,
@@ -1013,14 +1014,18 @@ export class InventarioComponent implements OnInit, OnChanges {
       if (mesIndex !== -1) {
         const datosOriginales = this.datosOriginales.detalleEntradasSalidas || [];
         this.datosFiltrados.detalleEntradasSalidas = datosOriginales.filter((item: any) => {
+          if (item.mes != null && item.mes >= 1 && item.mes <= 12) {
+            return item.mes === mesIndex + 1;
+          }
           if (!item.fecha) return false;
-          // Parsear fecha en formato DD/MM/YY
-          const partes = item.fecha.split('/');
+          const partes = String(item.fecha).split('/');
           if (partes.length === 3) {
-            const mes = parseInt(partes[1], 10) - 1; // Mes es 0-indexed
+            const mes = parseInt(partes[1], 10) - 1;
             return mes === mesIndex;
           }
-          return false;
+          const f = String(item.fecha).trim().toLowerCase();
+          const m = meses[mesIndex].toLowerCase();
+          return f === m || f.startsWith(`${m} `);
         });
       }
     }
@@ -1097,22 +1102,30 @@ export class InventarioComponent implements OnInit, OnChanges {
     const salidasPorMes: { [key: string]: number } = {};
 
     this.datosFiltrados.detalleEntradasSalidas.forEach((item: any) => {
-      if (item.fecha) {
-        const partes = item.fecha.split('/');
+      let mesNombre: string | null = null;
+      if (item.mes != null && item.mes >= 1 && item.mes <= 12) {
+        mesNombre = meses[item.mes - 1];
+      } else if (item.fecha) {
+        const partes = String(item.fecha).split('/');
         if (partes.length === 3) {
           const mes = parseInt(partes[1], 10) - 1;
-          if (mes >= 0 && mes < 12) {
-            const mesNombre = meses[mes];
-            
-            if (item.entradas) {
-              entradasPorMes[mesNombre] = (entradasPorMes[mesNombre] || 0) + item.entradas;
-            }
-            if (item.salidas) {
-              salidasPorMes[mesNombre] = (salidasPorMes[mesNombre] || 0) + item.salidas;
-            }
-          }
+          if (mes >= 0 && mes < 12) mesNombre = meses[mes];
+        } else {
+          const f = String(item.fecha).trim().toLowerCase();
+          const idx = meses.findIndex(
+            (m) =>
+              f === m.toLowerCase() ||
+              f.startsWith(`${m.toLowerCase()} `),
+          );
+          if (idx !== -1) mesNombre = meses[idx];
         }
       }
+      if (!mesNombre) return;
+
+      const ent = Number(item.entradas) || 0;
+      const sal = Number(item.salidas) || 0;
+      if (ent) entradasPorMes[mesNombre] = (entradasPorMes[mesNombre] || 0) + ent;
+      if (sal) salidasPorMes[mesNombre] = (salidasPorMes[mesNombre] || 0) + sal;
     });
 
     // Si hay filtro de mes, mostrar solo ese mes

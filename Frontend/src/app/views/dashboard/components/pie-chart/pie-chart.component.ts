@@ -28,11 +28,43 @@ export class PieChartComponent implements OnInit, OnChanges {
       return;
     }
 
-    // Preparar datos para el gráfico de pastel
+    // Preparar datos: objetos { name, value } o arrays paralelos labels[] + data[] (p. ej. CXC vigencia)
+    const labels = this.config.labels ?? [];
+
     const pieData = this.config.data.map((item: any, index: number) => {
+      const labelAt = labels[index];
+      const nameFromLabels =
+        labelAt != null && String(labelAt).trim() !== ''
+          ? String(labelAt)
+          : '';
+
+      if (item !== null && typeof item === 'object' && !Array.isArray(item)) {
+        const name =
+          item.name != null && String(item.name).trim() !== ''
+            ? String(item.name)
+            : item.estadoVigencia != null &&
+                String(item.estadoVigencia).trim() !== ''
+              ? String(item.estadoVigencia)
+              : nameFromLabels || `Item ${index + 1}`;
+        const valueRaw =
+          item.value ?? item.amount ?? item.total ?? item.y ?? 0;
+        const value =
+          typeof valueRaw === 'number'
+            ? valueRaw
+            : Number(valueRaw) || 0;
+        return { name, value };
+      }
+
+      const value =
+        typeof item === 'number'
+          ? item
+          : typeof item === 'string'
+            ? Number(item) || 0
+            : Number(item) || 0;
+
       return {
-        name: item.name || `Item ${index + 1}`,
-        value: item.value || item
+        name: nameFromLabels || `Item ${index + 1}`,
+        value,
       };
     });
 
@@ -71,12 +103,12 @@ export class PieChartComponent implements OnInit, OnChanges {
             borderWidth: 2
           },
           label: {
-            show: true,
+            show: false,
             formatter: '{b}: {d}%'
           },
           emphasis: {
             label: {
-              show: true,
+              show: false,
               fontSize: 14,
               fontWeight: 'bold'
             }

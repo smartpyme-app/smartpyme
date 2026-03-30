@@ -7,7 +7,45 @@ import { DashboardAnalyticsApiService } from './dashboard-analytics-api.service'
   providedIn: 'root',
 })
 export class InventarioDashboardDataService {
+  private static readonly MESES_ES = [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ] as const;
+
   constructor(private analytics: DashboardAnalyticsApiService) {}
+
+  /**
+   * Barras agrupadas: `app-bar-chart` detecta multi-serie cuando `data` es
+   * `[{ name, data }, …]` (no un solo array numérico + `dataExtra`).
+   */
+  private buildEntradasSalidasPorMesChart(esPorMes: any[] | null | undefined) {
+    const porMes = esPorMes ?? [];
+    return {
+      type: 'bar' as const,
+      labels: porMes.map((i: any) => i.nombreMes),
+      data: [
+        {
+          name: 'Entradas',
+          data: porMes.map((i: any) => Number(i.entradasUnidades) || 0),
+        },
+        {
+          name: 'Salidas',
+          data: porMes.map((i: any) => Number(i.salidasUnidades) || 0),
+        },
+      ],
+      colors: ['rgb(124, 171, 255)', 'rgb(241, 149, 71)'],
+    };
+  }
 
   private buildQueryPaths(filtros: any): { pSnap: string; pMov: string } {
     const empresa = this.analytics.idEmpresa;
@@ -57,13 +95,56 @@ export class InventarioDashboardDataService {
     };
   }
 
+  /**
+   * Filas del grid «Detalle entradas y salidas por producto».
+   * Ajusta claves si el JSON de Go difiere (snake_case, etc.).
+   */
+  private mapEsDetalleItem(i: any) {
+    const mesNum =
+      i.mes != null && !Number.isNaN(Number(i.mes)) ? Number(i.mes) : null;
+    let mesLabel = '';
+    if (i.nombreMes != null && String(i.nombreMes).trim() !== '') {
+      mesLabel = String(i.nombreMes).trim();
+    } else if (mesNum != null && mesNum >= 1 && mesNum <= 12) {
+      mesLabel = InventarioDashboardDataService.MESES_ES[mesNum - 1];
+    } else if (i.fecha != null && String(i.fecha).trim() !== '') {
+      mesLabel = String(i.fecha).trim();
+    }
+    const anio = i.anio ?? i.ano ?? i.year;
+    const fecha =
+      mesLabel && anio != null && String(anio).trim() !== ''
+        ? `${mesLabel} ${anio}`
+        : mesLabel;
+
+    return {
+      fecha,
+      mes: mesNum,
+      producto: i.producto != null ? String(i.producto) : '',
+      concepto: i.concepto != null ? String(i.concepto) : '',
+      referencia:
+        i.referencia != null
+          ? String(i.referencia)
+          : i.correlativo != null
+            ? String(i.correlativo)
+            : '',
+      entradas: i.entradas ?? i.entradasUnidades ?? null,
+      valorEntradas: i.valorEntradas ?? i.valor_entradas ?? null,
+      salidas: i.salidas ?? i.salidasUnidades ?? null,
+      valorSalidas: i.valorSalidas ?? i.valor_salidas ?? null,
+    };
+  }
+
   private mapearInventarioPesado(raw: {
     esCards: any;
     esPorMes: any;
+    esDetalle: any;
     ajustesCards: any;
     ajustesDetalle: any;
   }): Record<string, unknown> {
-    const { esCards, esPorMes, ajustesCards, ajustesDetalle } = raw;
+    const { esCards, esPorMes, esDetalle, ajustesCards, ajustesDetalle } = raw;
+    const listaDetalle = Array.isArray(esDetalle)
+      ? esDetalle
+      : esDetalle?.items ?? esDetalle?.data ?? [];
     return {
       entradasSalidas: {
         productosEnStock: esCards?.productosEnStock ?? 0,
@@ -71,12 +152,10 @@ export class InventarioDashboardDataService {
         salidas: esCards?.salidas ?? 0,
         utilidadEsperada: esCards?.utilidadEsperada ?? 0,
       },
-      entradasSalidasPorMesConfig: {
-        type: 'bar',
-        labels: (esPorMes ?? []).map((i: any) => i.nombreMes),
-        data: (esPorMes ?? []).map((i: any) => i.entradasUnidades),
-        dataExtra: (esPorMes ?? []).map((i: any) => i.salidasUnidades),
-      },
+      entradasSalidasPorMesConfig: this.buildEntradasSalidasPorMesChart(esPorMes),
+      detalleEntradasSalidas: (listaDetalle ?? []).map((row: any) =>
+        this.mapEsDetalleItem(row),
+      ),
       ajustes: {
         productosEnStock: ajustesCards?.productosEnStock ?? 0,
         unidadesPerdidas: ajustesCards?.unidadesPerdidas ?? 0,
@@ -115,6 +194,7 @@ export class InventarioDashboardDataService {
     const pesado$ = forkJoin({
       esCards: safe(`/api/inventario/es/cards?${pMov}`),
       esPorMes: safe(`/api/inventario/es/por-mes?${pMov}`),
+      esDetalle: safe(`/api/inventario/es/detalle?${pMov}`),
       ajustesCards: safe(`/api/inventario/ajustes/cards?${pMov}`),
       ajustesDetalle: safe(`/api/inventario/ajustes/detalle?${pMov}`),
     }).pipe(map((r) => this.mapearInventarioPesado(r)));
@@ -140,6 +220,7 @@ export class InventarioDashboardDataService {
       detalleProductos: safe(`/api/inventario/detalle-productos?${pSnap}`),
       esCards: safe(`/api/inventario/es/cards?${pMov}`),
       esPorMes: safe(`/api/inventario/es/por-mes?${pMov}`),
+      esDetalle: safe(`/api/inventario/es/detalle?${pMov}`),
       ajustesCards: safe(`/api/inventario/ajustes/cards?${pMov}`),
       ajustesDetalle: safe(`/api/inventario/ajustes/detalle?${pMov}`),
     }).pipe(
@@ -152,6 +233,7 @@ export class InventarioDashboardDataService {
         ...this.mapearInventarioPesado({
           esCards: all.esCards,
           esPorMes: all.esPorMes,
+          esDetalle: all.esDetalle,
           ajustesCards: all.ajustesCards,
           ajustesDetalle: all.ajustesDetalle,
         }),

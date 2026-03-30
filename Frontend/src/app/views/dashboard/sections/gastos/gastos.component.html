@@ -342,14 +342,13 @@
     <!-- Tabla de detalle de gastos y gráfico por proveedor -->
     <div class="row mb-4">
         <!-- Tabla: Detalle de gastos -->
-        <div class="col-md-6 mb-4">
+        <div class="col-12 col-lg-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 py-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 fw-bold">Detalle de gastos</h5>
-                        <div class="d-flex gap-2 align-items-center" *ngIf="datos.detalleGastos !== undefined">
-                            <!-- Buscador global -->
-                            <div class="input-group" style="width: 200px;">
+                    <div class="inv-ag-grid-toolbar">
+                        <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title">Detalle de gastos</h5>
+                        <div class="inv-ag-grid-toolbar-actions" *ngIf="datos.detalleGastos !== undefined">
+                            <div class="input-group inv-ag-grid-toolbar-search">
                                 <span class="input-group-text bg-white border-end-0">
                                     <i class="fas fa-search text-muted"></i>
                                 </span>
@@ -360,20 +359,22 @@
                                     [(ngModel)]="quickFilterTextGastos"
                                     (input)="onQuickFilterChangeGastos()">
                             </div>
-                            <!-- Botones de exportación -->
                             <button 
+                                type="button"
                                 class="btn btn-sm btn-outline-primary"
                                 (click)="exportarCSVGastos()"
                                 title="Exportar a CSV">
                                 <i class="fas fa-file-csv me-1"></i> CSV
                             </button>
                             <button 
+                                type="button"
                                 class="btn btn-sm btn-outline-success"
                                 (click)="exportarExcelGastos()"
                                 title="Exportar a Excel">
                                 <i class="fas fa-file-excel me-1"></i> Excel
                             </button>
                             <button 
+                                type="button"
                                 class="btn btn-sm btn-outline-secondary"
                                 (click)="limpiarFiltrosGastos()"
                                 title="Limpiar filtros">
@@ -382,7 +383,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-body px-3 py-0" style="height: 500px; display: flex; flex-direction: column;">
+                <div class="card-body px-3 py-0 gastos-detalle-grid-body">
                     <ng-container *ngIf="datos.detalleGastos !== undefined; else gastosTableLoader">
                         <ag-grid-angular
                             #detalleGastosGrid
@@ -399,10 +400,10 @@
                             [domLayout]="'normal'"
                             (gridReady)="onGridReadyGastos($event)">
                         </ag-grid-angular>
-                        <div class="p-3" style="background-color: #ffe6d4; border-top: 1px solid #F19447;">
-                            <div class="d-flex justify-content-between align-items-center">
+                        <div class="p-3 gastos-detalle-total-footer">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                                 <span class="fw-bold" style="color: #F19447;">Total</span>
-                                <span class="fw-bold" style="color: #F19447;">
+                                <span class="fw-bold text-break text-end" style="color: #F19447;">
                                     {{ totalDetalleGastos }}
                                 </span>
                             </div>
@@ -413,7 +414,7 @@
         </div>
 
         <!-- Gráfico: Gastos por proveedor -->
-        <div class="col-md-6 mb-4">
+        <div class="col-12 col-lg-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 py-3">
                     <h5 class="mb-0 fw-bold">Gastos por proveedor</h5>

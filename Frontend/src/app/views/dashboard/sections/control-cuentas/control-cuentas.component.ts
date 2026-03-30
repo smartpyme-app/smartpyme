@@ -1,5 +1,14 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
+import { ApiService } from '@services/api.service';
+import {
+  DashboardFiltrosCatalogoService,
+  DashboardFiltroCatalogoItem,
+} from '../../services/dashboard-filtros-catalogo.service';
+import {
+  DropdownMultiFiltroItem,
+  DropdownMultiFiltroSelection,
+} from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 
 @Component({
   selector: 'app-control-cuentas',
@@ -31,21 +40,44 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   
   // Filtros adicionales (Cuentas por cobrar)
   mostrarFiltrosAdicionales: boolean = false;
-  filtroSucursal: string = '';
-  filtroEstado: string = '';
-  filtroCliente: string = '';
-  
   // Filtros adicionales (Cuentas por pagar)
   mostrarFiltrosAdicionalesPagar: boolean = false;
-  filtroProveedor: string = '';
-  filtroEstadoPagar: string = '';
-  filtroCategoriaGasto: string = '';
-  
-  // Opciones para filtros
-  sucursales: any[] = [];
-  clientes: any[] = [];
-  proveedores: any[] = [];
-  categoriasGasto: any[] = [];
+
+  /** Evita emitir al padre antes de tiempo (mismo patrón que Gastos). */
+  private filtrosListosParaEmitir = false;
+
+  /** Multi-select CXC */
+  filtroCxcSucTodasImplicitas = true;
+  filtroCxcSucSeleccionadas: string[] = [];
+  filtroCxcCliTodasImplicitas = true;
+  filtroCxcCliSeleccionadas: string[] = [];
+  filtroCxcVigTodasImplicitas = true;
+  filtroCxcVigSeleccionadas: string[] = [];
+
+  /** Multi-select CXP */
+  filtroCxpProvTodasImplicitas = true;
+  filtroCxpProvSeleccionadas: string[] = [];
+  filtroCxpVigTodasImplicitas = true;
+  filtroCxpVigSeleccionadas: string[] = [];
+  filtroCxpCatTodasImplicitas = true;
+  filtroCxpCatSeleccionadas: string[] = [];
+
+  /** Catálogos desde Laravel / API Go (`DashboardFiltrosCatalogoService`), como Gastos. */
+  sucursales: DashboardFiltroCatalogoItem[] = [];
+  clientes: DashboardFiltroCatalogoItem[] = [];
+  proveedores: DashboardFiltroCatalogoItem[] = [];
+  categoriasGasto: DashboardFiltroCatalogoItem[] = [];
+  /** Valores de vigencia: etiquetas de los gráficos de cartera + dimensiones si existen. */
+  estadosVigencia: DashboardFiltroCatalogoItem[] = [];
+  private vigenciaCatalogoApi: DashboardFiltroCatalogoItem[] = [];
+  /**
+   * Unión de todos los estados de vigencia vistos (API + gráficos).
+   * Sin esto, al filtrar el backend devuelve menos segmentos en el doughnut y el multi-select pierde opciones.
+   */
+  private vigenciaFiltroOpcionesAcumuladas = new Map<
+    string,
+    DashboardFiltroCatalogoItem
+  >();
 
   // Filtros interactivos (se aplican localmente sin recargar)
   filtrosInteractivos: {
@@ -70,7 +102,11 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
 
   private inicializado: boolean = false;
 
-  constructor(private cdr: ChangeDetectorRef) { }
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private apiService: ApiService,
+    private filtrosCatalogo: DashboardFiltrosCatalogoService,
+  ) {}
 
   /**
    * Método eficiente de clonación profunda
@@ -179,15 +215,28 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     // Recalcular resumen de cuentas por pagar
     if (this.datos.resumenCuentasPorPagar) {
       const rows = this.datos.resumenCuentasPorPagar.map((item: any) => ({
+        proveedor: item.proveedor != null && String(item.proveedor).trim() !== ''
+          ? String(item.proveedor).trim()
+          : '-',
+        correlativo:
+          item.correlativo != null && String(item.correlativo).trim() !== ''
+            ? String(item.correlativo).trim()
+            : '-',
         fechaCompra: item.fechaCompra || '-',
         vencimiento: item.vencimiento || '-',
-        diasVencimiento: item.diasVencimiento || 0,
+        diasVencimiento:
+          item.diasVencimiento !== undefined && item.diasVencimiento !== null
+            ? item.diasVencimiento
+            : 0,
         estado: item.estado || '-',
         gastosTotalesConIVA: item.gastosTotalesConIVA || 0,
         totalAbonado: item.totalAbonado || 0,
-        ultimoAbono: item.ultimoAbono || '-',
+        ultimoAbono:
+          item.ultimoAbono != null && String(item.ultimoAbono).trim() !== ''
+            ? String(item.ultimoAbono).trim()
+            : '-',
         saldoPendiente: item.saldoPendiente || 0,
-        isTotal: false
+        isTotal: false,
       }));
 
       // Calcular totales
@@ -200,8 +249,14 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       this._totalesResumenCuentasPagarCache = totales;
 
       // Agregar fila de totales
-      if (totales.gastosTotalesConIVA > 0 || totales.totalAbonado > 0) {
+      if (
+        totales.gastosTotalesConIVA > 0 ||
+        totales.totalAbonado > 0 ||
+        totales.saldoPendiente > 0
+      ) {
         rows.push({
+          proveedor: '',
+          correlativo: '',
           fechaCompra: 'Total',
           vencimiento: '',
           diasVencimiento: '',
@@ -210,7 +265,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
           totalAbonado: totales.totalAbonado,
           ultimoAbono: '',
           saldoPendiente: totales.saldoPendiente,
-          isTotal: true
+          isTotal: true,
         });
       }
 
@@ -234,12 +289,14 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
+      this.filtrosListosParaEmitir = true;
       this.cdr.markForCheck();
     }, 100);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['datos']) {
+      this.refrescarEstadosVigenciaCombinados();
       // Actualizar datos originales cuando cambian
       if (this.datos && Object.keys(this.datos).length > 0) {
         this.datosOriginales = this.clonarDatos(this.datos);
@@ -257,12 +314,248 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   cargarOpcionesFiltros(): void {
-    // Aquí cargarías las opciones desde el servicio
-    // Por ahora valores de ejemplo
-    this.sucursales = [];
-    this.clientes = [];
-    this.proveedores = [];
-    this.categoriasGasto = [];
+    this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
+      next: (items) => {
+        this.sucursales = items;
+        this.aplicarRestriccionSucursalCxcPorRol();
+        setTimeout(() => {
+          if (this.filtrosListosParaEmitir) {
+            this.aplicarFiltros();
+          }
+        }, 150);
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.clientesParaFiltro().subscribe({
+      next: (items) => {
+        this.clientes = items;
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.proveedoresParaFiltro().subscribe({
+      next: (items) => {
+        this.proveedores = items;
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.categoriasParaFiltro().subscribe({
+      next: (items) => {
+        this.categoriasGasto = items;
+        this.cdr.markForCheck();
+      },
+    });
+
+    // this.filtrosCatalogo.estadosVigenciaCuentasParaFiltro().subscribe({
+    //   next: (items: DashboardFiltroCatalogoItem[]) => {
+    //     this.vigenciaCatalogoApi = items;
+    //     this.refrescarEstadosVigenciaCombinados();
+    //     this.cdr.markForCheck();
+    //   },
+    // });
+  }
+
+  /**
+   * Suma opciones de vigencia (no reemplaza): API dimensiones + etiquetas de gráficos.
+   * Los gráficos filtrados traen menos labels; solo añadimos claves nuevas al acumulado.
+   */
+  private refrescarEstadosVigenciaCombinados(): void {
+    for (const x of this.vigenciaCatalogoApi) {
+      const id = String(x.id).trim();
+      if (!id) {
+        continue;
+      }
+      this.vigenciaFiltroOpcionesAcumuladas.set(id, {
+        id,
+        nombre: String(x.nombre ?? id).trim() || id,
+      });
+    }
+    const d = this.datos || {};
+    for (const L of (d.cuentasPorVigenciaConfig?.labels as string[]) || []) {
+      const s = String(L).trim();
+      if (s && !this.vigenciaFiltroOpcionesAcumuladas.has(s)) {
+        this.vigenciaFiltroOpcionesAcumuladas.set(s, { id: s, nombre: s });
+      }
+    }
+    for (const L of (d.cuentasPorPagarVigenciaConfig?.labels as string[]) ||
+      []) {
+      const s = String(L).trim();
+      if (s && !this.vigenciaFiltroOpcionesAcumuladas.has(s)) {
+        this.vigenciaFiltroOpcionesAcumuladas.set(s, { id: s, nombre: s });
+      }
+    }
+    this.estadosVigencia = [
+      ...this.vigenciaFiltroOpcionesAcumuladas.values(),
+    ].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }
+
+  get filtroCxcSucursalDisabled(): boolean {
+    const user = this.apiService.auth_user();
+    return user?.tipo !== 'Administrador' && this.sucursales.length <= 1;
+  }
+
+  private aplicarRestriccionSucursalCxcPorRol(): void {
+    const user = this.apiService.auth_user();
+    const items = this.sucursales;
+    if (items.length === 0) {
+      this.filtroCxcSucTodasImplicitas = true;
+      this.filtroCxcSucSeleccionadas = [];
+      return;
+    }
+    if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
+      this.filtroCxcSucTodasImplicitas = false;
+      this.filtroCxcSucSeleccionadas = [String(user.id_sucursal)];
+    } else {
+      this.filtroCxcSucTodasImplicitas = true;
+      this.filtroCxcSucSeleccionadas = [];
+    }
+  }
+
+  private idsDeListaFiltro(items: DashboardFiltroCatalogoItem[]): string[] {
+    return (items || []).map((x) => String(x.id));
+  }
+
+  private filtroMultiAString(
+    todasImplicitas: boolean,
+    seleccionados: string[],
+    todosIds: string[],
+  ): string {
+    if (todasImplicitas || seleccionados.length === 0) {
+      return '';
+    }
+    if (
+      todosIds.length > 0 &&
+      seleccionados.length === todosIds.length &&
+      todosIds.every((id) => seleccionados.includes(id))
+    ) {
+      return '';
+    }
+    return seleccionados.join(',');
+  }
+
+  private filtroSucursalParaApiDesde(
+    todasImplicitas: boolean,
+    seleccionados: string[],
+  ): string | string[] {
+    const todosIds = this.idsDeListaFiltro(this.sucursales);
+    const sel = seleccionados;
+    if (todasImplicitas || sel.length === 0) {
+      return '';
+    }
+    if (
+      todosIds.length > 0 &&
+      sel.length === todosIds.length &&
+      todosIds.every((id) => sel.includes(id))
+    ) {
+      return '';
+    }
+    return sel.length === 1 ? sel[0] : [...sel];
+  }
+
+  private filtroCxcSucursalParaApi(): string | string[] {
+    return this.filtroSucursalParaApiDesde(
+      this.filtroCxcSucTodasImplicitas,
+      this.filtroCxcSucSeleccionadas,
+    );
+  }
+
+  private vigenciaParaApi(): string {
+    const todos = this.idsDeListaFiltro(this.estadosVigencia);
+    const a = this.filtroMultiAString(
+      this.filtroCxcVigTodasImplicitas,
+      this.filtroCxcVigSeleccionadas,
+      todos,
+    );
+    const b = this.filtroMultiAString(
+      this.filtroCxpVigTodasImplicitas,
+      this.filtroCxpVigSeleccionadas,
+      todos,
+    );
+    if (a && b) {
+      const set = new Set([
+        ...a.split(',').map((s) => s.trim()),
+        ...b.split(',').map((s) => s.trim()),
+      ]);
+      return [...set].filter(Boolean).join(',');
+    }
+    return a || b || '';
+  }
+
+  get filtroCxcSucursalesItems(): DropdownMultiFiltroItem[] {
+    return (this.sucursales || []).map((s) => ({
+      id: String(s.id),
+      nombre: s.nombre ?? '',
+    }));
+  }
+
+  get filtroCxcClientesItems(): DropdownMultiFiltroItem[] {
+    return (this.clientes || []).map((x) => ({
+      id: String(x.id),
+      nombre: x.nombre ?? '',
+    }));
+  }
+
+  get filtroCxcVigenciaItems(): DropdownMultiFiltroItem[] {
+    return (this.estadosVigencia || []).map((x) => ({
+      id: String(x.id),
+      nombre: x.nombre ?? '',
+    }));
+  }
+
+  get filtroCxpProveedoresItems(): DropdownMultiFiltroItem[] {
+    return (this.proveedores || []).map((x) => ({
+      id: String(x.id),
+      nombre: x.nombre ?? '',
+    }));
+  }
+
+  get filtroCxpVigenciaItems(): DropdownMultiFiltroItem[] {
+    return this.filtroCxcVigenciaItems;
+  }
+
+  get filtroCxpCategoriasItems(): DropdownMultiFiltroItem[] {
+    return (this.categoriasGasto || []).map((x) => ({
+      id: String(x.id),
+      nombre: x.nombre ?? '',
+    }));
+  }
+
+  onFiltroCxcSucursalChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroCxcSucTodasImplicitas = ev.todasImplicitas;
+    this.filtroCxcSucSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+  }
+
+  onFiltroCxcClienteChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroCxcCliTodasImplicitas = ev.todasImplicitas;
+    this.filtroCxcCliSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+  }
+
+  onFiltroCxcVigenciaChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroCxcVigTodasImplicitas = ev.todasImplicitas;
+    this.filtroCxcVigSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+  }
+
+  onFiltroCxpProveedorChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroCxpProvTodasImplicitas = ev.todasImplicitas;
+    this.filtroCxpProvSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+  }
+
+  onFiltroCxpVigenciaChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroCxpVigTodasImplicitas = ev.todasImplicitas;
+    this.filtroCxpVigSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+  }
+
+  onFiltroCxpCategoriaChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroCxpCatTodasImplicitas = ev.todasImplicitas;
+    this.filtroCxpCatSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
   }
 
   toggleFiltrosAdicionalesPagar(): void {
@@ -278,66 +571,131 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   limpiarFiltros(): void {
     this.anio = new Date().getFullYear().toString();
     this.mes = '';
-    // Limpiar filtros de cuentas por cobrar
-    this.filtroSucursal = '';
-    this.filtroEstado = '';
-    this.filtroCliente = '';
-    // Limpiar filtros de cuentas por pagar
-    this.filtroProveedor = '';
-    this.filtroEstadoPagar = '';
-    this.filtroCategoriaGasto = '';
-    // Limpiar filtros interactivos
+    this.filtroCxcCliTodasImplicitas = true;
+    this.filtroCxcCliSeleccionadas = [];
+    this.filtroCxcVigTodasImplicitas = true;
+    this.filtroCxcVigSeleccionadas = [];
+    this.filtroCxpProvTodasImplicitas = true;
+    this.filtroCxpProvSeleccionadas = [];
+    this.filtroCxpVigTodasImplicitas = true;
+    this.filtroCxpVigSeleccionadas = [];
+    this.filtroCxpCatTodasImplicitas = true;
+    this.filtroCxpCatSeleccionadas = [];
+    this.aplicarRestriccionSucursalCxcPorRol();
     this.limpiarFiltrosInteractivos();
     this.aplicarFiltros();
   }
 
   aplicarFiltros(): void {
-    // No emitir durante la inicialización
-    if (!this.inicializado) {
+    if (!this.inicializado || !this.filtrosListosParaEmitir) {
       return;
     }
-    
+
     if (!this.anio) {
       this.anio = new Date().getFullYear().toString();
     }
 
     const filtros: any = {
       anio: this.anio,
-      sucursal: this.filtroSucursal,
-      estado: this.filtroEstado,
-      cliente: this.filtroCliente,
-      proveedor: this.filtroProveedor,
-      estadoPagar: this.filtroEstadoPagar,
-      categoriaGasto: this.filtroCategoriaGasto
     };
+
+    const suc = this.filtroCxcSucursalParaApi();
+    if (suc !== '' && suc != null) {
+      filtros.sucursal = suc;
+    }
+
+    const cli = this.filtroMultiAString(
+      this.filtroCxcCliTodasImplicitas,
+      this.filtroCxcCliSeleccionadas,
+      this.idsDeListaFiltro(this.clientes),
+    );
+    if (cli) {
+      filtros.cliente = cli;
+    }
+
+    const vig = this.vigenciaParaApi();
+    if (vig) {
+      filtros.estadoVigencia = vig;
+    }
+
+    const prov = this.filtroMultiAString(
+      this.filtroCxpProvTodasImplicitas,
+      this.filtroCxpProvSeleccionadas,
+      this.idsDeListaFiltro(this.proveedores),
+    );
+    if (prov) {
+      filtros.proveedor = prov;
+    }
+
+    const cat = this.filtroMultiAString(
+      this.filtroCxpCatTodasImplicitas,
+      this.filtroCxpCatSeleccionadas,
+      this.idsDeListaFiltro(this.categoriasGasto),
+    );
+    if (cat) {
+      filtros.categoria = cat;
+    }
+
     if (this.mes) {
       filtros.mes = this.mes;
     }
-    
-    // Emitir evento al componente padre para recargar datos
+
     this.filtrosCambiados.emit(filtros);
+  }
+
+  private filtroMultiExplicitoActivo(
+    todasImplicitas: boolean,
+    seleccionados: string[],
+  ): boolean {
+    return !todasImplicitas || seleccionados.length > 0;
   }
 
   get puedeLimpiarFiltrosCxc(): boolean {
     const anioActual = new Date().getFullYear().toString();
-    return (
-      !!this.mes ||
-      this.anio !== anioActual ||
-      !!this.filtroSucursal ||
-      !!this.filtroEstado ||
-      !!this.filtroCliente
-    );
+    if (!!this.mes || this.anio !== anioActual) {
+      return true;
+    }
+    if (
+      this.filtroMultiExplicitoActivo(
+        this.filtroCxcSucTodasImplicitas,
+        this.filtroCxcSucSeleccionadas,
+      ) ||
+      this.filtroMultiExplicitoActivo(
+        this.filtroCxcCliTodasImplicitas,
+        this.filtroCxcCliSeleccionadas,
+      ) ||
+      this.filtroMultiExplicitoActivo(
+        this.filtroCxcVigTodasImplicitas,
+        this.filtroCxcVigSeleccionadas,
+      )
+    ) {
+      return true;
+    }
+    return false;
   }
 
   get puedeLimpiarFiltrosCxp(): boolean {
     const anioActual = new Date().getFullYear().toString();
-    return (
-      !!this.mes ||
-      this.anio !== anioActual ||
-      !!this.filtroProveedor ||
-      !!this.filtroEstadoPagar ||
-      !!this.filtroCategoriaGasto
-    );
+    if (!!this.mes || this.anio !== anioActual) {
+      return true;
+    }
+    if (
+      this.filtroMultiExplicitoActivo(
+        this.filtroCxpProvTodasImplicitas,
+        this.filtroCxpProvSeleccionadas,
+      ) ||
+      this.filtroMultiExplicitoActivo(
+        this.filtroCxpVigTodasImplicitas,
+        this.filtroCxpVigSeleccionadas,
+      ) ||
+      this.filtroMultiExplicitoActivo(
+        this.filtroCxpCatTodasImplicitas,
+        this.filtroCxpCatSeleccionadas,
+      )
+    ) {
+      return true;
+    }
+    return false;
   }
 
   formatCurrency(value: number): string {
@@ -446,9 +804,12 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       let cuentasFiltradas = [...this.datosFiltrados.resumenCuentasPorPagar];
 
       if (this.filtrosInteractivos.proveedor) {
-        // Necesitamos buscar el proveedor en los datos originales
-        // Por ahora, asumimos que el resumen tiene información del proveedor
-        // Esto puede necesitar ajuste según la estructura real de datos
+        const nombre = this.filtrosInteractivos.proveedor.toLowerCase();
+        cuentasFiltradas = cuentasFiltradas.filter((c: any) => {
+          const p = (c.proveedor ?? '').toString().trim();
+          const etiqueta = p || 'Sin proveedor';
+          return etiqueta.toLowerCase() === nombre;
+        });
       }
 
       if (this.filtrosInteractivos.vigenciaPagar) {
@@ -672,56 +1033,78 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   configurarAGGridResumenPagar(): void {
+    const estiloResumen = (
+      align: 'left' | 'center' | 'right',
+    ): ((params: any) => any) => {
+      return (params: any): any => {
+        if (params.data?.isTotal) {
+          return {
+            fontWeight: '600',
+            backgroundColor: '#F19447',
+            color: '#ffffff',
+            textAlign: align,
+          };
+        }
+        return { textAlign: align } as any;
+      };
+    };
+
     this.resumenCuentasPagarColumnDefs = [
-      { 
-        field: 'fechaCompra', 
+      {
+        field: 'proveedor',
+        headerName: 'Nombre de proveedor',
+        flex: 1,
+        minWidth: 160,
+        sortable: true,
+        filter: true,
+        cellStyle: estiloResumen('left'),
+      },
+      {
+        field: 'correlativo',
+        headerName: 'Correlativo',
+        width: 120,
+        sortable: true,
+        filter: true,
+        cellStyle: estiloResumen('center'),
+      },
+      {
+        field: 'fechaCompra',
         headerName: 'Fecha de compra',
-        width: 150,
+        width: 130,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#F19447', color: '#ffffff', textAlign: 'center' };
-          }
-          return { textAlign: 'center' } as any;
-        }
+        cellStyle: estiloResumen('center'),
       },
-      { 
-        field: 'vencimiento', 
+      {
+        field: 'vencimiento',
         headerName: 'Vencimiento',
-        width: 150,
+        width: 130,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#F19447', color: '#ffffff', textAlign: 'center' };
-          }
-          return { textAlign: 'center' } as any;
-        }
+        cellStyle: estiloResumen('center'),
       },
-      { 
-        field: 'diasVencimiento', 
-        headerName: 'Días vencimiento',
-        width: 150,
+      {
+        field: 'diasVencimiento',
+        headerName: 'Días de vencimiento',
+        width: 130,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#F19447', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: estiloResumen('right'),
         valueFormatter: (params: any) => {
           if (params.data?.isTotal) {
             return '';
           }
-          return params.value ? params.value.toLocaleString('es-GT') : '0';
-        }
+          const v = params.value;
+          if (v === null || v === undefined) {
+            return '-';
+          }
+          return Number(v).toLocaleString('es-GT');
+        },
       },
-      { 
-        field: 'estado', 
+      {
+        field: 'estado',
         headerName: 'Estado',
-        width: 150,
+        width: 120,
         sortable: true,
         filter: true,
         cellRenderer: (params: any) => {
@@ -734,83 +1117,58 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
           }
           return estado;
         },
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#F19447', color: '#ffffff', textAlign: 'left' };
-          }
-          return { textAlign: 'left' } as any;
-        }
+        cellStyle: estiloResumen('left'),
       },
-      { 
-        field: 'gastosTotalesConIVA', 
+      {
+        field: 'gastosTotalesConIVA',
         headerName: 'Gastos totales con IVA',
-        width: 180,
+        width: 175,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#F19447', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: estiloResumen('right'),
         valueFormatter: (params: any) => {
           if (params.value === null || params.value === undefined) {
             return '';
           }
           return this.formatCurrency(params.value);
-        }
+        },
       },
-      { 
-        field: 'totalAbonado', 
+      {
+        field: 'totalAbonado',
         headerName: 'Total abonado',
-        width: 150,
+        width: 140,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#F19447', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: estiloResumen('right'),
         valueFormatter: (params: any) => {
           if (params.value === null || params.value === undefined) {
             return '';
           }
           return this.formatCurrency(params.value);
-        }
+        },
       },
-      { 
-        field: 'ultimoAbono', 
+      {
+        field: 'ultimoAbono',
         headerName: 'Último abono',
-        width: 150,
+        width: 130,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#F19447', color: '#ffffff', textAlign: 'center' };
-          }
-          return { textAlign: 'center' } as any;
-        }
+        cellStyle: estiloResumen('center'),
       },
-      { 
-        field: 'saldoPendiente', 
+      {
+        field: 'saldoPendiente',
         headerName: 'Saldo pendiente (con IVA)',
-        width: 200,
+        width: 190,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#F19447', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: estiloResumen('right'),
         valueFormatter: (params: any) => {
           if (params.value === null || params.value === undefined) {
             return '';
           }
           return this.formatCurrency(params.value);
-        }
-      }
+        },
+      },
     ];
 
     this.resumenCuentasPagarGridOptions = {
