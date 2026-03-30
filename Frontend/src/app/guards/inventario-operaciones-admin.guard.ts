@@ -7,7 +7,7 @@ import {
 } from '@angular/router';
 import { ApiService } from '@services/api.service';
 
-/** Traslados, ajustes, consignas y entradas/salidas de inventario: solo administrador. */
+/** Traslados, ajustes, consignas y entradas/salidas: solo administrador en empresa 324; resto sin bloqueo aquí. */
 @Injectable({
   providedIn: 'root',
 })
