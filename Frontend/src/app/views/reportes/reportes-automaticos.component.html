@@ -117,6 +117,9 @@
               <span *ngIf="config.tipo_reporte === 'detalle-ventas-vendedor'"
                 >Detalle de Ventas por Vendedor</span
               >
+              <span *ngIf="config.tipo_reporte === 'detalle-ventas-totales'"
+                >Detalle de Ventas Totales</span
+              >
               <span *ngIf="config.tipo_reporte === 'inventario-por-sucursal'"
                 >Inventario por Sucursal</span
               >
@@ -138,6 +141,7 @@
                   config.tipo_reporte !==
                     'estado-financiero-consolidado-sucursales' &&
                   config.tipo_reporte !== 'detalle-ventas-vendedor' &&
+                  config.tipo_reporte !== 'detalle-ventas-totales' &&
                   config.tipo_reporte !== 'inventario-por-sucursal' &&
                   config.tipo_reporte !== 'ventas-por-utilidades' &&
                   config.tipo_reporte !== 'cobros-por-vendedor' &&

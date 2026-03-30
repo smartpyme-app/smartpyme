@@ -1514,7 +1514,10 @@ class VentasController extends Controller
         $ventas = new VentasExport();
         $ventas->filter($request);
 
-        return Excel::download($ventas, 'ventas.xlsx');
+        $anio = VentasExport::anioDesdeRequest($request);
+        $nombreArchivo = $anio !== null ? "ventas-{$anio}.xlsx" : 'ventas.xlsx';
+
+        return Excel::download($ventas, $nombreArchivo);
     }
 
     public function exportDetalles(Request $request)
@@ -1723,6 +1726,14 @@ class VentasController extends Controller
                     $configuracion,
                     $configuracion->sucursales ?? []
                 );
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-totales') {
+                $requestVentasTotales = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $empresa->id,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasExport($requestVentasTotales);
             }
             $filename = "{$configuracion->tipo_reporte}-{$fechaInicio}.xlsx";
 
@@ -1788,6 +1799,7 @@ class VentasController extends Controller
                 'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
                 'cobros-por-vendedor' => 'Reporte de Cobros por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'ventas-compras-por-marca-proveedor' => 'Reporte de Ventas y Compras por Marca y Proveedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-totales' => 'Reporte de Detalle de Ventas Totales ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -1872,6 +1884,24 @@ class VentasController extends Controller
                 $export = new CobrosPorVendedorExport();
                 $export->filter($request);
                 $filename = "cobros-por-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'ventas-compras-por-marca-proveedor') {
+                $export = new VentasComprasPorMarcaProveedorExport(
+                    $fechaInicio,
+                    $fechaFin,
+                    $configuracion->id_empresa,
+                    $configuracion,
+                    $configuracion->sucursales ?? []
+                );
+                $filename = "ventas-compras-por-marca-proveedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-totales') {
+                $requestVentasTotales = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $configuracion->id_empresa,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasExport($requestVentasTotales);
+                $filename = "detalle-ventas-totales-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             }
 
             $relativePath = "reportes/{$filename}";
@@ -1935,6 +1965,9 @@ class VentasController extends Controller
                 'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
                 'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
+                'cobros-por-vendedor' => 'Reporte de Cobros por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'ventas-compras-por-marca-proveedor' => 'Reporte de Ventas y Compras por Marca y Proveedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-totales' => 'Reporte de Detalle de Ventas Totales ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -2039,6 +2072,15 @@ class VentasController extends Controller
                     $configuracion,
                     $configuracion->sucursales ?? []
                 );
+                break;
+            case 'detalle-ventas-totales':
+                $requestVentasTotales = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $configuracion->id_empresa,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasExport($requestVentasTotales);
                 break;
             default:
                 return response()->json(['error' => 'Tipo de reporte no implementado'], 422);

@@ -341,6 +341,12 @@ class Venta extends Model {
         return $this->descuento_puntos / $this->puntos_canjeados;
     }
 
+    // necesario para exportar ventas con paquetes
+    public function paquetes()
+    {
+        return $this->hasMany('App\Models\Inventario\Paquete', 'id_venta');
+    }
+
 
 
 
