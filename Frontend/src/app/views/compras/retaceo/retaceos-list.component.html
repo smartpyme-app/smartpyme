@@ -11,7 +11,7 @@
       <div class="col-md-6 mb-3">
           <span class="text-muted d-flex align-items-center gap-2" *ngIf="retaceos?.total">
               Mostrando
-              <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
+              <select name="paginate" class="form-select w-auto" (change)="filtrarRetaceos()" [(ngModel)]="filtros.paginate">
                   <option value="10">10</option>
                   <option value="25">25</option>
                   <option value="50">50</option>
@@ -65,21 +65,17 @@
               <td>{{ retaceo.fecha | date:'dd/MM/yyyy' }}</td>
               <td>{{ retaceo.total_retaceado | currency }}</td>
               <td>
-                <select 
-                  class="form-select form-select-sm" 
-                  [(ngModel)]="retaceo.estado" 
-                  (change)="cambiarEstado(retaceo)"
-                  [disabled]="retaceo.estado === 'Anulado'"
+                <span
+                  class="badge py-2 position-relative"
+                  style="font-size: 0.8rem;"
                   [ngClass]="{
-                    'border-success': retaceo.estado === 'Aplicado',
-                    'border-warning': retaceo.estado === 'Pendiente',
-                    'border-danger': retaceo.estado === 'Anulado'
+                    'bg-warning': retaceo?.estado == 'Pendiente',
+                    'bg-success': retaceo?.estado == 'Aplicado',
+                    'bg-danger': retaceo?.estado == 'Anulado'
                   }"
-                  style="min-width: 120px;">
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="Aplicado">Aplicado</option>
-                  <option value="Anulado">Anulado</option>
-                </select>
+                >
+                  {{ retaceo.estado }}
+                </span>
               </td>
               <td class="text-center">
                 <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
@@ -87,6 +83,27 @@
                 </span>
                 <ng-template #accionesTemplate>
                   <div class="list-group border-0">
+                    <a
+                      *ngIf="apiService.canEdit() && retaceo.estado === 'Pendiente'"
+                      (click)="solicitarCambioEstado(retaceo, 'Aplicado')"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-check"></i>Marcar como aplicado
+                    </a>
+                    <a
+                      *ngIf="apiService.canEdit() && retaceo.estado === 'Pendiente'"
+                      (click)="solicitarCambioEstado(retaceo, 'Anulado')"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-ban"></i>Marcar como anulado
+                    </a>
+                    <a
+                      *ngIf="apiService.canEdit() && retaceo.estado === 'Aplicado'"
+                      (click)="solicitarCambioEstado(retaceo, 'Anulado')"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-ban"></i>Anular retaceo
+                    </a>
                     <a routerLink="/retaceo/{{retaceo.id}}" class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                     </a>
