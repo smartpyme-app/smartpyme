@@ -64,8 +64,6 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
                 'WR',
                 'Núm. guía',
                 'Núm. seguimiento',
-                'Estado paquete',
-                'Transportista',
             ]);
         }
 
@@ -244,8 +242,6 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             $fields[] = $paquete ? $paquete->wr : '';
             $fields[] = $paquete ? $paquete->num_guia : '';
             $fields[] = $paquete ? $paquete->num_seguimiento : '';
-            $fields[] = $paquete ? $paquete->estado : '';
-            $fields[] = $paquete ? $paquete->transportista : '';
         }
         return $fields;
     }
