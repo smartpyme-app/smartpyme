@@ -2,23 +2,82 @@
     <h2 class="page-heading">Inteligencia de negocios</h2>
 </section>
 
-<!-- Dashboard nuevo -->
-<app-dashboard></app-dashboard>
-
-<!-- Dashboard antiguo -->
-<div class="bg-white p-3 mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-12">
-            <div class="alert alert-info border-0">
-                <p class="mb-0"><b>Importante:</b> Los reportes se actualizan durante la noche.
-                </p>
+<ng-template #contenidoDashboardV1>
+    <div class="bg-white p-3" [ngClass]="{'rounded-bottom': tieneInteligenciaNegociosV2}">
+        <div class="row justify-content-center">
+            <div class="col-md-12">
+                <div class="alert alert-info border-0">
+                    <p class="mb-0"><b>Importante:</b> Los reportes se actualizan durante la noche.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-12" *ngIf="dashboards.total == 0">
+               Aún no hay configurados reportes, cuando lo estes aparecerán acá.
+           </div>
+            <div class="col-md-12" *ngFor="let dashboard of dashboards.data">
+                <div [innerHTML]="dashboard.codigo_embed"></div>
             </div>
         </div>
-        <div class="col-md-12" *ngIf="dashboards.total == 0">
-           Aún no hay configurados reportes, cuando lo estes aparecerán acá.
-       </div>
-        <div class="col-md-12" *ngFor="let dashboard of dashboards.data">
-            <div [innerHTML]="dashboard.codigo_embed"></div>
+    </div>
+</ng-template>
+
+<!-- Sin funcionalidad V2: solo dashboard clásico (embeds) -->
+<ng-container *ngIf="verificacionFuncionalidadLista && !tieneInteligenciaNegociosV2">
+    <ng-container *ngTemplateOutlet="contenidoDashboardV1"></ng-container>
+</ng-container>
+
+<!-- Con funcionalidad V2: pestañas V1 / V2 -->
+<ng-container *ngIf="verificacionFuncionalidadLista && tieneInteligenciaNegociosV2">
+    <ul class="nav nav-tabs px-3 pt-2 bg-white rounded-top border-bottom-0" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button
+                class="nav-link"
+                id="tab-inteligencia-v1"
+                data-bs-toggle="tab"
+                data-bs-target="#panel-inteligencia-v1"
+                type="button"
+                role="tab"
+                aria-controls="panel-inteligencia-v1"
+                aria-selected="false"
+            >
+                Inteligencia de negocios V1
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button
+                class="nav-link active"
+                id="tab-inteligencia-v2"
+                data-bs-toggle="tab"
+                data-bs-target="#panel-inteligencia-v2"
+                type="button"
+                role="tab"
+                aria-controls="panel-inteligencia-v2"
+                aria-selected="true"
+            >
+                Inteligencia de negocios V2
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div
+            class="tab-pane fade"
+            id="panel-inteligencia-v1"
+            role="tabpanel"
+            aria-labelledby="tab-inteligencia-v1"
+            tabindex="0"
+        >
+            <ng-container *ngTemplateOutlet="contenidoDashboardV1"></ng-container>
+        </div>
+
+        <div
+            class="tab-pane fade show active"
+            id="panel-inteligencia-v2"
+            role="tabpanel"
+            aria-labelledby="tab-inteligencia-v2"
+            tabindex="0"
+        >
+            <app-dashboard></app-dashboard>
         </div>
     </div>
-</div>
+</ng-container>

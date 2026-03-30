@@ -5,7 +5,7 @@
             *ngFor="let seccion of secciones" 
             type="button"
             class="btn rounded-3 px-3 px-sm-4 py-3 fw-medium text-center text-wrap"
-            [ngClass]="seccion.activo ? 'btn-section-active' : 'btn-section-inactive'"
+            [ngClass]="{ 'btn-primary': seccion.activo, 'btn-default': !seccion.activo }"
             (click)="cambiarSeccion(seccion)">
             {{ seccion.nombre }}
         </button>

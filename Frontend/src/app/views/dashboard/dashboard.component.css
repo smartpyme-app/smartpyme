@@ -28,24 +28,6 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Colores personalizados para los botones de sección */
-.btn-section-active {
-    background-color: #1e3a5f !important;
-    color: white !important;
-    border: none !important;
-}
-
-.btn-section-inactive {
-    background-color: #4a90e2 !important;
-    color: white !important;
-    border: none !important;
-}
-
-.btn-section-inactive:hover {
-    background-color: #357abd !important;
-    color: white !important;
-}
-
 /* Pestañas de sección: reparten el ancho en la fila y envuelven si no caben */
 .dashboard-section-tabs {
     display: flex;
