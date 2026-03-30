@@ -60,6 +60,16 @@ export class GastosComponent implements OnInit, OnChanges {
   filtroGastoEstTodasImplicitas = true;
   filtroGastoEstSeleccionadas: string[] = [];
 
+  /** Copia de otros filtros ya enviados al padre (año/mes usan siempre el control actual). */
+  filtroGastoSucTodasImplicitasAplicado = true;
+  filtroGastoSucSeleccionadasAplicado: string[] = [];
+  filtroGastoProvTodasImplicitasAplicado = true;
+  filtroGastoProvSeleccionadasAplicado: string[] = [];
+  filtroGastoTipoTodasImplicitasAplicado = true;
+  filtroGastoTipoSeleccionadasAplicado: string[] = [];
+  filtroGastoEstTodasImplicitasAplicado = true;
+  filtroGastoEstSeleccionadasAplicado: string[] = [];
+
   // Vista de métricas
   vistaMetricas: string = 'mes';
 
@@ -210,6 +220,7 @@ export class GastosComponent implements OnInit, OnChanges {
       next: (items) => {
         this.sucursales = items;
         this.aplicarRestriccionSucursalGastosPorRol();
+        this.copiarFiltrosAdicionalesGastosBorradorAAplicado();
         setTimeout(() => {
           if (this.filtrosListosParaEmitir) {
             this.aplicarFiltros();
@@ -306,10 +317,133 @@ export class GastosComponent implements OnInit, OnChanges {
     return sel.length === 1 ? sel[0] : [...sel];
   }
 
-  private filtroGastoSucursalParaApi(): string | string[] {
+  private filtroGastoSucursalParaApiAplicado(): string | string[] {
     return this.filtroGastoSucursalParaApiDesde(
-      this.filtroGastoSucTodasImplicitas,
-      this.filtroGastoSucSeleccionadas,
+      this.filtroGastoSucTodasImplicitasAplicado,
+      this.filtroGastoSucSeleccionadasAplicado,
+    );
+  }
+
+  private copiarFiltrosAdicionalesGastosAplicadoABorrador(): void {
+    this.filtroGastoSucTodasImplicitas = this.filtroGastoSucTodasImplicitasAplicado;
+    this.filtroGastoSucSeleccionadas = [...this.filtroGastoSucSeleccionadasAplicado];
+    this.filtroGastoProvTodasImplicitas = this.filtroGastoProvTodasImplicitasAplicado;
+    this.filtroGastoProvSeleccionadas = [...this.filtroGastoProvSeleccionadasAplicado];
+    this.filtroGastoTipoTodasImplicitas = this.filtroGastoTipoTodasImplicitasAplicado;
+    this.filtroGastoTipoSeleccionadas = [...this.filtroGastoTipoSeleccionadasAplicado];
+    this.filtroGastoEstTodasImplicitas = this.filtroGastoEstTodasImplicitasAplicado;
+    this.filtroGastoEstSeleccionadas = [...this.filtroGastoEstSeleccionadasAplicado];
+  }
+
+  private copiarFiltrosAdicionalesGastosBorradorAAplicado(): void {
+    this.filtroGastoSucTodasImplicitasAplicado = this.filtroGastoSucTodasImplicitas;
+    this.filtroGastoSucSeleccionadasAplicado = [...this.filtroGastoSucSeleccionadas];
+    this.filtroGastoProvTodasImplicitasAplicado = this.filtroGastoProvTodasImplicitas;
+    this.filtroGastoProvSeleccionadasAplicado = [...this.filtroGastoProvSeleccionadas];
+    this.filtroGastoTipoTodasImplicitasAplicado = this.filtroGastoTipoTodasImplicitas;
+    this.filtroGastoTipoSeleccionadasAplicado = [...this.filtroGastoTipoSeleccionadas];
+    this.filtroGastoEstTodasImplicitasAplicado = this.filtroGastoEstTodasImplicitas;
+    this.filtroGastoEstSeleccionadasAplicado = [...this.filtroGastoEstSeleccionadas];
+  }
+
+  private arraysMismoContenidoGastos(a: string[], b: string[]): boolean {
+    if (a.length !== b.length) return false;
+    const sa = [...a].map(String).sort();
+    const sb = [...b].map(String).sort();
+    return sa.every((v, i) => v === sb[i]);
+  }
+
+  private mismoEstadoFiltroMultiGastos(
+    todasA: boolean,
+    selA: string[],
+    todasB: boolean,
+    selB: string[],
+  ): boolean {
+    return todasA === todasB && this.arraysMismoContenidoGastos(selA, selB);
+  }
+
+  /** Hay criterio explícito en sucursal / proveedor / tipo / estado (borrador o ya aplicado). */
+  private filtroGastoAdicionalEstaActivo(
+    todasImplicitas: boolean,
+    seleccionados: string[],
+  ): boolean {
+    return !todasImplicitas || seleccionados.length > 0;
+  }
+
+  /** Botón «Limpiar filtros»: solo si hay mes, año distinto, otros filtros o filtros del gráfico. */
+  get puedeLimpiarFiltrosGastos(): boolean {
+    const anioActual = new Date().getFullYear().toString();
+    const hayEnBorrador =
+      this.filtroGastoAdicionalEstaActivo(
+        this.filtroGastoSucTodasImplicitas,
+        this.filtroGastoSucSeleccionadas,
+      ) ||
+      this.filtroGastoAdicionalEstaActivo(
+        this.filtroGastoProvTodasImplicitas,
+        this.filtroGastoProvSeleccionadas,
+      ) ||
+      this.filtroGastoAdicionalEstaActivo(
+        this.filtroGastoTipoTodasImplicitas,
+        this.filtroGastoTipoSeleccionadas,
+      ) ||
+      this.filtroGastoAdicionalEstaActivo(
+        this.filtroGastoEstTodasImplicitas,
+        this.filtroGastoEstSeleccionadas,
+      );
+    const hayAplicados =
+      this.filtroGastoAdicionalEstaActivo(
+        this.filtroGastoSucTodasImplicitasAplicado,
+        this.filtroGastoSucSeleccionadasAplicado,
+      ) ||
+      this.filtroGastoAdicionalEstaActivo(
+        this.filtroGastoProvTodasImplicitasAplicado,
+        this.filtroGastoProvSeleccionadasAplicado,
+      ) ||
+      this.filtroGastoAdicionalEstaActivo(
+        this.filtroGastoTipoTodasImplicitasAplicado,
+        this.filtroGastoTipoSeleccionadasAplicado,
+      ) ||
+      this.filtroGastoAdicionalEstaActivo(
+        this.filtroGastoEstTodasImplicitasAplicado,
+        this.filtroGastoEstSeleccionadasAplicado,
+      );
+    return (
+      !!this.mes ||
+      this.anio !== anioActual ||
+      hayEnBorrador ||
+      hayAplicados ||
+      this.tieneFiltrosInteractivos()
+    );
+  }
+
+  /** Muestra «Aplicar» solo si el borrador difiere de lo ya emitido al padre. */
+  get mostrarBotonAplicarOtrosFiltrosGastos(): boolean {
+    if (!this.mostrarFiltrosAdicionales) return false;
+    return !(
+      this.mismoEstadoFiltroMultiGastos(
+        this.filtroGastoSucTodasImplicitas,
+        this.filtroGastoSucSeleccionadas,
+        this.filtroGastoSucTodasImplicitasAplicado,
+        this.filtroGastoSucSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMultiGastos(
+        this.filtroGastoProvTodasImplicitas,
+        this.filtroGastoProvSeleccionadas,
+        this.filtroGastoProvTodasImplicitasAplicado,
+        this.filtroGastoProvSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMultiGastos(
+        this.filtroGastoTipoTodasImplicitas,
+        this.filtroGastoTipoSeleccionadas,
+        this.filtroGastoTipoTodasImplicitasAplicado,
+        this.filtroGastoTipoSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMultiGastos(
+        this.filtroGastoEstTodasImplicitas,
+        this.filtroGastoEstSeleccionadas,
+        this.filtroGastoEstTodasImplicitasAplicado,
+        this.filtroGastoEstSeleccionadasAplicado,
+      )
     );
   }
 
@@ -528,29 +662,29 @@ export class GastosComponent implements OnInit, OnChanges {
     const filtros: any = {
       anio: this.anio,
     };
-    const suc = this.filtroGastoSucursalParaApi();
+    const suc = this.filtroGastoSucursalParaApiAplicado();
     if (suc !== '' && suc != null) {
       filtros.sucursal = suc;
     }
     const prov = this.filtroGastoMultiAString(
-      this.filtroGastoProvTodasImplicitas,
-      this.filtroGastoProvSeleccionadas,
+      this.filtroGastoProvTodasImplicitasAplicado,
+      this.filtroGastoProvSeleccionadasAplicado,
       this.idsDeListaFiltro(this.proveedores),
     );
     if (prov) {
       filtros.proveedor = prov;
     }
     const tipo = this.filtroGastoMultiAString(
-      this.filtroGastoTipoTodasImplicitas,
-      this.filtroGastoTipoSeleccionadas,
+      this.filtroGastoTipoTodasImplicitasAplicado,
+      this.filtroGastoTipoSeleccionadasAplicado,
       this.idsDeListaFiltro(this.tiposGasto),
     );
     if (tipo) {
       filtros.tipoGasto = tipo;
     }
     const est = this.filtroGastoMultiAString(
-      this.filtroGastoEstTodasImplicitas,
-      this.filtroGastoEstSeleccionadas,
+      this.filtroGastoEstTodasImplicitasAplicado,
+      this.filtroGastoEstSeleccionadasAplicado,
       this.idsDeListaFiltro(this.estadosGasto),
     );
     if (est) {
@@ -572,8 +706,16 @@ export class GastosComponent implements OnInit, OnChanges {
     this.filtroGastoEstTodasImplicitas = true;
     this.filtroGastoEstSeleccionadas = [];
     this.aplicarRestriccionSucursalGastosPorRol();
+    this.copiarFiltrosAdicionalesGastosBorradorAAplicado();
     this.limpiarFiltrosInteractivos();
     this.aplicarFiltros();
+  }
+
+  /** Confirma el borrador de «otros filtros» y emite al padre. */
+  confirmarOtrosFiltrosGastos(): void {
+    this.copiarFiltrosAdicionalesGastosBorradorAAplicado();
+    this.aplicarFiltros();
+    this.cdr.markForCheck();
   }
 
   limpiarFiltrosInteractivos(): void {
@@ -597,8 +739,9 @@ export class GastosComponent implements OnInit, OnChanges {
     }
   }
 
-  toggleFiltrosAdicionales() {
+  toggleFiltrosAdicionales(): void {
     this.mostrarFiltrosAdicionales = !this.mostrarFiltrosAdicionales;
+    this.copiarFiltrosAdicionalesGastosAplicadoABorrador();
     this.cdr.markForCheck();
   }
 

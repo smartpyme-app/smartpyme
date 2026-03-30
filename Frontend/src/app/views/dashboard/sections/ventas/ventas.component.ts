@@ -809,6 +809,71 @@ export class VentasComponent implements OnInit, OnChanges {
     return !todasImplicitas || seleccionados.length > 0;
   }
 
+  private arraysMismoContenido(a: string[], b: string[]): boolean {
+    if (a.length !== b.length) return false;
+    const sa = [...a].map(String).sort();
+    const sb = [...b].map(String).sort();
+    return sa.every((v, i) => v === sb[i]);
+  }
+
+  private mismoEstadoFiltroMulti(
+    todasA: boolean,
+    selA: string[],
+    todasB: boolean,
+    selB: string[],
+  ): boolean {
+    return todasA === todasB && this.arraysMismoContenido(selA, selB);
+  }
+
+  /** Muestra «Aplicar» solo si el borrador difiere de lo ya aplicado al API. */
+  get mostrarBotonAplicarOtrosFiltrosVentas(): boolean {
+    if (!this.mostrarFiltrosAdicionales) return false;
+    return !(
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdSucursalTodasImplicitas,
+        this.filtroAdSucursalSeleccionadas,
+        this.filtroAdSucursalTodasImplicitasAplicado,
+        this.filtroAdSucursalSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdEstadoTodasImplicitas,
+        this.filtroAdEstadoSeleccionadas,
+        this.filtroAdEstadoTodasImplicitasAplicado,
+        this.filtroAdEstadoSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdCanalTodasImplicitas,
+        this.filtroAdCanalSeleccionadas,
+        this.filtroAdCanalTodasImplicitasAplicado,
+        this.filtroAdCanalSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdClienteTodasImplicitas,
+        this.filtroAdClienteSeleccionadas,
+        this.filtroAdClienteTodasImplicitasAplicado,
+        this.filtroAdClienteSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdVendedorTodasImplicitas,
+        this.filtroAdVendedorSeleccionadas,
+        this.filtroAdVendedorTodasImplicitasAplicado,
+        this.filtroAdVendedorSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroCatTodasImplicitas,
+        this.filtroCatSeleccionadas,
+        this.filtroCatTodasImplicitasAplicado,
+        this.filtroCatSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroProdTodasImplicitas,
+        this.filtroProdSeleccionadas,
+        this.filtroProdTodasImplicitasAplicado,
+        this.filtroProdSeleccionadasAplicado,
+      )
+    );
+  }
+
   get filtroAdSucursalesItems(): { id: string; nombre: string }[] {
     return (this.sucursales || []).map((s: any) => ({
       id: String(s.id),
@@ -976,6 +1041,7 @@ export class VentasComponent implements OnInit, OnChanges {
   confirmarOtrosFiltrosVentas(): void {
     this.copiarFiltrosAdicionalesBorradorAAplicado();
     this.emitirFiltrosAlPadre();
+    this.cdr.markForCheck();
   }
 
   private emitirFiltrosAlPadre(): void {

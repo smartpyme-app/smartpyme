@@ -45,6 +45,12 @@ export class InventarioComponent implements OnInit, OnChanges {
   filtroProducto: string = '';
   filtroSucursal: string = '';
   filtroProveedor: string = '';
+
+  /** Valores ya emitidos al padre (año/mes siempre desde el control). */
+  filtroCategoriaAplicado: string = '';
+  filtroProductoAplicado: string = '';
+  filtroSucursalAplicado: string = '';
+  filtroProveedorAplicado: string = '';
   
   // Opciones para filtros
   categorias: any[] = [];
@@ -176,9 +182,41 @@ export class InventarioComponent implements OnInit, OnChanges {
     this.proveedores = [];
   }
 
+  private copiarFiltrosAdicionalesInventarioAplicadoABorrador(): void {
+    this.filtroCategoria = this.filtroCategoriaAplicado;
+    this.filtroProducto = this.filtroProductoAplicado;
+    this.filtroSucursal = this.filtroSucursalAplicado;
+    this.filtroProveedor = this.filtroProveedorAplicado;
+  }
+
+  private copiarFiltrosAdicionalesInventarioBorradorAAplicado(): void {
+    this.filtroCategoriaAplicado = this.filtroCategoria;
+    this.filtroProductoAplicado = this.filtroProducto;
+    this.filtroSucursalAplicado = this.filtroSucursal;
+    this.filtroProveedorAplicado = this.filtroProveedor;
+  }
+
   toggleFiltrosAdicionales(): void {
     this.mostrarFiltrosAdicionales = !this.mostrarFiltrosAdicionales;
+    this.copiarFiltrosAdicionalesInventarioAplicadoABorrador();
     this.cdr.markForCheck();
+  }
+
+  /** Confirma categoría/producto/sucursal/proveedor y emite al padre. */
+  confirmarOtrosFiltrosInventario(): void {
+    this.copiarFiltrosAdicionalesInventarioBorradorAAplicado();
+    this.aplicarFiltros();
+    this.cdr.markForCheck();
+  }
+
+  get mostrarBotonAplicarOtrosFiltrosInventario(): boolean {
+    if (!this.mostrarFiltrosAdicionales) return false;
+    return (
+      this.filtroCategoria !== this.filtroCategoriaAplicado ||
+      this.filtroProducto !== this.filtroProductoAplicado ||
+      this.filtroSucursal !== this.filtroSucursalAplicado ||
+      this.filtroProveedor !== this.filtroProveedorAplicado
+    );
   }
 
   limpiarFiltros(): void {
@@ -188,6 +226,8 @@ export class InventarioComponent implements OnInit, OnChanges {
     this.filtroProducto = '';
     this.filtroSucursal = '';
     this.filtroProveedor = '';
+    this.copiarFiltrosAdicionalesInventarioBorradorAAplicado();
+    this.limpiarFiltrosInteractivos();
     this.aplicarFiltros();
   }
 
@@ -203,10 +243,10 @@ export class InventarioComponent implements OnInit, OnChanges {
 
     const filtros: any = {
       anio: this.anio,
-      categoria: this.filtroCategoria,
-      producto: this.filtroProducto,
-      sucursal: this.filtroSucursal,
-      proveedor: this.filtroProveedor
+      categoria: this.filtroCategoriaAplicado,
+      producto: this.filtroProductoAplicado,
+      sucursal: this.filtroSucursalAplicado,
+      proveedor: this.filtroProveedorAplicado,
     };
     if (this.mes) {
       filtros.mes = this.mes;
@@ -217,13 +257,21 @@ export class InventarioComponent implements OnInit, OnChanges {
 
   get puedeLimpiarFiltrosInventario(): boolean {
     const anioActual = new Date().getFullYear().toString();
+    if (!!this.mes || this.anio !== anioActual) {
+      return true;
+    }
+    if (this.tieneFiltrosInteractivos()) {
+      return true;
+    }
     return (
-      !!this.mes ||
-      this.anio !== anioActual ||
       !!this.filtroCategoria ||
       !!this.filtroProducto ||
       !!this.filtroSucursal ||
-      !!this.filtroProveedor
+      !!this.filtroProveedor ||
+      !!this.filtroCategoriaAplicado ||
+      !!this.filtroProductoAplicado ||
+      !!this.filtroSucursalAplicado ||
+      !!this.filtroProveedorAplicado
     );
   }
 

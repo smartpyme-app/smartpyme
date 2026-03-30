@@ -62,6 +62,20 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   filtroCxpCatTodasImplicitas = true;
   filtroCxpCatSeleccionadas: string[] = [];
 
+  /** Copias ya emitidas al padre (año/mes siempre desde el control). */
+  filtroCxcSucTodasImplicitasAplicado = true;
+  filtroCxcSucSeleccionadasAplicado: string[] = [];
+  filtroCxcCliTodasImplicitasAplicado = true;
+  filtroCxcCliSeleccionadasAplicado: string[] = [];
+  filtroCxcVigTodasImplicitasAplicado = true;
+  filtroCxcVigSeleccionadasAplicado: string[] = [];
+  filtroCxpProvTodasImplicitasAplicado = true;
+  filtroCxpProvSeleccionadasAplicado: string[] = [];
+  filtroCxpVigTodasImplicitasAplicado = true;
+  filtroCxpVigSeleccionadasAplicado: string[] = [];
+  filtroCxpCatTodasImplicitasAplicado = true;
+  filtroCxpCatSeleccionadasAplicado: string[] = [];
+
   /** Catálogos desde Laravel / API Go (`DashboardFiltrosCatalogoService`), como Gastos. */
   sucursales: DashboardFiltroCatalogoItem[] = [];
   clientes: DashboardFiltroCatalogoItem[] = [];
@@ -318,6 +332,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       next: (items) => {
         this.sucursales = items;
         this.aplicarRestriccionSucursalCxcPorRol();
+        this.copiarTodoFiltrosAdicionalesBorradorAAplicado();
         setTimeout(() => {
           if (this.filtrosListosParaEmitir) {
             this.aplicarFiltros();
@@ -454,23 +469,80 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     return sel.length === 1 ? sel[0] : [...sel];
   }
 
-  private filtroCxcSucursalParaApi(): string | string[] {
+  private filtroCxcSucursalParaApiAplicado(): string | string[] {
     return this.filtroSucursalParaApiDesde(
-      this.filtroCxcSucTodasImplicitas,
-      this.filtroCxcSucSeleccionadas,
+      this.filtroCxcSucTodasImplicitasAplicado,
+      this.filtroCxcSucSeleccionadasAplicado,
     );
   }
 
-  private vigenciaParaApi(): string {
+  private copiarFiltrosCxcAplicadoABorrador(): void {
+    this.filtroCxcSucTodasImplicitas = this.filtroCxcSucTodasImplicitasAplicado;
+    this.filtroCxcSucSeleccionadas = [...this.filtroCxcSucSeleccionadasAplicado];
+    this.filtroCxcCliTodasImplicitas = this.filtroCxcCliTodasImplicitasAplicado;
+    this.filtroCxcCliSeleccionadas = [...this.filtroCxcCliSeleccionadasAplicado];
+    this.filtroCxcVigTodasImplicitas = this.filtroCxcVigTodasImplicitasAplicado;
+    this.filtroCxcVigSeleccionadas = [...this.filtroCxcVigSeleccionadasAplicado];
+  }
+
+  private copiarFiltrosCxpAplicadoABorrador(): void {
+    this.filtroCxpProvTodasImplicitas = this.filtroCxpProvTodasImplicitasAplicado;
+    this.filtroCxpProvSeleccionadas = [...this.filtroCxpProvSeleccionadasAplicado];
+    this.filtroCxpVigTodasImplicitas = this.filtroCxpVigTodasImplicitasAplicado;
+    this.filtroCxpVigSeleccionadas = [...this.filtroCxpVigSeleccionadasAplicado];
+    this.filtroCxpCatTodasImplicitas = this.filtroCxpCatTodasImplicitasAplicado;
+    this.filtroCxpCatSeleccionadas = [...this.filtroCxpCatSeleccionadasAplicado];
+  }
+
+  private copiarFiltrosCxcBorradorAAplicado(): void {
+    this.filtroCxcSucTodasImplicitasAplicado = this.filtroCxcSucTodasImplicitas;
+    this.filtroCxcSucSeleccionadasAplicado = [...this.filtroCxcSucSeleccionadas];
+    this.filtroCxcCliTodasImplicitasAplicado = this.filtroCxcCliTodasImplicitas;
+    this.filtroCxcCliSeleccionadasAplicado = [...this.filtroCxcCliSeleccionadas];
+    this.filtroCxcVigTodasImplicitasAplicado = this.filtroCxcVigTodasImplicitas;
+    this.filtroCxcVigSeleccionadasAplicado = [...this.filtroCxcVigSeleccionadas];
+  }
+
+  private copiarFiltrosCxpBorradorAAplicado(): void {
+    this.filtroCxpProvTodasImplicitasAplicado = this.filtroCxpProvTodasImplicitas;
+    this.filtroCxpProvSeleccionadasAplicado = [...this.filtroCxpProvSeleccionadas];
+    this.filtroCxpVigTodasImplicitasAplicado = this.filtroCxpVigTodasImplicitas;
+    this.filtroCxpVigSeleccionadasAplicado = [...this.filtroCxpVigSeleccionadas];
+    this.filtroCxpCatTodasImplicitasAplicado = this.filtroCxpCatTodasImplicitas;
+    this.filtroCxpCatSeleccionadasAplicado = [...this.filtroCxpCatSeleccionadas];
+  }
+
+  private copiarTodoFiltrosAdicionalesBorradorAAplicado(): void {
+    this.copiarFiltrosCxcBorradorAAplicado();
+    this.copiarFiltrosCxpBorradorAAplicado();
+  }
+
+  private arraysMismoContenidoCc(a: string[], b: string[]): boolean {
+    if (a.length !== b.length) return false;
+    const sa = [...a].map(String).sort();
+    const sb = [...b].map(String).sort();
+    return sa.every((v, i) => v === sb[i]);
+  }
+
+  private mismoEstadoFiltroMultiCc(
+    todasA: boolean,
+    selA: string[],
+    todasB: boolean,
+    selB: string[],
+  ): boolean {
+    return todasA === todasB && this.arraysMismoContenidoCc(selA, selB);
+  }
+
+  private vigenciaParaApiAplicado(): string {
     const todos = this.idsDeListaFiltro(this.estadosVigencia);
     const a = this.filtroMultiAString(
-      this.filtroCxcVigTodasImplicitas,
-      this.filtroCxcVigSeleccionadas,
+      this.filtroCxcVigTodasImplicitasAplicado,
+      this.filtroCxcVigSeleccionadasAplicado,
       todos,
     );
     const b = this.filtroMultiAString(
-      this.filtroCxpVigTodasImplicitas,
-      this.filtroCxpVigSeleccionadas,
+      this.filtroCxpVigTodasImplicitasAplicado,
+      this.filtroCxpVigSeleccionadasAplicado,
       todos,
     );
     if (a && b) {
@@ -560,12 +632,76 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
 
   toggleFiltrosAdicionalesPagar(): void {
     this.mostrarFiltrosAdicionalesPagar = !this.mostrarFiltrosAdicionalesPagar;
+    this.copiarFiltrosCxpAplicadoABorrador();
     this.cdr.markForCheck();
   }
 
   toggleFiltrosAdicionales(): void {
     this.mostrarFiltrosAdicionales = !this.mostrarFiltrosAdicionales;
+    this.copiarFiltrosCxcAplicadoABorrador();
     this.cdr.markForCheck();
+  }
+
+  /** Confirma solo filtros de cuentas por cobrar (borrador → aplicado) y emite. */
+  confirmarOtrosFiltrosCxc(): void {
+    this.copiarFiltrosCxcBorradorAAplicado();
+    this.aplicarFiltros();
+    this.cdr.markForCheck();
+  }
+
+  /** Confirma solo filtros de cuentas por pagar (borrador → aplicado) y emite. */
+  confirmarOtrosFiltrosCxp(): void {
+    this.copiarFiltrosCxpBorradorAAplicado();
+    this.aplicarFiltros();
+    this.cdr.markForCheck();
+  }
+
+  get mostrarBotonAplicarOtrosFiltrosCxc(): boolean {
+    if (!this.mostrarFiltrosAdicionales) return false;
+    return !(
+      this.mismoEstadoFiltroMultiCc(
+        this.filtroCxcSucTodasImplicitas,
+        this.filtroCxcSucSeleccionadas,
+        this.filtroCxcSucTodasImplicitasAplicado,
+        this.filtroCxcSucSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMultiCc(
+        this.filtroCxcCliTodasImplicitas,
+        this.filtroCxcCliSeleccionadas,
+        this.filtroCxcCliTodasImplicitasAplicado,
+        this.filtroCxcCliSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMultiCc(
+        this.filtroCxcVigTodasImplicitas,
+        this.filtroCxcVigSeleccionadas,
+        this.filtroCxcVigTodasImplicitasAplicado,
+        this.filtroCxcVigSeleccionadasAplicado,
+      )
+    );
+  }
+
+  get mostrarBotonAplicarOtrosFiltrosCxp(): boolean {
+    if (!this.mostrarFiltrosAdicionalesPagar) return false;
+    return !(
+      this.mismoEstadoFiltroMultiCc(
+        this.filtroCxpProvTodasImplicitas,
+        this.filtroCxpProvSeleccionadas,
+        this.filtroCxpProvTodasImplicitasAplicado,
+        this.filtroCxpProvSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMultiCc(
+        this.filtroCxpVigTodasImplicitas,
+        this.filtroCxpVigSeleccionadas,
+        this.filtroCxpVigTodasImplicitasAplicado,
+        this.filtroCxpVigSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMultiCc(
+        this.filtroCxpCatTodasImplicitas,
+        this.filtroCxpCatSeleccionadas,
+        this.filtroCxpCatTodasImplicitasAplicado,
+        this.filtroCxpCatSeleccionadasAplicado,
+      )
+    );
   }
 
   limpiarFiltros(): void {
@@ -582,6 +718,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     this.filtroCxpCatTodasImplicitas = true;
     this.filtroCxpCatSeleccionadas = [];
     this.aplicarRestriccionSucursalCxcPorRol();
+    this.copiarTodoFiltrosAdicionalesBorradorAAplicado();
     this.limpiarFiltrosInteractivos();
     this.aplicarFiltros();
   }
@@ -599,28 +736,28 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       anio: this.anio,
     };
 
-    const suc = this.filtroCxcSucursalParaApi();
+    const suc = this.filtroCxcSucursalParaApiAplicado();
     if (suc !== '' && suc != null) {
       filtros.sucursal = suc;
     }
 
     const cli = this.filtroMultiAString(
-      this.filtroCxcCliTodasImplicitas,
-      this.filtroCxcCliSeleccionadas,
+      this.filtroCxcCliTodasImplicitasAplicado,
+      this.filtroCxcCliSeleccionadasAplicado,
       this.idsDeListaFiltro(this.clientes),
     );
     if (cli) {
       filtros.cliente = cli;
     }
 
-    const vig = this.vigenciaParaApi();
+    const vig = this.vigenciaParaApiAplicado();
     if (vig) {
       filtros.estadoVigencia = vig;
     }
 
     const prov = this.filtroMultiAString(
-      this.filtroCxpProvTodasImplicitas,
-      this.filtroCxpProvSeleccionadas,
+      this.filtroCxpProvTodasImplicitasAplicado,
+      this.filtroCxpProvSeleccionadasAplicado,
       this.idsDeListaFiltro(this.proveedores),
     );
     if (prov) {
@@ -628,8 +765,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     }
 
     const cat = this.filtroMultiAString(
-      this.filtroCxpCatTodasImplicitas,
-      this.filtroCxpCatSeleccionadas,
+      this.filtroCxpCatTodasImplicitasAplicado,
+      this.filtroCxpCatSeleccionadasAplicado,
       this.idsDeListaFiltro(this.categoriasGasto),
     );
     if (cat) {
@@ -650,52 +787,53 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     return !todasImplicitas || seleccionados.length > 0;
   }
 
-  get puedeLimpiarFiltrosCxc(): boolean {
+  private evaluarPuedeLimpiarFiltrosControlCuentas(): boolean {
     const anioActual = new Date().getFullYear().toString();
     if (!!this.mes || this.anio !== anioActual) {
       return true;
     }
+    if (this.tieneFiltrosInteractivos()) {
+      return true;
+    }
+    const paresBorrador: [boolean, string[]][] = [
+      [this.filtroCxcSucTodasImplicitas, this.filtroCxcSucSeleccionadas],
+      [this.filtroCxcCliTodasImplicitas, this.filtroCxcCliSeleccionadas],
+      [this.filtroCxcVigTodasImplicitas, this.filtroCxcVigSeleccionadas],
+      [this.filtroCxpProvTodasImplicitas, this.filtroCxpProvSeleccionadas],
+      [this.filtroCxpVigTodasImplicitas, this.filtroCxpVigSeleccionadas],
+      [this.filtroCxpCatTodasImplicitas, this.filtroCxpCatSeleccionadas],
+    ];
+    const paresAplicado: [boolean, string[]][] = [
+      [this.filtroCxcSucTodasImplicitasAplicado, this.filtroCxcSucSeleccionadasAplicado],
+      [this.filtroCxcCliTodasImplicitasAplicado, this.filtroCxcCliSeleccionadasAplicado],
+      [this.filtroCxcVigTodasImplicitasAplicado, this.filtroCxcVigSeleccionadasAplicado],
+      [this.filtroCxpProvTodasImplicitasAplicado, this.filtroCxpProvSeleccionadasAplicado],
+      [this.filtroCxpVigTodasImplicitasAplicado, this.filtroCxpVigSeleccionadasAplicado],
+      [this.filtroCxpCatTodasImplicitasAplicado, this.filtroCxpCatSeleccionadasAplicado],
+    ];
     if (
-      this.filtroMultiExplicitoActivo(
-        this.filtroCxcSucTodasImplicitas,
-        this.filtroCxcSucSeleccionadas,
-      ) ||
-      this.filtroMultiExplicitoActivo(
-        this.filtroCxcCliTodasImplicitas,
-        this.filtroCxcCliSeleccionadas,
-      ) ||
-      this.filtroMultiExplicitoActivo(
-        this.filtroCxcVigTodasImplicitas,
-        this.filtroCxcVigSeleccionadas,
-      )
+      paresBorrador.some(([t, s]) => this.filtroMultiExplicitoActivo(t, s))
+    ) {
+      return true;
+    }
+    if (
+      paresAplicado.some(([t, s]) => this.filtroMultiExplicitoActivo(t, s))
     ) {
       return true;
     }
     return false;
   }
 
+  get puedeLimpiarFiltrosControlCuentas(): boolean {
+    return this.evaluarPuedeLimpiarFiltrosControlCuentas();
+  }
+
+  get puedeLimpiarFiltrosCxc(): boolean {
+    return this.evaluarPuedeLimpiarFiltrosControlCuentas();
+  }
+
   get puedeLimpiarFiltrosCxp(): boolean {
-    const anioActual = new Date().getFullYear().toString();
-    if (!!this.mes || this.anio !== anioActual) {
-      return true;
-    }
-    if (
-      this.filtroMultiExplicitoActivo(
-        this.filtroCxpProvTodasImplicitas,
-        this.filtroCxpProvSeleccionadas,
-      ) ||
-      this.filtroMultiExplicitoActivo(
-        this.filtroCxpVigTodasImplicitas,
-        this.filtroCxpVigSeleccionadas,
-      ) ||
-      this.filtroMultiExplicitoActivo(
-        this.filtroCxpCatTodasImplicitas,
-        this.filtroCxpCatSeleccionadas,
-      )
-    ) {
-      return true;
-    }
-    return false;
+    return this.evaluarPuedeLimpiarFiltrosControlCuentas();
   }
 
   formatCurrency(value: number): string {

@@ -130,7 +130,7 @@
                                 type="button"
                                 class="btn btn-primary"
                                 tooltip="Aplicar filtros"
-                                *ngIf="mostrarFiltrosAdicionales"
+                                *ngIf="mostrarBotonAplicarOtrosFiltrosVentas"
                                 (click)="confirmarOtrosFiltrosVentas()">
                                 <i class="fa fa-check"></i> Aplicar
                             </button>
@@ -147,10 +147,16 @@
                     
                     <!-- Filtros adicionales (colapsables) -->
                     <div class="mt-3" *ngIf="mostrarFiltrosAdicionales">
-                        <p class="small text-muted mb-3 d-flex align-items-start gap-2">
+                        <p class="small text-muted mb-3 d-flex align-items-start gap-2" *ngIf="!mostrarBotonAplicarOtrosFiltrosVentas">
                             <i class="fas fa-info-circle mt-1 flex-shrink-0" aria-hidden="true"></i>
                             <span>
-                                Los cambios en estos filtros no se aplican solos: para actualizar los datos del dashboard, pulsa el botón <strong class="text-body">Aplicar</strong>.
+                                Los filtros muestran la última consulta aplicada. Cuando cambies algún criterio respecto a esa consulta, aparecerá el botón <strong class="text-body">Aplicar</strong> para actualizar los datos del dashboard.
+                            </span>
+                        </p>
+                        <p class="small text-primary mb-3 d-flex align-items-start gap-2" *ngIf="mostrarBotonAplicarOtrosFiltrosVentas">
+                            <i class="fas fa-info-circle mt-1 flex-shrink-0" aria-hidden="true"></i>
+                            <span>
+                                Hay cambios sin aplicar. Pulsa <strong>Aplicar</strong> para cargar el dashboard con los filtros seleccionados.
                             </span>
                         </p>
                         <ng-container *ngTemplateOutlet="filtrosAdicionalesVentasTpl"></ng-container>

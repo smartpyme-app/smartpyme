@@ -76,8 +76,9 @@
                             <button 
                                 type="button"
                                 class="btn btn-primary"
-                                tooltip="Aplicar filtros"
-                                (click)="aplicarFiltros()">
+                                tooltip="Aplicar otros filtros de cuentas por cobrar"
+                                *ngIf="mostrarBotonAplicarOtrosFiltrosCxc"
+                                (click)="confirmarOtrosFiltrosCxc()">
                                 <i class="fa fa-check"></i> Aplicar
                             </button>
                             <button 
@@ -85,7 +86,7 @@
                                 class="btn btn-outline-primary"
                                 tooltip="Limpiar filtros"
                                 (click)="limpiarFiltros()"
-                                *ngIf="puedeLimpiarFiltrosCxc">
+                                *ngIf="puedeLimpiarFiltrosControlCuentas">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
                             </button>
                         </div>
@@ -93,6 +94,18 @@
                     
                     <!-- Filtros adicionales (colapsables), catálogos vía API como Gastos -->
                     <div class="mt-3" *ngIf="mostrarFiltrosAdicionales">
+                        <p class="small text-muted mb-3 d-flex align-items-start gap-2" *ngIf="!mostrarBotonAplicarOtrosFiltrosCxc">
+                            <i class="fas fa-info-circle mt-1 flex-shrink-0 text-primary" aria-hidden="true"></i>
+                            <span>
+                                Los filtros muestran la última consulta aplicada. Cuando cambies sucursal, cliente o vigencia respecto a esa consulta, aparecerá <strong class="text-body">Aplicar</strong> para actualizar los datos.
+                            </span>
+                        </p>
+                        <p class="small text-primary mb-3 d-flex align-items-start gap-2" *ngIf="mostrarBotonAplicarOtrosFiltrosCxc">
+                            <i class="fas fa-info-circle mt-1 flex-shrink-0" aria-hidden="true"></i>
+                            <span>
+                                Hay cambios sin aplicar en cuentas por cobrar. Pulsa <strong>Aplicar</strong> para cargar el dashboard con esos criterios.
+                            </span>
+                        </p>
                         <div class="row g-3">
                             <div class="col-12 col-md-6 col-xl-4">
                                 <app-dropdown-multi-filtro
@@ -374,8 +387,9 @@
                                 type="button"
                                 class="btn"
                                 style="background-color: #F19447; border-color: #F19447; color: white;"
-                                tooltip="Aplicar filtros"
-                                (click)="aplicarFiltros()">
+                                tooltip="Aplicar otros filtros de cuentas por pagar"
+                                *ngIf="mostrarBotonAplicarOtrosFiltrosCxp"
+                                (click)="confirmarOtrosFiltrosCxp()">
                                 <i class="fa fa-check"></i> Aplicar
                             </button>
                             <button 
@@ -384,7 +398,7 @@
                                 style="border-color: #F19447; color: #F19447;"
                                 tooltip="Limpiar filtros"
                                 (click)="limpiarFiltros()"
-                                *ngIf="puedeLimpiarFiltrosCxp">
+                                *ngIf="puedeLimpiarFiltrosControlCuentas">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
                             </button>
                         </div>
@@ -392,6 +406,18 @@
                     
                     <!-- Filtros adicionales (colapsables), catálogos vía API como Gastos -->
                     <div class="mt-3" *ngIf="mostrarFiltrosAdicionalesPagar">
+                        <p class="small text-muted mb-3 d-flex align-items-start gap-2" *ngIf="!mostrarBotonAplicarOtrosFiltrosCxp">
+                            <i class="fas fa-info-circle mt-1 flex-shrink-0" style="color: #F19447;" aria-hidden="true"></i>
+                            <span>
+                                Los filtros muestran la última consulta aplicada. Cuando cambies proveedor o vigencia respecto a esa consulta, aparecerá <strong class="text-body">Aplicar</strong> para actualizar los datos.
+                            </span>
+                        </p>
+                        <p class="small mb-3 d-flex align-items-start gap-2" style="color: #c45f15;" *ngIf="mostrarBotonAplicarOtrosFiltrosCxp">
+                            <i class="fas fa-info-circle mt-1 flex-shrink-0" aria-hidden="true"></i>
+                            <span>
+                                Hay cambios sin aplicar en cuentas por pagar. Pulsa <strong>Aplicar</strong> para cargar el dashboard con esos criterios.
+                            </span>
+                        </p>
                         <div class="row g-3">
                             <div class="col-12 col-md-6 col-xl-4">
                                 <app-dropdown-multi-filtro

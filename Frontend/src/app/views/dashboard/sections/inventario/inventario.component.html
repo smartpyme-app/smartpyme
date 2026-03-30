@@ -59,8 +59,9 @@
                             <button 
                                 type="button"
                                 class="btn btn-primary"
-                                tooltip="Aplicar filtros"
-                                (click)="aplicarFiltros()">
+                                tooltip="Aplicar otros filtros al dashboard"
+                                *ngIf="mostrarBotonAplicarOtrosFiltrosInventario"
+                                (click)="confirmarOtrosFiltrosInventario()">
                                 <i class="fa fa-check"></i> Aplicar
                             </button>
                             <button 
@@ -76,14 +77,25 @@
                     
                     <!-- Filtros adicionales (colapsables) -->
                     <div class="mt-3" *ngIf="mostrarFiltrosAdicionales">
+                        <p class="small text-muted mb-3 d-flex align-items-start gap-2" *ngIf="!mostrarBotonAplicarOtrosFiltrosInventario">
+                            <i class="fas fa-info-circle mt-1 flex-shrink-0 text-primary" aria-hidden="true"></i>
+                            <span>
+                                Los filtros muestran la última consulta aplicada. Cuando cambies categoría, producto, sucursal o proveedor respecto a esa consulta, aparecerá el botón <strong class="text-body">Aplicar</strong> para actualizar los datos.
+                            </span>
+                        </p>
+                        <p class="small text-primary mb-3 d-flex align-items-start gap-2" *ngIf="mostrarBotonAplicarOtrosFiltrosInventario">
+                            <i class="fas fa-info-circle mt-1 flex-shrink-0" aria-hidden="true"></i>
+                            <span>
+                                Hay cambios sin aplicar. Pulsa <strong>Aplicar</strong> para cargar el dashboard con los filtros seleccionados.
+                            </span>
+                        </p>
                         <div class="row g-3">
                             <div class="col-12 col-md-6 col-xl-4">
                                 <label for="categoria" class="text-primary fw-medium small mb-1">Categoría</label>
                                 <select
                                     id="categoria"
                                     class="form-select"
-                                    [(ngModel)]="filtroCategoria"
-                                    (change)="aplicarFiltros()">
+                                    [(ngModel)]="filtroCategoria">
                                     <option value="">Todas</option>
                                     <option *ngFor="let categoria of categorias; trackBy: trackById" [value]="categoria.id">
                                         {{ categoria.nombre }}
@@ -95,8 +107,7 @@
                                 <select
                                     id="producto"
                                     class="form-select"
-                                    [(ngModel)]="filtroProducto"
-                                    (change)="aplicarFiltros()">
+                                    [(ngModel)]="filtroProducto">
                                     <option value="">Todas</option>
                                     <option *ngFor="let producto of productos; trackBy: trackById" [value]="producto.id">
                                         {{ producto.nombre }}
@@ -108,8 +119,7 @@
                                 <select
                                     id="sucursal"
                                     class="form-select"
-                                    [(ngModel)]="filtroSucursal"
-                                    (change)="aplicarFiltros()">
+                                    [(ngModel)]="filtroSucursal">
                                     <option value="">Todas</option>
                                     <option *ngFor="let sucursal of sucursales; trackBy: trackById" [value]="sucursal.id">
                                         {{ sucursal.nombre }}
@@ -121,8 +131,7 @@
                                 <select
                                     id="proveedor"
                                     class="form-select"
-                                    [(ngModel)]="filtroProveedor"
-                                    (change)="aplicarFiltros()">
+                                    [(ngModel)]="filtroProveedor">
                                     <option value="">Todas</option>
                                     <option *ngFor="let proveedor of proveedores; trackBy: trackById" [value]="proveedor.id">
                                         {{ proveedor.nombre }}
