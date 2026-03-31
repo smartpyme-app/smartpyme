@@ -1,0 +1,364 @@
+/* Estilos para la tabla de estado de resultados */
+.estado-resultados-table {
+    font-size: 13px;
+}
+
+.estado-resultados-table thead th {
+    background-color: #66A3FF;
+    color: white;
+    font-weight: 600;
+    padding: 12px 8px;
+    border: none;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.estado-resultados-table tbody tr {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.estado-resultados-table tbody tr:nth-child(even) {
+    background-color: #f7f7f7;
+}
+
+.estado-resultados-table tbody tr:nth-child(odd) {
+    background-color: white;
+}
+
+.estado-resultados-table tbody tr:hover {
+    background-color: #e8f0fe;
+}
+
+.estado-resultados-table tbody td {
+    padding: 10px 8px;
+    vertical-align: middle;
+    border: none;
+}
+
+.estado-resultados-table tbody td:first-child {
+    font-weight: 500;
+    background-color: inherit !important;
+}
+
+.estado-resultados-table tbody tr:nth-child(even) td:first-child {
+    background-color: #f7f7f7 !important;
+}
+
+.estado-resultados-table tbody tr:nth-child(odd) td:first-child {
+    background-color: white !important;
+}
+
+.estado-resultados-table tbody tr:hover td:first-child {
+    background-color: #e8f0fe !important;
+}
+
+.table-row-child td:first-child {
+    background-color: #fafafa !important;
+}
+
+.table-row-child:hover td:first-child {
+    background-color: #f0f0f0 !important;
+}
+
+.table-row-child {
+    background-color: #fafafa !important;
+}
+
+.table-row-child:hover {
+    background-color: #f0f0f0 !important;
+}
+
+.table-header-finanzas {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Estilos para valores negativos */
+.estado-resultados-table tbody td.text-end {
+    color: #333;
+}
+
+.estado-resultados-table tbody td.text-end.text-danger {
+    color: #d32f2f;
+}
+
+/* Botones de expandir/colapsar */
+.estado-resultados-table .btn-sm {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.estado-resultados-table .btn-sm:hover {
+    opacity: 0.7;
+}
+
+/* Scrollbar personalizado */
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Estilos especiales para la fila de Utilidad neta */
+.utilidad-neta-row {
+    background-color: #f5f5f5 !important;
+    border-top: 2px solid #e0e0e0;
+}
+
+.utilidad-neta-row:hover {
+    background-color: #eeeeee !important;
+}
+
+.utilidad-neta-label {
+    background-color: #f5f5f5 !important;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    padding: 8px !important;
+}
+
+.utilidad-neta-row:hover .utilidad-neta-label {
+    background-color: #eeeeee !important;
+}
+
+/* Colores para valores de utilidad neta */
+.utilidad-neta-positivo {
+    color: #2e7d32 !important;
+    font-weight: 600;
+}
+
+.utilidad-neta-negativo {
+    color: #f57c00 !important;
+    font-weight: 600;
+}
+
+/* Estilos para tablas de análisis */
+.analisis-table {
+    font-size: 13px;
+}
+
+.analisis-table thead th {
+    background-color: #66A3FF;
+    color: white;
+    font-weight: 600;
+    padding: 12px 8px;
+    border: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.analisis-table tbody tr {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.analisis-table tbody tr:nth-child(even) {
+    background-color: #f7f7f7;
+}
+
+.analisis-table tbody tr:nth-child(odd) {
+    background-color: white;
+}
+
+.analisis-table tbody tr:hover {
+    background-color: #e8f0fe;
+}
+
+.analisis-table tbody td {
+    padding: 10px 8px;
+    vertical-align: middle;
+    border: none;
+}
+
+.table-header-analisis {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Estilos para tabla de flujo de efectivo */
+.flujo-efectivo-table {
+    font-size: 13px;
+}
+
+.flujo-efectivo-table thead th {
+    background-color: #66A3FF;
+    color: white;
+    font-weight: 600;
+    padding: 12px 8px;
+    border: none;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.flujo-efectivo-table tbody tr {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.flujo-efectivo-table tbody tr:nth-child(even) {
+    background-color: #f7f7f7;
+}
+
+.flujo-efectivo-table tbody tr:nth-child(odd) {
+    background-color: white;
+}
+
+.flujo-efectivo-table tbody tr:hover {
+    background-color: #e8f0fe;
+}
+
+.flujo-efectivo-table tbody td {
+    padding: 10px 8px;
+    vertical-align: middle;
+    border: none;
+}
+
+.table-header-flujo {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Estilos especiales para fila de Efectivo disponible */
+.flujo-efectivo-disponible {
+    background-color: #e3f2fd !important;
+}
+
+.flujo-efectivo-disponible:hover {
+    background-color: #bbdefb !important;
+}
+
+.flujo-efectivo-label {
+    background-color: #e3f2fd !important;
+}
+
+.flujo-efectivo-disponible:hover .flujo-efectivo-label {
+    background-color: #bbdefb !important;
+}
+
+.flujo-efectivo-table tbody tr.flujo-efectivo-disponible td:first-child {
+    background-color: #e3f2fd !important;
+}
+
+.flujo-efectivo-table tbody tr.flujo-efectivo-disponible:hover td:first-child {
+    background-color: #bbdefb !important;
+}
+
+/* Estilos para AG Grid - Análisis Vertical */
+::ng-deep .analisis-vertical-grid.ag-theme-alpine {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+::ng-deep .analisis-vertical-grid .ag-header {
+    background-color: #66A3FF !important;
+    border-bottom: none !important;
+}
+
+::ng-deep .analisis-vertical-grid .ag-header-cell {
+    background-color: #66A3FF !important;
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+::ng-deep .analisis-vertical-grid .ag-header-cell-text {
+    color: white !important;
+}
+
+::ng-deep .analisis-vertical-grid .ag-row:nth-child(even) {
+    background-color: #f7f7f7 !important;
+}
+
+::ng-deep .analisis-vertical-grid .ag-row:nth-child(odd) {
+    background-color: white !important;
+}
+
+::ng-deep .analisis-vertical-grid .ag-row:hover {
+    background-color: #e8f0fe !important;
+}
+
+/* Estilos para AG Grid - Análisis Horizontal */
+::ng-deep .analisis-horizontal-grid.ag-theme-alpine {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+::ng-deep .analisis-horizontal-grid .ag-header {
+    background-color: #66A3FF !important;
+    border-bottom: none !important;
+}
+
+::ng-deep .analisis-horizontal-grid .ag-header-cell {
+    background-color: #66A3FF !important;
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+::ng-deep .analisis-horizontal-grid .ag-header-cell-text {
+    color: white !important;
+}
+
+::ng-deep .analisis-horizontal-grid .ag-row:nth-child(even) {
+    background-color: #f7f7f7 !important;
+}
+
+::ng-deep .analisis-horizontal-grid .ag-row:nth-child(odd) {
+    background-color: white !important;
+}
+
+::ng-deep .analisis-horizontal-grid .ag-row:hover {
+    background-color: #e8f0fe !important;
+}
+
+/* Estilos para AG Grid - Flujo de Efectivo */
+::ng-deep .flujo-efectivo-grid.ag-theme-alpine {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+::ng-deep .flujo-efectivo-grid .ag-header {
+    background-color: #66A3FF !important;
+    border-bottom: none !important;
+}
+
+::ng-deep .flujo-efectivo-grid .ag-header-cell {
+    background-color: #66A3FF !important;
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+::ng-deep .flujo-efectivo-grid .ag-header-cell-text {
+    color: white !important;
+}
+
+::ng-deep .flujo-efectivo-grid .ag-row:nth-child(even) {
+    background-color: #f7f7f7 !important;
+}
+
+::ng-deep .flujo-efectivo-grid .ag-row:nth-child(odd) {
+    background-color: white !important;
+}
+
+::ng-deep .flujo-efectivo-grid .ag-row:hover {
+    background-color: #e8f0fe !important;
+}

@@ -25,7 +25,19 @@ export class VentasComponent implements OnInit, OnDestroy {
   public downloadingVentas: boolean = false;
   public downloadingCobrosVendedor: boolean = false;
   public reporteSeleccionado: string = '';
-  
+  public anioExportVentas: number = Math.max(new Date().getFullYear(), 2023);
+
+  /** Años disponibles: desde 2023 hasta el año en curso (más reciente primero). */
+  public get aniosDisponiblesExportVentas(): number[] {
+    const hasta = Math.max(new Date().getFullYear(), 2023);
+    const desde = 2023;
+    const anios: number[] = [];
+    for (let year = hasta; year >= desde; year--) {
+      anios.push(year);
+    }
+    return anios;
+  }
+
   // Propiedades booleanas para tipos de reporte
   public esReporteMarca: boolean = false;
   public esReporteUtilidades: boolean = false;
@@ -611,6 +623,7 @@ export class VentasComponent implements OnInit, OnDestroy {
   // }
   public openDescargar(template: TemplateRef<any>) {
     this.reporteSeleccionado = '';
+    this.anioExportVentas = Math.max(new Date().getFullYear(), 2023);
     // Resetear todas las propiedades booleanas
     this.esReporteMarca = false;
     this.esReporteUtilidades = false;
@@ -621,7 +634,8 @@ export class VentasComponent implements OnInit, OnDestroy {
   public descargarVentas() {
     this.downloadingVentas = true;
     this.saving = true;
-    this.apiService.export('ventas/exportar', this.filtros).subscribe(
+    const filtrosExport = { ...this.filtros, anio: this.anioExportVentas };
+    this.apiService.export('ventas/exportar', filtrosExport).subscribe(
       (data: Blob) => {
         const blob = new Blob([data], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -629,7 +643,7 @@ export class VentasComponent implements OnInit, OnDestroy {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'ventas.xlsx';
+        a.download = `ventas-${this.anioExportVentas}.xlsx`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

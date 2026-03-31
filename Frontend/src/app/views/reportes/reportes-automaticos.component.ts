@@ -72,6 +72,10 @@ export class ReportesAutomaticosComponent implements OnInit {
       nombre: 'Detalle de Ventas por Vendedor',
     },
     {
+      tipo: 'detalle-ventas-totales',
+      nombre: 'Detalle de Ventas Totales',
+    },
+    {
       tipo: 'inventario-por-sucursal',
       nombre: 'Inventario por Sucursal',
     },

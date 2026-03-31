@@ -1,0 +1,73 @@
+<div
+    class="d-flex flex-column dropdown-multi-filtro-outer"
+    [class.dropdown-multi-filtro-outer--open]="panelAbierto"
+    [class.dropdown-multi-filtro-outer--accent]="!!accentColor"
+    [style.--dmf-accent]="accentColor || null"
+    #wrap>
+    <span class="dropdown-multi-filtro-label fw-medium small mb-1">{{ label }}</span>
+    <div class="dropdown-multi-filtro position-relative">
+        <button
+            type="button"
+            class="dropdown-multi-filtro-trigger"
+            [disabled]="disabled || items.length === 0"
+            (click)="togglePanel($event)">
+            <span class="dropdown-multi-filtro-trigger-label text-truncate">{{ etiquetaResumen }}</span>
+            <i
+                class="fas fa-chevron-down dropdown-multi-filtro-chevron"
+                [class.dropdown-multi-filtro-chevron--open]="panelAbierto"
+                aria-hidden="true"></i>
+        </button>
+        <div
+            class="dropdown-multi-filtro-panel"
+            [class.dropdown-multi-filtro-panel--searchable]="mostrarBuscador"
+            *ngIf="panelAbierto && !disabled && items.length > 0"
+            (click)="$event.stopPropagation()">
+            <div *ngIf="mostrarBuscador" class="dropdown-multi-filtro-buscar">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text dropdown-multi-filtro-buscar-icon" aria-hidden="true">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input
+                        type="search"
+                        class="form-control"
+                        [attr.aria-label]="buscadorPlaceholder"
+                        [placeholder]="buscadorPlaceholder"
+                        [value]="buscadorTexto"
+                        (input)="onBusquedaInput($event)"
+                        (click)="$event.stopPropagation()"
+                        autocomplete="off">
+                </div>
+                <p
+                    *ngIf="mostrarAvisoLimiteVista"
+                    class="dropdown-multi-filtro-limite-aviso small text-muted mb-0 mt-2 px-1">
+                    {{ textoAyudaLimiteVista }}
+                </p>
+            </div>
+            <div class="dropdown-multi-filtro-panel-scroll">
+                <label class="dropdown-multi-filtro-row">
+                    <input
+                        type="checkbox"
+                        class="form-check-input flex-shrink-0"
+                        [checked]="seleccionarTodoChecked"
+                        (change)="onSeleccionarTodoChange($event)">
+                    <span>Seleccionar todo</span>
+                </label>
+                <label
+                    *ngFor="let s of itemsFiltrados; trackBy: trackById"
+                    class="dropdown-multi-filtro-row">
+                    <input
+                        type="checkbox"
+                        class="form-check-input flex-shrink-0"
+                        [checked]="isItemChecked(s.id)"
+                        (change)="onItemChange(s.id, $any($event.target).checked)">
+                    <span class="text-truncate" [title]="s.nombre">{{ s.nombre }}</span>
+                </label>
+                <div
+                    *ngIf="mostrarBuscador && hayBusquedaActiva && itemsFiltrados.length === 0"
+                    class="dropdown-multi-filtro-sin-resultados px-3 py-2 small text-muted">
+                    Sin resultados
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
