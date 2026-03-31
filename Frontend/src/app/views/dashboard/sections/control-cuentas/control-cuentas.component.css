@@ -1,0 +1,380 @@
+/* Estilos específicos para la sección de Control de Cuentas */
+
+/* Cabeceras: título + buscador/botones (mismo patrón responsive que Inventario) */
+.control-cuentas-section .inv-ag-grid-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+@media (min-width: 992px) {
+  .control-cuentas-section .inv-ag-grid-toolbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+}
+
+.control-cuentas-section .inv-ag-grid-toolbar-title {
+  flex-shrink: 0;
+  line-height: 1.35;
+}
+
+.control-cuentas-section .inv-ag-grid-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+@media (min-width: 992px) {
+  .control-cuentas-section .inv-ag-grid-toolbar-actions {
+    width: auto;
+    justify-content: flex-end;
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.control-cuentas-section .inv-ag-grid-toolbar-search {
+  flex: 1 1 12rem;
+  min-width: min(100%, 12rem);
+  max-width: 100%;
+}
+
+@media (min-width: 576px) {
+  .control-cuentas-section .inv-ag-grid-toolbar-search {
+    max-width: 18rem;
+  }
+}
+
+/* Estilos modernos para AG Grid - Tabla de detalle de cuentas por cobrar */
+::ng-deep .detalle-cuentas-grid.ag-theme-alpine {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Header - fondo azul, texto blanco */
+::ng-deep .detalle-cuentas-grid .ag-header {
+    background-color: #66A3FF !important;
+    border-bottom: none !important;
+    border-top: none !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-header-cell {
+    background-color: #66A3FF !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-bottom: none !important;
+    padding: 12px 16px !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    text-align: center !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-header-cell-label {
+    justify-content: center !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-header-cell:last-child {
+    border-right: none !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-header-cell-text {
+    font-weight: 600 !important;
+    color: #ffffff !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-header-cell-label {
+    color: #ffffff !important;
+}
+
+/* Iconos de ordenamiento en header */
+::ng-deep .detalle-cuentas-grid .ag-header-cell .ag-sort-indicator-container {
+    color: #ffffff !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-header-cell .ag-icon {
+    color: #ffffff !important;
+}
+
+/* Filas de datos - alternadas blanco y gris claro */
+::ng-deep .detalle-cuentas-grid .ag-row {
+    border-bottom: 1px solid #e0e0e0 !important;
+    transition: background-color 0.15s ease !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-row:nth-child(even) {
+    background-color: #F7F7F7 !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-row:nth-child(odd) {
+    background-color: #ffffff !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-row:hover {
+    background-color: #e8f0fe !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-row.ag-row-selected {
+    background-color: #e7f3ff !important;
+}
+
+/* Celdas - padding generoso, sin bordes verticales */
+::ng-deep .detalle-cuentas-grid .ag-cell {
+    padding: 14px 16px !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    font-size: 0.875rem !important;
+    color: #212529 !important;
+    line-height: 1.5 !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-cell:focus {
+    outline: 2px solid #0d6efd !important;
+    outline-offset: -2px !important;
+    z-index: 1 !important;
+}
+
+/* Scrollbar moderno */
+::ng-deep .detalle-cuentas-grid .ag-body-viewport {
+    scrollbar-width: thin;
+    scrollbar-color: #dee2e6 #ffffff;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-body-viewport::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-body-viewport::-webkit-scrollbar-track {
+    background: #ffffff;
+    border-radius: 4px;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-body-viewport::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 4px;
+    border: 2px solid #ffffff;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-body-viewport::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+/* Eliminar bordes gruesos y sombras */
+::ng-deep .detalle-cuentas-grid.ag-theme-alpine,
+::ng-deep .detalle-cuentas-grid .ag-root-wrapper {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: #ffffff !important;
+}
+
+/* Fila de totales - fondo azul igual al header, texto blanco */
+::ng-deep .detalle-cuentas-grid .ag-row.ag-row-total {
+    background-color: #66A3FF !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    font-weight: 600 !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-row.ag-row-total .ag-cell {
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    background-color: #66A3FF !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-row.ag-row-total:hover {
+    background-color: #66A3FF !important;
+}
+
+/* Iconos de ordenamiento más sutiles */
+::ng-deep .detalle-cuentas-grid .ag-sort-indicator-container {
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-header-cell:hover .ag-sort-indicator-container {
+    opacity: 1;
+}
+
+/* Estilos para la sección de Cuentas por pagar con color #F19447 */
+.control-cuentas-section .card-body h2[style*="#F19447"] {
+    color: #F19447 !important;
+}
+
+.control-cuentas-section .card-body label[style*="#F19447"] {
+    color: #F19447 !important;
+}
+
+.control-cuentas-section .card-body button[style*="#F19447"]:hover {
+    opacity: 0.9;
+}
+
+.control-cuentas-section .card-body button[style*="border-color: #F19447"]:hover {
+    background-color: #F19447;
+    color: white;
+}
+
+.btn-custom-filtros {
+    border-color: #F19447;
+    color: #F19447;
+}
+
+.btn-custom-filtros:hover {
+    color: white !important;
+    background-color: #F19447 !important;
+}
+
+/* Estilos modernos para AG Grid - Tabla de resumen de cuentas por pagar */
+::ng-deep .resumen-cuentas-pagar-grid.ag-theme-alpine {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Header - fondo naranja, texto blanco */
+::ng-deep .resumen-cuentas-pagar-grid .ag-header {
+    background-color: #F19447 !important;
+    border-bottom: none !important;
+    border-top: none !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-header-cell {
+    background-color: #F19447 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-bottom: none !important;
+    padding: 12px 16px !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    text-align: center !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-header-cell-label {
+    justify-content: center !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-header-cell:last-child {
+    border-right: none !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-header-cell-text {
+    font-weight: 600 !important;
+    color: #ffffff !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-header-cell-label {
+    color: #ffffff !important;
+}
+
+/* Iconos de ordenamiento en header */
+::ng-deep .resumen-cuentas-pagar-grid .ag-header-cell .ag-sort-indicator-container {
+    color: #ffffff !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-header-cell .ag-icon {
+    color: #ffffff !important;
+}
+
+/* Filas de datos - alternadas blanco y gris claro */
+::ng-deep .resumen-cuentas-pagar-grid .ag-row {
+    border-bottom: 1px solid #e0e0e0 !important;
+    transition: background-color 0.15s ease !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-row:nth-child(even) {
+    background-color: #F7F7F7 !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-row:nth-child(odd) {
+    background-color: #ffffff !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-row:hover {
+    background-color: #fef0e6 !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-row.ag-row-selected {
+    background-color: #fef0e6 !important;
+}
+
+/* Celdas - padding generoso, sin bordes verticales */
+::ng-deep .resumen-cuentas-pagar-grid .ag-cell {
+    padding: 14px 16px !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    font-size: 0.875rem !important;
+    color: #212529 !important;
+    line-height: 1.5 !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-cell:focus {
+    outline: 2px solid #F19447 !important;
+    outline-offset: -2px !important;
+    z-index: 1 !important;
+}
+
+/* Scrollbar moderno */
+::ng-deep .resumen-cuentas-pagar-grid .ag-body-viewport {
+    scrollbar-width: thin;
+    scrollbar-color: #dee2e6 #ffffff;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-body-viewport::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-body-viewport::-webkit-scrollbar-track {
+    background: #ffffff;
+    border-radius: 4px;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-body-viewport::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 4px;
+    border: 2px solid #ffffff;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-body-viewport::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+/* Eliminar bordes gruesos y sombras */
+::ng-deep .resumen-cuentas-pagar-grid.ag-theme-alpine,
+::ng-deep .resumen-cuentas-pagar-grid .ag-root-wrapper {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: #ffffff !important;
+}
+
+/* Fila de totales - fondo naranja igual al header, texto blanco */
+::ng-deep .resumen-cuentas-pagar-grid .ag-row.ag-row-total-pagar {
+    background-color: #F19447 !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    font-weight: 600 !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-row.ag-row-total-pagar .ag-cell {
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    background-color: #F19447 !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-row.ag-row-total-pagar:hover {
+    background-color: #F19447 !important;
+}
+
+/* Iconos de ordenamiento más sutiles */
+::ng-deep .resumen-cuentas-pagar-grid .ag-sort-indicator-container {
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-header-cell:hover .ag-sort-indicator-container {
+    opacity: 1;
+}
