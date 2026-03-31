@@ -19,6 +19,7 @@ class PedidoRestauranteDetalle extends Model
         'subtotal',
         'total',
         'notas',
+        'lote_id',
     ];
 
     protected $casts = [

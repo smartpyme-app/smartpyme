@@ -9,6 +9,7 @@ use App\Models\Restaurante\PedidoRestaurante;
 use App\Models\Restaurante\PedidoRestauranteDetalle;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta as VentaModel;
+use App\Services\Restaurante\PedidoRestauranteInventarioService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -107,7 +108,26 @@ class PedidoRestauranteController extends Controller
             return response()->json(['error' => 'Solo se pueden confirmar pedidos en borrador'], 422);
         }
 
-        $pedido->update(['estado' => 'pendiente_facturar']);
+        if ($pedido->detalles()->doesntExist()) {
+            return response()->json(['error' => 'El pedido no tiene líneas de detalle'], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $inv = new PedidoRestauranteInventarioService;
+            $err = $inv->aplicarAlConfirmar($pedido->fresh(['detalles']), $user);
+            if ($err) {
+                DB::rollBack();
+
+                return response()->json(['error' => $err], 422);
+            }
+            $pedido->update(['estado' => 'pendiente_facturar']);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+
         $pedido->load(['cliente', 'usuario']);
 
         return response()->json($pedido->fresh(['detalles.producto', 'cliente', 'usuario']));
@@ -126,7 +146,25 @@ class PedidoRestauranteController extends Controller
             return response()->json(['error' => 'Solo se pueden anular pedidos en borrador o pendiente de facturar'], 422);
         }
 
-        $pedido->update(['estado' => 'anulado']);
+        DB::beginTransaction();
+        try {
+            if ($pedido->estado === 'pendiente_facturar' && $pedido->inventario_descontado_at) {
+                $inv = new PedidoRestauranteInventarioService;
+                $err = $inv->revertirPorAnulacion($pedido->fresh(['detalles']), $user);
+                if ($err) {
+                    DB::rollBack();
+
+                    return response()->json(['error' => $err], 422);
+                }
+            }
+            $pedido->refresh();
+            $pedido->update(['estado' => 'anulado']);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+
         $pedido->load(['cliente', 'usuario']);
 
         return response()->json($pedido->fresh(['detalles.producto', 'cliente', 'usuario']));
@@ -170,6 +208,7 @@ class PedidoRestauranteController extends Controller
             'pedido_id' => $pedido->id,
             'cliente_id' => $pedido->cliente_id,
             'id_sucursal' => $pedido->id_sucursal,
+            'id_bodega_inventario' => $pedido->id_bodega_inventario,
             'fecha' => $pedido->fecha?->format('Y-m-d'),
             'subtotal' => (float) $pedido->subtotal,
             'total' => (float) $pedido->total,
