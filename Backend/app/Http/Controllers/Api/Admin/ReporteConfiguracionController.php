@@ -357,6 +357,15 @@ class ReporteConfiguracionController extends Controller
 
                     $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
                     return response()->json(['message' => 'Reporte enviado correctamente'], 200);
+                case 'detalle-ventas-totales':
+                    $controller = new VentasController();
+
+                    $destinatarios = $request->email_prueba
+                        ? [$request->email_prueba]
+                        : $configuracion->destinatarios;
+
+                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
+                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
                 default:
                     return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
             }
@@ -420,6 +429,10 @@ class ReporteConfiguracionController extends Controller
                     $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
                     return $resultado;
                 case 'ventas-compras-por-marca-proveedor':
+                    $controller = new VentasController();
+                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
+                    return $resultado;
+                case 'detalle-ventas-totales':
                     $controller = new VentasController();
                     $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
                     return $resultado;
