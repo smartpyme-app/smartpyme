@@ -301,9 +301,36 @@ export class ApiService {
         return false;
     }
 
-    /** Ajustes, traslados, consignas, entradas/salidas y operaciones masivas de inventario. */
+    /**
+     * Empresa donde las rutas y la navegación de ajustes/traslados/consignas/entradas-salidas
+     * quedan reservadas solo al rol Administrador.
+     */
+    private static readonly EMPRESA_ID_INVENTARIO_OPERACIONES_SOLO_ADMIN = 324;
+
+    esEmpresaInventarioOperacionesSoloAdministrador(): boolean {
+        const id = this.auth_user()?.id_empresa;
+        return Number(id) === ApiService.EMPRESA_ID_INVENTARIO_OPERACIONES_SOLO_ADMIN;
+    }
+
+    /**
+     * Pestañas y guard de rutas: para empresa 324 solo Administrador; en el resto de empresas sin restricción extra.
+     */
     canAccederOperacionesInventario(): boolean {
+        if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+            return true;
+        }
+        return this.auth_user()?.tipo === 'Administrador';
+    }
+
+    /**
+     * Botones crear (ajuste, traslado, entrada/salida): empresa 324 solo Administrador;
+     * otras empresas conservan la regla anterior (canCreate y no Supervisor en 324).
+     */
+    puedeCrearOperacionesInventarioEnUi(): boolean {
         const usuario = this.auth_user();
+        if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+            return this.canCreate();
+        }
         return usuario?.tipo === 'Administrador';
     }
 
