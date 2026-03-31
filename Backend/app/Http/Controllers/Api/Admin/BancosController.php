@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use JWTAuth;
 use App\Models\Admin\Banco;
+use Illuminate\Support\Facades\Auth;
 
 class BancosController extends Controller
 {
@@ -29,6 +30,10 @@ class BancosController extends Controller
         $bancos->push(['nombre' => 'Banco Industrial', 'activo' => $listaDeBancos->where('nombre', 'Banco Industrial')->first() ? true : false ]);
         $bancos->push(['nombre' => 'Banrural', 'activo' => $listaDeBancos->where('nombre', 'Banrural')->first() ? true : false ]);
         $bancos->push(['nombre' => 'Banco Hipotecario', 'activo' => $listaDeBancos->where('nombre', 'Banco Hipotecario')->first() ? true : false ]);
+
+        if (Auth::user()->empresa()->pluck('pais')->first() == 'Honduras') {
+            $bancos->push(['nombre' => 'Ficohsa', 'activo' => $listaDeBancos->where('nombre', 'Ficohsa')->first() ? true : false ]);
+        }
 
         return Response()->json($bancos, 200);
 

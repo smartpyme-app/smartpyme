@@ -121,6 +121,8 @@ const routes: Routes = [
       ]
     },
 
+    { path: '404', component: NotFoundComponent, title: 'Página no encontrada' },
+
     // Not Found
     {
       path: '**',

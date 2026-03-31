@@ -335,6 +335,13 @@
 
         <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'ventas'">
             <p>Descargar los detalles de ventas totales.</p>
+            <div class="mb-3">
+                <label class="form-label">Año a exportar</label>
+                <select class="form-select" [(ngModel)]="anioExportVentas" name="anioExportVentas">
+                    <option *ngFor="let y of aniosDisponiblesExportVentas" [ngValue]="y">{{ y }}</option>
+                </select>
+                <small class="text-muted d-block mt-1">Solo se incluyen ventas del año indicado. Los demás filtros de la lista (sucursal, cliente, estado, etc.) siguen aplicándose; el rango de fechas del listado no se usa en esta exportación.</small>
+            </div>
             <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
                 <span *ngIf="!downloadingVentas">Descargar Ventas</span>
                 <span *ngIf="downloadingVentas">Descargando...</span>

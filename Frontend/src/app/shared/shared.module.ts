@@ -13,6 +13,8 @@ import { PipesModule } from '@pipes/pipes.module';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
+import { NgxEchartsModule } from 'ngx-echarts';
+import * as echarts from 'echarts';
 import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
 import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
@@ -66,6 +68,7 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     TagInputModule,
     NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
+    NgxEchartsModule.forRoot({ echarts }),
     TooltipModule.forRoot(),
     FocusModule.forRoot(),
     TypeaheadModule.forRoot(),
@@ -145,6 +148,7 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     SafeHtmlPipe,
     AlertsHaciendaComponent,
     SelectSearchComponent,
+    NgxEchartsModule,
     ActivarLotesMasivoComponent
   ],
   providers: [AlertService],
