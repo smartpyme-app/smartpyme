@@ -43,6 +43,8 @@ class AjustesService
             throw new Exception('El ajuste no tiene una bodega válida asociada', 400);
         }
 
+        Partida::assertNoExisteParaOrigen('Ajuste', $ajusteCompleto->id, 'Ya existen partidas contables generadas para este ajuste.');
+
         DB::beginTransaction();
 
         try {

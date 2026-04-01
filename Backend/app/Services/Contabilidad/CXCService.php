@@ -48,6 +48,8 @@ class CXCService
             throw new Exception('No se encontró la venta asociada al abono', 400);
         }
 
+        Partida::assertNoExisteParaOrigen('Abono de Venta', $cxc->id, 'Ya existen partidas contables generadas para este abono a venta.');
+
         DB::beginTransaction();
 
         try {

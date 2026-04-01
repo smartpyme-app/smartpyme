@@ -35,6 +35,8 @@ class ComprasService
             throw new Exception('La compra no tiene un monto válido', 400);
         }
 
+        Partida::assertNoExisteParaOrigen('Compra', $compra->id, 'Ya existen partidas contables generadas para esta compra.');
+
         DB::beginTransaction();
 
         try {

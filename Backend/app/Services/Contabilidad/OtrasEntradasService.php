@@ -43,6 +43,8 @@ class OtrasEntradasService
             throw new Exception('La entrada no tiene detalles para generar la partida contable', 400);
         }
 
+        Partida::assertNoExisteParaOrigen('Otra Entrada', $entradaCompleta->id, 'Ya existen partidas contables generadas para esta entrada de inventario.');
+
         DB::beginTransaction();
 
         try {

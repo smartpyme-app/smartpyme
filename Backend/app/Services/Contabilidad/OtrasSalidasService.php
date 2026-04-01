@@ -43,6 +43,8 @@ class OtrasSalidasService
             throw new Exception('La salida no tiene detalles para generar la partida contable', 400);
         }
 
+        Partida::assertNoExisteParaOrigen('Otra Salida', $salidaCompleta->id, 'Ya existen partidas contables generadas para esta salida de inventario.');
+
         DB::beginTransaction();
 
         try {

@@ -10,6 +10,7 @@ use App\Models\FidelizacionClientes\TransaccionPuntos;
 use App\Models\Planilla\CargoEmpresa;
 use App\Models\Planilla\DepartamentoEmpresa;
 use App\Models\Suscripcion;
+use App\Models\Contabilidad\Configuracion as ContabilidadConfiguracion;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
@@ -163,8 +164,22 @@ class Empresa extends Model
         'acces_chatbot_whatsapp',
         'shopify_webhook_url',
         'status_conexion_shopify',
-        'is_current_user_connected_to_shopify'
+        'is_current_user_connected_to_shopify',
+        'generar_partidas',
     ];
+
+    /**
+     * Valor de contabilidad_configuracion.generar_partidas (Manual / Auto).
+     * Expuesto en el JSON de empresa para que el frontend aplique generación automática de partidas.
+     */
+    public function getGenerarPartidasAttribute(): ?string
+    {
+        $valor = ContabilidadConfiguracion::withoutGlobalScopes()
+            ->where('id_empresa', $this->id)
+            ->value('generar_partidas');
+
+        return $valor ?: 'Manual';
+    }
 
     public function limiteUsuarios()
     {
@@ -234,24 +249,6 @@ class Empresa extends Model
     public function productos()
     {
         return $this->hasMany('App\Models\Inventario\Producto', 'id_empresa');
-    }
-
-    public function currency()
-    {
-        return $this->belongsTo(Currency::class, 'moneda', 'currency_code');
-    }
-
-    public function getCurrencySymbolAttribute()
-    {
-        if ($this->currency) {
-            return $this->currency->currency_symbol;
-        }
-        // Fallback cuando no hay registro en currencies (ej: empresa creada antes de la tabla)
-        $symbols = [
-            'USD' => '$', 'HNL' => 'L', 'GTQ' => 'Q', 'NIO' => 'C$', 'CRC' => '₡',
-            'PAB' => 'B/.', 'BZD' => '$', 'SVC' => '₡', 'EUR' => '€',
-        ];
-        return $symbols[$this->moneda] ?? '$';
     }
 
     public function licencia()
@@ -447,6 +444,12 @@ class Empresa extends Model
         return $this->hasMany('App\Models\WhatsApp\WhatsAppMessage', 'id_empresa');
     }
 
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'moneda', 'currency_code');
+    }
+
     public function getRecibosPendientesAttribute()
     {
         return $this->pagos()->where('estado', 'Pendiente')->count();
@@ -555,6 +558,11 @@ class Empresa extends Model
         return $this->hasMany(ConsumoPuntos::class, 'id_empresa');
     }
 
+    public function getCurrencySymbolAttribute()
+    {
+        return $this->currency ? $this->currency->currency_symbol : null;
+    }
+
     public function inicializarEstadoPruebasMasivas()
     {
         $estadoPruebas = [
@@ -636,7 +644,6 @@ class Empresa extends Model
             'modulos' => [],
             'configuraciones' => [
                 'ticket_en_pdf' => false
-                // Para futuras configuraciones generales
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados
@@ -698,6 +705,14 @@ class Empresa extends Model
     public function isComponenteQuimicoHabilitado(): bool
     {
         return (bool) $this->getCustomConfigValue('configuraciones', 'componente_quimico_activo', false);
+    }
+
+    /**
+     * Verificar si el módulo de bancos está activo para la empresa
+     */
+    public function isModuloBancos(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'modulo_bancos', false);
     }
 
     /**
