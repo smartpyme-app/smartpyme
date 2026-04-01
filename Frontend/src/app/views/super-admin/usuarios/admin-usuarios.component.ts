@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,12 +7,23 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { FilterPipe } from '@pipes/filter.pipe';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
     selector: 'app-admin-usuarios',
     templateUrl: './admin-usuarios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [
+        CommonModule,
+        RouterModule,
+        FormsModule,
+        NgSelectModule,
+        FilterPipe,
+        NotificacionesContainerComponent,
+        PaginationComponent,
+    ],
     
 })
 
@@ -99,9 +110,14 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
             }, error => {this.alertService.error(error); });
     }
 
-    override openModal(template: TemplateRef<any>, usuario?: any) {
-        this.usuario = usuario || {};
-        
+    /**
+     * Abre el modal de usuario. No usar super.openLargeModal(template, usuario) aquí:
+     * la base llama a this.openModal(template, { class, backdrop, ... }) y al estar este
+     * método sustituido antes, se re-entraba la carga de listas en bucle (muchas peticiones).
+     */
+    openUsuarioModal(template: TemplateRef<any>, usuario?: any) {
+        this.usuario = usuario ? { ...usuario } : {};
+
         if (!this.usuario.id) {
             this.usuario.rol_id = 2;
         }
@@ -117,18 +133,40 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
             .pipe(this.untilDestroyed())
             .subscribe(bodegas => {
                 this.bodegas = bodegas;
+                this.syncBodegaPorSucursal();
             }, error => {this.alertService.error(error); });
 
-        super.openLargeModal(template, usuario);
+        this.modalRef = this.modalManager.openModal(template, {
+            class: 'modal-lg',
+            backdrop: 'static',
+        });
     }
 
-    setSucursales(){
-        this.sucursales = this.sucursalesList.filter((item:any) => item.id_empresa == this.usuario.id_empresa);
-        this.usuario.id_sucursal = this.sucursales[0]?.id;
+    setSucursales() {
+        this.sucursales = this.sucursalesList.filter((item: any) => item.id_empresa == this.usuario.id_empresa);
+        const current = this.usuario.id_sucursal;
+        const existe = this.sucursales.some((s: any) => s.id == current);
+        if (!existe && this.sucursales.length) {
+            this.usuario.id_sucursal = this.sucursales[0].id;
+        }
+        this.syncBodegaPorSucursal();
     }
 
-    selectSucursal(){
-        this.usuario.id_bodega = this.bodegas[0]?.id;
+    selectSucursal() {
+        this.syncBodegaPorSucursal();
+    }
+
+    private syncBodegaPorSucursal() {
+        if (!this.bodegas?.length) {
+            return;
+        }
+        const list = this.bodegas.filter((b: any) =>
+            b.id_sucursal == this.usuario.id_sucursal && b.id_empresa == this.usuario.id_empresa
+        );
+        const ok = list.some((b: any) => b.id == this.usuario.id_bodega);
+        if (!ok && list.length) {
+            this.usuario.id_bodega = list[0].id;
+        }
     }
     
     public mostrarPassword(){

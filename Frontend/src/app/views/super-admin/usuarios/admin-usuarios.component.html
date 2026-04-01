@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Usuarios</h2>
-    <button (click)="openModal(musuario, {})"  tooltip="Crear canal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir usuario</button>
+    <button (click)="openUsuarioModal(musuario, {})"  tooltip="Crear canal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir usuario</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -94,7 +94,7 @@
                                     <i class="fa fa-trash"></i>
                                 </a>
                             } -->
-                                <a class="btn btn-default" (click)="openModal(musuario, usuario)" data-toggle="tooltip" title="Ver">
+                                <a class="btn btn-default" (click)="openUsuarioModal(musuario, usuario)" data-toggle="tooltip" title="Ver">
                                     <i class="fa fa-arrow-right"></i>
                                 </a>
                             </div>  
