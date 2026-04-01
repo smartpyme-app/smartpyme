@@ -874,10 +874,13 @@ class MHPruebasMasivasService
 
             $nuevoCorrelativoNC = $correlativoEspecifico ?? (($ultimoCorrelativoNC ?? 0) + 1);
 
+            $codPuntoVenta = optional($ventaBase->sucursal)->codigo_punto_venta ?? $this->sucursal->codigo_punto_venta ?? 'P001';
+            $codEstableMh = optional($ventaBase->sucursal)->cod_estable_mh ?? $this->sucursal->cod_estable_mh;
+
             $devolucion->fill([
                 'tipo_dte' => '05',
                 'correlativo' => $nuevoCorrelativoNC,
-                'numero_control' => 'DTE-05-' . $this->sucursal->cod_estable_mh . '0001-' . str_pad($nuevoCorrelativoNC, 15, '0', STR_PAD_LEFT),
+                'numero_control' => 'DTE-05-' . $codEstableMh . $codPuntoVenta . '-' . str_pad($nuevoCorrelativoNC, 15, '0', STR_PAD_LEFT),
                 'codigo_generacion' => strtoupper(Uuid::uuid4()->toString()),
                 'fecha' => Carbon::now()->format('Y-m-d'),
                 'fecha_pago' => Carbon::now()->format('Y-m-d'),
@@ -892,6 +895,8 @@ class MHPruebasMasivasService
                 'id_cliente' => $ventaBase->id_cliente,
                 'id_usuario' => $ventaBase->id_usuario,
                 'id_empresa' => $this->empresa->id,
+                'id_sucursal' => $ventaBase->id_sucursal,
+                'id_bodega' => $ventaBase->id_bodega,
                 'nombre_cliente' => $ventaBase->nombre_cliente,
                 'forma_pago' => $ventaBase->forma_pago
             ]);
@@ -963,10 +968,13 @@ class MHPruebasMasivasService
 
             $nuevoCorrelativoND = $correlativoEspecifico ?? (($ultimoCorrelativoND ?? 0) + 1);
 
+            $codPuntoVenta = optional($ventaBase->sucursal)->codigo_punto_venta ?? $this->sucursal->codigo_punto_venta ?? 'P001';
+            $codEstableMh = optional($ventaBase->sucursal)->cod_estable_mh ?? $this->sucursal->cod_estable_mh;
+
             $devolucion->fill([
                 'tipo_dte' => '06',
                 'correlativo' => $nuevoCorrelativoND,
-                'numero_control' => 'DTE-06-' . $this->sucursal->cod_estable_mh . '0001-' . str_pad($nuevoCorrelativoND, 15, '0', STR_PAD_LEFT),
+                'numero_control' => 'DTE-06-' . $codEstableMh . $codPuntoVenta . '-' . str_pad($nuevoCorrelativoND, 15, '0', STR_PAD_LEFT),
                 'codigo_generacion' => strtoupper(Uuid::uuid4()->toString()),
                 'fecha' => Carbon::now()->format('Y-m-d'),
                 'fecha_pago' => Carbon::now()->format('Y-m-d'),
@@ -981,6 +989,8 @@ class MHPruebasMasivasService
                 'id_cliente' => $ventaBase->id_cliente,
                 'id_usuario' => $ventaBase->id_usuario,
                 'id_empresa' => $this->empresa->id,
+                'id_sucursal' => $ventaBase->id_sucursal,
+                'id_bodega' => $ventaBase->id_bodega,
                 'nombre_cliente' => $ventaBase->nombre_cliente,
                 'forma_pago' => $ventaBase->forma_pago
             ]);
