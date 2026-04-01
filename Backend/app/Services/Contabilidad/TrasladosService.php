@@ -52,6 +52,8 @@ class TrasladosService
             throw new Exception('El traslado no tiene una cantidad válida', 400);
         }
 
+        Partida::assertNoExisteParaOrigen('Traslado', $trasladoCompleto->id, 'Ya existen partidas contables generadas para este traslado.');
+
         DB::beginTransaction();
 
         try {

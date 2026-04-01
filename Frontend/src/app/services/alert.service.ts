@@ -38,7 +38,12 @@ export class AlertService {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : 'El registro no ha sido encontrado'});
         }
         else if(message.status == 400) {
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});
+            const body = message.error || {};
+            // API a veces devuelve { message }, otras { error } (p. ej. HttpException en Handler), o { titulo, error }
+            const mensaje = body.message ?? body.error ?? (typeof body === 'string' ? body : undefined);
+            const titulo = body.titulo || 'Lo sentimos';
+            const tipo = body.titulo ? 'alert-info' : 'alert-danger';
+            this.alertSubject.next({ tipo, titulo, mensaje: mensaje ?? 'No se pudo completar la operación.' });
         }
         else if(message.status == 403) {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.error});
@@ -46,9 +51,6 @@ export class AlertService {
         else if(message.status == 401) {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});
             this.router.navigate(['/login']);
-        }
-        else if(message.status == 400) {
-            this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.error.titulo, 'mensaje' : message.error.error});
         }
         else if(message.status == 422) {
             let alerts='';

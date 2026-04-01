@@ -949,6 +949,12 @@ if (
         //   }, error => { this.alertService.error(error); this.saving = false; });
         // }
 
+        // Partida automática: misma regla en todos los flujos (incl. impresión / DTE),
+        // no solo cuando está desactivada la impresión al facturar.
+        if (this.venta.cotizacion != 1) {
+          this.generarPartidaVentaSiAutomatico(venta);
+        }
+
         if (
           this.venta.cotizacion != 1 &&
           this.apiService.auth_user().empresa.impresion_en_facturacion
@@ -982,20 +988,6 @@ if (
               'Venta creada',
               'La venta fue añadida exitosamente.'
             );
-
-            //Generar partida contable
-            if (
-              this.apiService.auth_user().empresa.generar_partidas == 'Auto'
-            ) {
-              this.apiService
-                .store('contabilidad/partida/venta', venta)
-                .subscribe(
-                  (venta) => {},
-                  (error) => {
-                    this.alertService.error(error);
-                  }
-                );
-            }
           }
         }
 
@@ -1009,6 +1001,17 @@ if (
         this.saving = false;
       }
     );
+  }
+
+  /** Usa empresa.generar_partidas (viene de configuración contable en el backend). */
+  private generarPartidaVentaSiAutomatico(ventaGuardada: any): void {
+    if (this.apiService.auth_user().empresa.generar_partidas !== 'Auto') {
+      return;
+    }
+    this.apiService.store('contabilidad/partida/venta', ventaGuardada).subscribe({
+      next: () => {},
+      error: (error) => this.alertService.error(error),
+    });
   }
 
   //Limpiar
