@@ -204,6 +204,14 @@
                     </option>
                 </select>
             </div>
+            <div class="form-group col-md-12" *ngIf="isElSalvador">
+                <label for="filtros.estado_json">Estado (descargas JSON / ZIP):</label>
+                <select [(ngModel)]="filtros.estado_json" class="form-select" name="filtros.estado_json" id="filtros.estado_json">
+                    <option value="no_anulados">No anulados</option>
+                    <option value="anulados">Anulados</option>
+                </select>
+                <small class="text-muted d-block mt-1">Aplica a DTEs Zip, Notas de Crédito y Notas de Débito. Por defecto se excluyen anulados, igual que el libro.</small>
+            </div>
         </div>
         <div class="d-grid">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
