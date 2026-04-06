@@ -35,9 +35,16 @@ class NotasCreditoDebitoExport
 
         $esCredito = ($tipoNota === '05');
         $nombreTipo = $esCredito ? 'NotasCredito' : 'NotasDebito';
+
+        $estadoJson = $request->input('estado_json', 'no_anulados');
+        if (!in_array($estadoJson, ['no_anulados', 'anulados'], true)) {
+            $estadoJson = 'no_anulados';
+        }
+
+        $sufijoAnulados = $estadoJson === 'anulados' ? '_anulados' : '';
         $nombreArchivo = ($fechaInicio == $fechaFin)
-            ? $nombreTipo . '_' . $fechaInicioFormateada
-            : $nombreTipo . '_' . $fechaInicioFormateada . '_' . $fechaFinFormateada;
+            ? $nombreTipo . $sufijoAnulados . '_' . $fechaInicioFormateada
+            : $nombreTipo . $sufijoAnulados . '_' . $fechaInicioFormateada . '_' . $fechaFinFormateada;
 
         $mensajeVacio = $esCredito
             ? 'No se encontraron notas de crédito que cumplan con los criterios de búsqueda.'
@@ -48,8 +55,13 @@ class NotasCreditoDebitoExport
             ->whereNotNull('sello_mh')
             ->where('enable', true)
             ->where('tipo_dte', $tipoNota)
-            ->whereHas('venta', function ($query) {
-                $query->where('estado', '!=', 'Anulada');
+            ->when($estadoJson === 'anulados', function ($query) {
+                return $query->whereNotNull('dte_invalidacion');
+            }, function ($query) {
+                return $query->whereNull('dte_invalidacion')
+                    ->whereHas('venta', function ($q) {
+                        $q->where('estado', '!=', 'Anulada');
+                    });
             })
             ->when($request->has('inicio') && $request->has('fin'), function ($query) use ($request) {
                 return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
@@ -101,10 +113,12 @@ class NotasCreditoDebitoExport
         $tempFiles = [];
 
         foreach ($devoluciones as $devolucion) {
-            if (empty($devolucion->dte)) {
+            $dte = ($estadoJson === 'anulados' && !empty($devolucion->dte_invalidacion))
+                ? $devolucion->dte_invalidacion
+                : $devolucion->dte;
+            if (empty($dte)) {
                 continue;
             }
-            $dte = $devolucion->dte;
             $codigoGeneracion = $dte['identificacion']['codigoGeneracion']
                 ?? $dte['codigoGeneracion']
                 ?? $devolucion->codigo_generacion
