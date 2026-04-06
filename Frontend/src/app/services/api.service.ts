@@ -195,6 +195,18 @@ export class ApiService {
         return customConfig?.configuraciones?.estado_cuenta_en_facturacion === true;
     }
 
+    /** SKU correlativo automático al crear productos (configuración de empresa) */
+    isSkuCorrelativoAutomatico(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.sku_correlativo_automatico === true;
+    }
+
 
     auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
 

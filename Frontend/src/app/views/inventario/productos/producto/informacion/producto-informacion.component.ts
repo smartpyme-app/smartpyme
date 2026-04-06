@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, TemplateRef, Input } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
@@ -10,9 +10,11 @@ import { ApiService } from '@services/api.service';
   selector: 'app-producto-informacion',
   templateUrl: './producto-informacion.component.html'
 })
-export class ProductoInformacionComponent implements OnInit {
+export class ProductoInformacionComponent implements OnInit, OnChanges {
 
     @Input() producto: any = {};
+    /** Evita múltiples llamadas al pedir SKU sugerido */
+    private skuCorrelativoPendiente = true;
     public categorias:any = [];
     public usuario:any = {};
     public categoria:any = {};
@@ -42,6 +44,43 @@ export class ProductoInformacionComponent implements OnInit {
 
         this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
 
+        this.intentarCargarSkuSugerido();
+    }
+
+    ngOnChanges(changes: SimpleChanges) {
+        if (changes['producto']) {
+            this.intentarCargarSkuSugerido();
+        }
+    }
+
+    /** Precarga el código correlativo desde la API cuando aplica (producto nuevo + opción de empresa). */
+    private intentarCargarSkuSugerido() {
+        const p = this.producto;
+        if (!p || p.id || !this.apiService.isSkuCorrelativoAutomatico()) {
+            return;
+        }
+        if (p.codigo) {
+            this.skuCorrelativoPendiente = false;
+            return;
+        }
+        if (!p.id_empresa) {
+            return;
+        }
+        if (!this.skuCorrelativoPendiente) {
+            return;
+        }
+
+        this.skuCorrelativoPendiente = false;
+        this.apiService.getAll('productos/siguiente-sku-correlativo').subscribe(
+            (res: any) => {
+                if (res?.habilitado && res?.codigo != null && p === this.producto && !this.producto.codigo) {
+                    this.producto.codigo = res.codigo;
+                }
+            },
+            () => {
+                this.skuCorrelativoPendiente = true;
+            }
+        );
     }
 
     public setCategoria(categoria:any){

@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
     Route::get('/producto/buscar-by-code/{codigo}', [ProductosController::class, 'searchByCode']);
     Route::get('/productos/list',               [ProductosController::class, 'list']);
+    Route::get('/productos/siguiente-sku-correlativo', [ProductosController::class, 'siguienteSkuCorrelativo']);
     Route::get('/productos/marca-productos',   [ProductosController::class, 'getMarcas']);
     Route::get('/productos/search',        [ProductosController::class, 'searchProductos']);
     Route::get('/productos/buscar/{txt}',       [ProductosController::class, 'search']);
