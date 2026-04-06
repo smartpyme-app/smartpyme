@@ -124,31 +124,37 @@
 
         <table class="table table-bordered table-hover border-primary mb-3">
             <tr>
-                <td width="20%">
+                <td width="16%">
                     <h3 class="text-center text-success">
                         {{ $simbolo_moneda }}{{ $indicadores->getTotalVentas() }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
                 </td>
-                <td width="20%">
+                <td width="17%">
                     <h3 class="text-center text-info">
                         {{ $simbolo_moneda }}{{ $indicadores->getTotalRecibos() }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> ABONOS</p>
                 </td>
-                <td width="20%">
+                <td width="17%">
                     <h3 class="text-center text-secondary">
                         {{ $simbolo_moneda }}{{ $indicadores->getTotalVentasPendientes() }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> CREDITOS</p>
                 </td>
-                <td width="20%">
+                <td width="17%">
                     <h3 class="text-center text-danger">
                         {{ $simbolo_moneda }}{{ $indicadores->getTotalDevolucionesVenta() }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> DEVOLUCIONES</p>
                 </td>
-                <td width="20%">
+                <td width="16%">
+                    <h3 class="text-center text-success">
+                        {{ $simbolo_moneda }}{{ $indicadores->getTotalVentasSinDevoluciones() }}
+                    </h3>
+                    <p class="mb-0 text-center">VENTAS TOTALES <br> SIN DEVOLUCIONES</p>
+                </td>
+                <td width="17%">
                     <h3 class="text-center text-secondary">
                         {{ $simbolo_moneda }}{{ $indicadores->getTotalGastosPagados() }}
                     </h3>

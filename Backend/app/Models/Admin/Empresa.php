@@ -41,6 +41,7 @@ class Empresa extends Model
         'logo',
         'propina',
         'propina_porcentaje',
+        'monto_minimo_retencion_iva_gc',
         'valor_inventario',
         'vender_sin_stock',
         'user_limit',
@@ -147,6 +148,7 @@ class Empresa extends Model
     ];
 
     protected $casts = [
+        'monto_minimo_retencion_iva_gc' => 'decimal:2',
         'enviar_dte' => 'boolean',
         'facturacion_electronica' => 'boolean',
         'custom_empresa' => 'json',

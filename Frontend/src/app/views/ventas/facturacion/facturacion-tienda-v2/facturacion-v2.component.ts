@@ -718,6 +718,8 @@ export class FacturacionV2Component implements OnInit {
     const rawSubTotal = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'));
     this.venta.sub_total = Number(rawSubTotal).toFixed(4);
 
+    this.sincronizarRetencionGranContribuyente();
+
     const rawExenta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'));
     this.venta.exenta = Number(rawExenta).toFixed(4);
     const rawNoSujeta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'));
@@ -828,6 +830,22 @@ export class FacturacionV2Component implements OnInit {
     }
   }
 
+    private montoMinimoRetencionIvaGc(): number {
+        const v = this.apiService.auth_user()?.empresa?.monto_minimo_retencion_iva_gc;
+        const n = parseFloat(v);
+        return !isNaN(n) && n >= 0 ? n : 100;
+    }
+
+    private sincronizarRetencionGranContribuyente(): void {
+        const c = this.venta?.cliente;
+        if (!c || c.tipo_contribuyente !== 'Grande') {
+            return;
+        }
+        const sub = parseFloat(this.venta.sub_total) || 0;
+        const min = this.montoMinimoRetencionIvaGc();
+        this.venta.retencion = sub > min;
+    }
+
     // Cliente
     public setCliente(cliente:any){
         if(cliente.id){
@@ -835,7 +853,6 @@ export class FacturacionV2Component implements OnInit {
             this.venta.id_cliente = cliente.id;
             this.venta.cliente = cliente;
             if(cliente.tipo_contribuyente == "Grande") {
-                this.venta.retencion = 1;
                 this.sumTotal();
             }
             

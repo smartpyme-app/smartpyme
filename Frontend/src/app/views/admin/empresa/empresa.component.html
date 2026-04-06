@@ -536,13 +536,25 @@
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Permitir cambiar el tipo de impuesto (Gravada, Exenta, No sujeta) por cada detalle de venta.</p>
+                        <p>Permitir cambiar el tipo de impuesto (Gravada, Exenta, No sujeta) de productos.</p>
                         <div class="form-switch bg-light-info rounded">
                             <label for="cambiar_tipo_impuesto_venta">Cambiar tipo de impuesto en venta</label>
                             <input class="form-check-input float-end" type="checkbox" role="switch"
                                 (change)="onSubmit()" [(ngModel)]="empresa.cambiar_tipo_impuesto_venta"
                                 name="cambiar_tipo_impuesto_venta">
                         </div>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6">
+                        <label for="monto_minimo_retencion_iva_gc">Monto mínimo para retención IVA 1% (gran contribuyente)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">{{ empresa.moneda || 'USD' }}</span>
+                            <input type="number" class="form-control" [(ngModel)]="empresa.monto_minimo_retencion_iva_gc"
+                                id="monto_minimo_retencion_iva_gc"
+                                name="monto_minimo_retencion_iva_gc" min="0" step="0.01"
+                                placeholder="100">
+                        </div>
+                        <small class="text-muted">La retención automática solo aplica si el subtotal de la operación es <strong>mayor</strong> a este monto (por defecto 100).</small>
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
@@ -675,6 +687,17 @@
 
                     <hr>
                     <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
+                    <div class="form-group col-md-12 col-xl-6">
+                        <p>Asignar automáticamente el código (SKU) como número correlativo.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="sku_correlativo_automatico">SKU correlativo automático</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="sku_correlativo_automatico"
+                                [checked]="isSkuCorrelativoAutomatico()"
+                                (change)="toggleSkuCorrelativoAutomatico()"
+                                name="sku_correlativo_automatico">
+                        </div>
+                    </div>
                     <div class="form-group col-md-6">
                         <label for="valor_inventario">Valor de inventario:</label>
                         <select class="form-select" [(ngModel)]="empresa.valor_inventario" name="valor_inventario">
