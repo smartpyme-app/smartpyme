@@ -32,6 +32,12 @@ export class CotizacionesComponent implements OnInit {
                 private modalService: BsModalService
     ){}
 
+    /** Mismo criterio que ventas (CajaVentas): Ventas / Ventas Limitado solo ven registros propios. */
+    public cotizacionesSoloPropias(): boolean {
+        const t = this.apiService.auth_user()?.tipo;
+        return t === 'Ventas' || t === 'Ventas Limitado';
+    }
+
     ngOnInit() {
 
         this.loadAll();
@@ -55,7 +61,7 @@ export class CotizacionesComponent implements OnInit {
     public loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_cliente = '';
-        this.filtros.id_usuario = '';
+        this.filtros.id_usuario = this.cotizacionesSoloPropias() ? this.apiService.auth_user().id : '';
         this.filtros.id_canal = '';
         this.filtros.id_proyecto = '';
         this.filtros.forma_pago = '';
@@ -69,6 +75,9 @@ export class CotizacionesComponent implements OnInit {
     }
 
     public filtrarVentas(){
+        if (this.cotizacionesSoloPropias()) {
+            this.filtros.id_usuario = this.apiService.auth_user().id;
+        }
         this.loading = true;
         if(!this.filtros.id_cliente){
             this.filtros.id_cliente = '';

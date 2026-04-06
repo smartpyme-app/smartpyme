@@ -20,16 +20,28 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CotizacionesController extends Controller
 {
-    
+    /**
+     * Ventas / Ventas Limitado: mismas reglas que el listado de ventas del vendedor (solo registros propios).
+     */
+    private function usuarioVeSoloSusCotizaciones(): bool
+    {
+        $user = Auth::user();
+
+        return $user && ($user->tipo === 'Ventas' || $user->tipo === 'Ventas Limitado');
+    }
+
     public function index(Request $request) {
        
-        $ordenes = Cotizacion::when($request->inicio, function($query) use ($request){
+        $ordenes = Cotizacion::when($this->usuarioVeSoloSusCotizaciones(), function ($query) {
+                            $query->where('id_usuario', Auth::id());
+                        })
+                        ->when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                         })
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
                         })
-                        ->when($request->id_usuario, function($query) use ($request){
+                        ->when(! $this->usuarioVeSoloSusCotizaciones() && $request->id_usuario, function($query) use ($request){
                             return $query->where('id_usuario', $request->id_usuario);
                         })
                         ->when($request->id_cliente, function($query) use ($request){
@@ -106,16 +118,25 @@ class CotizacionesController extends Controller
     public function read($id) {
 
         $orden = Cotizacion::where('id', $id)->with('cliente', 'detalles')->firstOrFail();
+        if ($this->usuarioVeSoloSusCotizaciones() && (int) $orden->id_usuario !== (int) Auth::id()) {
+            abort(403, 'No autorizado');
+        }
         return Response()->json($orden, 200);
 
     }
 
     public function search($txt) {
 
-        $ordenes = Cotizacion::with('cliente', function($q) use($txt){
-                                    $q->where('nombre', 'like' ,'%' . $txt . '%');
+        $ordenes = Cotizacion::when($this->usuarioVeSoloSusCotizaciones(), function ($query) {
+                                $query->where('id_usuario', Auth::id());
+                            })
+                                ->where('cotizacion', 1)
+                                ->where(function ($q) use ($txt) {
+                                    $q->whereHas('cliente', function ($cq) use ($txt) {
+                                        $cq->where('nombre', 'like', '%' . $txt . '%');
+                                    })->orWhere('estado', 'like', '%' . $txt . '%');
                                 })
-                                ->orwhere('estado', 'like' ,'%' . $txt . '%')
+                                ->with('cliente')
                                 ->paginate(10);
         return Response()->json($ordenes, 200);
 
@@ -123,7 +144,10 @@ class CotizacionesController extends Controller
 
     public function filter(Request $request) {
 
-            $ordenes = Cotizacion::when($request->fin, function($query) use ($request){
+            $ordenes = Cotizacion::when($this->usuarioVeSoloSusCotizaciones(), function ($query) {
+                                    $query->where('id_usuario', Auth::id());
+                                })
+                                ->when($request->fin, function($query) use ($request){
                                     return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                                 })
                                 ->when($request->sucursal_id, function($query) use ($request){
@@ -155,10 +179,22 @@ class CotizacionesController extends Controller
         ]);
         
 
-        if($request->id)
+        if ($this->usuarioVeSoloSusCotizaciones()) {
+            $request->merge(['id_usuario' => Auth::id()]);
+        }
+
+        if($request->id) {
             $orden = Cotizacion::findOrFail($request->id);
-        else
+            if ($this->usuarioVeSoloSusCotizaciones() && (int) $orden->id_usuario !== (int) Auth::id()) {
+                abort(403, 'No autorizado');
+            }
+            if ($this->usuarioVeSoloSusCotizaciones() && $request->has('estado')
+                && (string) $request->estado !== (string) $orden->estado) {
+                abort(403, 'No autorizado a modificar el estado de la cotización');
+            }
+        } else {
             $orden = new Cotizacion;
+        }
 
         $orden->fill($request->all());
         $orden->save();
@@ -225,6 +261,9 @@ class CotizacionesController extends Controller
     public function delete($id)
     {
         $orden = Cotizacion::findOrFail($id);
+        if ($this->usuarioVeSoloSusCotizaciones() && (int) $orden->id_usuario !== (int) Auth::id()) {
+            abort(403, 'No autorizado');
+        }
         foreach ($orden->detalles as $detalle) {
             $detalle->delete();
         }
@@ -236,6 +275,10 @@ class CotizacionesController extends Controller
 
     public function generarDoc($id){
         $venta = Cotizacion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
+
+        if ($this->usuarioVeSoloSusCotizaciones() && (int) $venta->id_usuario !== (int) Auth::id()) {
+            abort(403, 'No autorizado');
+        }
 
         if(Auth::user()->id_empresa == 420){ //420
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.cotizacion-inversiones-andre', compact('venta'));
