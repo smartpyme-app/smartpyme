@@ -400,45 +400,51 @@ export class FacturacionComponent implements OnInit {
       this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
       this.route.snapshot.queryParamMap.get('id_venta')!
     ) {
-      this.facturarCotizacion = true;
-      this.apiService
-        .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
-        .subscribe(
-          (venta) => {
-            this.venta = venta;
-            this.normalizarDetallesTipoGravado(this.venta);
-            if(!this.venta.cliente){
-                this.venta.cliente = {};
-            }else{
-              this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
-            }
-            this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
-            this.venta.fecha = this.apiService.date();
-            this.venta.fecha_pago = this.apiService.date();
-            this.venta.id_documento = null;
-            this.venta.correlativo = null;
-            this.venta.estado = 'Pagada';
-            this.venta.condicion = 'Contado';
-            this.venta.impuestos = this.impuestos;
-            this.venta.observaciones = '';
-            this.venta.cotizacion = 0;
-            this.venta.num_cotizacion = this.venta.id;
-            this.venta.id = null;
-            this.venta.detalles.forEach((detalle: any) => {
-              detalle.id = null;
-            });
-            this.sumTotal();
+      const tipoUv = this.apiService.auth_user()?.tipo;
+      if (tipoUv === 'Ventas' || tipoUv === 'Ventas Limitado') {
+        this.alertService.error('No tiene permiso para facturar cotizaciones.');
+        this.router.navigate(['/cotizaciones']);
+      } else {
+        this.facturarCotizacion = true;
+        this.apiService
+          .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
+          .subscribe(
+            (venta) => {
+              this.venta = venta;
+              this.normalizarDetallesTipoGravado(this.venta);
+              if(!this.venta.cliente){
+                  this.venta.cliente = {};
+              }else{
+                this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
+              }
+              this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+              this.venta.fecha = this.apiService.date();
+              this.venta.fecha_pago = this.apiService.date();
+              this.venta.id_documento = null;
+              this.venta.correlativo = null;
+              this.venta.estado = 'Pagada';
+              this.venta.condicion = 'Contado';
+              this.venta.impuestos = this.impuestos;
+              this.venta.observaciones = '';
+              this.venta.cotizacion = 0;
+              this.venta.num_cotizacion = this.venta.id;
+              this.venta.id = null;
+              this.venta.detalles.forEach((detalle: any) => {
+                detalle.id = null;
+              });
+              this.sumTotal();
 
-            // Para proyectos
-            if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
-              this.venta.detalles = [];
+              // Para proyectos
+              if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+                this.venta.detalles = [];
+              }
+            },
+            (error) => {
+              this.alertService.error(error);
+              this.loading = false;
             }
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.loading = false;
-          }
-        );
+          );
+      }
     }
 
     // Facturar orden de compra

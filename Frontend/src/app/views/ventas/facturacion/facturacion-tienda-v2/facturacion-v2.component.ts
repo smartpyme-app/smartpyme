@@ -376,93 +376,99 @@ export class FacturacionV2Component implements OnInit {
       this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
       this.route.snapshot.queryParamMap.get('id_venta')!
     ) {
-      this.facturarCotizacion = true;
-      this.apiService
-        .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
-        .subscribe(
-          (venta) => {
-            this.venta = venta;
-            this.normalizarDetallesTipoGravado(this.venta);
-            if(!this.venta.cliente){
-                this.venta.cliente = {};
-            }else{
-              this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
-            }
-            this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
-            this.venta.fecha = this.apiService.date();
-            this.venta.fecha_pago = this.apiService.date();
-            this.venta.id_documento = null;
-            this.venta.correlativo = null;
-            this.venta.estado = 'Pagada';
-            this.venta.condicion = 'Contado';
-            this.venta.impuestos = this.impuestos;
-            this.venta.observaciones = '';
-            this.venta.cotizacion = 0;
-            this.venta.num_cotizacion = this.venta.id;
-            this.venta.id = null;
-            
-            // Obtener porcentaje de IVA para conversión de precios
-            const porcentajeIvaTotal = this.venta.cobrar_impuestos 
-              ? (this.apiService.auth_user()?.empresa?.iva || 0)
-              : 0;
-            
-            // Ajustar precios de los detalles para v2 (precios incluyen IVA)
-            this.venta.detalles.forEach((detalle: any) => {
-              detalle.id = null;
-              
-              // Si el detalle no tiene precio_iva, asumir que precio es sin IVA (versión anterior)
-              // y calcular precio_iva
-              if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
-                if (porcentajeIvaTotal > 0) {
-                  // El precio actual es sin IVA, calcular precio con IVA
-                  detalle.precio_iva = (parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
-                } else {
-                  // Sin IVA, precio_iva es igual a precio
-                  detalle.precio_iva = parseFloat(detalle.precio || 0).toFixed(4);
-                }
-              } else {
-                // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
-                if (porcentajeIvaTotal > 0) {
-                  const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal);
-                  detalle.precio = precioSinIvaCalculado.toFixed(4);
-                } else {
-                  detalle.precio = parseFloat(detalle.precio_iva).toFixed(4);
-                }
+      const tipoUv = this.apiService.auth_user()?.tipo;
+      if (tipoUv === 'Ventas' || tipoUv === 'Ventas Limitado') {
+        this.alertService.error('No tiene permiso para facturar cotizaciones.');
+        this.router.navigate(['/cotizaciones']);
+      } else {
+        this.facturarCotizacion = true;
+        this.apiService
+          .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
+          .subscribe(
+            (venta) => {
+              this.venta = venta;
+              this.normalizarDetallesTipoGravado(this.venta);
+              if(!this.venta.cliente){
+                  this.venta.cliente = {};
+              }else{
+                this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
               }
+              this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+              this.venta.fecha = this.apiService.date();
+              this.venta.fecha_pago = this.apiService.date();
+              this.venta.id_documento = null;
+              this.venta.correlativo = null;
+              this.venta.estado = 'Pagada';
+              this.venta.condicion = 'Contado';
+              this.venta.impuestos = this.impuestos;
+              this.venta.observaciones = '';
+              this.venta.cotizacion = 0;
+              this.venta.num_cotizacion = this.venta.id;
+              this.venta.id = null;
               
-              // Asegurar que precio_iva esté como número
-              detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
+              // Obtener porcentaje de IVA para conversión de precios
+              const porcentajeIvaTotal = this.venta.cobrar_impuestos 
+                ? (this.apiService.auth_user()?.empresa?.iva || 0)
+                : 0;
               
-              // Recalcular total del detalle usando precio sin IVA
-              const precioSinIva = parseFloat(detalle.precio || 0);
-              detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
-              detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
-              const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
-              detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
-              detalle.gravada = detalle.tipo_gravado === 'gravada' ? detalle.total : 0;
-              detalle.exenta = detalle.tipo_gravado === 'exenta' ? detalle.total : 0;
-              detalle.no_sujeta = detalle.tipo_gravado === 'no_sujeta' ? detalle.total : 0;
+              // Ajustar precios de los detalles para v2 (precios incluyen IVA)
+              this.venta.detalles.forEach((detalle: any) => {
+                detalle.id = null;
+                
+                // Si el detalle no tiene precio_iva, asumir que precio es sin IVA (versión anterior)
+                // y calcular precio_iva
+                if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
+                  if (porcentajeIvaTotal > 0) {
+                    // El precio actual es sin IVA, calcular precio con IVA
+                    detalle.precio_iva = (parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+                  } else {
+                    // Sin IVA, precio_iva es igual a precio
+                    detalle.precio_iva = parseFloat(detalle.precio || 0).toFixed(4);
+                  }
+                } else {
+                  // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
+                  if (porcentajeIvaTotal > 0) {
+                    const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal);
+                    detalle.precio = precioSinIvaCalculado.toFixed(4);
+                  } else {
+                    detalle.precio = parseFloat(detalle.precio_iva).toFixed(4);
+                  }
+                }
+                
+                // Asegurar que precio_iva esté como número
+                detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
+                
+                // Recalcular total del detalle usando precio sin IVA
+                const precioSinIva = parseFloat(detalle.precio || 0);
+                detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
+                detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
+                const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
+                detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
+                detalle.gravada = detalle.tipo_gravado === 'gravada' ? detalle.total : 0;
+                detalle.exenta = detalle.tipo_gravado === 'exenta' ? detalle.total : 0;
+                detalle.no_sujeta = detalle.tipo_gravado === 'no_sujeta' ? detalle.total : 0;
+                
+                // Calcular total_iva para visualización (solo gravada lleva IVA)
+                if (detalle.tipo_gravado === 'gravada' && this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
+                  detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+                } else {
+                  detalle.total_iva = detalle.total;
+                }
+              });
               
-              // Calcular total_iva para visualización (solo gravada lleva IVA)
-              if (detalle.tipo_gravado === 'gravada' && this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-                detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
-              } else {
-                detalle.total_iva = detalle.total;
-              }
-            });
-            
-            this.sumTotal();
+              this.sumTotal();
 
-            // Para proyectos
-            if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
-              this.venta.detalles = [];
+              // Para proyectos
+              if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+                this.venta.detalles = [];
+              }
+            },
+            (error) => {
+              this.alertService.error(error);
+              this.loading = false;
             }
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.loading = false;
-          }
-        );
+          );
+      }
     }
 
     // Facturar orden de compra
