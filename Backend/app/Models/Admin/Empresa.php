@@ -78,6 +78,10 @@ class Empresa extends Model
         'wompi_id',
         'wompi_secret',
         'modulo_paquetes',
+        'webhook_paquete_venta_enabled',
+        'webhook_paquete_venta_url',
+        'webhook_paquete_venta_secret',
+        'webhook_paquete_venta_bearer_token',
         'modulo_citas',
         'modulo_proyectos',
         'activo',
@@ -154,6 +158,7 @@ class Empresa extends Model
         'custom_empresa' => 'json',
         'importacion_productos_shopify' => 'boolean',
         'shopify_sync_bidirectional' => 'boolean',
+        'webhook_paquete_venta_enabled' => 'boolean',
     ];
 
     protected $appends = [

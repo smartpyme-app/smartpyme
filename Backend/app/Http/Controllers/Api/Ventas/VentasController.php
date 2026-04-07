@@ -27,6 +27,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Inventario\Paquete;
+use App\Services\Webhooks\WebhookPaqueteVentaDispatcher;
 use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
 use Luecano\NumeroALetras\NumeroALetras;
@@ -342,6 +343,8 @@ class VentasController extends Controller
             return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
         }
 
+        $webhookPaquetesFacturadosBulk = false;
+
         // Ajustar stocks
         foreach ($venta->detalles as $detalle) {
 
@@ -423,8 +426,17 @@ class VentasController extends Controller
                     $abono->estado = 'Confirmado';
                     $abono->save();
                 }
-                // Paquetes de la venta: cambiar estado a En bodega
+                // Paquetes de la venta: al revertir anulación quedan Facturados (update masivo no dispara observer)
                 Paquete::where('id_venta', $venta->id)->update(['estado' => 'Facturado']);
+                if (!$webhookPaquetesFacturadosBulk) {
+                    $webhookPaquetesFacturadosBulk = true;
+                    $idsPaquetes = Paquete::withoutGlobalScopes()
+                        ->where('id_venta', $venta->id)
+                        ->pluck('id');
+                    foreach ($idsPaquetes as $pid) {
+                        WebhookPaqueteVentaDispatcher::dispatch((int) $pid);
+                    }
+                }
             }
         }
 
