@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Admin\Empresa;
+use App\Models\Inventario\Paquete;
 use App\Models\Ventas\Detalle;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -76,7 +77,10 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
 
         $detallesQuery = Detalle::query();
         if ($this->incluirPaquetes) {
-            $detallesQuery->with('paquete');
+            // Incluir paquetes soft-deleted (p. ej. tras anulación o reprocesos) para conservar WR/guía en el reporte
+            $detallesQuery->with(['paquete' => static function ($q) {
+                $q->withTrashed();
+            }]);
         }
 
         $detalles = $detallesQuery->whereHas('venta', function($query) use ($request) {
@@ -238,11 +242,38 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
               $venta ? $venta->sucursal()->pluck('nombre')->first() : null,
          ];
         if ($this->incluirPaquetes) {
-            $paquete = $row->relationLoaded('paquete') ? $row->paquete : $row->paquete()->first();
+            $paquete = $this->resolvePaqueteParaDetalle($row, $venta);
             $fields[] = $paquete ? $paquete->wr : '';
             $fields[] = $paquete ? $paquete->num_guia : '';
             $fields[] = $paquete ? $paquete->num_seguimiento : '';
         }
         return $fields;
+    }
+
+    /**
+     * Resuelve el paquete asociado al detalle, incluyendo borrados lógicos y casos donde id_venta_detalle quedó desincronizado.
+     */
+    protected function resolvePaqueteParaDetalle(Detalle $row, $venta): ?Paquete
+    {
+        $paquete = $row->relationLoaded('paquete') ? $row->paquete : null;
+        if (!$paquete) {
+            $paquete = $row->paquete()->withTrashed()->first();
+        }
+
+        if ($paquete || !$venta) {
+            return $paquete;
+        }
+
+        $empresaId = Auth::user()->id_empresa;
+        $porVenta = Paquete::withTrashed()
+            ->where('id_empresa', $empresaId)
+            ->where('id_venta', $venta->id)
+            ->get();
+
+        if ($porVenta->count() === 1) {
+            return $porVenta->first();
+        }
+
+        return null;
     }
 }
