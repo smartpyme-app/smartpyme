@@ -122,7 +122,7 @@
                     $porcentaje_descuento = $subtotal_linea > 0 ? round(($detalle->descuento / $subtotal_linea) * 100, 2) : 0;
                 @endphp
                 <tr>
-                    <td class="@if ($detalle->descuento == 0) border-bottom @endif">   {{ $detalle->nombre_producto  }}</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif">@include('reportes.facturacion.partials.cotizacion-detalle-descripcion')</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{number_format($detalle->precio , 2) }}</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">  @if ($detalle->descuento > 0) {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->descuento, 2) }} <small style="font-size: 12px;">({{ $porcentaje_descuento }}%)</small> @endif</td>
