@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import * as moment from 'moment';
 import { HttpService } from '@services/http.service';
 import { AlertService } from '@services/alert.service';
+import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 
 declare let $: any;
 
@@ -171,7 +172,21 @@ export class UtilityService {
     });
   }
 
+  /**
+   * Catálogo MH (SV) o DGT (CR): mismos nombres de recurso y localStorage.
+   */
+  private prefijoUbicacion(): string {
+    try {
+      const raw = localStorage.getItem('SP_auth_user');
+      const u = raw ? JSON.parse(raw) : null;
+      return resolveCodigoPaisFe(u?.empresa) === FE_PAIS_CR ? 'fe-cr/' : '';
+    } catch {
+      return '';
+    }
+  }
+
   loadData(): void {
+    const ub = this.prefijoUbicacion();
     this.httpService.getAll('formas-de-pago').subscribe(
       (metodospago: any) => {
         localStorage.setItem('metodospago', JSON.stringify(metodospago));
@@ -190,7 +205,7 @@ export class UtilityService {
       }
     );
 
-    this.httpService.getAll('municipios').subscribe(
+    this.httpService.getAll(ub + 'municipios').subscribe(
       (municipios: any) => {
         localStorage.setItem('municipios', JSON.stringify(municipios));
       },
@@ -199,7 +214,7 @@ export class UtilityService {
       }
     );
 
-    this.httpService.getAll('distritos').subscribe(
+    this.httpService.getAll(ub + 'distritos').subscribe(
       (distritos: any) => {
         localStorage.setItem('distritos', JSON.stringify(distritos));
       },
@@ -208,7 +223,7 @@ export class UtilityService {
       }
     );
 
-    this.httpService.getAll('departamentos').subscribe(
+    this.httpService.getAll(ub + 'departamentos').subscribe(
       (departamentos: any) => {
         localStorage.setItem('departamentos', JSON.stringify(departamentos));
       },

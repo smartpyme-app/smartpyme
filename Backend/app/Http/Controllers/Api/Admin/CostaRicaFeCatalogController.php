@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaDgtUbicacionCatalogService;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaHaciendaPublicApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -93,5 +94,31 @@ class CostaRicaFeCatalogController extends Controller
         $result = $api->tipoCambioDolar();
 
         return response()->json($result['data'], $result['status']);
+    }
+
+    /**
+     * Provincias (1–7), mismo formato que GET /departamentos (MH) para reutilizar selects.
+     *
+     * @see CostaRicaDgtUbicacionCatalogService
+     */
+    public function departamentos(CostaRicaDgtUbicacionCatalogService $catalog): JsonResponse
+    {
+        return response()->json($catalog->departamentos(), 200);
+    }
+
+    /**
+     * Cantones (3 dígitos), mismo formato que GET /municipios.
+     */
+    public function municipios(CostaRicaDgtUbicacionCatalogService $catalog): JsonResponse
+    {
+        return response()->json($catalog->municipios(), 200);
+    }
+
+    /**
+     * Distritos INEC (5 dígitos), mismo formato que GET /distritos.
+     */
+    public function distritos(CostaRicaDgtUbicacionCatalogService $catalog): JsonResponse
+    {
+        return response()->json($catalog->distritos(), 200);
     }
 }

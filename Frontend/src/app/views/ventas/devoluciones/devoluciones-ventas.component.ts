@@ -242,12 +242,32 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         }
     }
 
+    esFeCostaRica(): boolean {
+        return this.facturacionElectronica.isCostaRicaFe();
+    }
+
+    /** SV suele usar 05/06 en pantalla; CR guarda tipo_dte 03 en la devolución. */
+    private tipoDteDevolucion(venta: any): string {
+        if (venta?.tipo_dte) {
+            return String(venta.tipo_dte);
+        }
+
+        return this.esFeCostaRica() ? '03' : '05';
+    }
+
     imprimirDTEPDF(venta: any) {
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/05/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        const t = this.tipoDteDevolucion(venta);
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(venta: any) {
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/05/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        const t = this.tipoDteDevolucion(venta);
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    imprimirDTEXML(venta: any) {
+        const t = this.tipoDteDevolucion(venta);
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-xml/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     emitirDTE() {

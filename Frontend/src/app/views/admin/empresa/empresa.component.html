@@ -30,23 +30,23 @@
 
                 </div>
                 <h5 class="mb-3">Datos de mi empresa</h5>
-                <div class="row">
-                    <div class="form-group col-md-6 col-lg-4">
+                <div class="row g-3">
+                    <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="nombre">Nombre</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.nombre" name="nombre"
                             placeholder="Escriba aquí" required>
                     </div>
-                    <div class="form-group col-md-6 col-lg-4">
+                    <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="nombre_propietario">Propietario</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.nombre_propietario"
                             name="nombre_propietario" placeholder="Escriba aquí">
                     </div>
-                    <div class="form-group col-md-6 col-lg-4">
+                    <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="telefono">Teléfono</label>
                         <input type="tel" class="form-control" [(ngModel)]="empresa.telefono" name="telefono"
                             placeholder="Escriba aquí">
                     </div>
-                    <div class="form-group col-md-6 col-lg-4">
+                    <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="correo">Correo</label>
                         <input type="email" class="form-control" [(ngModel)]="empresa.correo" name="correo"
                             placeholder="Escriba aquí">
@@ -54,7 +54,7 @@
 
                     <!-- si la empresa ES salvadoreña -->
                     @if (apiService.auth_user().empresa.pais == 'El Salvador') {
-                      <div class="form-group col-md-6 col-lg-4">
+                      <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="departamento">Departamento:</label>
                         <ng-select [(ngModel)]="empresa.cod_departamento" (change)="setDepartamento()" class="form-select p-0" name="empresa.departamento">
                           @for (departamento of departamentos; track $index) {
@@ -65,7 +65,7 @@
                         </ng-select>
                       </div>
 
-                      <div class="form-group col-md-6 col-lg-4">
+                      <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="distrito">Distrito:</label>
                         <ng-select  [(ngModel)]="empresa.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="empresa.cod_distrito">
                           @for (distrito of distritos | filter:'cod_departamento':empresa.cod_departamento; track $index) {
@@ -76,7 +76,7 @@
                         </ng-select>
                       </div>
 
-                      <div class="form-group col-md-6 col-lg-4">
+                      <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="municipio">Municipio:</label>
                         <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0" name="empresa.municipio">
                           @for (municipio of municipios | filter:'nombre_departamento':empresa.departamento; track $index) {
@@ -88,34 +88,79 @@
                       </div>
                     }
 
-                    <!-- si la empresa NO ES salvadoreña -->
-                    @if (apiService.auth_user().empresa.pais != 'El Salvador') {
-                      <div class="form-group col-md-6 col-lg-4">
+                    <!-- Otros países (no SV, no CR FE): departamento/municipio libre. CR FE usa selects DGT más abajo. -->
+                    @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
+                      <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="departamento">Departamento:</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.departamento" name="empresa.departamento" placeholder="Escriba aquí">
                       </div>
-                      <div class="form-group col-md-6 col-lg-4">
+                      <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="municipio">Municipio:</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.municipio" name="empresa.municipio" placeholder="Escriba aquí">
                       </div>
                     }
 
 
-                    <div class="form-group col-md-6 col-lg-4">
+                    <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="direccion">Dirección</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion"
                             placeholder="Escriba aquí">
                     </div>
-                    <div class="form-group col-md-6 col-lg-4">
+                    @if (esCostaRicaFe()) {
+                    <div class="form-group col-12 col-md-6 col-lg-4">
+                        <label for="empresa_cr_provincia">Provincia</label>
+                        <ng-select [(ngModel)]="empresa.cod_departamento" (change)="setDepartamento()" class="form-select p-0" name="empresa_cr_provincia" id="empresa_cr_provincia">
+                          @for (prov of departamentos; track prov.cod) {
+                            <ng-option [value]="prov.cod">{{ prov.nombre }}</ng-option>
+                          }
+                        </ng-select>
+                    </div>
+                    <div class="form-group col-12 col-md-6 col-lg-4">
+                        <label for="empresa_cr_canton">Cantón</label>
+                        <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0" name="empresa_cr_canton" id="empresa_cr_canton" placeholder="Seleccione">
+                          @for (mun of municipiosFiltradosCr(); track mun.cod) {
+                            <ng-option [value]="mun.cod">{{ mun.nombre }}</ng-option>
+                          }
+                        </ng-select>
+                    </div>
+                    <div class="form-group col-12 col-md-6 col-lg-4">
+                        <label for="empresa_cr_distrito">Distrito</label>
+                        <ng-select [(ngModel)]="empresa.cod_distrito" (change)="setDistrito()" class="form-select p-0" name="empresa_cr_distrito" id="empresa_cr_distrito" placeholder="Seleccione">
+                          @for (dis of distritosFiltradosCr(); track dis.cod) {
+                            <ng-option [value]="dis.cod">{{ dis.nombre }}</ng-option>
+                          }
+                        </ng-select>
+                    </div>
+                    }
+                    @if (esCostaRicaFe()) {
+                    <div class="form-group col-12 col-md-6 col-lg-4">
+                        <label for="fe_cr_emisor_tipo_identificacion">Tipo de identificación</label>
+                        <select class="form-select" id="fe_cr_emisor_tipo_identificacion" name="fe_cr_emisor_tipo_identificacion"
+                            [(ngModel)]="customConfig.facturacion_fe.emisor_tipo_identificacion"
+                            (ngModelChange)="onFacturacionFeEmisorIdentificacionChange()">
+                            <option value="01">01 — Cédula física</option>
+                            <option value="02">02 — Cédula jurídica</option>
+                            <option value="03">03 — DIMEX</option>
+                            <option value="04">04 — NITE</option>
+                            <option value="05">05 — Extranjero no domiciliado</option>
+                        </select>
+                    </div>
+                    }
+                    <div class="form-group col-12 col-md-6 col-lg-4">
                         @if (apiService.auth_user().empresa.pais == 'El Salvador') {
                           <label for="nit">NIT</label>
                         }
-                        @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                        @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
                           <label for="nit">Identificación Fiscal</label>
                         }
-                        <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" mask='{{apiService.auth_user().empresa.validador_nit}}'>
+                        @if (esCostaRicaFe()) {
+                          <label for="nit">Identificación</label>
+                        }
+                        <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" mask='{{apiService.auth_user().empresa.validador_nit}}'
+                            (ngModelChange)="onNitEmpresaChange()">
                     </div>
-                    <div class="form-group col-md-6 col-lg-3">
+                    @if (!esCostaRicaFe()) {
+                    <div class="form-group col-12 col-md-6 col-lg-4">
                         @if (apiService.auth_user().empresa.pais == 'El Salvador') {
                           <label for="ncr">NCR</label>
                         }
@@ -124,7 +169,8 @@
                         }
                         <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí">
                     </div>
-                    <div class="form-group col-md-6 col-lg-3">
+                    }
+                    <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="tipo_contribuyente">Tamaño</label>
                         <select class="form-select" [(ngModel)]="empresa.tipo_contribuyente" name="tipo_contribuyente">
                             <option value="">Seleccione aquí</option>
@@ -150,19 +196,15 @@
                         <label for="cod_estable">Cod Establecimiento:</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.cod_estable" name="cod_estable" placeholder="xxxx">
                     </div> -->
-                    <div class="form-group col-md-8">
-                        @if (!esCostaRicaFe()) {
-                        <label for="actividad_economica">Actividad económica:</label>
-                        }
-                        @if (esCostaRicaFe()) {
-                        <label for="actividad_economica">Actividad económica de la empresa (CABYS)</label>
-                        }
-                        @if (apiService.auth_user().empresa.pais == 'El Salvador') {
+                    @if (apiService.auth_user().empresa.pais == 'El Salvador') {
+                    <div class="form-group col-12 col-lg-8">
+                        <label for="empresa_cod_actividad_economica_sv">Actividad económica</label>
                           <ng-select
                             [(ngModel)]="empresa.cod_actividad_economica"
                             (change)="setGiro()"
                             class="form-select p-0"
                             name="empresa.cod_actividad_economica"
+                            id="empresa_cod_actividad_economica_sv"
                             [items]="actividad_economicas"
                             bindLabel="nombre"
                             bindValue="cod"
@@ -174,23 +216,27 @@
                               <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item.nombre">{{ item.nombre }}</span>
                             </ng-template>
                           </ng-select>
-                        }
+                    </div>
+                    }
 
-                        @if (esCostaRicaFe()) {
+                    @if (esCostaRicaFe()) {
+                    <div class="col-12">
+                        <div class="row g-3">
+                        <div class="form-group col-12 col-lg-6 mb-0">
+                          <label for="actividad_contribuyente_cr">Actividad económica</label>
                           <ng-select
                             class="form-select p-0"
-                            name="cabys_empresa_buscar"
-                            [items]="cabysEmpresaItems$ | async"
+                            name="actividad_contribuyente_cr"
+                            [items]="actividadesContribuyenteCr"
                             bindLabel="label"
-                            [loading]="cabysEmpresaLoading"
-                            [typeahead]="cabysEmpresaInput$"
-                            [compareWith]="compareCabysEmpresa"
-                            [(ngModel)]="cabysEmpresaSeleccionado"
-                            (change)="onCabysEmpresaSelectChange($event)"
+                            [loading]="contribuyenteCargandoCr"
+                            [compareWith]="compareActividadContribuyenteCr"
+                            [(ngModel)]="actividadContribuyenteSeleccionada"
+                            (change)="onActividadContribuyenteCrChange($event)"
                             [clearable]="true"
                             notFoundText="Sin resultados"
-                            placeholder="Buscar por descripción (mín. 3 letras)..."
-                            id="cabys_empresa_buscar">
+                            placeholder="Seleccione actividad"
+                            id="actividad_contribuyente_cr">
                             <ng-template ng-label-tmp let-item="item">
                               <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item?.label">{{ item?.label }}</span>
                             </ng-template>
@@ -198,14 +244,43 @@
                               <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item.label">{{ item.label }}</span>
                             </ng-template>
                           </ng-select>
-                        }
-
-                        @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
-                          <input type="text" class="form-control" [(ngModel)]="empresa.giro" name="empresa_giro_otros" placeholder="Escriba aquí">
-                        }
+                        </div>
+                        <div class="form-group col-12 col-lg-6 mb-0">
+                          <label for="cabys_default_cr_buscar">CABYS por defecto</label>
+                          <ng-select
+                            class="form-select p-0"
+                            id="cabys_default_cr_buscar"
+                            name="cabys_default_cr_buscar"
+                            [items]="cabysDefaultItems$ | async"
+                            bindLabel="label"
+                            [loading]="cabysDefaultLoading"
+                            [typeahead]="cabysDefaultInput$"
+                            [compareWith]="compareCabysDefault"
+                            [(ngModel)]="cabysDefaultSeleccionado"
+                            (change)="onCabysDefaultSelectChange($event)"
+                            [clearable]="true"
+                            notFoundText="Sin resultados"
+                            placeholder="Buscar por nombre o código (mín. 3 caracteres)">
+                            <ng-template ng-label-tmp let-item="item">
+                              <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item?.label">{{ item?.label }}</span>
+                            </ng-template>
+                            <ng-template ng-option-tmp let-item="item">
+                              <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item.label">{{ item.label }}</span>
+                            </ng-template>
+                          </ng-select>
+                        </div>
+                        </div>
                     </div>
-                    <div class="form-group col-md-6 col-lg-4">
-                        <label for="pais">País:</label>
+                    }
+
+                    @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
+                    <div class="form-group col-12 col-md-6 col-lg-4">
+                        <label for="empresa_giro_otros">Giro</label>
+                        <input type="text" class="form-control" id="empresa_giro_otros" [(ngModel)]="empresa.giro" name="empresa_giro_otros" placeholder="Escriba aquí">
+                    </div>
+                    }
+                    <div class="form-group col-12 col-md-6 col-lg-4">
+                        <label for="pais">País</label>
                         <select class="form-select" name="pais" (change)="setPais()" [(ngModel)]="empresa.pais">
                             <option value="Belice">+501 Belice</option>
                             <option value="Guatemala">+502 Guatemala</option>
@@ -217,8 +292,8 @@
                             <option value="México">+52 México</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-6 col-lg-4">
-                        <label for="moneda">Moneda:</label>
+                    <div class="form-group col-12 col-md-6 col-lg-4">
+                        <label for="moneda">Moneda</label>
                         <select class="form-select" [(ngModel)]="empresa.moneda" name="moneda">
                             <option value="">Seleccione aquí</option>
                             <option value="USD">USD</option>
@@ -231,7 +306,7 @@
                             <option value="MXN">MXN</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-6 col-lg-4">
+                    <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="iva">IVA</label>
                         <div class="input-group">
                             <input type="number" class="form-control" [(ngModel)]="empresa.iva" name="iva"
@@ -239,8 +314,8 @@
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
-                    <div class="form-group col-md-6 col-lg-4" *ngIf="tieneAccesoPropina">
-                        <label for="propina_porcentaje">Propina Porcentaje</label>
+                    <div class="form-group col-12 col-md-6 col-lg-4" *ngIf="tieneAccesoPropina">
+                        <label for="propina_porcentaje">Propina</label>
                         <div class="input-group">
                             <input type="number" class="form-control" [(ngModel)]="empresa.propina_porcentaje" name="propina_porcentaje"
                                 placeholder="Escriba aquí">
@@ -828,24 +903,19 @@
             </div>
             @if (esCostaRicaFe()) {
             <div class="row mt-2">
-                <div class="col-12 mb-3">
-                    <p class="small text-muted mb-0">
-                        El <strong>CABYS por defecto</strong> de la empresa se configura en la pestaña <strong>Datos de mi empresa</strong>, campo <em>Actividad económica de la empresa (CABYS)</em>.
-                    </p>
-                </div>
                 <div class="form-group col-md-8 col-lg-6">
                     <label for="fe_cr_certificado_p12">Archivo de certificado digital</label>
                     <input id="fe_cr_certificado_p12" type="file" class="form-control" accept=".p12,application/x-pkcs12"
                         (change)="subirCertificadoFeCr($event)" [disabled]="subiendoCertCr" />
+                    @if (subiendoCertCr || tieneCertificadoFeCr) {
                     <small class="form-text text-muted d-block mt-1">
                         @if (subiendoCertCr) {
                             <span>Guardando certificado…</span>
                         } @else if (tieneCertificadoFeCr) {
-                            <span class="text-success">Ya tiene un certificado cargado; puede reemplazarlo eligiendo otro archivo.</span>
-                        } @else {
-                            Suba el certificado que le entregó su banco o asesor (archivo con extensión .p12) antes de probar la conexión o emitir facturas electrónicas.
+                            <span class="text-success">Certificado cargado.</span>
                         }
                     </small>
+                    }
                 </div>
             </div>
             }

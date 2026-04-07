@@ -131,7 +131,7 @@
                         @if (cliente.tipo == 'Persona') {
                             <div class="form-group col-6 col-lg-3">
                                 <label for="pais">Pais:</label>
-                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
                                     <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
                                 }
                                 @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
@@ -139,7 +139,16 @@
                                 }
                                 @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
                                     <ng-select [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
-                                        @for (pais of paises; track pais.cod) {
+                                        @for (pais of paises; track $index) {
+                                            <ng-option [value]="pais.cod">
+                                                {{ pais.nombre }}
+                                            </ng-option>
+                                        }
+                                    </ng-select>
+                                }
+                                @if (esCostaRicaFe()) {
+                                    <ng-select [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais_cr">
+                                        @for (pais of paises; track $index) {
                                             <ng-option [value]="pais.cod">
                                                 {{ pais.nombre }}
                                             </ng-option>
@@ -150,7 +159,12 @@
                         }
                         @if (cliente.tipo == 'Persona') {
                             <div class="form-group col-6 col-lg-3">
-                                <label for="departamento">Departamento:</label>
+                                @if (esCostaRicaFe()) {
+                                    <label for="cliente_cr_provincia_p">Provincia</label>
+                                }
+                                @if (!esCostaRicaFe()) {
+                                    <label for="departamento">Departamento:</label>
+                                }
                                 @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
                                     <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
                                 }
@@ -163,15 +177,27 @@
                                         }
                                     </ng-select>
                                 }
-                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                @if (esCostaRicaFe()) {
+                                    <ng-select [(ngModel)]="cliente.cod_departamento" (change)="setDepartamento()" placeholder="Seleccione" class="form-control form-select p-0" name="cliente_cr_provincia_p" id="cliente_cr_provincia_p">
+                                        @for (prov of departamentos; track prov.cod) {
+                                            <ng-option [value]="prov.cod">{{ prov.nombre }}</ng-option>
+                                        }
+                                    </ng-select>
+                                }
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
                                     <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
                                 }
                             </div>
                         }
                         @if (cliente.tipo == 'Persona') {
                             <div class="form-group col-6 col-lg-3">
-                                <label for="distrito">Distrito:</label>
-                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                @if (esCostaRicaFe()) {
+                                    <label for="cliente_cr_canton_p">Cantón</label>
+                                }
+                                @if (!esCostaRicaFe()) {
+                                    <label for="distrito">Distrito:</label>
+                                }
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
                                     <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
                                 }
                                 @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
@@ -186,11 +212,23 @@
                                         }
                                     </ng-select>
                                 }
+                                @if (esCostaRicaFe()) {
+                                    <ng-select [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Seleccione" class="form-control form-select p-0" name="cliente_cr_canton_p" id="cliente_cr_canton_p">
+                                        @for (mun of municipiosFiltradosCr(); track mun.cod) {
+                                            <ng-option [value]="mun.cod">{{ mun.nombre }}</ng-option>
+                                        }
+                                    </ng-select>
+                                }
                             </div>
                         }
                         @if (cliente.tipo == 'Persona') {
                             <div class="form-group col-6 col-lg-3">
-                                <label for="municipio">Municipio:</label>
+                                @if (esCostaRicaFe()) {
+                                    <label for="cliente_cr_distrito_p">Distrito</label>
+                                }
+                                @if (!esCostaRicaFe()) {
+                                    <label for="municipio">Municipio:</label>
+                                }
                                 @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
                                     <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
                                 }
@@ -203,7 +241,14 @@
                                         }
                                     </ng-select>
                                 }
-                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                @if (esCostaRicaFe()) {
+                                    <ng-select [(ngModel)]="cliente.cod_distrito" (change)="setDistrito()" placeholder="Seleccione" class="form-control form-select p-0" name="cliente_cr_distrito_p" id="cliente_cr_distrito_p">
+                                        @for (dis of distritosFiltradosCr(); track dis.cod) {
+                                            <ng-option [value]="dis.cod">{{ dis.nombre }}</ng-option>
+                                        }
+                                    </ng-select>
+                                }
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
                                     <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
                                 }
                             </div>
@@ -294,7 +339,7 @@
                         @if (cliente.tipo == 'Empresa') {
                             <div class="form-group col-6 col-lg-3">
                                 <label for="pais">Pais:</label>
-                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
                                     <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
                                 }
                                 @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
@@ -302,7 +347,16 @@
                                 }
                                 @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
                                     <ng-select [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
-                                        @for (pais of paises; track pais.cod) {
+                                        @for (pais of paises; track $index) {
+                                            <ng-option [value]="pais.cod">
+                                                {{ pais.nombre }}
+                                            </ng-option>
+                                        }
+                                    </ng-select>
+                                }
+                                @if (esCostaRicaFe()) {
+                                    <ng-select [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais_cr_emp">
+                                        @for (pais of paises; track $index) {
                                             <ng-option [value]="pais.cod">
                                                 {{ pais.nombre }}
                                             </ng-option>
@@ -313,7 +367,12 @@
                         }
                         @if (cliente.tipo == 'Empresa') {
                             <div class="form-group col-6 col-lg-4">
-                                <label for="departamento">Departamento:</label>
+                                @if (esCostaRicaFe()) {
+                                    <label for="cliente_cr_provincia_e">Provincia</label>
+                                }
+                                @if (!esCostaRicaFe()) {
+                                    <label for="departamento">Departamento:</label>
+                                }
 
                                 <!-- Si la empresa es SALVADOREÑA -->
                                 @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
@@ -328,17 +387,29 @@
                                         }
                                     </ng-select>
                                 }
+                                @if (esCostaRicaFe()) {
+                                    <ng-select [(ngModel)]="cliente.cod_departamento" (change)="setDepartamento()" placeholder="Seleccione" class="form-control form-select p-0" name="cliente_cr_provincia_e" id="cliente_cr_provincia_e">
+                                        @for (prov of departamentos; track prov.cod) {
+                                            <ng-option [value]="prov.cod">{{ prov.nombre }}</ng-option>
+                                        }
+                                    </ng-select>
+                                }
 
-                                <!-- Si la empresa NO ES SALVADOREÑA -->
-                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                <!-- Si la empresa NO ES SALVADOREÑA (ni CR FE) -->
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
                                     <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
                                 }
                             </div>
                         }
                         @if (cliente.tipo == 'Empresa') {
                             <div class="form-group col-6 col-lg-4">
-                                <label for="distrito">Distrito:</label>
-                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                @if (esCostaRicaFe()) {
+                                    <label for="cliente_cr_canton_e">Cantón</label>
+                                }
+                                @if (!esCostaRicaFe()) {
+                                    <label for="distrito">Distrito:</label>
+                                }
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
                                     <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
                                 }
                                 @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
@@ -353,11 +424,23 @@
                                         }
                                     </ng-select>
                                 }
+                                @if (esCostaRicaFe()) {
+                                    <ng-select [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Seleccione" class="form-control form-select p-0" name="cliente_cr_canton_e" id="cliente_cr_canton_e">
+                                        @for (mun of municipiosFiltradosCr(); track mun.cod) {
+                                            <ng-option [value]="mun.cod">{{ mun.nombre }}</ng-option>
+                                        }
+                                    </ng-select>
+                                }
                             </div>
                         }
                         @if (cliente.tipo == 'Empresa') {
                             <div class="form-group col-6 col-lg-4">
-                                <label for="municipio">Municipio:</label>
+                                @if (esCostaRicaFe()) {
+                                    <label for="cliente_cr_distrito_e">Distrito</label>
+                                }
+                                @if (!esCostaRicaFe()) {
+                                    <label for="municipio">Municipio:</label>
+                                }
 
                                 <!-- Si la empresa es SALVADOREÑA -->
                                 @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
@@ -372,9 +455,16 @@
                                         }
                                     </ng-select>
                                 }
+                                @if (esCostaRicaFe()) {
+                                    <ng-select [(ngModel)]="cliente.cod_distrito" (change)="setDistrito()" placeholder="Seleccione" class="form-control form-select p-0" name="cliente_cr_distrito_e" id="cliente_cr_distrito_e">
+                                        @for (dis of distritosFiltradosCr(); track dis.cod) {
+                                            <ng-option [value]="dis.cod">{{ dis.nombre }}</ng-option>
+                                        }
+                                    </ng-select>
+                                }
 
                                 <!-- Si la empresa no es salvadoreña EXTRANJERA -->
-                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
                                     <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
                                 }
                             </div>
@@ -488,7 +578,7 @@
                     }
                     @if (apiService.auth_user().empresa.facturacion_electronica) {
                         <ng-select [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
-                            @for (pais of paises; track pais.cod) {
+                            @for (pais of paises; track $index) {
                                 <ng-option [value]="pais.cod">
                                     {{ pais.nombre }}
                                 </ng-option>

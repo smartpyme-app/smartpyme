@@ -16,10 +16,13 @@ use InvalidArgumentException;
  * Mapea una {@link Venta} al arreglo esperado por dazza-dev/dgt-xml-generator (Factura 01).
  *
  * Reutiliza campos de empresa ya usados para FE (y formularios): cod_actividad_economica, giro,
- * cod_departamento / cod_municipio / cod_distrito (ubicación FE según país), cod_estable, cod_estable_mh,
- * mh_*. CABYS por línea: producto.codigo_cabys, producto.codigo (13 dígitos); fallback empresa:
- * custom_empresa.facturacion_fe.cabys_default o cod_actividad_economica (13 dígitos) + descripción en giro.
- * Actividad receptor opcional: custom_empresa.facturacion_fe.receptor_actividad_codigo (6 dígitos).
+ * Ubicación emisor/receptor en XML: código distrito CR de 5 dígitos (facturacion_fe.emisor_distrito o cod_distrito si ya es CR).
+ * No usar distrito/municipio de El Salvador rellenado a 5 dígitos. cod_estable, cod_estable_mh,
+ * mh_*. CABYS por línea: producto.codigo_cabys, producto.codigo (13 dígitos); fallback solo
+ * custom_empresa.facturacion_fe.cabys_default (13 dígitos). Actividad del emisor: cod_actividad_economica
+ * según Hacienda; se normaliza al formato del catálogo DGT (actividades-economicas.json), p. ej. "7020.0", no "070200".
+ * Tipo identificación emisor: facturacion_fe.emisor_tipo_identificacion (01–05, default 02).
+ * Actividad receptor opcional: facturacion_fe.receptor_actividad_codigo (mismo criterio de normalización).
  */
 final class CostaRicaInvoiceFromVentaMapper
 {
@@ -126,7 +129,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $cabys = $this->resolverCabysLinea($producto, $empresa);
         if (strlen($cabys) !== 13) {
             throw new InvalidArgumentException(
-                'Código CABYS inválido o faltante en línea de devolución. Revise CABYS del producto, código 13 dígitos en producto, CABYS por defecto en cuenta (actividad económica) o cabys_default en configuración.'
+                'Código CABYS inválido o faltante en línea de devolución. Revise CABYS del producto, código 13 dígitos en producto, o cabys_default en facturacion_fe (custom_empresa).'
             );
         }
 
@@ -143,7 +146,7 @@ final class CostaRicaInvoiceFromVentaMapper
             $totalLinea = round($subTotal + $ivaMonto, 5);
         }
 
-        [$ivaTarifaCode, $ivaNombre, $rate] = $this->tarifaIva($porcentajeIvaEstimado, $ivaMonto > 0.00001);
+        [$ivaTarifaCode, , $rate] = $this->tarifaIva($porcentajeIvaEstimado, $ivaMonto > 0.00001);
 
         $tipoStr = strtolower((string) ($producto->tipo ?? ''));
         $tipoTx = str_contains($tipoStr, 'servic') ? '05' : '01';
@@ -166,7 +169,7 @@ final class CostaRicaInvoiceFromVentaMapper
         if ($ivaMonto > 0.00001 && $rate > 0) {
             $line['taxes'] = [[
                 'tax_type' => '01',
-                'iva_type' => ['code' => $ivaTarifaCode, 'name' => $ivaNombre],
+                'iva_type' => $ivaTarifaCode,
                 'rate' => $rate,
                 'amount' => $ivaMonto,
             ]];
@@ -203,7 +206,7 @@ final class CostaRicaInvoiceFromVentaMapper
         if ($iva > 0) {
             $summary['taxes'] = [[
                 'tax_type' => '01',
-                'iva_type' => ['code' => '08', 'name' => 'Tarifa general 13%'],
+                'iva_type' => '08',
                 'rate' => 13.0,
                 'amount' => $iva,
             ]];
@@ -249,54 +252,164 @@ final class CostaRicaInvoiceFromVentaMapper
         return str_contains($c, 'cred') ? '02' : '01';
     }
 
+    /**
+     * Catálogo tipo identificación emisor (Hacienda CR / DGT). 06 = no contribuyente (no aplica a emisor).
+     */
+    private function tipoIdentificacionEmisorCr(Empresa $empresa): string
+    {
+        $allowed = ['01', '02', '03', '04', '05'];
+        $raw = trim((string) $empresa->getCustomConfigValue('facturacion_fe', 'emisor_tipo_identificacion', '02'));
+        if (! in_array($raw, $allowed, true)) {
+            return '02';
+        }
+
+        return $raw;
+    }
+
+    /**
+     * distritos.json (DGT): claves de 5 dígitos; el primero es provincia (1–7). canton = primeros 3 dígitos.
+     * facturacion_fe.emisor_distrito tiene prioridad; cod_distrito solo si ya es un código CR válido (no rellenar con ceros códigos de SV).
+     */
+    private function resolverDistritoCostaRicaCincoDigitos(Empresa $empresa): string
+    {
+        $prioridad = [
+            $empresa->getCustomConfigValue('facturacion_fe', 'emisor_distrito', null),
+            $empresa->cod_distrito ?? null,
+        ];
+
+        foreach ($prioridad as $raw) {
+            if ($raw === null || $raw === '') {
+                continue;
+            }
+            $d = preg_replace('/\D/', '', (string) $raw);
+            if ($d === '') {
+                continue;
+            }
+            if (strlen($d) > 5) {
+                $d = substr($d, 0, 5);
+            }
+            if (strlen($d) === 5 && preg_match('/^[1-7]\d{4}$/', $d) === 1) {
+                return $d;
+            }
+        }
+
+        throw new InvalidArgumentException(
+            'Configure el distrito fiscal de Costa Rica para el XML (código de 5 dígitos del catálogo INEC/DGT, ej. 10101). '
+            .'En la empresa: facturacion_fe.emisor_distrito, o cod_distrito solo si ya guarda ese código de 5 dígitos. '
+            .'Los códigos de distrito de El Salvador no aplican: al rellenarlos con ceros se generan valores inválidos (ej. 00014).'
+        );
+    }
+
     private function ubicacionEmisor(Empresa $empresa): array
     {
-        $provDigits = preg_replace('/\D/', '', (string) ($empresa->cod_departamento ?? '1'));
-        $prov = $provDigits !== '' ? (int) substr($provDigits, 0, 1) : 1;
+        $dis = $this->resolverDistritoCostaRicaCincoDigitos($empresa);
 
-        $canDigits = preg_replace('/\D/', '', (string) ($empresa->cod_municipio ?? ''));
-        $can = $canDigits !== ''
-            ? substr(str_pad($canDigits, 3, '0', STR_PAD_LEFT), 0, 3)
-            : '101';
+        return [
+            'province' => (int) $dis[0],
+            'canton' => substr($dis, 0, 3),
+            'district' => $dis,
+        ];
+    }
 
-        $disDigits = preg_replace('/\D/', '', (string) ($empresa->cod_distrito ?? ''));
-        $dis = $disDigits !== ''
-            ? substr(str_pad($disDigits, 5, '0', STR_PAD_LEFT), 0, 5)
-            : '10101';
+    /**
+     * XSD Hacienda (BarrioUbicacionType): minLength 5. La plantilla dgt-xml-generator siempre emite el elemento Barrio
+     * con el texto de neighborhood; si falta, el XML queda vacío y falla la validación.
+     */
+    private function textoBarrioUbicacionXml(string ...$candidatos): string
+    {
+        foreach ($candidatos as $c) {
+            $t = trim((string) $c);
+            if (mb_strlen($t) >= 5) {
+                return mb_substr($t, 0, 160);
+            }
+        }
+        foreach ($candidatos as $c) {
+            $t = trim((string) $c);
+            if ($t !== '') {
+                return str_pad($t, 5, '.', STR_PAD_RIGHT);
+            }
+        }
 
-        return ['province' => $prov, 'canton' => $can, 'district' => $dis];
+        return 'Centro';
+    }
+
+    /**
+     * dgt-xml-generator usa el catálogo actividades-economicas.json con códigos "NNNN.N" (p. ej. 7020.0).
+     * Hacienda suele devolver 5 dígitos (70200) o 6 con cero a la izquierda por error (070200); ambos se mapean a 7020.0.
+     */
+    private function codigoActividadEconomicaParaDgt(string $raw): string
+    {
+        $raw = trim($raw);
+        if (str_contains($raw, '.')) {
+            $parts = explode('.', $raw, 2);
+            if (
+                count($parts) === 2
+                && ctype_digit($parts[0])
+                && ctype_digit($parts[1])
+                && strlen($parts[1]) === 1
+            ) {
+                return str_pad($parts[0], 4, '0', STR_PAD_LEFT).'.'.$parts[1];
+            }
+        }
+
+        $digits = preg_replace('/\D/', '', $raw) ?? '';
+        if ($digits === '') {
+            throw new InvalidArgumentException(
+                'Código de actividad económica inválido. Use el código del catálogo de Hacienda o el formato NNNN.N (ej. 7020.0).'
+            );
+        }
+
+        if (strlen($digits) > 6) {
+            $digits = substr($digits, 0, 6);
+        }
+
+        if (strlen($digits) === 6 && str_starts_with($digits, '0')) {
+            $digits = ltrim($digits, '0');
+            if ($digits === '') {
+                $digits = '0';
+            }
+        }
+
+        if (strlen($digits) <= 5) {
+            $digits = str_pad($digits, 5, '0', STR_PAD_LEFT);
+
+            return substr($digits, 0, 4).'.'.substr($digits, 4, 1);
+        }
+
+        return substr($digits, 0, 4).'.'.substr($digits, 5, 1);
     }
 
     private function emisor(Empresa $empresa): array
     {
-        $codAct = preg_replace('/\D/', '', (string) ($empresa->cod_actividad_economica ?? ''));
-        if (strlen($codAct) < 6) {
+        $actividadCampo = trim((string) ($empresa->cod_actividad_economica ?? ''));
+        if ($actividadCampo === '') {
             throw new InvalidArgumentException(
-                'Configure cod_actividad_economica (6 dígitos) según actividad económica registrada en Hacienda CR.'
+                'Configure actividad económica del contribuyente (Datos de empresa): cargue actividades desde Hacienda y seleccione la registrada para su NIT.'
             );
         }
-        $codAct = substr(str_pad($codAct, 6, '0', STR_PAD_LEFT), 0, 6);
+        $codAct = $this->codigoActividadEconomicaParaDgt($actividadCampo);
 
         $nit = $this->soloDigitos((string) ($empresa->nit ?? ''));
         if (strlen($nit) < 9) {
-            throw new InvalidArgumentException('El NIT/cédula jurídica del emisor no es válido para Costa Rica.');
+            throw new InvalidArgumentException('El número de identificación del emisor no es válido para Costa Rica (mínimo 9 dígitos, según tipo configurado).');
         }
 
         $loc = $this->ubicacionEmisor($empresa);
 
         return [
-            'identification_type' => '02',
+            'identification_type' => $this->tipoIdentificacionEmisorCr($empresa),
             'identification_number' => $nit,
             'name' => $empresa->nombre ?? 'Emisor',
             'trade_name' => $empresa->nombre ?? null,
-            'activity' => [
-                'code' => $codAct,
-                'name' => trim((string) ($empresa->giro ?? '')) ?: ($empresa->nombre ?? 'Actividad económica'),
-            ],
+            'activity' => $codAct,
             'location' => [
                 'province' => $loc['province'],
                 'canton' => $loc['canton'],
                 'district' => $loc['district'],
+                'neighborhood' => $this->textoBarrioUbicacionXml(
+                    (string) $empresa->getCustomConfigValue('facturacion_fe', 'emisor_barrio', ''),
+                    (string) ($empresa->direccion ?? '')
+                ),
                 'address_details' => $empresa->direccion ?? 'Costa Rica',
             ],
             'phone' => $this->telefonoCr($empresa->telefono ?? '22222222'),
@@ -336,16 +449,20 @@ final class CostaRicaInvoiceFromVentaMapper
                 'province' => $loc['province'],
                 'canton' => $loc['canton'],
                 'district' => $loc['district'],
+                'neighborhood' => $this->textoBarrioUbicacionXml(
+                    (string) $empresa->getCustomConfigValue('facturacion_fe', 'receptor_barrio', ''),
+                    (string) ($cliente->distrito ?? ''),
+                    (string) ($cliente->municipio ?? ''),
+                    (string) ($cliente->direccion ?? ''),
+                    (string) ($empresa->direccion ?? '')
+                ),
                 'address_details' => $cliente->direccion ?: ($empresa->direccion ?? 'Costa Rica'),
             ],
         ];
 
         $ractCode = $empresa->getCustomConfigValue('facturacion_fe', 'receptor_actividad_codigo', null);
-        if ($ractCode) {
-            $ract = substr(str_pad(preg_replace('/\D/', '', (string) $ractCode), 6, '0', STR_PAD_LEFT), 0, 6);
-            if (strlen($ract) === 6) {
-                $receiver['activity'] = ['code' => $ract, 'name' => 'Actividad receptor'];
-            }
+        if ($ractCode !== null && trim((string) $ractCode) !== '') {
+            $receiver['activity'] = $this->codigoActividadEconomicaParaDgt((string) $ractCode);
         }
 
         if ($cliente->correo) {
@@ -353,6 +470,14 @@ final class CostaRicaInvoiceFromVentaMapper
         }
         if ($cliente->telefono) {
             $receiver['phone'] = $this->telefonoCr($cliente->telefono);
+        }
+
+        // dgt-xml-generator siempre lee phone y email en el receptor (sin isset).
+        if (! isset($receiver['phone'])) {
+            $receiver['phone'] = $this->telefonoCr($empresa->telefono ?? '22222222');
+        }
+        if (! isset($receiver['email'])) {
+            $receiver['email'] = array_filter([$empresa->correo ?? null]);
         }
 
         return $receiver;
@@ -370,8 +495,14 @@ final class CostaRicaInvoiceFromVentaMapper
                 'province' => $loc['province'],
                 'canton' => $loc['canton'],
                 'district' => $loc['district'],
+                'neighborhood' => $this->textoBarrioUbicacionXml(
+                    (string) $empresa->getCustomConfigValue('facturacion_fe', 'emisor_barrio', ''),
+                    (string) ($empresa->direccion ?? '')
+                ),
                 'address_details' => $empresa->direccion ?? 'Costa Rica',
             ],
+            'phone' => $this->telefonoCr($empresa->telefono ?? '22222222'),
+            'email' => array_filter([$empresa->correo ?? null]),
         ];
     }
 
@@ -379,11 +510,6 @@ final class CostaRicaInvoiceFromVentaMapper
     {
         $raw = $empresa->getCustomConfigValue('facturacion_fe', 'cabys_default', null);
         $digits = preg_replace('/\D/', '', (string) $raw);
-        if (strlen($digits) === 13) {
-            return $digits;
-        }
-
-        $digits = preg_replace('/\D/', '', (string) ($empresa->cod_actividad_economica ?? ''));
 
         return strlen($digits) === 13 ? $digits : '';
     }
@@ -416,7 +542,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $cabys = $this->resolverCabysLinea($producto, $empresa);
         if (strlen($cabys) !== 13) {
             throw new InvalidArgumentException(
-                'Código CABYS inválido o faltante. Asigne CABYS en el producto, producto.codigo 13 dígitos, o CABYS por defecto en empresa (actividad económica / giro) o cabys_default.'
+                'Código CABYS inválido o faltante. Asigne CABYS en el producto o servicio, producto.codigo con 13 dígitos, o configure facturacion_fe.cabys_default (13 dígitos) si aplica.'
             );
         }
 
@@ -430,7 +556,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $totalLinea = round((float) $detalle->total, 5);
 
         $pct = (float) ($detalle->porcentaje_impuesto ?? 0);
-        [$ivaTarifaCode, $ivaNombre, $rate] = $this->tarifaIva($pct, $ivaMonto > 0);
+        [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $ivaMonto > 0);
 
         $tipoStr = strtolower((string) ($producto->tipo ?? ''));
         $tipoTx = str_contains($tipoStr, 'servic') ? '05' : '01';
@@ -452,7 +578,7 @@ final class CostaRicaInvoiceFromVentaMapper
         if ($ivaMonto > 0 && $rate > 0) {
             $line['taxes'] = [[
                 'tax_type' => '01',
-                'iva_type' => ['code' => $ivaTarifaCode, 'name' => $ivaNombre],
+                'iva_type' => $ivaTarifaCode,
                 'rate' => $rate,
                 'amount' => $ivaMonto,
             ]];
@@ -523,7 +649,7 @@ final class CostaRicaInvoiceFromVentaMapper
         if ($iva > 0) {
             $summary['taxes'] = [[
                 'tax_type' => '01',
-                'iva_type' => ['code' => '08', 'name' => 'Tarifa general 13%'],
+                'iva_type' => '08',
                 'rate' => 13.0,
                 'amount' => $iva,
             ]];

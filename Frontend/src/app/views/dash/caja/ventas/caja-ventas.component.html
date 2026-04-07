@@ -316,6 +316,18 @@
                 <p class="small text-muted text-break mb-2">Clave: {{ venta.codigo_generacion }}</p>
             }
 
+            @if (esFeCostaRica() && venta.codigo_generacion) {
+                <button type="button" (click)="imprimirDTEJSON(venta)" class="mb-2 btn btn-primary btn-block">
+                    Ver JSON (comprobante)
+                </button>
+                <button type="button" (click)="imprimirDTEPDF(venta)" class="mb-2 btn btn-primary btn-block">
+                    Ver PDF (resumen)
+                </button>
+                <button type="button" (click)="imprimirDTEXML(venta)" class="mb-3 btn btn-outline-secondary btn-block" title="Disponible si ya consultó el estado y Hacienda devolvió XML">
+                    Ver XML respuesta Hacienda
+                </button>
+            }
+
             @if (venta.sello_mh && !esFeCostaRica()) {
                 <button (click)="imprimirDTEJSON(venta)" class="mb-3 btn btn-primary btn-block">
                     Ver JSON

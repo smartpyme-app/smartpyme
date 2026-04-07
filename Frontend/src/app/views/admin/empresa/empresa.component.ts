@@ -16,9 +16,13 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import {
+    ContribuyenteActividadOption,
+    mapContribuyenteAeResponseToActividades,
+} from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
 import { mapCabysApiResponseToOptions, CabysSelectOption } from '@services/facturacion-electronica/cabys-hacienda.mapper';
 import { HaciendaCabysClientService } from '@services/facturacion-electronica/hacienda-cabys-client.service';
-import { Observable, Subject, of } from 'rxjs';
+import { Observable, Subject, of, forkJoin } from 'rxjs';
 import { map, debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
 
 @Component({
@@ -76,13 +80,27 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         }
     };
 
-    /** CABYS por defecto (CR): cod_actividad_economica = código 13 dígitos, giro = descripción oficial. */
-    cabysEmpresaInput$ = new Subject<string>();
-    cabysEmpresaItems$!: Observable<CabysSelectOption[]>;
-    cabysEmpresaLoading = false;
-    cabysEmpresaSeleccionado: CabysSelectOption | null = null;
+    /** Actividad económica CR: datos de /fe/ae (contribuyente), no CABYS. */
+    actividadesContribuyenteCr: ContribuyenteActividadOption[] = [];
+    actividadContribuyenteSeleccionada: ContribuyenteActividadOption | null = null;
+    contribuyenteCargandoCr = false;
+    private nitCrActividadesTimer: ReturnType<typeof setTimeout> | null = null;
 
-    readonly compareCabysEmpresa = (a: CabysSelectOption, b: CabysSelectOption): boolean => {
+    readonly compareActividadContribuyenteCr = (a: ContribuyenteActividadOption, b: ContribuyenteActividadOption): boolean => {
+        if (!a || !b) {
+            return false;
+        }
+
+        return this.normalizarCodigoActividadCr(a.codigo) === this.normalizarCodigoActividadCr(b.codigo);
+    };
+
+    /** CABYS por defecto (custom_empresa.facturacion_fe.cabys_default), solo CR. */
+    cabysDefaultInput$ = new Subject<string>();
+    cabysDefaultItems$!: Observable<CabysSelectOption[]>;
+    cabysDefaultLoading = false;
+    cabysDefaultSeleccionado: CabysSelectOption | null = null;
+
+    readonly compareCabysDefault = (a: CabysSelectOption, b: CabysSelectOption): boolean => {
         if (!a || !b) {
             return false;
         }
@@ -103,7 +121,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     ngOnInit() {
 
-        this.cabysEmpresaItems$ = this.cabysEmpresaInput$.pipe(
+        this.cabysDefaultItems$ = this.cabysDefaultInput$.pipe(
             debounceTime(400),
             distinctUntilChanged(),
             switchMap((term: string) => {
@@ -111,14 +129,14 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 if (t.length < 3) {
                     return of([]);
                 }
-                this.cabysEmpresaLoading = true;
+                this.cabysDefaultLoading = true;
                 this.cdr.markForCheck();
 
                 return this.haciendaCabys.getCabysByQuery(t, 20).pipe(
                     map((body) => mapCabysApiResponseToOptions(body)),
                     catchError(() => of([])),
                     finalize(() => {
-                        this.cabysEmpresaLoading = false;
+                        this.cabysDefaultLoading = false;
                         this.cdr.markForCheck();
                     }),
                 );
@@ -135,11 +153,17 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.loadAll();
         this.verificarAccesoPropina();
 
-        this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
-        this.municipios = JSON.parse(localStorage.getItem('municipios')!);
-        this.distritos = JSON.parse(localStorage.getItem('distritos')!);
-        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+        this.cargarArraysUbicacionDesdeStorage();
+        if (resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR) {
+            this.refrescarCatalogosUbicacionCr();
+        }
 
+        this.destroyRef.onDestroy(() => {
+            if (this.nitCrActividadesTimer !== null) {
+                clearTimeout(this.nitCrActividadesTimer);
+                this.nitCrActividadesTimer = null;
+            }
+        });
     }
 
     ngAfterViewInit() {
@@ -170,7 +194,13 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
             if (resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR) {
                 this.refreshEstadoCertificadoFeCr();
-                this.syncCabysEmpresaSeleccionDesdeEmpresa();
+                this.syncActividadContribuyenteCrDesdeEmpresa();
+                this.syncCabysDefaultDesdeConfig();
+                this.syncEmisorDistritoFeDesdeEmpresa();
+                const nitCr = String(this.empresa?.nit ?? '').replace(/\D/g, '');
+                if (nitCr.length >= 9 && nitCr.length <= 12) {
+                    this.cargarActividadesContribuyenteDesdeHacienda({ silenciosoSiNitInvalido: true });
+                }
             } else {
                 this.tieneCertificadoFeCr = false;
             }
@@ -206,7 +236,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
             this.initializeCustomConfig();
             if (resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR) {
-                this.syncCabysEmpresaSeleccionDesdeEmpresa();
+                this.syncActividadContribuyenteCrDesdeEmpresa();
+                this.syncCabysDefaultDesdeConfig();
             }
 
             let user: any = {};
@@ -246,9 +277,22 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         console.log(distrito);
         if (distrito) {
             this.empresa.cod_municipio = distrito.cod_municipio;
-            this.setMunicipio();
+            const mun = this.municipios.find(
+                (m: any) => m.cod == distrito.cod_municipio && m.cod_departamento == distrito.cod_departamento,
+            );
+            if (mun) {
+                this.empresa.municipio = mun.nombre;
+            }
             this.empresa.distrito = distrito.nombre;
             this.empresa.cod_distrito = distrito.cod;
+        }
+        if (this.esCostaRicaFe()) {
+            this.ensureFacturacionFeCr();
+            const digits = String(this.empresa.cod_distrito ?? '').replace(/\D/g, '');
+            if (digits.length === 5) {
+                this.customConfig.facturacion_fe.emisor_distrito = digits;
+            }
+            this.empresa.custom_empresa = this.customConfig;
         }
         this.cdr.markForCheck();
     }
@@ -481,7 +525,95 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         return resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR;
     }
 
-    onCabysEmpresaSelectChange(item: CabysSelectOption | null): void {
+    /** Cantones DGT filtrados por provincia (cod_departamento). */
+    public municipiosFiltradosCr(): any[] {
+        const c = this.empresa?.cod_departamento;
+        if (c === undefined || c === null || c === '') {
+            return [];
+        }
+        return (this.municipios || []).filter((m: any) => String(m.cod_departamento) === String(c));
+    }
+
+    /** Distritos INEC (5 dígitos) filtrados por provincia y cantón. */
+    public distritosFiltradosCr(): any[] {
+        const m = this.empresa?.cod_municipio;
+        const d = this.empresa?.cod_departamento;
+        if (
+            m === undefined || m === null || m === ''
+            || d === undefined || d === null || d === ''
+        ) {
+            return [];
+        }
+        return (this.distritos || []).filter(
+            (x: any) => String(x.cod_municipio) === String(m) && String(x.cod_departamento) === String(d),
+        );
+    }
+
+    private cargarArraysUbicacionDesdeStorage(): void {
+        this.departamentos = this.parseLocalStorageArray('departamentos');
+        this.municipios = this.parseLocalStorageArray('municipios');
+        this.distritos = this.parseLocalStorageArray('distritos');
+        this.actividad_economicas = this.parseLocalStorageArray('actividad_economicas');
+    }
+
+    private parseLocalStorageArray(key: string): any[] {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    /** Provincias/cantones/distritos desde JSON DGT (mismo formato que MH para selects). */
+    private refrescarCatalogosUbicacionCr(): void {
+        forkJoin({
+            dep: this.apiService.getAll('fe-cr/departamentos'),
+            mun: this.apiService.getAll('fe-cr/municipios'),
+            dis: this.apiService.getAll('fe-cr/distritos'),
+        })
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: ({ dep, mun, dis }) => {
+                    this.departamentos = dep;
+                    this.municipios = mun;
+                    this.distritos = dis;
+                    localStorage.setItem('departamentos', JSON.stringify(dep));
+                    localStorage.setItem('municipios', JSON.stringify(mun));
+                    localStorage.setItem('distritos', JSON.stringify(dis));
+                    this.cdr.markForCheck();
+                },
+                error: (e) => this.alertService.error(e),
+            });
+    }
+
+    private syncEmisorDistritoFeDesdeEmpresa(): void {
+        if (!this.esCostaRicaFe()) {
+            return;
+        }
+        this.ensureFacturacionFeCr();
+        const d = String(this.empresa?.cod_distrito ?? '').replace(/\D/g, '');
+        if (d.length === 5) {
+            this.customConfig.facturacion_fe.emisor_distrito = d;
+        }
+        this.cdr.markForCheck();
+    }
+
+    /** Costa Rica: tras editar el NIT, consulta actividades en Hacienda (debounce). */
+    onNitEmpresaChange(): void {
+        if (!this.esCostaRicaFe()) {
+            return;
+        }
+        if (this.nitCrActividadesTimer !== null) {
+            clearTimeout(this.nitCrActividadesTimer);
+        }
+        this.nitCrActividadesTimer = setTimeout(() => {
+            this.nitCrActividadesTimer = null;
+            this.cargarActividadesContribuyenteDesdeHacienda({ silenciosoSiNitInvalido: true });
+        }, 600);
+    }
+
+    onActividadContribuyenteCrChange(item: ContribuyenteActividadOption | null): void {
         if (item) {
             this.empresa.cod_actividad_economica = item.codigo;
             this.empresa.giro = item.descripcion;
@@ -492,19 +624,149 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.cdr.markForCheck();
     }
 
-    private syncCabysEmpresaSeleccionDesdeEmpresa(): void {
-        const raw = this.empresa?.cod_actividad_economica;
+    onFacturacionFeEmisorIdentificacionChange(): void {
+        this.ensureFacturacionFeCr();
+        this.empresa.custom_empresa = this.customConfig;
+        this.cdr.markForCheck();
+    }
+
+    onCabysDefaultSelectChange(item: CabysSelectOption | null): void {
+        this.ensureFacturacionFeCr();
+        if (item) {
+            this.customConfig.facturacion_fe.cabys_default = item.codigo;
+            this.customConfig.facturacion_fe.cabys_default_descripcion = item.descripcion;
+        } else {
+            delete this.customConfig.facturacion_fe.cabys_default;
+            delete this.customConfig.facturacion_fe.cabys_default_descripcion;
+        }
+        this.empresa.custom_empresa = this.customConfig;
+        this.cdr.markForCheck();
+    }
+
+    private ensureFacturacionFeCr(): void {
+        if (
+            !this.customConfig.facturacion_fe ||
+            typeof this.customConfig.facturacion_fe !== 'object' ||
+            Array.isArray(this.customConfig.facturacion_fe)
+        ) {
+            this.customConfig.facturacion_fe = {};
+        }
+    }
+
+    private syncCabysDefaultDesdeConfig(): void {
+        if (resolveCodigoPaisFe(this.empresa) !== FE_PAIS_CR) {
+            return;
+        }
+        this.ensureFacturacionFeCr();
+        const raw = this.customConfig.facturacion_fe.cabys_default;
         const digits = raw != null && raw !== '' ? String(raw).replace(/\D/g, '') : '';
         if (digits.length === 13) {
-            const desc = String(this.empresa?.giro ?? '').trim();
-            this.cabysEmpresaSeleccionado = {
+            const desc = String(this.customConfig.facturacion_fe.cabys_default_descripcion ?? '').trim();
+            this.cabysDefaultSeleccionado = {
                 codigo: digits,
                 descripcion: desc,
-                label: desc ? `${digits} — ${desc}` : digits,
+                label: desc !== '' ? `${digits} — ${desc}` : digits,
             };
         } else {
-            this.cabysEmpresaSeleccionado = null;
+            this.cabysDefaultSeleccionado = null;
         }
+        this.cdr.markForCheck();
+    }
+
+    cargarActividadesContribuyenteDesdeHacienda(opciones?: { silenciosoSiNitInvalido?: boolean }): void {
+        const nit = String(this.empresa?.nit ?? '').replace(/\D/g, '');
+        if (nit.length < 9 || nit.length > 12) {
+            if (!opciones?.silenciosoSiNitInvalido) {
+                this.alertService.warning(
+                    'Identificación',
+                    'Ingrese un NIT o cédula jurídica válida (9 a 12 dígitos) en el campo NIT de la empresa.',
+                );
+            }
+
+            return;
+        }
+
+        this.contribuyenteCargandoCr = true;
+        this.cdr.markForCheck();
+        this.apiService
+            .getAll('fe-cr/contribuyente', { identificacion: nit })
+            .pipe(
+                this.untilDestroyed(),
+                finalize(() => {
+                    this.contribuyenteCargandoCr = false;
+                    this.cdr.markForCheck();
+                }),
+            )
+            .subscribe({
+                next: (body) => {
+                    const list = mapContribuyenteAeResponseToActividades(body);
+                    const sel = this.actividadContribuyenteSeleccionada;
+                    let merged = list;
+                    if (sel?.codigo) {
+                        if (list.length > 0 && !list.some((a) => this.compareActividadContribuyenteCr(a, sel))) {
+                            merged = [sel, ...list];
+                        }
+                        if (list.length === 0) {
+                            merged = [sel];
+                        }
+                    }
+                    this.actividadesContribuyenteCr = merged;
+                    if (list.length === 0) {
+                        this.alertService.warning(
+                            'Hacienda',
+                            'No se encontraron actividades económicas para esta identificación. Verifique el NIT o intente más tarde.',
+                        );
+                    }
+                    this.reconciliarSeleccionActividadContribuyenteCr();
+                },
+                error: (e) => this.alertService.error(e),
+            });
+    }
+
+    private normalizarCodigoActividadCr(codigo: string): string {
+        return String(codigo ?? '').replace(/\D/g, '');
+    }
+
+    private reconciliarSeleccionActividadContribuyenteCr(): void {
+        const sel = this.actividadContribuyenteSeleccionada;
+        if (!sel?.codigo) {
+            return;
+        }
+        const hit = this.actividadesContribuyenteCr.find((a) => this.compareActividadContribuyenteCr(a, sel));
+        if (hit) {
+            this.actividadContribuyenteSeleccionada = hit;
+            this.onActividadContribuyenteCrChange(hit);
+        }
+        this.cdr.markForCheck();
+    }
+
+    private syncActividadContribuyenteCrDesdeEmpresa(): void {
+        const rawCod = String(this.empresa?.cod_actividad_economica ?? '').trim();
+        const desc = String(this.empresa?.giro ?? '').trim();
+        const soloDigitos = rawCod.replace(/\D/g, '');
+        if (soloDigitos.length === 13) {
+            this.actividadContribuyenteSeleccionada = null;
+            this.actividadesContribuyenteCr = [];
+            this.cdr.markForCheck();
+
+            return;
+        }
+        if (rawCod === '' && desc === '') {
+            this.actividadContribuyenteSeleccionada = null;
+            this.cdr.markForCheck();
+
+            return;
+        }
+        const synthetic: ContribuyenteActividadOption = {
+            codigo: rawCod,
+            descripcion: desc,
+            label: desc !== '' ? `${rawCod} — ${desc}` : rawCod,
+        };
+        this.actividadContribuyenteSeleccionada = synthetic;
+        if (!this.actividadesContribuyenteCr.some((a) => this.compareActividadContribuyenteCr(a, synthetic))) {
+            this.actividadesContribuyenteCr = [synthetic, ...this.actividadesContribuyenteCr];
+        }
+        this.reconciliarSeleccionActividadContribuyenteCr();
         this.cdr.markForCheck();
     }
 
@@ -1429,6 +1691,13 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
         if (! this.customConfig.facturacion_fe || typeof this.customConfig.facturacion_fe !== 'object' || Array.isArray(this.customConfig.facturacion_fe)) {
             this.customConfig.facturacion_fe = {};
+        }
+
+        if (resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR) {
+            const fe = this.customConfig.facturacion_fe as Record<string, unknown>;
+            if (fe['emisor_tipo_identificacion'] === undefined || fe['emisor_tipo_identificacion'] === null || fe['emisor_tipo_identificacion'] === '') {
+                fe['emisor_tipo_identificacion'] = '02';
+            }
         }
     }
 

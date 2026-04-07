@@ -585,7 +585,15 @@
         <div class="d-grid">
 
             @if (esFeCostaRica() && venta.codigo_generacion) {
-                <p class="small text-muted text-break mb-2"><strong>Clave:</strong> {{ venta.codigo_generacion }}</p>
+                <button type="button" (click)="imprimirDTEJSON(venta)" class="mb-2 btn btn-primary btn-block">
+                    Ver JSON (comprobante)
+                </button>
+                <button type="button" (click)="imprimirDTEPDF(venta)" class="mb-2 btn btn-primary btn-block">
+                    Ver PDF (resumen)
+                </button>
+                <button type="button" (click)="imprimirDTEXML(venta)" class="mb-3 btn btn-outline-secondary btn-block" title="Disponible si ya consultó el estado y Hacienda devolvió XML">
+                    Ver XML respuesta Hacienda
+                </button>
             }
 
             @if (venta.sello_mh && !esFeCostaRica()) {
@@ -659,6 +667,15 @@
                         <span> — Pendiente o no aceptada; consulte estado.</span>
                     }
                 </p>
+                <button type="button" (click)="imprimirDTEJSON(venta, '02')" class="mb-2 btn btn-sm btn-outline-primary w-100">
+                    Ver JSON nota de débito
+                </button>
+                <button type="button" (click)="imprimirDTEPDF(venta, '02')" class="mb-2 btn btn-sm btn-outline-primary w-100">
+                    Ver PDF nota de débito
+                </button>
+                <button type="button" (click)="imprimirDTEXML(venta, '02')" class="mb-3 btn btn-sm btn-outline-secondary w-100">
+                    Ver XML nota de débito (Hacienda)
+                </button>
             }
 
             @if (!venta?.sello_mh && !(esFeCostaRica() && venta.codigo_generacion)) {

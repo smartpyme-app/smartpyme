@@ -69,7 +69,7 @@ class FacturacionElectronicaHelperService
     public function obtenerCodigoGeneracion(Venta $venta): string
     {
         if ($this->tieneFacturacionElectronica()) {
-            if ($this->ventaFeCrAceptada($venta) && ! empty($venta->codigo_generacion)) {
+            if ($this->ventaFeCrConClave($venta)) {
                 return (string) $venta->codigo_generacion;
             }
             if ($venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
@@ -88,7 +88,7 @@ class FacturacionElectronicaHelperService
     public function obtenerNumeroControl(Venta $venta): string
     {
         if ($this->tieneFacturacionElectronica()) {
-            if ($this->ventaFeCrAceptada($venta) && ! empty($venta->codigo_generacion)) {
+            if ($this->ventaFeCrConClave($venta)) {
                 return (string) $venta->codigo_generacion;
             }
             if ($venta->sello_mh && isset($venta->dte['identificacion']['numeroControl'])) {
@@ -128,11 +128,25 @@ class FacturacionElectronicaHelperService
 
     private function ventaTieneComprobanteElectronicoValido(Venta $venta): bool
     {
+        if ($this->ventaFeCrConClave($venta)) {
+            return true;
+        }
+
         if ($this->ventaFeCrAceptada($venta)) {
             return true;
         }
 
         return ! empty($venta->sello_mh);
+    }
+
+    /** FE CR: clave y sello_mh se guardan al emitir (como correlativo “sellado” en la práctica). */
+    private function ventaFeCrConClave(Venta $venta): bool
+    {
+        $dte = $venta->dte;
+
+        return is_array($dte)
+            && ($dte['pais'] ?? null) === 'CR'
+            && trim((string) ($venta->codigo_generacion ?? '')) !== '';
     }
 
     private function ventaFeCrAceptada(Venta $venta): bool
