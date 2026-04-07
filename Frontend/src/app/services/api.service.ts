@@ -405,6 +405,21 @@ export class ApiService {
         return false;
     }
 
+    /** Empresa activó bloquear facturar/editar/gestionar cotizaciones para vendedores (Mi cuenta). */
+    empresaBloqueaCotizacionesVendedores(): boolean {
+        const u = this.auth_user();
+        const cfg = u?.empresa?.custom_empresa?.configuraciones as { bloquear_cotizaciones_vendedores?: boolean } | undefined;
+        return cfg?.bloquear_cotizaciones_vendedores === true;
+    }
+
+    /**
+     * Bloqueos de UI/API extra (facturar cotización desde menú, editar, detalles, cambiar estado): rol Ventas + opción empresa.
+     * El listado solo cotizaciones propias usa isVentas() y no depende de esta opción.
+     */
+    restriccionesCotizacionesVendedoresActivas(): boolean {
+        return this.isVentas() && this.empresaBloqueaCotizacionesVendedores();
+    }
+
     private loadConstants() {
         this.http.get<any>(this.apiUrl + 'constants').subscribe(
           (constants) => {

@@ -1127,8 +1127,10 @@ export class FacturacionCompraComponent implements OnInit {
             errores.push('Tipo');
         }
         
-        if (!this.nuevoProducto.costo || this.nuevoProducto.costo <= 0) {
-            errores.push('Costo');
+        if (!this.apiService.isSupervisorLimitado()) {
+            if (!this.nuevoProducto.costo || this.nuevoProducto.costo <= 0) {
+                errores.push('Costo');
+            }
         }
         
         if (!this.nuevoProducto.id_categoria || this.nuevoProducto.id_categoria === '') {
@@ -1142,14 +1144,19 @@ export class FacturacionCompraComponent implements OnInit {
 
         this.creandoProducto = true;
 
+        const precioNum = parseFloat(this.nuevoProducto.precio) || 0;
+        const costoNum = this.apiService.isSupervisorLimitado()
+            ? precioNum
+            : parseFloat(this.nuevoProducto.costo);
+
         // Preparar datos para el backend
         const datosProducto = {
             nombre: this.nuevoProducto.nombre,
             tipo: this.nuevoProducto.tipo,
             codigo: this.nuevoProducto.codigo || null,
             cod_proveed_prod: this.nuevoProducto.cod_proveed_prod || null,
-            costo: parseFloat(this.nuevoProducto.costo),
-            precio: parseFloat(this.nuevoProducto.precio) || parseFloat(this.nuevoProducto.costo),
+            costo: costoNum,
+            precio: precioNum || costoNum,
             marca: this.nuevoProducto.marca || null,
             stock: this.nuevoProducto.stock || 0,
             descripcion: this.nuevoProducto.descripcion || null,

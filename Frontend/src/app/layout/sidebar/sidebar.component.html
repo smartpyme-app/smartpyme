@@ -82,7 +82,7 @@
     
                 </div>
              </li>
-            <li class="mb-1" *ngIf="authUser?.tipo != 'Supervisor Limitado'">
+            <li class="mb-1">
                 <button (click)="toggleCompras()" tooltip="Compras" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!comprasIsCollapsed" aria-controls="collapseBasic">
                     <img src="/assets/icons/log-in.png" class="icon me-2">Compras
                 </button>

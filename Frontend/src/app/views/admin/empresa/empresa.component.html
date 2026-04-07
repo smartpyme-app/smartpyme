@@ -403,6 +403,25 @@
                         </div>
                     </div>
 
+                    <div class="row" *ngIf="apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Super Admin'">
+                        <h4 class="mb-0 fw-bold">Cotizaciones y vendedores</h4>
+                        <div class="form-group col-md-12 col-xl-8 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="bloquear_cotizaciones_vendedores" class="form-label">
+                                    <strong>Bloquear a vendedores facturar y gestionar cotizaciones</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="bloquear_cotizaciones_vendedores"
+                                    [checked]="isBloquearCotizacionesVendedoresEnabled()"
+                                    (change)="toggleBloquearCotizacionesVendedores()"
+                                    name="bloquear_cotizaciones_vendedores">
+                            </div>
+                            <small class="text-muted d-block">
+                                Los usuarios Ventas o Ventas limitado siempre ven solo sus cotizaciones en el listado (como en ventas). Si activa esta opción, además no podrán facturar, editar, ver detalles ni cambiar el estado de las cotizaciones; solo imprimir.
+                            </small>
+                        </div>
+                    </div>
+
                     <div class="row" *ngIf="empresa.mostrar_sello_firma || empresa.mostrar_sello_firma_cotizacion">
                         <div class="col-md-6 mb-4">
                             <h6 class="mb-3">Subir sello</h6>

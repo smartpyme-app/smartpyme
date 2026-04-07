@@ -400,8 +400,7 @@ export class FacturacionComponent implements OnInit {
       this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
       this.route.snapshot.queryParamMap.get('id_venta')!
     ) {
-      const tipoUv = this.apiService.auth_user()?.tipo;
-      if (tipoUv === 'Ventas' || tipoUv === 'Ventas Limitado') {
+      if (this.apiService.restriccionesCotizacionesVendedoresActivas()) {
         this.alertService.error('No tiene permiso para facturar cotizaciones.');
         this.router.navigate(['/cotizaciones']);
       } else {
