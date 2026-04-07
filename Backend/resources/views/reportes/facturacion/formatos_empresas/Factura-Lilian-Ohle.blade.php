@@ -195,9 +195,49 @@
 
 </head>
 <body>
-<body>  
 
     <section id="factura">
+        @php
+            $corr = str_pad((string) $venta->correlativo, 8, '0', STR_PAD_LEFT);
+            $prefPorSucursalJson = data_get($empresa->custom_empresa, 'configuraciones.prefijo_factura_lilian_ohle_por_sucursal', []);
+            $prefPorSucursal = is_array($prefPorSucursalJson) ? $prefPorSucursalJson : [];
+            $idSucVenta = $venta->id_sucursal;
+            $prefFijoSucursal = null;
+            if ($idSucVenta !== null) {
+                $prefFijoSucursal = $prefPorSucursal[(string) $idSucVenta] ?? $prefPorSucursal[$idSucVenta] ?? null;
+            }
+            if ($prefFijoSucursal !== null && trim((string) $prefFijoSucursal) !== '') {
+                $numFacturaDisplay = trim((string) $prefFijoSucursal).' '.$corr;
+            } else {
+                $prefDoc = trim((string) ($documento->prefijo ?? ''));
+                $numFacturaDisplay = $prefDoc !== '' ? $prefDoc.' '.$corr : '000-003-01- '.$corr;
+            }
+            $cai = data_get($empresa->custom_empresa, 'configuraciones.factura_cai') ?: ($documento->resolucion ?? null);
+            $rangoAuth = data_get($empresa->custom_empresa, 'configuraciones.factura_rango_autorizado') ?: ($documento->rangos ?? null);
+            $fechaLimiteCai = data_get($empresa->custom_empresa, 'configuraciones.factura_fecha_limite');
+            if ($fechaLimiteCai) {
+                try {
+                    $fechaLimiteFmt = \Carbon\Carbon::parse($fechaLimiteCai)->format('d/m/Y');
+                } catch (\Throwable $e) {
+                    $fechaLimiteFmt = $fechaLimiteCai;
+                }
+            } else {
+                $fechaLimiteFmt = !empty($documento->fecha)
+                    ? \Carbon\Carbon::parse($documento->fecha)->format('d/m/Y')
+                    : '';
+            }
+            $cuentaCondiciones = trim((string) data_get($empresa->custom_empresa, 'configuraciones.factura_condiciones_cuenta_banco', ''));
+            $sucursalVenta = $venta->sucursal ?? $venta->sucursal()->first();
+            $telefonoFactura = ($sucursalVenta && trim((string) ($sucursalVenta->telefono ?? '')) !== '')
+                ? $sucursalVenta->telefono
+                : ($empresa->telefono ?? null);
+            $direccionFactura = ($sucursalVenta && trim((string) ($sucursalVenta->direccion ?? '')) !== '')
+                ? $sucursalVenta->direccion
+                : ($empresa->direccion ?? null);
+            $correoFactura = ($sucursalVenta && trim((string) ($sucursalVenta->correo ?? '')) !== '')
+                ? $sucursalVenta->correo
+                : ($empresa->correo ?? null);
+        @endphp
         <table id="header">
             <tbody style="border: 0px;">
                 <tr>
@@ -211,18 +251,18 @@
                 <tr>
                     <td>
                         <h2>{{ strtoupper($empresa->nombre) }}</h2>
-                        @if($empresa->direccion || $empresa->telefono || $empresa->email)
+                        @if($direccionFactura || $telefonoFactura || $correoFactura)
                         <br>
                         @if($empresa->nit)<h3><b>RTN: {{ $empresa->nit }}</b></h3>@endif
-                        @if($empresa->direccion)<p style="margin: 0px;">{{ $empresa->direccion }}</p>@endif
-                        @if($empresa->telefono)<p style="margin: 0px;">Teléfono: {{ $empresa->telefono }}</p>@endif
-                        @if($empresa->email)<p style="margin: 0px;">E-mail: {{ $empresa->email }}</p>@endif
+                        @if($direccionFactura)<p style="margin: 0px;">{{ $direccionFactura }}</p>@endif
+                        @if($telefonoFactura)<p style="margin: 0px;">Teléfono: {{ $telefonoFactura }}</p>@endif
+                        @if($correoFactura)<p style="margin: 0px;">E-mail: {{ $correoFactura }}</p>@endif
                         @endif
                         <p style="margin-top: 5px;"><b>Cliente: </b> {{ $venta->nombre_cliente }}</p>
                         <p><b>Dirección: </b> {{ $venta->id_cliente ? $cliente->direccion : '' }}</p>
                     </td>
                     <td>
-                        <h1 style="color: red; font-size: 1.2em;">000-002-01- {{ str_pad($venta->correlativo, 8, '0', STR_PAD_LEFT)}}</h1>
+                        <h1 style="color: red; font-size: 1.2em;">{{ $numFacturaDisplay }}</h1>
                         <br>
                         <p><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
                         <p><b>ID Cliente:</b> {{ $venta->cliente ? $venta->cliente->codigo_cliente : '' }}</p>
@@ -312,7 +352,7 @@
             </tbody>
             <tfoot style="display: table-row-group; page-break-inside: avoid;">
                 <tr>
-                    <td colspan="5"><span style="font-size: 12px;">Original: Cliente &nbsp;&nbsp;&nbsp; Copia: Emisor</span></td>
+                    <td colspan="5"><span style="font-size: 11px;">Original: Cliente &nbsp;&nbsp; Copia: Emisor &nbsp;&nbsp; 2da Copia: Contabilidad &nbsp;&nbsp; 3ra Copia: Expediente Cliente</span></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Exento:</td>
                     <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
                 </tr>
@@ -378,9 +418,26 @@
             </tr>
         </table>
 
+        @if (!empty($documento->nota))
+            <div style="font-size: 13px; text-align: justify; margin-top: 16px; line-height: 1.35;">
+                {!! nl2br(e($documento->nota)) !!}
+            </div>
+        @endif
+        <div style="font-size: 13px; text-align: center; margin-top: 14px; line-height: 1.4;">
+            @if ($cai)
+                <p style="margin: 4px 0;"><strong>CAI:</strong> {{ $cai }}</p>
+            @endif
+            @if ($rangoAuth)
+                <p style="margin: 4px 0;"><strong>RANGO AUTORIZADO:</strong> {{ $rangoAuth }}</p>
+            @endif
+            @if ($fechaLimiteFmt)
+                <p style="margin: 4px 0;"><strong>FECHA LÍMITE DE EMISIÓN:</strong> {{ $fechaLimiteFmt }}</p>
+            @endif
+        </div>
+
         <h3 style="text-align: center; margin-top: 30px;">
-            ¡Gracias por su Compra! <br>
-            La Factura es Beneficio de Todos, "EXIJALA"
+        ¡Gracias por su Compra! <br>
+        La Factura es Beneficio de Todos, "EXIJALA"
         </h3>
     </section>
 
