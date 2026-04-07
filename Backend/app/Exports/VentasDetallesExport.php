@@ -21,10 +21,21 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
     /** @var bool */
     protected $incluirPaquetes = false;
 
+    /** @var int|null Empresa para filtrar (sesión o reportes automáticos vía request). */
+    protected ?int $idEmpresaFiltro = null;
+
     public function filter(Request $request)
     {
         $this->request = $request;
-        $empresa = Empresa::find(Auth::user()->id_empresa);
+        if (auth()->check()) {
+            $this->idEmpresaFiltro = (int) auth()->user()->id_empresa;
+        } elseif ($request->filled('id_empresa')) {
+            $this->idEmpresaFiltro = (int) $request->id_empresa;
+        } else {
+            $this->idEmpresaFiltro = null;
+        }
+
+        $empresa = $this->idEmpresaFiltro ? Empresa::find($this->idEmpresaFiltro) : null;
         $this->incluirPaquetes = $empresa && !empty($empresa->modulo_paquetes);
     }
 
@@ -75,6 +86,12 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
     {
         $request = $this->request;
 
+        $columnasOrdenPermitidas = ['id', 'fecha', 'correlativo', 'total', 'estado', 'created_at', 'num_identificacion'];
+        $orden = in_array($request->orden ?? '', $columnasOrdenPermitidas, true) ? $request->orden : 'fecha';
+        $direccion = in_array(strtolower((string) ($request->direccion ?? '')), ['asc', 'desc'], true)
+            ? strtolower($request->direccion)
+            : 'desc';
+
         $detallesQuery = Detalle::query();
         if ($this->incluirPaquetes) {
             // Incluir paquetes soft-deleted (p. ej. tras anulación o reprocesos) para conservar WR/guía en el reporte
@@ -83,8 +100,16 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             }]);
         }
 
-        $detalles = $detallesQuery->whereHas('venta', function($query) use ($request) {
-                              $query->when($request->inicio, function ($query) use ($request) {
+        $idEmpresa = $this->idEmpresaFiltro;
+
+        $detalles = $detallesQuery->whereHas('venta', function ($query) use ($request, $orden, $direccion, $idEmpresa) {
+                              $query->when($idEmpresa !== null, function ($q) use ($idEmpresa) {
+                                  $q->where('ventas.id_empresa', $idEmpresa);
+                              })
+                                ->when(!empty($request->sucursales) && is_array($request->sucursales), function ($q) use ($request) {
+                                    $q->whereIn('ventas.id_sucursal', $request->sucursales);
+                                })
+                                ->when($request->inicio, function ($query) use ($request) {
                                     return $query->where('fecha', '>=', $request->inicio);
                                 })
                                 ->when($request->fin, function ($query) use ($request) {
@@ -169,7 +194,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
                                             ->orWhere('forma_pago', 'like', $buscador);
                                     });
                                 })
-                                ->orderBy($request->orden, $request->direccion)
+                                ->orderBy($orden, $direccion)
                                 ->orderBy('id', 'desc');
                             })->get();
 
@@ -264,7 +289,10 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             return $paquete;
         }
 
-        $empresaId = Auth::user()->id_empresa;
+        $empresaId = $this->idEmpresaFiltro ?? (auth()->check() ? (int) auth()->user()->id_empresa : null);
+        if ($empresaId === null) {
+            return null;
+        }
         $porVenta = Paquete::withTrashed()
             ->where('id_empresa', $empresaId)
             ->where('id_venta', $venta->id)
