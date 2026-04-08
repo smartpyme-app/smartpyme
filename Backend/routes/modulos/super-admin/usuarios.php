@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\SuperAdmin\UsuariosController;
 
+    Route::get('/admin-usuarios/exportar',       [UsuariosController::class, 'export']);
     Route::get('/admin-usuarios',                 [UsuariosController::class, 'index']);
     Route::get('/admin-usuarios/list-vendedores', [UsuariosController::class, 'listVendedores']);
     Route::get('/admin-usuarios/list',            [UsuariosController::class, 'list']);

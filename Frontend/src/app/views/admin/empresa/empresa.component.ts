@@ -1146,9 +1146,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
                 estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
                 sku_correlativo_automatico: false, // SKU correlativo automático al crear productos
-                cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
-                cotizacion_mostrar_imagenes_productos: false, // Mostrar imágenes de productos en cotizaciones
-                bloquear_cotizaciones_vendedores: false // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
+                bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
             },
             campos_personalizados: {}
         };
@@ -1301,20 +1299,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.updateCamposContables(!currentValue);
     }
 
-    public isCotizacionMostrarDescripcionEnabled(): boolean {
-        return this.getCustomConfig('configuraciones', 'cotizacion_mostrar_descripcion', true);
-    }
-
-    public updateCotizacionMostrarDescripcion(enabled: boolean) {
-        this.addCustomConfig('configuraciones', 'cotizacion_mostrar_descripcion', enabled);
-        this.onSubmit().then(() => {
-            this.alertService.success(
-                'Configuración actualizada',
-                `Mostrar descripción en cotizaciones ${enabled ? 'activado' : 'desactivado'} correctamente`
-            );
-        });
-    }
-
     public isBloquearCotizacionesVendedoresEnabled(): boolean {
         return this.getCustomConfig('configuraciones', 'bloquear_cotizaciones_vendedores', false);
     }
@@ -1329,28 +1313,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                     : 'Restricciones de cotizaciones para vendedores desactivadas.'
             );
         });
-    }
-
-    public toggleCotizacionMostrarDescripcion() {
-        this.updateCotizacionMostrarDescripcion(!this.isCotizacionMostrarDescripcionEnabled());
-    }
-
-    public isCotizacionMostrarImagenesProductosEnabled(): boolean {
-        return this.getCustomConfig('configuraciones', 'cotizacion_mostrar_imagenes_productos', false);
-    }
-
-    public updateCotizacionMostrarImagenesProductos(enabled: boolean) {
-        this.addCustomConfig('configuraciones', 'cotizacion_mostrar_imagenes_productos', enabled);
-        this.onSubmit().then(() => {
-            this.alertService.success(
-                'Configuración actualizada',
-                `Imágenes de productos en cotizaciones ${enabled ? 'activadas' : 'desactivadas'} correctamente`
-            );
-        });
-    }
-
-    public toggleCotizacionMostrarImagenesProductos() {
-        this.updateCotizacionMostrarImagenesProductos(!this.isCotizacionMostrarImagenesProductosEnabled());
     }
 
     public toggleBloquearCotizacionesVendedores() {

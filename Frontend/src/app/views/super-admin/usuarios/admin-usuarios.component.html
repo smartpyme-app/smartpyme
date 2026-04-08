@@ -12,7 +12,12 @@
         </div>
 
         <div class="col">
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-default" placement="bottom"
+                    [tooltip]="downloading ? 'Generando archivo...' : 'Descargar Excel (respeta filtros actuales)'"
+                    (click)="descargarUsuarios()" [disabled]="downloading">
+                    <i class="fa fa-download"></i>
+                </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="loadAll()" autocomplete="off">
                     <div class="input-group">
                         <div class="input-group-text bg-white border-end-0">
