@@ -257,6 +257,19 @@ export class ApiService {
     return JSON.parse(localStorage.getItem('SP_auth_user')!);
   }
 
+  /** Indica si la empresa tiene activo el módulo de bancos (cuentas vinculadas a formas de pago). */
+  isModuloBancos(): boolean {
+    const empresa = this.auth_user()?.empresa;
+    if (!empresa || !empresa.custom_empresa) {
+      return false;
+    }
+    const customConfig =
+      typeof empresa.custom_empresa === 'string'
+        ? JSON.parse(empresa.custom_empresa)
+        : empresa.custom_empresa;
+    return customConfig?.configuraciones?.modulo_bancos === true;
+  }
+
   getCurrencySymbol(): string {
     try {
       const empresa = this.auth_user()?.empresa;

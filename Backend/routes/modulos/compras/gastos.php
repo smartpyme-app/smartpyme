@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Route;
 
     Route::post('/gastos/dash',         [GastosController::class, 'dash']);
 
+    Route::post('/gastos/importar-json', [GastosController::class, 'importarJson']);
+    Route::get('/gastos/nums-ids', [GastosController::class, 'getNumerosIdentificacion']);
+
     Route::get('/gastos/categorias',    [CategoriasController::class, 'index']);
     Route::get('/gastos/categorias/list',    [CategoriasController::class, 'list']);
     Route::post('/gastos/categoria',    [CategoriasController::class, 'store']);

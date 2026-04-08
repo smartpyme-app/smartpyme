@@ -1,6 +1,5 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Location } from '@angular/common';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -19,8 +18,7 @@ export class GastoDetallesComponent implements OnInit {
 
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
-	    private location: Location
+	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
 	) { }
 
 	ngOnInit() {
@@ -28,6 +26,9 @@ export class GastoDetallesComponent implements OnInit {
     }
 
     public loadAll(){
+        if(this.modalRef){
+            this.modalRef.hide();
+        }
         this.route.params.subscribe((params:any) => {
             if (params.id) {
                 this.loading = true;
@@ -43,8 +44,15 @@ export class GastoDetallesComponent implements OnInit {
         });
     }
 
-    public goBack() {
-        this.location.back();
+    public openAbono(template: TemplateRef<any>, gasto:any){
+        this.gasto = gasto;
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public setEstado(abono: any){
+        this.apiService.store('gasto/abono', abono).subscribe(abono => {
+            this.loadAll();
+        }, error => {this.alertService.error(error); });
     }
 
 }
