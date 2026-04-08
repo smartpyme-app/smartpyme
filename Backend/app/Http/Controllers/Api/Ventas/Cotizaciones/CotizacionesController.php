@@ -21,6 +21,26 @@ use Maatwebsite\Excel\Facades\Excel;
 class CotizacionesController extends Controller
 {
     /**
+     * Preferencias de cotización desde custom_empresa (PDF).
+     */
+    private function cotizacionPdfViewData(Cotizacion $venta): array
+    {
+        $custom = ($venta->empresa && is_array($venta->empresa->custom_empresa))
+            ? $venta->empresa->custom_empresa
+            : [];
+        $cfg = isset($custom['configuraciones']) && is_array($custom['configuraciones'])
+            ? $custom['configuraciones']
+            : [];
+
+        return [
+            'cotizacion_mostrar_descripcion' => array_key_exists('cotizacion_mostrar_descripcion', $cfg)
+                ? (bool) $cfg['cotizacion_mostrar_descripcion']
+                : true,
+            'cotizacion_mostrar_imagenes_productos' => !empty($cfg['cotizacion_mostrar_imagenes_productos']),
+        ];
+    }
+
+    /**
      * Usuario con rol Ventas / Ventas Limitado (listado y export: solo cotizaciones propias, como en ventas).
      */
     private function esUsuarioRolVentasCotizaciones(): bool
@@ -289,23 +309,29 @@ class CotizacionesController extends Controller
     }
 
     public function generarDoc($id){
-        $venta = Cotizacion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
+        $venta = Cotizacion::where('id', $id)->with([
+            'detalles.producto',
+            'cliente',
+            'empresa.currency',
+        ])->firstOrFail();
 
         if ($this->esUsuarioRolVentasCotizaciones() && (int) $venta->id_usuario !== (int) Auth::id()) {
             abort(403, 'No autorizado');
         }
 
+        $pdfData = array_merge(compact('venta'), $this->cotizacionPdfViewData($venta));
+
         if(Auth::user()->id_empresa == 420){ //420
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.cotizacion-inversiones-andre', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.cotizacion-inversiones-andre', $pdfData);
             $pdf->setPaper('US Letter', 'portrait');
         }elseif(Auth::user()->id_empresa == 498){ //13
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.cotizacion-grupo-split', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.cotizacion-grupo-split', $pdfData);
             $pdf->setPaper('US Letter', 'portrait');
         }elseif(Auth::user()->id_empresa == 2){ //2 Super Admin
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.cotizacion-smartpyme', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.cotizacion-smartpyme', $pdfData);
             $pdf->setPaper('US Letter', 'portrait');
         }else{
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.cotizacion', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.cotizacion', $pdfData);
             $pdf->setPaper('US Letter', 'portrait');
         }
         return $pdf->stream('cotizacion-' . $venta->id . '.pdf');
