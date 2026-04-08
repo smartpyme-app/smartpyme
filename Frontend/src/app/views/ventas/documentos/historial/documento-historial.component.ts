@@ -8,6 +8,7 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { documentoNombreOpciones, DocumentoNombreOption } from '../documento-nombre-options';
 
 @Component({
     selector: 'app-documento-historial',
@@ -26,6 +27,10 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
         direccion: 'desc'
     };
     public sucursales: any = [];
+
+    opcionesNombreDocumento(): DocumentoNombreOption[] {
+        return documentoNombreOpciones(this.apiService.auth_user()?.empresa);
+    }
 
     constructor(
         private route: ActivatedRoute,
