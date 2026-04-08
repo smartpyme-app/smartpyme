@@ -32,6 +32,8 @@ export class AdminUsuariosComponent implements OnInit {
 
 	ngOnInit() {
         this.filtros.id_empresa = '';
+        this.filtros.id_sucursal = '';
+        this.filtros.tipo = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
@@ -43,16 +45,26 @@ export class AdminUsuariosComponent implements OnInit {
         this.apiService.getAll('empresas/list').subscribe(empresas => { 
             this.empresas = empresas;
         }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('sucursales/list').subscribe((sucursales) => {
+            this.sucursalesList = sucursales;
+        }, (error) => { this.alertService.error(error); });
     }
 
-    public loadAll(){
+    public loadAll(closeFilterModal = false) {
         this.loading = true;        
         this.apiService.getAll('admin-usuarios', this.filtros).subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.loading = false;
+            if (closeFilterModal) {
+                this.modalRef?.hide();
+            }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
+    openFilterModal(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+    }
 
     openModal(template: TemplateRef<any>, usuario:any) {
         this.usuario = usuario;

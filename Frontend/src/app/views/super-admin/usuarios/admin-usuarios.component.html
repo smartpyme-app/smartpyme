@@ -21,7 +21,7 @@
                         <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                     </div>
                 </form>
-                <button tooltip="Filtrar (F3)" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button>
+                <button type="button" tooltip="Filtrar (F3)" (click)="openFilterModal(mfilter)" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button>
             </div>
         </div>
     </div>
@@ -151,12 +151,18 @@
                 <select name="tipo" [(ngModel)]="usuario.tipo" class="form-control form-select">
                     <option value="Administrador">Administrador</option>
                     <option value="Supervisor">Supervisor</option>
+                    <option value="Supervisor Limitado">Supervisor Limitado</option>
                     <option value="Contador">Contador</option>
                     <option value="Citas">Citas</option>
                     <option value="Ventas">Ventas</option>
+                    <option value="Ventas Limitado">Ventas Limitado</option>
+                    <option value="Cajero">Cajero</option>
                 </select>
             </div>
-            
+            <div class="form-group col-md-6" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado'">
+                <label for="codigo_autorizacion">Código para autorizaciones:</label>
+                <input type="password" class="form-control" [(ngModel)]="usuario.codigo_autorizacion" name="codigo_autorizacion" placeholder="Código para autorizaciones de venta">
+            </div>
             <div class="form-group col-md-6">
                 <label for="id_empresa">Empresa:</label>
                 <ng-select [(ngModel)]="usuario.id_empresa" (change)="setSucursales()"  class="form-select p-0" name="id_empresa">
@@ -206,14 +212,14 @@
     </button>
   </div>
   <div class="modal-body">
-    <form autocomplete="off" (ngSubmit)="loadAll()">
+    <form autocomplete="off" (ngSubmit)="loadAll(true)">
         <div class="row text-center">
 
             <div class="form-group col-sm-12">
                 <label for="filtros.sucursal">Sucursal:</label>
-                <select [(ngModel)]="filtros.sucursal_id" class="form-control form-select" name="filtros.sucursal_id">
+                <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                    <option *ngFor="let sucursal of sucursalesList" [value]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
                 </select>
@@ -224,9 +230,12 @@
                     <option value="">Todos</option>
                     <option value="Administrador">Administrador</option>
                     <option value="Supervisor">Supervisor</option>
+                    <option value="Supervisor Limitado">Supervisor Limitado</option>
                     <option value="Contador">Contador</option>
                     <option value="Citas">Citas</option>
                     <option value="Ventas">Ventas</option>
+                    <option value="Ventas Limitado">Ventas Limitado</option>
+                    <option value="Cajero">Cajero</option>
                 </select>
             </div>
 

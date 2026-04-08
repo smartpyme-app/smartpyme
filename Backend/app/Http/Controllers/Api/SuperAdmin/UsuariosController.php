@@ -26,6 +26,9 @@ class UsuariosController extends Controller
                                 ->when($request->id_sucursal, function($q) use ($request){
                                     $q->where('id_sucursal', $request->id_sucursal);
                                 })
+                                ->when($request->tipo, function($q) use ($request){
+                                    $q->where('tipo', $request->tipo);
+                                })
                                 ->when($request->buscador, function($query) use ($request){
                                     return $query->where('name', 'like' ,'%' . $request->buscador . '%')
                                                  ->orwhere('email', 'like' ,"%" . $request->buscador . "%");

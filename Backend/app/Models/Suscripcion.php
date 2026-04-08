@@ -27,6 +27,7 @@ class Suscripcion extends Model
         'fin_periodo_prueba',
         'fecha_cancelacion',
         'motivo_cancelacion',
+        'comentarios',
         'nit',
         'nombre_factura',
         'direccion_factura',

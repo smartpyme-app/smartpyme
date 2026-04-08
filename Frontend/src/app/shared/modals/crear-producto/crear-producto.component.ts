@@ -22,7 +22,7 @@ export class CrearProductoComponent implements OnInit {
     modalRef?: BsModalRef;
 
     constructor( 
-        private apiService: ApiService, 
+        public apiService: ApiService, 
         private alertService: AlertService,
         private route: ActivatedRoute, 
         private router: Router,
@@ -95,6 +95,11 @@ export class CrearProductoComponent implements OnInit {
 
     public onSubmit() {
         this.guardar = true;
+        if (this.apiService.isSupervisorLimitado()) {
+            const p = parseFloat(this.producto.precio) || 0;
+            this.producto.costo = p;
+            this.producto.costo_promedio = p;
+        }
         if (!this.producto.id) {
             if (!this.producto.costo) {
                 this.producto.costo = this.producto.costo_promedio;

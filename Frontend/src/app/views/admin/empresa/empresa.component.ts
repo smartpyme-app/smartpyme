@@ -1147,7 +1147,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
                 sku_correlativo_automatico: false, // SKU correlativo automático al crear productos
                 cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
-                cotizacion_mostrar_imagenes_productos: false // Mostrar imágenes de productos en cotizaciones
+                cotizacion_mostrar_imagenes_productos: false, // Mostrar imágenes de productos en cotizaciones
+                bloquear_cotizaciones_vendedores: false // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
             },
             campos_personalizados: {}
         };
@@ -1314,6 +1315,22 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         });
     }
 
+    public isBloquearCotizacionesVendedoresEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'bloquear_cotizaciones_vendedores', false);
+    }
+
+    public updateBloquearCotizacionesVendedores(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'bloquear_cotizaciones_vendedores', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Restricciones de cotizaciones para vendedores activadas.'
+                    : 'Restricciones de cotizaciones para vendedores desactivadas.'
+            );
+        });
+    }
+
     public toggleCotizacionMostrarDescripcion() {
         this.updateCotizacionMostrarDescripcion(!this.isCotizacionMostrarDescripcionEnabled());
     }
@@ -1334,6 +1351,10 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     public toggleCotizacionMostrarImagenesProductos() {
         this.updateCotizacionMostrarImagenesProductos(!this.isCotizacionMostrarImagenesProductosEnabled());
+    }
+
+    public toggleBloquearCotizacionesVendedores() {
+        this.updateBloquearCotizacionesVendedores(!this.isBloquearCotizacionesVendedoresEnabled());
     }
 
     // Métodos para configuraciones de lotes
