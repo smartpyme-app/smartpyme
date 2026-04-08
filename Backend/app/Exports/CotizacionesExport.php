@@ -44,12 +44,13 @@ class CotizacionesExport implements FromCollection, WithHeadings, WithMapping
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
 
         $user = Auth::user();
-        $soloUsuarioVentas = $user && ($user->tipo === 'Ventas' || $user->tipo === 'Ventas Limitado');
+        $soloCotizacionesPropiasVendedor = $user
+            && ($user->tipo === 'Ventas' || $user->tipo === 'Ventas Limitado');
 
-        $ventas = Cotizacion::when($soloUsuarioVentas, function ($query) use ($user) {
+        $ventas = Cotizacion::when($soloCotizacionesPropiasVendedor, function ($query) use ($user) {
                             $query->where('id_usuario', $user->id);
                         })
-                        ->when(! $soloUsuarioVentas && $request->id_usuario, function($query) use ($request){
+                        ->when(! $soloCotizacionesPropiasVendedor && $request->id_usuario, function($query) use ($request){
                             return $query->where('id_usuario', $request->id_usuario);
                         })
                         ->when($request->buscador, function($query) use ($request){

@@ -630,7 +630,8 @@ class Empresa extends Model
             ],
             'modulos' => [],
             'configuraciones' => [
-                'ticket_en_pdf' => false
+                'ticket_en_pdf' => false,
+                'bloquear_cotizaciones_vendedores' => false,
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados
