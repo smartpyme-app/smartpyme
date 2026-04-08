@@ -22,6 +22,7 @@ class SuscripcionService
             'fin_periodo_prueba' => $suscripcionData['fin_periodo_prueba'] ?? null,
             'fecha_cancelacion' => $suscripcionData['fecha_cancelacion'] ?? null,
             'motivo_cancelacion' => $suscripcionData['motivo_cancelacion'] ?? null,
+            'comentarios' => $suscripcionData['comentarios'] ?? null,
             'requiere_factura' => $suscripcionData['requiere_factura'] ?? false,
             'nit' => $suscripcionData['nit'] ?? null,
             'nombre_factura' => $suscripcionData['nombre_factura'] ?? null,
