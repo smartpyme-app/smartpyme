@@ -209,29 +209,26 @@
 
 <ng-template #mfilter>
   <div class="modal-header">
-    <div class="modal-title text-center">
-        <h2 class="text-center no-margin">Filtros</h2>
+    <div class="modal-title">
+        <h2 class="text-center mb-0">Filtros</h2>
     </div>
-    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
-      <span aria-hidden="true">&times;</span>
-    </button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Cerrar"></button>
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="loadAll(true)">
-        <div class="row text-center">
-
-            <div class="form-group col-sm-12">
-                <label for="filtros.sucursal">Sucursal:</label>
-                <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
+        <div class="row g-3">
+            <div class="col-12">
+                <label class="form-label" for="filtro-sucursal">Sucursal</label>
+                <select id="filtro-sucursal" [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
                     <option *ngFor="let sucursal of sucursalesList" [value]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
                 </select>
             </div>
-            <div class="form-group col-md-12">
-                <label for="tipo">* Tipo:</label>
-                <select name="tipo" [(ngModel)]="filtros.tipo" class="form-control form-select">
+            <div class="col-12">
+                <label class="form-label" for="filtro-tipo">Tipo</label>
+                <select id="filtro-tipo" name="tipo" [(ngModel)]="filtros.tipo" class="form-select">
                     <option value="">Todos</option>
                     <option value="Administrador">Administrador</option>
                     <option value="Supervisor">Supervisor</option>
@@ -243,16 +240,12 @@
                     <option value="Cajero">Cajero</option>
                 </select>
             </div>
-
         </div>
-        <br><br>
-        <div class="row text-center">
-            <div class="col-xs-12">
-                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
-                </button>
-            </div>
+        <div class="d-grid mt-4">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
         </div>
     </form>
   </div>
