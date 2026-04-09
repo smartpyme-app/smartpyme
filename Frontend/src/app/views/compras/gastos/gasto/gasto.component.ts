@@ -37,12 +37,6 @@ export class GastoComponent implements OnInit {
 
   modalRef?: BsModalRef;
 
-  readonly TIPOS_CATEGORIA = [
-    'Alquiler', 'Combustible', 'Costo de venta', 'Gastos varios', 'Insumos',
-    'Impuestos', 'Gastos Administrativos', 'Mantenimiento', 'Marketing',
-    'Materia Prima', 'Servicios', 'Pago comisión', 'Planilla', 'Préstamos', 'Publicidad'
-  ];
-
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
@@ -101,9 +95,11 @@ export class GastoComponent implements OnInit {
       (error) => { this.alertService.error(error); }
     );
 
-    this.apiService.getAll('gastos/categorias').subscribe(
+    this.apiService.getAll('gastos/categorias/list').subscribe(
       (categorias) => {
         this.categorias = categorias;
+        this.syncTipoDesdeCategoriaSeleccionada();
+        this.syncDetalleCategoriaIdsDesdeTipo();
         this.loading = false;
       },
       (error) => {
@@ -210,6 +206,7 @@ export class GastoComponent implements OnInit {
               ...d,
               tipo_gravado: d.tipo_gravado || (d.aplica_iva ? 'gravada' : 'no_sujeta'),
             }));
+            this.syncDetalleCategoriaIdsDesdeTipo();
           } else if (this.gasto.detalles && this.gasto.detalles.length === 1) {
             this.varios_items = false;
             this.detalles = [];
@@ -218,6 +215,7 @@ export class GastoComponent implements OnInit {
             this.detalles = [];
           }
 
+          this.syncTipoDesdeCategoriaSeleccionada();
           this.loading = false;
         },
         (error) => {
@@ -236,7 +234,7 @@ export class GastoComponent implements OnInit {
       this.gasto.tipo_operacion = 'Gravada';
       this.gasto.tipo_costo_gasto = 'Gastos de venta sin donación';
       this.gasto.tipo_sector = this.apiService.auth_user().empresa.tipo_sector ?? null;
-      this.gasto.id_categoria = '';
+      this.gasto.id_categoria = null;
       this.gasto.id_proveedor = '';
       // this.gasto.fecha_pago = this.apiService.date();
       this.gasto.fecha = this.apiService.date();
@@ -370,6 +368,61 @@ export class GastoComponent implements OnInit {
   public setCategoria(categoria: any) {
     this.categorias.push(categoria);
     this.gasto.id_categoria = categoria.id;
+    this.gasto.tipo = categoria.nombre ?? '';
+  }
+
+  /** Mantiene `gasto.tipo` (requerido por el API) alineado con la categoría elegida por id. */
+  public onCategoriaSeleccionada(id: number | string | null) {
+    if (id == null || id === '') {
+      this.gasto.tipo = '';
+      return;
+    }
+    const cat = this.categorias.find((c: any) => String(c.id) === String(id));
+    this.gasto.tipo = cat ? cat.nombre : '';
+  }
+
+  private syncTipoDesdeCategoriaSeleccionada() {
+    if (this.gasto?.id_categoria != null && this.gasto.id_categoria !== '') {
+      const cat = this.categorias.find(
+        (c: any) => String(c.id) === String(this.gasto.id_categoria)
+      );
+      if (cat) {
+        this.gasto.tipo = cat.nombre;
+      }
+    }
+  }
+
+  /** Si el detalle solo tiene `tipo` (datos viejos), resuelve `id_categoria` cuando ya cargó el catálogo. */
+  private syncDetalleCategoriaIdsDesdeTipo() {
+    if (!this.categorias?.length || !this.detalles?.length) {
+      return;
+    }
+    this.detalles.forEach((d: any) => {
+      if (d.id_categoria != null && d.id_categoria !== '') {
+        return;
+      }
+      if (d.tipo) {
+        const cat = this.categorias.find((c: any) => c.nombre === d.tipo);
+        if (cat) {
+          d.id_categoria = cat.id;
+        }
+      }
+    });
+  }
+
+  public onDetalleCategoriaSeleccionada(idx: number, id: number | string | null) {
+    const d = this.detalles[idx];
+    if (!d) {
+      return;
+    }
+    if (id == null || id === '') {
+      d.id_categoria = null;
+      d.tipo = '';
+      return;
+    }
+    d.id_categoria = id;
+    const cat = this.categorias.find((c: any) => String(c.id) === String(id));
+    d.tipo = cat ? cat.nombre : '';
   }
 
   public setProveedor(proveedor: any) {
@@ -527,9 +580,10 @@ export class GastoComponent implements OnInit {
   }
 
   public addDetalle() {
-    this.detalles.push({
+    const line: any = {
       concepto: '',
       tipo: 'Gastos varios',
+      id_categoria: null,
       tipo_gravado: 'gravada',
       cantidad: 1,
       precio_unitario: 0,
@@ -543,7 +597,12 @@ export class GastoComponent implements OnInit {
       aplica_percepcion: false,
       area_empresa: null,
       id_proyecto: this.gasto.id_proyecto || null,
-    });
+    };
+    const gv = this.categorias.find((c: any) => c.nombre === 'Gastos varios');
+    if (gv) {
+      line.id_categoria = gv.id;
+    }
+    this.detalles.push(line);
   }
 
   public removeDetalle(idx: number) {
@@ -624,6 +683,7 @@ export class GastoComponent implements OnInit {
 
   public onSubmit() {
     this.saving = true;
+    const editando = !!this.gasto.id;
 
     if (this.duplicargasto) {
       this.gasto.recurrente = false;
@@ -651,6 +711,10 @@ export class GastoComponent implements OnInit {
         return {
           concepto: d.concepto,
           tipo: d.tipo || 'Gastos varios',
+          id_categoria:
+            d.id_categoria != null && d.id_categoria !== ''
+              ? d.id_categoria
+              : null,
           tipo_gravado: ['gravada', 'exenta', 'no_sujeta'].includes(tg) ? tg : 'gravada',
           cantidad: parseFloat(d.cantidad) || 1,
           precio_unitario: parseFloat(d.precio_unitario) || parseFloat(d.sub_total) || 0,
@@ -671,19 +735,23 @@ export class GastoComponent implements OnInit {
     }
 
     this.apiService.store('gasto', payload).subscribe(
-      (gasto) => {
-        if (!this.gasto.id) {
+      (gastoResp) => {
+        this.gasto = { ...this.gasto, ...gastoResp };
+        if (gastoResp.detalles) {
+          this.detalles = [...gastoResp.detalles];
+        }
+        if (editando) {
           this.alertService.success(
-            'Gasto guardado',
-            'El gasto fue guardado exitosamente.'
+            'Gasto actualizado',
+            'Los cambios se guardaron correctamente.'
           );
         } else {
           this.alertService.success(
             'Gasto creado',
             'El gasto fue añadido exitosamente.'
           );
+          this.router.navigate(['/gastos']);
         }
-        this.router.navigate(['/gastos']);
         this.saving = false;
       },
       (error) => {
@@ -845,7 +913,7 @@ export class GastoComponent implements OnInit {
         this.gasto.tipo_documento = 'Factura';
         this.gasto.detalle_banco = '';
         this.gasto.tipo = 'Gastos varios'; // Categoría predeterminada
-        this.gasto.id_categoria = '';
+        this.gasto.id_categoria = null;
         this.gasto.id_proveedor = '';
         this.gasto.fecha = this.apiService.date();
         this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
@@ -914,6 +982,7 @@ export class GastoComponent implements OnInit {
             return {
               concepto: item.descripcion || '',
               tipo: 'Gastos varios',
+              id_categoria: null,
               tipo_gravado: esGravada ? 'gravada' : 'no_sujeta',
               cantidad: cant,
               precio_unitario: precio,

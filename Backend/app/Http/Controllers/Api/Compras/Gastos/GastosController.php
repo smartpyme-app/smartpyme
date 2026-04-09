@@ -163,6 +163,7 @@ class GastosController extends Controller
                 'detalles.*.sub_total' => 'required|numeric|min:0',
                 'detalles.*.iva' => 'nullable|numeric|min:0',
                 'detalles.*.total' => 'required|numeric|min:0',
+                'detalles.*.id_categoria' => 'nullable|numeric',
             ], [
                 'id_proveedor.required' => 'El campo proveedor es obligatorio.',
                 'id_usuario.required' => 'El campo usuario es obligatorio.',
@@ -232,6 +233,8 @@ class GastosController extends Controller
                 if ($gasto->forma_pago == 'Cheque') {
                     $this->chequesService->crear($gasto, $gasto->nombre_proveedor, 'Gasto: ' . $gasto->tipo_documento . ' #' . ($gasto->referencia ? $gasto->referencia : ''), 'Gasto');
                 }
+            } else {
+                $this->transaccionesService->sincronizarConGasto($gasto);
             }
 
             return response()->json($gasto->load('detalles'), 200);
@@ -278,12 +281,17 @@ class GastosController extends Controller
             $perc = (float) ($d['iva_percibido'] ?? 0);
             $tot = (float) ($d['total'] ?? $sub + $iv - $renta + $perc);
 
+            $idCategoriaDetalle = isset($d['id_categoria']) && $d['id_categoria'] !== '' && $d['id_categoria'] !== null
+                ? (int) $d['id_categoria']
+                : null;
+
             DetalleEgreso::create([
                 'id_egreso' => $gasto->id,
                 'numero_item' => $idx + 1,
                 'concepto' => $d['concepto'] ?? '',
                 'tipo' => $d['tipo'] ?? 'Gastos varios',
                 'tipo_gravado' => in_array($d['tipo_gravado'] ?? '', ['gravada', 'exenta', 'no_sujeta']) ? $d['tipo_gravado'] : 'gravada',
+                'id_categoria' => $idCategoriaDetalle,
                 'cantidad' => $d['cantidad'] ?? 1,
                 'precio_unitario' => $d['precio_unitario'] ?? $sub,
                 'sub_total' => $sub,
@@ -313,12 +321,17 @@ class GastosController extends Controller
         } else {
             $tipoGravado = 'no_sujeta';
         }
+        $idCategoriaCabecera = $request->id_categoria !== null && $request->id_categoria !== ''
+            ? (int) $request->id_categoria
+            : null;
+
         DetalleEgreso::create([
             'id_egreso' => $gasto->id,
             'numero_item' => 1,
             'concepto' => $request->concepto ?? '',
             'tipo' => $request->tipo ?? 'Gastos varios',
             'tipo_gravado' => $tipoGravado,
+            'id_categoria' => $idCategoriaCabecera,
             'cantidad' => 1,
             'precio_unitario' => $request->sub_total ?? $request->total ?? 0,
             'sub_total' => $gasto->sub_total ?? 0,
