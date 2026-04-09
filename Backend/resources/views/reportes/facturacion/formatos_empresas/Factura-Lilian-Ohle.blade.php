@@ -5,27 +5,32 @@
     <title>{{ $empresa->nombre }} {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
 
-        *{ font-size: 14px; margin: 0; padding: 0;}
-        html, body{
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
             font-family: serif;
+            font-size: 11px;
+            line-height: 1.2;
         }
-        @page { 
-            margin: 2cm 2.5cm;
-            margin-top: 2cm;
-            margin-bottom: 2cm;
-            margin-left: 2.5cm;
-            margin-right: 2.5cm;
+        @page {
+            margin: 1.1cm 1.4cm;
+            size: letter;
         }
-        #factura{
-            padding: 0px 50px;
-        }
-
-        p{
-            margin: 0px 0px 5px 0px;
+        #factura {
+            padding: 0 18px;
         }
 
-        table   {text-align: left; border-collapse: collapse; width: 100%; }
-        table th, table td{height: 0.4cm; text-align: left; padding: 4px;}
+        p {
+            margin: 0 0 3px 0;
+        }
+
+        #header td { padding: 2px 4px; vertical-align: top; }
+        #header h1 { margin: 0 0 2px 0; line-height: 1.15; }
+        #header h2 { font-size: 12px; margin: 0 0 3px 0; line-height: 1.15; }
+        #header h3 { font-size: 11px; margin: 0 0 2px 0; }
+        #header .logo-factura { height: 68px; width: auto; display: block; }
+
+        table { text-align: left; border-collapse: collapse; width: 100%; }
+        table th, table td { text-align: left; padding: 2px 3px; vertical-align: top; }
 
         table tbody {
             border: 1px solid black; 
@@ -47,7 +52,7 @@
         }
 
         #op th{
-            font-size: 11px;
+            font-size: 9px;
             background-color: #252598;
             color: white;
             text-align: center;
@@ -71,6 +76,10 @@
         }
 
         #productos {
+            margin-top: 4px;
+            margin-bottom: 2px;
+            border-spacing: 0;
+            border-collapse: collapse;
             page-break-inside: auto;
             page-break-before: auto;
             page-break-after: auto;
@@ -79,6 +88,7 @@
         #productos thead {
             display: table-row-group;
             page-break-after: avoid;
+            page-break-inside: avoid;
         }
 
         #productos tfoot {
@@ -104,44 +114,23 @@
         }
 
         #productos td, #productos th {
-            padding: 5px;
+            padding: 3px 4px;
+            font-size: 10px;
         }
 
-        /* Asegurar que las páginas tengan margen superior cuando la tabla se divide */
-        @page {
-            margin-top: 2cm;
-            margin-bottom: 2cm;
-            margin-left: 2.5cm;
-            margin-right: 2.5cm;
-        }
-
-        /* Espaciado adicional para la tabla cuando se divide */
-        #productos {
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-
-        /* Forzar espaciado en páginas que contienen tablas divididas */
-        @page :first {
-            margin-top: 2cm;
-        }
-
-        @page :left {
-            margin-top: 2cm;
-        }
-
-        @page :right {
-            margin-top: 2cm;
-        }
-
-        /* Asegurar que el contenido de la tabla tenga espaciado */
         #productos thead tr:first-child th {
-            padding-top: 15px;
+            padding-top: 4px;
+            padding-bottom: 3px;
         }
 
-        /* Espaciado adicional para cuando la tabla continúa en nueva página */
         #productos tbody tr:first-child td {
-            padding-top: 10px;
+            padding-top: 3px;
+        }
+
+        #productos tfoot td {
+            padding: 2px 4px;
+            font-size: 10px;
+            line-height: 1.15;
         }
 
         /* Forzar espaciado en la primera fila de datos cuando la tabla se divide */
@@ -150,46 +139,16 @@
             page-break-after: auto;
         }
 
-        /* Asegurar que el encabezado de la tabla tenga espaciado cuando se repite */
-        #productos thead {
-            page-break-after: avoid;
-        }
-
-        /* Controlar mejor la repetición del encabezado */
-        #productos {
-            page-break-inside: auto;
-            page-break-before: auto;
-            page-break-after: auto;
-        }
-
-        /* Asegurar que el pie de tabla no cause repetición del encabezado */
-        #productos tfoot {
-            page-break-inside: avoid;
-            page-break-before: avoid;
-        }
-
-        /* Regla específica para evitar que el encabezado se repita cuando solo el pie de tabla cambia de página */
-        #productos {
-            page-break-inside: auto;
-        }
-
-        /* Asegurar que el encabezado nunca se repita */
-        #productos thead {
-            display: table-row-group;
-            page-break-after: avoid;
-            page-break-inside: avoid;
-        }
-
         /* Tabla de firmas sin bordes */
         #firmas, #firmas tbody, #firmas tr, #firmas td, #firmas th {
             border: none !important;
         }
+        #firmas { font-size: 10px; margin-top: 14px !important; }
+        #firmas .firma-logo { height: 58px; width: auto; }
 
-        /* Espaciado adicional para el contenido de la tabla */
-        #productos {
-            border-spacing: 0;
-            border-collapse: collapse;
-        }
+        .pie-cai { font-size: 10px; text-align: center; margin-top: 6px; line-height: 1.3; }
+        .pie-cai p { margin: 2px 0; }
+        .agradece-factura { font-size: 11px; text-align: center; margin: 10px 0 0 0; line-height: 1.25; font-weight: normal; }
 
     </style>
 
@@ -243,28 +202,26 @@
                 <tr>
                     <td>
                         @if ($venta->empresa()->pluck('logo')->first())
-                            <img height="100" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
+                            <img class="logo-factura" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
                     </td>
-                    <td><h1 style="text-align: right; font-size: 1.4em;">FACTURA</h1></td>
+                    <td><h1 style="text-align: right; font-size: 13px; margin: 0;">FACTURA</h1></td>
                 </tr>
                 <tr>
                     <td>
                         <h2>{{ strtoupper($empresa->nombre) }}</h2>
                         @if($direccionFactura || $telefonoFactura || $correoFactura)
-                        <br>
                         @if($empresa->nit)<h3><b>RTN: {{ $empresa->nit }}</b></h3>@endif
                         @if($direccionFactura)<p style="margin: 0px;">{{ $direccionFactura }}</p>@endif
                         @if($telefonoFactura)<p style="margin: 0px;">Teléfono: {{ $telefonoFactura }}</p>@endif
                         @if($correoFactura)<p style="margin: 0px;">E-mail: {{ $correoFactura }}</p>@endif
                         @endif
-                        <p style="margin-top: 5px;"><b>Cliente: </b> {{ $venta->nombre_cliente }}</p>
+                        <p style="margin-top: 3px;"><b>Cliente: </b> {{ $venta->nombre_cliente }}</p>
                         <p><b>Dirección: </b> {{ $venta->id_cliente ? $cliente->direccion : '' }}</p>
                     </td>
                     <td>
-                        <h1 style="color: red; font-size: 1.2em;">{{ $numFacturaDisplay }}</h1>
-                        <br>
-                        <p><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+                        <h1 style="color: red; font-size: 12px; margin: 0 0 4px 0;">{{ $numFacturaDisplay }}</h1>
+                        <p style="margin-top: 0;"><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
                         <p><b>ID Cliente:</b> {{ $venta->cliente ? $venta->cliente->codigo_cliente : '' }}</p>
                         <p><b>Cotización:</b> {{ $venta->num_cotizacion }}</p>
                         <p><b>RTN:</b> {{ $venta->id_cliente ? $cliente->nit : '' }}</p>
@@ -363,7 +320,7 @@
             </tbody>
             <tfoot style="display: table-row-group; page-break-inside: avoid;">
                 <tr>
-                    <td colspan="5"><span style="font-size: 11px;">Original: Cliente &nbsp;&nbsp; Copia: Emisor &nbsp;&nbsp; 2da Copia: Contabilidad &nbsp;&nbsp; 3ra Copia: Expediente Cliente</span></td>
+                    <td colspan="5"><span style="font-size: 8px;">Original: Cliente &nbsp;&nbsp; Copia: Emisor &nbsp;&nbsp; 2da Copia: Contabilidad &nbsp;&nbsp; 3ra Copia: Expediente Cliente</span></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Exento:</td>
                     <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($importe_exento, 2) }}</td>
                 </tr>
@@ -402,25 +359,25 @@
                     <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($iva_15, 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="5"><p style="color: red;">Original: Cliente</p></td>
+                    <td colspan="5"><p style="color: red; margin: 0; font-size: 9px;">Original: Cliente</p></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">ISV 18%:</td>
                     <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($iva_18, 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="5"> {{$dolares}} CON {{$centavos}}/100 LEMPIRAS. <br> </td>
+                    <td colspan="5">{{$dolares}} CON {{$centavos}}/100 LEMPIRAS.</td>
                     <td style="padding: 0 3px 0 0; text-align: right;">TOTAL A PAGAR:</td>
                     <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($venta->total, 2) }}</td>
                 </tr>
             </tfoot>
         </table>
 
-        <table id="firmas" style="margin-top: 50px; width: 100%; border-collapse: collapse;">
+        <table id="firmas" style="width: 100%; border-collapse: collapse;">
             <tr>
-                <td style="width: 50%; vertical-align: bottom; padding-right: 20px; border: none;">
+                <td style="width: 50%; vertical-align: bottom; padding-right: 12px; border: none;">
                     @if ($venta->empresa()->pluck('logo')->first())
-                    <img style="height: 90px;" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Firma">
+                    <img class="firma-logo" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Firma">
                     @endif
-                    <span style="display: block; margin-bottom: 5px;">Firma:</span>
+                    <span style="display: block; margin-bottom: 2px;">Firma:</span>
                 </td>
                 <td style="width: 50%; vertical-align: bottom; text-align: right; border: none;">
                     ____________________________<br>
@@ -430,23 +387,23 @@
         </table>
 
         @if (!empty($documento->nota))
-            <div style="font-size: 13px; text-align: justify; margin-top: 16px; line-height: 1.35;">
+            <div style="font-size: 10px; text-align: justify; margin-top: 8px; line-height: 1.25;">
                 {!! nl2br(e($documento->nota)) !!}
             </div>
         @endif
-        <div style="font-size: 13px; text-align: center; margin-top: 14px; line-height: 1.4;">
+        <div class="pie-cai">
             @if ($cai)
-                <p style="margin: 4px 0;"><strong>CAI:</strong> {{ $cai }}</p>
+                <p><strong>CAI:</strong> {{ $cai }}</p>
             @endif
             @if ($rangoAuth)
-                <p style="margin: 4px 0;"><strong>RANGO AUTORIZADO:</strong> {{ $rangoAuth }}</p>
+                <p><strong>RANGO AUTORIZADO:</strong> {{ $rangoAuth }}</p>
             @endif
             @if ($fechaLimiteFmt)
-                <p style="margin: 4px 0;"><strong>FECHA LÍMITE DE EMISIÓN:</strong> {{ $fechaLimiteFmt }}</p>
+                <p><strong>FECHA LÍMITE DE EMISIÓN:</strong> {{ $fechaLimiteFmt }}</p>
             @endif
         </div>
 
-        <h3 style="text-align: center; margin-top: 30px;">
+        <h3 class="agradece-factura">
         ¡Gracias por su Compra! <br>
         La Factura es Beneficio de Todos, "EXIJALA"
         </h3>
