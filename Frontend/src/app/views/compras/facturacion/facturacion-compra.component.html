@@ -45,8 +45,8 @@
             <input type="text" class="form-control" [(ngModel)]="compra.referencia" name="referencia" placeholder="Escribe aquí">
         </div>
         <div class="form-group col-md-4 col-lg-2" *ngIf="compra.cotizacion == 1">
-            <label for="referencia">Correlativo</label>
-            <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia" placeholder="Escribe aquí">
+            <label for="referencia_cot">Correlativo</label>
+            <input type="text" class="form-control" [(ngModel)]="compra.referencia" name="referencia_cot" id="referencia_cot" placeholder="Escribe aquí">
         </div>
         <div class="form-group col-md-4 col-lg-3" *ngIf="compra.cotizacion == 0 && compra.cobrar_percepcion">
             <label for="sello_mh">Sello de Recepción</label>
@@ -333,38 +333,70 @@
 
 <ng-template #jsonImportTemplate>
     <div class="modal-header">
-      <h4 class="modal-title">Importar Compra desde JSON</h4>
+      <h4 class="modal-title">Importar compra desde JSON</h4>
       <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
+      <p class="text-muted small mb-3">
+        Importe <strong>un solo</strong> documento DTE por vez: elija un archivo <code>.json</code> o pegue el contenido en el cuadro de texto.
+      </p>
       <div class="mb-3">
-        <label for="jsonFile" class="form-label">Seleccionar archivo JSON</label>
-        <input type="file" class="form-control" id="jsonFile" (change)="handleFileInput($event)" accept=".json">
+        <label for="jsonFileInput" class="form-label">Archivo JSON</label>
+        <input
+          #jsonFileInput
+          type="file"
+          class="form-control"
+          id="jsonFileInput"
+          (change)="handleFileInput($event)"
+          accept=".json,application/json">
       </div>
       <div class="mb-3">
-        <label class="form-label">O pegar contenido JSON</label>
-        <textarea class="form-control" rows="10" [(ngModel)]="jsonContent" name="jsonContent"></textarea>
+        <label class="form-label">O pegar JSON</label>
+        <textarea class="form-control" rows="8" [(ngModel)]="jsonContent" name="jsonContent" placeholder="Contenido del DTE en JSON"></textarea>
       </div>
       <div class="d-grid">
-        <button type="button" [disabled]="processingJson || !jsonContent.trim()" class="btn btn-primary" (click)="processJsonData()">
-            <span *ngIf="!processingJson">Procesar</span>
-            <span *ngIf="processingJson">Procesando...</span>
-          </button>
+        <button
+          type="button"
+          [disabled]="processingJson || !tieneFuentesJsonImport()"
+          class="btn btn-primary"
+          (click)="processJsonData()">
+          <span *ngIf="!processingJson">Procesar</span>
+          <span *ngIf="processingJson">Procesando...</span>
+        </button>
       </div>
     </div>
   </ng-template>
 
   <ng-template #productosAjuste>
     <div class="modal-header">
-      <h4 class="modal-title">Ajustar Productos No Reconocidos</h4>
+      <h4 class="modal-title">Conciliar productos no reconocidos</h4>
       <button type="button" class="btn-close" (click)="cancelarAjusteProductos()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
       <div class="alert alert-warning">
         <i class="fa fa-exclamation-triangle"></i>
-        Los siguientes productos del DTE no fueron reconocidos automáticamente. 
-        Por favor, seleccione el producto correspondiente para cada item.
+        Hay productos sin coincidencia automática. Asigne el producto correspondiente a cada ítem.
       </div>
+
+      <ul
+        class="nav nav-tabs flex-nowrap mb-3 ajuste-tabs-json"
+        role="tablist"
+        *ngIf="ajusteBloques.length > 1">
+        <li class="nav-item flex-shrink-0" *ngFor="let bloque of ajusteBloques; let i = index" role="presentation">
+          <button
+            type="button"
+            class="nav-link text-nowrap py-2 d-flex align-items-center"
+            [class.active]="ajusteTabActivo === i"
+            (click)="ajusteTabActivo = i"
+            [title]="bloque.etiqueta">
+            <span class="d-inline-block text-truncate" style="max-width: 12rem;">{{ bloque.etiqueta }}</span>
+            <span class="badge bg-warning text-dark ms-1 flex-shrink-0">{{ bloque.items.length }}</span>
+          </button>
+        </li>
+      </ul>
+      <p class="small text-muted mb-2" *ngIf="ajusteBloques[ajusteTabActivo] as docActivo">
+        <strong>Documento:</strong> {{ docActivo.etiqueta }}
+      </p>
       
       <!-- Botón para crear nuevos productos/servicios -->
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -387,7 +419,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let item of productosNoEncontrados; let i = index">
+            <tr *ngFor="let item of itemsAjusteTabActiva; let i = index">
               <td>
                 <span class="badge bg-primary">{{ item.numItem }}</span>
               </td>
@@ -522,11 +554,11 @@
               <div 
                 class="progress-bar bg-success" 
                 role="progressbar" 
-                [style.width.%]="(getProductosAsignados() / productosNoEncontrados.length) * 100">
+                [style.width.%]="totalItemsConciliacion ? (getProductosAsignados() / totalItemsConciliacion) * 100 : 0">
               </div>
             </div>
             <small class="text-muted">
-              {{ getProductosAsignados() }} de {{ productosNoEncontrados.length }} productos asignados
+              {{ getProductosAsignados() }} de {{ totalItemsConciliacion }} productos asignados (todos los documentos)
             </small>
           </div>
           <div class="col-md-4 text-end">
@@ -579,9 +611,17 @@
   <ng-template #mcrearProducto>
     <div class="modal-header">
       <h4 class="modal-title">Crear Nuevo Producto/Servicio</h4>
-      <button type="button" class="btn-close" (click)="modalCrearProducto.hide()" aria-label="Close"></button>
+      <button type="button" class="btn-close" (click)="cerrarModalCrearProducto()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
+      <div
+        *ngIf="crearProductoAlerta"
+        class="alert d-flex align-items-start justify-content-between gap-2 mb-3"
+        [ngClass]="'alert-' + crearProductoAlertaTipo"
+        role="alert">
+        <span class="flex-grow-1">{{ crearProductoAlerta }}</span>
+        <button type="button" class="btn-close flex-shrink-0 mt-0" aria-label="Cerrar" (click)="crearProductoAlerta = null"></button>
+      </div>
       <form #productoForm="ngForm" (ngSubmit)="crearProducto()">
         <div class="row">
           <div class="col-md-6">
@@ -740,7 +780,7 @@
       </form>
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" (click)="modalCrearProducto.hide()">Cancelar</button>
+      <button type="button" class="btn btn-secondary" (click)="cerrarModalCrearProducto()">Cancelar</button>
       <button type="button" class="btn btn-success" (click)="crearProducto()" [disabled]="creandoProducto">
         <span *ngIf="!creandoProducto">
           <i class="fa fa-plus"></i> Crear Producto

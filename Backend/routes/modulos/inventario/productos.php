@@ -47,6 +47,8 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::post('/productos/buscar-por-codigo-proveedor', [ProductosController::class, 'buscarPorCodigoProveedor']);
     Route::post('/productos/buscar-por-nombre', [ProductosController::class, 'buscarPorNombre']);
     Route::post('/productos/buscar-sugerencias', [ProductosController::class, 'buscarSugerencias']);
+    Route::post('/productos/resolver-importacion-dte', [ProductosController::class, 'resolverProductosImportacionDte']);
+    Route::post('/productos/buscar-sugerencias-lote', [ProductosController::class, 'buscarSugerenciasLote']);
 
 // Composisiones
     Route::post('/producto/composicion',        [ComposicionesController::class, 'store']);
