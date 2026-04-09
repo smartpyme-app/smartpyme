@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api\SuperAdmin;
 
+use App\Exports\AdminUsuariosExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User as Usuario;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Validation\Rules\Password;
@@ -39,6 +41,14 @@ class UsuariosController extends Controller
 
         return Response()->json($usuarios, 200);
 
+    }
+
+    public function export(Request $request)
+    {
+        $export = new AdminUsuariosExport();
+        $export->filter($request);
+
+        return Excel::download($export, 'usuarios-smartpyme.xlsx');
     }
 
     public function listVendedores() {

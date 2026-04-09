@@ -25,6 +25,7 @@ export class AdminUsuariosComponent implements OnInit {
     public filtros:any = {};
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
+    public downloading:boolean = false;
 
     modalRef?: BsModalRef;
 
@@ -103,6 +104,27 @@ export class AdminUsuariosComponent implements OnInit {
             this.usuarios = usuarios;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    public descargarUsuarios(): void {
+        this.downloading = true;
+        const params = { ...this.filtros };
+        delete params.paginate;
+        this.apiService.export('admin-usuarios/exportar', params).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'usuarios-smartpyme.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+        }, (error) => {
+            this.alertService.error(error);
+            this.downloading = false;
+        });
     }
     
     public mostrarPassword(){
