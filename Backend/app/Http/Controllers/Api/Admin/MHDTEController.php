@@ -74,7 +74,7 @@ class MHDTEController extends Controller
     }
 
     public function generarDTESujetoExcluidoGasto(Request $request){
-        $gasto = Gasto::where('id', $request->id)->with('proveedor', 'empresa')->firstOrFail();
+        $gasto = Gasto::where('id', $request->id)->with('proveedor', 'empresa', 'detalles')->firstOrFail();
         $mh = new MHSujetoExcluidoGasto;
         $DTE = $mh->generarDTE($gasto);
 
