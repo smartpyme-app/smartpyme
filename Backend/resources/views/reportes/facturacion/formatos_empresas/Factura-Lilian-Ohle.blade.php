@@ -24,7 +24,14 @@
             margin: 0 0 3px 0;
         }
 
-        #header td { padding: 2px 4px; vertical-align: top; }
+        #header { width: 100%; border: none !important; border-collapse: collapse; }
+        #header td { padding: 4px 6px; vertical-align: top; border: none !important; }
+        #header tbody { border: none !important; }
+        #header .col-logo { width: 42%; }
+        #header .encabezado-doc { width: 58%; text-align: right; }
+        #header .bloque-empresa,
+        #header .bloque-cliente { width: 50%; }
+        #header .titulo-bloque { font-size: 10px; font-weight: bold; letter-spacing: 0.04em; margin: 0 0 5px 0; text-transform: uppercase; color: #333; }
         #header h1 { margin: 0 0 2px 0; line-height: 1.15; }
         #header h2 { font-size: 12px; margin: 0 0 3px 0; line-height: 1.15; }
         #header h3 { font-size: 11px; margin: 0 0 2px 0; }
@@ -199,34 +206,36 @@
                 : ($empresa->correo ?? null);
         @endphp
         <table id="header">
-            <tbody style="border: 0px;">
+            <tbody style="border: 0;">
                 <tr>
-                    <td>
+                    <td class="col-logo">
                         @if ($venta->empresa()->pluck('logo')->first())
                             <img class="logo-factura" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
                     </td>
-                    <td><h1 style="text-align: right; font-size: 13px; margin: 0;">FACTURA</h1></td>
+                    <td class="encabezado-doc">
+                        <h1 style="text-align: right; font-size: 13px; margin: 0;">FACTURA</h1>
+                        <h1 style="color: red; font-size: 12px; margin: 0 0 6px 0; text-align: right;">{{ $numFacturaDisplay }}</h1>
+                        <p style="margin: 0 0 3px 0; text-align: right;"><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+                        <p style="margin: 0; text-align: right;"><b>Cotización:</b> {{ $venta->num_cotizacion }}</p>
+                    </td>
                 </tr>
                 <tr>
-                    <td>
+                    <td class="bloque-empresa">
+                        <p class="titulo-bloque">Empresa</p>
                         <h2>{{ strtoupper($empresa->nombre) }}</h2>
-                        @if($direccionFactura || $telefonoFactura || $correoFactura)
                         @if($empresa->nit)<h3><b>RTN: {{ $empresa->nit }}</b></h3>@endif
-                        @if($direccionFactura)<p style="margin: 0px;">{{ $direccionFactura }}</p>@endif
-                        @if($telefonoFactura)<p style="margin: 0px;">Teléfono: {{ $telefonoFactura }}</p>@endif
-                        @if($correoFactura)<p style="margin: 0px;">E-mail: {{ $correoFactura }}</p>@endif
-                        @endif
-                        <p style="margin-top: 3px;"><b>Cliente: </b> {{ $venta->nombre_cliente }}</p>
-                        <p><b>Dirección: </b> {{ $venta->id_cliente ? $cliente->direccion : '' }}</p>
+                        @if($direccionFactura)<p style="margin: 0 0 3px 0;">{{ $direccionFactura }}</p>@endif
+                        @if($telefonoFactura)<p style="margin: 0 0 3px 0;">Teléfono: {{ $telefonoFactura }}</p>@endif
+                        @if($correoFactura)<p style="margin: 0;">E-mail: {{ $correoFactura }}</p>@endif
                     </td>
-                    <td>
-                        <h1 style="color: red; font-size: 12px; margin: 0 0 4px 0;">{{ $numFacturaDisplay }}</h1>
-                        <p style="margin-top: 0;"><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
-                        <p><b>ID Cliente:</b> {{ $venta->cliente ? $venta->cliente->codigo_cliente : '' }}</p>
-                        <p><b>Cotización:</b> {{ $venta->num_cotizacion }}</p>
-                        <p><b>RTN:</b> {{ $venta->id_cliente ? $cliente->nit : '' }}</p>
-                        <p><b>Teléfono:</b> {{ $venta->id_cliente ? $cliente->telefono : '' }}</p>
+                    <td class="bloque-cliente">
+                        <p class="titulo-bloque">Cliente</p>
+                        <p style="margin: 0 0 4px 0;"><b>Nombre:</b> {{ $venta->nombre_cliente }}</p>
+                        <p style="margin: 0 0 3px 0;"><b>Dirección:</b> {{ $venta->id_cliente ? ($cliente->direccion ?? '') : '' }}</p>
+                        <p style="margin: 0 0 3px 0;"><b>ID Cliente:</b> {{ $venta->cliente ? $venta->cliente->codigo_cliente : '' }}</p>
+                        <p style="margin: 0 0 3px 0;"><b>RTN:</b> {{ $venta->id_cliente ? ($cliente->nit ?? '') : '' }}</p>
+                        <p style="margin: 0;"><b>Teléfono:</b> {{ $venta->id_cliente ? ($cliente->telefono ?? '') : '' }}</p>
                     </td>
                 </tr>
             </tbody>
