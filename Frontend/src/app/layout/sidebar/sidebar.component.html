@@ -58,6 +58,7 @@
                             @if (apiService.hasPermission('productos.bodegas.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bodegas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/box.png" class="icon me-2">Bodegas</a></li>
                             }
+                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/kardex']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Kardex</a></li>
                             @if (apiService.hasPermission('productos.categorias.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
                             }

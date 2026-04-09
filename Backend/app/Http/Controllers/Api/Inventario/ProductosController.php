@@ -829,8 +829,8 @@ class ProductosController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => $request->habilitar 
-                ? 'Inventario por lotes habilitado masivamente' 
+            'message' => $request->habilitar
+                ? 'Inventario por lotes habilitado masivamente'
                 : 'Inventario por lotes deshabilitado masivamente',
             'productos_actualizados' => $productosActualizados
         ]);

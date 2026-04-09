@@ -497,6 +497,14 @@
           </p>
         </div>
       }
+      @if (suscripcion?.comentarios) {
+      <div class="col-12">
+        <p><strong>Comentarios:</strong></p>
+        <p class="mb-0 text-muted" style="white-space: pre-wrap">
+      {{ suscripcion?.comentarios }}
+      </p>
+    </div>
+      }
     </div>
   </div>
 </ng-template>
@@ -735,6 +743,20 @@
             name="direccion_factura"
             rows="2"
           ></textarea>
+        </div>
+
+        <div class="form-group col-md-12 mb-3">
+          <label class="form-label">Comentarios:</label>
+          <textarea
+            class="form-control"
+            [(ngModel)]="suscripcion.comentarios"
+            name="comentarios"
+            rows="4"
+            placeholder="Notas internas sobre esta suscripción…"
+          ></textarea>
+          <small class="text-muted">
+            Notas importantes visibles solo para administración
+          </small>
         </div>
 
         @if (suscripcion.estado === 'Cancelado') {

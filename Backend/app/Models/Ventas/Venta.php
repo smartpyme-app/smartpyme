@@ -383,6 +383,12 @@ class Venta extends Model {
         return $this->descuento_puntos / $this->puntos_canjeados;
     }
 
+    // necesario para exportar ventas con paquetes
+    public function paquetes()
+    {
+        return $this->hasMany('App\Models\Inventario\Paquete', 'id_venta');
+    }
+
     /**
      * Scope para cargar las relaciones necesarias para detalleText()
      * Uso: Venta::withDetalleTextRelations()->find($id)

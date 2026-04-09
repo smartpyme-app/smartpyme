@@ -138,6 +138,9 @@
                                     <a (click)="imprimir(traslado)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
+                                    <a [routerLink]="['/traslado/detalle', traslado.id]" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-eye"></i> Ver detalles
+                                    </a>
                                     <a (click)="generarPartidaContable(traslado)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-edit"></i> Generar partida contable
                                     </a>

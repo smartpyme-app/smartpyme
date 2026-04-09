@@ -93,7 +93,9 @@
         </div>
 
         <table>
-            @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
+            @php
+                $iva = $venta->empresa()->pluck('iva')->first() / 100;
+            @endphp
             @foreach($venta->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
@@ -101,7 +103,7 @@
                 <td class="precio">     ${{ number_format($detalle->precio, 2) }}</td>
                 <td class="sujetas">   </td>
                 <td class="exentas">    </td>
-                <td class="gravadas">  ${{ number_format($detalle->total, 2) }} </th>
+                <td class="gravadas">  ${{ number_format($detalle->total, 2) }} </td>
             </tr>
             @endforeach
         </table>

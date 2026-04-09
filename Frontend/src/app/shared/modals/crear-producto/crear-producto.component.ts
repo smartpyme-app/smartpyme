@@ -15,7 +15,7 @@ import { BaseModalComponent } from '../../base/base-modal.component';
     templateUrl: './crear-producto.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+
 })
 export class CrearProductoComponent extends BaseModalComponent implements OnInit {
     @Input() producto: any = {};
@@ -26,12 +26,12 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
     public guardar = false;
     public usuario: any;
 
-    
-    constructor( 
+
+    constructor(
         private apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
-        private route: ActivatedRoute, 
+        private route: ActivatedRoute,
         private router: Router
     ) {
         super(modalManager, alertService);
@@ -40,7 +40,7 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
 
     ngOnInit() {
         this.producto.empresa_id = this.apiService.auth_user().empresa_id;
-        
+
         this.apiService.getAll('categorias/list')
             .pipe(this.untilDestroyed())
             .subscribe(categorias => {
@@ -52,8 +52,8 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
 
     override openModal(template: TemplateRef<any>) {
         this.producto = {};
-        super.openModal(template, { 
-            class: 'modal-lg', 
+        super.openModal(template, {
+            class: 'modal-lg',
             backdrop: 'static',
             keyboard: false,
             ignoreBackdropClick: true
@@ -104,6 +104,11 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
 
     public onSubmit() {
         this.guardar = true;
+        if (this.apiService.isSupervisorLimitado()) {
+            const p = parseFloat(this.producto.precio) || 0;
+            this.producto.costo = p;
+            this.producto.costo_promedio = p;
+        }
         if (!this.producto.id) {
             if (!this.producto.costo) {
                 this.producto.costo = this.producto.costo_promedio;
@@ -149,16 +154,16 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
 
     public verificarSiExiste() {
         if (this.producto.nombre) {
-            this.apiService.getAll('productos', { 
-                nombre: this.producto.nombre, 
-                estado: 1 
+            this.apiService.getAll('productos', {
+                nombre: this.producto.nombre,
+                estado: 1
             })
                 .pipe(this.untilDestroyed())
-                .subscribe(productos => { 
+                .subscribe(productos => {
                 if (productos.data[0]) {
-                    this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
-                        'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' + 
-                        this.apiService.appUrl + '/producto/editar/' + productos.data[0].id + '">Ver producto</a>. ' + 
+                    this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.',
+                        'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' +
+                        this.apiService.appUrl + '/producto/editar/' + productos.data[0].id + '">Ver producto</a>. ' +
                         '<br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
                     );
                 }

@@ -27,6 +27,22 @@ export class CacheInterceptor implements HttpInterceptor {
       return next.handle(req);
     }
 
+    const saltarJWT = req.params.get('saltarJWT');
+    if (saltarJWT) {
+      return next.handle(req);
+    }
+
+    let token = this.apiService.auth_token();
+    const httpRequest = req.clone({
+      headers: new HttpHeaders({
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Expires': 'Sat, 01 Jan 2000 00:00:00 GMT',
+        'Content-Type':  'application/json',
+        'Authorization': 'Bearer ' + token
+      })
+    });
+
     // Extraer parámetros de la petición
     const params = this.extractParams(req);
 
@@ -59,14 +75,14 @@ export class CacheInterceptor implements HttpInterceptor {
    */
   private extractParams(req: HttpRequest<any>): any {
     const params: any = {};
-    
+
     // Si la petición tiene HttpParams, extraerlos
     if (req.params && req.params.keys().length > 0) {
       req.params.keys().forEach(key => {
         params[key] = req.params.get(key);
       });
     }
-    
+
     return params;
   }
 

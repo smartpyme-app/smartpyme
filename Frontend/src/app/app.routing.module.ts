@@ -11,39 +11,39 @@ export const GUARD_TYPES = {
 } as const;
 
 export const routes: Routes = [
-    { 
-      path: 'login', 
-      loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent), 
-      title: 'Inicio de sesión' 
+    {
+      path: 'login',
+      loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
+      title: 'Inicio de sesión'
     },
-    { 
-      path: 'registro', 
-      loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent), 
-      title: 'Registro' 
+    {
+      path: 'registro',
+      loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent),
+      title: 'Registro'
     },
-    { 
-      path: 'pago', 
-      loadComponent: () => import('./auth/register/pago/pago.component').then(m => m.PagoComponent), 
-      title: 'Pago' 
+    {
+      path: 'pago',
+      loadComponent: () => import('./auth/register/pago/pago.component').then(m => m.PagoComponent),
+      title: 'Pago'
     },
-    { 
-      path: 'pago-exitoso', 
-      loadComponent: () => import('./auth/register/pago/payment-success.component').then(m => m.PaymentSuccessComponent), 
-      title: 'Pago exitoso' 
+    {
+      path: 'pago-exitoso',
+      loadComponent: () => import('./auth/register/pago/payment-success.component').then(m => m.PaymentSuccessComponent),
+      title: 'Pago exitoso'
     },
-    { 
-      path: 'pago-exitoso-paywall', 
-      loadComponent: () => import('./layout/paywall/components/payment-success/payment-success.component').then(m => m.PaymentSuccessPaywallComponent), 
-      title: 'Pago exitoso' 
+    {
+      path: 'pago-exitoso-paywall',
+      loadComponent: () => import('./layout/paywall/components/payment-success/payment-success.component').then(m => m.PaymentSuccessPaywallComponent),
+      title: 'Pago exitoso'
     },
-    { 
-      path: 'restablecer-cuenta', 
-      loadComponent: () => import('./auth/forget/forget.component').then(m => m.ForgetComponent), 
-      title: 'Restablecer contraseña' 
+    {
+      path: 'restablecer-cuenta',
+      loadComponent: () => import('./auth/forget/forget.component').then(m => m.ForgetComponent),
+      title: 'Restablecer contraseña'
     },
-    { 
-      path: 'lock', 
-      loadComponent: () => import('./auth/lock/lock.component').then(m => m.LockComponent) 
+    {
+      path: 'lock',
+      loadComponent: () => import('./auth/lock/lock.component').then(m => m.LockComponent)
     },
 
     // Paywall (sin SubscriptionGuard para permitir acceso)
@@ -126,11 +126,13 @@ export const routes: Routes = [
       ]
     },
 
-  // Not Found
-  {
-    path: '**',
-    loadComponent: () => import('./shared/404/not-found.component').then(m => m.NotFoundComponent),
-  },
+    { path: '404', component: NotFoundComponent, title: 'Página no encontrada' },
+
+    // Not Found
+    {
+      path: '**',
+      component: NotFoundComponent
+    }
 ];
 
 @NgModule({

@@ -46,8 +46,13 @@
     <div class="col-md-3">
       <div class="card bg-success text-white">
         <div class="card-body">
-          <h6 class="card-title">Total Neto</h6>
-          <h3 class="mb-0">{{ planilla.total_neto | currency }}</h3>
+          <h6 class="card-title">
+            {{ (planilla.total_viaticos || 0) > 0 ? 'Total a Pagar' : 'Total Neto' }}
+          </h6>
+          <h3 class="mb-0">{{ ((+planilla.total_neto || 0) + (+planilla.total_viaticos || 0)) | currency }}</h3>
+          <small *ngIf="(planilla.total_viaticos || 0) > 0">
+            Neto: {{ planilla.total_neto | currency }} + Viáticos: {{ planilla.total_viaticos | currency }}
+          </small>
         </div>
       </div>
     </div>
@@ -164,15 +169,17 @@
                 </th>
               }
             }
-
-            <th class="text-end">Total Neto</th>
-            <th class="text-center">Acciones</th>
-          </tr>
+  <th class="text-end" *ngIf="esElSalvador">Viáticos</th>
+<th class="text-end">Total a Pagar</th>
+<th class="text-center">Acciones</th>
+</tr>
+</thead>
+<tbody>
+<tr *ngFor="let detalle of detalles">
+<td>
         </thead>
-        <tbody>
           @for (detalle of detalles; track detalle.id) {
             <tr>
-            <td>
               {{ detalle.empleado?.nombres }} {{ detalle.empleado?.apellidos }}<br />
               <small class="text-muted">{{ detalle.empleado?.codigo }}</small>
             </td>
@@ -215,9 +222,12 @@
               }
             }
 
-            <td class="text-end">
-                {{ detalle.sueldo_neto | currency }}
-            </td>
+              <td class="text-end" *ngIf="esElSalvador">
+                {{ detalle.viaticos | currency }}
+              </td>
+              <td class="text-end">
+                {{ getTotalAPagar(detalle) | currency }}
+              </td>
 
             <td class="text-center">
               <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
@@ -268,7 +278,7 @@
               {{ getTotalCampo('salario_devengado') | currency }}
             </th>
             <th class="text-end">
-              {{ (planilla.bonificaciones_total + planilla.comisiones_total + planilla.otros_ingresos_total) | currency }}
+              {{ ((+planilla.bonificaciones_total || 0) + (+planilla.comisiones_total || 0) + (+planilla.otros_ingresos_total || 0)) | currency }}
             </th>
             <th class="text-end">
               {{ getTotalCampoReal('total_ingresos') | currency }}
@@ -295,9 +305,11 @@
                 </th>
               }
             }
-
-            <th class="text-end">
-              {{ getTotalCampoReal('sueldo_neto') | currency }}
+  <th class="text-end" *ngIf="esElSalvador">
+  {{ getTotalCampoReal('viaticos') | currency }}
+  </th>
+  <th class="text-end">
+              {{ getTotalAPagarPlanilla() | currency }}
             </th>
             <th></th>
           </tr>
@@ -752,6 +764,28 @@
                     </div>
                   </div>
 
+                  <div class="mb-3" *ngIf="esElSalvador">
+                    <label class="d-flex align-items-center gap-2">
+                      <span>Viáticos</span>
+                      <i class="fa fa-car text-info" title="No constituyen salario ni renta gravable (LISR Art. 3)"></i>
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                      <input type="number" class="form-control"
+                        [(ngModel)]="detalleSeleccionado.viaticos"
+                        name="viaticos"
+                        (input)="onViaticosChange()"
+                        (change)="onViaticosChange()"
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                    <small class="text-muted">
+                      No afectan ISSS, AFP ni ISR. Se suman al total a pagar.
+                    </small>
+                  </div>
+
                   <div class="mb-3">
                     <label class="d-flex align-items-center gap-2 flex-wrap">
                       <span>Abonos</span>
@@ -1056,12 +1090,16 @@ class="accordion-collapse"
             </div>
 
 
-            <!-- Sueldo Neto -->
+            <!-- Sueldo Neto y Total a Pagar -->
             <div class="col-12">
               <div class="alert alert-success">
                 <strong>Sueldo Neto:</strong> ${{
                 detalleSeleccionado.sueldo_neto | number : "1.2-2"
                 }}
+                <span *ngIf="(detalleSeleccionado.viaticos || 0) > 0" class="ms-3">
+                  | <strong>Viáticos:</strong> ${{ detalleSeleccionado.viaticos | number : "1.2-2" }}
+                  | <strong>Total a Pagar:</strong> ${{ getTotalAPagar(detalleSeleccionado) | number : "1.2-2" }}
+                </span>
               </div>
             </div>
           </div>

@@ -157,8 +157,6 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     super();
   }
   public authUser: any = {};
-  public empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488, 543,569,657,538,754];
-
 
   ngOnInit() {
     const encryptedId = this.route.snapshot.paramMap.get('id')!;
@@ -168,6 +166,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       // Nuevo usuario
       this.usuario = {};
       this.usuario.rol_id = 2;
+      this.usuario.tipo = 'Administrador';
       this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
       this.usuario.caja_id = 1;
       this.usuario.activo = true;

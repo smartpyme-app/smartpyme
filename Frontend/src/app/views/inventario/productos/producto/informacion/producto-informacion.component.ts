@@ -1,13 +1,15 @@
 import {
   Component,
   OnInit,
+  OnChanges,
+  SimpleChanges,
   TemplateRef,
   Input,
   ViewChild,
   inject,
 } from '@angular/core';
 
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRo,ute } from '@angular/router';
 import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -31,9 +33,11 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
-export class ProductoInformacionComponent extends BaseModalComponent implements OnInit {
+export class ProductoInformacionComponent extends BaseModalComponent implements OnInit, OnChanges {
   @ViewChild('modalAtributo') modalAtributo!: TemplateRef<any>;
   @Input() producto: any = {};
+  /** Evita múltiples llamadas al pedir SKU sugerido */
+  private skuCorrelativoPendiente = true;
   public categorias: any = [];
   public subcategorias: any = [];
   public subcategRes: any = [];
@@ -104,6 +108,8 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
         this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
 
+    this.intentarCargarSkuSugerido();
+
     this.apiService.getAll('proveedores/list')
       .pipe(this.untilDestroyed())
       .subscribe(
@@ -129,6 +135,42 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     // );
 
     this.cdr.detectChanges();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['producto']) {
+      this.intentarCargarSkuSugerido();
+    }
+  }
+
+  /** Precarga el código correlativo desde la API cuando aplica (producto nuevo + opción de empresa). */
+  private intentarCargarSkuSugerido() {
+    const p = this.producto;
+    if (!p || p.id || !this.apiService.isSkuCorrelativoAutomatico()) {
+      return;
+    }
+    if (p.codigo) {
+      this.skuCorrelativoPendiente = false;
+      return;
+    }
+    if (!p.id_empresa) {
+      return;
+    }
+    if (!this.skuCorrelativoPendiente) {
+      return;
+    }
+
+    this.skuCorrelativoPendiente = false;
+    this.apiService.getAll('productos/siguiente-sku-correlativo').subscribe(
+      (res: any) => {
+        if (res?.habilitado && res?.codigo != null && p === this.producto && !this.producto.codigo) {
+          this.producto.codigo = res.codigo;
+        }
+      },
+      () => {
+        this.skuCorrelativoPendiente = true;
+      }
+    );
   }
 
   public loadAtributes() {

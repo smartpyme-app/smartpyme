@@ -120,36 +120,43 @@
             @endif
             <b style="margin-left: 100px;">Fecha: </b>{{\Carbon\Carbon::parse($indicadores->inicio)->format('d/m/Y')}}
         </p>
+        @php $simbolo_moneda = optional($indicadores->empresa->currency)->currency_symbol ?? '$'; @endphp
 
         <table class="table table-bordered table-hover border-primary mb-3">
             <tr>
-                <td width="20%">
+                <td width="16%">
                     <h3 class="text-center text-success">
-                        ${{ $indicadores->getTotalVentas() }}
+                        {{ $simbolo_moneda }}{{ $indicadores->getTotalVentas() }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
                 </td>
-                <td width="20%">
+                <td width="17%">
                     <h3 class="text-center text-info">
-                        ${{ $indicadores->getTotalRecibos() }}
+                        {{ $simbolo_moneda }}{{ $indicadores->getTotalRecibos() }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> ABONOS</p>
                 </td>
-                <td width="20%">
+                <td width="17%">
                     <h3 class="text-center text-secondary">
-                        ${{ $indicadores->getTotalVentasPendientes() }}
+                        {{ $simbolo_moneda }}{{ $indicadores->getTotalVentasPendientes() }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> CREDITOS</p>
                 </td>
-                <td width="20%">
+                <td width="17%">
                     <h3 class="text-center text-danger">
-                        ${{ $indicadores->getTotalDevolucionesVenta() }}
+                        {{ $simbolo_moneda }}{{ $indicadores->getTotalDevolucionesVenta() }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> DEVOLUCIONES</p>
                 </td>
-                <td width="20%">
+                <td width="16%">
+                    <h3 class="text-center text-success">
+                        {{ $simbolo_moneda }}{{ $indicadores->getTotalVentasSinDevoluciones() }}
+                    </h3>
+                    <p class="mb-0 text-center">VENTAS TOTALES <br> SIN DEVOLUCIONES</p>
+                </td>
+                <td width="17%">
                     <h3 class="text-center text-secondary">
-                        ${{ $indicadores->getTotalGastosPagados() }}
+                        {{ $simbolo_moneda }}{{ $indicadores->getTotalGastosPagados() }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> GASTOS</p>
                 </td>
@@ -172,32 +179,32 @@
             <tr>
                 <td>Ventas del día</td>
                 <td class="text-right">{{ $indicadores->getCantidadVentasPagadas() }}</td>
-                <td class="text-right">${{number_format($indicadores->getTotalVentasPagadas(), 2) }}</td>
+                <td class="text-right">{{ $simbolo_moneda }}{{number_format($indicadores->getTotalVentasPagadas(), 2) }}</td>
             </tr>
             <tr>
                 <td>Ventas al crédito</td>
                 <td class="text-right">{{ $indicadores->getCantidadVentasPendientes() }}</td>
-                <td class="text-right">${{ number_format($indicadores->getTotalVentasPendientes(), 2) }}</td>
+                <td class="text-right">{{ $simbolo_moneda }}{{ number_format($indicadores->getTotalVentasPendientes(), 2) }}</td>
             </tr>
             <tr>
                 <td>Abonos</td>
                 <td class="text-right">{{ $indicadores->getCantidadRecibos() }}</td>
-                <td class="text-right">${{ number_format($indicadores->getTotalRecibos(), 2) }}</td></tr>
+                <td class="text-right">{{ $simbolo_moneda }}{{ number_format($indicadores->getTotalRecibos(), 2) }}</td></tr>
             <tr>
                 <td>Devoluciones</td>
                 <td class="text-right">{{ $indicadores->getCantidadDevolucionesVenta() }}</td>
-                <td class="text-right">${{ number_format($indicadores->getTotalDevolucionesVenta(), 2) }}</td>
+                <td class="text-right">{{ $simbolo_moneda }}{{ number_format($indicadores->getTotalDevolucionesVenta(), 2) }}</td>
             </tr>
             @if (Auth::user()->tipo == 'Administrador')
             <tr><td>Gastos</td>
                 <td class="text-right">{{ $indicadores->getCantidadGastos() }}</td>
-                <td class="text-right">${{ number_format($indicadores->getTotalGastos(), 2) }}</td>
+                <td class="text-right">{{ $simbolo_moneda }}{{ number_format($indicadores->getTotalGastos(), 2) }}</td>
             </tr>
             @endif
             <tr>
                 <td>Cuentas por cobrar</td>
                 <td class="text-right">{{ $indicadores->getCantidadVentasPendientes() }}</td>
-                <td class="text-right">${{ number_format($indicadores->getTotalVentasPendientes(), 2) }}</td>
+                <td class="text-right">{{ $simbolo_moneda }}{{ number_format($indicadores->getTotalVentasPendientes(), 2) }}</td>
             </tr>
             </tbody>
         </table>
@@ -219,7 +226,7 @@
                 <tr class="bg-light font-weight-bold">
                     <td>{{ $formadepago['nombre'] }}</td> 
                     <td class="text-right">{{ $formadepago['cantidad'] }}</td>
-                    <td class="text-right">${{ number_format($formadepago['total'],2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($formadepago['total'],2) }}</td>
                 </tr>     
             @endforeach
             </tbody>
@@ -249,7 +256,7 @@
                 <tr>
                     <td>{{$canal['nombre']}}</td>
                     <td class="text-right">{{ $canal['cantidad'] }}</td>
-                    <td class="text-right">${{ number_format($canal['total'], 2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($canal['total'], 2) }}</td>
                 </tr>
                 @endforeach
 
@@ -280,7 +287,7 @@
                 <tr>
                     <td>{{ $documento['nombre_sucursal'] }} - {{$documento['nombre']}}</td>
                     <td class="text-right">{{ $documento['inicio'] . ' - ' . $documento['fin']}} </td>
-                    <td class="text-right">${{ number_format($documento['total'],2) }} </td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($documento['total'],2) }} </td>
                 </tr>
                 @endforeach
 
@@ -311,7 +318,7 @@
                 <tr>
                     <td>{{ $devolucion->venta()->first()->nombre_documento }}</td>
                     <td class="text-right">{{$devolucion->venta()->first()->correlativo}}</td>
-                    <td class="text-right">${{number_format($devolucion->venta()->first()->total,2)}}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{number_format($devolucion->venta()->first()->total,2)}}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -341,7 +348,7 @@
                 <tr>
                     <td>{{ $venta->nombre_documento }}</td>
                     <td class="text-right">{{ $venta->correlativo }}</td>
-                    <td class="text-right">${{ number_format($venta->total,2) }}</td>
+                    <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta->total,2) }}</td>
                 </tr>
                 @endforeach
             </tbody>

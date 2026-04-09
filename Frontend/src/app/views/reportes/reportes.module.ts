@@ -7,9 +7,12 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
+import { FocusModule } from 'angular2-focus';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { NgxEchartsModule } from 'ngx-echarts';
+import * as echarts from 'echarts';
 
 import { HistorialVentasComponent } from './ventas/historial/historial-ventas.component';
 import { DetalleVentasComponent } from './ventas/detalle/detalle-ventas.component';
@@ -25,6 +28,7 @@ import { CorteComponent } from './corte/corte.component';
 import { ReportesComponent } from './reportes.component';
 import { ReportesAutomaticosComponent } from './reportes-automaticos.component';
 import { ReplacePipe } from './reportes-automaticos.component';
+import { DashboardModule } from '@views/dashboard/dashboard.module';
 
 @NgModule({
   imports: [
@@ -34,10 +38,13 @@ import { ReplacePipe } from './reportes-automaticos.component';
     PipesModule,
     SharedModule,
     NgSelectModule,
+    NgxEchartsModule.forRoot({ echarts }),
     ProgressbarModule.forRoot(),
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
     ModalModule.forRoot(),
+    FocusModule.forRoot(),
+    DashboardModule,
     // Componentes standalone
     EmpleadosVentasComponent,
     HistorialVentasComponent,

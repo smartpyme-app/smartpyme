@@ -73,7 +73,7 @@
                     @for (producto of productos?.data; track producto.id) {
                         <tr>
                             <td>
-                                <img [appLazyImage]="apiService.baseUrl + '/img/productos/default.jpg'" class="rounded-circle" width="50px"> 
+                                <img [appLazyImage]="apiService.baseUrl + '/img/productos/default.jpg'" class="rounded-circle" width="50px">
                                 {{ producto.nombre }}
                             </td>
                             <td class="d-none d-lg-table-cell">
@@ -202,7 +202,7 @@
                 <input type="checkbox" [(ngModel)]="filtro.sin_condigo" class="form-check" name="filtro.sin_condigo">
             </div>
         </div>
-        
+
         <br><br>
         <div class="row text-center">
             <div class="col-xs-12">
@@ -230,14 +230,14 @@
   <div class="modal-body">
     <form name="facturacion" autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row text-center">
-  
+
             <div class="form-group col-md-12">
                 <label for="precio">Precio:</label>
                 <input type="number" class="form-control text-center" [(ngModel)]="producto.precio" name="precio" placeholder="Precio">
             </div>
 
         </div>
-        
+
         <br><br>
         <div class="row text-center">
             <div class="col-xs-12">

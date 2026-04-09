@@ -167,10 +167,14 @@ class PlanillasController extends Controller
                 'cod_pais' => $planilla->empresa->cod_pais,
             ];
             $planillaArray['id'] = $planilla->id;
+            $planillaArray['codigo'] = $planilla->codigo;
+            $planillaArray['fecha_inicio'] = $planilla->fecha_inicio;
+            $planillaArray['fecha_fin'] = $planilla->fecha_fin;
             $planillaArray['detalles'] = $detalles;
             $planillaArray['total_salarios'] = $planilla->total_salarios;
             $planillaArray['total_deducciones'] = $planilla->total_deducciones;
             $planillaArray['total_neto'] = $planilla->total_neto;
+            $planillaArray['total_viaticos'] = $planilla->total_viaticos ?? 0;
             $planillaArray['estado'] = $planilla->estado;
             $planillaArray['totales'] = $totales;
             $planillaArray['tipo_planilla'] = $planilla->tipo_planilla;
@@ -726,7 +730,7 @@ class PlanillasController extends Controller
 
             // Obtener los detalles activos
             $detalles = $planilla->detalles()
-                ->where('estado', PlanillaConstants::PLANILLA_BORRADOR)
+                ->where('estado', '!=', 0)
                 ->get();
 
             // Determinar factor de ajuste según tipo de planilla
@@ -741,6 +745,7 @@ class PlanillasController extends Controller
             $total_salarios = 0;
             $total_deducciones = 0;
             $total_neto = 0;
+            $total_viaticos = 0;
             $total_aportes_patronales = 0;
             $bonificaciones_total = 0;
             $comisiones_total = 0;
@@ -766,6 +771,9 @@ class PlanillasController extends Controller
                 // Acumular neto
                 $total_neto += $detalle->sueldo_neto;
 
+                // Acumular viáticos (no afectan deducciones, se suman al total a pagar)
+                $total_viaticos += $detalle->viaticos ?? 0;
+
                 // Acumular aportes patronales
                 $total_aportes_patronales += $detalle->isss_patronal + $detalle->afp_patronal;
             }
@@ -775,6 +783,7 @@ class PlanillasController extends Controller
                 'total_salarios' => round($total_salarios, 2),
                 'total_deducciones' => round($total_deducciones, 2),
                 'total_neto' => round($total_neto, 2),
+                'total_viaticos' => round($total_viaticos, 2),
                 'total_aportes_patronales' => round($total_aportes_patronales, 2),
                 'bonificaciones_total' => round($bonificaciones_total, 2),
                 'comisiones_total' => round($comisiones_total, 2),
@@ -807,6 +816,7 @@ class PlanillasController extends Controller
             'otros_ingresos' => 'nullable|numeric|min:0',
             'abonos' => 'nullable|numeric|min:0',
             'abonos_sin_retencion' => 'nullable|boolean',
+            'viaticos' => 'nullable|numeric|min:0',
             'dias_laborados' => 'nullable|numeric|min:0|max:31',
             'prestamos' => 'nullable|numeric|min:0',
             'anticipos' => 'nullable|numeric|min:0',
@@ -858,6 +868,7 @@ class PlanillasController extends Controller
             $detalle->abonos_sin_retencion = $request->boolean('abonos_sin_retencion', true);
             $detalle->prestamos = $request->prestamos ?? 0;
             $detalle->anticipos = $request->anticipos ?? 0;
+            $detalle->viaticos = $request->viaticos ?? 0;
             $detalle->otros_descuentos = $request->otros_descuentos ?? 0;
             $detalle->descuentos_judiciales = $request->descuentos_judiciales ?? 0;
             $detalle->detalle_otras_deducciones = $request->detalle_otras_deducciones;
@@ -1562,9 +1573,9 @@ class PlanillasController extends Controller
             $detallesProcesados = 0;
             $gastosCreados = 0;
 
-            // Totales para deducciones patronales
-            $totalISSS_Patronal = 0;
-            $totalAFP_Patronal = 0;
+            // Totales a pagar a instituciones (aporte patronal + retenciones al empleado)
+            $totalISSS_a_Pagar = 0;
+            $totalAFP_a_Pagar = 0;
 
             // Fecha de pago
             $fecha_pago = now();
@@ -1584,39 +1595,47 @@ class PlanillasController extends Controller
                     // Obtener el nombre completo del empleado
                     $nombreEmpleado = $detalle->empleado->nombres . ' ' . $detalle->empleado->apellidos;
 
-                    // Salario neto (después de deducciones)
+                    // Total a pagar = sueldo neto + viáticos (viáticos no afectan deducciones)
                     $sueldoNeto = round(floatval($detalle->sueldo_neto ?? 0), 2);
+                    $viaticos = round(floatval($detalle->viaticos ?? 0), 2);
+                    $totalAPagar = $sueldoNeto + $viaticos;
 
-                    // Acumular totales para deducciones patronales
+                    // Acumular lo desembolsado a ISSS y AFP (patronal + retenido al empleado)
                     $isssPatronal = round(floatval($detalle->isss_patronal ?? 0), 2);
+                    $isssEmpleado = round(floatval($detalle->isss_empleado ?? 0), 2);
                     $afpPatronal = round(floatval($detalle->afp_patronal ?? 0), 2);
+                    $afpEmpleado = round(floatval($detalle->afp_empleado ?? 0), 2);
 
-                    $totalISSS_Patronal += $isssPatronal;
-                    $totalAFP_Patronal += $afpPatronal;
+                    $totalISSS_a_Pagar += $isssPatronal + $isssEmpleado;
+                    $totalAFP_a_Pagar += $afpPatronal + $afpEmpleado;
 
-                    // Solo crear gasto si el salario neto es mayor a cero
-                    if ($sueldoNeto > 0) {
+                    // Solo crear gasto si el total a pagar es mayor a cero
+                    if ($totalAPagar > 0) {
                         // Log::info('Creando gasto para salario neto de empleado', [
                         //     'empleado' => $nombreEmpleado,
-                        //     'monto' => $sueldoNeto
+                        //     'monto' => $totalAPagar
                         // ]);
+
+                        $conceptoGasto = $viaticos > 0
+                            ? "Salario neto + viáticos - {$nombreEmpleado}"
+                            : "Salario neto - {$nombreEmpleado}";
 
                         $gastoEmpleado = Gasto::create([
                             'fecha' => $fecha_pago,
                             'fecha_pago' => $fecha_pago,
                             'tipo_documento' => 'Planilla',
                             'referencia' => $planilla->codigo,
-                            'concepto' => "Salario neto - {$nombreEmpleado}",
+                            'concepto' => $conceptoGasto,
                             'tipo' => 'Sueldos y Salarios',
                             'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                             'forma_pago' => 'Transferencia',
-                            'total' => $sueldoNeto,
+                            'total' => $totalAPagar,
                             'id_proveedor' => $proveedor->id,
                             'id_categoria' => $categoria->id,
                             'id_usuario' => auth()->id(),
                             'id_empresa' => $planilla->id_empresa,
                             'id_sucursal' => $planilla->id_sucursal,
-                            'nota' => "Pago de salario neto a {$nombreEmpleado} - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
+                            'nota' => "Pago " . ($viaticos > 0 ? "(salario neto + viáticos) " : "de salario neto ") . "a {$nombreEmpleado} - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
                         ]);
 
                         $gastosCreados++;
@@ -1624,10 +1643,10 @@ class PlanillasController extends Controller
                 }
             }
 
-            // 2. Crear un gasto para el total de ISSS patronal
-            if ($totalISSS_Patronal > 0) {
-                // Log::info('Creando gasto para total de ISSS patronal', [
-                //     'monto' => $totalISSS_Patronal
+            // 2. Crear un gasto por el total pagado a ISSS (patronal + retenciones)
+            if ($totalISSS_a_Pagar > 0) {
+                // Log::info('Creando gasto para total ISSS a pagar', [
+                //     'monto' => $totalISSS_a_Pagar
                 // ]);
 
                 $gastoISSS = Gasto::create([
@@ -1635,26 +1654,26 @@ class PlanillasController extends Controller
                     'fecha_pago' => $fecha_pago,
                     'tipo_documento' => 'Planilla',
                     'referencia' => $planilla->codigo,
-                    'concepto' => "Aporte patronal ISSS - Planilla {$planilla->codigo}",
+                    'concepto' => "Pago ISSS (Aporte Patronal + Retenciones) - Planilla {$planilla->codigo}",
                     'tipo' => 'ISSS Patronal',
                     'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                     'forma_pago' => 'Transferencia',
-                    'total' => $totalISSS_Patronal,
+                    'total' => $totalISSS_a_Pagar,
                     'id_proveedor' => $proveedor->id,
                     'id_categoria' => $categoria->id,
                     'id_usuario' => auth()->id(),
                     'id_empresa' => $planilla->id_empresa,
                     'id_sucursal' => $planilla->id_sucursal,
-                    'nota' => "Aporte patronal total ISSS - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
+                    'nota' => "Pago total a ISSS (aporte patronal + retenciones a empleados) - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
                 ]);
 
                 $gastosCreados++;
             }
 
-            // 3. Crear un gasto para el total de AFP patronal
-            if ($totalAFP_Patronal > 0) {
-                // Log::info('Creando gasto para total de AFP patronal', [
-                //     'monto' => $totalAFP_Patronal
+            // 3. Crear un gasto por el total pagado a AFP (patronal + retenciones)
+            if ($totalAFP_a_Pagar > 0) {
+                // Log::info('Creando gasto para total AFP a pagar', [
+                //     'monto' => $totalAFP_a_Pagar
                 // ]);
 
                 $gastoAFP = Gasto::create([
@@ -1662,17 +1681,17 @@ class PlanillasController extends Controller
                     'fecha_pago' => $fecha_pago,
                     'tipo_documento' => 'Planilla',
                     'referencia' => $planilla->codigo,
-                    'concepto' => "Aporte patronal AFP - Planilla {$planilla->codigo}",
+                    'concepto' => "Pago AFP (Aporte Patronal + Retenciones) - Planilla {$planilla->codigo}",
                     'tipo' => 'AFP Patronal',
                     'estado' => PlanillaConstants::ESTADO_GASTO_PLANILLA_PAGADO,
                     'forma_pago' => 'Transferencia',
-                    'total' => $totalAFP_Patronal,
+                    'total' => $totalAFP_a_Pagar,
                     'id_proveedor' => $proveedor->id,
                     'id_categoria' => $categoria->id,
                     'id_usuario' => auth()->id(),
                     'id_empresa' => $planilla->id_empresa,
                     'id_sucursal' => $planilla->id_sucursal,
-                    'nota' => "Aporte patronal total AFP - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
+                    'nota' => "Pago total a AFP (aporte patronal + retenciones a empleados) - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
                 ]);
 
                 $gastosCreados++;
@@ -1681,8 +1700,8 @@ class PlanillasController extends Controller
             // Log::info('Finalizado registro de gastos de planilla', [
             //     'detalles_procesados' => $detallesProcesados,
             //     'gastos_creados' => $gastosCreados,
-            //     'total_isss_patronal' => $totalISSS_Patronal,
-            //     'total_afp_patronal' => $totalAFP_Patronal
+            //     'total_isss_a_pagar' => $totalISSS_a_Pagar,
+            //     'total_afp_a_pagar' => $totalAFP_a_Pagar
             // ]);
 
             return true;
@@ -2445,6 +2464,7 @@ class PlanillasController extends Controller
         $detalle->comisiones = 0;
         $detalle->bonificaciones = 0;
         $detalle->otros_ingresos = 0;
+        $detalle->viaticos = 0;
         $detalle->isss_empleado = round($isssEmpleado, 2);
         $detalle->isss_patronal = round($isssPatronal, 2);
         $detalle->afp_empleado = round($afpEmpleado, 2);

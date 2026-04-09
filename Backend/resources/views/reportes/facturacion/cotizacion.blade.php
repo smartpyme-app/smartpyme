@@ -149,8 +149,8 @@
                     $porcentaje_descuento = $subtotal_linea > 0 ? round(($detalle->descuento / $subtotal_linea) * 100, 2) : 0;
                 @endphp
                 <tr>
-                    <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
-                    <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif">@include('reportes.facturacion.partials.cotizacion-detalle-descripcion')</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
                     <!-- Custom field values -->
                     @foreach($uniqueCustomFields as $field)
                         @php
@@ -158,7 +158,7 @@
                             return $cf->custom_field_id == $field['id'];
                             });
                         @endphp
-                        <td class="border-bottom text-right">
+                        <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">
                             @if($customValue)
                                 @if($customValue->custom_field_value_id)
                                     {{ $customValue->customFieldValue->value }}
@@ -170,16 +170,16 @@
                             @endif
                         </td>
                     @endforeach
-                    <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{number_format($detalle->precio , 2) }}</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }} {{number_format($detalle->precio , 2) }}</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">  @if ($detalle->descuento > 0) {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->descuento, 2) }} <small>({{ $porcentaje_descuento }}%)</small> @endif</td>
-                    <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</td>
                 </tr>
                 @if ($detalle->descuento > 0)
                     <tr>
                         <td>DESCUENTOS</td>
                         <td></td>
                         @foreach($uniqueCustomFields as $field)
-                            <td class="border-bottom"></td>
+                            <td class="@if ($detalle->descuento == 0) border-bottom @endif"></td>
                         @endforeach
                         <td></td>
                         <td class="text-right">- {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->descuento, 2) }} </td>
@@ -272,5 +272,4 @@
 
 
 </body>
-
 </html>

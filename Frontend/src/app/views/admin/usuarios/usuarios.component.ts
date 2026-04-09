@@ -47,7 +47,6 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
     CountryISO.CostaRica,
     CountryISO.Panama
   ];
-  empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488, 543, 569, 657, 538, 754];
   public modules: any[] = [];
   public permissionsLoading: boolean = false;
   public role: any = {

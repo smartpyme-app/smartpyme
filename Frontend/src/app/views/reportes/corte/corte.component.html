@@ -56,6 +56,12 @@
         </h3>
         <p class="mb-0 text-center">TOTAL <br> DEVOLUCIONES</p>
     </div>
+  <div class="card p-3">
+    <h3 class="text-center text-success">
+      {{ ((indicadores.totalVentas || 0) + (indicadores.totalPropina || 0) - (indicadores.totalDevolucionesVenta || 0)) | currency }}
+    </h3>
+    <p class="mb-0 text-center">VENTAS TOTALES <br> SIN DEVOLUCIONES</p>
+  </div>
     @if (usuario.tipo != 'Ventas' && usuario.tipo != 'Ventas Limitado') {
         <div class="card p-3">
             <h3 class="text-center text-secondary">

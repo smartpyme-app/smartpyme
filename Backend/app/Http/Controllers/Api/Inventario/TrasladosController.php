@@ -24,6 +24,14 @@ class TrasladosController extends Controller
 {
 
 
+    public function read($id) {
+        $traslado = Traslado::where('id', $id)
+            ->with(['producto', 'origen', 'destino', 'empresa', 'usuario', 'lote', 'loteDestino'])
+            ->firstOrFail();
+
+        return Response()->json($traslado, 200);
+    }
+
     public function index(Request $request) {
 
         $traslados = Traslado::when($request->fin, function($query) use ($request){
@@ -481,6 +489,117 @@ class TrasladosController extends Controller
             return Response()->json(['error' => $e->getMessage()], 400);
         }
 
+    }
+
+    /**
+     * Actualizar estado del traslado (solo cambiar de Cancelado a Confirmado).
+     * Cuando se confirma un traslado cancelado, se re-aplica el movimiento de inventario.
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate(['estado' => 'required|in:Confirmado,Cancelado']);
+
+        $traslado = Traslado::findOrFail($id);
+
+        if ($request->estado === 'Cancelado') {
+            return $this->delete($id);
+        }
+
+        if ($traslado->estado !== 'Cancelado') {
+            return Response()->json(['error' => 'Solo se puede confirmar un traslado cancelado.'], 400);
+        }
+
+        $traslado->estado = 'Confirmado';
+
+        DB::beginTransaction();
+        try {
+            $producto = Producto::where('id', $traslado->id_producto)->with('composiciones')->firstOrFail();
+
+            if ($traslado->lote_id && $producto->inventario_por_lotes) {
+                $loteOrigen = Lote::findOrFail($traslado->lote_id);
+                $loteOrigen->refresh();
+
+                if ($loteOrigen->id_bodega != $traslado->id_bodega_de) {
+                    throw new \Exception('El lote no pertenece a la bodega de origen.');
+                }
+
+                $stockDisponible = (float) $loteOrigen->stock;
+                $cantidadRequerida = (float) $traslado->cantidad;
+                if ($stockDisponible < $cantidadRequerida) {
+                    throw new \Exception('El lote no tiene stock suficiente. Stock disponible: ' . number_format($stockDisponible, 2) . ', Cantidad requerida: ' . number_format($cantidadRequerida, 2));
+                }
+
+                $loteOrigen->stock = max(0, $stockDisponible - $cantidadRequerida);
+                $loteOrigen->save();
+
+                if ($traslado->lote_id_destino) {
+                    $loteDestino = Lote::findOrFail($traslado->lote_id_destino);
+                    $loteDestino->stock += $traslado->cantidad;
+                    $loteDestino->save();
+                } else {
+                    $loteDestino = Lote::where('id_producto', $producto->id)
+                        ->where('id_bodega', $traslado->id_bodega)
+                        ->where('numero_lote', $loteOrigen->numero_lote)
+                        ->first();
+                    if ($loteDestino) {
+                        $loteDestino->stock += $traslado->cantidad;
+                        $loteDestino->save();
+                    } else {
+                        Lote::create([
+                            'id_producto' => $producto->id,
+                            'id_bodega' => $traslado->id_bodega,
+                            'numero_lote' => $loteOrigen->numero_lote,
+                            'fecha_vencimiento' => $loteOrigen->fecha_vencimiento,
+                            'fecha_fabricacion' => $loteOrigen->fecha_fabricacion,
+                            'stock' => $traslado->cantidad,
+                            'stock_inicial' => $traslado->cantidad,
+                            'id_empresa' => Auth::user()->id_empresa,
+                        ]);
+                    }
+                }
+            }
+
+            $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega_de)->first();
+            $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega)->first();
+
+            if (!$origen || $origen->stock < $traslado->cantidad) {
+                throw new \Exception('La sucursal origen no tiene el stock suficiente.');
+            }
+
+            $origen->stock -= $traslado->cantidad;
+            $origen->save();
+            $origen->kardex($traslado, $traslado->cantidad * -1);
+
+            $destino->stock += $traslado->cantidad;
+            $destino->save();
+            $destino->kardex($traslado, $traslado->cantidad);
+
+            foreach ($producto->composiciones as $comp) {
+                $prodComp = Producto::where('id', $comp->id_compuesto)->with('composiciones')->firstOrFail();
+                $origenComp = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $traslado->id_bodega_de)->first();
+                $destinoComp = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $traslado->id_bodega)->first();
+                if ($origenComp && $destinoComp && $origenComp->stock >= $traslado->cantidad * $comp->cantidad) {
+                    $cantidad = $traslado->cantidad * $comp->cantidad;
+                    $origenComp->stock -= $cantidad;
+                    $origenComp->save();
+                    $origenComp->kardex($traslado, $cantidad * -1);
+                    $destinoComp->stock += $cantidad;
+                    $destinoComp->save();
+                    $destinoComp->kardex($traslado, $cantidad);
+                }
+            }
+
+            $traslado->save();
+
+            DB::commit();
+            return Response()->json($traslado, 200);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
     }
 
     public function export(Request $request){

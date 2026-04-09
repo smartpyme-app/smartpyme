@@ -38,7 +38,18 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Acceso al módulo de contabilidad',
                 'orden' => 4
             ],
-            //,
+            [
+                'nombre' => 'Fidelización de Clientes',
+                'slug' => 'fidelizacion-clientes',
+                'descripcion' => 'Sistema de acumulación y canje de puntos para fidelizar clientes',
+                'orden' => 5
+            ],
+            [
+                'nombre' => 'Inteligencia de negocios V2',
+                'slug' => 'inteligencia-negocios-v2',
+                'descripcion' => 'Acceso al dashboard de inteligencia de negocios (versión 2)',
+                'orden' => 6
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

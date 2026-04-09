@@ -13,7 +13,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './admin-usuarios.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+
 })
 
 export class AdminUsuariosComponent extends BaseCrudComponent<any> implements OnInit {
@@ -29,10 +29,11 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
     public filtrado:boolean = false;
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
+    public downloading:boolean = false;
 
-    constructor( 
-        apiService:ApiService, 
-        alertService:AlertService, 
+    constructor(
+        apiService:ApiService,
+        alertService:AlertService,
         modalManager: ModalManagerService
     ){
         super(apiService, alertService, modalManager, {
@@ -59,6 +60,8 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
 
 	ngOnInit() {
         this.filtros.id_empresa = '';
+        this.filtros.id_sucursal = '';
+        this.filtros.tipo = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
@@ -69,27 +72,34 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
 
         this.apiService.getAll('empresas/list')
             .pipe(this.untilDestroyed())
-            .subscribe(empresas => { 
+            .subscribe(empresas => {
                 this.empresas = empresas;
             }, error => {this.alertService.error(error); });
+
+    this.apiService.getAll('sucursales/list').subscribe((sucursales) => {
+      this.sucursalesList = sucursales;
+    }, (error) => { this.alertService.error(error); });
     }
 
-    public override loadAll(){
-        this.loading = true;        
+    public override loadAll(closeFilterModal = false){
+        this.loading = true;
         this.apiService.getAll('admin-usuarios', this.filtros)
             .pipe(this.untilDestroyed())
-            .subscribe(usuarios => { 
+            .subscribe(usuarios => {
                 this.usuarios = usuarios;
                 this.usuarios.data.forEach((usuario:any) => {
                     usuario.rol_name = usuario.roles[0].name;
                     usuario.rol_id = usuario.roles[0].id;
                 });
                 this.loading = false;
+                if (closeFilterModal) {
+                  this.modalRef?.hide();
+                }
             }, error => {this.alertService.error(error); this.loading = false;});
 
         this.apiService.getAll('roles')
             .pipe(this.untilDestroyed())
-            .subscribe(roles => { 
+            .subscribe(roles => {
                 this.roles = roles;
                 this.roles.forEach((rol:any) => {
                     rol.name = rol.name.split('_')
@@ -99,9 +109,13 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
             }, error => {this.alertService.error(error); });
     }
 
+  openFilterModal(template: TemplateRef<any>) {
+    this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+  }
+
     override openModal(template: TemplateRef<any>, usuario?: any) {
         this.usuario = usuario || {};
-        
+
         if (!this.usuario.id) {
             this.usuario.rol_id = 2;
         }
@@ -130,14 +144,51 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
     selectSucursal(){
         this.usuario.id_bodega = this.bodegas[0]?.id;
     }
-    
+
+    public descargarUsuarios(): void {
+        this.downloading = true;
+        const params = { ...this.filtros };
+        delete params.paginate;
+        this.apiService.export('admin-usuarios/exportar', params).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'usuarios-smartpyme.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+        }, (error) => {
+            this.alertService.error(error);
+            this.downloading = false;
+        });
+    }
+
     public mostrarPassword(){
         this.showpassword = !this.showpassword;
-    }  
-    
+    }
+
     public mostrarPassword2(){
         this.showpassword2 = !this.showpassword2;
-    }  
+    }
+
+    public onSubmit() {
+        this.saving = true;
+        // Guardamos al usuario
+        this.apiService.store('admin-usuario', this.usuario).subscribe(usuario => {
+            this.loadAll();
+            this.saving = false;
+            if(!this.usuario.id){
+                this.alertService.success('Usuario creado', 'El usuario fue añadido exitosamente.');
+            }else{
+                this.alertService.success('Usuario guardado', 'El usuario fue guardado exitosamente.');
+            }
+            this.modalRef?.hide();
+        },error => {this.alertService.error(error); this.saving = false; });
+
+    }
 
     public setEstado(usuario:any){
         this.apiService.store('admin-usuario', usuario)
@@ -159,7 +210,7 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
 
     public override delete(item: any | number): void {
         const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
+
         if (!confirm('¿Desea eliminar el Registro?')) {
             return;
         }
@@ -187,7 +238,7 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
         this.loading = true;
         this.apiService.store('admin-usuarios/filtrar', this.filtros)
             .pipe(this.untilDestroyed())
-            .subscribe(usuarios => { 
+            .subscribe(usuarios => {
                 this.usuarios = usuarios;
                 this.loading = false;
                 this.closeModal();

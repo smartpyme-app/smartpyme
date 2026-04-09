@@ -41,6 +41,7 @@ import { MateriaPrimaInformacionComponent } from './materias-prima/materia-prima
 import { KardexComponent } from './kardex/kardex.component';
 import { TrasladosComponent } from './traslados/traslados.component';
 import { TrasladoComponent } from './traslados/traslado/traslado.component';
+import { TrasladoDetalleComponent } from './traslados/traslado-detalle/traslado-detalle.component';
 import { AjustesComponent } from './ajustes/ajustes.component';
 import { AjusteComponent } from './ajustes/ajuste/ajuste.component';
 
@@ -107,6 +108,7 @@ import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
     MateriaPrimaInformacionComponent,
     TrasladosComponent,
     TrasladoComponent,
+    TrasladoDetalleComponent,
     AjustesComponent,
     AjusteComponent,
     ServiciosComponent,
@@ -149,6 +151,7 @@ import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
     MateriaPrimaInformacionComponent,
     TrasladosComponent,
     TrasladoComponent,
+    TrasladoDetalleComponent,
     AjustesComponent,
     AjusteComponent,
     ServiciosComponent,

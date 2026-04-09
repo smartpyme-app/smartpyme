@@ -120,6 +120,12 @@
               @if (config.tipo_reporte === 'detalle-ventas-vendedor') {
                 <span>Detalle de Ventas por Vendedor</span>
               }
+              @if (config.tipo_reporte === 'detalle-ventas-totales') {
+                <span>Detalle de Ventas Totales</span>
+              }
+              @if (config.tipo_reporte === 'detalle-ventas-por-producto') {
+                <span>Detalle de Ventas por Producto</span>
+              }
               @if (config.tipo_reporte === 'inventario-por-sucursal') {
                 <span>Inventario por Sucursal</span>
               }
@@ -139,6 +145,8 @@
                 config.tipo_reporte !== 'ventas-por-categoria-vendedor' &&
                 config.tipo_reporte !== 'estado-financiero-consolidado-sucursales' &&
                 config.tipo_reporte !== 'detalle-ventas-vendedor' &&
+                config.tipo_reporte !== 'detalle-ventas-totales' &&
+                config.tipo_reporte !== 'detalle-ventas-por-producto' &&
                 config.tipo_reporte !== 'inventario-por-sucursal' &&
                 config.tipo_reporte !== 'ventas-por-utilidades' &&
                 config.tipo_reporte !== 'cobros-por-vendedor' &&
@@ -480,6 +488,27 @@
                   planificación de compras y prevención de desabastecimiento.
                   </p>
                   </div>
+                }
+                @case ('detalle-ventas-por-producto') {
+                <div>
+                  <strong class="d-block mb-1"
+                  >Detalle de Ventas por Producto</strong
+                  >
+                  <p class="mb-2">
+                    Exporta el mismo Excel que en Ventas → “Detalles de ventas por
+                    producto”: una fila por línea de detalle con producto,
+                    cantidades, IVA, totales y, si aplica, datos de paquetes (WR,
+                    guía).
+                  </p>
+                  <ul class="ps-3 mb-1">
+                    <li>Respeta las sucursales seleccionadas en la configuración</li>
+                    <li>El período de cada envío es el día del reporte automático, o el rango que elija al descargar o enviar prueba</li>
+                  </ul>
+                  <p class="mb-0 mt-2">
+                    <strong>Ideal para:</strong> Seguimiento por SKU, conciliaciones
+                    y análisis de ventas al nivel de producto.
+                  </p>
+                </div>
                 }
                 @case ('cobros-por-vendedor') {
                   <div>

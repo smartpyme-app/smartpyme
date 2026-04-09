@@ -199,7 +199,8 @@
             </div>
             <div class="form-group col-12">
                 <label for="documento.nota">Nota</label>
-                <textarea name="documento.nota" class="form-control" cols="30" rows="3" [(ngModel)]="documento.nota"></textarea>
+                <textarea name="documento.nota" class="form-control" cols="30" rows="3" maxlength="1000" [(ngModel)]="documento.nota"></textarea>
+                <small class="text-muted">Máximo 1000 caracteres</small>
             </div>
         </div>
         <div class="d-grid">
@@ -284,7 +285,8 @@
               </div>
               <div class="form-group col-12">
                   <label for="documento.nota">Nota</label>
-                  <textarea name="documento.nota" class="form-control" cols="30" rows="3" [(ngModel)]="documento.nota"></textarea>
+                  <textarea name="documento.nota" class="form-control" cols="30" rows="3" maxlength="1000" [(ngModel)]="documento.nota"></textarea>
+                  <small class="text-muted">Máximo 1000 caracteres</small>
               </div>
           </div>
           <div class="d-grid">

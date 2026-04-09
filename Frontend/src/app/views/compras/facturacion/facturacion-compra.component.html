@@ -168,7 +168,7 @@
 
     <app-compra-detalles [compra]="compra" (update)="updatecompra($event)" (sumTotal)="sumTotal()"></app-compra-detalles>
 
-    <div class="row">
+    <div class="row" *ngIf="!apiService.isSupervisorLimitado()">
         <div class="col-md-12">
             <table class="table table-sm table-borderless table-condensed mb-0">
                 <tbody>
@@ -492,7 +492,7 @@
               <th style="width: 120px;">Código DTE</th>
               <th style="width: 200px;">Descripción DTE</th>
               <th style="width: 80px;">Cant.</th>
-              <th style="width: 100px;">Precio Unit.</th>
+              <th *ngIf="!apiService.isSupervisorLimitado()" style="width: 100px;">Precio Unit.</th>
               <th>Producto a Asignar</th>
             </tr>
           </thead>
@@ -780,7 +780,7 @@
         </div>
 
         <div class="row">
-          <div class="col-md-6">
+          <div class="col-md-6" *ngIf="!apiService.isSupervisorLimitado()">
             <div class="form-group mb-3">
               <label for="costo">Costo *</label>
               <input
@@ -794,7 +794,7 @@
                 placeholder="0.00">
             </div>
           </div>
-          <div class="col-md-6">
+          <div [class.col-md-6]="!apiService.isSupervisorLimitado()" [class.col-md-12]="apiService.isSupervisorLimitado()">
             <div class="form-group mb-3">
               <label for="precio">Precio de Venta</label>
               <input

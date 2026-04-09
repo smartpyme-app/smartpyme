@@ -25,6 +25,8 @@ export interface ConfiguracionReporte {
     VENTAS_POR_CATEGORIA_VENDEDOR: 'ventas-por-categoria-vendedor',
     ESTADO_FINANCIERO_CONSOLIDADO: 'estado-financiero-consolidado-sucursales',
     DETALLE_VENTAS_VENDEDOR: 'detalle-ventas-vendedor',
+    DETALLE_VENTAS_TOTALES: 'detalle-ventas-totales',
+    DETALLE_VENTAS_POR_PRODUCTO: 'detalle-ventas-por-producto',
     VENTAS_DIARIAS: 'ventas-diarias',
     PRODUCTOS_VENDIDOS: 'productos-vendidos'
   };

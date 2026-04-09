@@ -23,6 +23,7 @@
       "ES2022",
       "dom"
     ],
+    "skipLibCheck": true,
     "paths": {
       "@shared/*": [
         "src/app/shared/*"
@@ -44,6 +45,9 @@
       ],
       "@workers/*": [
         "src/app/workers/*"
+      ],
+      "@charts/*": [
+        "src/app/views/dashboard/*"
       ]
     }
   },

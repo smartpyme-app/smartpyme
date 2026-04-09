@@ -110,7 +110,7 @@
                 @foreach($venta->detalles as $detalle)
                 <tr>
                     <td class="border-bottom">   {{ $detalle->producto->codigo ?? $detalle->producto->barcode }}</td>
-                    <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
+                    <td class="border-bottom">@include('reportes.facturacion.partials.cotizacion-detalle-descripcion')</td>
                     <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
                     <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{number_format($detalle->precio , 2) }}</td>
                     <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</th>

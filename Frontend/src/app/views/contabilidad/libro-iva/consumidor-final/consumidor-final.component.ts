@@ -48,6 +48,7 @@ export class ConsumidorFinalComponent extends BaseModalComponent implements OnIn
 
         this.filtros.id_sucursal = '';
         this.filtros.tipo_documento = 'Crédito fiscal';
+        this.filtros.estado_json = 'no_anulados';
         this.filtros.anio = currentYear;
         this.filtros.mes = currentMonth;
         this.filtros.time = 'day';
@@ -171,17 +172,30 @@ export class ConsumidorFinalComponent extends BaseModalComponent implements OnIn
               return;
             }
 
-            // Si no es texto plano, es un archivo ZIP
+            if (data.size === 0) {
+              this.alertService.error('El archivo descargado está vacío');
+              this.downloading = false;
+              return;
+            }
+
+            const fechaInicio = this.filtros.inicio.replace(/-/g, '');
+            const fechaFin = this.filtros.fin.replace(/-/g, '');
+            const prefijoDte = this.filtros.estado_json === 'anulados' ? 'DTEs_anulados_' : 'DTEs_';
+            const filename = `${prefijoDte}${fechaInicio}_${fechaFin}.zip`;
+
             const url = window.URL.createObjectURL(data);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'DTEs_Export_' + new Date().toISOString().slice(0, 10) + '.zip';
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            setTimeout(() => {
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(url);
+            }, 100);
             this.downloading = false;
             this.cdr.markForCheck();
+            this.alertService.success('Éxito', 'Archivo descargado correctamente');
           },
           (error: any) => {
             // Para errores HTTP que no devuelven un Blob

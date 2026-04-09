@@ -1235,7 +1235,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 lotes_dias_anticipacion: 30, // Días para alerta de vencimiento
                 componente_quimico_activo: false, // Habilitar campo componente químico en productos
                 modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
-                estado_cuenta_en_facturacion: false // Mostrar estado de cuenta del cliente al facturar
+                estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
+                sku_correlativo_automatico: false, // SKU correlativo automático al crear productos
+                bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
             },
             campos_personalizados: {}
         };
@@ -1390,6 +1392,26 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.updateCamposContables(!currentValue);
     }
 
+    public isBloquearCotizacionesVendedoresEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'bloquear_cotizaciones_vendedores', false);
+    }
+
+    public updateBloquearCotizacionesVendedores(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'bloquear_cotizaciones_vendedores', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Restricciones de cotizaciones para vendedores activadas.'
+                    : 'Restricciones de cotizaciones para vendedores desactivadas.'
+            );
+        });
+    }
+
+    public toggleBloquearCotizacionesVendedores() {
+        this.updateBloquearCotizacionesVendedores(!this.isBloquearCotizacionesVendedoresEnabled());
+    }
+
     // Métodos para configuraciones de lotes
     public isLotesActivo(): boolean {
         return this.getCustomConfig('configuraciones', 'lotes_activo', false);
@@ -1489,6 +1511,30 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.alertService.success(
                 'Configuración actualizada',
                 `Estado de cuenta en facturación ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    public isSkuCorrelativoAutomatico(): boolean {
+        return this.getCustomConfig('configuraciones', 'sku_correlativo_automatico', false);
+    }
+
+    public toggleSkuCorrelativoAutomatico() {
+        this.updateSkuCorrelativoAutomatico(!this.isSkuCorrelativoAutomatico());
+    }
+
+    public updateSkuCorrelativoAutomatico(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'sku_correlativo_automatico', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `SKU correlativo automático ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
             );
             const authUser = this.apiService.auth_user();
             if (authUser?.empresa?.id === this.empresa?.id) {

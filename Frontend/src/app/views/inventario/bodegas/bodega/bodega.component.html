@@ -70,7 +70,7 @@
 
                     @for (inventario of productos?.data; track inventario.id) {
                         <tr>
-                            
+
                             <td>{{ inventario.id }}</td>
                             <td>{{ inventario.producto.nombre }}<a class="float-end d-none"  tooltip="Ver información del producto" routerLink="/producto/{{ inventario.producto_id }}"><i class="fa fa-edit"></i></a></td>
                             <td>{{ inventario.producto.nombre_categoria }} &rsaquo; {{ inventario.producto.nombre_subcategoria }}</td>
@@ -86,7 +86,7 @@
                                     <a class="btn btn-default" routerLink="/kardex/{{ inventario.producto_id }}" tooltip="Kardex">
                                         <i class="fa fa-right-left"></i>
                                     </a>
-                                </div>  
+                                </div>
                             </td>
 
                         </tr>
@@ -127,7 +127,7 @@
             <label for="ubicacion">Ubicación:</label>
             <input type="text" class="form-control" [(ngModel)]="producto.ubicacion" name="ubicacion" placeholder="Ubicación">
         </div>
-        
+
         <div class="col-12 mt-5">
             <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !producto.stock_min || !producto.producto_id">
                 @if (!loading) {
@@ -163,7 +163,7 @@
                 <label for="stock_final">Stock Real:</label>
                 <input type="number" min="1" class="form-control" [(ngModel)]="ajuste.stock_final" name="stock_final" focus="true">
             </div>
-            
+
             <div class="form-group col-xs-12">
                 <label for="ajuste">Ajuste:</label>
                 @if (ajuste.stock_final) {
@@ -234,7 +234,7 @@
                 <input type="checkbox" [(ngModel)]="filtro.stock_bodega" class="form-check" name="filtro.stock_bodega">
             </div>
         </div>
-        
+
         <br><br>
         <div class="row text-center">
             <div class="col-xs-12">

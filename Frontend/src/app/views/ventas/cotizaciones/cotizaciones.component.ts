@@ -89,7 +89,7 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
   public override loadAll() {
     this.filtros.id_sucursal = '';
     this.filtros.id_cliente = '';
-    this.filtros.id_usuario = '';
+    this.filtros.id_usuario = this.apiService.isVentas() ? this.apiService.auth_user().id : '';
     this.filtros.id_canal = '';
     this.filtros.id_proyecto = '';
     this.filtros.forma_pago = '';
@@ -102,10 +102,13 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
   }
 
   public filtrarVentas() {
+    if (this.apiService.isVentas()) {
+      this.filtros.id_usuario = this.apiService.auth_user().id;
+    }
     this.loading = true;
     this.cdr.markForCheck();
     if (!this.filtros.id_cliente) this.filtros.id_cliente = '';
-  
+
     this.apiService.getAll('cotizaciones', this.filtros)
       .pipe(this.untilDestroyed())
       .subscribe(ventas => {
@@ -131,7 +134,7 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
   public setEstado(cotizacion: any) {
     // Agregamos el distintivo
     cotizacion.cotizacion_id = 1;
-    
+
     this.apiService.store('cotizacion', cotizacion)
       .pipe(this.untilDestroyed())
       .subscribe({
@@ -148,7 +151,7 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
 
   public override delete(item: any | number): void {
     const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-    
+
     if (!confirm('¿Desea eliminar el Registro?')) {
       return;
     }

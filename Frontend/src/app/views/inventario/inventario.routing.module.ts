@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '@layout/layout.component';
 import { CitasGuard } from '@guards/citas.guard';
-import { AdminGuard } from '@guards/admin.guard';
+import { InventarioOperacionesAdminGuard } from '@guards/inventario-operaciones-admin.guard';
 
 import { ProductosComponent } from '@views/inventario/productos/productos.component';
 import { DetalleProductoComponent } from '@views/inventario/productos/detalle-producto/detalle-producto.component';
@@ -16,6 +16,7 @@ import { MateriaPrimaComponent } from '@views/inventario/materias-prima/materia-
 import { KardexComponent } from '@views/inventario/kardex/kardex.component';
 import { TrasladosComponent } from '@views/inventario/traslados/traslados.component';
 import { TrasladoComponent } from '@views/inventario/traslados/traslado/traslado.component';
+import { TrasladoDetalleComponent } from '@views/inventario/traslados/traslado-detalle/traslado-detalle.component';
 import { AjustesComponent } from '@views/inventario/ajustes/ajustes.component';
 import { AjusteComponent } from '@views/inventario/ajustes/ajuste/ajuste.component';
 import { CategoriasComponent } from '@views/inventario/categorias/categorias.component';
@@ -45,11 +46,11 @@ const routes: Routes = [
         { path: 'productos', component: ProductosComponent, title: 'Productos' },
         { path: 'detalle-producto/:id', component: DetalleProductoComponent, title: 'Detalle de producto' },
         { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
-        { path: 'ajuste/crear', component: AjusteMasivoComponent, title: 'Ajuste masivo' },
+        { path: 'ajuste/crear', canActivate: [InventarioOperacionesAdminGuard], component: AjusteMasivoComponent, title: 'Ajuste masivo' },
         { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
 
 
-        { path: 'consignas', component: ProductosConsignasComponent, title: 'Productos en consigna' },
+        { path: 'consignas', canActivate: [InventarioOperacionesAdminGuard], component: ProductosConsignasComponent, title: 'Productos en consigna' },
 
         { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
         { path: 'materia-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
@@ -57,16 +58,18 @@ const routes: Routes = [
         { path: 'materia-prima/editar/:id', component: ProductoComponent, title: 'Materia prima'  },
 
         { path: 'producto/:id', component: ProductoComponent },
+        { path: 'kardex', component: KardexComponent, title: 'Kardex' },
         { path: 'kardex/:id', component: KardexComponent },
         { path: 'promociones', component: PromocionesComponent},
 
-        { path: 'traslados', component: TrasladosComponent, title: 'Traslados' },
-        { path: 'traslado/:id', component: TrasladoComponent, title: 'Traslado'  },
+        { path: 'traslados', canActivate: [InventarioOperacionesAdminGuard], component: TrasladosComponent, title: 'Traslados' },
+        { path: 'traslado/:id', canActivate: [InventarioOperacionesAdminGuard], component: TrasladoComponent, title: 'Traslado'  },
+        { path: 'traslado/detalle/:id', canActivate: [InventarioOperacionesAdminGuard], component: TrasladoDetalleComponent, title: 'Detalle de traslado' },
 
         { path: 'categorias', component: CategoriasComponent, title: 'Categorias' },
 
-        { path: 'ajustes', component: AjustesComponent, title: 'Ajustes'  },
-        { path: 'ajuste/:id', component: AjusteComponent, title: 'Ajuste'  },
+        { path: 'ajustes', canActivate: [InventarioOperacionesAdminGuard], component: AjustesComponent, title: 'Ajustes'  },
+        { path: 'ajuste/:id', canActivate: [InventarioOperacionesAdminGuard], component: AjusteComponent, title: 'Ajuste'  },
 
         { path: 'lotes', component: LotesComponent, title: 'Lotes'  },
 
@@ -78,15 +81,15 @@ const routes: Routes = [
 
         { path: 'bodegas', component: BodegasComponent },
         { path: 'bodega/:id', component: BodegaComponent },
-        { path: 'traslado-masivo/crear', component: TrasladoMasivoComponent, title: 'Traslado masivo' },
+        { path: 'traslado-masivo/crear', canActivate: [InventarioOperacionesAdminGuard], component: TrasladoMasivoComponent, title: 'Traslado masivo' },
 
         // Nuevas rutas para entradas y salidas
-        { path: 'entradas', component: InventarioEntradasComponent, title: 'Entradas de Inventario' },
-        { path: 'entrada/:id', component: InventarioEntradaComponent, title: 'Entrada de Inventario' },
-        { path: 'entrada/detalle/:id', component: EntradaDetalleComponent, title: 'Detalle de entrada' },
-        { path: 'salidas', component: InventarioSalidasComponent, title: 'Salidas de Inventario' },
-        { path: 'salida/:id', component: InventarioSalidaComponent, title: 'Salida de Inventario' },
-        { path: 'salida/detalle/:id', component: SalidaDetalleComponent, title: 'Detalle de salida' },
+        { path: 'entradas', canActivate: [InventarioOperacionesAdminGuard], component: InventarioEntradasComponent, title: 'Entradas de Inventario' },
+        { path: 'entrada/:id', canActivate: [InventarioOperacionesAdminGuard], component: InventarioEntradaComponent, title: 'Entrada de Inventario' },
+        { path: 'entrada/detalle/:id', canActivate: [InventarioOperacionesAdminGuard], component: EntradaDetalleComponent, title: 'Detalle de entrada' },
+        { path: 'salidas', canActivate: [InventarioOperacionesAdminGuard], component: InventarioSalidasComponent, title: 'Salidas de Inventario' },
+        { path: 'salida/:id', canActivate: [InventarioOperacionesAdminGuard], component: InventarioSalidaComponent, title: 'Salida de Inventario' },
+        { path: 'salida/detalle/:id', canActivate: [InventarioOperacionesAdminGuard], component: SalidaDetalleComponent, title: 'Detalle de salida' },
 
 
     ]

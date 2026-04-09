@@ -24,7 +24,7 @@ class Kardex extends Model {
         'id_usuario',
     );
 
-    protected $appends = ['nombre_usuario', 'nombre_producto', 'modelo', 'modelo_detalle', 'numero_lote'];
+    protected $appends = ['nombre_usuario', 'nombre_producto', 'modelo', 'modelo_detalle', 'numero_lote', 'nombre_proveedor_origen', 'nacionalidad_proveedor'];
 
     public function getNombreUsuarioAttribute()
     {
@@ -174,6 +174,52 @@ class Kardex extends Model {
         }
         
         return null;
+    }
+
+    /**
+     * Nombre del proveedor (compras) o origen (ventas/cliente) para formato kardex farmacia
+     */
+    public function getNombreProveedorOrigenAttribute()
+    {
+        if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
+            $compra = \App\Models\Compras\Compra::find($this->referencia);
+            if ($compra && $compra->proveedor) {
+                return $compra->proveedor->tipo == 'Empresa' ? ($compra->proveedor->nombre_empresa ?? '') : trim(($compra->proveedor->nombre ?? '') . ' ' . ($compra->proveedor->apellido ?? ''));
+            }
+        }
+        if (str_contains($this->detalle, 'Devolución Compra')) {
+            $devolucion = \App\Models\Compras\Devoluciones\Devolucion::find($this->referencia);
+            if ($devolucion && $devolucion->proveedor) {
+                return $devolucion->proveedor->tipo == 'Empresa' ? ($devolucion->proveedor->nombre_empresa ?? '') : trim(($devolucion->proveedor->nombre ?? '') . ' ' . ($devolucion->proveedor->apellido ?? ''));
+            }
+        }
+        if ($this->detalle == 'Venta' || $this->detalle == 'Venta a consigna' || $this->detalle == 'Venta Anulada' || str_contains($this->detalle, 'Devolución Venta')) {
+            $venta = \App\Models\Ventas\Venta::find($this->referencia);
+            if ($venta && $venta->cliente) {
+                return $venta->cliente->nombre ?? '';
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Nacionalidad del proveedor (compras) para formato kardex farmacia
+     */
+    public function getNacionalidadProveedorAttribute()
+    {
+        if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
+            $compra = \App\Models\Compras\Compra::find($this->referencia);
+            if ($compra && $compra->proveedor && $compra->proveedor->pais) {
+                return $compra->proveedor->pais;
+            }
+        }
+        if (str_contains($this->detalle, 'Devolución Compra')) {
+            $devolucion = \App\Models\Compras\Devoluciones\Devolucion::find($this->referencia);
+            if ($devolucion && $devolucion->proveedor && $devolucion->proveedor->pais) {
+                return $devolucion->proveedor->pais;
+            }
+        }
+        return '';
     }
 
 }

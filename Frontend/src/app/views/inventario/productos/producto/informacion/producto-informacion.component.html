@@ -1,108 +1,75 @@
 <form name="form" (ngSubmit)="onSubmit()">
-  <div class="row">
-    <h5 class="mb-3 font-weight-bold">Detalles</h5>
-    <!-- nombre  -->
-    <div class="form-group col-md-12 col-lg-3">
-      <label for="nombre">Nombre</label>
-      <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre"
-        placeholder="Escribe aquí" required>
-    </div>
-    <!-- categoria -->
-    <div class="form-group col-md-12 col-lg-3">
-      <label for="id_categoria" class="w-100">Categoría</label>
-      <div class="input-group">
-        <ng-select name="id_categoria" [(ngModel)]="producto.id_categoria" class="form-select p-0"
-          (change)="updateInputValue($event)">
-          @for (categoria of categorias; track categoria.id) {
-          <ng-option [value]="categoria.id">
-            {{categoria.nombre}}
-          </ng-option>
-          }
-        </ng-select>
-        <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
-      </div>
-    </div>
-
-
-    <!-- subcategoria -->
-    <div class="form-group col-md-12 col-lg-3">
-      <label for="id_subcategoria" class="w-100">Subcategoría</label>
-      <div class="input-group">
-        <ng-select name="id_subcategoria" [(ngModel)]="producto.id_subcategoria" class="form-select p-0"
-          (change)="updateInputValue($event)">
-          @for (subcategoria of subcategRes; track subcategoria.id) {
-          <ng-option [value]="subcategoria.id">
-            {{subcategoria.nombre}}
-          </ng-option>
-          }
-        </ng-select>
-        <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
-      </div>
-    </div>
-    <!-- marca -->
-    <div class="form-group col-md-12 col-lg-3">
-      <label for="marca">Marca</label>
-      <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
-    </div>
-
-    <div class="form-group col-md-12 col-lg-7">
-      <label for="etiquetas">Etiquetas</label>
-      <tag-input theme='bootstrap' [placeholder]="'Escribe aquí'" secondaryPlaceholder="Escribe aquí" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
-    </div>
-
-    <!-- <h6 class="my-3 font-weight-bold">Organización</h6> -->
-    <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
-
-
-    <!-- codigo sku  -->
-    <div class="form-group col-md-6 col-lg-3">
-      <label for="codigo">Código</label>
-      <div class="input-group">
-        <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" [disabled]="true"
-          placeholder="Se genera con las categorias">
-        <!-- <span class="input-group-text" *ngIf="producto.codigo">
+    <div class="row">
+        <h6 class="mb-3 font-weight-bold">Detalles</h6>
+        <div class="form-group col-md-12 col-lg-4">
+            <label for="nombre">Nombre</label>
+            <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre" placeholder="Escribe aquí" required>
+        </div>
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="codigo">Código (SKU)</label>
+            <div class="input-group">
+                <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" [placeholder]="!producto.id && apiService.isSkuCorrelativoAutomatico() ? 'Sugerido automáticamente' : 'Escribe aquí'">
+                <span class="input-group-text" *ngIf="producto.codigo">
                     <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
-                </span> -->
-      </div>
-    </div>
-     <!-- unidad de medida -->
-     @if (producto.tipo != 'Servicio') {
-     <div class="form-group col-md-4 col-lg-3">
-      <label for="medida">U. de Medida</label>
-      <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="medida">
-        @for (medida of medidas; track medida.nombre) {
-        <ng-option [value]="medida.nombre">
-          {{ medida.nombre }}
-        </ng-option>
-        }
-      </ng-select>
-    </div>
-    }
-    <!-- codigo de barra  -->
-    <div class="form-group col-md-6 col-lg-3">
-      <label for="barcode">Código de barras</label>
-      <div class="input-group">
-        <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí"
-          mask='0*'>
-        @if (producto.barcode) {
-        <span class="input-group-text">
-          <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
-        </span>
-        }
-      </div>
-    </div>
+                </span>
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="barcode">Código de barras</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
+        </div>
+        <div class="form-group col-md-6 col-lg-2" *ngIf="producto.tipo != 'Servicio'">
+            <label for="medida">U. de Medida</label>
+            <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="producto.medida">
+                <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
+                    {{ medida.nombre }}
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-4" *ngIf="isComponenteQuimicoHabilitado()">
+            <label for="componente_quimico">Componente químico</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.componente_quimico" name="componente_quimico" placeholder="Escribe aquí">
+        </div>
 
-    <div class="form-group col-md-12 col-lg-4" *ngIf="isComponenteQuimicoHabilitado()">
-      <label for="componente_quimico">Componente químico</label>
-      <input type="text" class="form-control" [(ngModel)]="producto.componente_quimico" name="componente_quimico" placeholder="Escribe aquí">
-    </div>
-
-    <!-- codigo de proveedor  -->
-    <div class="form-group col-md-6 col-lg-3">
-      <label for="cod_proveed_prod">Código de proveedor</label>
-      <input type="text" class="form-control" [(ngModel)]="producto.cod_proveed_prod" name="cod_proveed_prod"
-        placeholder="Escribe aquí" mask='0*'>
-    </div>
+        <h6 class="my-3 font-weight-bold">Organización</h6>
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="subcategoria_id" class="w-100">Categoria</label>
+            <div class="input-group">
+                <ng-select
+                    name="id_categoria"
+                    [(ngModel)]="producto.id_categoria"
+                    class="form-select p-0"
+                    [items]="categorias"
+                    bindLabel="nombre"
+                    bindValue="id"
+                    placeholder="Seleccione una categoría">
+                </ng-select>
+                <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
+            </div>
+        </div>
+      <!-- subcategoria -->
+      <div class="form-group col-md-6col-lg-2">
+        <label for="id_subcategoria" class="w-100">Subcategoría</label>
+        <div class="input-group">
+          <ng-select name="id_subcategoria" [(ngModel)]="producto.id_subcategoria" class="form-select p-0"
+                     (change)="updateInputValue($event)">
+            @for (subcategoria of subcategRes; track subcategoria.id) {
+            <ng-option [value]="subcategoria.id">
+            {{subcategoria.nombre}}
+            </ng-option>
+            }
+          </ng-select>
+          <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
+        </div>
+      </div>
+        <div class="form-group col-md-6 col-lg-2">
+            <label for="marca">Marca</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
+        </div>
+        <div class="form-group col-md-12 col-lg-7">
+            <label for="etiquetas">Etiquetas</label>
+            <tag-input theme='bootstrap' [placeholder]="'Escribe aquí'" secondaryPlaceholder="Escribe aquí" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
+        </div>
 
         <h6 class="my-3 font-weight-bold">Precio</h6>
         @if (!loading && producto.tipo != 'Materia prima') {

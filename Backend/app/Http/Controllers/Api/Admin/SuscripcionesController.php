@@ -225,6 +225,10 @@ class SuscripcionesController extends Controller
                 $suscripcion->fecha_cancelacion = now();
             }
 
+            if ($request->has('comentarios')) {
+                $suscripcion->comentarios = $request->input('comentarios');
+            }
+
             $suscripcion->intentos_cobro = 0;
             $suscripcion->estado_ultimo_pago = 'Pendiente';
 
@@ -285,7 +289,7 @@ class SuscripcionesController extends Controller
                 $empresa->save();
             }
 
-            $suscripcion->update([
+            $datosActualizacion = [
                 'fecha_proximo_pago' => $validated['fecha_proximo_pago'],
                 'estado_ultimo_pago' => $request->input('estado_ultimo_pago'),
                 'estado' => $validated['estado'],
@@ -296,7 +300,11 @@ class SuscripcionesController extends Controller
                 'nombre_factura' => $request->input('nombre_factura'),
                 'direccion_factura' => $request->input('direccion_factura'),
                 'motivo_cancelacion' => $request->input('motivo_cancelacion'),
-            ]);
+            ];
+            if ($request->exists('comentarios')) {
+                $datosActualizacion['comentarios'] = $request->input('comentarios');
+            }
+            $suscripcion->update($datosActualizacion);
 
             // Actualizar campos monto_mensual y monto_anual en la empresa
             $empresa = Empresa::findOrFail($suscripcion->empresa_id);
