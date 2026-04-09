@@ -99,7 +99,7 @@ class GastosController extends Controller
 
     public function read($id)
     {
-        $gasto = Gasto::where('id', $id)->with(['abonos', 'detalles'])->first();
+        $gasto = Gasto::where('id', $id)->with(['abonos', 'detalles', 'areaEmpresa.departamento'])->first();
         if (!$gasto) {
             return response()->json(['error' => 'Gasto no encontrado'], 404);
         }

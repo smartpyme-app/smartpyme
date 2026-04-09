@@ -6,6 +6,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 import * as moment from 'moment';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-gasto',
@@ -34,6 +35,13 @@ export class GastoComponent implements OnInit {
 
   public varios_items = false;
   public detalles: any[] = [];
+
+  /** Catálogo de áreas (filtradas por sucursal al cargar). */
+  public areas: any[] = [];
+  /** Departamentos de empresa según sucursal del gasto. */
+  public departamentosEmpresa: any[] = [];
+  /** Solo UI: filtra áreas; el gasto guarda `id_area_empresa`. */
+  public idDepartamentoSeleccionado: number | null = null;
 
   modalRef?: BsModalRef;
 
@@ -196,9 +204,11 @@ export class GastoComponent implements OnInit {
               }
           }
 
-          if (!this.gasto.area_empresa) {
-            this.gasto.area_empresa = '';
+          if (this.gasto.es_retaceo === undefined || this.gasto.es_retaceo === null) {
+            this.gasto.es_retaceo = false;
           }
+
+          this.cargarDepartamentosYAreas();
 
           if (this.gasto.detalles && this.gasto.detalles.length > 1) {
             this.varios_items = true;
@@ -243,7 +253,9 @@ export class GastoComponent implements OnInit {
       this.gasto.id_usuario = this.apiService.auth_user().id;
       this.gasto.otros_impuestos = []; 
       this.gasto.impuestos_valores = [];
-      this.gasto.area_empresa = '';
+      this.gasto.id_area_empresa = null;
+      this.gasto.es_retaceo = false;
+      this.idDepartamentoSeleccionado = null;
       this.varios_items = false;
       this.detalles = [];
 
@@ -252,6 +264,7 @@ export class GastoComponent implements OnInit {
           +this.route.snapshot.queryParamMap.get('id_proyecto')!;
       }
       this.setTotal();
+      this.cargarDepartamentosYAreas();
     }
 
     // Duplicar gasto
@@ -268,6 +281,10 @@ export class GastoComponent implements OnInit {
             this.gasto = gasto;
             this.gasto.fecha = this.apiService.date();
             this.gasto.id = null;
+            if (this.gasto.es_retaceo === undefined || this.gasto.es_retaceo === null) {
+              this.gasto.es_retaceo = false;
+            }
+            this.cargarDepartamentosYAreas();
 
             if(this.gasto.otros_impuestos) {
               this.mostrar_otros_impuestos = true;
@@ -363,12 +380,6 @@ export class GastoComponent implements OnInit {
         this.alertService.error(error);
       }
     );
-  }
-
-  public setCategoria(categoria: any) {
-    this.categorias.push(categoria);
-    this.gasto.id_categoria = categoria.id;
-    this.gasto.tipo = categoria.nombre ?? '';
   }
 
   /** Mantiene `gasto.tipo` (requerido por el API) alineado con la categoría elegida por id. */
@@ -704,6 +715,7 @@ export class GastoComponent implements OnInit {
     }
 
     const payload: any = { ...this.gasto };
+    payload.area_empresa = null;
     if (this.varios_items && this.detalles.length > 0) {
       payload.varios_items = true;
       payload.detalles = this.detalles.map(d => {
@@ -1263,6 +1275,91 @@ export class GastoComponent implements OnInit {
 
   public isColumnEnabled(columnName: string): boolean {
       return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+  }
+
+  /** Áreas del departamento elegido (obligatorio elegir departamento antes). */
+  get areasGastoSelector(): any[] {
+    if (!this.areas?.length || this.idDepartamentoSeleccionado == null) {
+      return [];
+    }
+    return this.areas.filter(
+      (a: any) => String(a.id_departamento) === String(this.idDepartamentoSeleccionado)
+    );
+  }
+
+  setDepartamentoCreado(dep: any) {
+    this.idDepartamentoSeleccionado = dep.id;
+    this.cargarDepartamentosYAreas();
+  }
+
+  setAreaEmpresaCreada(area: any) {
+    this.gasto.id_area_empresa = area.id;
+    if (area.id_departamento != null) {
+      this.idDepartamentoSeleccionado = area.id_departamento;
+    }
+    this.cargarDepartamentosYAreas();
+  }
+
+  /** Carga departamentos y áreas según sucursal del gasto y sincroniza el selector de departamento. */
+  public cargarDepartamentosYAreas(): void {
+    if (!this.gasto?.id_sucursal) {
+      this.departamentosEmpresa = [];
+      this.areas = [];
+      this.idDepartamentoSeleccionado = null;
+      return;
+    }
+    forkJoin({
+      deps: this.apiService.getAll('area-empresa/list_departamentos', {
+        id_sucursal: this.gasto.id_sucursal,
+      }),
+      areas: this.apiService.getAll('area-empresa/list', {
+        id_sucursal: this.gasto.id_sucursal,
+      }),
+    }).subscribe({
+      next: ({ deps, areas }) => {
+        this.departamentosEmpresa = deps;
+        this.areas = areas;
+        this.aplicarSeleccionDepartamentoDesdeArea();
+      },
+      error: (e) => this.alertService.error(e),
+    });
+  }
+
+  private aplicarSeleccionDepartamentoDesdeArea(): void {
+    if (!this.gasto?.id_area_empresa || !this.areas?.length) {
+      return;
+    }
+    const a = this.areas.find(
+      (x: any) => String(x.id) === String(this.gasto.id_area_empresa)
+    );
+    if (a) {
+      this.idDepartamentoSeleccionado = a.id_departamento;
+    }
+  }
+
+  public onDepartamentoGastoChange(): void {
+    if (this.idDepartamentoSeleccionado == null) {
+      this.gasto.id_area_empresa = null;
+      return;
+    }
+    if (this.gasto?.id_area_empresa == null || this.gasto.id_area_empresa === '') {
+      return;
+    }
+    const sel = this.areas.find(
+      (x: any) => String(x.id) === String(this.gasto.id_area_empresa)
+    );
+    if (
+      sel &&
+      String(sel.id_departamento) !== String(this.idDepartamentoSeleccionado)
+    ) {
+      this.gasto.id_area_empresa = null;
+    }
+  }
+
+  public onSucursalGastoChange(): void {
+    this.gasto.id_area_empresa = null;
+    this.idDepartamentoSeleccionado = null;
+    this.cargarDepartamentosYAreas();
   }
 
   public goBack() {
