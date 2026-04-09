@@ -12,12 +12,12 @@
             line-height: 1.2;
         }
         @page {
-            /* Márgenes uniformes 2 cm (área imprimible respecto al borde de la hoja) */
-            margin: 2cm;
+            /* Más espacio arriba: impresoras/DomPDF suelen recortar; lados y abajo 2 cm */
+            margin: 3cm 2cm 2cm 2cm;
             size: letter;
         }
         #factura {
-            padding: 6px 18px 0 18px;
+            padding: 14px 18px 0 18px;
         }
 
         p {
