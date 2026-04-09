@@ -12,11 +12,12 @@
             line-height: 1.2;
         }
         @page {
-            margin: 1.1cm 1.4cm;
+            /* Márgenes uniformes 2 cm (área imprimible respecto al borde de la hoja) */
+            margin: 2cm;
             size: letter;
         }
         #factura {
-            padding: 0 18px;
+            padding: 6px 18px 0 18px;
         }
 
         p {
