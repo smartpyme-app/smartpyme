@@ -24,14 +24,27 @@
             margin: 0 0 3px 0;
         }
 
-        #header { width: 100%; border: none !important; border-collapse: collapse; }
-        #header td { padding: 4px 6px; vertical-align: top; border: none !important; }
+        #header { width: 100%; border: none !important; border-collapse: collapse; table-layout: fixed; }
+        #header td { padding: 4px 8px; vertical-align: top; border: none !important; }
         #header tbody { border: none !important; }
-        #header .col-logo { width: 42%; }
-        #header .encabezado-doc { width: 58%; text-align: right; }
+        #header .col-logo { width: 40%; }
+        #header .encabezado-doc { width: 60%; text-align: right; }
         #header .bloque-empresa,
         #header .bloque-cliente { width: 50%; }
-        #header .titulo-bloque { font-size: 10px; font-weight: bold; letter-spacing: 0.04em; margin: 0 0 5px 0; text-transform: uppercase; color: #333; }
+        #header .encabezado-doc p { margin: 0 0 3px 0; text-align: right; }
+        #header .bloque-cliente .linea-nombre {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: normal;
+            line-height: 1.25;
+            max-width: 100%;
+        }
+        #header .bloque-cliente .linea-direccion {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.25;
+            max-width: 100%;
+        }
         #header h1 { margin: 0 0 2px 0; line-height: 1.15; }
         #header h2 { font-size: 12px; margin: 0 0 3px 0; line-height: 1.15; }
         #header h3 { font-size: 11px; margin: 0 0 2px 0; }
@@ -42,6 +55,9 @@
 
         table tbody {
             border: 1px solid black; 
+        }
+        #header, #header tbody, #header tr, #header td {
+            border: none !important;
         }
 
         #productos th{
@@ -204,6 +220,23 @@
             $correoFactura = ($sucursalVenta && trim((string) ($sucursalVenta->correo ?? '')) !== '')
                 ? $sucursalVenta->correo
                 : ($empresa->correo ?? null);
+
+            // Dirección y teléfono del cliente: para tipo Empresa van en empresa_direccion / empresa_telefono
+            $direccionClienteFactura = '';
+            $telefonoClienteFactura = '';
+            if ($venta->id_cliente && isset($cliente) && $cliente) {
+                $baseDir = trim((string) ($cliente->getDireccionEfectiva() ?? ''));
+                if ($baseDir === '') {
+                    $baseDir = trim((string) ($cliente->direccion ?? $cliente->empresa_direccion ?? ''));
+                }
+                $partesDir = array_filter([
+                    $baseDir !== '' ? $baseDir : null,
+                    trim((string) ($cliente->municipio ?? '')) ?: null,
+                    trim((string) ($cliente->departamento ?? '')) ?: null,
+                ]);
+                $direccionClienteFactura = trim(implode(', ', $partesDir));
+                $telefonoClienteFactura = trim((string) ($cliente->getTelefonoEfectivo() ?? $cliente->telefono ?? $cliente->empresa_telefono ?? ''));
+            }
         @endphp
         <table id="header">
             <tbody style="border: 0;">
@@ -216,13 +249,13 @@
                     <td class="encabezado-doc">
                         <h1 style="text-align: right; font-size: 13px; margin: 0;">FACTURA</h1>
                         <h1 style="color: red; font-size: 12px; margin: 0 0 6px 0; text-align: right;">{{ $numFacturaDisplay }}</h1>
-                        <p style="margin: 0 0 3px 0; text-align: right;"><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
-                        <p style="margin: 0; text-align: right;"><b>Cotización:</b> {{ $venta->num_cotizacion }}</p>
+                        <p><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+                        <p><b>ID Cliente:</b> {{ $venta->cliente ? $venta->cliente->codigo_cliente : '' }}</p>
+                        <p><b>Cotización:</b> {{ $venta->num_cotizacion }}</p>
                     </td>
                 </tr>
                 <tr>
                     <td class="bloque-empresa">
-                        <p class="titulo-bloque">Empresa</p>
                         <h2>{{ strtoupper($empresa->nombre) }}</h2>
                         @if($empresa->nit)<h3><b>RTN: {{ $empresa->nit }}</b></h3>@endif
                         @if($direccionFactura)<p style="margin: 0 0 3px 0;">{{ $direccionFactura }}</p>@endif
@@ -230,12 +263,10 @@
                         @if($correoFactura)<p style="margin: 0;">E-mail: {{ $correoFactura }}</p>@endif
                     </td>
                     <td class="bloque-cliente">
-                        <p class="titulo-bloque">Cliente</p>
-                        <p style="margin: 0 0 4px 0;"><b>Nombre:</b> {{ $venta->nombre_cliente }}</p>
-                        <p style="margin: 0 0 3px 0;"><b>Dirección:</b> {{ $venta->id_cliente ? ($cliente->direccion ?? '') : '' }}</p>
-                        <p style="margin: 0 0 3px 0;"><b>ID Cliente:</b> {{ $venta->cliente ? $venta->cliente->codigo_cliente : '' }}</p>
-                        <p style="margin: 0 0 3px 0;"><b>RTN:</b> {{ $venta->id_cliente ? ($cliente->nit ?? '') : '' }}</p>
-                        <p style="margin: 0;"><b>Teléfono:</b> {{ $venta->id_cliente ? ($cliente->telefono ?? '') : '' }}</p>
+                        <p class="linea-nombre" style="margin: 0 0 4px 0;"><b>Nombre:</b> {{ $venta->nombre_cliente }}</p>
+                        <p class="linea-direccion" style="margin: 0 0 3px 0;"><b>Dirección:</b> {{ $direccionClienteFactura }}</p>
+                        <p style="margin: 0 0 3px 0;"><b>RTN:</b> {{ $venta->id_cliente && isset($cliente) && $cliente ? ($cliente->nit ?? '') : '' }}</p>
+                        <p style="margin: 0;"><b>Teléfono:</b> {{ $telefonoClienteFactura }}</p>
                     </td>
                 </tr>
             </tbody>
