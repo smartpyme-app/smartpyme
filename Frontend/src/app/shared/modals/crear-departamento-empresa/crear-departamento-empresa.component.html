@@ -1,0 +1,68 @@
+
+<button type="button" class="btn btn-default tcla-F1" (click)="openModal(mDepartamento)">
+    <i *ngIf="!id_departamento" tooltip="Crear nuevo departamento (F1)" class="fa fa-plus"></i>
+    <i *ngIf="id_departamento" tooltip="Editar departamento (F1)" class="fa fa-pencil-alt"></i>
+</button>
+
+<ng-template #mDepartamento>
+    <div class="modal-header justify-content-between">
+        <h3 class="modal-title">
+            <span *ngIf="!id_departamento">Nuevo departamento</span>
+            <span *ngIf="id_departamento">Editar departamento</span>
+        </h3>
+        <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">
+            Cancelar <i class="fa fa-close"></i>
+        </button>
+    </div>
+    <div class="modal-body p-3">
+        <app-notificaciones-container></app-notificaciones-container>
+        <form (ngSubmit)="onSubmit()">
+            <div class="row">
+                <div class="form-group col-md-12">
+                    <label for="nombre">Nombre del departamento:</label>
+                    <input type="text" 
+                           class="form-control" 
+                           name="nombre" 
+                           [(ngModel)]="departamento.nombre"
+                           placeholder="Ingrese el nombre del departamento"
+                           required>
+                </div>
+                
+                <div class="form-group col-md-12">
+                    <label for="descripcion">Descripción:</label>
+                    <textarea class="form-control" 
+                              placeholder="Descripción del departamento (opcional)" 
+                              [(ngModel)]="departamento.descripcion" 
+                              name="descripcion" 
+                              cols="30" 
+                              rows="3"></textarea>
+                </div>
+
+                <div class="form-group col-md-6">
+                    <label for="estado">Estado:</label>
+                    <select class="form-select" name="estado" [(ngModel)]="departamento.estado">
+                        <option value="1">Activo</option>
+                        <option value="0">Inactivo</option>
+                    </select>
+                </div>
+
+                <input type="hidden" name="activo" [(ngModel)]="departamento.activo" value="1">
+            </div>
+            
+            <div class="row">          
+                <div class="form-group col-md-12 mt-3">
+                    <button type="submit" 
+                            [disabled]="saving || !departamento.nombre" 
+                            class="btn btn-primary float-end tcla-F10" 
+                            tooltip="Guardar (F10)">
+                        <span *ngIf="!saving">
+                            Guardar departamento 
+                            <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                        </span>
+                        <span *ngIf="saving">Guardando...</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</ng-template>

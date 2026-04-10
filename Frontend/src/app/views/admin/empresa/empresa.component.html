@@ -631,6 +631,17 @@
                         </div>
                     </div>
                     <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Activa categorías de gasto desde base de datos, departamentos y áreas en el formulario de gastos y enlaces en el menú Compras.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="gastos_categorias_personalizadas">Habilitar categorías de gastos personalizadas</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="gastos_categorias_personalizadas"
+                                [checked]="isGastosCategoriasPersonalizadasHabilitadas()"
+                                (change)="toggleGastosCategoriasPersonalizadas()"
+                                name="gastos_categorias_personalizadas">
+                        </div>
+                    </div>
+                    <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Muestra el saldo pendiente del cliente al seleccionarlo en facturación.</p>
                         <div class="form-switch bg-light-info rounded">
                             <label for="estado_cuenta_en_facturacion">Habilitar estado de cuenta en facturación</label>
