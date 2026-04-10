@@ -394,6 +394,14 @@ export class PartidasComponent implements OnInit {
     this.filtrarPartidas();
   }
 
+  /**
+   * URL única por descarga para evitar caché HTTP (navegador/CDN) en reportes GET.
+   */
+  private buildReportDownloadUrl(relativePath: string): string {
+    const token = this.apiService.auth_token();
+    return `${this.apiService.baseUrl}${relativePath}?token=${token}&_ts=${Date.now()}`;
+  }
+
   // Métodos existentes sin cambios...
   public imprimirDiarioAux() {
     if (
@@ -403,17 +411,16 @@ export class PartidasComponent implements OnInit {
       this.reporte.tipo_cuenta
     ) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/libro/diario/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_cuenta +
-          '/' +
-          this.reporte.tipo_descarga +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_cuenta +
+            '/' +
+            this.reporte.tipo_descarga
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -423,17 +430,16 @@ export class PartidasComponent implements OnInit {
   public imprimirMayor() {
     if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.concepto) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/libro/diario/mayor/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_cuenta +
-          '/' +
-          this.reporte.concepto +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_cuenta +
+            '/' +
+            this.reporte.concepto
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -448,17 +454,16 @@ export class PartidasComponent implements OnInit {
       this.reporte.tipo_cuenta
     ) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/libro/diario/mayor/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_cuenta +
-          '/' +
-          this.reporte.tipo_descarga +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_cuenta +
+            '/' +
+            this.reporte.tipo_descarga
+        )
       );
     } else {
       console.error('Por favor, llenar los campos requeridos.');
@@ -468,15 +473,14 @@ export class PartidasComponent implements OnInit {
   public imprimirMovCuenta() {
     if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.cuenta) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/movimiento/cuenta/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.cuenta +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.cuenta
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -491,17 +495,16 @@ export class PartidasComponent implements OnInit {
       this.reporte.tipo_cuenta
     ) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/balance/comprobacion/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_cuenta +
-          '/' +
-          this.reporte.tipo_descarga +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_cuenta +
+            '/' +
+            this.reporte.tipo_descarga
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -515,15 +518,14 @@ export class PartidasComponent implements OnInit {
       this.reporte.tipo_descarga
     ) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/balance/general/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_descarga +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_descarga
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -537,15 +539,14 @@ export class PartidasComponent implements OnInit {
       this.reporte.tipo_descarga
     ) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/estado/resultados/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_descarga +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_descarga
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -565,10 +566,7 @@ export class PartidasComponent implements OnInit {
   }
 
   public imprimirPartida(partida: any) {
-    window.open(
-      this.apiService.baseUrl + '/api/partidas/descargar/' + partida.id + '?token=' + this.apiService.auth_token(),
-      '_blank'
-    );
+    window.open(this.buildReportDownloadUrl('/api/partidas/descargar/' + partida.id), '_blank');
   }
 
   public descargarPartidaExcel(partida: any) {
