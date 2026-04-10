@@ -20,6 +20,14 @@
 
         <div class="col">
             <div class="d-flex gap-2">
+                <button
+                    *ngIf="apiService.canCreate()"
+                    type="button"
+                    tooltip="Importar varias compras desde archivos JSON (DTE)"
+                    (click)="openImportacionJsonMasivo(mbulkJson)"
+                    class="btn btn-default">
+                    <img src="/assets/icons/upload.png" class="icon"> 
+                </button>
                 <button tooltip="Descargar compras" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCompras()" autocomplete="off">
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar"
@@ -523,3 +531,177 @@
       </form>
     </div>
   </ng-template>
+
+<ng-template #mbulkJson>
+  <div class="modal-header">
+    <h4 class="modal-title">Importar compras desde JSON (masivo)</h4>
+    <button type="button" class="btn-close" (click)="cerrarImportacionBulk()" aria-label="Cerrar"></button>
+  </div>
+  <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+    <p class="text-muted small">
+      Agregue hasta {{ maxBulkJsonFiles }} archivos DTE. En cada pestaña revise proveedor, bodega y detalle: puede <strong>agregar o quitar productos y servicios</strong> como en facturación; si hay líneas del JSON sin coincidencia, asígnelas y pulse <strong>Incorporar al detalle</strong>. Luego guarde cada compra o use <strong>Guardar todas las listas</strong>.
+    </p>
+    <div class="mb-3 d-flex flex-wrap align-items-center gap-2">
+      <input
+        #bulkFileIn
+        type="file"
+        multiple
+        accept=".json,application/json"
+        class="d-none"
+        (change)="onBulkJsonFilesChange($event)">
+      <button
+        type="button"
+        class="btn btn-outline-primary btn-sm"
+        [disabled]="bulkProcesandoArchivos"
+        (click)="bulkFileIn.click()">
+        <i class="fa fa-plus"></i> Agregar archivos JSON
+      </button>
+      <span *ngIf="bulkProcesandoArchivos" class="text-muted small">Procesando archivos…</span>
+    </div>
+
+    <div *ngIf="!bulkItems.length && !bulkProcesandoArchivos" class="alert alert-light border mb-0">
+      No hay archivos cargados todavía.
+    </div>
+
+    <div *ngIf="bulkItems.length">
+      <ul class="nav nav-tabs flex-nowrap mb-3 border-bottom" style="overflow-x: auto; overflow-y: hidden;">
+        <li class="nav-item flex-shrink-0" *ngFor="let it of bulkItems; let i = index">
+          <button
+            type="button"
+            class="nav-link py-2"
+            [class.active]="bulkTabIndex === i"
+            (click)="bulkTabIndex = i">
+            <span class="text-truncate d-inline-block align-middle" style="max-width: 11rem" [title]="it.fileName">{{ it.fileName }}</span>
+            <span
+              class="badge ms-1 align-middle"
+              [ngClass]="{
+                'bg-success': it.estado === 'guardada',
+                'bg-warning text-dark': it.estado === 'pendiente_productos',
+                'bg-primary': it.estado === 'lista',
+                'bg-danger': it.estado === 'error',
+                'bg-secondary': it.estado === 'guardando'
+              }">{{ it.estado }}</span>
+          </button>
+        </li>
+      </ul>
+
+      <ng-container *ngIf="bulkItemActivo as item">
+        <div *ngIf="item.error" class="alert alert-danger">{{ item.error }}</div>
+
+        <div *ngIf="item.estado !== 'error' && item.estado !== 'guardada'">
+          <div class="row g-2 mb-3">
+            <div class="col-md-4">
+              <label class="form-label small">Fecha</label>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="item.compra.fecha" [name]="'bf-' + item.uid + '-fecha'">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Nº referencia (correlativo)</label>
+              <input type="text" class="form-control form-control-sm" [(ngModel)]="item.compra.referencia" [name]="'bf-' + item.uid + '-ref'" readonly>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Documento</label>
+              <input type="text" class="form-control form-control-sm" [(ngModel)]="item.compra.tipo_documento" [name]="'bf-' + item.uid + '-tdoc'" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">Proveedor *</label>
+              <ng-select
+                class="form-select form-select-sm p-0"
+                [(ngModel)]="item.compra.id_proveedor"
+                (change)="onBulkProveedorChange(item)"
+                [name]="'bf-' + item.uid + '-prov'"
+                placeholder="Seleccione proveedor">
+                <ng-option [value]="p.id" *ngFor="let p of proveedores">
+                  {{ p.tipo == 'Empresa' ? p.nombre_empresa : p.nombre_completo }}
+                </ng-option>
+              </ng-select>
+            </div>
+            <div class="col-md-6" *ngIf="bodegasBulk.length">
+              <label class="form-label small">Bodega</label>
+              <select
+                class="form-select form-select-sm"
+                [(ngModel)]="item.compra.id_bodega"
+                (change)="onBulkBodegaChange(item)"
+                [name]="'bf-' + item.uid + '-bod'">
+                <option *ngFor="let b of bodegasBulk" [value]="b.id">{{ b.nombre }}</option>
+              </select>
+            </div>
+          </div>
+
+          <h6 class="small text-muted mb-1">Detalle (productos y servicios)</h6>
+          <p class="small text-muted mb-2">Use la búsqueda o la lupa para agregar líneas; edite cantidades, costo y descuentos como en la facturación de compra.</p>
+          <app-compra-detalles
+            [compra]="item.compra"
+            (update)="onBulkDetallesRecalc(item)"
+            (sumTotal)="onBulkDetallesRecalc(item)">
+          </app-compra-detalles>
+
+          <div *ngIf="item.noEncontrados?.length" class="border rounded p-3 mb-3 bg-light mt-3">
+            <h6 class="text-warning small mb-2">
+              <i class="fa fa-exclamation-triangle"></i> Productos sin coincidencia automática ({{ item.noEncontrados.length }})
+            </h6>
+            <div class="table-responsive">
+              <table class="table table-sm mb-2">
+                <thead>
+                  <tr>
+                    <th>Descripción DTE</th>
+                    <th style="min-width: 220px;">Producto en sistema</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of item.noEncontrados">
+                    <td class="small">{{ row.descripcion }} <span class="text-muted" *ngIf="row.codigo">({{ row.codigo }})</span></td>
+                    <td>
+                      <ng-select
+                        [(ngModel)]="row.productoSeleccionado"
+                        [typeahead]="bulkSearchProductos$"
+                        [loading]="bulkSearchLoading"
+                        [name]="'bulk-p-' + item.uid + '-' + row.numItem"
+                        bindLabel="nombre"
+                        placeholder="Buscar producto…"
+                        [compareWith]="compareProductosBulk">
+                        <ng-option *ngFor="let pr of bulkSearchResults" [value]="pr">{{ pr.nombre }}</ng-option>
+                      </ng-select>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button type="button" class="btn btn-sm btn-warning" (click)="incorporarProductosPendientes(item)">
+              Incorporar seleccionados al detalle
+            </button>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-top pt-3">
+            <div>
+              <strong>Total:</strong> {{ item.compra.total | currency:'USD':'symbol':'1.2' }}
+              <span class="text-muted small ms-2">Sub: {{ item.compra.sub_total | currency:'USD':'symbol':'1.2' }} · IVA: {{ item.compra.iva | currency:'USD':'symbol':'1.2' }}</span>
+            </div>
+            <button
+              type="button"
+              class="btn btn-success btn-sm"
+              [disabled]="!puedeGuardarBulkItem(item) || item.estado === 'guardando'"
+              (click)="guardarBulkItem(item)">
+              <span *ngIf="item.estado !== 'guardando'"><i class="fa fa-check"></i> Guardar esta compra</span>
+              <span *ngIf="item.estado === 'guardando'">Guardando…</span>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="item.estado === 'guardada'" class="alert alert-success mb-0">
+          <i class="fa fa-check"></i> Esta compra ya fue registrada.
+        </div>
+      </ng-container>
+    </div>
+  </div>
+  <div class="modal-footer flex-wrap gap-2">
+    <button type="button" class="btn btn-secondary" (click)="cerrarImportacionBulk()">Cerrar</button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="bulkGuardandoTodas || bulkProcesandoArchivos"
+      (click)="guardarTodasBulkListas()">
+      <span *ngIf="!bulkGuardandoTodas">Guardar todas las listas</span>
+      <span *ngIf="bulkGuardandoTodas">Guardando…</span>
+    </button>
+  </div>
+</ng-template>

@@ -4,8 +4,10 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { CompraJsonBulkService } from '@services/compra-json-bulk.service';
 import { Subject } from 'rxjs';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, switchMap, takeUntil, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 declare var $:any;
 
@@ -48,9 +50,56 @@ export class ComprasComponent implements OnInit, OnDestroy {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
-                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
-    ){}
+    /** Importación masiva JSON (listado de compras) */
+    public bulkModalRef!: BsModalRef;
+    public bulkItems: BulkCompraItem[] = [];
+    public bulkTabIndex = 0;
+    public bulkProcesandoArchivos = false;
+    public bulkGuardandoTodas = false;
+    public impuestosCompra: any[] = [];
+    public bodegasBulk: any[] = [];
+    public readonly maxBulkJsonFiles = 10; // este es el limite de archivos que se pueden cargar
+    /** Documentos de venta filtrados para compras (correlativo por tipo y sucursal) */
+    public documentosBulk: any[] = [];
+    public bulkSearchProductos$ = new Subject<string>();
+    public bulkSearchResults: any[] = [];
+    public bulkSearchLoading = false;
+    public bulkSearchTerm = '';
+
+    constructor(
+        public apiService: ApiService,
+        public mhService: MHService,
+        private alertService: AlertService,
+        private modalService: BsModalService,
+        private router: Router,
+        private route: ActivatedRoute,
+        private compraJsonBulk: CompraJsonBulkService
+    ) {
+        this.bulkSearchProductos$
+            .pipe(
+                debounceTime(300),
+                distinctUntilChanged(),
+                switchMap((term) => {
+                    if (!term || term.length < 2) {
+                        return of([]);
+                    }
+                    this.bulkSearchLoading = true;
+                    this.bulkSearchTerm = term;
+                    return this.apiService
+                        .store('productos/buscar-modal', {
+                            termino: term,
+                            id_empresa: this.apiService.auth_user().id_empresa,
+                            limite: 15,
+                        })
+                        .pipe(catchError(() => of([])));
+                }),
+                takeUntil(this.destroy$)
+            )
+            .subscribe((results) => {
+                this.bulkSearchResults = results || [];
+                this.bulkSearchLoading = false;
+            });
+    }
 
     ngOnDestroy() {
         this.destroy$.next();
@@ -502,4 +551,291 @@ export class ComprasComponent implements OnInit, OnDestroy {
     window.open(this.apiService.baseUrl + '/api/compra/impresion/' + compra.id + '?token=' + this.apiService.auth_token());
   }
 
+  // --- Importación masiva desde JSON (listado compras) ---
+
+  openImportacionJsonMasivo(template: TemplateRef<any>) {
+    this.bulkItems = [];
+    this.bulkTabIndex = 0;
+    this.documentosBulk = [];
+    const auth = this.apiService.auth_user();
+    const documentosPermitidos = [
+      'Factura',
+      'Crédito fiscal',
+      'Ticket',
+      'Recibo',
+      'Sujeto excluido',
+      'Factura de exportación',
+    ];
+    this.apiService.getAll('impuestos').subscribe(
+      (impuestos) => {
+        this.impuestosCompra = (impuestos || []).filter(
+          (i: any) => i.aplica_compras !== false && i.aplica_compras !== 0
+        );
+        this.apiService.getAll('bodegas/list').subscribe(
+          (bodegas) => {
+            this.bodegasBulk = bodegas || [];
+            this.apiService.getAll('documentos/list').subscribe(
+              (documentos) => {
+                this.documentosBulk = (documentos || []).filter(
+                  (x: any) =>
+                    x.id_sucursal == auth.id_sucursal &&
+                    documentosPermitidos.includes(x.nombre) &&
+                    x.nombre != 'Nota de crédito' &&
+                    x.nombre != 'Nota de débito'
+                );
+                this.bulkModalRef = this.modalService.show(template, {
+                  class: 'modal-xl modal-dialog-scrollable',
+                  backdrop: 'static',
+                });
+              },
+              (e) => this.alertService.error(e)
+            );
+          },
+          (e) => this.alertService.error(e)
+        );
+      },
+      (e) => this.alertService.error(e)
+    );
+  }
+
+  cerrarImportacionBulk() {
+    this.bulkModalRef?.hide();
+    this.bulkItems = [];
+    this.bulkTabIndex = 0;
+  }
+
+  private readFileText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result ?? ''));
+      r.onerror = () => reject(r.error);
+      r.readAsText(file);
+    });
+  }
+
+  async onBulkJsonFilesChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const files = input.files;
+    if (!files?.length) {
+      return;
+    }
+    const list = Array.from(files).slice(0, this.maxBulkJsonFiles);
+    if (files.length > this.maxBulkJsonFiles) {
+      this.alertService.warning(
+        'Límite',
+        `Solo se procesan los primeros ${this.maxBulkJsonFiles} archivos.`
+      );
+    }
+    this.bulkProcesandoArchivos = true;
+    const proveedores = this.proveedores || [];
+    for (const f of list) {
+      const uid = 'b-' + Math.random().toString(36).slice(2, 11);
+      try {
+        const text = await this.readFileText(f);
+        const jsonData = JSON.parse(text);
+        const prep = await this.compraJsonBulk.prepararCompraDesdeJson(
+          jsonData,
+          this.impuestosCompra,
+          proveedores,
+          this.documentosBulk
+        );
+        if (prep.error) {
+          this.bulkItems.push({
+            uid,
+            fileName: f.name,
+            compra: prep.compra,
+            jsonData,
+            noEncontrados: [],
+            error: prep.error,
+            estado: 'error',
+          });
+        } else {
+          const estado: BulkCompraItem['estado'] =
+            prep.noEncontrados.length > 0 ? 'pendiente_productos' : 'lista';
+          this.bulkItems.push({
+            uid,
+            fileName: f.name,
+            compra: prep.compra,
+            jsonData,
+            noEncontrados: prep.noEncontrados,
+            estado,
+          });
+        }
+      } catch (e: any) {
+        this.bulkItems.push({
+          uid,
+          fileName: f.name,
+          compra: this.compraJsonBulk.crearCompraBase(this.impuestosCompra),
+          jsonData: {},
+          noEncontrados: [],
+          error: e?.message || 'JSON inválido',
+          estado: 'error',
+        });
+      }
+    }
+    this.bulkProcesandoArchivos = false;
+    input.value = '';
+    if (this.bulkItems.length && this.bulkTabIndex >= this.bulkItems.length) {
+      this.bulkTabIndex = 0;
+    }
+  }
+
+  get bulkItemActivo(): BulkCompraItem | null {
+    return this.bulkItems[this.bulkTabIndex] ?? null;
+  }
+
+  onBulkProveedorChange(item: BulkCompraItem) {
+    this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
+  }
+
+  onBulkBodegaChange(item: BulkCompraItem) {
+    const b = this.bodegasBulk.find((x: any) => x.id == item.compra.id_bodega);
+    if (b) {
+      item.compra.id_sucursal = b.id_sucursal;
+    }
+    this.compraJsonBulk.aplicarReferenciaCorrelativo(
+      item.compra,
+      this.documentosBulk,
+      item.jsonData
+    );
+  }
+
+  /** Mismo flujo que facturación: líneas editables, búsqueda y lotes vía `app-compra-detalles`. */
+  onBulkDetallesRecalc(item: BulkCompraItem) {
+    if (item.estado === 'guardada' || item.estado === 'error' || item.estado === 'guardando') {
+      return;
+    }
+    this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
+    item.estado = item.noEncontrados?.length ? 'pendiente_productos' : 'lista';
+  }
+
+  incorporarProductosPendientes(item: BulkCompraItem) {
+    if (!item.noEncontrados?.length) {
+      return;
+    }
+    const faltan = item.noEncontrados.filter((x) => !x.productoSeleccionado?.id);
+    if (faltan.length) {
+      this.alertService.warning(
+        'Productos',
+        'Seleccione un producto del sistema para cada línea pendiente.'
+      );
+      return;
+    }
+    for (const row of item.noEncontrados) {
+      item.compra.detalles.push(
+        this.compraJsonBulk.crearDetalleDesdeItem(row, row.productoSeleccionado)
+      );
+    }
+    item.noEncontrados = [];
+    this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
+    item.estado = 'lista';
+  }
+
+  puedeGuardarBulkItem(item: BulkCompraItem): boolean {
+    if (item.estado === 'error' || item.estado === 'guardada' || item.estado === 'guardando') {
+      return false;
+    }
+    if (!item.compra?.id_proveedor) {
+      return false;
+    }
+    if (!item.compra.detalles?.length) {
+      return false;
+    }
+    if (item.noEncontrados?.length) {
+      return false;
+    }
+    if (this.apiService.isLotesActivo()) {
+      for (const d of item.compra.detalles) {
+        if (d.inventario_por_lotes && !d.lote_id) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  guardarBulkItem(item: BulkCompraItem) {
+    if (!this.puedeGuardarBulkItem(item)) {
+      this.alertService.warning(
+        'Revisión',
+        'Complete proveedor, líneas de detalle y productos pendientes antes de guardar.'
+      );
+      return;
+    }
+    if (!confirm(`¿Registrar la compra del archivo "${item.fileName}"?`)) {
+      return;
+    }
+    item.estado = 'guardando';
+    item.compra.recibido = item.compra.total;
+    this.apiService.store('compra/facturacion', item.compra).subscribe(
+      () => {
+        item.estado = 'guardada';
+        this.alertService.success('Compra registrada', item.fileName);
+        this.filtrarCompras();
+      },
+      (err) => {
+        item.estado = 'lista';
+        this.alertService.error(err);
+      }
+    );
+  }
+
+  guardarTodasBulkListas() {
+    const listas = this.bulkItems.filter((i) => this.puedeGuardarBulkItem(i));
+    if (!listas.length) {
+      this.alertService.warning('Nada que guardar', 'No hay compras listas para registrar.');
+      return;
+    }
+    if (
+      !confirm(
+        `Se registrarán ${listas.length} compra(s). ¿Continuar?`
+      )
+    ) {
+      return;
+    }
+    this.guardarBulkSecuencial(listas, 0);
+  }
+
+  private guardarBulkSecuencial(items: BulkCompraItem[], idx: number) {
+    if (idx >= items.length) {
+      this.bulkGuardandoTodas = false;
+      this.alertService.success(
+        'Importación',
+        `Se registraron ${items.length} compra(s).`
+      );
+      this.filtrarCompras();
+      this.cerrarImportacionBulk();
+      return;
+    }
+    const item = items[idx];
+    this.bulkGuardandoTodas = true;
+    item.estado = 'guardando';
+    item.compra.recibido = item.compra.total;
+    this.apiService.store('compra/facturacion', item.compra).subscribe(
+      () => {
+        item.estado = 'guardada';
+        this.guardarBulkSecuencial(items, idx + 1);
+      },
+      (err) => {
+        item.estado = 'lista';
+        this.bulkGuardandoTodas = false;
+        this.alertService.error(err);
+      }
+    );
+  }
+
+  compareProductosBulk(a: any, b: any): boolean {
+    return a && b && a.id === b.id;
+  }
+
+}
+
+export interface BulkCompraItem {
+  uid: string;
+  fileName: string;
+  compra: any;
+  jsonData: any;
+  noEncontrados: any[];
+  error?: string;
+  estado: 'error' | 'pendiente_productos' | 'lista' | 'guardando' | 'guardada';
 }
