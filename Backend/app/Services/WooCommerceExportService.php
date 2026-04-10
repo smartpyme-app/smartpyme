@@ -10,6 +10,18 @@ use Illuminate\Support\Facades\Log;
 
 class WooCommerceExportService
 {
+    /** @var WooCommerceSkuResolver */
+    protected $skuResolver;
+
+    /** @var WooCommerceResolvedProductWriter */
+    protected $resolvedProductWriter;
+
+    public function __construct(WooCommerceSkuResolver $skuResolver, WooCommerceResolvedProductWriter $resolvedProductWriter)
+    {
+        $this->skuResolver = $skuResolver;
+        $this->resolvedProductWriter = $resolvedProductWriter;
+    }
+
     public function exportarProductos(User $user, $productos, $bodega)
     {
         // Obtener la empresa del usuario para acceder a la configuración de WooCommerce
@@ -62,6 +74,22 @@ class WooCommerceExportService
                     }
                 }
 
+                $resolution = $this->skuResolver->resolveBySku($client, (string) $producto->codigo);
+
+                if ($resolution !== null) {
+                    try {
+                        $this->resolvedProductWriter->applyResolution($client, $producto, $productData, $resolution);
+                        $this->registrarExito($resultados, $producto, 'actualizado', $producto->woocommerce_id);
+                    } catch (\Exception $e) {
+                        Log::warning('Error aplicando resolución SKU en export WooCommerce: ' . $e->getMessage(), [
+                            'producto_id' => $producto->id,
+                            'sku' => $producto->codigo,
+                        ]);
+                        $this->registrarError($producto, $e, $resultados);
+                    }
+                    continue;
+                }
+
                 // Productos importados desde CSV de WooCommerce: NUNCA crear, solo actualizar
                 if ($esImportadoWooCommerce) {
                     Log::info("Producto importado de WooCommerce sin woocommerce_id o actualización fallida - omitido", [
@@ -73,14 +101,7 @@ class WooCommerceExportService
                     continue;
                 }
 
-                // Buscar por SKU solo si no se pudo actualizar por ID
-                $existente = $this->buscarProductoPorSku($client, $producto->codigo);
-
-                if ($existente) {
-                    $this->actualizarProductoPorSku($client, $producto, $existente, $productData, $resultados);
-                } else {
-                    $this->crearNuevoProducto($client, $producto, $productData, $resultados);
-                }
+                $this->crearNuevoProducto($client, $producto, $productData, $resultados);
             } catch (\Exception $e) {
                 $this->registrarError($producto, $e, $resultados);
             }
@@ -95,7 +116,7 @@ class WooCommerceExportService
             // Variaciones usan endpoint distinto: products/{parent_id}/variations/{variation_id}
             if (!empty($producto->woocommerce_parent_id)) {
                 $endpoint = "products/{$producto->woocommerce_parent_id}/variations/{$producto->woocommerce_id}";
-                $productDataVariation = $this->prepararDatosVariacion($productData);
+                $productDataVariation = $this->resolvedProductWriter->buildVariationPayload($productData);
                 $client->put($endpoint, $productDataVariation);
             } else {
                 $client->put("products/{$producto->woocommerce_id}", $productData);
@@ -116,40 +137,10 @@ class WooCommerceExportService
         }
     }
 
-    /**
-     * Adapta datos de producto al formato de variación para la API de WooCommerce.
-     * Las variaciones solo permiten actualizar precio, stock, sku, etc.
-     */
-    private function prepararDatosVariacion(array $productData)
-    {
-        return array_filter([
-            'sku' => $productData['sku'] ?? null,
-            'regular_price' => $productData['regular_price'] ?? null,
-            'price' => $productData['price'] ?? null,
-            'manage_stock' => $productData['manage_stock'] ?? true,
-            'stock_quantity' => $productData['stock_quantity'] ?? 0,
-            'stock_status' => $productData['stock_status'] ?? 'outofstock',
-        ], fn($v) => $v !== null);
-    }
-
-    private function actualizarProductoPorSku($client, $producto, $existente, $productData, &$resultados)
-    {
-        $response = $client->put("products/{$existente['id']}", $productData);
-        $wooId = $this->extraerWooId($response);
-
-        if (!$wooId) {
-            throw new \Exception("No se pudo obtener el ID del producto actualizado en WooCommerce");
-        }
-
-        $producto->woocommerce_id = $existente['id'];
-        $producto->save();
-
-        $this->registrarExito($resultados, $producto, 'actualizado', $wooId);
-    }
-
     private function crearNuevoProducto($client, $producto, $productData, &$resultados)
     {
-        $response = $client->post('products', $productData);
+        $payload = array_merge($productData, ['type' => 'simple']);
+        $response = $client->post('products', $payload);
         $wooId = $this->extraerWooId($response);
 
         if (!$wooId) {
@@ -157,7 +148,8 @@ class WooCommerceExportService
         }
 
         $producto->woocommerce_id = $wooId;
-        $producto->save();
+        $producto->woocommerce_parent_id = null;
+        $producto->saveQuietly();
 
         $this->registrarExito($resultados, $producto, 'creado', $wooId);
     }
@@ -192,34 +184,6 @@ class WooCommerceExportService
         ];
     }
 
-    private function buscarProductoPorSku($client, $sku)
-    {
-        try {
-            // Si el SKU está vacío, no podemos buscar
-            if (empty($sku)) {
-                return null;
-            }
-
-            // Buscar productos con este SKU
-            $response = $client->get('products', [
-                'sku' => $sku,
-                'per_page' => 1
-            ]);
-
-            // Revisar si tenemos respuesta y contiene datos
-            if (isset($response['body']) && is_array($response['body']) && count($response['body']) > 0) {
-                return $response['body'][0];
-            } elseif (is_array($response) && count($response) > 0) {
-                return $response[0];
-            }
-
-            return null;
-        } catch (\Exception $e) {
-            Log::warning("Error buscando producto por SKU ({$sku}): " . $e->getMessage());
-            return null;
-        }
-    }
-
     private function prepararDatosProducto($producto, $stock, $client)
     {
         $categories = [];
@@ -252,7 +216,6 @@ class WooCommerceExportService
 
         $productData = [
             'name' => $producto->nombre,
-            'type' => 'simple',
             'status' => 'publish',
             'featured' => false,
             'catalog_visibility' => 'visible',
