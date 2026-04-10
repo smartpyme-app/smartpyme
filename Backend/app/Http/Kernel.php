@@ -76,5 +76,6 @@ class Kernel extends HttpKernel
         'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
         'company_scope' => \App\Http\Middleware\Authorization\EnsureCompanyScope::class,
+        'reports.no_cache' => \App\Http\Middleware\DisableDynamicReportCaching::class,
     ];
 }
