@@ -90,6 +90,7 @@ class Venta extends Model {
         'tipo_anulacion',
         'motivo_anulacion',
         'codigo_generacion_remplazo',
+        'fe_cr_exoneracion',
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento', 'nombre_proyecto'];
@@ -100,6 +101,7 @@ class Venta extends Model {
         'descuento_puntos' => 'decimal:2',
         'dte' => 'array',
         'dte_invalidacion' => 'array',
+        'fe_cr_exoneracion' => 'array',
     ];
 
     protected static function boot()

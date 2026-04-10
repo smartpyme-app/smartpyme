@@ -46,12 +46,6 @@ export class AlertService {
     error(message: any) {
         console.log(message);
 
-        // Para errores de validación (422), siempre mostrar el alert incluso si hay modal abierto
-        if(message.status == 422) {
-            // Forzar modal a false ANTES de procesar el error
-            this.modal = false;
-        }
-
         if(message.status == 0) {
             const mensaje = 'No hay conexión con el servidor. Posibles causas: timeout (la operación tardó demasiado), CORS, o el servidor no está disponible. Intente nuevamente.';
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
@@ -130,10 +124,6 @@ export class AlertService {
             // Emitir el alert inmediatamente
             this.alertSubject.next(alertData);
 
-            // Asegurar que el modal no bloquee la visualización del error
-            setTimeout(() => {
-                this.modal = false;
-            }, 0);
         }
         else if(message.status == 500) {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});

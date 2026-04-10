@@ -3,6 +3,7 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
 import { FilterPipe } from '@pipes/filter.pipe';
@@ -10,9 +11,12 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { BuscadorClientesComponent } from '@shared/parts/buscador-clientes/buscador-clientes.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
+import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
+import { MetodosDePagoComponent } from '../facturacion-tienda/metodos-de-pago/metodos-de-pago.component';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
@@ -24,12 +28,15 @@ import * as moment from 'moment';
   imports: [
     CommonModule,
     FormsModule,
+    NgSelectModule,
     RouterModule,
     CurrencyPipe,
     DecimalPipe,
     FilterPipe,
     BuscadorClientesComponent,
     CrearClienteComponent,
+    CrearProyectoComponent,
+    MetodosDePagoComponent,
     VentaDetallesV2Component
   ],
   providers: [SumPipe],
@@ -62,6 +69,17 @@ export class FacturacionV2Component implements OnInit {
   public tieneAccesoPropina: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
+
+  /** Códigos nota 10.1 DGT (ejemplos frecuentes; ver documentación oficial para el caso concreto). */
+  public readonly feCrTiposDocumentoExoneracion: { codigo: string; nombre: string }[] = [
+    { codigo: '01', nombre: 'Compras autorizadas por Dirección General de Hacienda' },
+    { codigo: '02', nombre: 'Ventas de mercancía en casos especiales' },
+    { codigo: '03', nombre: 'Casos especiales de venta de bienes o prestación de servicios' },
+    { codigo: '04', nombre: 'Órgano de las corporaciones municipales' },
+    { codigo: '08', nombre: 'Exoneración a Zona Franca' },
+    { codigo: '09', nombre: 'Servicios complementarios exportación (RLIVA)' },
+    { codigo: '99', nombre: 'Otros (especificar en documento otro)' },
+  ];
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -306,6 +324,7 @@ export class FacturacionV2Component implements OnInit {
     this.venta.id_vendedor = this.apiService.auth_user().id;
     this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.venta.id_empresa = this.apiService.auth_user().id_empresa;
+    this.initFeCrExoneracionVenta();
     let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
     if (corte) {
       this.venta.fecha = JSON.parse(sessionStorage.getItem('SP_corte')!).fecha;
@@ -337,6 +356,7 @@ export class FacturacionV2Component implements OnInit {
             this.venta = venta;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+            this.initFeCrExoneracionVenta();
             this.sumTotal();
           },
           (error) => {
@@ -366,6 +386,7 @@ export class FacturacionV2Component implements OnInit {
               this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
             }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+            this.initFeCrExoneracionVenta();
             this.venta.fecha = this.apiService.date();
             this.venta.fecha_pago = this.apiService.date();
             this.venta.id_documento = null;
@@ -408,6 +429,7 @@ export class FacturacionV2Component implements OnInit {
               this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
             }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+            this.initFeCrExoneracionVenta();
             this.venta.fecha = this.apiService.date();
             this.venta.fecha_pago = this.apiService.date();
             this.venta.id_documento = null;
@@ -714,6 +736,48 @@ export class FacturacionV2Component implements OnInit {
       return 0;
     }
     return precioConIva - this.calcularPrecioSinIva(precioConIva, porcentajeIva);
+  }
+
+  esFeCostaRicaFacturacion(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+  }
+
+  /** Catálogo MH (incoterm, recinto, régimen) y DTE 11: solo El Salvador. */
+  esFacturacionElSalvador(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
+  }
+
+  /** Datos de exoneración DGT (se guardan en ventas.fe_cr_exoneracion). */
+  initFeCrExoneracionVenta(): void {
+    if (!this.esFeCostaRicaFacturacion()) {
+      return;
+    }
+    const base = {
+      aplica: false,
+      tipo_documento_ex: '',
+      numero_documento: '',
+      nombre_institucion: '',
+      tarifa_exonerada: 13,
+      numero_articulo: '',
+      numero_inciso: '',
+      documento_otro: '',
+    };
+    const cur = this.venta?.fe_cr_exoneracion;
+    if (!cur || typeof cur !== 'object') {
+      this.venta.fe_cr_exoneracion = { ...base };
+      return;
+    }
+    this.venta.fe_cr_exoneracion = { ...base, ...cur };
+  }
+
+  onCobrarImpuestosChange(): void {
+    if (this.venta.cobrar_impuestos && this.venta.fe_cr_exoneracion) {
+      this.venta.fe_cr_exoneracion.aplica = false;
+    }
+    if (!this.venta.cobrar_impuestos) {
+      this.initFeCrExoneracionVenta();
+    }
+    this.sumTotal();
   }
 
   public sumTotal() {
@@ -1070,7 +1134,7 @@ export class FacturacionV2Component implements OnInit {
         this.venta.id_documento = documento.id;
         this.venta.correlativo = documento.correlativo;
 
-        if (this.venta.nombre_documento == 'Factura de exportación') {
+        if (this.venta.nombre_documento == 'Factura de exportación' && this.esFacturacionElSalvador()) {
             this.apiService.getAll('recintos').subscribe(
                 (recintos) => {
                     this.recintos = recintos;

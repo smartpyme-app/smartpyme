@@ -15,6 +15,10 @@ use Carbon\Carbon;
 use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumoPuntosService;
 
 use App\Models\Ventas\Venta;
+use App\Models\Ventas\Detalle;
+use App\Models\Ventas\DetalleCompuesto;
+use App\Models\Ventas\Impuesto;
+use App\Models\Ventas\MetodoDePago;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade as PDF;
 use App\Http\Requests\Ventas\StoreVentaRequest;

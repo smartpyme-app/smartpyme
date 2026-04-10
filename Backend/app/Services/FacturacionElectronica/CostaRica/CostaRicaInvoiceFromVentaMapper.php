@@ -48,7 +48,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
         $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
 
-        return [
+        $payload = [
             'date' => $dateIso,
             'establishment' => $est,
             'emission_point' => $ter,
@@ -66,6 +66,13 @@ final class CostaRicaInvoiceFromVentaMapper
             'payments' => $this->pagos($venta),
             'summary' => $this->resumen($venta),
         ];
+
+        $metaEx = $this->metadataExoneracionCr($venta);
+        if ($metaEx !== null) {
+            $payload['fe_cr_exoneracion'] = $metaEx;
+        }
+
+        return $payload;
     }
 
     /**
@@ -585,6 +592,49 @@ final class CostaRicaInvoiceFromVentaMapper
         }
 
         return $line;
+    }
+
+    /**
+     * Metadatos de exoneración guardados en el JSON del comprobante (trazabilidad).
+     * El generador XML actual (dgt-xml-generator) no incluye aún el nodo de exoneración v4.4 en línea.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function metadataExoneracionCr(Venta $venta): ?array
+    {
+        if (! $this->ventaDeclaraExoneracionCr($venta)) {
+            return null;
+        }
+
+        $ex = $this->exoneracionCrArray($venta);
+
+        return [
+            'aplica' => true,
+            'tipo_documento_ex' => (string) ($ex['tipo_documento_ex'] ?? ''),
+            'numero_documento' => (string) ($ex['numero_documento'] ?? ''),
+            'nombre_institucion' => (string) ($ex['nombre_institucion'] ?? ''),
+            'tarifa_exonerada' => (float) ($ex['tarifa_exonerada'] ?? 13),
+            'numero_articulo' => (string) ($ex['numero_articulo'] ?? ''),
+            'numero_inciso' => (string) ($ex['numero_inciso'] ?? ''),
+            'documento_otro' => (string) ($ex['documento_otro'] ?? ''),
+        ];
+    }
+
+    private function ventaDeclaraExoneracionCr(Venta $venta): bool
+    {
+        $ex = $venta->fe_cr_exoneracion;
+
+        return is_array($ex) && ! empty($ex['aplica']);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function exoneracionCrArray(Venta $venta): array
+    {
+        $ex = $venta->fe_cr_exoneracion;
+
+        return is_array($ex) ? $ex : [];
     }
 
     /**

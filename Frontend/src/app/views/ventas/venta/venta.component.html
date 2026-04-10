@@ -89,7 +89,7 @@
     </div>
 
 </div>
-@if (venta.nombre_documento == 'Factura de exportación') {
+@if (venta.nombre_documento == 'Factura de exportación' && esFacturacionElSalvador()) {
     <div class="card border-0">
         <div class="card-body">
             <div class="row">

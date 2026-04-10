@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * Emisión FE Costa Rica: factura 01, tiquete 04, nota crédito 03, nota débito 02 (dazza-dev/dgt-cr).
+ * Emisión FE Costa Rica: factura 01 (incl. factura de exportación), tiquete 04, nota crédito 03, nota débito 02 (dazza-dev/dgt-cr).
  */
 final class CostaRicaFeEmitService
 {
@@ -30,6 +30,7 @@ final class CostaRicaFeEmitService
     {
         $venta = $this->cargarVenta($ventaId);
         $this->assertEmpresaCr($venta->empresa);
+        $this->assertDatosExoneracionCrSiAplica($venta);
         if (! $this->esDocumentoFacturaCr($venta->nombre_documento)) {
             throw new RuntimeException('Use emisión de tiquete para documentos tipo Ticket/Tiquete.');
         }
@@ -50,6 +51,7 @@ final class CostaRicaFeEmitService
     {
         $venta = $this->cargarVenta($ventaId);
         $this->assertEmpresaCr($venta->empresa);
+        $this->assertDatosExoneracionCrSiAplica($venta);
         if (! $this->esDocumentoTiqueteCr($venta->nombre_documento)) {
             throw new RuntimeException('El documento de la venta debe ser Ticket o Tiquete para comprobante 04.');
         }
@@ -285,13 +287,33 @@ final class CostaRicaFeEmitService
         }
     }
 
+    /**
+     * Si la venta declara exoneración de IVA (fe_cr_exoneracion.aplica), exige tipo y número de documento.
+     */
+    private function assertDatosExoneracionCrSiAplica(Venta $venta): void
+    {
+        $ex = $venta->fe_cr_exoneracion;
+        if (! is_array($ex) || empty($ex['aplica'])) {
+            return;
+        }
+        $tipo = trim((string) ($ex['tipo_documento_ex'] ?? ''));
+        $num = trim((string) ($ex['numero_documento'] ?? ''));
+        if ($tipo === '' || $num === '') {
+            throw new RuntimeException(
+                'Para exoneración de IVA en Costa Rica indique el tipo de documento y el número de autorización (facturación sin IVA).'
+            );
+        }
+    }
+
     private function esDocumentoFacturaCr(?string $nombreDocumento): bool
     {
-        $n = strtolower(trim((string) $nombreDocumento));
+        $n = mb_strtolower(trim((string) $nombreDocumento), 'UTF-8');
 
         return $n === 'factura'
             || str_contains($n, 'credito fiscal')
-            || str_contains($n, 'crédito fiscal');
+            || str_contains($n, 'crédito fiscal')
+            || str_contains($n, 'exportación')
+            || str_contains($n, 'exportacion');
     }
 
     private function esDocumentoTiqueteCr(?string $nombreDocumento): bool

@@ -7,7 +7,8 @@ import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 
-import { SumPipe }     from '@pipes/sum.pipe';
+import { SumPipe } from '@pipes/sum.pipe';
+import { FilterPipe } from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
@@ -15,8 +16,9 @@ import { AlertService } from '@services/alert.service';
   selector: 'app-tienda-venta-buscador-v2',
   templateUrl: './tienda-venta-buscador-v2.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, CurrencyPipe],
-  providers: [SumPipe]
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, CurrencyPipe, FilterPipe, SumPipe],
+  /** SumPipe: uso en plantilla + inyección en constructor (selectProducto, getStock). */
+  providers: [SumPipe],
 })
 export class TiendaVentaBuscadorV2Component implements OnInit {
 

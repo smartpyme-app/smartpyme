@@ -1,13 +1,25 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 @Component({
   selector: 'app-importar-excel',
-  templateUrl: './importar-excel.component.html'
+  templateUrl: './importar-excel.component.html',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    TooltipModule,
+    NotificacionesContainerComponent,
+    ImportarExcelComponent,
+  ],
 })
 export class ImportarExcelComponent implements OnInit {
 
