@@ -1147,6 +1147,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
                 sku_correlativo_automatico: false, // SKU correlativo automático al crear productos
                 bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
+                dte_mostrar_descripcion_producto: true, // Descripción extendida del catálogo en PDF de factura y CCF (DTE)
             },
             campos_personalizados: {}
         };
@@ -1250,6 +1251,26 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public toggleTicketEnPdf() {
         const currentValue = this.isTicketEnPdfEnabled();
         this.updateTicketEnPdf(!currentValue);
+    }
+
+    public isDteMostrarDescripcionProductoEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'dte_mostrar_descripcion_producto', true);
+    }
+
+    public updateDteMostrarDescripcionProducto(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'dte_mostrar_descripcion_producto', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Se mostrará la descripción del producto en los PDF de DTE (factura y CCF).'
+                    : 'Ya no se mostrará la descripción extendida del producto en los PDF de DTE.'
+            );
+        });
+    }
+
+    public toggleDteMostrarDescripcionProducto() {
+        this.updateDteMostrarDescripcionProducto(!this.isDteMostrarDescripcionProductoEnabled());
     }
 
     // Método para obtener la versión de facturación configurada
