@@ -595,8 +595,15 @@
               <input type="date" class="form-control form-control-sm" [(ngModel)]="item.compra.fecha" [name]="'bf-' + item.uid + '-fecha'">
             </div>
             <div class="col-md-4">
-              <label class="form-label small">Nº referencia (correlativo)</label>
-              <input type="text" class="form-control form-control-sm" [(ngModel)]="item.compra.referencia" [name]="'bf-' + item.uid + '-ref'" readonly>
+              <label class="form-label small">Nº referencia</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                [(ngModel)]="item.compra.referencia"
+                [name]="'bf-' + item.uid + '-ref'"
+                placeholder="Ej. correlativo del catálogo"
+                autocomplete="off">
+              <small class="text-muted">Valor sugerido según el documento y sucursal; puede editarlo si corresponde.</small>
             </div>
             <div class="col-md-4">
               <label class="form-label small">Documento</label>

@@ -375,17 +375,16 @@ class ComprasController extends Controller
 
             }
 
-        // Incrementar el correlarivo de orden de compra
-        if (!$request->id && $request->tipo_documento == 'Orden de compra') {
+        // SE CAMBIO PARA IMPORTACIÓN MASIVA JSON: Correlativo en catálogo `documentos`: (1) flujo legado sin cambios, (2) importación masiva JSON (flag explícito).
+        if (! $request->id && $compra->tipo_documento) {
             $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
-            $documento->increment('correlativo');
-        }
-
-        
-        // Incrementar el correlarivo de Sujeto excluido
-        if (!$request->id && $request->tipo_documento == 'Sujeto excluido') {
-            $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
-            $documento->increment('correlativo');
+            if ($documento) {
+                $porImportacionMasiva = $request->boolean('incrementar_correlativo_importacion_massiva');
+                $porFlujoLegado = in_array($compra->tipo_documento, ['Orden de compra', 'Sujeto excluido'], true);
+                if ($porImportacionMasiva || $porFlujoLegado) {
+                    $documento->increment('correlativo');
+                }
+            }
         }
 
         DB::commit();

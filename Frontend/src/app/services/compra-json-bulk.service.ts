@@ -127,12 +127,130 @@ export class CompraJsonBulkService {
         }
 
         if (codGen && doc) {
-            const tag = `Código generación MH: ${codGen}`;
-            const obs = String(compra.observaciones || '');
-            if (!obs.includes(codGen)) {
-                compra.observaciones = obs ? `${obs}\n${tag}` : tag;
+            this.anexarObservacionCodigoGeneracionMh(compra, codGen);
+        }
+    }
+
+    private anexarObservacionCodigoGeneracionMh(compra: any, codGen: string): void {
+        const tag = `Código generación MH: ${codGen}`;
+        const obs = String(compra.observaciones || '');
+        if (!obs.includes(codGen)) {
+            compra.observaciones = obs ? `${obs}\n${tag}` : tag;
+        }
+    }
+
+    /**
+     * Varios JSON comparten el mismo correlativo "siguiente" del catálogo; asigna 2401, 2402, 2403…
+     * en el orden de `items` (mismo tipo_documento + sucursal). Si no hay documento en catálogo, usa `aplicarReferenciaCorrelativo`.
+     *
+     * Tras guardar una compra, usar `opts.despuesDeGuardar`: el catálogo en API puede no reflejar aún el incremento;
+     * en ese caso las pendientes siguen desde `referenciaGuardada + 1` (no se recalcula solo desde GET).
+     */
+    aplicarReferenciasSecuencialesImportacion(
+        items: { compra: any; estado: string; jsonData?: any }[],
+        documentos: any[],
+        opts?: {
+            despuesDeGuardar?: {
+                referenciaGuardada: any;
+                tipo_documento: string;
+                id_sucursal: any;
+            };
+        }
+    ): void {
+        if (opts?.despuesDeGuardar) {
+            const dg = opts.despuesDeGuardar;
+            const keyDg = `${dg.tipo_documento}-${String(dg.id_sucursal)}`;
+            const base = this.parseCorrelativoNumerico(dg.referenciaGuardada);
+            if (!isNaN(base)) {
+                let siguiente = base + 1;
+                for (const it of items) {
+                    if (it.estado === 'guardada' || it.estado === 'error') {
+                        continue;
+                    }
+                    const key = `${it.compra.tipo_documento}-${String(it.compra.id_sucursal)}`;
+                    if (key !== keyDg) {
+                        continue;
+                    }
+                    it.compra.referencia = siguiente;
+                    siguiente += 1;
+                    const codGen = it.jsonData?.identificacion?.codigoGeneracion;
+                    const doc = (documentos || []).find(
+                        (x: any) =>
+                            x.nombre === it.compra.tipo_documento &&
+                            String(x.id_sucursal) === String(it.compra.id_sucursal)
+                    );
+                    if (codGen && doc) {
+                        this.anexarObservacionCodigoGeneracionMh(it.compra, codGen);
+                    }
+                }
+                return;
             }
         }
+
+        const useSeq = new Map<string, boolean>();
+        for (const it of items) {
+            if (it.estado === 'guardada' || it.estado === 'error') {
+                continue;
+            }
+            const key = `${it.compra.tipo_documento}-${it.compra.id_sucursal}`;
+            if (useSeq.has(key)) {
+                continue;
+            }
+            const d = (documentos || []).find(
+                (x: any) =>
+                    x.nombre === it.compra.tipo_documento &&
+                    String(x.id_sucursal) === String(it.compra.id_sucursal)
+            );
+            const n = this.parseCorrelativoNumerico(d?.correlativo);
+            useSeq.set(
+                key,
+                !!(d && d.correlativo != null && String(d.correlativo).trim() !== '' && !isNaN(n))
+            );
+        }
+
+        const counters = new Map<string, number>();
+        for (const it of items) {
+            if (it.estado === 'guardada' || it.estado === 'error') {
+                continue;
+            }
+            const key = `${it.compra.tipo_documento}-${it.compra.id_sucursal}`;
+            if (!useSeq.get(key)) {
+                this.aplicarReferenciaCorrelativo(it.compra, documentos, it.jsonData);
+                continue;
+            }
+            if (!counters.has(key)) {
+                const d = (documentos || []).find(
+                    (x: any) =>
+                        x.nombre === it.compra.tipo_documento &&
+                        String(x.id_sucursal) === String(it.compra.id_sucursal)
+                );
+                counters.set(key, this.parseCorrelativoNumerico(d?.correlativo));
+            }
+            const cur = counters.get(key)!;
+            it.compra.referencia = cur;
+            counters.set(key, cur + 1);
+            const codGen = it.jsonData?.identificacion?.codigoGeneracion;
+            const doc = (documentos || []).find(
+                (x: any) =>
+                    x.nombre === it.compra.tipo_documento &&
+                    String(x.id_sucursal) === String(it.compra.id_sucursal)
+            );
+            if (codGen && doc) {
+                this.anexarObservacionCodigoGeneracionMh(it.compra, codGen);
+            }
+        }
+    }
+
+    private parseCorrelativoNumerico(val: any): number {
+        if (val == null || val === '') {
+            return NaN;
+        }
+        const digits = String(val).replace(/\D/g, '');
+        if (digits.length === 0) {
+            return NaN;
+        }
+        const n = parseInt(digits, 10);
+        return isNaN(n) ? NaN : n;
     }
 
     aplicarCabeceraDte(

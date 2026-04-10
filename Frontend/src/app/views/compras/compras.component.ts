@@ -553,10 +553,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
 
   // --- Importación masiva desde JSON (listado compras) ---
 
-  openImportacionJsonMasivo(template: TemplateRef<any>) {
-    this.bulkItems = [];
-    this.bulkTabIndex = 0;
-    this.documentosBulk = [];
+  private filterDocumentosBulkLista(documentos: any[]): any[] {
     const auth = this.apiService.auth_user();
     const documentosPermitidos = [
       'Factura',
@@ -566,6 +563,56 @@ export class ComprasComponent implements OnInit, OnDestroy {
       'Sujeto excluido',
       'Factura de exportación',
     ];
+    return (documentos || []).filter(
+      (x: any) =>
+        x.id_sucursal == auth.id_sucursal &&
+        documentosPermitidos.includes(x.nombre) &&
+        x.nombre != 'Nota de crédito' &&
+        x.nombre != 'Nota de débito'
+    );
+  }
+
+  /**
+   * Recarga `documentos/list` y reasigna referencias en pestañas pendientes.
+   * Tras guardar, se pasa `despuesDeGuardar` para numerar desde la referencia realmente registrada (+1, +2…),
+   * porque el correlativo del GET no siempre refleja de inmediato el incremento en servidor.
+   */
+  private refrescarCorrelativosBulkTrasGuardar(
+    done?: () => void,
+    despuesDeGuardar?: {
+      referenciaGuardada: any;
+      tipo_documento: string;
+      id_sucursal: any;
+    }
+  ) {
+    this.apiService.getAll('documentos/list').subscribe(
+      (documentos) => {
+        this.documentosBulk = this.filterDocumentosBulkLista(documentos);
+        this.compraJsonBulk.aplicarReferenciasSecuencialesImportacion(
+          this.bulkItems,
+          this.documentosBulk,
+          despuesDeGuardar ? { despuesDeGuardar } : undefined
+        );
+        done?.();
+      },
+      (e) => {
+        this.alertService.error(e);
+        if (despuesDeGuardar) {
+          this.compraJsonBulk.aplicarReferenciasSecuencialesImportacion(
+            this.bulkItems,
+            this.documentosBulk,
+            { despuesDeGuardar }
+          );
+        }
+        done?.();
+      }
+    );
+  }
+
+  openImportacionJsonMasivo(template: TemplateRef<any>) {
+    this.bulkItems = [];
+    this.bulkTabIndex = 0;
+    this.documentosBulk = [];
     this.apiService.getAll('impuestos').subscribe(
       (impuestos) => {
         this.impuestosCompra = (impuestos || []).filter(
@@ -576,13 +623,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
             this.bodegasBulk = bodegas || [];
             this.apiService.getAll('documentos/list').subscribe(
               (documentos) => {
-                this.documentosBulk = (documentos || []).filter(
-                  (x: any) =>
-                    x.id_sucursal == auth.id_sucursal &&
-                    documentosPermitidos.includes(x.nombre) &&
-                    x.nombre != 'Nota de crédito' &&
-                    x.nombre != 'Nota de débito'
-                );
+                this.documentosBulk = this.filterDocumentosBulkLista(documentos);
                 this.bulkModalRef = this.modalService.show(template, {
                   class: 'modal-xl modal-dialog-scrollable',
                   backdrop: 'static',
@@ -675,6 +716,10 @@ export class ComprasComponent implements OnInit, OnDestroy {
     }
     this.bulkProcesandoArchivos = false;
     input.value = '';
+    this.compraJsonBulk.aplicarReferenciasSecuencialesImportacion(
+      this.bulkItems,
+      this.documentosBulk
+    );
     if (this.bulkItems.length && this.bulkTabIndex >= this.bulkItems.length) {
       this.bulkTabIndex = 0;
     }
@@ -693,10 +738,9 @@ export class ComprasComponent implements OnInit, OnDestroy {
     if (b) {
       item.compra.id_sucursal = b.id_sucursal;
     }
-    this.compraJsonBulk.aplicarReferenciaCorrelativo(
-      item.compra,
-      this.documentosBulk,
-      item.jsonData
+    this.compraJsonBulk.aplicarReferenciasSecuencialesImportacion(
+      this.bulkItems,
+      this.documentosBulk
     );
   }
 
@@ -729,6 +773,11 @@ export class ComprasComponent implements OnInit, OnDestroy {
     item.noEncontrados = [];
     this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
     item.estado = 'lista';
+  }
+
+  /** Solo importación masiva: pide al backend avanzar el correlativo del documento en catálogo (no afecta facturación normal). */
+  private payloadFacturacionImportacionMasiva(compra: any): object {
+    return { ...compra, incrementar_correlativo_importacion_massiva: true };
   }
 
   puedeGuardarBulkItem(item: BulkCompraItem): boolean {
@@ -767,11 +816,18 @@ export class ComprasComponent implements OnInit, OnDestroy {
     }
     item.estado = 'guardando';
     item.compra.recibido = item.compra.total;
-    this.apiService.store('compra/facturacion', item.compra).subscribe(
+    this.apiService
+      .store('compra/facturacion', this.payloadFacturacionImportacionMasiva(item.compra))
+      .subscribe(
       () => {
         item.estado = 'guardada';
-        this.alertService.success('Compra registrada', item.fileName);
-        this.filtrarCompras();
+        const ref = item.compra.referencia;
+        const td = item.compra.tipo_documento;
+        const suc = item.compra.id_sucursal;
+        this.refrescarCorrelativosBulkTrasGuardar(() => {
+          this.alertService.success('Compra registrada', item.fileName);
+          this.filtrarCompras();
+        }, { referenciaGuardada: ref, tipo_documento: td, id_sucursal: suc });
       },
       (err) => {
         item.estado = 'lista';
@@ -811,10 +867,18 @@ export class ComprasComponent implements OnInit, OnDestroy {
     this.bulkGuardandoTodas = true;
     item.estado = 'guardando';
     item.compra.recibido = item.compra.total;
-    this.apiService.store('compra/facturacion', item.compra).subscribe(
+    this.apiService
+      .store('compra/facturacion', this.payloadFacturacionImportacionMasiva(item.compra))
+      .subscribe(
       () => {
         item.estado = 'guardada';
-        this.guardarBulkSecuencial(items, idx + 1);
+        const ref = item.compra.referencia;
+        const td = item.compra.tipo_documento;
+        const suc = item.compra.id_sucursal;
+        this.refrescarCorrelativosBulkTrasGuardar(
+          () => this.guardarBulkSecuencial(items, idx + 1),
+          { referenciaGuardada: ref, tipo_documento: td, id_sucursal: suc }
+        );
       },
       (err) => {
         item.estado = 'lista';
