@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Admin\Empresa;
-use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
@@ -12,6 +11,17 @@ use Illuminate\Support\Facades\Log;
 
 class WooCommerceStockService
 {
+    /** @var WooCommerceSkuResolver */
+    protected $skuResolver;
+
+    /** @var WooCommerceResolvedProductWriter */
+    protected $resolvedProductWriter;
+
+    public function __construct(WooCommerceSkuResolver $skuResolver, WooCommerceResolvedProductWriter $resolvedProductWriter)
+    {
+        $this->skuResolver = $skuResolver;
+        $this->resolvedProductWriter = $resolvedProductWriter;
+    }
 
     public function actualizarStockEnWooCommerce($productoId, $userId)
     {
@@ -53,9 +63,6 @@ class WooCommerceStockService
                 return false;
             }
 
-            $sku = $producto->codigo;
-            //  $bodegas = Bodega::where('id_sucursal', $usuario->id_sucursal)->get();
-
             $stock = Inventario::where('id_producto', $productoId)
                 ->where('id_bodega', $usuario->id_bodega)
                 ->value('stock');
@@ -79,46 +86,24 @@ class WooCommerceStockService
                 }
             }
 
-            $existente = $this->buscarProductoPorSku($wooClient, $producto->codigo);
+            $resolution = $this->skuResolver->resolveBySku($wooClient, (string) $producto->codigo);
 
-            if ($existente) {
-                $this->actualizarProductoPorSku($wooClient, $producto, $existente, $productData);
-            } else {
-                $this->crearNuevoProducto($wooClient, $producto, $productData);
+            if ($resolution !== null) {
+                $this->resolvedProductWriter->applyResolution($wooClient, $producto, $productData, $resolution);
+
+                return true;
             }
 
-
-            $searchResponse = $wooClient->get('products', [
-                'sku' => $sku,
-                'per_page' => 1
-            ]);
-
-            Log::info("Respuesta de WooCommerce: ", $searchResponse);
-
-
-            if ($searchResponse['status'] !== 'success' || count($searchResponse['body']) === 0) {
-                Log::warning("No se encontró producto en WooCommerce con SKU: {$sku}", [
-                    'response' => $searchResponse
+            if (!empty($producto->imported_from_woocommerce_csv)) {
+                Log::info('Producto importado desde WooCommerce: sin coincidencia remota por SKU, no se crea en WooCommerce', [
+                    'producto_id' => $producto->id,
+                    'sku' => $producto->codigo,
                 ]);
+
                 return false;
             }
 
-            //$wooProductId = $searchResponse[0]['id'];
-
-            $wooProductId = $searchResponse['body'][0]['id'];
-
-            $response = $wooClient->put('products/' . $wooProductId, [
-                'stock_quantity' => (int)$stock,
-                'manage_stock' => true
-            ]);
-
-            Log::info("Stock actualizado en WooCommerce", [
-                'producto_id' => $productoId,
-                'woocommerce_id' => $wooProductId,
-                'sku' => $sku,
-                'stock' => $stock,
-                'response' => $response
-            ]);
+            $this->crearNuevoProducto($wooClient, $producto, $productData);
 
             return true;
         } catch (\Exception $e) {
@@ -132,22 +117,10 @@ class WooCommerceStockService
         }
     }
 
-    private function actualizarProductoPorSku($client, $producto, $existente, $productData)
-    {
-        $response = $client->put("products/{$existente['id']}", $productData);
-        $wooId = $this->extraerWooId($response);
-
-        if (!$wooId) {
-            throw new \Exception("No se pudo obtener el ID del producto actualizado en WooCommerce");
-        }
-
-        $producto->woocommerce_id = $existente['id'];
-        $producto->save();
-    }
-
     private function crearNuevoProducto($client, $producto, $productData)
     {
-        $response = $client->post('products', $productData);
+        $payload = array_merge($productData, ['type' => 'simple']);
+        $response = $client->post('products', $payload);
         $wooId = $this->extraerWooId($response);
 
         if (!$wooId) {
@@ -155,7 +128,8 @@ class WooCommerceStockService
         }
 
         $producto->woocommerce_id = $wooId;
-        $producto->save();
+        $producto->woocommerce_parent_id = null;
+        $producto->saveQuietly();
     }
 
     private function extraerWooId($response)
@@ -167,47 +141,12 @@ class WooCommerceStockService
         return $response['body']['id'] ?? $response['id'] ?? null;
     }
 
-    private function buscarProductoPorSku($client, $sku)
-    {
-        try {
-            // Si el SKU está vacío, no podemos buscar
-            if (empty($sku)) {
-                return null;
-            }
-
-            // Buscar productos con este SKU
-            $response = $client->get('products', [
-                'sku' => $sku,
-                'per_page' => 1
-            ]);
-
-            // Revisar si tenemos respuesta y contiene datos
-            if (isset($response['body']) && is_array($response['body']) && count($response['body']) > 0) {
-                return $response['body'][0];
-            } elseif (is_array($response) && count($response) > 0) {
-                return $response[0];
-            }
-
-            return null;
-        } catch (\Exception $e) {
-            Log::warning("Error buscando producto por SKU ({$sku}): " . $e->getMessage());
-            return null;
-        }
-    }
-
     private function actualizarProductoExistente($client, $producto, $productData)
     {
         try {
             if (!empty($producto->woocommerce_parent_id)) {
                 $endpoint = "products/{$producto->woocommerce_parent_id}/variations/{$producto->woocommerce_id}";
-                $variationData = array_filter([
-                    'sku' => $productData['sku'] ?? null,
-                    'regular_price' => $productData['regular_price'] ?? null,
-                    'price' => $productData['price'] ?? null,
-                    'manage_stock' => $productData['manage_stock'] ?? true,
-                    'stock_quantity' => $productData['stock_quantity'] ?? 0,
-                    'stock_status' => $productData['stock_status'] ?? 'outofstock',
-                ], fn($v) => $v !== null);
+                $variationData = $this->resolvedProductWriter->buildVariationPayload($productData);
                 $client->put($endpoint, $variationData);
             } else {
                 $client->put("products/{$producto->woocommerce_id}", $productData);
@@ -280,7 +219,6 @@ class WooCommerceStockService
 
         $productData = [
             'name' => $producto->nombre,
-            'type' => 'simple',
             'status' => 'publish',
             'featured' => false,
             'catalog_visibility' => 'visible',

@@ -637,6 +637,7 @@ class Empresa extends Model
             'configuraciones' => [
                 'ticket_en_pdf' => false,
                 'bloquear_cotizaciones_vendedores' => false,
+                'dte_mostrar_descripcion_producto' => true,
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados

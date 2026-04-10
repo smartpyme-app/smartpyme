@@ -337,7 +337,6 @@ export class FacturacionCompraComponent implements OnInit {
         }
 
         this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
-        this.sincronizarRetencionGranContribuyenteCompra();
         this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0;
         this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
         this.compra.renta_retenida = this.compra.renta ? this.compra.sub_total * 0.10 : 0;
@@ -411,23 +410,6 @@ export class FacturacionCompraComponent implements OnInit {
         }
     }
 
-    private montoMinimoRetencionIvaGc(): number {
-        const v = this.apiService.auth_user()?.empresa?.monto_minimo_retencion_iva_gc;
-        const n = parseFloat(v);
-        return !isNaN(n) && n >= 0 ? n : 100;
-    }
-
-    private sincronizarRetencionGranContribuyenteCompra(): void {
-        const prov = this.proveedores?.find((p: any) => p.id == this.compra.id_proveedor)
-            || this.compra.proveedor;
-        if (!prov || prov.tipo_contribuyente !== 'Grande') {
-            return;
-        }
-        const sub = parseFloat(this.compra.sub_total) || 0;
-        const min = this.montoMinimoRetencionIvaGc();
-        this.compra.retencion = sub > min;
-    }
-
     // proveedor
     public setProveedor(proveedor:any){
         if(!this.compra.id_proveedor){
@@ -435,6 +417,7 @@ export class FacturacionCompraComponent implements OnInit {
         }
         this.compra.id_proveedor = proveedor.id;
         if(proveedor.tipo_contribuyente == "Grande") {
+            this.compra.retencion = 1;
             this.sumTotal();
         }
     }

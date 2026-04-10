@@ -259,8 +259,18 @@
             $iva_18 = 0;
             $gravada_15 = 0;
             $gravada_18 = 0;
+            $importe_exento = 0;
             foreach ($venta->detalles as $det) {
                 $porc = $det->porcentaje_impuesto !== null && $det->porcentaje_impuesto !== '' ? (float) $det->porcentaje_impuesto : $ivaEmpresa;
+                $tipoGrav = $det->tipo_gravado ?? 'gravada';
+                if (abs($porc) < 0.01 || $tipoGrav === 'exenta') {
+                    $montoLineaExento = (float) ($det->exenta ?? 0);
+                    if ($montoLineaExento <= 0) {
+                        $montoLineaExento = (float) ($det->gravada ?? $det->sub_total ?? $det->total ?? 0);
+                    }
+                    $importe_exento += $montoLineaExento;
+                    continue;
+                }
                 if ($porc == 15 || (abs($porc - 15) < 0.01)) {
                     $iva_15 += (float) ($det->iva ?? 0);
                     $gravada_15 += (float) ($det->gravada ?? $det->sub_total ?? 0);
@@ -304,7 +314,7 @@
                 <tr>
                     <td colspan="3"><span style="font-size: 12px;">Original: Cliente &nbsp;&nbsp;&nbsp; Copia: Emisor</span></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Exento:</td>
-                    <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
+                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($importe_exento, 2) }}</td>
                 </tr>
                 <tr>
                     {{-- Fecha Límite de Emisión (comentado de momento) --}}
