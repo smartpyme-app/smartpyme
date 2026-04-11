@@ -10,23 +10,30 @@ use App\Http\Requests\Compras\Gastos\StoreCategoriaRequest;
 
 class CategoriasController extends Controller
 {
-    
-    public function index() {
-       
-        $categorias = Categoria::with('cuenta')->orderBy('nombre', 'asc')->get();
 
-        return Response()->json($categorias, 200);
-
+    private function idEmpresaUsuario(): int
+    {
+        return (int) auth()->user()->id_empresa;
     }
 
-    public function list() {
-       
-        $categorias = Categoria::orderby('nombre')
-                                // ->where('activo', true)
-                                ->get();
+    public function index() {
+
+        $categorias = Categoria::with('cuenta')
+            ->where('id_empresa', $this->idEmpresaUsuario())
+            ->orderBy('nombre', 'asc')->get();
 
         return Response()->json($categorias, 200);
 
+    /**
+     * Listado compacto para selectores (misma tabla y filtro por empresa).
+     */
+    public function list()
+    {
+        $categorias = Categoria::where('id_empresa', $this->idEmpresaUsuario())
+            ->orderBy('nombre', 'asc')
+            ->get();
+
+        return Response()->json($categorias, 200);
     }
 
     public function store(StoreCategoriaRequest $request)
@@ -36,8 +43,10 @@ class CategoriasController extends Controller
             $categoria = Categoria::findOrFail($request->id);
         else
             $categoria = new Categoria;
-        
-        $categoria->fill($request->all());
+            $categoria->id_empresa = $idEmpresa;
+        }
+
+        $categoria->nombre = $request->nombre;
         $categoria->save();
 
         return Response()->json($categoria, 200);
@@ -46,12 +55,12 @@ class CategoriasController extends Controller
 
     public function delete($id)
     {
-       
-        $categoria = Categoria::findOrFail($id);
+        $categoria = Categoria::where('id', $id)
+            ->where('id_empresa', $this->idEmpresaUsuario())
+            ->firstOrFail();
         $categoria->delete();
 
         return Response()->json($categoria, 201);
-
     }
 
 

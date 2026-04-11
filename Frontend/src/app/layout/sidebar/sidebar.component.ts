@@ -94,6 +94,11 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         }else{
             this.gastosIsCollapsed = JSON.parse(localStorage.getItem('gastosIsCollapsed')!);
         }
+        if (!localStorage.getItem('gastosIsCollapsed')) {
+            localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
+        } else {
+            this.gastosIsCollapsed = JSON.parse(localStorage.getItem('gastosIsCollapsed')!);
+        }
         if (!localStorage.getItem('preferenciasIsCollapsed')) {
             localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
         }else{

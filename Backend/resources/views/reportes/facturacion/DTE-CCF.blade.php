@@ -239,6 +239,12 @@
                 </tr>
             </thead>
             <tbody>
+                @php
+                    $empresaDtePdf = $registro->empresa()->first();
+                    $dteMostrarDescripcionProducto = $empresaDtePdf
+                        ? (bool) $empresaDtePdf->getCustomConfigValue('configuraciones', 'dte_mostrar_descripcion_producto', true)
+                        : true;
+                @endphp
                 @foreach($DTE['cuerpoDocumento'] as $detalle)
                 <tr>
                     <td class="border-bottom">   {{ $detalle['numItem']  }}</td>
@@ -246,10 +252,10 @@
                     <td class="border-bottom">   {{ $detalle['codigo']  }}</td>
                     <td class="border-bottom">
                         {{ $detalle['descripcion']  }}
-                        @if ($registro->empresa()->pluck('id')->first() != 529 && $registro->detalles->where('descripcion', $detalle['descripcion'])->first() && $registro->detalles->where('descripcion', $detalle['descripcion'])->first()->producto)
+                        @if ($dteMostrarDescripcionProducto && ($detReg = $registro->detalles->where('descripcion', $detalle['descripcion'])->first()) && $detReg->producto)
                             <br>
                             <span class="text-muted">
-                                {!! nl2br(e($registro->detalles->where('descripcion', $detalle['descripcion'])->first()->producto->descripcion)) !!}
+                                {!! nl2br(e($detReg->producto->descripcion)) !!}
                             </span>
                         @endif
                     </td>

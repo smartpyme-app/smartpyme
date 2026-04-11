@@ -51,6 +51,9 @@ import { CrearImpuestoComponent } from './modals/crear-impuesto/crear-impuesto.c
 // SelectSearchComponent removido - solo se usa en módulos lazy
 // Componentes y pipes standalone
 import { NotFoundComponent } from './404/not-found.component';
+import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
+import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
+
 import { PaginationComponent } from './parts/pagination/pagination.component';
 import { TimerComponent } from './parts/timer/timer.component';
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
@@ -107,6 +110,8 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     CrearAbonoCompraComponent,
     CrearAbonoGastoComponent,
     CrearImpuestoComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent,
     VerHistorialButtonComponent,
     ThreedsModalComponent,
     AlertsHaciendaComponent,
@@ -171,6 +176,11 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     // SelectSearchComponent removido - solo se usa en módulos lazy
     // Componentes y pipes standalone
     NotFoundComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent,
+    CrearProyectoComponent,
+    ThreedsModalComponent,
+    VerHistorialButtonComponent,
     SafeHtmlPipe,
     PaginationComponent,
     TimerComponent,

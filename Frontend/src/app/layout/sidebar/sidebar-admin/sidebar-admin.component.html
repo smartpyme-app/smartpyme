@@ -88,10 +88,18 @@
                   </ul>
                 </div>
             </li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/gastos']" tooltip="Gastos" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+            <li class="mb-1">
+                <button (click)="toggleGastos()" tooltip="Gastos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!gastosIsCollapsed" aria-controls="collapseGastosAdmin">
                     <img src="/assets/icons/log-out.png" class="icon me-2">Gastos
-                </a>
+                </button>
+                <div [collapse]="gastosIsCollapsed" [isAnimated]="true" id="collapseGastosAdmin">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
+                    <li *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
+                    <li *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos/departamentos-empresa']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/building-cog.png" class="icon me-2">Departamentos</a></li>
+                    <li *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos/areas-empresa']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/2-layers.png" class="icon me-2">Áreas</a></li>
+                  </ul>
+                </div>
             </li>
             <li class="mb-1">
                 <button (click)="toggleFinanzas()" tooltip="Finanzas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!finanzasIsCollapsed" aria-controls="collapseBasic">

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Planilla\AreasEmpresaController;
 use Illuminate\Support\Facades\Route;

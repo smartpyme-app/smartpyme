@@ -376,9 +376,25 @@ class ClientesController extends Controller
     public function estadoCuenta($id)
     {
 
-        $cliente = Cliente::where('id', $id)->with('empresa')->firstOrFail();
-        $cliente->ventas = $cliente->ventas()->where('estado', 'Pendiente')->get();
-        // return $cliente;
+        $cliente = Cliente::where('id', $id)->with(['empresa.currency'])->firstOrFail();
+        // Misma base que saldoPendiente(): no incluir cotizaciones (no son CxC operativa hasta facturarse).
+        $cliente->ventas = $cliente->ventas()
+            ->where('estado', 'Pendiente')
+            ->where(function ($q) {
+                $q->where('cotizacion', 0)->orWhereNull('cotizacion');
+            })
+            ->with([
+                'documento',
+                'abonos' => function ($q) {
+                    $q->where('estado', 'Confirmado')
+                        ->with('documento')
+                        ->orderBy('fecha')
+                        ->orderBy('id');
+                },
+            ])
+            ->orderBy('fecha')
+            ->orderBy('id')
+            ->get();
         $reportes = app('dompdf.wrapper')->loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
         return $reportes->stream();
     }

@@ -40,6 +40,7 @@ class AreasEmpresaExport implements FromCollection, WithHeadings, WithMapping, W
             'Estado',
             'Fecha de Creación',
             'Fecha de Actualización'
+            'Fecha de Actualización',
         ];
     }
 
@@ -48,15 +49,20 @@ class AreasEmpresaExport implements FromCollection, WithHeadings, WithMapping, W
      */
     public function map($area): array
     {
+        $sucursalNombre = 'N/A';
+        if ($area->departamento && $area->departamento->sucursal) {
+            $sucursalNombre = $area->departamento->sucursal->nombre;
+        }
+
         return [
             $area->id,
             $area->nombre,
             $area->descripcion ?: 'N/A',
-            $area->sucursal ? $area->sucursal->nombre : 'N/A',
+            $sucursalNombre,
             $area->departamento ? $area->departamento->nombre : 'N/A',
             $area->activo ? 'Activo' : 'Inactivo',
             $area->created_at ? $area->created_at->format('d/m/Y H:i') : 'N/A',
-            $area->updated_at ? $area->updated_at->format('d/m/Y H:i') : 'N/A'
+            $area->updated_at ? $area->updated_at->format('d/m/Y H:i') : 'N/A',
         ];
     }
 

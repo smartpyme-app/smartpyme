@@ -22,6 +22,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
+import { forkJoin } from 'rxjs';
 
 @Component({
     selector: 'app-gasto',
@@ -60,6 +61,13 @@ export class GastoComponent implements OnInit {
   public loadingAreas: boolean = false;
   public departamentos: any[] = [];
   public contabilidadHabilitada: boolean = false;
+
+  /** Catálogo de áreas (filtradas por sucursal del gasto). */
+  public areas: any[] = [];
+  /** Departamentos de empresa según sucursal del gasto. */
+  public departamentosEmpresa: any[] = [];
+  /** Solo UI: filtra áreas; el gasto guarda `id_area_empresa`. */
+  public idDepartamentoSeleccionado: number | null = null;
 
   modalRef?: BsModalRef;
 
@@ -145,6 +153,19 @@ export class GastoComponent implements OnInit {
           this.cdr.markForCheck();
         }
       });
+
+    if (this.apiService.isGastosCategoriasPersonalizadasHabilitadas()) {
+      this.apiService.getAll('gastos/categorias/list').subscribe(
+        (categorias) => {
+          this.categorias = categorias;
+          this.loading = false;
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
+    }
 
     // Los bancos y categorías se cargarán después de verificar contabilidad
 
@@ -274,11 +295,22 @@ export class GastoComponent implements OnInit {
             this.gasto.area_empresa = '';
           }
 
+          if (this.apiService.isGastosCategoriasPersonalizadasHabilitadas()) {
+            this.cargarDepartamentosYAreas();
+            if (this.gasto.id_categoria != null && this.gasto.id_categoria !== '') {
+              this.gasto.id_categoria = Number(this.gasto.id_categoria);
+            }
+          }
+
           if (this.gasto.detalles && this.gasto.detalles.length > 1) {
             this.varios_items = true;
             this.detalles = this.gasto.detalles.map((d: any) => ({
               ...d,
               tipo_gravado: d.tipo_gravado || (d.aplica_iva ? 'gravada' : 'no_sujeta'),
+              id_categoria:
+                d.id_categoria != null && d.id_categoria !== ''
+                  ? Number(d.id_categoria)
+                  : null,
             }));
           } else if (this.gasto.detalles && this.gasto.detalles.length === 1) {
             this.varios_items = false;
@@ -309,7 +341,7 @@ export class GastoComponent implements OnInit {
       this.gasto.tipo_operacion = 'Gravada';
       this.gasto.tipo_costo_gasto = 'Gastos de venta sin donación';
       this.gasto.tipo_sector = this.apiService.auth_user().empresa.tipo_sector ?? null;
-      this.gasto.id_categoria = '';
+      this.gasto.id_categoria = null;
       this.gasto.id_proveedor = '';
       // this.gasto.fecha_pago = this.apiService.date();
       this.gasto.fecha = this.apiService.date();
@@ -329,6 +361,9 @@ export class GastoComponent implements OnInit {
           +this.route.snapshot.queryParamMap.get('id_proyecto')!;
       }
       this.setTotal();
+      if (this.apiService.isGastosCategoriasPersonalizadasHabilitadas()) {
+        this.cargarDepartamentosYAreas();
+      }
     }
 
     // Duplicar gasto
@@ -656,6 +691,7 @@ export class GastoComponent implements OnInit {
     this.detalles.push({
       concepto: '',
       tipo: 'Gastos varios',
+      id_categoria: null,
       tipo_gravado: 'gravada',
       cantidad: 1,
       precio_unitario: 0,
@@ -785,13 +821,21 @@ export class GastoComponent implements OnInit {
     }
 
     const payload: any = { ...this.gasto };
+    if (!this.apiService.isGastosCategoriasPersonalizadasHabilitadas()) {
+      delete payload.id_categoria;
+      delete payload.id_area_empresa;
+    } else if (payload.id_categoria != null && payload.id_categoria !== '') {
+      payload.id_categoria = Number(payload.id_categoria);
+    } else {
+      payload.id_categoria = null;
+    }
     if (this.varios_items && this.detalles.length > 0) {
       payload.varios_items = true;
       payload.detalles = this.detalles.map(d => {
         const tg = d.tipo_gravado || (d.aplica_iva ? 'gravada' : 'no_sujeta');
-        return {
+        const line: any = {
           concepto: d.concepto,
-          tipo: d.tipo || 'Gastos varios',
+          tipo: (d.tipo && String(d.tipo).trim()) ? d.tipo : 'Gastos varios',
           tipo_gravado: ['gravada', 'exenta', 'no_sujeta'].includes(tg) ? tg : 'gravada',
           cantidad: parseFloat(d.cantidad) || 1,
           precio_unitario: parseFloat(d.precio_unitario) || parseFloat(d.sub_total) || 0,
@@ -806,6 +850,11 @@ export class GastoComponent implements OnInit {
           area_empresa: d.area_empresa || null,
           id_proyecto: d.id_proyecto || null,
         };
+        if (this.apiService.isGastosCategoriasPersonalizadasHabilitadas()) {
+          const ic = d.id_categoria;
+          line.id_categoria = ic != null && ic !== '' ? Number(ic) : null;
+        }
+        return line;
       });
     } else {
       payload.varios_items = false;
@@ -1004,7 +1053,7 @@ export class GastoComponent implements OnInit {
         this.gasto.tipo_documento = 'Factura';
         this.gasto.detalle_banco = '';
         this.gasto.tipo = 'Gastos varios'; // Categoría predeterminada
-        this.gasto.id_categoria = '';
+        this.gasto.id_categoria = null;
         this.gasto.id_proveedor = '';
         this.gasto.fecha = this.apiService.date();
         this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
@@ -1417,6 +1466,93 @@ export class GastoComponent implements OnInit {
     this.areasDisponibles.push(area);
     this.gasto.id_area_empresa = area.id.toString();
   }
+
+  get areasGastoSelector(): any[] {
+    if (!this.areas?.length || this.idDepartamentoSeleccionado == null) {
+      return [];
+    }
+    return this.areas.filter(
+      (a: any) => String(a.id_departamento) === String(this.idDepartamentoSeleccionado)
+    );
+  }
+
+  setDepartamentoCreado(dep: any) {
+    this.idDepartamentoSeleccionado = dep.id;
+    this.cargarDepartamentosYAreas();
+  }
+
+  setAreaEmpresaCreada(area: any) {
+    this.gasto.id_area_empresa = area.id;
+    if (area.id_departamento != null) {
+      this.idDepartamentoSeleccionado = area.id_departamento;
+    }
+    this.cargarDepartamentosYAreas();
+  }
+
+  public cargarDepartamentosYAreas(): void {
+    if (!this.apiService.isGastosCategoriasPersonalizadasHabilitadas() || !this.gasto?.id_sucursal) {
+      this.departamentosEmpresa = [];
+      this.areas = [];
+      this.idDepartamentoSeleccionado = null;
+      return;
+    }
+    forkJoin({
+      deps: this.apiService.getAll('area-empresa/list_departamentos', {
+        id_sucursal: this.gasto.id_sucursal,
+      }),
+      areas: this.apiService.getAll('area-empresa/list', {
+        id_sucursal: this.gasto.id_sucursal,
+      }),
+    }).subscribe({
+      next: ({ deps, areas }) => {
+        this.departamentosEmpresa = deps;
+        this.areas = areas;
+        this.aplicarSeleccionDepartamentoDesdeArea();
+      },
+      error: (e) => this.alertService.error(e),
+    });
+  }
+
+  private aplicarSeleccionDepartamentoDesdeArea(): void {
+    if (!this.gasto?.id_area_empresa || !this.areas?.length) {
+      return;
+    }
+    const a = this.areas.find(
+      (x: any) => String(x.id) === String(this.gasto.id_area_empresa)
+    );
+    if (a) {
+      this.idDepartamentoSeleccionado = a.id_departamento;
+    }
+  }
+
+  public onDepartamentoGastoChange(): void {
+    if (this.idDepartamentoSeleccionado == null) {
+      this.gasto.id_area_empresa = null;
+      return;
+    }
+    if (this.gasto?.id_area_empresa == null || this.gasto.id_area_empresa === '') {
+      return;
+    }
+    const sel = this.areas.find(
+      (x: any) => String(x.id) === String(this.gasto.id_area_empresa)
+    );
+    if (
+      sel &&
+      String(sel.id_departamento) !== String(this.idDepartamentoSeleccionado)
+    ) {
+      this.gasto.id_area_empresa = null;
+    }
+  }
+
+  public onSucursalGastoChange(): void {
+    if (!this.apiService.isGastosCategoriasPersonalizadasHabilitadas()) {
+      return;
+    }
+    this.gasto.id_area_empresa = null;
+    this.idDepartamentoSeleccionado = null;
+    this.cargarDepartamentosYAreas();
+  }
+
   public goBack() {
     this.location.back();
   }

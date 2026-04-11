@@ -161,6 +161,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/planilla/configuraciones.php');
 	require base_path('routes/modulos/planilla/cargos.php');
 	require base_path('routes/modulos/planilla/departamentos-planilla.php');
+	require base_path('routes/modulos/planilla/areas-empresa.php');
 
 	require base_path('routes/modulos/planilla/historialcontratos.php');
 

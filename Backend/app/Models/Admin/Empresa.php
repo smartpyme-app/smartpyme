@@ -646,6 +646,7 @@ class Empresa extends Model
             'configuraciones' => [
                 'ticket_en_pdf' => false,
                 'bloquear_cotizaciones_vendedores' => false,
+                'dte_mostrar_descripcion_producto' => true,
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados
@@ -715,6 +716,14 @@ class Empresa extends Model
     public function isModuloBancos(): bool
     {
         return (bool) $this->getCustomConfigValue('configuraciones', 'modulo_bancos', false);
+    }
+
+    /**
+     * Categorías de gasto personalizadas, departamentos y áreas (selector en gastos y menú).
+     */
+    public function isGastosCategoriasPersonalizadasHabilitadas(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'gastos_categorias_personalizadas', false);
     }
 
     /**

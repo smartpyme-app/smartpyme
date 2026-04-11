@@ -15,12 +15,12 @@
         }
         @if (apiService.canCreate()) {
           <button (click)="openModal(marea)" tooltip="Crear área de empresa (F4)" class="btn btn-default tcla-F4 d-none d-sm-block">
-            <i class="fa fa-plus"></i> Añadir área de empresa 
+            <i class="fa fa-plus"></i> Añadir área de empresa
           </button>
         }
         <button class="btn btn-light text-danger" routerLink="/departamentos-empresa"><i class="fa fa-arrow-left"></i> Regresar</button>
     </div>
-    
+
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -28,7 +28,7 @@
         <div class="col-md-6 mb-3">
             @if (areas?.total) {
               <span class="text-muted d-flex align-items-center gap-2">
-                Mostrando 
+                Mostrando
                 <select name="paginate" class="form-select w-auto" (change)="aplicarFiltros()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -73,11 +73,11 @@
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th (click)="setOrden('created_at')" 
-                            [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" 
+                        <th (click)="setOrden('created_at')"
+                            [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}"
                             class="click">Fecha creación</th>
-                        <th (click)="setOrden('nombre')" 
-                            [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" 
+                        <th (click)="setOrden('nombre')"
+                            [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}"
                             class="click">Nombre</th>
                         <th>Descripción</th>
                         <th>Estado</th>
@@ -107,7 +107,7 @@
                         <td>{{ area.nombre }}</td>
                         <td>{{ area.descripcion | truncate:50 }}</td>
                         <td>
-                            <span class="badge py-2" 
+                            <span class="badge py-2"
                                   [ngClass]="{'bg-success': area.activo == '1' || area.activo == 1, 'bg-danger': area.activo == '0' || area.activo == 0}">
                                 {{ area.activo == '1' || area.activo == 1 ? 'Activo' : 'Inactivo' }}
                             </span>
@@ -134,16 +134,16 @@
                                       </a>
                                     }
                                     @if (apiService.canEdit()) {
-                                      <a 
-                                         (click)="toggleEstado(area)" 
+                                      <a
+                                         (click)="toggleEstado(area)"
                                          class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw" [ngClass]="{'fa-eye': area.activo == '0' || area.activo == 0, 'fa-eye-slash': area.activo == '1' || area.activo == 1}"></i>
                                         {{ area.activo == '1' || area.activo == 1 ? 'Desactivar' : 'Activar' }}
                                       </a>
                                     }
                                     @if (apiService.canDelete()) {
-                                      <a 
-                                         (click)="delete(area.id)" 
+                                      <a
+                                         (click)="delete(area.id)"
                                          class="list-group-item list-group-item-action border-0 click text-danger">
                                         <i class="fa fa-fw fa-trash"></i> Eliminar
                                       </a>
@@ -302,9 +302,9 @@
                 <div class="form-group col-md-6">
                     <label for="id_departamento">Departamento *</label>
                     <div class="d-flex gap-2">
-                        <select [(ngModel)]="area.id_departamento" 
-                                class="form-select" 
-                                name="id_departamento" 
+                        <select [(ngModel)]="area.id_departamento"
+                                class="form-select"
+                                name="id_departamento"
                                 (change)="onDepartamentoChange()"
                                 required>
                             <option value="">Seleccione un departamento</option>

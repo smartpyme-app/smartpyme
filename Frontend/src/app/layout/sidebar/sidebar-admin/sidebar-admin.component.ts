@@ -25,6 +25,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
     public productosIsCollapsed:boolean = true;
     public ventasIsCollapsed:boolean = true;
     public comprasIsCollapsed:boolean = true;
+    public gastosIsCollapsed:boolean = true;
     public preferenciasIsCollapsed:boolean = true;
     public finanzasIsCollapsed:boolean = true;
     public paquetesIsCollapsed:boolean = true;
@@ -64,6 +65,11 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
             localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
         }else{
             this.comprasIsCollapsed = JSON.parse(localStorage.getItem('comprasIsCollapsed')!);
+        }
+        if (!localStorage.getItem('gastosIsCollapsed')) {
+            localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
+        } else {
+            this.gastosIsCollapsed = JSON.parse(localStorage.getItem('gastosIsCollapsed')!);
         }
         if (!localStorage.getItem('preferenciasIsCollapsed')) {
             localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
@@ -173,6 +179,15 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
         this.toggleSidebarMenu();
     }
 
+    toggleGastos() {
+        if (this.gastosIsCollapsed) {
+            this.closeAll();
+        }
+        this.gastosIsCollapsed = !this.gastosIsCollapsed;
+        localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
     togglePreferencias() {
         if(this.preferenciasIsCollapsed){
             this.closeAll();
@@ -224,6 +239,8 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
         localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
         this.comprasIsCollapsed = true;
         localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
+        this.gastosIsCollapsed = true;
+        localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
         this.preferenciasIsCollapsed = true;
         localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
         this.finanzasIsCollapsed = true;
