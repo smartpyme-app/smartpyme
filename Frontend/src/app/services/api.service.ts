@@ -183,6 +183,18 @@ export class ApiService {
         return customConfig?.configuraciones?.modulo_bancos === true;
     }
 
+    /** Categorías de gasto personalizadas, departamentos y áreas (configuración de empresa). */
+    isGastosCategoriasPersonalizadasHabilitadas(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.gastos_categorias_personalizadas === true;
+    }
+
     /** Indica si mostrar estado de cuenta del cliente en facturación está habilitado */
     isEstadoCuentaEnFacturacionHabilitado(): boolean {
         const empresa = this.auth_user()?.empresa;

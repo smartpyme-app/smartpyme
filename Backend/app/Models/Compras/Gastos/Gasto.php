@@ -37,6 +37,7 @@ class Gasto extends Model
         'total',
         'nota',
         'area_empresa',
+        'id_area_empresa',
         'id_usuario',
         'id_proyecto',
         'id_empresa',

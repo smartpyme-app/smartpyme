@@ -710,6 +710,14 @@ class Empresa extends Model
     }
 
     /**
+     * Categorías de gasto personalizadas, departamentos y áreas (selector en gastos y menú).
+     */
+    public function isGastosCategoriasPersonalizadasHabilitadas(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'gastos_categorias_personalizadas', false);
+    }
+
+    /**
      * Obtener la metodología de lotes (FIFO, LIFO, FEFO, Manual)
      */
     public function getLotesMetodologia(): string

@@ -36,6 +36,8 @@ import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.c
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
 import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
 import { AbonosGastosComponent } from './gastos/abonos/abonos-gastos.component';
+import { DepartamentoEmpresaComponent } from './gastos/departamento-empresa/departamento-empresa.component';
+import { AreaEmpresaComponent } from './gastos/area-empresa/area-empresa.component';
 
 // import { HistorialComprasComponent } from './reportes/historial/historial-compras.component';
 // import { DetalleComprasComponent } from './reportes/detalle/detalle-compras.component';
@@ -76,6 +78,8 @@ import { AbonosGastosComponent } from './gastos/abonos/abonos-gastos.component';
     GastosDashComponent,
     GastosCategoriasComponent,
     AbonosGastosComponent,
+    DepartamentoEmpresaComponent,
+    AreaEmpresaComponent,
   ],
   exports: [
   	ComprasComponent,
@@ -98,6 +102,8 @@ import { AbonosGastosComponent } from './gastos/abonos/abonos-gastos.component';
     GastosDashComponent,
     GastosCategoriasComponent,
     AbonosGastosComponent,
+    DepartamentoEmpresaComponent,
+    AreaEmpresaComponent,
   ]
 })
 export class ComprasModule { }
