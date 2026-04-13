@@ -539,7 +539,7 @@
   </div>
   <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
     <p class="text-muted small">
-      Agregue hasta {{ maxBulkJsonFiles }} archivos DTE. En cada pestaña revise proveedor, bodega y detalle: puede <strong>agregar o quitar productos y servicios</strong> como en facturación; si hay líneas del JSON sin coincidencia, asígnelas y pulse <strong>Incorporar al detalle</strong>. Luego guarde cada compra o use <strong>Guardar todas las listas</strong>.
+      Agregue hasta {{ maxBulkJsonFiles }} archivos DTE. Cada pestaña pasa a <strong>Listo para procesar</strong> cuando no quedan productos por vincular. Revise proveedor (puede <strong>crear proveedor</strong>), bodega y detalle; los <strong>lotes</strong> no se leen del JSON: si un producto es por lotes, use el botón de lote en la tabla para elegir o crear lote. Guarde cada compra o use <strong>Guardar todas las listas</strong> cuando todas las pestañas estén listas.
     </p>
     <div class="mb-3 d-flex flex-wrap align-items-center gap-2">
       <input
@@ -580,7 +580,7 @@
                 'bg-primary': it.estado === 'lista',
                 'bg-danger': it.estado === 'error',
                 'bg-secondary': it.estado === 'guardando'
-              }">{{ it.estado }}</span>
+              }">{{ labelEstadoBulk(it.estado) }}</span>
           </button>
         </li>
       </ul>
@@ -611,16 +611,23 @@
             </div>
             <div class="col-md-6">
               <label class="form-label small">Proveedor *</label>
-              <ng-select
-                class="form-select form-select-sm p-0"
-                [(ngModel)]="item.compra.id_proveedor"
-                (change)="onBulkProveedorChange(item)"
-                [name]="'bf-' + item.uid + '-prov'"
-                placeholder="Seleccione proveedor">
-                <ng-option [value]="p.id" *ngFor="let p of proveedores">
-                  {{ p.tipo == 'Empresa' ? p.nombre_empresa : p.nombre_completo }}
-                </ng-option>
-              </ng-select>
+              <div class="input-group flex-nowrap">
+                <ng-select
+                  class="form-select form-select-sm p-0"
+                  appendTo="body"
+                  [(ngModel)]="item.compra.id_proveedor"
+                  (change)="onBulkProveedorChange(item)"
+                  [name]="'bf-' + item.uid + '-prov'"
+                  placeholder="Seleccione proveedor">
+                  <ng-option [value]="p.id" *ngFor="let p of proveedores">
+                    {{ p.tipo == 'Empresa' ? p.nombre_empresa : p.nombre_completo }}
+                  </ng-option>
+                </ng-select>
+                <app-crear-proveedor
+                  [id_proveedor]="item.compra.id_proveedor"
+                  (update)="setProveedorBulk(item, $event)">
+                </app-crear-proveedor>
+              </div>
             </div>
             <div class="col-md-6" *ngIf="bodegasBulk.length">
               <label class="form-label small">Bodega</label>
@@ -659,6 +666,7 @@
                     <td class="small">{{ row.descripcion }} <span class="text-muted" *ngIf="row.codigo">({{ row.codigo }})</span></td>
                     <td>
                       <ng-select
+                        appendTo="body"
                         [(ngModel)]="row.productoSeleccionado"
                         [typeahead]="bulkSearchProductos$"
                         [loading]="bulkSearchLoading"
@@ -705,7 +713,8 @@
     <button
       type="button"
       class="btn btn-primary"
-      [disabled]="bulkGuardandoTodas || bulkProcesandoArchivos"
+      [disabled]="!puedeGuardarTodasBulk() || bulkGuardandoTodas || bulkProcesandoArchivos"
+      tooltip="Solo disponible cuando todas las pestañas están listas para procesar (sin errores ni pendientes de vinculación)."
       (click)="guardarTodasBulkListas()">
       <span *ngIf="!bulkGuardandoTodas">Guardar todas las listas</span>
       <span *ngIf="bulkGuardandoTodas">Guardando…</span>

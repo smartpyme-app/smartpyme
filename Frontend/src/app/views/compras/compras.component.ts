@@ -729,6 +729,46 @@ export class ComprasComponent implements OnInit, OnDestroy {
     return this.bulkItems[this.bulkTabIndex] ?? null;
   }
 
+  /** Texto UX en pestañas (el estado interno sigue siendo `lista`, `pendiente_productos`, etc.). */
+  labelEstadoBulk(estado: string): string {
+    const m: Record<string, string> = {
+      lista: 'Listo para procesar',
+      pendiente_productos: 'Pendiente vinculación',
+      guardada: 'Registrada',
+      guardando: 'Guardando…',
+      error: 'Error',
+    };
+    return m[estado] ?? estado;
+  }
+
+  /**
+   * "Guardar todas" solo si hay compras por registrar y todas las pestañas activas están listas
+   * (productos vinculados, proveedor, lotes si aplica, etc.).
+   */
+  puedeGuardarTodasBulk(): boolean {
+    if (!this.bulkItems.length || this.bulkProcesandoArchivos || this.bulkGuardandoTodas) {
+      return false;
+    }
+    const activos = this.bulkItems.filter(
+      (i) => i.estado !== 'guardada' && i.estado !== 'error'
+    );
+    if (!activos.length) {
+      return false;
+    }
+    return activos.every((i) => i.estado === 'lista' && this.puedeGuardarBulkItem(i));
+  }
+
+  setProveedorBulk(item: BulkCompraItem, proveedor: any) {
+    if (!item.compra.id_proveedor) {
+      this.proveedores.push(proveedor);
+    }
+    item.compra.id_proveedor = proveedor.id;
+    if (proveedor.tipo_contribuyente === 'Grande') {
+      item.compra.retencion = 1;
+    }
+    this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
+  }
+
   onBulkProveedorChange(item: BulkCompraItem) {
     this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
   }
@@ -773,6 +813,17 @@ export class ComprasComponent implements OnInit, OnDestroy {
     item.noEncontrados = [];
     this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
     item.estado = 'lista';
+    if (this.apiService.isLotesActivo()) {
+      const sinLote = item.compra.detalles.filter(
+        (d: any) => d.inventario_por_lotes && !d.lote_id
+      );
+      if (sinLote.length) {
+        this.alertService.info(
+          'Lotes / partidas',
+          'Hay líneas con control por lotes. Use el botón de lote en la tabla del detalle para elegir un lote existente o crear uno nuevo (no se infiere del JSON).'
+        );
+      }
+    }
   }
 
   /** Solo importación masiva: pide al backend avanzar el correlativo del documento en catálogo (no afecta facturación normal). */

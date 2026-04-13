@@ -307,6 +307,7 @@ export class CompraJsonBulkService {
         const descuento = parseFloat(item.montoDescu) || 0;
         const totalFinal = totalCalculado > 0 ? totalCalculado : cantidad * precio - descuento;
 
+        const auth = this.apiService.auth_user();
         return {
             id: null,
             id_producto: producto.id,
@@ -324,6 +325,10 @@ export class CompraJsonBulkService {
             tipo: producto.tipo,
             img: producto.img || 'default-product.png',
             stock: producto.tipo === 'Servicio' ? null : producto.stock || 0,
+            inventario_por_lotes: !!producto.inventario_por_lotes,
+            lote_id: null,
+            porcentaje_impuesto:
+                producto.porcentaje_impuesto ?? auth?.empresa?.iva ?? null,
         };
     }
 
