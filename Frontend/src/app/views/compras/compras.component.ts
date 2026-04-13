@@ -5,7 +5,11 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { CompraJsonBulkService } from '@services/compra-json-bulk.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { Subject } from 'rxjs';
+
+/** Debe coincidir con el slug en Backend (FuncionalidadesSeeder / verificar-acceso). */
+const SLUG_IMPORTACION_MASIVA_COMPRAS_JSON = 'importacion-masiva-compras-json';
 import { debounceTime, distinctUntilChanged, switchMap, takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 
@@ -65,6 +69,8 @@ export class ComprasComponent implements OnInit, OnDestroy {
     public bulkSearchResults: any[] = [];
     public bulkSearchLoading = false;
     public bulkSearchTerm = '';
+    /** Importación masiva JSON en listado de compras (funcionalidad por empresa). */
+    public permiteImportacionMasivaComprasJson = false;
 
     constructor(
         public apiService: ApiService,
@@ -73,7 +79,8 @@ export class ComprasComponent implements OnInit, OnDestroy {
         private modalService: BsModalService,
         private router: Router,
         private route: ActivatedRoute,
-        private compraJsonBulk: CompraJsonBulkService
+        private compraJsonBulk: CompraJsonBulkService,
+        private funcionalidadesService: FuncionalidadesService
     ) {
         this.bulkSearchProductos$
             .pipe(
@@ -139,6 +146,12 @@ export class ComprasComponent implements OnInit, OnDestroy {
         this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
+
+        this.funcionalidadesService
+            .verificarAcceso(SLUG_IMPORTACION_MASIVA_COMPRAS_JSON)
+            .subscribe((ok) => {
+                this.permiteImportacionMasivaComprasJson = !!ok;
+            });
     }
 
     public loadAll() {
@@ -610,6 +623,13 @@ export class ComprasComponent implements OnInit, OnDestroy {
   }
 
   openImportacionJsonMasivo(template: TemplateRef<any>) {
+    if (!this.permiteImportacionMasivaComprasJson) {
+      this.alertService.warning(
+        'Importación masiva',
+        'Su empresa no tiene habilitada la importación masiva de compras desde JSON. Solicite la activación al administrador.'
+      );
+      return;
+    }
     this.bulkItems = [];
     this.bulkTabIndex = 0;
     this.documentosBulk = [];

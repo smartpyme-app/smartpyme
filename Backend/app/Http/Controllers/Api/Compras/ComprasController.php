@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Admin\Documento;
+use App\Models\Admin\Funcionalidad;
+use App\Models\Admin\EmpresaFuncionalidad;
 use App\Models\Compras\Compra;
 use App\Models\Compras\DevolucionCompra;
 use App\Models\Compras\Proveedores\Proveedor;
@@ -254,6 +256,16 @@ class ComprasController extends Controller
             'id_proveedor.required' => 'El campo proveedor es obligatorio.',
             'detalles.required' => 'Los detalles son obligatorios.'
         ]);
+
+        if ($request->boolean('incrementar_correlativo_importacion_massiva')) {
+            $idEmpresaAuth = auth()->user()->id_empresa ?? null;
+            if (!$this->empresaTieneImportacionMasivaComprasJson($idEmpresaAuth)) {
+                return Response()->json([
+                    'error' => 'Su empresa no tiene habilitada la importación masiva de compras desde JSON.',
+                    'code' => 403,
+                ], 403);
+            }
+        }
 
         DB::beginTransaction();
          
@@ -878,6 +890,24 @@ class ComprasController extends Controller
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('compra-' . $compra->id . '.pdf');
 
+    }
+
+    /**
+     * Slug en `funcionalidades` / super admin → empresas (FuncionalidadesSeeder).
+     */
+    private function empresaTieneImportacionMasivaComprasJson(?int $idEmpresa): bool
+    {
+        if (!$idEmpresa) {
+            return false;
+        }
+        $funcionalidad = Funcionalidad::where('slug', 'importacion-masiva-compras-json')->first();
+        if (!$funcionalidad) {
+            return false;
+        }
+        return EmpresaFuncionalidad::where('id_empresa', $idEmpresa)
+            ->where('id_funcionalidad', $funcionalidad->id)
+            ->where('activo', 1)
+            ->exists();
     }
 
 

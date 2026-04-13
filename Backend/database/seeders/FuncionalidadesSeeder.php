@@ -50,6 +50,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Acceso al dashboard de inteligencia de negocios (versión 2)',
                 'orden' => 6
             ],
+            [
+                'nombre' => 'Importación masiva de compras (JSON DTE)',
+                'slug' => 'importacion-masiva-compras-json',
+                'descripcion' => 'Permite importar varias compras desde archivos JSON de DTE en el listado de compras',
+                'orden' => 7
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

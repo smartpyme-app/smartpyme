@@ -21,7 +21,7 @@
         <div class="col">
             <div class="d-flex gap-2">
                 <button
-                    *ngIf="apiService.canCreate()"
+                    *ngIf="apiService.canCreate() && permiteImportacionMasivaComprasJson"
                     type="button"
                     tooltip="Importar varias compras desde archivos JSON (DTE)"
                     (click)="openImportacionJsonMasivo(mbulkJson)"
