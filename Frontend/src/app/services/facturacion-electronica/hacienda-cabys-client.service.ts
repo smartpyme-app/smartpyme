@@ -5,11 +5,8 @@ import { environment } from 'src/environments/environment';
 import { ApiService } from '@services/api.service';
 
 /**
- * Consultas CABYS directas al dominio público de Hacienda desde el navegador.
- * Evita el bloqueo WAF que a menudo afecta a las IPs de servidores (hosting);
- * la API expone Access-Control-Allow-Origin: *.
- *
- * Si falla (red, CORS inesperado), se usa el proxy Laravel /api/fe-cr/cabys.
+ * CABYS: mismo JSON que Hacienda (`{ cabys, cantidad, total }`).
+ * Primero el proxy Laravel (sesión, caché servidor, JSON estable); si falla, GET directo a api.hacienda.go.cr (HttpBackend, sin interceptors).
  */
 @Injectable({ providedIn: 'root' })
 export class HaciendaCabysClientService {
@@ -27,17 +24,25 @@ export class HaciendaCabysClientService {
   }
 
   getCabysByQuery(q: string, top: number = 20): Observable<unknown> {
-    const params = new HttpParams().set('q', q.trim()).set('top', String(top));
-    return this.http.get<unknown>(`${this.baseUrl}/fe/cabys`, { params }).pipe(
-      catchError(() => this.apiService.getAll('fe-cr/cabys', { q: q.trim(), top })),
+    const qTrim = q.trim();
+    const topStr = String(top);
+    const filtros = { q: qTrim, top: topStr };
+    return this.apiService.getAll('fe-cr/cabys', filtros).pipe(
+      catchError(() => {
+        const params = new HttpParams().set('q', qTrim).set('top', topStr);
+        return this.http.get<unknown>(`${this.baseUrl}/fe/cabys`, { params });
+      }),
     );
   }
 
   getCabysByCodigo(codigo: string): Observable<unknown> {
     const digits = codigo.replace(/\D/g, '');
-    const params = new HttpParams().set('codigo', digits);
-    return this.http.get<unknown>(`${this.baseUrl}/fe/cabys`, { params }).pipe(
-      catchError(() => this.apiService.getAll('fe-cr/cabys', { codigo: digits })),
+    const filtros = { codigo: digits };
+    return this.apiService.getAll('fe-cr/cabys', filtros).pipe(
+      catchError(() => {
+        const params = new HttpParams().set('codigo', digits);
+        return this.http.get<unknown>(`${this.baseUrl}/fe/cabys`, { params });
+      }),
     );
   }
 }

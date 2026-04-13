@@ -24,54 +24,112 @@ function firstObjectArray(body: Record<string, unknown>): Record<string, unknown
 }
 
 function pickCodigo(row: Record<string, unknown>): string {
-  const raw = row['codigo'] ?? row['code'] ?? row['cabys'] ?? row['Codigo'] ?? '';
+  const raw =
+    row['codigo'] ??
+    row['Codigo'] ??
+    row['code'] ??
+    row['cabys'] ??
+    row['codigoCabys'] ??
+    row['codigoCABYS'] ??
+    row['CodigoCabys'] ??
+    '';
+
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    const n = Math.trunc(Math.abs(raw));
+
+    return String(n).replace(/\D/g, '').padStart(13, '0').slice(-13);
+  }
 
   return String(raw).replace(/\D/g, '');
+}
+
+/** CABYS son 13 dígitos; la API a veces devuelve número o cadena sin ceros a la izquierda. */
+function normalizeCabys13Digits(digits: string): string {
+  if (digits.length === 0) {
+    return '';
+  }
+  if (digits.length >= 13) {
+    return digits.slice(0, 13);
+  }
+
+  return digits.padStart(13, '0');
 }
 
 function pickDescripcion(row: Record<string, unknown>): string {
   const raw =
     row['descripcion'] ??
+    row['Descripcion'] ??
     row['description'] ??
     row['nombre'] ??
-    row['Descripcion'] ??
+    row['Nombre'] ??
+    row['texto'] ??
+    row['Texto'] ??
+    row['detalle'] ??
+    row['Detalle'] ??
     '';
 
   return String(raw).trim();
 }
 
-export function mapCabysApiResponseToOptions(body: unknown): CabysSelectOption[] {
+/** Extrae el array de filas CABYS (Hacienda suele devolver { cabys, cantidad, total }; a veces PascalCase o data). */
+function extractCabysRows(body: unknown): Record<string, unknown>[] {
   if (body == null) {
     return [];
   }
 
-  let rows: Record<string, unknown>[] = [];
-
   if (Array.isArray(body)) {
-    rows = body as Record<string, unknown>[];
-  } else if (typeof body === 'object') {
-    const o = body as Record<string, unknown>;
-    const direct = ['cabys', 'items', 'data', 'resultados', 'results', 'lista'] as const;
-    for (const k of direct) {
-      const v = o[k];
-      if (Array.isArray(v)) {
-        rows = v as Record<string, unknown>[];
-        break;
-      }
-    }
-    if (rows.length === 0 && o['data'] && typeof o['data'] === 'object') {
-      const inner = o['data'] as Record<string, unknown>;
-      if (Array.isArray(inner['cabys'])) {
-        rows = inner['cabys'] as Record<string, unknown>[];
-      }
-    }
-    if (rows.length === 0) {
-      const found = firstObjectArray(o);
-      if (found) {
-        rows = found;
-      }
-    }
+    return body as Record<string, unknown>[];
   }
+
+  if (typeof body !== 'object') {
+    return [];
+  }
+
+  const tryRowsFrom = (o: Record<string, unknown>): Record<string, unknown>[] | null => {
+    const keys = [
+      'cabys',
+      'Cabys',
+      'CABYS',
+      'items',
+      'Items',
+      'data',
+      'Data',
+      'resultados',
+      'results',
+      'lista',
+    ] as const;
+    for (const k of keys) {
+      const v = o[k];
+      if (!Array.isArray(v)) {
+        continue;
+      }
+      if (v.length === 0) {
+        return [];
+      }
+      const first = v[0];
+      if (first && typeof first === 'object' && !Array.isArray(first)) {
+        return v as Record<string, unknown>[];
+      }
+    }
+
+    return null;
+  };
+
+  const o = body as Record<string, unknown>;
+  let rows = tryRowsFrom(o);
+  if (rows === null && o['data'] && typeof o['data'] === 'object' && !Array.isArray(o['data'])) {
+    rows = tryRowsFrom(o['data'] as Record<string, unknown>);
+  }
+  if (rows === null) {
+    const found = firstObjectArray(o);
+    rows = found ?? [];
+  }
+
+  return rows;
+}
+
+export function mapCabysApiResponseToOptions(body: unknown): CabysSelectOption[] {
+  const rows = extractCabysRows(body);
 
   const out: CabysSelectOption[] = [];
 
@@ -80,7 +138,7 @@ export function mapCabysApiResponseToOptions(body: unknown): CabysSelectOption[]
       continue;
     }
     const digits = pickCodigo(row);
-    const codigo = digits.length >= 13 ? digits.slice(0, 13) : digits;
+    const codigo = normalizeCabys13Digits(digits);
     if (codigo.length !== 13) {
       continue;
     }

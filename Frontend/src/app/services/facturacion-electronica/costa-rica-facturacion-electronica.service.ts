@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '@services/api.service';
+import { errorEmisionFeCr } from './fe-cr-http-error.util';
 
 /**
  * FE Costa Rica: factura 01, tiquete 04, nota crédito 03 (devolución), nota débito 02.
@@ -42,40 +43,9 @@ export class CostaRicaFacturacionElectronicaService {
           reject({ message: msg, devolucion });
         },
         error: (err) => {
-          const m = err?.error?.error ?? err?.message ?? err;
-          reject(typeof m === 'string' ? m : 'Error al emitir nota de crédito electrónica.');
+          reject(errorEmisionFeCr(err));
         },
       });
-    });
-  }
-
-  /** Nota de débito 02 referenciando factura 01 aceptada. */
-  emitirNotaDebitoVenta(ventaId: number, motivo: string, montoLinea: number): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.api
-        .store('emitirFeCrNotaDebitoVenta', {
-          id: ventaId,
-          motivo: motivo || '',
-          monto_linea: montoLinea,
-        })
-        .subscribe({
-          next: (res: any) => {
-            const venta = res?.venta;
-            if (res?.aceptada) {
-              resolve(venta);
-              return;
-            }
-            const msg =
-              typeof res?.detalle_estado?.messages === 'string'
-                ? res.detalle_estado.messages
-                : 'La nota de débito no fue aceptada por Hacienda.';
-            reject({ message: msg, venta });
-          },
-          error: (err) => {
-            const m = err?.error?.error ?? err?.message ?? err;
-            reject(typeof m === 'string' ? m : 'Error al emitir nota de débito electrónica.');
-          },
-        });
     });
   }
 
@@ -101,8 +71,7 @@ export class CostaRicaFacturacionElectronicaService {
           reject({ message: msg, venta });
         },
         error: (err) => {
-          const m = err?.error?.error ?? err?.message ?? err;
-          reject(typeof m === 'string' ? m : 'Error al emitir comprobante electrónico.');
+          reject(errorEmisionFeCr(err));
         },
       });
     });

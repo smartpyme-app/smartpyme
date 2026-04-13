@@ -1,0 +1,17 @@
+﻿<Clave>{{ document_key }}</Clave>
+<ProveedorSistemas>{{ issuer.identification_number }}</ProveedorSistemas>
+<CodigoActividadEmisor>{{ issuer.activity.code }}</CodigoActividadEmisor>
+{% if receiver.activity.code %}
+<CodigoActividadReceptor>{{ receiver.activity.code }}</CodigoActividadReceptor>
+{% endif %}
+<NumeroConsecutivo>{{ sequential_number }}</NumeroConsecutivo>
+<FechaEmision>{{ date }}</FechaEmision>
+{% include 'Components/entity.xml.twig' with { 'entity': issuer, node: 'Emisor'
+} %} {% include 'Components/entity.xml.twig' with { 'entity': receiver, node:
+'Receptor' } %}
+<CondicionVenta>{{ sale_condition.code }}</CondicionVenta>
+{% if sale_condition.code == '99' %}
+<CondicionVentaOtros>{{ sale_condition_details }}</CondicionVentaOtros>
+{% endif %} {% if credit_term %}
+<PlazoCredito>{{ credit_term }}</PlazoCredito>
+{% endif %}

@@ -26,14 +26,14 @@
                     </td>
                 </tr>
                 }
-                @if (!loading && producto?.proveedores.length == 0) {
+                @if (!loading && (producto?.proveedores?.length ?? 0) === 0) {
                 <tr>
                     <td colspan="6" class="text-center">
                         <span class="text-muted">No tiene proveedores agregados</span>
                     </td>
                 </tr>
                 }
-                @for (proveedor of producto.proveedores; track proveedor.id) {
+                @for (proveedor of producto?.proveedores ?? []; track proveedor.id) {
                 <tr>
                     <td>{{ proveedor?.proveedor.tipo == 'Persona' ? proveedor?.proveedor.nombre_completo : proveedor?.proveedor.nombre_empresa | truncate:30 }}</td>
                     <td>{{ proveedor?.proveedor.correo }}</td>

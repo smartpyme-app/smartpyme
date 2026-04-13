@@ -2,6 +2,11 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import {
+  HaciendaCrErrorVista,
+  parsearRespuestaErrorHaciendaCr,
+  pareceErrorHaciendaCr,
+} from '@services/facturacion-electronica/hacienda-cr-error.parser';
 
 @Component({
     selector: 'app-alerts-hacienda',
@@ -12,6 +17,30 @@ import { RouterModule } from '@angular/router';
 })
 export class AlertsHaciendaComponent {
   @Input() errores: string[] | any = [];
+
+  /** Vista parseada para mensajes DGT Costa Rica (XSD / ambiente de pruebas). */
+  get vistaCostaRica(): HaciendaCrErrorVista | null {
+    const raw = this.textoErrorCostaRicaRaw;
+    if (!raw || !pareceErrorHaciendaCr(raw)) {
+      return null;
+    }
+    const vista = parsearRespuestaErrorHaciendaCr(raw);
+    const mostrarCr =
+      vista.detalles.length > 0 || !!vista.avisoPruebas || !!(vista.resumen && vista.resumen.trim());
+    return mostrarCr ? vista : null;
+  }
+
+  /** Texto bruto del mensaje Hacienda CR (string o envuelto en objeto). */
+  private get textoErrorCostaRicaRaw(): string {
+    const e = this.errores;
+    if (typeof e === 'string') {
+      return e;
+    }
+    if (e && typeof e === 'object' && typeof e.haciendaCrRaw === 'string') {
+      return e.haciendaCrRaw;
+    }
+    return '';
+  }
 
   // Diccionario para traducir campos técnicos a nombres amigables
   private nombresAmigables: Record<string, string> = {
@@ -26,9 +55,13 @@ export class AlertsHaciendaComponent {
     departamento: 'Departamento',
   };
 
-  // Normaliza los errores
+  // Normaliza los errores (Ministerio de Hacienda El Salvador y otros formatos simples)
   get erroresList(): string[] {
     if (!this.errores) return [];
+
+    if (this.vistaCostaRica) {
+      return [];
+    }
 
     if (typeof this.errores === 'string') return [this.errores];
 

@@ -2,14 +2,18 @@
 
 namespace App\Services\FacturacionElectronica\CostaRica;
 
+use App\Exceptions\CostaRica\CostaRicaFeEmisionFallidaException;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use DazzaDev\DgtCr\Client;
-use Throwable;
+use DOMDocument;
 use Illuminate\Support\Facades\Log;
+use ReflectionClass;
+use ReflectionException;
 use RuntimeException;
+use Throwable;
 
 /**
  * Emisión FE Costa Rica: factura 01 (incl. factura de exportación), tiquete 04, nota crédito 03, nota débito 02 (dazza-dev/dgt-cr).
@@ -102,7 +106,16 @@ final class CostaRicaFeEmitService
             $envio = $client->sendDocument();
         } catch (Throwable $e) {
             Log::error('FE CR sendDocument NC', ['devolucion' => $devolucionId, 'error' => $e->getMessage()]);
-            throw $e;
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                'Error al enviar la nota de crédito a Hacienda: '.$e->getMessage(),
+                $data,
+                null,
+                null,
+                $xmlSin,
+                $xmlFirm,
+                $e
+            );
         }
 
         $clave = $client->getDocumentKey();
@@ -110,6 +123,18 @@ final class CostaRicaFeEmitService
             $client->checkStatusWithRetry($clave, 3, 2)
         );
         $aceptada = (bool) ($estado['success'] ?? false);
+
+        if (! $aceptada) {
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                $this->mensajeEstadoHaciendaNoAceptado($estado),
+                $data,
+                $clave,
+                $estado,
+                $xmlSin,
+                $xmlFirm
+            );
+        }
 
         $devolucion->codigo_generacion = $clave;
         $devolucion->tipo_dte = '03';
@@ -124,7 +149,7 @@ final class CostaRicaFeEmitService
                 'tipoDte' => '03',
             ],
             'cr' => [
-                'aceptada' => $aceptada,
+                'aceptada' => true,
                 'envio' => $envio,
                 'estado_consulta' => $estado,
             ],
@@ -133,7 +158,7 @@ final class CostaRicaFeEmitService
 
         return [
             'clave' => $clave,
-            'aceptada' => $aceptada,
+            'aceptada' => true,
             'detalle_estado' => $estado,
             'devolucion' => $devolucion->fresh(),
         ];
@@ -242,7 +267,16 @@ final class CostaRicaFeEmitService
             $envio = $client->sendDocument();
         } catch (Throwable $e) {
             Log::error('FE CR sendDocument ND', ['venta' => $ventaFacturaId, 'error' => $e->getMessage()]);
-            throw $e;
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                'Error al enviar la nota de débito a Hacienda: '.$e->getMessage(),
+                $data,
+                null,
+                null,
+                $xmlSin,
+                $xmlFirm,
+                $e
+            );
         }
 
         $clave = $client->getDocumentKey();
@@ -251,10 +285,22 @@ final class CostaRicaFeEmitService
         );
         $aceptada = (bool) ($estado['success'] ?? false);
 
+        if (! $aceptada) {
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                $this->mensajeEstadoHaciendaNoAceptado($estado),
+                $data,
+                $clave,
+                $estado,
+                $xmlSin,
+                $xmlFirm
+            );
+        }
+
         $dte = is_array($venta->dte) ? $venta->dte : [];
         $dte['cr']['nota_debito'] = [
             'clave' => $clave,
-            'aceptada' => $aceptada,
+            'aceptada' => true,
             'documento' => $data,
             'envio' => $envio,
             'estado_consulta' => $estado,
@@ -264,7 +310,7 @@ final class CostaRicaFeEmitService
 
         return [
             'clave' => $clave,
-            'aceptada' => $aceptada,
+            'aceptada' => true,
             'detalle_estado' => $estado,
             'venta' => $venta->fresh(),
         ];
@@ -339,7 +385,16 @@ final class CostaRicaFeEmitService
             $envio = $client->sendDocument();
         } catch (Throwable $e) {
             Log::error('FE CR sendDocument', ['venta' => $venta->id, 'tipo' => $dgtType, 'error' => $e->getMessage()]);
-            throw $e;
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                'Error al enviar el comprobante a Hacienda: '.$e->getMessage(),
+                $data,
+                null,
+                null,
+                $xmlSin,
+                $xmlFirm,
+                $e
+            );
         }
 
         $clave = $client->getDocumentKey();
@@ -347,6 +402,18 @@ final class CostaRicaFeEmitService
             $client->checkStatusWithRetry($clave, 3, 2)
         );
         $aceptada = (bool) ($estado['success'] ?? false);
+
+        if (! $aceptada) {
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                $this->mensajeEstadoHaciendaNoAceptado($estado),
+                $data,
+                $clave,
+                $estado,
+                $xmlSin,
+                $xmlFirm
+            );
+        }
 
         $venta->codigo_generacion = $clave;
         $venta->tipo_dte = $tipoDte;
@@ -363,7 +430,7 @@ final class CostaRicaFeEmitService
                 'tipoDte' => $tipoDte,
             ],
             'cr' => [
-                'aceptada' => $aceptada,
+                'aceptada' => true,
                 'envio' => $envio,
                 'estado_consulta' => $estado,
             ],
@@ -372,10 +439,47 @@ final class CostaRicaFeEmitService
 
         return [
             'clave' => $clave,
-            'aceptada' => $aceptada,
+            'aceptada' => true,
             'detalle_estado' => $estado,
             'venta' => $venta->fresh(),
         ];
+    }
+
+    /**
+     * Mensaje para error HTTP (misma idea que FE SV: no persistir DTE si Hacienda no aceptó).
+     *
+     * @param  array<string, mixed>  $estado
+     */
+    private function mensajeEstadoHaciendaNoAceptado(array $estado): string
+    {
+        $msg = $estado['messages'] ?? null;
+        if (is_string($msg) && trim($msg) !== '') {
+            return trim($msg);
+        }
+        if (is_array($msg)) {
+            $parts = [];
+            foreach ($msg as $m) {
+                if (is_string($m) && trim($m) !== '') {
+                    $parts[] = trim($m);
+                } elseif ($m !== null && ! is_array($m)) {
+                    $parts[] = trim((string) $m);
+                }
+            }
+            if ($parts !== []) {
+                return implode(' ', $parts);
+            }
+        }
+
+        $status = strtolower(trim((string) ($estado['status'] ?? '')));
+        if ($status === 'rechazado') {
+            return 'El comprobante fue rechazado por Hacienda. Revise los datos y vuelva a intentar la emisión.';
+        }
+
+        if ($status === 'recibido' || $status === 'procesando') {
+            return 'El comprobante aún no consta como aceptado en Hacienda (en proceso). Espere unos minutos y use «Consultar estado en Hacienda»; no se guardó como emitido.';
+        }
+
+        return 'El comprobante no fue aceptado por el Ministerio de Hacienda. No se registró como emitido.';
     }
 
     private function configurarClienteEmisorReceptor(\DazzaDev\DgtCr\Client $client, array $data): void
@@ -421,6 +525,62 @@ final class CostaRicaFeEmitService
     private function soloDigitos(string $s): string
     {
         return preg_replace('/\D/', '', $s) ?? '';
+    }
+
+    /**
+     * XML en español (XSD DGT) generado por dgt-xml-generator: sin firma y, si aplica, firmado (p. ej. tras fallo de red).
+     *
+     * @return array{0: ?string, 1: ?string} [sin_firma, firmado]
+     */
+    private function xmlComprobanteDesdeClienteDgt(Client $client): array
+    {
+        return [$this->xmlSinFirmaDesdeClienteDgt($client), $this->xmlFirmadoDesdeClienteDgt($client)];
+    }
+
+    private function xmlSinFirmaDesdeClienteDgt(Client $client): ?string
+    {
+        try {
+            $ref = new ReflectionClass($client);
+            if (! $ref->hasProperty('document')) {
+                return null;
+            }
+            $prop = $ref->getProperty('document');
+            $prop->setAccessible(true);
+            $document = $prop->getValue($client);
+            if (! is_object($document) || ! method_exists($document, 'getDocumentXml')) {
+                return null;
+            }
+            $dom = $document->getDocumentXml();
+            if (! $dom instanceof DOMDocument) {
+                return null;
+            }
+            $dom->formatOutput = true;
+            $xml = $dom->saveXML();
+
+            return $xml !== false ? $xml : null;
+        } catch (ReflectionException|Throwable) {
+            return null;
+        }
+    }
+
+    private function xmlFirmadoDesdeClienteDgt(Client $client): ?string
+    {
+        try {
+            $ref = new ReflectionClass($client);
+            if (! $ref->hasProperty('signedDocument')) {
+                return null;
+            }
+            $prop = $ref->getProperty('signedDocument');
+            $prop->setAccessible(true);
+            if (! $prop->isInitialized($client)) {
+                return null;
+            }
+            $signed = $prop->getValue($client);
+
+            return is_string($signed) && $signed !== '' ? $signed : null;
+        } catch (ReflectionException|Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -517,6 +677,21 @@ final class CostaRicaFeEmitService
         $client = $this->factory->make($venta->empresa);
         $estado = $this->checkStatusConReintentosSinPersistirXml($client, $clave, 3, 2);
         $aceptada = (bool) ($estado['success'] ?? false);
+        $status = strtolower(trim((string) ($estado['status'] ?? '')));
+
+        if ($status === 'rechazado') {
+            $venta->codigo_generacion = null;
+            $venta->sello_mh = null;
+            $venta->tipo_dte = null;
+            $venta->dte = null;
+            $venta->save();
+
+            return [
+                'venta' => $venta->fresh(),
+                'detalle_estado' => $estado,
+                'rechazado' => true,
+            ];
+        }
 
         $venta->sello_mh = $clave;
 

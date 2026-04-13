@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
+import { pareceErrorHaciendaCr } from './facturacion-electronica/hacienda-cr-error.parser';
 
 @Injectable({
   providedIn: 'root',
@@ -33,6 +34,14 @@ export class AlertService {
             message = message.message;
         } else {
             message = message;
+        }
+
+        // Respuestas largas de DGT (Costa Rica): acortar el toast; el detalle amigable va en pantallas con app-alerts-hacienda
+        if (typeof message === 'string' && pareceErrorHaciendaCr(message)) {
+            const primera = message.split(/\n/).find((l) => l.trim().length > 0)?.trim() ?? message;
+            message =
+                (primera.length > 220 ? `${primera.slice(0, 220)}…` : primera) +
+                ' — Abra «Emitir / ver comprobante» desde Ventas para ver la explicación detallada.';
         }
 
         this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': titulo, 'mensaje' : message});
@@ -76,6 +85,14 @@ export class AlertService {
                     errorTitle = 'Corrige los siguientes errores';
                 } else {
                     errorMessage = message.error.error;
+                    if (typeof errorMessage === 'string' && pareceErrorHaciendaCr(errorMessage)) {
+                        const primera =
+                            errorMessage.split(/\n/).find((l) => l.trim().length > 0)?.trim() ?? errorMessage;
+                        errorMessage =
+                            (primera.length > 220 ? `${primera.slice(0, 220)}…` : primera) +
+                            ' — En Ventas, abra el comprobante para ver el error explicado en detalle.';
+                        errorTitle = 'Hacienda rechazó el comprobante';
+                    }
                 }
             }
             // Formato 2: message.error.message (común en Laravel)

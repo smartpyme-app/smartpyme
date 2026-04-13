@@ -230,6 +230,17 @@ class MHDTEController extends Controller
             abort(400, 'Tipo de documento no disponible para PDF en FE Costa Rica.');
         }
 
+        // En DGT la factura de exportación puede emitirse con tipo 01 en el XML; el PDF debe reflejar
+        // el documento de venta (catálogo 11 — factura electrónica de exportación).
+        if (
+            $registro instanceof Venta
+            && in_array($tipo, ['01', '11'], true)
+            && trim((string) ($registro->nombre_documento ?? '')) === 'Factura de exportación'
+        ) {
+            $tipoDteRuta = '11';
+            $titulo = 'Factura de exportación';
+        }
+
         $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.FE-CR-Comprobante', [
             'registro' => $registro,
             'documento' => $documento,

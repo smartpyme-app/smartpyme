@@ -38,7 +38,8 @@ final class CostaRicaInvoiceFromVentaMapper
             throw new InvalidArgumentException('La venta no tiene líneas de detalle.');
         }
 
-        $fecha = Carbon::parse($venta->fecha)->timezone('America/Costa_Rica');
+        // Fecha/hora de emisión del XML: instante actual en CR (evita rechazo -53 por desfase con hora oficial DGT).
+        $fecha = Carbon::now('America/Costa_Rica');
         $dateIso = $fecha->format('Y-m-d\TH:i:sP');
 
         $est = $this->codigoEstablecimiento3($empresa);
@@ -47,6 +48,8 @@ final class CostaRicaInvoiceFromVentaMapper
 
         $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
         $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
+
+        $lineItems = $venta->detalles->map(fn (Detalle $d) => $this->linea($d, $empresa, $venta))->all();
 
         $payload = [
             'date' => $dateIso,
@@ -62,9 +65,9 @@ final class CostaRicaInvoiceFromVentaMapper
             ],
             'issuer' => $this->emisor($empresa),
             'receiver' => $this->receptor($venta, $empresa),
-            'line_items' => $venta->detalles->map(fn (Detalle $d) => $this->linea($d, $empresa))->all(),
+            'line_items' => $lineItems,
             'payments' => $this->pagos($venta),
-            'summary' => $this->resumen($venta),
+            'summary' => $this->resumenAlineadoALineas($venta, $lineItems),
         ];
 
         $metaEx = $this->metadataExoneracionCr($venta);
@@ -77,11 +80,15 @@ final class CostaRicaInvoiceFromVentaMapper
 
     /**
      * Tiquete electrónico (04): mismos totales que factura; receptor siempre genérico (consumidor final).
+     * XSD v4.4: el tiquete no incluye el nodo TipoTransaccion por línea (sí la factura); el XML usa items-ticket.xml.twig.
+     *
+     * El receptor no puede usar tipo 06 (No contribuyente) como en la factura genérica: la validación DGT (-409) exige
+     * para TE consumidor final anónimo el tipo 05 (Extranjero no domiciliado) con número acorde a la nota 4.
      */
     public function buildTicketDocumentData(Venta $venta, Empresa $empresa, int $secuencial): array
     {
         $data = $this->buildDocumentData($venta, $empresa, $secuencial);
-        $data['receiver'] = $this->receptorGenerico($empresa);
+        $data['receiver'] = $this->receptorGenericoTiquete($empresa);
 
         return $data;
     }
@@ -155,32 +162,35 @@ final class CostaRicaInvoiceFromVentaMapper
 
         [$ivaTarifaCode, , $rate] = $this->tarifaIva($porcentajeIvaEstimado, $ivaMonto > 0.00001);
 
-        $tipoStr = strtolower((string) ($producto->tipo ?? ''));
-        $tipoTx = str_contains($tipoStr, 'servic') ? '05' : '01';
         $desc = $detalle->descripcion ?: ($producto->nombre ?? 'Ítem');
+
+        // Catálogo DGT tipos-transaccion.json: 01 = «Venta normal de bienes y servicios» (general), no significa «solo mercancía».
+        // Los códigos 02–05 son autoconsumo u otros; no son «02=servicio». Hacienda cuadra TotalServGravados vs TotalMercanciasGravadas
+        // según línea (p. ej. Unid vs Sp), no cambiando 01↔02 en tipo transacción. Mantener 01 en venta corriente.
+        $esServicio = $this->esLineaServicioCr($producto);
 
         $line = [
             'cabys_code' => $cabys,
             'description' => mb_substr(strip_tags((string) $desc), 0, 200),
             'quantity' => $cantidad,
-            'unit_measure' => $tipoTx === '05' ? 'Sp' : 'Unid',
+            'unit_measure' => $esServicio ? 'Sp' : 'Unid',
             'unit_price' => round($subTotal / $cantidad, 5),
             'sub_total' => $subTotal,
             'total_amount' => $subTotal,
             'taxable_base' => $subTotal,
-            'transaction_type' => $tipoTx,
+            'transaction_type' => '01',
             'total_tax' => $ivaMonto,
             'total' => $totalLinea,
         ];
 
-        if ($ivaMonto > 0.00001 && $rate > 0) {
-            $line['taxes'] = [[
-                'tax_type' => '01',
-                'iva_type' => $ivaTarifaCode,
-                'rate' => $rate,
-                'amount' => $ivaMonto,
-            ]];
-        }
+        // XSD v4.4: antes de <ImpuestoNeto> debe existir al menos un <Impuesto> o <ImpuestoAsumidoEmisorFabrica>.
+        $gravado = $ivaMonto > 0.00001 && $rate > 0;
+        $line['taxes'] = [[
+            'tax_type' => '01',
+            'iva_type' => $this->codigoTarifaIvaDosDigitos($ivaTarifaCode),
+            'rate' => $gravado ? $rate : 0.0,
+            'amount' => $gravado ? $ivaMonto : 0.0,
+        ]];
 
         return $line;
     }
@@ -513,6 +523,20 @@ final class CostaRicaInvoiceFromVentaMapper
         ];
     }
 
+    /**
+     * Consumidor final en tiquete electrónico (04): tipo 05 + número placeholder (nota 4 v4.4).
+     * No usar 06 aquí: Hacienda rechaza -409 «Tipo de Identificación del Receptor no permitido para este documento».
+     */
+    private function receptorGenericoTiquete(Empresa $empresa, string $nombre = 'Cliente general'): array
+    {
+        $base = $this->receptorGenerico($empresa, $nombre);
+
+        return array_replace($base, [
+            'identification_type' => '05',
+            'identification_number' => '00000000000000000000',
+        ]);
+    }
+
     private function cabysPorDefecto(Empresa $empresa): string
     {
         $raw = $empresa->getCustomConfigValue('facturacion_fe', 'cabys_default', null);
@@ -543,7 +567,13 @@ final class CostaRicaInvoiceFromVentaMapper
         return $this->cabysPorDefecto($empresa);
     }
 
-    private function linea(Detalle $detalle, Empresa $empresa): array
+    /**
+     * @see \App\Models\MH\MHFactura::detalles() En El Salvador, si la venta lleva IVA, al generar el DTE se incorpora
+     *      el impuesto (p. ej. precio * 1.13) porque en BD los montos suelen venir sin reflejar el total con impuesto
+     *      en el mismo sentido. Aquí: si la venta tiene IVA y el detalle tiene `total` = `sub_total` pero con IVA en
+     *      columna `iva`, el monto de línea para FE debe ser subtotal + IVA (coherente con resumen y pagos).
+     */
+    private function linea(Detalle $detalle, Empresa $empresa, Venta $venta): array
     {
         $producto = $detalle->producto;
         $cabys = $this->resolverCabysLinea($producto, $empresa);
@@ -561,35 +591,43 @@ final class CostaRicaInvoiceFromVentaMapper
         $subTotal = round((float) $detalle->sub_total, 5);
         $ivaMonto = round((float) ($detalle->iva ?? 0), 5);
         $totalLinea = round((float) $detalle->total, 5);
+        $ventaLlevaIva = (float) ($venta->iva ?? 0) > 0.00001;
+        if (
+            $ventaLlevaIva
+            && $ivaMonto > 0.00001
+            && abs($totalLinea - $subTotal) < 0.0001
+        ) {
+            $totalLinea = round($subTotal + $ivaMonto, 5);
+        }
 
         $pct = (float) ($detalle->porcentaje_impuesto ?? 0);
         [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $ivaMonto > 0);
 
-        $tipoStr = strtolower((string) ($producto->tipo ?? ''));
-        $tipoTx = str_contains($tipoStr, 'servic') ? '05' : '01';
+        $esServicio = $this->esLineaServicioCr($producto);
 
+        // transaction_type 01 = catálogo DGT «Venta normal de bienes y servicios»; no usar 02 pensando que es «servicio».
         $line = [
             'cabys_code' => $cabys,
             'description' => mb_substr(strip_tags((string) $detalle->descripcion), 0, 200),
             'quantity' => $cantidad,
-            'unit_measure' => $tipoTx === '05' ? 'Sp' : 'Unid',
+            'unit_measure' => $esServicio ? 'Sp' : 'Unid',
             'unit_price' => round($subTotal / $cantidad, 5),
             'sub_total' => $subTotal,
             'total_amount' => $subTotal,
             'taxable_base' => $subTotal,
-            'transaction_type' => $tipoTx,
+            'transaction_type' => '01',
             'total_tax' => $ivaMonto,
             'total' => $totalLinea,
         ];
 
-        if ($ivaMonto > 0 && $rate > 0) {
-            $line['taxes'] = [[
-                'tax_type' => '01',
-                'iva_type' => $ivaTarifaCode,
-                'rate' => $rate,
-                'amount' => $ivaMonto,
-            ]];
-        }
+        // XSD v4.4: antes de <ImpuestoNeto> debe existir al menos un <Impuesto> o <ImpuestoAsumidoEmisorFabrica>.
+        $gravado = $ivaMonto > 0 && $rate > 0;
+        $line['taxes'] = [[
+            'tax_type' => '01',
+            'iva_type' => $this->codigoTarifaIvaDosDigitos($ivaTarifaCode),
+            'rate' => $gravado ? $rate : 0.0,
+            'amount' => $gravado ? $ivaMonto : 0.0,
+        ]];
 
         return $line;
     }
@@ -661,6 +699,16 @@ final class CostaRicaInvoiceFromVentaMapper
         return ['08', 'Tarifa general 13%', 13.0];
     }
 
+    /**
+     * Código de tarifa IVA según catálogo DGT (dos dígitos, p. ej. "08"). Evita pérdida del cero inicial si el valor circula como entero.
+     */
+    private function codigoTarifaIvaDosDigitos(string $code): string
+    {
+        $d = preg_replace('/\D/', '', $code);
+
+        return $d !== '' ? str_pad($d, 2, '0', STR_PAD_LEFT) : '08';
+    }
+
     private function pagos(Venta $venta): array
     {
         return [[
@@ -669,26 +717,90 @@ final class CostaRicaInvoiceFromVentaMapper
         ]];
     }
 
-    private function resumen(Venta $venta): array
+    /**
+     * Totales de resumen = misma regla que cada línea del XML (Unid vs Sp y base gravada = taxable_base de la línea).
+     * Evita -111 cuando columna gravada del detalle ≠ sub_total usado en línea, o cuando servicio/mercancía no coincidía con el detalle.
+     *
+     * @param  array<int, array<string, mixed>>  $lineItems
+     */
+    private function resumenAlineadoALineas(Venta $venta, array $lineItems): array
     {
-        $grav = round((float) ($venta->gravada ?? 0), 2);
-        $exe = round((float) ($venta->exenta ?? 0), 2);
-        $ns = round((float) ($venta->no_sujeta ?? 0), 2);
+        $venta->loadMissing(['detalles.producto']);
+
+        $taxedGoods = 0.0;
+        $taxedServices = 0.0;
+        $exemptGoods = 0.0;
+        $exemptServices = 0.0;
+        $nsGoods = 0.0;
+        $nsServices = 0.0;
+
+        $detalles = $venta->detalles->values();
+        foreach ($detalles as $idx => $detalle) {
+            $line = $lineItems[$idx] ?? null;
+            if (! is_array($line)) {
+                continue;
+            }
+
+            $esServicio = ($line['unit_measure'] ?? '') === 'Sp';
+            $clas = $this->clasificarDetalleVentaCr($detalle);
+
+            if ($clas === 'gravada') {
+                $monto = round((float) ($line['taxable_base'] ?? $line['sub_total'] ?? 0), 2);
+            } else {
+                $monto = $this->montoDetallePorClasificacionCr($detalle, $clas);
+            }
+
+            if ($monto <= 0.00001) {
+                continue;
+            }
+
+            if ($clas === 'gravada') {
+                if ($esServicio) {
+                    $taxedServices += $monto;
+                } else {
+                    $taxedGoods += $monto;
+                }
+            } elseif ($clas === 'exenta') {
+                if ($esServicio) {
+                    $exemptServices += $monto;
+                } else {
+                    $exemptGoods += $monto;
+                }
+            } else {
+                if ($esServicio) {
+                    $nsServices += $monto;
+                } else {
+                    $nsGoods += $monto;
+                }
+            }
+        }
+
+        $taxedGoods = round($taxedGoods, 2);
+        $taxedServices = round($taxedServices, 2);
+        $exemptGoods = round($exemptGoods, 2);
+        $exemptServices = round($exemptServices, 2);
+        $nsGoods = round($nsGoods, 2);
+        $nsServices = round($nsServices, 2);
+
         $iva = round((float) ($venta->iva ?? 0), 2);
         $desc = round((float) ($venta->descuento ?? 0), 2);
         $sub = round((float) ($venta->sub_total ?? 0), 2);
         $total = round((float) ($venta->total ?? 0), 2);
 
+        $totalTaxed = round($taxedGoods + $taxedServices, 2);
+        $totalExempt = round($exemptGoods + $exemptServices, 2);
+        $totalNs = round($nsGoods + $nsServices, 2);
+
         $summary = [
-            'total_taxed_goods' => $grav,
-            'total_exempt_goods' => $exe,
-            'total_non_taxable_goods' => $ns,
-            'total_taxed_services' => 0.0,
-            'total_exempt_services' => 0.0,
-            'total_non_taxable_services' => 0.0,
-            'total_taxed' => $grav,
-            'total_exempt' => $exe,
-            'total_non_taxable' => $ns,
+            'total_taxed_goods' => $taxedGoods,
+            'total_exempt_goods' => $exemptGoods,
+            'total_non_taxable_goods' => $nsGoods,
+            'total_taxed_services' => $taxedServices,
+            'total_exempt_services' => $exemptServices,
+            'total_non_taxable_services' => $nsServices,
+            'total_taxed' => $totalTaxed,
+            'total_exempt' => $totalExempt,
+            'total_non_taxable' => $totalNs,
             'total_sale' => $sub + $desc,
             'total_discounts' => $desc,
             'total_net_sale' => $sub,
@@ -706,6 +818,97 @@ final class CostaRicaInvoiceFromVentaMapper
         }
 
         return $summary;
+    }
+
+    /**
+     * Servicio vs bien para Unid vs Sp y totales del resumen: debe alinearse con cómo Hacienda agrupa la línea (evita -111).
+     * El catálogo DGT de tipo de transacción (01, 02…) no es «01=mercancía / 02=servicio»; el 01 es venta general.
+     * Por defecto se trata como mercancía (Unid) salvo tipo/medida claramente de servicio — no usar palabras sueltas en
+     * descripcion_cabys (muchas descripciones oficiales incluyen «servicio» y generaban Sp erróneo en productos físicos).
+     */
+    private function esLineaServicioCr(?Producto $producto): bool
+    {
+        if ($producto === null) {
+            return false;
+        }
+
+        $tipo = trim((string) ($producto->tipo ?? ''));
+        if ($tipo !== '') {
+            if (
+                strcasecmp($tipo, 'Mercancía') === 0
+                || strcasecmp($tipo, 'Mercancia') === 0
+                || strcasecmp($tipo, 'Producto') === 0
+                || strcasecmp($tipo, 'Materia Prima') === 0
+                || strcasecmp($tipo, 'Insumo') === 0
+            ) {
+                return false;
+            }
+        }
+
+        if (strcasecmp($tipo, 'Servicio') === 0) {
+            return true;
+        }
+
+        $tipoStr = strtolower($tipo);
+        if ($tipoStr !== '' && str_contains($tipoStr, 'servic')) {
+            return true;
+        }
+
+        $medida = strtoupper(trim((string) ($producto->medida ?? '')));
+        if (in_array($medida, ['SP', 'S/P', 'HORA', 'H', 'SERVICIO'], true)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return 'gravada'|'exenta'|'no_sujeta'
+     */
+    private function clasificarDetalleVentaCr(Detalle $detalle): string
+    {
+        $t = strtolower(trim((string) ($detalle->tipo_gravado ?? '')));
+        if (in_array($t, ['gravada', 'exenta', 'no_sujeta'], true)) {
+            return $t;
+        }
+        if ((float) ($detalle->iva ?? 0) > 0.00001) {
+            return 'gravada';
+        }
+        if ((float) ($detalle->exenta ?? 0) > 0.00001) {
+            return 'exenta';
+        }
+        if ((float) ($detalle->no_sujeta ?? 0) > 0.00001) {
+            return 'no_sujeta';
+        }
+
+        return 'gravada';
+    }
+
+    private function montoDetallePorClasificacionCr(Detalle $detalle, string $clasificacion): float
+    {
+        return match ($clasificacion) {
+            'gravada' => $this->montoGravadoLineaResumenCr($detalle),
+            'exenta' => round(max((float) ($detalle->exenta ?? 0), 0), 2) > 0.00001
+                ? round((float) $detalle->exenta, 2)
+                : round((float) $detalle->sub_total, 2),
+            'no_sujeta' => round(max((float) ($detalle->no_sujeta ?? 0), 0), 2) > 0.00001
+                ? round((float) $detalle->no_sujeta, 2)
+                : round((float) $detalle->sub_total, 2),
+            default => round((float) $detalle->sub_total, 2),
+        };
+    }
+
+    private function montoGravadoLineaResumenCr(Detalle $detalle): float
+    {
+        $grav = round((float) ($detalle->gravada ?? 0), 2);
+        if ($grav > 0.00001) {
+            return $grav;
+        }
+        if ((float) ($detalle->iva ?? 0) > 0.00001) {
+            return round((float) $detalle->sub_total, 2);
+        }
+
+        return 0.0;
     }
 
     private function telefonoCr(string $raw): array

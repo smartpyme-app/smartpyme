@@ -22,7 +22,7 @@ import {
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
 import { mapCabysApiResponseToOptions, CabysSelectOption } from '@services/facturacion-electronica/cabys-hacienda.mapper';
 import { HaciendaCabysClientService } from '@services/facturacion-electronica/hacienda-cabys-client.service';
-import { Observable, Subject, of, forkJoin } from 'rxjs';
+import { Subject, of, forkJoin } from 'rxjs';
 import { map, debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
 
 @Component({
@@ -96,7 +96,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     /** CABYS por defecto (custom_empresa.facturacion_fe.cabys_default), solo CR. */
     cabysDefaultInput$ = new Subject<string>();
-    cabysDefaultItems$!: Observable<CabysSelectOption[]>;
+    cabysDefaultItems: CabysSelectOption[] = [];
     cabysDefaultLoading = false;
     cabysDefaultSeleccionado: CabysSelectOption | null = null;
 
@@ -107,6 +107,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
         return a.codigo === b.codigo;
     };
+
+    readonly cabysDefaultNgSelectSearchFn = (_term: string, _item: CabysSelectOption): boolean => true;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -121,27 +123,33 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     ngOnInit() {
 
-        this.cabysDefaultItems$ = this.cabysDefaultInput$.pipe(
-            debounceTime(400),
-            distinctUntilChanged(),
-            switchMap((term: string) => {
-                const t = (term ?? '').trim();
-                if (t.length < 3) {
-                    return of([]);
-                }
-                this.cabysDefaultLoading = true;
-                this.cdr.markForCheck();
+        this.cabysDefaultInput$
+            .pipe(
+                debounceTime(400),
+                distinctUntilChanged(),
+                switchMap((term: string) => {
+                    const t = (term ?? '').trim();
+                    if (t.length < 3) {
+                        return of([]);
+                    }
+                    this.cabysDefaultLoading = true;
+                    this.cdr.markForCheck();
 
-                return this.haciendaCabys.getCabysByQuery(t, 20).pipe(
-                    map((body) => mapCabysApiResponseToOptions(body)),
-                    catchError(() => of([])),
-                    finalize(() => {
-                        this.cabysDefaultLoading = false;
-                        this.cdr.markForCheck();
-                    }),
-                );
-            }),
-        );
+                    return this.haciendaCabys.getCabysByQuery(t, 20).pipe(
+                        map((body) => mapCabysApiResponseToOptions(body)),
+                        catchError(() => of([])),
+                        finalize(() => {
+                            this.cabysDefaultLoading = false;
+                            this.cdr.markForCheck();
+                        }),
+                    );
+                }),
+                this.untilDestroyed(),
+            )
+            .subscribe((items) => {
+                this.cabysDefaultItems = items;
+                this.cdr.markForCheck();
+            });
 
         this.apiService.getAll('canales')
             .pipe(this.untilDestroyed())

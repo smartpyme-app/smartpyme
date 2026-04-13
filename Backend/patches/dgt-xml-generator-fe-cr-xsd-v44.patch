@@ -1,0 +1,175 @@
+﻿diff --git a/src/Views/Components/taxes.xml.twig b/src/Views/Components/taxes.xml.twig
+index e54f73adb..c23b6062d 100644
+--- a/src/Views/Components/taxes.xml.twig
++++ b/src/Views/Components/taxes.xml.twig
+@@ -1,15 +1,22 @@
+ {% for tax in taxes %}
++{% set impTaxType = tax.tax_type ?? tax.taxType %}
++{% set impIvaType = tax.iva_type ?? tax.ivaType %}
++{% set impOtherTax = tax.other_tax_type ?? tax.otherTaxType %}
+ <{{ node }}>
+-  <Codigo>{{ tax.tax_type.code }}</Codigo>
+-  {% if tax.other_tax_type %}
+-  <CodigoImpuestoOTRO>{{ tax.other_tax_type }}</CodigoImpuestoOTRO>
++  <Codigo>{{ impTaxType.code }}</Codigo>
++  {% if impOtherTax %}
++  <CodigoImpuestoOTRO>{{ impOtherTax }}</CodigoImpuestoOTRO>
+   {% endif %}
+-  {% if tax.iva_type %}
+-  <CodigoTarifaIVA>{{ tax.iva_type.code }}</CodigoTarifaIVA>
++  {% if impIvaType %}
++  <CodigoTarifaIVA>{{ impIvaType.code }}</CodigoTarifaIVA>
+   {% endif %}
++  {% if node == 'TotalDesgloseImpuesto' %}
++  <{{ nodeAmount }}>{{ (tax.amount|default(0))|number_format(2, '.', '') }}</{{ nodeAmount }}>
++  {% else %}
+   {% if tax.rate %}
+-  <Tarifa>{{ tax.rate }}</Tarifa>
++  <Tarifa>{{ (tax.rate|default(0))|number_format(2, '.', '') }}</Tarifa>
++  {% endif %}
++  <{{ nodeAmount }}>{{ (tax.amount|default(0))|number_format(5, '.', '') }}</{{ nodeAmount }}>
+   {% endif %}
+-  <{{ nodeAmount }}>{{ tax.amount }}</{{ nodeAmount }}>
+ </{{ node }}>
+ {% endfor %}
+
+diff --git a/src/Views/Components/summary.xml.twig b/src/Views/Components/summary.xml.twig
+index 84830415a..ac84d5e05 100644
+--- a/src/Views/Components/summary.xml.twig
++++ b/src/Views/Components/summary.xml.twig
+@@ -1,34 +1,34 @@
+ <ResumenFactura>
+   <CodigoTipoMoneda>
+     <CodigoMoneda>{{ currency.currency_code }}</CodigoMoneda>
+-    <TipoCambio>{{ currency.exchange_rate }}</TipoCambio>
++    <TipoCambio>{{ (currency.exchange_rate|default(1))|number_format(5, '.', '') }}</TipoCambio>
+   </CodigoTipoMoneda>
+-  <TotalServGravados>{{ summary.total_taxed_services }}</TotalServGravados>
+-  <TotalServExentos>{{ summary.total_exempt_services }}</TotalServExentos>
++  <TotalServGravados>{{ (summary.total_taxed_services|default(0))|number_format(2, '.', '') }}</TotalServGravados>
++  <TotalServExentos>{{ (summary.total_exempt_services|default(0))|number_format(2, '.', '') }}</TotalServExentos>
+   <TotalServExonerado>{{
+-    summary.total_exonerated_services
++    (summary.total_exonerated_services|default(0))|number_format(2, '.', '')
+   }}</TotalServExonerado>
+   <TotalServNoSujeto>{{
+-    summary.total_non_taxable_services
++    (summary.total_non_taxable_services|default(0))|number_format(2, '.', '')
+   }}</TotalServNoSujeto>
+   <TotalMercanciasGravadas>{{
+-    summary.total_taxed_goods
++    (summary.total_taxed_goods|default(0))|number_format(2, '.', '')
+   }}</TotalMercanciasGravadas>
+   <TotalMercanciasExentas>{{
+-    summary.total_exempt_goods
++    (summary.total_exempt_goods|default(0))|number_format(2, '.', '')
+   }}</TotalMercanciasExentas>
+-  <TotalMercExonerada>{{ summary.total_exonerated_goods }}</TotalMercExonerada>
+-  <TotalMercNoSujeta>{{ summary.total_non_taxable_goods }}</TotalMercNoSujeta>
+-  <TotalGravado>{{ summary.total_taxed }}</TotalGravado>
+-  <TotalExento>{{ summary.total_exempt }}</TotalExento>
+-  <TotalExonerado>{{ summary.total_exonerated }}</TotalExonerado>
+-  <TotalNoSujeto>{{ summary.total_non_taxable }}</TotalNoSujeto>
+-  <TotalVenta>{{ summary.total_sale }}</TotalVenta>
+-  <TotalDescuentos>{{ summary.total_discounts }}</TotalDescuentos>
+-  <TotalVentaNeta>{{ summary.total_net_sale }}</TotalVentaNeta>
++  <TotalMercExonerada>{{ (summary.total_exonerated_goods|default(0))|number_format(2, '.', '') }}</TotalMercExonerada>
++  <TotalMercNoSujeta>{{ (summary.total_non_taxable_goods|default(0))|number_format(2, '.', '') }}</TotalMercNoSujeta>
++  <TotalGravado>{{ (summary.total_taxed|default(0))|number_format(2, '.', '') }}</TotalGravado>
++  <TotalExento>{{ (summary.total_exempt|default(0))|number_format(2, '.', '') }}</TotalExento>
++  <TotalExonerado>{{ (summary.total_exonerated|default(0))|number_format(2, '.', '') }}</TotalExonerado>
++  <TotalNoSujeto>{{ (summary.total_non_taxable|default(0))|number_format(2, '.', '') }}</TotalNoSujeto>
++  <TotalVenta>{{ (summary.total_sale|default(0))|number_format(2, '.', '') }}</TotalVenta>
++  <TotalDescuentos>{{ (summary.total_discounts|default(0))|number_format(2, '.', '') }}</TotalDescuentos>
++  <TotalVentaNeta>{{ (summary.total_net_sale|default(0))|number_format(2, '.', '') }}</TotalVentaNeta>
+   {% include 'Components/taxes.xml.twig' with { 'node': 'TotalDesgloseImpuesto',
+   'nodeAmount': 'TotalMontoImpuesto', 'taxes': summary.taxes } %}
+-  <TotalImpuesto>{{ summary.total_tax }}</TotalImpuesto>
++  <TotalImpuesto>{{ (summary.total_tax|default(0))|number_format(2, '.', '') }}</TotalImpuesto>
+   {% include 'Components/payments.xml.twig' %}
+-  <TotalComprobante>{{ summary.total_voucher }}</TotalComprobante>
++  <TotalComprobante>{{ (summary.total_voucher|default(0))|number_format(2, '.', '') }}</TotalComprobante>
+ </ResumenFactura>
+
+diff --git a/src/Views/Components/items.xml.twig b/src/Views/Components/items.xml.twig
+index 1e9cec35f..f554f0fa2 100644
+--- a/src/Views/Components/items.xml.twig
++++ b/src/Views/Components/items.xml.twig
+@@ -13,7 +13,7 @@
+       <Codigo>{{ commercial_code.code }}</Codigo>
+     </CodigoComercial>
+     {% endfor %} {% endif %}
+-    <Cantidad>{{ item.quantity }}</Cantidad>
++    <Cantidad>{{ (item.quantity|default(0))|number_format(3, '.', '') }}</Cantidad>
+     <UnidadMedida>{{ item.unit_measure.code }}</UnidadMedida>
+     {% if item.commercial_unit_measure %}
+     <UnidadMedidaComercial>{{
+@@ -33,18 +33,17 @@
+     <TipoTransaccion>{{ item.transaction_type.code }}</TipoTransaccion>
+     {% endif %}
+     <Detalle>{{ item.description }}</Detalle>
+-    <PrecioUnitario>{{ item.unit_price }}</PrecioUnitario>
+-    <MontoTotal>{{ item.total_amount }}</MontoTotal>
++    <PrecioUnitario>{{ (item.unit_price|default(0))|number_format(5, '.', '') }}</PrecioUnitario>
++    <MontoTotal>{{ (item.total_amount|default(0))|number_format(5, '.', '') }}</MontoTotal>
+     {% include 'Components/discounts.xml.twig' with { 'discounts':
+     item.discounts } %}
+-    <SubTotal>{{ item.sub_total }}</SubTotal>
+-    <BaseImponible>{{ item.taxable_base }}</BaseImponible>
++    <SubTotal>{{ (item.sub_total|default(0))|number_format(5, '.', '') }}</SubTotal>
++    <BaseImponible>{{ (item.taxable_base|default(0))|number_format(5, '.', '') }}</BaseImponible>
+     {% include 'Components/taxes.xml.twig' with { 'node': 'Impuesto',
+     'nodeAmount': 'Monto', 'taxes': item.taxes } %}
+-    <ImpuestoAsumidoEmisorFabrica>{{
+-      item.assumed_factory_tax
+-    }}</ImpuestoAsumidoEmisorFabrica>
+-    <ImpuestoNeto>{{ item.total_tax }}</ImpuestoNeto>
+-    <MontoTotalLinea>{{ item.total }}</MontoTotalLinea>
++    {% set assumed = item.assumed_factory_tax ?? 0 %}
++    <ImpuestoAsumidoEmisorFabrica>{{ assumed|number_format(2, '.', '') }}</ImpuestoAsumidoEmisorFabrica>
++    <ImpuestoNeto>{{ (item.total_tax|default(0))|number_format(5, '.', '') }}</ImpuestoNeto>
++    <MontoTotalLinea>{{ (item.total|default(0))|number_format(5, '.', '') }}</MontoTotalLinea>
+   </LineaDetalle>
+   {% endfor %}
+ </DetalleServicio>
+
+diff --git a/src/Views/Components/payments.xml.twig b/src/Views/Components/payments.xml.twig
+index 49f821a5c..ee2495d6b 100644
+--- a/src/Views/Components/payments.xml.twig
++++ b/src/Views/Components/payments.xml.twig
+@@ -4,6 +4,6 @@
+   {% if payment.other_payment_method %}
+   <MedioPagoOtros>{{ payment.other_payment_method }}</MedioPagoOtros>
+   {% endif %}
+-  <TotalMedioPago>{{ payment.amount }}</TotalMedioPago>
++  <TotalMedioPago>{{ (payment.amount|default(0))|number_format(2, '.', '') }}</TotalMedioPago>
+ </MedioPago>
+ {% endfor %}
+
+diff --git a/src/Views/Components/discounts.xml.twig b/src/Views/Components/discounts.xml.twig
+index 0f53f22ff..5069d670f 100644
+--- a/src/Views/Components/discounts.xml.twig
++++ b/src/Views/Components/discounts.xml.twig
+@@ -1,6 +1,6 @@
+ {% for discount in discounts %}
+ <Descuento>
+-  <MontoDescuento>{{ discount.amount }}</MontoDescuento>
++  <MontoDescuento>{{ (discount.amount|default(0))|number_format(5, '.', '') }}</MontoDescuento>
+   <CodigoDescuento>{{ discount.discount_type.code }}</CodigoDescuento>
+   {% if discount.other_discount_type %}
+   <CodigoDescuentoOTRO>{{ discount.other_discount_type }}</CodigoDescuentoOTRO>
+   {% endif %} {% if discount.description %}
+   <NaturalezaDescuento>{{ discount.description }}</NaturalezaDescuento>
+   {% endif %}
+ </Descuento>
+ {% endfor %}
+
+diff --git a/src/Views/Components/info.xml.twig b/src/Views/Components/info.xml.twig
+index 29b35633b..f5956427a 100644
+--- a/src/Views/Components/info.xml.twig
++++ b/src/Views/Components/info.xml.twig
+@@ -1,3 +1,4 @@
++{# XSD facturaElectronica v4.4: orden estricto. Tras FechaEmision van Emisor y Receptor; CondicionVenta va despues del Receptor. DetalleServicio y ResumenFactura se incluyen desde invoice.xml.twig. No reordenar. #}
+ <Clave>{{ document_key }}</Clave>
+ <ProveedorSistemas>{{ issuer.identification_number }}</ProveedorSistemas>
+ <CodigoActividadEmisor>{{ issuer.activity.code }}</CodigoActividadEmisor>

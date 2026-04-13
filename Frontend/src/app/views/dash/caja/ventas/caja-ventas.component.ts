@@ -5,14 +5,19 @@ import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import {
+  mensajeErrorHttpFeCr,
+  type FeCrErrorEmisionPayload,
+} from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
 
 @Component({
     selector: 'app-caja-ventas',
     templateUrl: './caja-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, AlertsHaciendaComponent],
     
 })
 
@@ -277,8 +282,37 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
             if (error?.venta) {
                 this.venta = error.venta;
             }
-            const msg = typeof error === 'string' ? error : error?.message ?? error;
-            this.alertService.warning('Hubo un problema', msg);
+            let msg: string;
+            let feCrIntento: FeCrErrorEmisionPayload | undefined;
+            if (this.esPayloadErrorEmisionFeCr(error)) {
+                msg = error.message;
+                feCrIntento = error;
+                console.warn('FE CR — JSON del comprobante intentado a emitir:', error.documento);
+                if (error.xml_comprobante) {
+                    console.warn('FE CR — XML del comprobante (sin firma):', error.xml_comprobante);
+                }
+            } else if (typeof error === 'string') {
+                msg = error;
+            } else {
+                msg = this.esFeCostaRica()
+                    ? mensajeErrorHttpFeCr(error)
+                    : String(error?.message ?? error);
+            }
+            if (this.esFeCostaRica()) {
+                this.venta = {
+                    ...this.venta,
+                    errores: msg,
+                    ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
+                };
+                this.alertService.info(
+                    'Comprobante no emitido',
+                    feCrIntento
+                        ? 'Revise el mensaje y despliegue «XML del comprobante» o «JSON interno» si está disponible.'
+                        : 'Revise el mensaje en el recuadro superior.'
+                );
+            } else {
+                this.alertService.warning('Hubo un problema', msg);
+            }
         });
     }
 
@@ -314,6 +348,16 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
         return this.facturacionElectronica.isCostaRicaFe();
     }
 
+    private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
+        return (
+            typeof e === 'object' &&
+            e !== null &&
+            'message' in e &&
+            'documento' in e &&
+            typeof (e as FeCrErrorEmisionPayload).message === 'string'
+        );
+    }
+
     consultarFeCr(): void {
         this.saving = true;
         this.facturacionElectronica
@@ -326,7 +370,14 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
                     }
                     const ok = !!res?.detalle_estado?.success;
                     const messages = res?.detalle_estado?.messages;
-                    if (ok) {
+                    if (res?.rechazado) {
+                        this.alertService.warning(
+                            'Comprobante rechazado en Hacienda',
+                            typeof messages === 'string' && messages
+                                ? messages
+                                : 'Se quitó la clave en el sistema; corrija los datos y vuelva a emitir.'
+                        );
+                    } else if (ok) {
                         this.alertService.success('Estado en Hacienda', 'Comprobante aceptado.');
                     } else {
                         this.alertService.info(

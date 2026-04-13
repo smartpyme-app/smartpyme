@@ -122,10 +122,4 @@ export class FacturacionElectronicaService {
       ? this.costaRica.consultarEstadoVenta(ventaId)
       : this.throwNoSoportadoObs();
   }
-
-  emitirNotaDebitoFeCr(ventaId: number, motivo: string, montoLinea: number): Promise<any> {
-    return this.esCostaRica()
-      ? this.costaRica.emitirNotaDebitoVenta(ventaId, motivo, montoLinea)
-      : this.rejectNoSoportado();
-  }
 }

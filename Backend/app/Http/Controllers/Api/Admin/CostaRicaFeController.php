@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exceptions\CostaRica\CostaRicaFeEmisionFallidaException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CostaRica\EmitirFeCrDevolucionRequest;
 use App\Http\Requests\CostaRica\EmitirFeCrNotaDebitoRequest;
@@ -18,6 +19,8 @@ class CostaRicaFeController extends Controller
             $resultado = $emitService->emitirFacturaDesdeVenta((int) $request->id);
 
             return response()->json($resultado, 200);
+        } catch (CostaRicaFeEmisionFallidaException $e) {
+            return response()->json($this->payloadErrorEmisionFeCr($e), 422);
         } catch (Throwable $e) {
             return response()->json([
                 'error' => $e->getMessage(),
@@ -31,6 +34,8 @@ class CostaRicaFeController extends Controller
             $resultado = $emitService->emitirTiqueteDesdeVenta((int) $request->id);
 
             return response()->json($resultado, 200);
+        } catch (CostaRicaFeEmisionFallidaException $e) {
+            return response()->json($this->payloadErrorEmisionFeCr($e), 422);
         } catch (Throwable $e) {
             return response()->json([
                 'error' => $e->getMessage(),
@@ -44,6 +49,8 @@ class CostaRicaFeController extends Controller
             $resultado = $emitService->emitirNotaCreditoDesdeDevolucion((int) $request->id);
 
             return response()->json($resultado, 200);
+        } catch (CostaRicaFeEmisionFallidaException $e) {
+            return response()->json($this->payloadErrorEmisionFeCr($e), 422);
         } catch (Throwable $e) {
             return response()->json([
                 'error' => $e->getMessage(),
@@ -61,6 +68,8 @@ class CostaRicaFeController extends Controller
             );
 
             return response()->json($resultado, 200);
+        } catch (CostaRicaFeEmisionFallidaException $e) {
+            return response()->json($this->payloadErrorEmisionFeCr($e), 422);
         } catch (Throwable $e) {
             return response()->json([
                 'error' => $e->getMessage(),
@@ -79,5 +88,27 @@ class CostaRicaFeController extends Controller
                 'error' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    /**
+     * @return array{
+     *   error: string,
+     *   documento: array<string, mixed>,
+     *   clave: ?string,
+     *   detalle_estado: ?array<string, mixed>,
+     *   xml_comprobante: ?string,
+     *   xml_comprobante_firmado: ?string
+     * }
+     */
+    private function payloadErrorEmisionFeCr(CostaRicaFeEmisionFallidaException $e): array
+    {
+        return [
+            'error' => $e->getMessage(),
+            'documento' => $e->getDocumento(),
+            'clave' => $e->getClave(),
+            'detalle_estado' => $e->getDetalleEstado(),
+            'xml_comprobante' => $e->getXmlComprobante(),
+            'xml_comprobante_firmado' => $e->getXmlComprobanteFirmado(),
+        ];
     }
 }

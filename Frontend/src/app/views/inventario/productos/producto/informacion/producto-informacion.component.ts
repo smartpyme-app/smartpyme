@@ -22,7 +22,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { Observable, Subject, of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { map, debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
@@ -60,21 +60,14 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   nuevoAtributo: any = {};
   guardandoAtributo: boolean = false;
 
-  /** CABYS Costa Rica: búsqueda vía API Hacienda (proxy backend). */
+  /** CABYS (CR): mismo patrón que búsqueda de productos en ajustes — Subject + array `cabysItems`. */
   cabysInput$ = new Subject<string>();
-  cabysItems$!: Observable<CabysSelectOption[]>;
+  cabysItems: CabysSelectOption[] = [];
   cabysLoading = false;
   cabysSeleccionado: CabysSelectOption | null = null;
-  cabysCodigoManual = '';
-  cabysConsultandoCodigo = false;
 
-  readonly compareCabys = (a: CabysSelectOption, b: CabysSelectOption): boolean => {
-    if (!a || !b) {
-      return false;
-    }
-
-    return a.codigo === b.codigo;
-  };
+  readonly compareCabys = (a: CabysSelectOption, b: CabysSelectOption): boolean =>
+    !!(a && b && a.codigo === b.codigo);
 
   constructor(
     public apiService: ApiService,
@@ -96,27 +89,33 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     this.loadAtributes();
     this.usuario = this.apiService.auth_user();
 
-    this.cabysItems$ = this.cabysInput$.pipe(
-      debounceTime(400),
-      distinctUntilChanged(),
-      switchMap((term: string) => {
-        const t = (term ?? '').trim();
-        if (t.length < 3) {
-          return of([]);
-        }
-        this.cabysLoading = true;
-        this.cdr.markForCheck();
+    this.cabysInput$
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        switchMap((term: string) => {
+          const t = (term ?? '').trim();
+          if (t.length < 3) {
+            return of([]);
+          }
+          this.cabysLoading = true;
+          this.cdr.markForCheck();
 
-        return this.haciendaCabys.getCabysByQuery(t, 20).pipe(
-          map((body) => mapCabysApiResponseToOptions(body)),
-          catchError(() => of([])),
-          finalize(() => {
-            this.cabysLoading = false;
-            this.cdr.markForCheck();
-          }),
-        );
-      }),
-    );
+          return this.haciendaCabys.getCabysByQuery(t, 20).pipe(
+            map((body) => mapCabysApiResponseToOptions(body)),
+            catchError(() => of([])),
+            finalize(() => {
+              this.cabysLoading = false;
+              this.cdr.markForCheck();
+            }),
+          );
+        }),
+        this.untilDestroyed(),
+      )
+      .subscribe((items) => {
+        this.cabysItems = [...items];
+        this.cdr.detectChanges();
+      });
 
     this.syncCabysSeleccionFromProducto();
 
@@ -199,39 +198,6 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     this.cdr.markForCheck();
   }
 
-  consultarCabysPorCodigo(): void {
-    const d = (this.cabysCodigoManual || '').replace(/\D/g, '');
-    if (d.length !== 13) {
-      this.alertService.warning('CABYS', 'Ingrese exactamente 13 dígitos.');
-      return;
-    }
-    this.cabysConsultandoCodigo = true;
-    this.cdr.markForCheck();
-    this.haciendaCabys
-      .getCabysByCodigo(d)
-      .pipe(
-        this.untilDestroyed(),
-        finalize(() => {
-          this.cabysConsultandoCodigo = false;
-          this.cdr.markForCheck();
-        }),
-      )
-      .subscribe({
-        next: (body) => {
-          const opts = mapCabysApiResponseToOptions(body);
-          const hit = opts.find((o) => o.codigo === d) ?? opts[0];
-          if (hit) {
-            this.cabysSeleccionado = hit;
-            this.onCabysSelectChange(hit);
-            this.cabysCodigoManual = '';
-          } else {
-            this.alertService.warning('CABYS', 'No se encontró información para ese código en Hacienda.');
-          }
-        },
-        error: (e) => this.alertService.error(e),
-      });
-  }
-
   private syncCabysSeleccionFromProducto(): void {
     const raw = this.producto?.codigo_cabys;
     const digits = raw != null && raw !== '' ? String(raw).replace(/\D/g, '') : '';
@@ -245,7 +211,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     } else {
       this.cabysSeleccionado = null;
     }
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   public loadAtributes() {

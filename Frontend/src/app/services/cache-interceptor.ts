@@ -94,6 +94,11 @@ export class CacheInterceptor implements HttpInterceptor {
       return true;
     }
 
+    // CABYS: búsqueda por texto cambia en cada tecleo; no cachear (evita listas vacías o datos viejos).
+    if (url.includes('fe-cr/cabys') || url.includes('/fe/cabys')) {
+      return false;
+    }
+
     // Cachear otros endpoints GET por defecto
     return true;
   }
