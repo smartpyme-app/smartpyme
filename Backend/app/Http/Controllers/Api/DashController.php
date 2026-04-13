@@ -101,6 +101,7 @@ class DashController extends Controller
         $indicadores->totalRecibos = $indicadores->getTotalRecibos();
         $indicadores->totalVentasPendientes = $indicadores->getTotalVentasPendientes();
         $indicadores->totalDevolucionesVenta = $indicadores->getTotalDevolucionesVenta();
+        $indicadores->totalVentasSinDevoluciones = $indicadores->getTotalVentasSinDevoluciones();
         $indicadores->totalGastosPagados = $indicadores->getTotalGastosPagados();
 
         $indicadores->total_ventas_forma_pago = $indicadores->getVentasByFormaPago();

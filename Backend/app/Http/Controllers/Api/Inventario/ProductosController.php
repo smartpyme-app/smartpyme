@@ -2388,4 +2388,27 @@ class ProductosController extends Controller
             ]);
         }
     }
+
+    /**
+     * Siguiente SKU correlativo sugerido: máximo código solo numérico en la empresa + 1 (si la opción está activa).
+     */
+    public function siguienteSkuCorrelativo()
+    {
+        $user = Auth::user();
+        $empresa = $user->empresa;
+        if (!$empresa || !$empresa->getCustomConfigValue('configuraciones', 'sku_correlativo_automatico', false)) {
+            return response()->json(['habilitado' => false, 'codigo' => null]);
+        }
+
+        $idEmpresa = (int) $user->id_empresa;
+        $max = DB::table('productos')
+            ->where('id_empresa', $idEmpresa)
+            ->whereNull('deleted_at')
+            ->whereRaw('codigo REGEXP "^[0-9]+$"')
+            ->max(DB::raw('CAST(codigo AS UNSIGNED)'));
+
+        $codigo = (string) ((int) ($max ?? 0) + 1);
+
+        return response()->json(['habilitado' => true, 'codigo' => $codigo]);
+    }
 }

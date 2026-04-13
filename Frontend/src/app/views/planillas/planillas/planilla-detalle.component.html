@@ -46,7 +46,7 @@
           <h6 class="card-title">
             {{ (planilla.total_viaticos || 0) > 0 ? 'Total a Pagar' : 'Total Neto' }}
           </h6>
-          <h3 class="mb-0">{{ (planilla.total_neto || 0) + (planilla.total_viaticos || 0) | currency }}</h3>
+          <h3 class="mb-0">{{ ((+planilla.total_neto || 0) + (+planilla.total_viaticos || 0)) | currency }}</h3>
           <small *ngIf="(planilla.total_viaticos || 0) > 0">
             Neto: {{ planilla.total_neto | currency }} + Viáticos: {{ planilla.total_viaticos | currency }}
           </small>
@@ -250,7 +250,7 @@
               {{ getTotalCampo('salario_devengado') | currency }}
             </th>
             <th class="text-end">
-              {{ (planilla.bonificaciones_total + planilla.comisiones_total + planilla.otros_ingresos_total) | currency }}
+              {{ ((+planilla.bonificaciones_total || 0) + (+planilla.comisiones_total || 0) + (+planilla.otros_ingresos_total || 0)) | currency }}
             </th>
             <th class="text-end">
               {{ getTotalCampoReal('total_ingresos') | currency }}

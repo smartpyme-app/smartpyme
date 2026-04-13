@@ -1146,8 +1146,12 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 lotes_dias_anticipacion: 30, // Días para alerta de vencimiento
                 componente_quimico_activo: false, // Habilitar campo componente químico en productos
                 modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
+                gastos_categorias_personalizadas: false, // Categorías de gasto BD, departamentos y áreas en gastos
                 estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
-                vista_modulo_restaurante_pedidos: 'ambos' as 'restaurante' | 'pedidos' | 'ambos' // Menú lateral: restaurante, pedidos o ambos
+                vista_modulo_restaurante_pedidos: 'ambos' as 'restaurante' | 'pedidos' | 'ambos', // Menú lateral: restaurante, pedidos o ambos
+                sku_correlativo_automatico: false, // SKU correlativo automático al crear productos
+                bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
+                dte_mostrar_descripcion_producto: true, // Descripción extendida del catálogo en PDF de factura y CCF (DTE)
             },
             campos_personalizados: {}
         };
@@ -1253,6 +1257,26 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.updateTicketEnPdf(!currentValue);
     }
 
+    public isDteMostrarDescripcionProductoEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'dte_mostrar_descripcion_producto', true);
+    }
+
+    public updateDteMostrarDescripcionProducto(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'dte_mostrar_descripcion_producto', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Se mostrará la descripción del producto en los PDF de DTE (factura y CCF).'
+                    : 'Ya no se mostrará la descripción extendida del producto en los PDF de DTE.'
+            );
+        });
+    }
+
+    public toggleDteMostrarDescripcionProducto() {
+        this.updateDteMostrarDescripcionProducto(!this.isDteMostrarDescripcionProductoEnabled());
+    }
+
     // Método para obtener la versión de facturación configurada
     public getVersionFacturacion(): string {
         return this.getCustomConfig('configuraciones', 'version_facturacion', 'original');
@@ -1298,6 +1322,26 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public toggleCamposContables() {
         const currentValue = this.isCamposContablesEnabled();
         this.updateCamposContables(!currentValue);
+    }
+
+    public isBloquearCotizacionesVendedoresEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'bloquear_cotizaciones_vendedores', false);
+    }
+
+    public updateBloquearCotizacionesVendedores(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'bloquear_cotizaciones_vendedores', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Restricciones de cotizaciones para vendedores activadas.'
+                    : 'Restricciones de cotizaciones para vendedores desactivadas.'
+            );
+        });
+    }
+
+    public toggleBloquearCotizacionesVendedores() {
+        this.updateBloquearCotizacionesVendedores(!this.isBloquearCotizacionesVendedoresEnabled());
     }
 
     // Métodos para configuraciones de lotes
@@ -1382,6 +1426,32 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         });
     }
 
+    public isGastosCategoriasPersonalizadasHabilitadas(): boolean {
+        return this.getCustomConfig('configuraciones', 'gastos_categorias_personalizadas', false);
+    }
+
+    public toggleGastosCategoriasPersonalizadas() {
+        const currentValue = this.isGastosCategoriasPersonalizadasHabilitadas();
+        this.updateGastosCategoriasPersonalizadas(!currentValue);
+    }
+
+    public updateGastosCategoriasPersonalizadas(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'gastos_categorias_personalizadas', activo);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                activo
+                    ? 'Categorías de gastos personalizadas habilitadas.'
+                    : 'Categorías de gastos personalizadas deshabilitadas.'
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
     // Métodos para estado de cuenta en facturación
     public isEstadoCuentaEnFacturacionHabilitado(): boolean {
         return this.getCustomConfig('configuraciones', 'estado_cuenta_en_facturacion', false);
@@ -1399,6 +1469,30 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.alertService.success(
                 'Configuración actualizada',
                 `Estado de cuenta en facturación ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    public isSkuCorrelativoAutomatico(): boolean {
+        return this.getCustomConfig('configuraciones', 'sku_correlativo_automatico', false);
+    }
+
+    public toggleSkuCorrelativoAutomatico() {
+        this.updateSkuCorrelativoAutomatico(!this.isSkuCorrelativoAutomatico());
+    }
+
+    public updateSkuCorrelativoAutomatico(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'sku_correlativo_automatico', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `SKU correlativo automático ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
             );
             const authUser = this.apiService.auth_user();
             if (authUser?.empresa?.id === this.empresa?.id) {

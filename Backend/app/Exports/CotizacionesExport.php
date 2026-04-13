@@ -42,8 +42,18 @@ class CotizacionesExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
-        $ventas = Cotizacion::when($request->buscador, function($query) use ($request){
+
+        $user = Auth::user();
+        $soloCotizacionesPropiasVendedor = $user
+            && ($user->tipo === 'Ventas' || $user->tipo === 'Ventas Limitado');
+
+        $ventas = Cotizacion::when($soloCotizacionesPropiasVendedor, function ($query) use ($user) {
+                            $query->where('id_usuario', $user->id);
+                        })
+                        ->when(! $soloCotizacionesPropiasVendedor && $request->id_usuario, function($query) use ($request){
+                            return $query->where('id_usuario', $request->id_usuario);
+                        })
+                        ->when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
@@ -54,9 +64,6 @@ class CotizacionesExport implements FromCollection, WithHeadings, WithMapping
                         })
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
-                        })
-                        ->when($request->id_usuario, function($query) use ($request){
-                            return $query->where('id_usuario', $request->id_usuario);
                         })
                         ->when($request->id_cliente, function($query) use ($request){
                             return $query->where('id_cliente', $request->id_cliente);

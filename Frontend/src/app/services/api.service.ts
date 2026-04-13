@@ -187,6 +187,18 @@ export class ApiService {
         return customConfig?.configuraciones?.modulo_bancos === true;
     }
 
+    /** Categorías de gasto personalizadas, departamentos y áreas (configuración de empresa). */
+    isGastosCategoriasPersonalizadasHabilitadas(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.gastos_categorias_personalizadas === true;
+    }
+
     /** Indica si mostrar estado de cuenta del cliente en facturación está habilitado */
     isEstadoCuentaEnFacturacionHabilitado(): boolean {
         const empresa = this.auth_user()?.empresa;
@@ -218,6 +230,17 @@ export class ApiService {
         return 'ambos';
     }
 
+    /** SKU correlativo automático al crear productos (configuración de empresa) */
+    isSkuCorrelativoAutomatico(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.sku_correlativo_automatico === true;
+    }
 
     auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
 
@@ -324,6 +347,39 @@ export class ApiService {
         return false;
     }
 
+    /**
+     * Empresa donde las rutas y la navegación de ajustes/traslados/consignas/entradas-salidas
+     * quedan reservadas solo al rol Administrador.
+     */
+    private static readonly EMPRESA_ID_INVENTARIO_OPERACIONES_SOLO_ADMIN = 324;
+
+    esEmpresaInventarioOperacionesSoloAdministrador(): boolean {
+        const id = this.auth_user()?.id_empresa;
+        return Number(id) === ApiService.EMPRESA_ID_INVENTARIO_OPERACIONES_SOLO_ADMIN;
+    }
+
+    /**
+     * Pestañas y guard de rutas: para empresa 324 solo Administrador; en el resto de empresas sin restricción extra.
+     */
+    canAccederOperacionesInventario(): boolean {
+        if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+            return true;
+        }
+        return this.auth_user()?.tipo === 'Administrador';
+    }
+
+    /**
+     * Botones crear (ajuste, traslado, entrada/salida): empresa 324 solo Administrador;
+     * otras empresas conservan la regla anterior (canCreate y no Supervisor en 324).
+     */
+    puedeCrearOperacionesInventarioEnUi(): boolean {
+        const usuario = this.auth_user();
+        if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+            return this.canCreate();
+        }
+        return usuario?.tipo === 'Administrador';
+    }
+
     canEdit(){
         let usuario = this.auth_user();
         if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
@@ -381,6 +437,21 @@ export class ApiService {
         let usuario = this.auth_user();
         if (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado') return true;
         return false;
+    }
+
+    /** Empresa activó bloquear facturar/editar/gestionar cotizaciones para vendedores (Mi cuenta). */
+    empresaBloqueaCotizacionesVendedores(): boolean {
+        const u = this.auth_user();
+        const cfg = u?.empresa?.custom_empresa?.configuraciones as { bloquear_cotizaciones_vendedores?: boolean } | undefined;
+        return cfg?.bloquear_cotizaciones_vendedores === true;
+    }
+
+    /**
+     * Bloqueos de UI/API extra (facturar cotización desde menú, editar, detalles, cambiar estado): rol Ventas + opción empresa.
+     * El listado solo cotizaciones propias usa isVentas() y no depende de esta opción.
+     */
+    restriccionesCotizacionesVendedoresActivas(): boolean {
+        return this.isVentas() && this.empresaBloqueaCotizacionesVendedores();
     }
 
     private loadConstants() {

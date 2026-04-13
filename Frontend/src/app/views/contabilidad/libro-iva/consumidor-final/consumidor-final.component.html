@@ -163,6 +163,14 @@
                     </option>
                 </select>
             </div>
+            <div class="form-group col-md-12" *ngIf="isElSalvador">
+                <label for="filtros.estado_json_cf">Estado (descarga JSON / ZIP):</label>
+                <select [(ngModel)]="filtros.estado_json" class="form-select" name="filtros.estado_json" id="filtros.estado_json_cf">
+                    <option value="no_anulados">No anulados</option>
+                    <option value="anulados">Anulados</option>
+                </select>
+                <small class="text-muted d-block mt-1">Aplica a DTEs Zip (consumidor final). Por defecto se excluyen anulados.</small>
+            </div>
         </div>
         <div class="d-grid">
             <button type="submit" [disabled]="loading" class="btn btn-primary">

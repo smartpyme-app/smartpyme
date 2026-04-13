@@ -31,19 +31,27 @@ class GlobalDttesExport
         $fechaFinFormateada = date('Ymd', strtotime($fechaFin));
 
         // Crear el nombre del archivo con las fechas
+        $estadoJson = $request->input('estado_json', 'no_anulados');
+        if (!in_array($estadoJson, ['no_anulados', 'anulados'], true)) {
+            $estadoJson = 'no_anulados';
+        }
+
+        $prefijoNombre = $estadoJson === 'anulados' ? 'DTEs_anulados_' : 'DTEs_';
         $nombreArchivo = '';
         if ($fechaInicio == $fechaFin) {
-            // Si es un solo día
-            $nombreArchivo = 'DTEs_' . $fechaInicioFormateada;
+            $nombreArchivo = $prefijoNombre . $fechaInicioFormateada;
         } else {
-            // Si es un rango de fechas
-            $nombreArchivo = 'DTEs_' . $fechaInicioFormateada . '_' . $fechaFinFormateada;
+            $nombreArchivo = $prefijoNombre . $fechaInicioFormateada . '_' . $fechaFinFormateada;
         }
 
         $ventas = Venta::with(['cliente', 'documento'])
             ->whereRaw("dte IS NOT NULL")
             ->whereNotNull('sello_mh')
-            ->where('estado', '!=', 'Anulada')
+            ->when($estadoJson === 'anulados', function ($query) {
+                return $query->where('estado', 'Anulada');
+            }, function ($query) {
+                return $query->where('estado', '!=', 'Anulada');
+            })
             ->where('cotizacion', 0)
             ->where('tipo_dte', $request->typeDTE)
             ->when($request->filled('id_sucursal'), function ($query) use ($request) {
@@ -126,12 +134,14 @@ class GlobalDttesExport
         
         foreach ($ventas as $venta) {
 
-            if (empty($venta->dte)) {
+            $dte = ($estadoJson === 'anulados' && !empty($venta->dte_invalidacion))
+                ? $venta->dte_invalidacion
+                : $venta->dte;
+
+            if (empty($dte)) {
                 Log::info('DTE vacío para venta ID: ' . $venta->id);
                 continue;
             }
-
-            $dte = $venta->dte;
 
             if (isset($dte['identificacion']) && isset($dte['identificacion']['codigoGeneracion'])) {
                 $codigoGeneracion = $dte['identificacion']['codigoGeneracion'];

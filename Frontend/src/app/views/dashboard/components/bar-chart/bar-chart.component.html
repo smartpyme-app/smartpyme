@@ -1,0 +1,8 @@
+<div class="w-100 chart-container" *ngIf="config">
+    <div echarts [options]="chartOption" (chartInit)="onChartInit($event)" class="w-100 h-100"></div>
+</div>
+
+<div *ngIf="!config" class="text-center p-4 text-muted">
+    <p class="mb-0">No hay datos disponibles para mostrar</p>
+</div>
+

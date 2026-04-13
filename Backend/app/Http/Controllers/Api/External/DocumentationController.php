@@ -37,8 +37,8 @@ class DocumentationController extends Controller
             "openapi" => "3.0.0",
             "info" => [
                 "title" => "SmartPYME External API",
-                "description" => "API Externa para proveedores terceros - Acceso a datos de ventas e inventario. Límites: 1000/2000 requests por hora.",
-                "version" => "1.2.0-" . time(),
+                "description" => "API Externa para proveedores terceros - Consulta de ventas, inventario, devoluciones e importación de paquetes. Límites: 1000/2000 requests por hora.",
+                "version" => "1.3.0-" . time(),
             ],
             "servers" => [
                 [
@@ -74,6 +74,10 @@ class DocumentationController extends Controller
                 [
                     "name" => "Devoluciones",
                     "description" => "Endpoints para consultar información de devoluciones de ventas"
+                ],
+                [
+                    "name" => "Paquetes",
+                    "description" => "Importación masiva de paquetes desde sistemas externos"
                 ]
             ],
             "paths" => [
@@ -756,6 +760,212 @@ class DocumentationController extends Controller
                                         ]
                                     ]
                                 ]
+                            ]
+                        ]
+                    ]
+                ],
+                "/packages/import" => [
+                    "post" => [
+                        "tags" => ["Paquetes"],
+                        "summary" => "Importar paquetes en lote",
+                        "description" => "Crea paquetes en estado \"En bodega\" (misma lógica que la importación por Excel). Por cada ítem debe enviarse **id_sucursal** o **sucursal** (nombre exacto en base de datos, sin distinguir mayúsculas). Si ya existe un paquete con el mismo **wr** en la empresa, el ítem se omite (skipped). Máximo 200 ítems por solicitud. El usuario registrador se resuelve automáticamente (administrador o supervisor activo de la empresa).",
+                        "security" => [["ApiKeyAuth" => []]],
+                        "requestBody" => [
+                            "required" => true,
+                            "content" => [
+                                "application/json" => [
+                                    "schema" => [
+                                        "type" => "object",
+                                        "required" => ["packages"],
+                                        "properties" => [
+                                            "packages" => [
+                                                "type" => "array",
+                                                "minItems" => 1,
+                                                "maxItems" => 200,
+                                                "items" => [
+                                                    "type" => "object",
+                                                    "required" => [
+                                                        "cliente",
+                                                        "codigo_asesor",
+                                                        "wr",
+                                                        "guia",
+                                                        "piezas",
+                                                        "embalaje",
+                                                        "peso",
+                                                        "precio",
+                                                        "cuenta_a_terceros",
+                                                        "otros",
+                                                        "total"
+                                                    ],
+                                                    "properties" => [
+                                                        "id_sucursal" => [
+                                                            "type" => "integer",
+                                                            "description" => "ID de sucursal de la empresa. Si se envía, tiene prioridad sobre sucursal.",
+                                                            "example" => 3
+                                                        ],
+                                                        "sucursal" => [
+                                                            "type" => "string",
+                                                            "description" => "Nombre de la sucursal (activa). Obligatorio si no se envía id_sucursal.",
+                                                            "example" => "Sucursal Centro"
+                                                        ],
+                                                        "cliente" => [
+                                                            "type" => "string",
+                                                            "description" => "Nombre del cliente; si no existe se crea.",
+                                                            "example" => "Importadora ABC"
+                                                        ],
+                                                        "codigo_asesor" => [
+                                                            "type" => "string",
+                                                            "description" => "Código interno del usuario asesor (campo codigo en usuarios).",
+                                                            "example" => "A01"
+                                                        ],
+                                                        "wr" => [
+                                                            "type" => "string",
+                                                            "description" => "Identificador único del paquete por empresa (duplicado = skipped).",
+                                                            "example" => "WR-2025-0001"
+                                                        ],
+                                                        "guia" => [
+                                                            "type" => "string",
+                                                            "description" => "Número de guía",
+                                                            "example" => "GUIA-998877"
+                                                        ],
+                                                        "piezas" => ["type" => "number", "example" => 2],
+                                                        "embalaje" => ["type" => "string", "example" => "Caja"],
+                                                        "peso" => ["type" => "number", "example" => 12.5],
+                                                        "precio" => ["type" => "number", "example" => 150.0],
+                                                        "cuenta_a_terceros" => ["type" => "number", "example" => 0],
+                                                        "otros" => ["type" => "number", "example" => 0],
+                                                        "total" => ["type" => "number", "example" => 150.0],
+                                                        "transportista" => ["type" => "string", "nullable" => true],
+                                                        "consignatario" => ["type" => "string", "nullable" => true],
+                                                        "transportador" => ["type" => "string", "nullable" => true],
+                                                        "seguimiento" => ["type" => "string", "nullable" => true, "description" => "Número de seguimiento"],
+                                                        "volumen" => ["type" => "number", "nullable" => true],
+                                                        "nota" => ["type" => "string", "nullable" => true]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ],
+                                    "example" => [
+                                        "packages" => [
+                                            [
+                                                "sucursal" => "Sucursal Centro",
+                                                "cliente" => "Cliente API",
+                                                "codigo_asesor" => "A01",
+                                                "wr" => "WR-EJEMPLO-001",
+                                                "guia" => "G-10001",
+                                                "seguimiento" => "TRACK-556677",
+                                                "piezas" => 1,
+                                                "embalaje" => "Caja",
+                                                "peso" => 10,
+                                                "precio" => 100,
+                                                "cuenta_a_terceros" => 0,
+                                                "otros" => 0,
+                                                "total" => 100
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ],
+                        "responses" => [
+                            "200" => [
+                                "description" => "Procesamiento completado (revisar errors por ítem si hubo fallos parciales)",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => [
+                                                    "type" => "boolean",
+                                                    "example" => true
+                                                ],
+                                                "created" => [
+                                                    "type" => "integer",
+                                                    "description" => "Paquetes nuevos guardados",
+                                                    "example" => 5
+                                                ],
+                                                "skipped" => [
+                                                    "type" => "integer",
+                                                    "description" => "Ítems omitidos (WR ya existente)",
+                                                    "example" => 1
+                                                ],
+                                                "errors" => [
+                                                    "type" => "array",
+                                                    "items" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "index" => [
+                                                                "type" => "integer",
+                                                                "description" => "Índice en el arreglo packages"
+                                                            ],
+                                                            "wr" => [
+                                                                "type" => "string",
+                                                                "nullable" => true
+                                                            ],
+                                                            "message" => ["type" => "string"]
+                                                        ]
+                                                    ]
+                                                ],
+                                                "items" => [
+                                                    "type" => "array",
+                                                    "description" => "Detalle por ítem procesado",
+                                                    "items" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "index" => ["type" => "integer"],
+                                                            "wr" => ["type" => "string", "nullable" => true],
+                                                            "status" => [
+                                                                "type" => "string",
+                                                                "enum" => ["created", "skipped"]
+                                                            ],
+                                                            "id" => [
+                                                                "type" => "integer",
+                                                                "nullable" => true,
+                                                                "description" => "ID del paquete en SmartPYME"
+                                                            ]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "400" => [
+                                "description" => "Solicitud inválida (ej. packages vacío o más de 200 ítems)",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => false],
+                                                "error" => ["type" => "string", "example" => "Solicitud inválida"],
+                                                "details" => ["type" => "object"]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "401" => [
+                                "description" => "No autorizado - API key inválido o empresa inactiva"
+                            ],
+                            "422" => [
+                                "description" => "La empresa no tiene usuario activo para registrar paquetes",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => false],
+                                                "error" => ["type" => "string"]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "429" => [
+                                "description" => "Rate limit excedido"
                             ]
                         ]
                     ]

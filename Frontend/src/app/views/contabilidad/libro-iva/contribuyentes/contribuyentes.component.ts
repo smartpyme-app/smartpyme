@@ -42,6 +42,8 @@ export class ContribuyentesComponent implements OnInit {
 
         this.filtros.id_sucursal = '';
         this.filtros.tipo_documento = 'Crédito fiscal';
+        //JSON en ZIP DTEs / notas: no_anulados (por defecto) | anulados
+        this.filtros.estado_json = 'no_anulados';
         this.filtros.anio = currentYear;
         this.filtros.mes = currentMonth;
         this.filtros.time = 'day';
@@ -201,7 +203,8 @@ export class ContribuyentesComponent implements OnInit {
         }
         const fechaInicio = this.filtros.inicio.replace(/-/g, '');
         const fechaFin = this.filtros.fin.replace(/-/g, '');
-        const filename = `${prefijo}_${fechaInicio}_${fechaFin}.zip`;
+        const sufijo = this.filtros.estado_json === 'anulados' ? '_anulados' : '';
+        const filename = `${prefijo}${sufijo}_${fechaInicio}_${fechaFin}.zip`;
         const url = window.URL.createObjectURL(data);
         const a = document.createElement('a');
         a.href = url;
@@ -239,7 +242,8 @@ export class ContribuyentesComponent implements OnInit {
               
               const fechaInicio = this.filtros.inicio.replace(/-/g, '');
               const fechaFin = this.filtros.fin.replace(/-/g, '');
-              const filename = `DTEs_${fechaInicio}_${fechaFin}.zip`;
+              const prefijoDte = this.filtros.estado_json === 'anulados' ? 'DTEs_anulados_' : 'DTEs_';
+              const filename = `${prefijoDte}${fechaInicio}_${fechaFin}.zip`;
               
               const url = window.URL.createObjectURL(data);
               const a = document.createElement('a');

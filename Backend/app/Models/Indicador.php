@@ -320,6 +320,14 @@ class Indicador extends Model
                 // - $this->getTotalDevolucionesVenta();
     }
 
+    /**
+     * Ventas totales (incl. propina) menos devoluciones — mismo criterio que el card de cierre de caja.
+     */
+    public function getTotalVentasSinDevoluciones()
+    {
+        return ($this->getTotalVentas() + $this->getTotalPropina()) - $this->getTotalDevolucionesVenta();
+    }
+
     public function getCantidadGastos(){
         return $this->getCantidadComprasPagadas() 
                 + $this->getCantidadGastosPagados()

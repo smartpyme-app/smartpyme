@@ -41,6 +41,7 @@ class Empresa extends Model
         'logo',
         'propina',
         'propina_porcentaje',
+        'monto_minimo_retencion_iva_gc',
         'valor_inventario',
         'vender_sin_stock',
         'user_limit',
@@ -77,6 +78,10 @@ class Empresa extends Model
         'wompi_id',
         'wompi_secret',
         'modulo_paquetes',
+        'webhook_paquete_venta_enabled',
+        'webhook_paquete_venta_url',
+        'webhook_paquete_venta_secret',
+        'webhook_paquete_venta_bearer_token',
         'modulo_citas',
         'modulo_proyectos',
         'activo',
@@ -147,11 +152,13 @@ class Empresa extends Model
     ];
 
     protected $casts = [
+        'monto_minimo_retencion_iva_gc' => 'decimal:2',
         'enviar_dte' => 'boolean',
         'facturacion_electronica' => 'boolean',
         'custom_empresa' => 'json',
         'importacion_productos_shopify' => 'boolean',
         'shopify_sync_bidirectional' => 'boolean',
+        'webhook_paquete_venta_enabled' => 'boolean',
     ];
 
     protected $appends = [
@@ -628,7 +635,9 @@ class Empresa extends Model
             ],
             'modulos' => [],
             'configuraciones' => [
-                'ticket_en_pdf' => false
+                'ticket_en_pdf' => false,
+                'bloquear_cotizaciones_vendedores' => false,
+                'dte_mostrar_descripcion_producto' => true,
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados
@@ -698,6 +707,14 @@ class Empresa extends Model
     public function isModuloBancos(): bool
     {
         return (bool) $this->getCustomConfigValue('configuraciones', 'modulo_bancos', false);
+    }
+
+    /**
+     * Categorías de gasto personalizadas, departamentos y áreas (selector en gastos y menú).
+     */
+    public function isGastosCategoriasPersonalizadasHabilitadas(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'gastos_categorias_personalizadas', false);
     }
 
     /**

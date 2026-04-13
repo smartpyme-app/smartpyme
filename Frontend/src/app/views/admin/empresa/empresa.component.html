@@ -386,6 +386,21 @@
                                 Los tickets se generarán en formato PDF.
                             </small>
                         </div>
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="dte_mostrar_descripcion_producto" class="form-label">
+                                    <strong>Mostrar descripción del producto en PDF de DTE</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="dte_mostrar_descripcion_producto"
+                                    [checked]="isDteMostrarDescripcionProductoEnabled()"
+                                    (change)="toggleDteMostrarDescripcionProducto()"
+                                    name="dte_mostrar_descripcion_producto">
+                            </div>
+                            <small class="text-muted">
+                                Incluye bajo cada línea la descripción del catálogo en facturas y créditos fiscales (PDF). La descripción de la línea del DTE siempre se muestra.
+                            </small>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -416,6 +431,25 @@
                             </div>
                             <small class="text-muted">
                                 Los sello y firma se generarán en formato PDF.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row" *ngIf="apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Super Admin'">
+                        <h4 class="mb-0 fw-bold">Cotizaciones y vendedores</h4>
+                        <div class="form-group col-md-12 col-xl-8 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="bloquear_cotizaciones_vendedores" class="form-label">
+                                    <strong>Bloquear a vendedores facturar y gestionar cotizaciones</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="bloquear_cotizaciones_vendedores"
+                                    [checked]="isBloquearCotizacionesVendedoresEnabled()"
+                                    (change)="toggleBloquearCotizacionesVendedores()"
+                                    name="bloquear_cotizaciones_vendedores">
+                            </div>
+                            <small class="text-muted d-block">
+                                Los usuarios Ventas o Ventas limitado siempre ven solo sus cotizaciones en el listado (como en ventas). Si activa esta opción, además no podrán facturar, editar, ver detalles ni cambiar el estado de las cotizaciones; solo imprimir.
                             </small>
                         </div>
                     </div>
@@ -553,13 +587,25 @@
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Permitir cambiar el tipo de impuesto (Gravada, Exenta, No sujeta) por cada detalle de venta.</p>
+                        <p>Permitir cambiar el tipo de impuesto (Gravada, Exenta, No sujeta) de productos.</p>
                         <div class="form-switch bg-light-info rounded">
                             <label for="cambiar_tipo_impuesto_venta">Cambiar tipo de impuesto en venta</label>
                             <input class="form-check-input float-end" type="checkbox" role="switch"
                                 (change)="onSubmit()" [(ngModel)]="empresa.cambiar_tipo_impuesto_venta"
                                 name="cambiar_tipo_impuesto_venta">
                         </div>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6">
+                        <label for="monto_minimo_retencion_iva_gc">Monto mínimo para retención IVA 1% (gran contribuyente)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">{{ empresa.moneda || 'USD' }}</span>
+                            <input type="number" class="form-control" [(ngModel)]="empresa.monto_minimo_retencion_iva_gc"
+                                id="monto_minimo_retencion_iva_gc"
+                                name="monto_minimo_retencion_iva_gc" min="0" step="0.01"
+                                placeholder="100">
+                        </div>
+                        <small class="text-muted">La retención automática solo aplica si el subtotal de la operación es <strong>mayor</strong> a este monto (por defecto 100).</small>
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
@@ -599,6 +645,17 @@
                                 [checked]="isModuloBancos()"
                                 (change)="toggleModuloBancos()"
                                 name="modulo_bancos">
+                        </div>
+                    </div>
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Activa categorías de gastos, departamentos y áreas en el formulario de gastos.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="gastos_categorias_personalizadas">Habilitar categorías de gastos personalizadas</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="gastos_categorias_personalizadas"
+                                [checked]="isGastosCategoriasPersonalizadasHabilitadas()"
+                                (change)="toggleGastosCategoriasPersonalizadas()"
+                                name="gastos_categorias_personalizadas">
                         </div>
                     </div>
                     <div class="form-group col-md-12 col-xl-6 without-label">
@@ -692,6 +749,17 @@
 
                     <hr>
                     <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
+                    <div class="form-group col-md-12 col-xl-6">
+                        <p>Asignar automáticamente el código (SKU) como número correlativo.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="sku_correlativo_automatico">SKU correlativo automático</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="sku_correlativo_automatico"
+                                [checked]="isSkuCorrelativoAutomatico()"
+                                (change)="toggleSkuCorrelativoAutomatico()"
+                                name="sku_correlativo_automatico">
+                        </div>
+                    </div>
                     <div class="form-group col-md-6">
                         <label for="valor_inventario">Valor de inventario:</label>
                         <select class="form-select" [(ngModel)]="empresa.valor_inventario" name="valor_inventario">
@@ -905,6 +973,40 @@
                         </small>
                     </div>
                 </div>
+
+                <div class="col-12 mb-5" *ngIf="empresa.modulo_paquetes">
+                    <h5 class="mb-3">Notificación al facturar paquetes (webhook)</h5>
+                    <p class="text-muted small mb-3">
+                        Cuando un paquete pasa a estado Facturado por una venta, SmartPYME puede enviar un POST JSON a la URL que indique.
+                        Opcional: firma HMAC en la cabecera <code>X-SmartPyme-Signature</code> (prefijo <code>sha256=</code>) y/o token Bearer.
+                    </p>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="webhook_paquete_enabled"
+                            [(ngModel)]="empresa.webhook_paquete_venta_enabled" name="webhook_paquete_venta_enabled"
+                            (change)="onSubmit()">
+                        <label class="form-check-label" for="webhook_paquete_enabled">Activar envío al facturar paquete</label>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="webhook_paquete_url">URL del endpoint (HTTPS recomendado)</label>
+                        <input type="url" class="form-control" id="webhook_paquete_url"
+                            [(ngModel)]="empresa.webhook_paquete_venta_url" name="webhook_paquete_venta_url"
+                            placeholder="https://ejemplo.com/webhooks/paquetes" (blur)="onSubmit()">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="webhook_paquete_secret">Secreto para firma HMAC (opcional)</label>
+                        <input type="password" class="form-control" id="webhook_paquete_secret"
+                            [(ngModel)]="empresa.webhook_paquete_venta_secret" name="webhook_paquete_venta_secret"
+                            placeholder="Compartido con el sistema receptor" autocomplete="off" (blur)="onSubmit()">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="webhook_paquete_bearer">Token Bearer (opcional)</label>
+                        <input type="password" class="form-control" id="webhook_paquete_bearer"
+                            [(ngModel)]="empresa.webhook_paquete_venta_bearer_token"
+                            name="webhook_paquete_venta_bearer_token" placeholder="Authorization: Bearer …"
+                            autocomplete="off" (blur)="onSubmit()">
+                    </div>
+                </div>
+
                 <div class="col-12 mb-5" *ngIf="apiService.auth_user().empresa.acces_chatbot_whatsapp">
                     <h5 class="mb-3">Codigo de empresa para whatsapp</h5>
                     <div class="form-group">

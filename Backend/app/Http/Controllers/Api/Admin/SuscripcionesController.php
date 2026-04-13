@@ -199,6 +199,7 @@ class SuscripcionesController extends Controller
                 'direccion_factura' => 'nullable|string|max:500',
                 'requiere_factura' => 'boolean',
                 'motivo_cancelacion' => 'nullable|string|max:500',
+                'comentarios' => 'nullable|string',
                 'monto_mensual' => 'nullable|numeric|min:0',
                 'monto_anual' => 'nullable|numeric|min:0'
             ]);
@@ -243,6 +244,10 @@ class SuscripcionesController extends Controller
                 }
                 $suscripcion->motivo_cancelacion = $request->motivo_cancelacion;
                 $suscripcion->fecha_cancelacion = now();
+            }
+
+            if ($request->has('comentarios')) {
+                $suscripcion->comentarios = $request->input('comentarios');
             }
 
             $suscripcion->intentos_cobro = 0;
@@ -300,6 +305,7 @@ class SuscripcionesController extends Controller
                 'nombre_factura' => 'nullable|string',
                 'direccion_factura' => 'nullable|string',
                 'motivo_cancelacion' => 'nullable|string',
+                'comentarios' => 'nullable|string',
                 'nit' => 'nullable|string',
                 'monto_mensual' => 'nullable|numeric|min:0',
                 'monto_anual' => 'nullable|numeric|min:0'
@@ -320,7 +326,7 @@ class SuscripcionesController extends Controller
                 $empresa->save();
             }
 
-            $suscripcion->update([
+            $datosActualizacion = [
                 'fecha_proximo_pago' => $validated['fecha_proximo_pago'],
                 'estado_ultimo_pago' => $request->input('estado_ultimo_pago'),
                 'estado' => $validated['estado'],
@@ -331,7 +337,11 @@ class SuscripcionesController extends Controller
                 'nombre_factura' => $request->input('nombre_factura'),
                 'direccion_factura' => $request->input('direccion_factura'),
                 'motivo_cancelacion' => $request->input('motivo_cancelacion'),
-            ]);
+            ];
+            if ($request->exists('comentarios')) {
+                $datosActualizacion['comentarios'] = $request->input('comentarios');
+            }
+            $suscripcion->update($datosActualizacion);
 
             // Actualizar campos monto_mensual y monto_anual en la empresa
             $empresa = Empresa::findOrFail($suscripcion->empresa_id);

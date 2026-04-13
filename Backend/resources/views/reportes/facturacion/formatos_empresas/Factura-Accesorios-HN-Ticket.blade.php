@@ -148,7 +148,7 @@
     @php
         $corr = str_pad((string) $venta->correlativo, 8, '0', STR_PAD_LEFT);
         $prefijosSucursalPorDefectoAccesorios = [
-            '868' => '000-003-01-',
+            '868' => '000-004-01-',
             '897' => '000-002-01-',
             '898' => '000-003-01-',
         ];

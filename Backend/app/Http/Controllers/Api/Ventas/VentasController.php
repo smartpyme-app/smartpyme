@@ -27,6 +27,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Inventario\Paquete;
+use App\Services\Webhooks\WebhookPaqueteVentaDispatcher;
 use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
 use Luecano\NumeroALetras\NumeroALetras;
@@ -342,6 +343,8 @@ class VentasController extends Controller
             return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
         }
 
+        $webhookPaquetesFacturadosBulk = false;
+
         // Ajustar stocks
         foreach ($venta->detalles as $detalle) {
 
@@ -423,8 +426,17 @@ class VentasController extends Controller
                     $abono->estado = 'Confirmado';
                     $abono->save();
                 }
-                // Paquetes de la venta: cambiar estado a En bodega
+                // Paquetes de la venta: al revertir anulación quedan Facturados (update masivo no dispara observer)
                 Paquete::where('id_venta', $venta->id)->update(['estado' => 'Facturado']);
+                if (!$webhookPaquetesFacturadosBulk) {
+                    $webhookPaquetesFacturadosBulk = true;
+                    $idsPaquetes = Paquete::withoutGlobalScopes()
+                        ->where('id_venta', $venta->id)
+                        ->pluck('id');
+                    foreach ($idsPaquetes as $pid) {
+                        WebhookPaqueteVentaDispatcher::dispatch((int) $pid);
+                    }
+                }
             }
         }
 
@@ -1514,7 +1526,10 @@ class VentasController extends Controller
         $ventas = new VentasExport();
         $ventas->filter($request);
 
-        return Excel::download($ventas, 'ventas.xlsx');
+        $anio = VentasExport::anioDesdeRequest($request);
+        $nombreArchivo = $anio !== null ? "ventas-{$anio}.xlsx" : 'ventas.xlsx';
+
+        return Excel::download($ventas, $nombreArchivo);
     }
 
     public function exportDetalles(Request $request)
@@ -1723,6 +1738,23 @@ class VentasController extends Controller
                     $configuracion,
                     $configuracion->sucursales ?? []
                 );
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-totales') {
+                $requestVentasTotales = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $empresa->id,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasExport($requestVentasTotales);
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-por-producto') {
+                $requestDetalleProducto = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $empresa->id,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasDetallesExport();
+                $export->filter($requestDetalleProducto);
             }
             $filename = "{$configuracion->tipo_reporte}-{$fechaInicio}.xlsx";
 
@@ -1788,6 +1820,8 @@ class VentasController extends Controller
                 'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
                 'cobros-por-vendedor' => 'Reporte de Cobros por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'ventas-compras-por-marca-proveedor' => 'Reporte de Ventas y Compras por Marca y Proveedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-totales' => 'Reporte de Detalle de Ventas Totales ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-por-producto' => 'Reporte de Detalle de Ventas por Producto ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -1872,6 +1906,34 @@ class VentasController extends Controller
                 $export = new CobrosPorVendedorExport();
                 $export->filter($request);
                 $filename = "cobros-por-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'ventas-compras-por-marca-proveedor') {
+                $export = new VentasComprasPorMarcaProveedorExport(
+                    $fechaInicio,
+                    $fechaFin,
+                    $configuracion->id_empresa,
+                    $configuracion,
+                    $configuracion->sucursales ?? []
+                );
+                $filename = "ventas-compras-por-marca-proveedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-totales') {
+                $requestVentasTotales = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $configuracion->id_empresa,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasExport($requestVentasTotales);
+                $filename = "detalle-ventas-totales-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-por-producto') {
+                $requestDetalleProducto = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $configuracion->id_empresa,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasDetallesExport();
+                $export->filter($requestDetalleProducto);
+                $filename = "detalle-ventas-por-producto-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             }
 
             $relativePath = "reportes/{$filename}";
@@ -1935,6 +1997,10 @@ class VentasController extends Controller
                 'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
                 'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
+                'cobros-por-vendedor' => 'Reporte de Cobros por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'ventas-compras-por-marca-proveedor' => 'Reporte de Ventas y Compras por Marca y Proveedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-totales' => 'Reporte de Detalle de Ventas Totales ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-por-producto' => 'Reporte de Detalle de Ventas por Producto ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -2039,6 +2105,25 @@ class VentasController extends Controller
                     $configuracion,
                     $configuracion->sucursales ?? []
                 );
+                break;
+            case 'detalle-ventas-totales':
+                $requestVentasTotales = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $configuracion->id_empresa,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasExport($requestVentasTotales);
+                break;
+            case 'detalle-ventas-por-producto':
+                $requestDetalleProducto = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $configuracion->id_empresa,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasDetallesExport();
+                $export->filter($requestDetalleProducto);
                 break;
             default:
                 return response()->json(['error' => 'Tipo de reporte no implementado'], 422);

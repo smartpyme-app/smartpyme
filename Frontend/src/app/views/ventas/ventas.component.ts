@@ -25,7 +25,18 @@ export class VentasComponent implements OnInit, OnDestroy {
   public downloadingVentas: boolean = false;
   public downloadingCobrosVendedor: boolean = false;
   public reporteSeleccionado: string = '';
-  
+
+  /** Años disponibles: desde 2023 hasta el año en curso (más reciente primero). */
+  public get aniosDisponiblesExportVentas(): number[] {
+    const hasta = Math.max(new Date().getFullYear(), 2023);
+    const desde = 2023;
+    const anios: number[] = [];
+    for (let year = hasta; year >= desde; year--) {
+      anios.push(year);
+    }
+    return anios;
+  }
+
   // Propiedades booleanas para tipos de reporte
   public esReporteMarca: boolean = false;
   public esReporteUtilidades: boolean = false;
@@ -76,6 +87,29 @@ export class VentasComponent implements OnInit, OnDestroy {
     id_sucursal: '',
     id_vendedor: '',
   };
+
+  /**
+   * Período para exportar "Detalles por producto" y "Detalles ventas totales" cuando el listado no tiene inicio/fin en la URL.
+   */
+  public tipoPeriodoExport: 'rango' | 'anio' | 'mes' | 'anio_mes' = 'anio_mes';
+  public exportPeriodoRangoInicio = '';
+  public exportPeriodoRangoFin = '';
+  public exportPeriodoAnio: number = new Date().getFullYear();
+  public exportPeriodoMes = new Date().getMonth() + 1;
+  public readonly mesesExportPeriodo = [
+    { v: 1, n: 'Enero' },
+    { v: 2, n: 'Febrero' },
+    { v: 3, n: 'Marzo' },
+    { v: 4, n: 'Abril' },
+    { v: 5, n: 'Mayo' },
+    { v: 6, n: 'Junio' },
+    { v: 7, n: 'Julio' },
+    { v: 8, n: 'Agosto' },
+    { v: 9, n: 'Septiembre' },
+    { v: 10, n: 'Octubre' },
+    { v: 11, n: 'Noviembre' },
+    { v: 12, n: 'Diciembre' },
+  ];
 
   public modalRefDescargar!: any; // BsModalRef
   public modalRefAcumulado!: any; // BsModalRef
@@ -615,13 +649,154 @@ export class VentasComponent implements OnInit, OnDestroy {
     this.esReporteMarca = false;
     this.esReporteUtilidades = false;
     this.esReporteCobrosVendedor = false;
+    this.resetExportPeriodo();
     this.modalRefDescargar = this.modalService.show(template);
   }
 
+  /** True si el listado tiene rango de fechas en la URL (evita export histórico sin límite). */
+  public get tieneRangoFechaEnListado(): boolean {
+    const i = this.filtros?.inicio;
+    const f = this.filtros?.fin;
+    return !!(i && f && String(i).trim() !== '' && String(f).trim() !== '');
+  }
+
+  /** Válido para export "detalles por producto" y "ventas totales" (mismo período en el modal). */
+  public get puedeDescargarConPeriodoExport(): boolean {
+    return this.buildFechasExportPeriodo() !== null;
+  }
+
+  public get anioEnCursoParaMes(): number {
+    return new Date().getFullYear();
+  }
+
+  private resetExportPeriodo(): void {
+    this.tipoPeriodoExport = 'anio_mes';
+    const d = new Date();
+    this.exportPeriodoAnio = d.getFullYear();
+    this.exportPeriodoMes = d.getMonth() + 1;
+    this.exportPeriodoRangoInicio = '';
+    this.exportPeriodoRangoFin = '';
+  }
+
+  private pad2ExportPeriodo(n: number): string {
+    return String(n).padStart(2, '0');
+  }
+
+  private ultimoDiaDelMesExportPeriodo(anio: number, mes: number): number {
+    return new Date(anio, mes, 0).getDate();
+  }
+
+  /** Diferencia en días enteros entre dos fechas ISO (YYYY-MM-DD). Usa mediodía local para evitar DST. */
+  private diasEntreFechasIso(inicioIso: string, finIso: string): number {
+    const s = new Date(inicioIso + 'T12:00:00');
+    const e = new Date(finIso + 'T12:00:00');
+    return Math.floor((e.getTime() - s.getTime()) / 86400000);
+  }
+
+  /** Máximo de días permitidos entre inicio y fin en modo rango (no más de un año). */
+  private static readonly MAX_DIAS_RANGO_EXPORT_PERIOD = 365;
+
+  /**
+   * True si el rango elegido supera un año (solo modo rango, sin filtro en URL).
+   */
+  public get exportPeriodoRangoSuperaUnAnio(): boolean {
+    if (this.tieneRangoFechaEnListado || this.tipoPeriodoExport !== 'rango') {
+      return false;
+    }
+    const ini = this.exportPeriodoRangoInicio?.trim();
+    const fin = this.exportPeriodoRangoFin?.trim();
+    if (!ini || !fin || ini > fin) {
+      return false;
+    }
+    return (
+      this.diasEntreFechasIso(ini, fin) > VentasComponent.MAX_DIAS_RANGO_EXPORT_PERIOD
+    );
+  }
+
+  /**
+   * Fechas efectivas para export de detalles / ventas totales: URL del listado o período del modal.
+   */
+  public buildFechasExportPeriodo(): { inicio: string; fin: string } | null {
+    if (this.tieneRangoFechaEnListado) {
+      return {
+        inicio: String(this.filtros.inicio).trim(),
+        fin: String(this.filtros.fin).trim(),
+      };
+    }
+    switch (this.tipoPeriodoExport) {
+      case 'rango': {
+        const ini = this.exportPeriodoRangoInicio?.trim();
+        const fin = this.exportPeriodoRangoFin?.trim();
+        if (!ini || !fin) return null;
+        if (ini > fin) return null;
+        if (
+          this.diasEntreFechasIso(ini, fin) >
+          VentasComponent.MAX_DIAS_RANGO_EXPORT_PERIOD
+        ) {
+          return null;
+        }
+        return { inicio: ini, fin };
+      }
+      case 'anio': {
+        const y = +this.exportPeriodoAnio;
+        if (!y || y < 2000 || y > 2100) return null;
+        return { inicio: `${y}-01-01`, fin: `${y}-12-31` };
+      }
+      case 'mes': {
+        const y = new Date().getFullYear();
+        const m = +this.exportPeriodoMes;
+        if (m < 1 || m > 12) return null;
+        const ud = this.ultimoDiaDelMesExportPeriodo(y, m);
+        return {
+          inicio: `${y}-${this.pad2ExportPeriodo(m)}-01`,
+          fin: `${y}-${this.pad2ExportPeriodo(m)}-${this.pad2ExportPeriodo(ud)}`,
+        };
+      }
+      case 'anio_mes': {
+        const y = +this.exportPeriodoAnio;
+        const m = +this.exportPeriodoMes;
+        if (!y || y < 2000 || y > 2100 || m < 1 || m > 12) return null;
+        const ud = this.ultimoDiaDelMesExportPeriodo(y, m);
+        return {
+          inicio: `${y}-${this.pad2ExportPeriodo(m)}-01`,
+          fin: `${y}-${this.pad2ExportPeriodo(m)}-${this.pad2ExportPeriodo(ud)}`,
+        };
+      }
+      default:
+        return null;
+    }
+  }
+
+  private alertPeriodoExportInvalido(): void {
+    if (
+      !this.tieneRangoFechaEnListado &&
+      this.tipoPeriodoExport === 'rango' &&
+      this.exportPeriodoRangoSuperaUnAnio
+    ) {
+      this.alertService.error(
+        'El rango de fechas no puede superar un año (365 días entre inicio y fin).'
+      );
+    } else {
+      this.alertService.error(
+        'Debe indicar un período válido para el reporte (rango, año, mes o año y mes).'
+      );
+    }
+  }
+
   public descargarVentas() {
+    const fechas = this.buildFechasExportPeriodo();
+    if (!fechas) {
+      this.alertPeriodoExportInvalido();
+      return;
+    }
+    const base = { ...this.filtros, inicio: fechas.inicio, fin: fechas.fin };
+    const filtrosExport = { ...base };
+    delete (filtrosExport as any).anio;
+
     this.downloadingVentas = true;
     this.saving = true;
-    this.apiService.export('ventas/exportar', this.filtros).subscribe(
+    const sufijoArchivo = `${fechas.inicio}_a_${fechas.fin}`.replace(/[^0-9a-z_-]+/gi, '_');
+    this.apiService.export('ventas/exportar', filtrosExport).subscribe(
       (data: Blob) => {
         const blob = new Blob([data], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -629,7 +804,7 @@ export class VentasComponent implements OnInit, OnDestroy {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'ventas.xlsx';
+        a.download = `ventas-${sufijoArchivo}.xlsx`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -698,8 +873,15 @@ export class VentasComponent implements OnInit, OnDestroy {
 
 
   public descargarDetalles() {
-    this.downloadingDetalles = true; this.saving = true;
-    this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data: Blob) => {
+    const fechas = this.buildFechasExportPeriodo();
+    if (!fechas) {
+      this.alertPeriodoExportInvalido();
+      return;
+    }
+    const filtrosExport = { ...this.filtros, inicio: fechas.inicio, fin: fechas.fin };
+    this.downloadingDetalles = true;
+    this.saving = true;
+    this.apiService.export('ventas-detalles/exportar', filtrosExport).subscribe((data: Blob) => {
       const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1295,6 +1477,10 @@ export class VentasComponent implements OnInit, OnDestroy {
           break;
         case 'cobros-vendedor':
           this.esReporteCobrosVendedor = true;
+          break;
+        case 'detalles':
+        case 'ventas':
+          this.resetExportPeriodo();
           break;
       }
     }
