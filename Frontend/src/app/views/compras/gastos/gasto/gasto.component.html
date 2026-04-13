@@ -46,7 +46,7 @@
         <div class="row">
             <div class="form-group col-md-4 col-lg-3">
                 <label for="id_sucursal">Sucursal:</label>
-                <select name="id_sucursal" [(ngModel)]="gasto.id_sucursal" class="form-select">
+                <select name="id_sucursal" [(ngModel)]="gasto.id_sucursal" (change)="onSucursalGastoChange()" class="form-select">
                     <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
                         {{ sucursal.nombre }}
                     </option>
@@ -65,15 +65,9 @@
                 </div>
             </div>
             <div class="form-group col-md-4 col-lg-3">
-                <label for="id_categoria" class="w-100">Categoria:</label>
+                <label for="tipo_gasto" class="w-100">Tipo de gasto</label>
                 <div class="input-group flex-nowrap">
-                    <!-- <ng-select name="id_categoria" [(ngModel)]="gasto.id_categoria" class="form-select p-0">
-                        <ng-option value="">Seleccione aquí</ng-option>
-                        <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
-                            {{categoria.nombre}}
-                        </ng-option>
-                    </ng-select> -->
-                    <select name="tipo" [(ngModel)]="gasto.tipo" class="form-select">
+                    <select id="tipo_gasto" name="tipo" [(ngModel)]="gasto.tipo" class="form-select">
                         <option value="">Seleccione aquí</option>
                         <option value="Alquiler">Alquiler</option>
                         <option value="Combustible">Combustible</option>
@@ -91,17 +85,63 @@
                         <option value="Préstamos">Préstamos</option>
                         <option value="Publicidad">Publicidad</option>
                     </select>
-                    <!-- <app-crear-categoria-gasto (update)="setCategoria($event)"></app-crear-categoria-gasto> -->
                 </div>
             </div>
-            <div class="form-group col-md-4 col-lg-3">
-                <label for="area_empresa">Area empresa:</label>
-                <input 
-                type="text" 
-                [(ngModel)]="gasto.area_empresa" 
-                name="area_empresa" 
-                class="form-control" 
-                id="area_empresa" 
+            <div class="form-group col-md-4 col-lg-3" *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+                <label for="id_categoria" class="w-100">Categoría</label>
+                <ng-select
+                    name="id_categoria"
+                    [items]="categorias"
+                    bindLabel="nombre"
+                    bindValue="id"
+                    placeholder="Seleccione aquí"
+                    [(ngModel)]="gasto.id_categoria"
+                    [clearable]="true"
+                    class="form-select p-0">
+                </ng-select>
+            </div>
+            <div class="form-group col-md-4 col-lg-3" *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+                <label for="id_departamento_gasto">Departamento</label>
+                <div class="input-group flex-nowrap">
+                    <select
+                        class="form-select flex-grow-1"
+                        name="id_departamento_gasto"
+                        [(ngModel)]="idDepartamentoSeleccionado"
+                        (ngModelChange)="onDepartamentoGastoChange()">
+                        <option [ngValue]="null">Seleccione aquí</option>
+                        <option *ngFor="let d of departamentosEmpresa" [ngValue]="d.id">{{ d.nombre }}</option>
+                    </select>
+                    <app-crear-departamento (update)="setDepartamentoCreado($event)"></app-crear-departamento>
+                </div>
+            </div>
+            <div class="form-group col-md-4 col-lg-3" *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+                <label for="id_area_empresa">Área empresa</label>
+                <div class="input-group flex-nowrap">
+                    <ng-select
+                        name="id_area_empresa"
+                        [(ngModel)]="gasto.id_area_empresa"
+                        class="form-select p-0 flex-grow-1"
+                        placeholder="Primero elija departamento"
+                        [clearable]="true"
+                        [disabled]="!idDepartamentoSeleccionado">
+                        <ng-option *ngFor="let area of areasGastoSelector" [value]="area.id">
+                            {{ area.nombre }}
+                        </ng-option>
+                    </ng-select>
+                    <app-crear-area-empresa
+                        *ngIf="idDepartamentoSeleccionado"
+                        [id_departamento_preselected]="idDepartamentoSeleccionado"
+                        (update)="setAreaEmpresaCreada($event)">
+                    </app-crear-area-empresa>
+                </div>
+            </div>
+            <div class="form-group col-md-4 col-lg-3" *ngIf="!apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+                <label for="area_empresa">Área empresa</label>
+                <input type="text"
+                [(ngModel)]="gasto.area_empresa"
+                name="area_empresa"
+                class="form-control"
+                id="area_empresa"
                 placeholder="Ingrese el área de la empresa">
             </div>
             <div class="form-group col-md-4 col-lg-3" *ngIf="isColumnEnabled('columna_proyecto')">
@@ -151,10 +191,24 @@
                         <input type="text" class="form-control" [(ngModel)]="d.concepto" [name]="'det_concepto_'+i" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-3">
-                        <label>Categoría:</label>
+                        <label>Tipo de gasto:</label>
                         <select class="form-select" [(ngModel)]="d.tipo" [name]="'det_tipo_'+i">
+                            <option value="">Seleccione aquí</option>
                             <option *ngFor="let t of TIPOS_CATEGORIA" [value]="t">{{ t }}</option>
                         </select>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-3" *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+                        <label>Categoría:</label>
+                        <ng-select
+                            class="form-select p-0"
+                            [items]="categorias"
+                            bindLabel="nombre"
+                            bindValue="id"
+                            placeholder="Seleccione aquí"
+                            [(ngModel)]="d.id_categoria"
+                            [clearable]="true"
+                            [name]="'det_id_categoria_'+i">
+                        </ng-select>
                     </div>
                     <div class="form-group col-md-3 col-lg-2">
                         <label>Cantidad:</label>

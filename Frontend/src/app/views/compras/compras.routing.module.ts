@@ -31,6 +31,8 @@ import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.c
 import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
 import { AbonosGastosComponent } from './gastos/abonos/abonos-gastos.component';
+import { DepartamentoEmpresaComponent } from './gastos/departamento-empresa/departamento-empresa.component';
+import { AreaEmpresaComponent } from './gastos/area-empresa/area-empresa.component';
 
 const routes: Routes = [
   {
@@ -74,6 +76,8 @@ const routes: Routes = [
         { path: 'gasto/:id', component: GastoComponent, title:'Gasto' },
         { path: 'gastos/dash', component: GastosDashComponent },
         { path: 'gastos/categorias', component: GastosCategoriasComponent },
+        { path: 'gastos/departamentos-empresa', component: DepartamentoEmpresaComponent, title: 'Departamentos de empresa' },
+        { path: 'gastos/areas-empresa', component: AreaEmpresaComponent, title: 'Áreas de empresa' },
 
     ]
   }

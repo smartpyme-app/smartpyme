@@ -1144,6 +1144,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 lotes_dias_anticipacion: 30, // Días para alerta de vencimiento
                 componente_quimico_activo: false, // Habilitar campo componente químico en productos
                 modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
+                gastos_categorias_personalizadas: false, // Categorías de gasto BD, departamentos y áreas en gastos
                 estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
                 sku_correlativo_automatico: false, // SKU correlativo automático al crear productos
                 bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
@@ -1414,6 +1415,32 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 `Módulo de bancos ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
             );
             // Actualizar auth_user en localStorage para que el sidebar refleje el cambio sin recargar
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    public isGastosCategoriasPersonalizadasHabilitadas(): boolean {
+        return this.getCustomConfig('configuraciones', 'gastos_categorias_personalizadas', false);
+    }
+
+    public toggleGastosCategoriasPersonalizadas() {
+        const currentValue = this.isGastosCategoriasPersonalizadasHabilitadas();
+        this.updateGastosCategoriasPersonalizadas(!currentValue);
+    }
+
+    public updateGastosCategoriasPersonalizadas(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'gastos_categorias_personalizadas', activo);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                activo
+                    ? 'Categorías de gastos personalizadas habilitadas.'
+                    : 'Categorías de gastos personalizadas deshabilitadas.'
+            );
             const authUser = this.apiService.auth_user();
             if (authUser?.empresa?.id === this.empresa?.id) {
                 authUser.empresa.custom_empresa = this.empresa.custom_empresa;
