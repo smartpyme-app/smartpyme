@@ -48,9 +48,9 @@ export class ApiService {
     login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); this.funcionalidadesService.limpiarCache(); this.loadConstants(); } }) ); }
     register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data) {localStorage.setItem('SP_user_register', JSON.stringify(data)); } })); }
 
-    export(url:string, filtros: any): Observable<Blob> {
+    export(url:string, filtros: any, timeoutMs: number = 120000): Observable<Blob> {
         return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros }).pipe(
-            timeout(120000),
+            timeout(timeoutMs),
             catchError((error) => {
                 if (error.error instanceof Blob && error.error.type?.includes('application/json')) {
                     return from<string>(error.error.text()).pipe(

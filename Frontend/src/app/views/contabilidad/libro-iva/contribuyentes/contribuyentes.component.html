@@ -1,64 +1,13 @@
 
-<section class="bg-white p-4 rounded mb-3 d-flex justify-content-between">
+<section class="bg-white p-4 rounded mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
-        <h2>Libro de Contribuyentes</h2>
+        <h2 class="mb-0">Libro de Contribuyentes</h2>
     </div>
-    <div class="dropdown">
-        <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
-                data-bs-toggle="dropdown" aria-expanded="false" [disabled]="downloading">
-          Descargas 
-        </button>
-        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-          <li>
-            <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
-                Libro de IVA Excel
-            </button>
-          </li>
-          <li>
-            <button class="dropdown-item d-flex align-items-center" (click)="descargarLibroPDF()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
-                Libro de IVA PDF
-            </button>
-          </li>
-          <li *ngIf="isElSalvador">
-            <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
-                Anexo CSV
-            </button>
-          </li>
-          <li>
-            <button class="dropdown-item d-flex align-items-center" (click)="descargarLibroRetencion()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
-                Libro de Rentención 1% Excel
-            </button>
-          </li>
-          <li *ngIf="isElSalvador">
-            <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexoRetencion()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
-                Anexo de Rentención 1% CSV
-            </button>
-          </li>
-          <li *ngIf="isElSalvador">
-            <button class="dropdown-item d-flex align-items-center" (click)="descargarDTECreditoFiscal()" title="Descargar DTEs en zip como JSON ">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
-                DTEs Zip
-            </button>
-          </li>
-          <li *ngIf="isElSalvador">
-            <button class="dropdown-item d-flex align-items-center" (click)="descargarNotasCredito()" title="Descargar notas de crédito en ZIP (JSON) para declaración">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
-                Notas de Crédito ZIP
-            </button>
-          </li>
-          <li *ngIf="isElSalvador">
-            <button class="dropdown-item d-flex align-items-center" (click)="descargarNotasDebito()" title="Descargar notas de débito en ZIP (JSON) para declaración">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
-                Notas de Débito ZIP
-            </button>
-          </li>
-        </ul>
-      </div>
+    <button type="button" class="btn btn-default tcla-F6 d-inline-flex align-items-center" (click)="openDescargasModal(mdescargas)"
+            [disabled]="downloading" tooltip="Descargas (F6)">
+        <img src="/assets/icons/download.png" class="icon me-2" alt="">
+        Descargas
+    </button>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
@@ -210,7 +159,7 @@
                     <option value="no_anulados">No anulados</option>
                     <option value="anulados">Anulados</option>
                 </select>
-                <small class="text-muted d-block mt-1">Aplica a DTEs Zip, Notas de Crédito y Notas de Débito. Por defecto se excluyen anulados, igual que el libro.</small>
+                <small class="text-muted d-block mt-1">Aplica a DTEs Zip, DTEs PDF (ZIP), Notas de Crédito y Notas de Débito. Por defecto se excluyen anulados, igual que el libro.</small>
             </div>
         </div>
         <div class="d-grid">
@@ -221,4 +170,41 @@
         </div>
     </form>
   </div>
+</ng-template>
+
+<ng-template #mdescargas>
+    <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title">Descargas</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalDescargas()" aria-label="Cerrar"></button>
+    </div>
+    <div class="modal-body pt-2">
+        <p class="text-muted small mb-3">
+            Periodo actual: <strong>{{ filtros.inicio }}</strong> al <strong>{{ filtros.fin }}</strong>.
+            Para otro rango o sucursal use <strong>Filtrar</strong> (F3).
+        </p>
+        <label class="form-label" for="selTipoDescarga">Tipo de archivo</label>
+        <select id="selTipoDescarga" class="form-select" [(ngModel)]="tipoDescarga" name="tipoDescarga">
+            <option value="">Seleccione</option>
+            <option value="libro_excel">Libro de IVA (Excel)</option>
+            <option value="libro_pdf">Libro de IVA (PDF)</option>
+            <option *ngIf="isElSalvador" value="anexo_csv">Anexo CSV</option>
+            <option value="retencion_excel">Libro de retención 1% (Excel)</option>
+            <option *ngIf="isElSalvador" value="anexo_retencion_csv">Anexo de retención 1% (CSV)</option>
+            <option *ngIf="isElSalvador" value="dtes_zip">DTEs crédito fiscal (JSON en ZIP)</option>
+            <option *ngIf="isElSalvador" value="dtes_pdf_zip">DTEs crédito fiscal (PDF en ZIP)</option>
+            <option *ngIf="isElSalvador" value="notas_credito">Notas de crédito (JSON ZIP)</option>
+            <option *ngIf="isElSalvador" value="notas_debito">Notas de débito (JSON ZIP)</option>
+        </select>
+        <p *ngIf="isElSalvador && tipoDescarga && esDescargaZipDeclaracion(tipoDescarga)" class="small text-muted mt-2 mb-0">
+            Anulados / no anulados se ajustan en el modal de filtros (F3), igual que antes.
+        </p>
+    </div>
+    <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-default" (click)="cerrarModalDescargas()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="ejecutarDescargaSeleccionada()"
+                [disabled]="downloading || !tipoDescarga">
+            <span *ngIf="!downloading">Descargar</span>
+            <span *ngIf="downloading">Generando…</span>
+        </button>
+    </div>
 </ng-template>
