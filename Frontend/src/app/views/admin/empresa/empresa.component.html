@@ -435,6 +435,41 @@
                         </div>
                     </div>
 
+                    <hr>
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Cotizaciones</h4>
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="cotizacion_mostrar_descripcion" class="form-label">
+                                    <strong>Mostrar descripción en cotizaciones</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="cotizacion_mostrar_descripcion"
+                                    [checked]="isCotizacionMostrarDescripcionEnabled()"
+                                    (change)="toggleCotizacionMostrarDescripcion()"
+                                    name="cotizacion_mostrar_descripcion">
+                            </div>
+                            <small class="text-muted">
+                                Incluye la descripción de cada línea al imprimir o exportar la cotización.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="cotizacion_mostrar_imagenes_productos" class="form-label">
+                                    <strong>Mostrar imágenes de productos</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="cotizacion_mostrar_imagenes_productos"
+                                    [checked]="isCotizacionMostrarImagenesProductosEnabled()"
+                                    (change)="toggleCotizacionMostrarImagenesProductos()"
+                                    name="cotizacion_mostrar_imagenes_productos">
+                            </div>
+                            <small class="text-muted">
+                                Muestra la imagen del producto en la cotización cuando exista.
+                            </small>
+                        </div>
+                    </div>
+
                     <div class="row" *ngIf="apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Super Admin'">
                         <h4 class="mb-0 fw-bold">Cotizaciones y vendedores</h4>
                         <div class="form-group col-md-12 col-xl-8 without-label">
@@ -495,6 +530,7 @@
                     </div>
 
 
+                    <hr>
                     <h4 class="mb-0 fw-bold">Facturación</h4>
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Calcular el IVA por defecto.</p>
