@@ -50,6 +50,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public showpassword2: boolean = false;
     public canales: any = [];
     public tieneAccesoPropina: boolean = false;
+    public tieneAccesoModuloRestaurantePedidos: boolean = false;
 
     public customConfig: any = {
         columnas: {
@@ -71,6 +72,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
         this.loadAll();
         this.verificarAccesoPropina();
+        this.verificarAccesoModuloRestaurantePedidos();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
@@ -1146,7 +1148,10 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
                 gastos_categorias_personalizadas: false, // Categorías de gasto BD, departamentos y áreas en gastos
                 estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
+                vista_modulo_restaurante_pedidos: 'ambos' as 'restaurante' | 'pedidos' | 'ambos', // Menú lateral: restaurante, pedidos o ambos
                 sku_correlativo_automatico: false, // SKU correlativo automático al crear productos
+                cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
+                cotizacion_mostrar_imagenes_productos: false, // Mostrar imágenes de productos en cotizaciones
                 bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
                 dte_mostrar_descripcion_producto: true, // Descripción extendida del catálogo en PDF de factura y CCF (DTE)
             },
@@ -1319,6 +1324,42 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public toggleCamposContables() {
         const currentValue = this.isCamposContablesEnabled();
         this.updateCamposContables(!currentValue);
+    }
+
+    public isCotizacionMostrarDescripcionEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'cotizacion_mostrar_descripcion', true);
+    }
+
+    public updateCotizacionMostrarDescripcion(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'cotizacion_mostrar_descripcion', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Mostrar descripción en cotizaciones ${enabled ? 'activado' : 'desactivado'} correctamente`
+            );
+        });
+    }
+
+    public toggleCotizacionMostrarDescripcion() {
+        this.updateCotizacionMostrarDescripcion(!this.isCotizacionMostrarDescripcionEnabled());
+    }
+
+    public isCotizacionMostrarImagenesProductosEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'cotizacion_mostrar_imagenes_productos', false);
+    }
+
+    public updateCotizacionMostrarImagenesProductos(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'cotizacion_mostrar_imagenes_productos', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Imágenes de productos en cotizaciones ${enabled ? 'activadas' : 'desactivadas'} correctamente`
+            );
+        });
+    }
+
+    public toggleCotizacionMostrarImagenesProductos() {
+        this.updateCotizacionMostrarImagenesProductos(!this.isCotizacionMostrarImagenesProductosEnabled());
     }
 
     public isBloquearCotizacionesVendedoresEnabled(): boolean {
@@ -1703,6 +1744,31 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 this.tieneAccesoPropina = false;
             }
         );
+    }
+
+    public verificarAccesoModuloRestaurantePedidos() {
+        this.funcionalidadesService.verificarAcceso('modulo-restaurante').subscribe({
+            next: (acceso) => {
+                this.tieneAccesoModuloRestaurantePedidos = acceso;
+            },
+            error: () => {
+                this.tieneAccesoModuloRestaurantePedidos = false;
+            }
+        });
+    }
+
+    public getVistaModuloRestaurantePedidos(): 'restaurante' | 'pedidos' | 'ambos' {
+        const v = this.getCustomConfig('configuraciones', 'vista_modulo_restaurante_pedidos', 'ambos');
+        if (v === 'restaurante' || v === 'pedidos' || v === 'ambos') {
+            return v;
+        }
+        return 'ambos';
+    }
+
+    public setVistaModuloRestaurantePedidos(vista: 'restaurante' | 'pedidos' | 'ambos') {
+        this.addCustomConfig('configuraciones', 'vista_modulo_restaurante_pedidos', vista);
+        this.empresa.custom_empresa = this.customConfig;
+        this.onSubmit();
     }
 
     public limpiarCacheYLogout() {

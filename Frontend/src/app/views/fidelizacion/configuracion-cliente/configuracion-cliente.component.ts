@@ -34,12 +34,15 @@ export class ConfiguracionClienteComponent implements OnInit {
     is_default: false,
     configuracion_avanzada: this.getDefaultAdvancedConfig()
   };
+  /** Valor del selector de nivel en UI: id de tipo base (number) o 'personalizado' */
+  public nivelSeleccionado: number | 'personalizado' | null = null;
   public filtros: any = {
     buscador: '',
     orden: 'nivel',
     direccion: 'asc',
     paginate: 25,
-    estado: ''
+    estado: '',
+    tipo: ''
   };
   
   // Propiedades para paginación
@@ -53,6 +56,9 @@ export class ConfiguracionClienteComponent implements OnInit {
   };
   
   public downloading: boolean = false;
+
+  /** Ocultar configuración avanzada hasta que esté lista */
+  public mostrarConfiguracionAvanzada: boolean = false;
 
   // Propiedades para gestión de reglas de upgrade
   public showUpgradeRulesModal: boolean = false;
@@ -81,6 +87,9 @@ export class ConfiguracionClienteComponent implements OnInit {
   }
 
   loadAll(): void {
+    this.filtros.estado = '';
+    this.filtros.tipo = '';
+    this.pagination.current_page = 1;
     this.loadTiposCliente();
     this.loadTiposBase();
   }
@@ -99,20 +108,21 @@ export class ConfiguracionClienteComponent implements OnInit {
       ...(this.filtros.buscador && { search: this.filtros.buscador }),
       ...(this.filtros.orden && { order: this.filtros.orden }),
       ...(this.filtros.direccion && { direction: this.filtros.direccion }),
-      ...(this.filtros.estado && { estado: this.filtros.estado })
+      ...(this.filtros.estado && { estado: this.filtros.estado }),
+      ...(this.filtros.tipo && { tipo: this.filtros.tipo })
     };
     
     this.fidelizacionService.getTiposCliente(params).subscribe({
       next: (response: PaginatedResponse<TipoClienteEmpresa>) => {
         if (response.success && response.data) {
           // Formatear los datos para limitar decimales
-          this.tiposCliente = response.data.data.map(tipo => ({
+          this.tiposCliente = response.data.data.map((tipo) => ({
             ...tipo,
             puntos_por_dolar: this.formatDecimal(parseFloat(tipo.puntos_por_dolar.toString())),
             configuracion_avanzada: {
               ...tipo.configuracion_avanzada,
-              valor_punto: this.formatDecimal(parseFloat(tipo.configuracion_avanzada?.valor_punto?.toString() || '0'))
-            }
+              valor_punto: this.resolveValorPuntoFromTipo(tipo),
+            },
           }));
           this.pagination = {
             current_page: response.data.current_page,
@@ -169,8 +179,11 @@ export class ConfiguracionClienteComponent implements OnInit {
    */
   openCreateModal(): void {
     this.editingTipo = null;
+    const primerTipoBase = this.tiposBase?.[0];
     this.formData = {
-      nivel: 1,
+      id_tipo_base: primerTipoBase?.id,
+      nivel: primerTipoBase?.orden ?? 1,
+      nombre_personalizado: undefined,
       puntos_por_dolar: 1.0,
       minimo_canje: 100,
       maximo_canje: 1000,
@@ -178,6 +191,7 @@ export class ConfiguracionClienteComponent implements OnInit {
       is_default: false,
       configuracion_avanzada: this.getDefaultAdvancedConfig()
     };
+    this.nivelSeleccionado = primerTipoBase ? primerTipoBase.id : 'personalizado';
     this.showModal = true;
   }
 
@@ -195,8 +209,12 @@ export class ConfiguracionClienteComponent implements OnInit {
       maximo_canje: tipo.maximo_canje,
       expiracion_meses: tipo.expiracion_meses,
       is_default: tipo.is_default,
-      configuracion_avanzada: this.ensureAdvancedConfig(tipo.configuracion_avanzada)
+      configuracion_avanzada: this.ensureAdvancedConfig({
+        ...tipo.configuracion_avanzada,
+        valor_punto: this.resolveValorPuntoFromTipo(tipo),
+      }),
     };
+    this.nivelSeleccionado = tipo.is_personalizado ? 'personalizado' : (tipo.tipo_base?.id ?? null);
     this.showModal = true;
   }
 
@@ -206,6 +224,26 @@ export class ConfiguracionClienteComponent implements OnInit {
   closeModal(): void {
     this.showModal = false;
     this.editingTipo = null;
+    this.nivelSeleccionado = null;
+  }
+
+  /**
+   * Al cambiar el nivel seleccionado en la UI (Standard, VIP, Ultra VIP o Personalizado)
+   */
+  onNivelSeleccionadoChange(value: number | 'personalizado' | null): void {
+    this.nivelSeleccionado = value;
+    if (value === 'personalizado') {
+      this.formData.id_tipo_base = undefined;
+      this.formData.nivel = this.formData.nivel || 1;
+      this.formData.nombre_personalizado = this.formData.nombre_personalizado || '';
+    } else if (value !== null && typeof value === 'number') {
+      const tipoBase = this.tiposBase.find(t => t.id === value);
+      if (tipoBase) {
+        this.formData.id_tipo_base = tipoBase.id;
+        this.formData.nivel = tipoBase.orden;
+        this.formData.nombre_personalizado = undefined;
+      }
+    }
   }
 
   /**
@@ -220,6 +258,7 @@ export class ConfiguracionClienteComponent implements OnInit {
         habilitado: true,
         reglas: []
       },
+      // TODO: BENEFICIOS_EXCLUSIVOS - Mantener estructura para compatibilidad; UI comentada en .html
       beneficios_exclusivos: {
         descuento_maximo_adicional: 0,
         puntos_bienvenida_anual: 0,
@@ -239,13 +278,14 @@ export class ConfiguracionClienteComponent implements OnInit {
     }
 
     return {
-      valor_punto: config.valor_punto || 0.01,
+      valor_punto: config.valor_punto ?? 0.01,
       multiplicador_especial: config.multiplicador_especial || false,
       multiplicador_valor: config.multiplicador_valor,
       descuento_cumpleanos: config.descuento_cumpleanos || false,
       descuento_cumpleanos_porcentaje: config.descuento_cumpleanos_porcentaje,
       acceso_exclusivo: config.acceso_exclusivo || false,
       soporte_prioritario: config.soporte_prioritario || false,
+      // TODO: BENEFICIOS_EXCLUSIVOS - Mantener para compatibilidad; UI comentada
       beneficios_exclusivos: {
         descuento_maximo_adicional: config.beneficios_exclusivos?.descuento_maximo_adicional || 0,
         puntos_bienvenida_anual: config.beneficios_exclusivos?.puntos_bienvenida_anual || 0,
@@ -269,7 +309,6 @@ export class ConfiguracionClienteComponent implements OnInit {
       { value: 'puntos_acumulados', label: 'Puntos Acumulados', description: 'Basado en puntos acumulados' },
       { value: 'compras_periodo', label: 'Compras en Período', description: 'Basado en número de compras en un período' }
     ];
-    console.log('Tipos de reglas disponibles:', tipos);
     return tipos;
   }
 
@@ -528,7 +567,7 @@ export class ConfiguracionClienteComponent implements OnInit {
    * Mostrar simulación de venta con la configuración actual
    */
   private mostrarSimulacionVenta(): void {
-    const valorPunto = this.formData.configuracion_avanzada?.valor_punto || 0.01;
+    const valorPunto = this.formData.configuracion_avanzada?.valor_punto ?? 0.01;
     const puntosPorDolar = this.formData.puntos_por_dolar || 1.0;
     const minimoCanje = this.formData.minimo_canje || 100;
     const maximoCanje = this.formData.maximo_canje || 1000;
@@ -561,7 +600,7 @@ export class ConfiguracionClienteComponent implements OnInit {
         <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #dee2e6;">
           <h5 style="color: #495057; margin-bottom: 10px;">💰 Configuración Actual:</h5>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
-            <div><strong>Valor del punto:</strong> $${valorPunto.toFixed(2)}</div>
+            <div><strong>Valor del punto:</strong> $${valorPunto.toFixed(4)}</div>
             <div><strong>Puntos por dólar:</strong> ${puntosPorDolar}</div>
             <div><strong>Mínimo canje:</strong> ${minimoCanje} puntos</div>
             <div><strong>Máximo canje:</strong> ${maximoCanje} puntos</div>
@@ -609,6 +648,13 @@ export class ConfiguracionClienteComponent implements OnInit {
    * Proceder con el guardado después de mostrar la simulación
    */
   private procederConGuardado(): void {
+    // Validar nombre personalizado cuando es tipo personalizado
+    if (this.nivelSeleccionado === 'personalizado') {
+      if (!this.formData.nombre_personalizado?.trim()) {
+        this.alertService.error('El nombre del tipo es requerido para tipos personalizados');
+        return;
+      }
+    }
     // Validar datos
     const errors = this.fidelizacionService.validatePuntosConfig(this.formData);
     if (errors.length > 0) {
@@ -693,7 +739,7 @@ export class ConfiguracionClienteComponent implements OnInit {
     this.fidelizacionService.toggleStatus(tipo.id).subscribe({
       next: (response) => {
         if (response.success) {
-          this.alertService.success('success','Estado actualizado exitosamente');
+          this.alertService.success('Exito','Estado actualizado exitosamente');
           this.loadTiposCliente();
         } else {
           this.alertService.error(response.message || 'Error al cambiar el estado');
@@ -709,9 +755,9 @@ export class ConfiguracionClienteComponent implements OnInit {
    * Establecer como tipo por defecto
    */
   setAsDefault(tipo: TipoClienteEmpresa): void {
-    if (confirm(`¿Está seguro de establecer "${tipo.nombre_efectivo}" como tipo por defecto para el nivel ${tipo.nivel}?`)) {
+    if (confirm(`¿Está seguro de establecer "${tipo.nombre_efectivo}" como tipo por defecto? Los clientes sin tipo asignado usarán este.`)) {
       const updateData: UpdateTipoClienteRequest = {
-        id_tipo_base: tipo.tipo_base?.id,
+        id_tipo_base: tipo.tipo_base?.id ?? (tipo as any).id_tipo_base ?? undefined,
         nivel: tipo.nivel,
         nombre_personalizado: tipo.is_personalizado ? tipo.nombre_efectivo : undefined,
         puntos_por_dolar: tipo.puntos_por_dolar,
@@ -725,7 +771,7 @@ export class ConfiguracionClienteComponent implements OnInit {
       this.fidelizacionService.updateTipoCliente(tipo.id, updateData).subscribe({
         next: (response) => {
           if (response.success) {
-            this.alertService.success('success','Tipo de cliente establecido como por defecto exitosamente');
+            this.alertService.success('Exito','Tipo de cliente establecido como por defecto exitosamente');
             this.loadTiposCliente();
           } else {
             this.alertService.error(response.message || 'Error al establecer como por defecto');
@@ -813,7 +859,7 @@ export class ConfiguracionClienteComponent implements OnInit {
     // TODO: Implementar descarga de tipos de cliente
     setTimeout(() => {
       this.downloading = false;
-      this.alertService.success('success', 'Descarga completada');
+      this.alertService.success('Exito', 'Descarga completada');
     }, 1000);
   }
 
@@ -876,5 +922,39 @@ export class ConfiguracionClienteComponent implements OnInit {
    */
   formatDecimal(value: number): number {
     return Math.round(value * 100) / 100;
+  }
+
+  /**
+   * Valor del punto en BD: decimal(8,4); no usar formatDecimal (2 cifras) para no perder precisión.
+   */
+  formatValorPuntoDecimal(value: number): number {
+    if (isNaN(value)) {
+      return 0;
+    }
+    return Math.round(value * 10000) / 10000;
+  }
+
+  /**
+   * El API expone `valor_punto` en el tipo y a veces también en `configuracion_avanzada`.
+   * Si solo se lee configuracion_avanzada y ahí no viene la clave, antes se caía a 0.
+   */
+  private resolveValorPuntoFromTipo(tipo: any): number {
+    const tryParse = (raw: unknown): number | null => {
+      if (raw === undefined || raw === null) return null;
+      const s = String(raw).trim();
+      if (s === '') return null;
+      const n = parseFloat(s);
+      return isNaN(n) ? null : n;
+    };
+
+    const fromRoot = tryParse(tipo?.valor_punto);
+    if (fromRoot !== null) {
+      return this.formatValorPuntoDecimal(fromRoot);
+    }
+    const fromAdv = tryParse(tipo?.configuracion_avanzada?.valor_punto);
+    if (fromAdv !== null) {
+      return this.formatValorPuntoDecimal(fromAdv);
+    }
+    return 0.01;
   }
 }

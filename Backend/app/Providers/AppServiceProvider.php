@@ -9,7 +9,9 @@ use Illuminate\Support\ServiceProvider;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Paquete;
 use App\Models\Inventario\Producto;
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
+use App\Observers\FidelizacionCliente\ClienteNivelObserver;
 use App\Observers\InventarioObserver;
 use App\Observers\PaqueteWebhookObserver;
 use App\Observers\ProductoObserver;
@@ -42,7 +44,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        // Registrar el observer de Inventario
+        Cliente::observe(ClienteNivelObserver::class);
         Inventario::observe(InventarioObserver::class);
 
         Paquete::observe(PaqueteWebhookObserver::class);

@@ -22,6 +22,8 @@ export class ApiService {
 
     getToUrl(url:string) {return this.http.get<any>(url).pipe(retry(0), catchError(this.handleError) )}
 
+    getAsText(url: string): Observable<string> {return this.http.get(this.apiUrl + url, { responseType: 'text' }).pipe(retry(0), catchError(this.handleError)); }
+
     getAll(url:string, filtros:any = {}) {return this.http.get<any>(this.apiUrl + url, { params: filtros }).pipe(retry(0), catchError(this.handleError) )}
 
     read(url:string, id: number) {return this.http.get<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
@@ -39,6 +41,8 @@ export class ApiService {
     }
 
     update(url: string, id: number, model: any) {return this.http .put<any>(`${this.apiUrl}${url}/${id}`, model) .pipe(retry(0), catchError(this.handleError)); }
+
+    putToUrl(url: string, model: any) {return this.http.put<any>(this.apiUrl + url, model).pipe(retry(0), catchError(this.handleError)); }
 
     delete(url:string, id: number) {return this.http.delete<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
 
@@ -207,6 +211,25 @@ export class ApiService {
         return customConfig?.configuraciones?.estado_cuenta_en_facturacion === true;
     }
 
+    /**
+     * Vista del menú lateral cuando la funcionalidad "Restaurantes y pedidos" está activa:
+     * restaurante | pedidos | ambos (por defecto ambos = comportamiento anterior).
+     */
+    getVistaModuloRestaurantePedidos(): 'restaurante' | 'pedidos' | 'ambos' {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return 'ambos';
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        const v = customConfig?.configuraciones?.vista_modulo_restaurante_pedidos;
+        if (v === 'restaurante' || v === 'pedidos' || v === 'ambos') {
+            return v;
+        }
+        return 'ambos';
+    }
+
     /** SKU correlativo automático al crear productos (configuración de empresa) */
     isSkuCorrelativoAutomatico(): boolean {
         const empresa = this.auth_user()?.empresa;
@@ -218,7 +241,6 @@ export class ApiService {
             : empresa.custom_empresa;
         return customConfig?.configuraciones?.sku_correlativo_automatico === true;
     }
-
 
     auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
 

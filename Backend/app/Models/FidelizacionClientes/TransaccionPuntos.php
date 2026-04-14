@@ -35,9 +35,9 @@ class TransaccionPuntos extends Model
     ];
 
     protected $casts = [
-        'puntos' => 'double',
-        'puntos_antes' => 'double',
-        'puntos_despues' => 'double',
+        'puntos' => 'integer',
+        'puntos_antes' => 'integer',
+        'puntos_despues' => 'integer',
         'monto_asociado' => 'decimal:2',
         'puntos_consumidos' => 'integer',
         'fecha_expiracion' => 'date',
@@ -104,7 +104,7 @@ class TransaccionPuntos extends Model
     {
         return $query->where('tipo', self::TIPO_GANANCIA)
                     ->where('fecha_expiracion', '<=', now()->addDays($dias))
-                    ->where('puntos_consumidos', '<', 'puntos');
+                    ->whereColumn('puntos_consumidos', '<', 'puntos');
     }
 
     public function scopeDisponiblesParaConsumo($query)
@@ -155,7 +155,15 @@ class TransaccionPuntos extends Model
 
     public static function generarIdempotencyKey($clienteId, $tipo, $referencia = null)
     {
-        return md5($clienteId . '_' . $tipo . '_' . ($referencia ?? time()));
+        // Si no hay referencia, generar un UUID único
+        // IMPORTANTE: Esto no es idempotente. Para operaciones que requieren idempotencia,
+        // siempre se debe proporcionar una referencia estable (ej: venta_id, token desde frontend)
+        if ($referencia === null) {
+            $uuid = \Illuminate\Support\Str::uuid();
+            return "{$tipo}_{$clienteId}_{$uuid}";
+        }
+
+        return "{$tipo}_{$clienteId}_{$referencia}";
     }
 
     public function isGanancia()

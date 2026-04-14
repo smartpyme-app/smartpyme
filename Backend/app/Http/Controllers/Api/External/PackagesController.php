@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 
 class PackagesController extends Controller
 {
-    private const MAX_PACKAGES = 200;
+    private const MAX_PACKAGES = 500;
 
     public function import(Request $request, PaqueteExternalImportService $importService)
     {

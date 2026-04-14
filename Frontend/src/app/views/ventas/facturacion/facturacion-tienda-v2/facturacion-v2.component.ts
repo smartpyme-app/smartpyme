@@ -5,7 +5,9 @@ import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { MHService } from '@services/MH.service';
+import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
@@ -41,14 +43,35 @@ export class FacturacionV2Component implements OnInit {
   public facturarCotizacion = false;
   public api: boolean = false;
   public tieneAccesoPropina: boolean = false;
+  public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  preCuentaId: number | null = null;
+  sesionId: number | null = null;
+  pedidoCanalId: number | null = null;
+
+  // Información de puntos canjeados
+  public puntosCanjeados: number = 0;
+  public descuentoPuntos: number = 0;
+  public puntosCliente: number = 0;
+  public loadingPuntos: boolean = false;
+  public loadingModalPuntos: boolean = false;
+  public puntosInfoModal: PuntosDisponiblesInfo | null = null;
+  public configuracionModal: ConfiguracionCliente | null = null;
+  public puntosProximosAExpirarModal: any[] = [];
+  public usarPuntosModal: boolean = false;
+  public puntosACanjearModal: number = 0;
+
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
+  modalPuntosRef!: BsModalRef;
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
+
+  @ViewChild('modalPuntos')
+  public modalPuntosTemplate!: TemplateRef<any>;
 
   @ViewChild('mcredito')
   public creditoTemplate!: TemplateRef<any>;
@@ -61,7 +84,9 @@ export class FacturacionV2Component implements OnInit {
     private sumPipe: SumPipe,
     private route: ActivatedRoute,
     private router: Router,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private restauranteService: RestauranteService,
+    private fidelizacionService: FidelizacionService,
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
@@ -72,6 +97,7 @@ export class FacturacionV2Component implements OnInit {
     this.cargarDatosIniciales();
     this.loadData();
     this.verificarAccesoPropina();
+    this.verificarFidelizacionHabilitada();
   }
 
   public loadData() {
@@ -309,6 +335,75 @@ export class FacturacionV2Component implements OnInit {
         this.venta.observaciones = this.venta.id_empresa == 2 ? 'Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \nPagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \nDisponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \nPropiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \nLimitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \nDuración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \nSituaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \nRenovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \nPolítica de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \nBrindar capacitaciones y soporte técnico a usuarios de negocios. \nGarantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \nOfrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\nBrindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
     }
 
+    // Pre-cuenta restaurante: state o queryParams (respaldo por si state se pierde)
+    const navState = history.state as any;
+    const qp = this.route.snapshot.queryParamMap;
+    const preCuentaIdFromState = navState?.preCuentaId;
+    const preCuentaIdFromQuery = qp.get('pre_cuenta');
+    const preCuentaIdVal = preCuentaIdFromState ?? (preCuentaIdFromQuery ? +preCuentaIdFromQuery : null);
+    if (preCuentaIdVal) {
+      this.preCuentaId = preCuentaIdVal;
+      this.sesionId = navState?.sesionId ?? (qp.get('sesion') ? +qp.get('sesion')! : null);
+      const detalles = navState?.preCuentaData?.detalles ?? [];
+      if (detalles.length) {
+        const iva = this.apiService.auth_user()?.empresa?.iva ?? 0;
+        this.venta.observaciones = ((this.venta.observaciones || '') + ' Mesa ' + (navState.preCuentaData.mesa_numero || '')).trim();
+        this.venta.detalles = detalles.map((d: any) => {
+        const sub = (d.cantidad || 0) * (parseFloat(d.precio) || 0);
+        return {
+          id_producto: d.id_producto,
+          cantidad: d.cantidad,
+          precio: parseFloat(d.precio).toFixed(4),
+          descripcion: d.descripcion || '',
+          costo: 0,
+          descuento: 0,
+          descuento_porcentaje: 0,
+          sub_total: sub.toFixed(4),
+          total: sub.toFixed(4),
+          tipo_gravado: 'gravada',
+          porcentaje_impuesto: iva,
+          gravada: 0,
+          exenta: 0,
+          no_sujeta: 0,
+          iva: 0,
+        };
+      });
+        this.normalizarDetallesTipoGravado(this.venta);
+        this.sumTotal();
+        const pctPropinaEmpresa = parseFloat(String(this.apiService.auth_user()?.empresa?.propina_porcentaje ?? '')) || 0;
+        if (pctPropinaEmpresa > 0) {
+          this.venta.cobrar_propina = true;
+          this.sumTotal();
+        }
+      }
+    } else {
+      const pedidoCanalFromState = navState?.pedidoCanalId;
+      const pedidoCanalFromQuery = qp.get('pedido_canal');
+      const pedidoCanalIdVal =
+        pedidoCanalFromState ?? (pedidoCanalFromQuery ? +pedidoCanalFromQuery : null);
+      if (pedidoCanalIdVal) {
+        this.pedidoCanalId = pedidoCanalIdVal;
+        const pdata = navState?.pedidoCanalData;
+        if (pdata?.detalles?.length) {
+          this.aplicarPedidoCanalAFactura({
+            pedido_id: pedidoCanalIdVal,
+            cliente_id: pdata.cliente_id,
+            id_sucursal: pdata.id_sucursal,
+            fecha: pdata.fecha,
+            canal: pdata.canal,
+            referencia_externa: pdata.referencia_externa,
+            observaciones: pdata.observaciones,
+            detalles: pdata.detalles
+          });
+        } else {
+          this.restauranteService.prepararFacturaPedidoCanal(pedidoCanalIdVal).subscribe({
+            next: (data) => this.aplicarPedidoCanalAFactura(data),
+            error: (e) => this.alertService.error(e)
+          });
+        }
+      }
+    }
+
     // Para editar cotizaciones Pre-venta
     if (this.route.snapshot.paramMap.get('id')!) {
       this.apiService
@@ -404,16 +499,16 @@ export class FacturacionV2Component implements OnInit {
               this.venta.cotizacion = 0;
               this.venta.num_cotizacion = this.venta.id;
               this.venta.id = null;
-              
+
               // Obtener porcentaje de IVA para conversión de precios
-              const porcentajeIvaTotal = this.venta.cobrar_impuestos 
+              const porcentajeIvaTotal = this.venta.cobrar_impuestos
                 ? (this.apiService.auth_user()?.empresa?.iva || 0)
                 : 0;
-              
+
               // Ajustar precios de los detalles para v2 (precios incluyen IVA)
               this.venta.detalles.forEach((detalle: any) => {
                 detalle.id = null;
-                
+
                 // Si el detalle no tiene precio_iva, asumir que precio es sin IVA (versión anterior)
                 // y calcular precio_iva
                 if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
@@ -433,10 +528,10 @@ export class FacturacionV2Component implements OnInit {
                     detalle.precio = parseFloat(detalle.precio_iva).toFixed(4);
                   }
                 }
-                
+
                 // Asegurar que precio_iva esté como número
                 detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
-                
+
                 // Recalcular total del detalle usando precio sin IVA
                 const precioSinIva = parseFloat(detalle.precio || 0);
                 detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
@@ -446,7 +541,7 @@ export class FacturacionV2Component implements OnInit {
                 detalle.gravada = detalle.tipo_gravado === 'gravada' ? detalle.total : 0;
                 detalle.exenta = detalle.tipo_gravado === 'exenta' ? detalle.total : 0;
                 detalle.no_sujeta = detalle.tipo_gravado === 'no_sujeta' ? detalle.total : 0;
-                
+
                 // Calcular total_iva para visualización (solo gravada lleva IVA)
                 if (detalle.tipo_gravado === 'gravada' && this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
                   detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
@@ -454,7 +549,7 @@ export class FacturacionV2Component implements OnInit {
                   detalle.total_iva = detalle.total;
                 }
               });
-              
+
               this.sumTotal();
 
               // Para proyectos
@@ -474,12 +569,12 @@ export class FacturacionV2Component implements OnInit {
     if (this.route.snapshot.queryParamMap.get('facturar_orden_compra')!) {
       this.apiService.read('orden-de-compra/solicitud/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).subscribe((ordenCompra) => {
         this.venta.num_orden = ordenCompra.id;
-        
+
         this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit)).subscribe((empresa) => {
           if(empresa.length > 0){
             this.setCliente(empresa[0]);
             console.log(empresa);
-            
+
             // Solo procesar productos si el cliente existe
             this.procesarProductosOrdenCompra(ordenCompra.detalles);
           }else{
@@ -521,17 +616,17 @@ export class FacturacionV2Component implements OnInit {
           detalle.cantidad = detalleCompra.cantidad;
           detalle.descripcion = producto.nombre;
           detalle.id_producto = producto.id;
-          
+
           // En v2, el precio se muestra con IVA pero se guarda sin IVA
           const iva = this.apiService.auth_user()?.empresa?.iva || 0;
           const precioSinIva = parseFloat(producto.precio);
           const precioConIva = precioSinIva * (1 + iva / 100);
-          
+
           // precio_iva: precio con IVA (para cálculos y visualización)
           detalle.precio_iva = precioConIva.toFixed(4);
           // precio: precio sin IVA (para guardar en BD)
           detalle.precio = precioSinIva.toFixed(4);
-          
+
           detalle.costo = parseFloat(producto.costo);
           detalle.id_vendedor = this.venta.id_vendedor;
           detalle.exenta = 0;
@@ -715,7 +810,7 @@ export class FacturacionV2Component implements OnInit {
 
     // En v2, los detalles tienen total sin IVA, así que agregamos el IVA al calcular los totales
     // Usar el IVA de la empresa directamente
-    const porcentajeIvaTotal = this.venta.cobrar_impuestos 
+    const porcentajeIvaTotal = this.venta.cobrar_impuestos
       ? (this.apiService.auth_user()?.empresa?.iva || 0)
       : 0;
 
@@ -807,14 +902,16 @@ export class FacturacionV2Component implements OnInit {
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    // El total NO incluye la propina; subtotal e IVA en 4 decimales, total redondeado a moneda (2)
+    // El total NO incluye la propina; incluir descuento por puntos si aplica
+    const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const totalNum =
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(String(this.venta.iva_percibido)) -
       parseFloat(String(this.venta.iva_retenido)) -
-      parseFloat(String(this.venta.renta_retenida));
+      parseFloat(String(this.venta.renta_retenida)) -
+      descuentoPuntos;
     this.venta.total = (Math.round(totalNum * 100) / 100).toFixed(2);
 
 
@@ -860,12 +957,18 @@ export class FacturacionV2Component implements OnInit {
             if(cliente.tipo_contribuyente == "Grande") {
                 this.sumTotal();
             }
-            
+
+            // Resetear y cargar puntos del cliente (si fidelización habilitada)
+            this.resetearPuntos();
+            if (this.tieneFidelizacionHabilitada) {
+                this.cargarPuntosCliente();
+            }
+
             // Asignar vendedor si el cliente tiene uno asignado
             if(cliente.id_vendedor) {
                 this.venta.id_vendedor = cliente.id_vendedor;
             }
-            
+
             // Si el cliente tiene crédito habilitado, aplicar venta al crédito automáticamente
             if (cliente.habilita_credito && cliente.dias_credito) {
                 this.venta.credito = true;
@@ -889,11 +992,13 @@ export class FacturacionV2Component implements OnInit {
             } else {
                 this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
             }
-            
+
             // Limpiar mensaje de validación al cambiar cliente
             this.mensajeValidacionFecha = '';
         } else {
             this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
+            this.puntosCliente = 0;
+            this.resetearPuntos();
         }
         console.log(cliente);
     }
@@ -947,9 +1052,9 @@ export class FacturacionV2Component implements OnInit {
         const hoy = moment();
         const fechaSeleccionada = moment(fechaPago);
         const diasDiferencia = fechaSeleccionada.diff(hoy, 'days');
-        
+
         let diasMaximos = 30; // Por defecto 30 días (clasificación C)
-        
+
         switch (this.venta.cliente.clasificacion.toUpperCase()) {
             case 'A':
                 diasMaximos = 90;
@@ -964,7 +1069,7 @@ export class FacturacionV2Component implements OnInit {
                 diasMaximos = 30;
                 break;
         }
-        
+
         return diasDiferencia <= diasMaximos;
     }
 
@@ -978,7 +1083,7 @@ export class FacturacionV2Component implements OnInit {
 
         let diasMaximos = 30;
         let clasificacion = 'C';
-        
+
         switch (this.venta.cliente.clasificacion.toUpperCase()) {
             case 'A':
                 diasMaximos = 90;
@@ -993,7 +1098,7 @@ export class FacturacionV2Component implements OnInit {
                 clasificacion = 'C';
                 break;
         }
-        
+
         return `Clientes de clasificación ${clasificacion} no puede exceder ${diasMaximos} días.`;
     }
 
@@ -1002,15 +1107,15 @@ export class FacturacionV2Component implements OnInit {
      */
     public validarFechaPago() {
         this.mensajeValidacionFecha = ''; // Limpiar mensaje anterior
-        
+
         if (this.venta.credito && this.venta.fecha_pago) {
             if (!this.validarFechaPagoPorClasificacion(this.venta.fecha_pago)) {
                 this.mensajeValidacionFecha = this.obtenerMensajeValidacionFecha();
-                
+
                 // Revertir a la fecha anterior o establecer una fecha válida
                 const hoy = moment();
                 let diasMaximos = 30;
-                
+
                 if (this.venta.cliente?.clasificacion) {
                     switch (this.venta.cliente.clasificacion.toUpperCase()) {
                         case 'A':
@@ -1024,7 +1129,7 @@ export class FacturacionV2Component implements OnInit {
                             break;
                     }
                 }
-                
+
                 // Establecer la fecha máxima permitida
                 this.venta.fecha_pago = hoy.add(diasMaximos, 'days').format('YYYY-MM-DD');
             }
@@ -1052,7 +1157,7 @@ export class FacturacionV2Component implements OnInit {
                 item.total = null;
             });
         }
-        
+
         // Si módulo bancos: asignar banco por defecto del método de pago
         if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
             const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
@@ -1125,7 +1230,7 @@ export class FacturacionV2Component implements OnInit {
   public onFacturar() {
     // Validar que si el método de pago requiere banco, este esté seleccionado
     this.mensajeErrorBanco = '';
-    
+
     if (this.venta.cotizacion != 1 && this.requiereBanco() && !this.venta.detalle_banco) {
       this.mensajeErrorBanco = 'Debe seleccionar un banco para este método de pago.';
       this.alertService.error('Debe seleccionar un banco para este método de pago.');
@@ -1147,12 +1252,119 @@ export class FacturacionV2Component implements OnInit {
     }
   }
 
+  private navegarPostFacturaPreCuenta(ventaId: number) {
+    if (!this.preCuentaId) {
+      this.alertService.warning('No se pudo vincular la pre-cuenta', 'ID de pre-cuenta no disponible.');
+      this.router.navigate(['/restaurante']);
+      return;
+    }
+    this.restauranteService.marcarPreCuentaFacturada(this.preCuentaId, ventaId).subscribe({
+      next: (res: any) => {
+        const dest = res?.sesion_cerrada ? ['/restaurante'] : (this.sesionId ? ['/restaurante/cuenta', this.sesionId] : ['/restaurante']);
+        this.router.navigate(dest);
+        this.alertService.success('Factura creada', res?.sesion_cerrada ? 'Pre-cuenta facturada. Mesa liberada.' : 'Pre-cuenta marcada como facturada.');
+      },
+      error: (err) => {
+        const msg = err?.error?.error || err?.error?.message || err?.message || err;
+        this.alertService.error(msg ?? 'Error al marcar pre-cuenta como facturada');
+        this.router.navigate(['/restaurante']);
+      }
+    });
+  }
+
+  private aplicarPedidoCanalAFactura(data: {
+    pedido_id: number;
+    cliente_id?: number | null;
+    id_sucursal?: number | null;
+    fecha?: string | null;
+    canal?: string | null;
+    referencia_externa?: string | null;
+    observaciones?: string | null;
+    detalles: any[];
+  }): void {
+    this.pedidoCanalId = data.pedido_id;
+    if (data.id_sucursal) {
+      this.venta.id_sucursal = data.id_sucursal;
+    }
+    if (data.fecha) {
+      this.venta.fecha = data.fecha;
+      this.venta.fecha_pago = data.fecha;
+    }
+    const partes: string[] = [`Pedido canal #${data.pedido_id}`];
+    if (data.canal) {
+      partes.push(`Canal: ${data.canal}`);
+    }
+    if (data.referencia_externa) {
+      partes.push(`Ref: ${data.referencia_externa}`);
+    }
+    if (data.observaciones) {
+      partes.push(String(data.observaciones));
+    }
+    this.venta.observaciones = partes.join('. ');
+
+    const detalles = data.detalles || [];
+    if (detalles.length) {
+      const iva = this.apiService.auth_user()?.empresa?.iva ?? 0;
+      this.venta.detalles = detalles.map((d: any) => {
+        const precio = parseFloat(String(d.precio)) || 0;
+        const cant = parseFloat(String(d.cantidad)) || 0;
+        const descLine = parseFloat(String(d.descuento ?? 0)) || 0;
+        const sub = Math.max(0, cant * precio - descLine);
+        return {
+          id_producto: d.id_producto,
+          cantidad: cant,
+          precio: precio.toFixed(4),
+          descripcion: d.descripcion || '',
+          costo: 0,
+          descuento: descLine.toFixed(4),
+          descuento_porcentaje: 0,
+          sub_total: sub.toFixed(4),
+          total: sub.toFixed(4),
+          tipo_gravado: 'gravada',
+          porcentaje_impuesto: iva,
+          gravada: 0,
+          exenta: 0,
+          no_sujeta: 0,
+          iva: 0,
+        };
+      });
+      this.normalizarDetallesTipoGravado(this.venta);
+      this.sumTotal();
+    }
+
+    if (data.cliente_id) {
+      this.apiService.read('cliente/', data.cliente_id as number).subscribe({
+        next: (c) => this.setCliente(c),
+        error: () => {},
+      });
+    }
+  }
+
+  private navegarPostFacturaPedidoCanal(ventaId: number) {
+    if (!this.pedidoCanalId) {
+      this.alertService.warning('No se pudo vincular el pedido', 'ID de pedido no disponible.');
+      this.router.navigate(['/pedidos']);
+      return;
+    }
+    this.restauranteService.marcarPedidoCanalFacturado(this.pedidoCanalId, ventaId).subscribe({
+      next: () => {
+        this.router.navigate(['/pedidos']);
+        this.alertService.success('Factura creada', 'El pedido quedó marcado como facturado.');
+      },
+      error: (err) => {
+        const msg = err?.error?.error || err?.error?.message || err?.message || err;
+        this.alertService.error(msg ?? 'Error al vincular la venta con el pedido');
+        this.router.navigate(['/pedidos']);
+      },
+    });
+  }
+
   /**
    * Verifica si el método de pago requiere selección de banco
    */
   public requiereBanco(): boolean {
-    return this.venta.forma_pago && 
-           this.venta.forma_pago !== 'Efectivo' && 
+    return this.venta.forma_pago &&
+           this.venta.forma_pago !== 'Efectivo' &&
            this.venta.forma_pago !== 'Wompi' &&
            this.venta.forma_pago !== 'Multiple';
   }
@@ -1224,9 +1436,15 @@ export class FacturacionV2Component implements OnInit {
               'Impresión',
               'width=400'
             );
-            this.cargarDatosIniciales();
-            this.loadData();
-            this.router.navigate(['/ventas-v2/crear']);
+            if (this.preCuentaId && this.venta.id) {
+              this.navegarPostFacturaPreCuenta(this.venta.id);
+            } else if (this.pedidoCanalId && this.venta.id) {
+              this.navegarPostFacturaPedidoCanal(this.venta.id);
+            } else {
+              this.cargarDatosIniciales();
+              this.loadData();
+              this.router.navigate(['/ventas-v2/crear']);
+            }
           }
         } else {
           if (this.venta.cotizacion == 1) {
@@ -1235,6 +1453,10 @@ export class FacturacionV2Component implements OnInit {
               'Cotización creada',
               'La cotizacion fue añadida exitosamente.'
             );
+          } else if (this.preCuentaId && this.venta.id) {
+            this.navegarPostFacturaPreCuenta(this.venta.id);
+          } else if (this.pedidoCanalId && this.venta.id) {
+            this.navegarPostFacturaPedidoCanal(this.venta.id);
           } else {
             this.router.navigate(['/ventas']);
             this.alertService.success(
@@ -1306,8 +1528,14 @@ export class FacturacionV2Component implements OnInit {
           'Impresión',
           'width=400'
         );
-        this.cargarDatosIniciales();
-        this.router.navigate(['/ventas-v2/crear']);
+        if (this.preCuentaId && this.venta.id) {
+          this.navegarPostFacturaPreCuenta(this.venta.id);
+        } else if (this.pedidoCanalId && this.venta.id) {
+          this.navegarPostFacturaPedidoCanal(this.venta.id);
+        } else {
+          this.cargarDatosIniciales();
+          this.router.navigate(['/ventas-v2/crear']);
+        }
       })
       .catch((error) => {
         this.cargarDatosIniciales();
@@ -1421,5 +1649,210 @@ public getTotalConPropina(): number {
     return total + propina;
 }
 
+  // ==================== FIDELIZACIÓN - PUNTOS ====================
+
+  private resetearPuntos(): void {
+    this.puntosCanjeados = 0;
+    this.descuentoPuntos = 0;
+    this.venta.puntos_canjeados = 0;
+    this.venta.descuento_puntos = 0;
+  }
+
+  public getEmpresaId(): number {
+    return this.apiService.auth_user().empresa.id;
+  }
+
+  private cargarPuntosCliente(): void {
+    if (!this.venta.cliente?.id) {
+      this.puntosCliente = 0;
+      return;
+    }
+    this.loadingPuntos = true;
+    this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.puntosCliente = response.data.puntos_disponibles;
+          } else {
+            this.puntosCliente = 0;
+          }
+          this.loadingPuntos = false;
+        },
+        error: () => {
+          this.puntosCliente = 0;
+          this.loadingPuntos = false;
+        }
+      });
+  }
+
+  public abrirModalPuntos(): void {
+    if (!this.venta.cliente?.id) return;
+    this.modalPuntosRef = this.modalService.show(this.modalPuntosTemplate, { class: 'modal-lg' });
+    this.cargarDatosModal();
+  }
+
+  public cerrarModalPuntos(): void {
+    this.modalPuntosRef?.hide();
+  }
+
+  private cargarDatosModal(): void {
+    this.loadingModalPuntos = true;
+    this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.puntosInfoModal = response.data;
+            this.configuracionModal = response.data.configuracion || null;
+            this.calcularPuntosProximosAExpirarModal();
+            if (this.puntosCanjeados > 0) {
+              this.usarPuntosModal = true;
+              this.puntosACanjearModal = this.puntosCanjeados;
+            } else {
+              this.usarPuntosModal = false;
+              this.puntosACanjearModal = 0;
+            }
+          } else {
+            this.puntosInfoModal = null;
+            this.configuracionModal = null;
+          }
+          this.loadingModalPuntos = false;
+        },
+        error: () => {
+          this.puntosInfoModal = null;
+          this.configuracionModal = null;
+          this.loadingModalPuntos = false;
+        }
+      });
+  }
+
+  private calcularPuntosProximosAExpirarModal(): void {
+    if (!this.puntosInfoModal?.ganancias_detalle) {
+      this.puntosProximosAExpirarModal = [];
+      return;
+    }
+    this.puntosProximosAExpirarModal = this.puntosInfoModal.ganancias_detalle
+      .filter((g: any) => g.puntos_disponibles > 0 && g.dias_para_expirar <= 30)
+      .sort((a: any, b: any) => a.dias_para_expirar - b.dias_para_expirar)
+      .slice(0, 5);
+  }
+
+  public onToggleUsarPuntosModal(): void {
+    if (!this.usarPuntosModal) {
+      this.puntosACanjearModal = 0;
+    } else {
+      this.puntosACanjearModal = this.configuracionModal?.minimo_canje || 1;
+    }
+  }
+
+  public onCambiarPuntosModal(): void {
+    if (!this.puntosInfoModal || !this.configuracionModal) return;
+    if (this.puntosACanjearModal < 0) this.puntosACanjearModal = 0;
+    const minimo = this.configuracionModal.minimo_canje || 1;
+    const maximo = this.getMaximoCanje();
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles;
+    if (this.puntosACanjearModal > puntosDisponibles) {
+      this.puntosACanjearModal = puntosDisponibles;
+      this.alertService.warning('Puntos insuficientes', `Solo tienes ${puntosDisponibles} puntos disponibles`);
+    }
+    if (this.puntosACanjearModal > maximo) {
+      this.puntosACanjearModal = maximo;
+      this.alertService.warning('Límite excedido', `El máximo de canje para ${this.configuracionModal.tipo_cliente} es ${maximo} puntos`);
+    }
+    if (this.puntosACanjearModal > 0 && this.puntosACanjearModal < minimo) {
+      this.alertService.warning('Cantidad inválida', `El mínimo de canje para ${this.configuracionModal.tipo_cliente} es ${minimo} puntos`);
+    }
+  }
+
+  public usarTodosPuntosModal(): void {
+    if (!this.puntosInfoModal || !this.configuracionModal) return;
+    this.puntosACanjearModal = this.getMaximoCanje();
+    this.usarPuntosModal = true;
+  }
+
+  public getDescuentoTotalModal(): number {
+    if (!this.configuracionModal) return 0;
+    return this.puntosACanjearModal * (this.configuracionModal.valor_punto || 0.01);
+  }
+
+  public aplicarCanjeModal(): void {
+    if (!this.usarPuntosModal || this.puntosACanjearModal <= 0) return;
+    if (!this.puntosInfoModal || !this.configuracionModal) {
+      this.alertService.error('No se pudo cargar la información de puntos');
+      return;
+    }
+    const minimo = this.configuracionModal.minimo_canje || 1;
+    const maximo = this.getMaximoCanje();
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles;
+    if (this.puntosACanjearModal < minimo) {
+      this.alertService.warning('Cantidad inválida', `El mínimo de canje para ${this.configuracionModal.tipo_cliente} es ${minimo} puntos`);
+      return;
+    }
+    if (this.puntosACanjearModal > maximo) {
+      this.alertService.warning('Límite excedido', `El máximo de canje para ${this.configuracionModal.tipo_cliente} es ${maximo} puntos`);
+      return;
+    }
+    if (this.puntosACanjearModal > puntosDisponibles) {
+      this.alertService.warning('Puntos insuficientes', `Solo tienes ${puntosDisponibles} puntos disponibles`);
+      return;
+    }
+    this.puntosCanjeados = this.puntosACanjearModal;
+    this.descuentoPuntos = this.getDescuentoTotalModal();
+    this.venta.puntos_canjeados = this.puntosCanjeados;
+    this.venta.descuento_puntos = this.descuentoPuntos;
+    this.sumTotal();
+    this.puntosCliente = (this.puntosInfoModal?.puntos_disponibles || 0) - this.puntosCanjeados;
+    this.alertService.success('¡Descuento aplicado!', `Se aplicó un descuento de $${this.descuentoPuntos.toFixed(2)} por ${this.puntosCanjeados} puntos`);
+  }
+
+  public getDiasExpiracionClass(dias: number): string {
+    if (dias <= 3) return 'text-danger fw-bold';
+    if (dias <= 7) return 'text-warning fw-bold';
+    if (dias <= 30) return 'text-info';
+    return 'text-muted';
+  }
+
+  public quitarDescuentoPuntos(): void {
+    this.resetearPuntos();
+    this.usarPuntosModal = false;
+    this.puntosACanjearModal = 0;
+    this.sumTotal();
+    this.cargarPuntosCliente();
+    this.alertService.success('Descuento removido', 'El descuento por puntos ha sido eliminado');
+    this.cerrarModalPuntos();
+  }
+
+  public getMaximoCanje(): number {
+    if (!this.configuracionModal || !this.puntosInfoModal) return 0;
+    const maximoConfiguracion = this.configuracionModal.maximo_canje || 1000;
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles || 0;
+    return Math.min(maximoConfiguracion, puntosDisponibles);
+  }
+
+  public getValorPunto(): string {
+    const valor = this.configuracionModal?.valor_punto || 0.01;
+    return `$${Number(valor).toFixed(3)}`;
+  }
+
+  public isCanjeValido(): boolean {
+    if (!this.usarPuntosModal || !this.puntosInfoModal || !this.configuracionModal) return false;
+    const minimo = this.configuracionModal.minimo_canje || 1;
+    const maximo = this.getMaximoCanje();
+    const puntosDisponibles = this.puntosInfoModal.puntos_disponibles;
+    return this.puntosACanjearModal >= minimo &&
+      this.puntosACanjearModal <= maximo &&
+      this.puntosACanjearModal <= puntosDisponibles &&
+      this.puntosACanjearModal > 0;
+  }
+
+  public formatNumber(value: number): string {
+    return value?.toLocaleString() || '0';
+  }
+
+  private verificarFidelizacionHabilitada(): void {
+    this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
+      next: (tieneAcceso: boolean) => { this.tieneFidelizacionHabilitada = tieneAcceso; },
+      error: () => { this.tieneFidelizacionHabilitada = false; }
+    });
+  }
 }
 
