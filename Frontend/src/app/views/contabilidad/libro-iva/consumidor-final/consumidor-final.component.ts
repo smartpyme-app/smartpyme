@@ -20,6 +20,7 @@ export class ConsumidorFinalComponent implements OnInit {
     public downloading:boolean = false;
     public filtros:any = {};
     modalRef!: BsModalRef;
+    public tipoDescarga: string = '';
 
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
@@ -78,7 +79,54 @@ export class ConsumidorFinalComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
-    } 
+    }
+
+    public openDescargasModal(template: TemplateRef<any>): void {
+        this.tipoDescarga = '';
+        this.modalRef = this.modalService.show(template, {
+            class: 'modal-md',
+            backdrop: true,
+            ignoreBackdropClick: false,
+        });
+    }
+
+    public cerrarModalDescargas(): void {
+        this.modalRef?.hide();
+        this.tipoDescarga = '';
+    }
+
+    public esDescargaZipDeclaracion(tipo: string): boolean {
+        return tipo === 'dtes_zip' || tipo === 'dtes_pdf_zip';
+    }
+
+    public ejecutarDescargaSeleccionada(): void {
+        if (!this.tipoDescarga) {
+            this.alertService.warning('Seleccione un tipo', 'Elija una opción en el listado.');
+            return;
+        }
+        switch (this.tipoDescarga) {
+            case 'libro_excel':
+                this.descargarLibro();
+                break;
+            case 'libro_pdf':
+                this.descargarLibroPDF();
+                break;
+            case 'anexo_csv':
+                this.descargarAnexo();
+                break;
+            case 'dtes_zip':
+                this.descargarDTEConsumidorFinal();
+                break;
+            case 'dtes_pdf_zip':
+                this.descargarDTEsPdfZip();
+                break;
+            default:
+                this.alertService.warning('Opción no válida', 'Seleccione otra opción.');
+                return;
+        }
+        this.modalRef?.hide();
+        this.tipoDescarga = '';
+    }
 
     private manejarErrorDescarga(error: any): void {
         // Si el error viene como Blob (JSON convertido a Blob), leerlo y mostrar el mensaje
@@ -184,6 +232,53 @@ export class ConsumidorFinalComponent implements OnInit {
           }
         );
       }
+
+    public descargarDTEsPdfZip(): void {
+        this.downloading = true;
+        this.filtros.typeDTE = '01';
+        this.apiService.export('libro-iva/consumidores/descargar-dttes-pdf', this.filtros, 900000).subscribe(
+            (data: Blob) => {
+                if (data.type === 'text/plain') {
+                    data.text().then((errorMessage: string) => {
+                        this.alertService.error(errorMessage);
+                    });
+                    this.downloading = false;
+                    return;
+                }
+                if (data.size === 0) {
+                    this.alertService.error('El archivo descargado está vacío');
+                    this.downloading = false;
+                    return;
+                }
+                const fechaInicio = this.filtros.inicio.replace(/-/g, '');
+                const fechaFin = this.filtros.fin.replace(/-/g, '');
+                const prefijo = this.filtros.estado_json === 'anulados' ? 'DTEs_PDF_anulados_' : 'DTEs_PDF_';
+                const filename = `${prefijo}${fechaInicio}_${fechaFin}.zip`;
+                const url = window.URL.createObjectURL(data);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+                this.downloading = false;
+                this.alertService.success('Éxito', 'Archivo ZIP con PDFs descargado correctamente');
+            },
+            (error: any) => {
+                if (error.error instanceof Blob && error.error.type === 'text/plain') {
+                    error.error.text().then((errorMessage: string) => {
+                        this.alertService.error(errorMessage);
+                    });
+                } else {
+                    this.alertService.error(error.message || 'Error desconocido');
+                }
+                this.downloading = false;
+            }
+        );
+    }
 
       public descargarLibroPDF(): void {
         this.filtros.formato = 'pdf';

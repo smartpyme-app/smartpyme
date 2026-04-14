@@ -20,6 +20,8 @@ export class ContribuyentesComponent implements OnInit {
     public downloading:boolean = false;
     public filtros:any = {};
     modalRef!: BsModalRef;
+    /** Valor del select en el modal de descargas */
+    public tipoDescarga: string = '';
 
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
@@ -79,7 +81,67 @@ export class ContribuyentesComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
-    } 
+    }
+
+    public openDescargasModal(template: TemplateRef<any>): void {
+        this.tipoDescarga = '';
+        this.modalRef = this.modalService.show(template, {
+            class: 'modal-md',
+            backdrop: true,
+            ignoreBackdropClick: false,
+        });
+    }
+
+    public cerrarModalDescargas(): void {
+        this.modalRef?.hide();
+        this.tipoDescarga = '';
+    }
+
+    /** Opciones ZIP/JSON de declaración MH (mensaje de ayuda en el modal). */
+    public esDescargaZipDeclaracion(tipo: string): boolean {
+        return ['dtes_zip', 'dtes_pdf_zip', 'notas_credito', 'notas_debito'].indexOf(tipo) !== -1;
+    }
+
+    public ejecutarDescargaSeleccionada(): void {
+        if (!this.tipoDescarga) {
+            this.alertService.warning('Seleccione un tipo', 'Elija una opción en el listado.');
+            return;
+        }
+        switch (this.tipoDescarga) {
+            case 'libro_excel':
+                this.descargarLibro();
+                break;
+            case 'libro_pdf':
+                this.descargarLibroPDF();
+                break;
+            case 'anexo_csv':
+                this.descargarAnexo();
+                break;
+            case 'retencion_excel':
+                this.descargarLibroRetencion();
+                break;
+            case 'anexo_retencion_csv':
+                this.descargarAnexoRetencion();
+                break;
+            case 'dtes_zip':
+                this.descargarDTECreditoFiscal();
+                break;
+            case 'dtes_pdf_zip':
+                this.descargarDTEsPdfZip();
+                break;
+            case 'notas_credito':
+                this.descargarNotasCredito();
+                break;
+            case 'notas_debito':
+                this.descargarNotasDebito();
+                break;
+            default:
+                this.alertService.warning('Opción no válida', 'Seleccione otra opción.');
+                return;
+        }
+        this.modalRef?.hide();
+        this.tipoDescarga = '';
+    }
 
     private manejarErrorDescarga(error: any): void {
         if (error.error instanceof Blob) {
@@ -270,6 +332,58 @@ export class ContribuyentesComponent implements OnInit {
               }
               this.downloading = false;
           }
+      );
+  }
+
+  public descargarDTEsPdfZip(): void {
+    this.downloading = true;
+    this.filtros.typeDTE = '03';
+    this.apiService
+      .export('libro-iva/contribuyentes/descargar-dttes-pdf', this.filtros, 900000)
+      .subscribe(
+        (data: Blob) => {
+          if (data.type === 'text/plain') {
+            data.text().then((errorMessage: string) => {
+              this.alertService.error(errorMessage);
+              this.downloading = false;
+            });
+            return;
+          }
+          if (data.size === 0) {
+            this.alertService.error('El archivo descargado está vacío');
+            this.downloading = false;
+            return;
+          }
+          const fechaInicio = this.filtros.inicio.replace(/-/g, '');
+          const fechaFin = this.filtros.fin.replace(/-/g, '');
+          const prefijo =
+            this.filtros.estado_json === 'anulados'
+              ? 'DTEs_PDF_anulados_'
+              : 'DTEs_PDF_';
+          const filename = `${prefijo}${fechaInicio}_${fechaFin}.zip`;
+          const url = window.URL.createObjectURL(data);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+          this.downloading = false;
+          this.alertService.success('Éxito', 'Archivo ZIP con PDFs descargado correctamente');
+        },
+        (error: any) => {
+          if (error.error instanceof Blob) {
+            error.error.text().then((errorMessage: string) => {
+              this.alertService.error(errorMessage || 'Error al descargar');
+            });
+          } else {
+            this.alertService.error(error.message || 'Error desconocido');
+          }
+          this.downloading = false;
+        }
       );
   }
 

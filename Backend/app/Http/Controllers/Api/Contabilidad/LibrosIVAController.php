@@ -21,6 +21,7 @@ use App\Exports\Contabilidad\AnexoSujetosExcluidosExport;
 use App\Exports\Contabilidad\LibroComprasExport;
 use App\Exports\Contabilidad\AnexoComprasExport;
 use App\Exports\Contabilidad\GlobalDttesExport;
+use App\Exports\Contabilidad\GlobalDttesPdfExport;
 use App\Exports\Contabilidad\NotasCreditoDebitoExport;
 use App\Exports\Contabilidad\LibroRetencion1Export;
 use App\Exports\Contabilidad\AnexoRetencion1Export;
@@ -946,6 +947,57 @@ class LibrosIVAController extends Controller
             Log::error('Excepción al exportar DTEs: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
             
+            return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
+                ->header('Content-Type', 'text/plain');
+        }
+    }
+
+    /**
+     * ZIP con un PDF por DTE (mismos filtros que descargar-dttes JSON).
+     */
+    public function exportGlobalDttesPdf(Request $request)
+    {
+        try {
+            @set_time_limit(0);
+
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            $export = new GlobalDttesPdfExport();
+            $export->filter($request);
+            $result = $export->generateZip();
+
+            if (!$result['success']) {
+                Log::error('Error al generar ZIP PDF DTEs: ' . $result['message']);
+
+                return response($result['message'], 400)
+                    ->header('Content-Type', 'text/plain');
+            }
+
+            $filePath = storage_path('app/' . $result['path']);
+
+            if (!file_exists($filePath)) {
+                Log::error('Archivo ZIP PDF no encontrado: ' . $filePath);
+
+                return response('Archivo no encontrado', 404)
+                    ->header('Content-Type', 'text/plain');
+            }
+
+            $fileContent = file_get_contents($filePath);
+            @unlink($filePath);
+
+            return response($fileContent, 200)
+                ->header('Content-Type', 'application/zip')
+                ->header('Content-Disposition', 'attachment; filename="' . $result['filename'] . '"')
+                ->header('Content-Length', strlen($fileContent))
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
+        } catch (\Exception $e) {
+            Log::error('Excepción al exportar DTEs PDF: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
             return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
                 ->header('Content-Type', 'text/plain');
         }
