@@ -539,7 +539,7 @@
   </div>
   <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
     <p class="text-muted small">
-      Agregue hasta {{ maxBulkJsonFiles }} archivos DTE. Cada pestaña pasa a <strong>Listo para procesar</strong> cuando no quedan productos por vincular. Revise proveedor (puede <strong>crear proveedor</strong>), bodega y detalle; los <strong>lotes</strong> no se leen del JSON: si un producto es por lotes, use el botón de lote en la tabla para elegir o crear lote. Guarde cada compra o use <strong>Guardar todas las listas</strong> cuando todas las pestañas estén listas.
+      Agregue hasta {{ maxBulkJsonFiles }} archivos DTE. Cada pestaña pasa a <strong>Listo para procesar</strong> cuando no quedan ítems por vincular. Revise proveedor (puede <strong>crear proveedor</strong>), bodega y detalle; con el botón <strong>+</strong> del detalle puede <strong>crear producto o servicio</strong> (elija el tipo en el formulario). Los <strong>lotes</strong> no se leen del JSON: si un producto es por lotes, use el botón de lote en la tabla para elegir o crear lote. Guarde cada compra o use <strong>Guardar todas las listas</strong> cuando todas las pestañas estén listas.
     </p>
     <div class="mb-3 d-flex flex-wrap align-items-center gap-2">
       <input
@@ -651,14 +651,14 @@
 
           <div *ngIf="item.noEncontrados?.length" class="border rounded p-3 mb-3 bg-light mt-3">
             <h6 class="text-warning small mb-2">
-              <i class="fa fa-exclamation-triangle"></i> Productos sin coincidencia automática ({{ item.noEncontrados.length }})
+              <i class="fa fa-exclamation-triangle"></i> Productos o servicios sin coincidencia automática ({{ item.noEncontrados.length }})
             </h6>
             <div class="table-responsive">
               <table class="table table-sm mb-2">
                 <thead>
                   <tr>
                     <th>Descripción DTE</th>
-                    <th style="min-width: 220px;">Producto en sistema</th>
+                    <th style="min-width: 220px;">Producto o servicio en sistema</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -672,7 +672,7 @@
                         [loading]="bulkSearchLoading"
                         [name]="'bulk-p-' + item.uid + '-' + row.numItem"
                         bindLabel="nombre"
-                        placeholder="Buscar producto…"
+                        placeholder="Buscar producto o servicio…"
                         [compareWith]="compareProductosBulk">
                         <ng-option *ngFor="let pr of bulkSearchResults" [value]="pr">{{ pr.nombre }}</ng-option>
                       </ng-select>

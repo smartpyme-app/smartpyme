@@ -62,7 +62,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
     public bulkGuardandoTodas = false;
     public impuestosCompra: any[] = [];
     public bodegasBulk: any[] = [];
-    public readonly maxBulkJsonFiles = 10; // este es el limite de archivos que se pueden cargar
+    public readonly maxBulkJsonFiles = 20; // este es el limite de archivos que se pueden cargar
     /** Documentos de venta filtrados para compras (correlativo por tipo y sucursal) */
     public documentosBulk: any[] = [];
     public bulkSearchProductos$ = new Subject<string>();
