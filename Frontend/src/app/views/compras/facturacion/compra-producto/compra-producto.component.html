@@ -42,7 +42,7 @@
         <!-- <button type="button" class="btn btn-default" tooltip="Crear producto" (click)="crearProducto(createProductModal)">
             <i class="fa fa-plus"></i>
         </button> -->
-        <app-crear-producto (update)="onProductoCreated($event)"></app-crear-producto>
+        <app-crear-producto [permitirElegirTipo]="true" (update)="onProductoCreated($event)"></app-crear-producto>
     </div>
 </div>
 
@@ -191,6 +191,6 @@
         <button type="button" class="btn-close" (click)="modalCreateProductRef.hide(); alertService.modal = false;" aria-label="Close"></button>
     </div>
     <div class="modal-body">
-        <app-crear-producto (update)="onProductoCreated($event)"></app-crear-producto>
+        <app-crear-producto [permitirElegirTipo]="true" (update)="onProductoCreated($event)"></app-crear-producto>
     </div>
 </ng-template>

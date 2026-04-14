@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
@@ -13,7 +13,14 @@ import * as moment from 'moment';
 @Component({
   selector: 'app-facturacion-compra',
   templateUrl: './facturacion-compra.component.html',
-  providers: [ SumPipe ]
+  providers: [ SumPipe ],
+  styles: [`
+    .ajuste-tabs-json {
+      overflow-x: auto;
+      overflow-y: hidden;
+      flex-wrap: nowrap;
+    }
+  `],
 })
 
 export class FacturacionCompraComponent implements OnInit {
@@ -36,8 +43,12 @@ export class FacturacionCompraComponent implements OnInit {
     public facturarCotizacion = false;
     public imprimir:boolean = false;
     public jsonContent: string = '';
+    /** Etiqueta para el bloque de conciliación (nombre de archivo o texto pegado). */
+    public jsonImportEtiqueta = 'DTE importado';
     public processingJson: boolean = false;
-    public productosNoEncontrados: any[] = [];
+    /** Bloques de productos sin match, uno por cada JSON que requiera conciliación. */
+    public ajusteBloques: { etiqueta: string; items: any[] }[] = [];
+    public ajusteTabActivo = 0;
     public modalProductos!: BsModalRef;
     public productosEncontrados: any[] = []; // Cache de productos ya encontrados
     public buscandoProductos: boolean = false;
@@ -53,6 +64,9 @@ export class FacturacionCompraComponent implements OnInit {
     public nuevoProducto: any = {};
     public creandoProducto: boolean = false;
     public categorias: any[] = [];
+    /** Mensajes de validación o error API solo dentro del modal crear producto */
+    public crearProductoAlerta: string | null = null;
+    public crearProductoAlertaTipo: 'danger' | 'warning' | 'info' = 'danger';
 
     
     modalRef!: BsModalRef;
@@ -66,6 +80,9 @@ export class FacturacionCompraComponent implements OnInit {
     
     @ViewChild('productosAjuste')
     public productosAjusteTemplate!: TemplateRef<any>;
+
+    @ViewChild('jsonFileInput')
+    public jsonFileInput?: ElementRef<HTMLInputElement>;
     
 
     
@@ -546,45 +563,178 @@ export class FacturacionCompraComponent implements OnInit {
 
     openJsonImport(template: TemplateRef<any>) {
         this.jsonContent = '';
+        this.jsonImportEtiqueta = 'DTE importado';
+        setTimeout(() => {
+            if (this.jsonFileInput?.nativeElement) {
+                this.jsonFileInput.nativeElement.value = '';
+            }
+        });
         this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
     }
 
-      /**
-     * Maneja la selección de archivo JSON
-     */
-    handleFileInput(event: any) {
-        const file = event.target.files[0];
-        if (file) {
+    /** Un solo archivo: carga el contenido en jsonContent y guarda etiqueta para conciliación. */
+    handleFileInput(event: Event) {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        if (!file) {
+            return;
+        }
+        this.jsonImportEtiqueta = file.name;
         const reader = new FileReader();
-        reader.onload = (e: any) => {
-            this.jsonContent = e.target.result;
+        reader.onload = (e: ProgressEvent<FileReader>) => {
+            this.jsonContent = String(e.target?.result ?? '');
         };
         reader.readAsText(file);
+    }
+
+    tieneFuentesJsonImport(): boolean {
+        return !!this.jsonContent.trim();
+    }
+
+    async processJsonData() {
+        this.processingJson = true;
+
+        try {
+            const texto = this.jsonContent.trim();
+            if (!texto) {
+                this.alertService.warning('Sin datos', 'Seleccione un archivo JSON o pegue el contenido.');
+                return;
+            }
+
+            let data: any;
+            try {
+                data = JSON.parse(texto);
+            } catch (e) {
+                this.alertService.error('JSON inválido: revise el formato del archivo o del texto pegado.');
+                return;
+            }
+            if (!data?.identificacion) {
+                this.alertService.error(
+                    'Formato incorrecto: el JSON no contiene la estructura esperada de DTE (identificacion).'
+                );
+                return;
+            }
+
+            const etiqueta =
+                this.jsonImportEtiqueta && this.jsonImportEtiqueta !== 'DTE importado'
+                    ? this.jsonImportEtiqueta
+                    : 'Contenido pegado';
+
+            await this.importarUnDocumentoDte(data, etiqueta);
+
+            this.modalRef?.hide();
+            this.jsonContent = '';
+            if (this.jsonFileInput?.nativeElement) {
+                this.jsonFileInput.nativeElement.value = '';
+            }
+            this.jsonImportEtiqueta = 'DTE importado';
+            if (!this.ajusteBloques.length) {
+                this.alertService.success('Datos importados', 'El documento JSON se importó correctamente.');
+            }
+        } catch (error) {
+            this.alertService.error('Error al procesar JSON: ' + error);
+        } finally {
+            this.processingJson = false;
         }
     }
 
-    processJsonData() {
-        this.processingJson = true;
-    
-        try {
-          // Parsear el JSON
-          const jsonData = JSON.parse(this.jsonContent);
-    
-          // Mapear los datos del JSON al modelo de Compra
-          this.mapJsonToCompra(jsonData);
-    
-          // Cerrar el modal y mostrar mensaje de éxito
-          this.modalRef?.hide();
-          this.alertService.success(
-            'Datos importados',
-            'Los datos del JSON han sido importados exitosamente.'
-          );
-        } catch (error) {
-          this.alertService.error('Error al procesar el JSON: ' + error);
-        } finally {
-          this.processingJson = false;
+    /** Importa un único DTE (compras: un JSON por operación). */
+    async importarUnDocumentoDte(data: any, etiqueta: string) {
+        this.compra.detalles = [];
+        this.ajusteBloques = [];
+        this.ajusteTabActivo = 0;
+
+        this.aplicarCabeceraPrimerDocumento(data);
+
+        const cuerpo = data.cuerpoDocumento;
+        if (cuerpo && cuerpo.length > 0) {
+            const res = await this.resolverLineasDte(cuerpo);
+            this.compra.detalles.push(...res.detalles);
+            if (res.noEncontrados.length > 0) {
+                this.ajusteBloques.push({ etiqueta, items: res.noEncontrados });
+            }
         }
-      }
+
+        if (this.ajusteBloques.length > 0) {
+            await this.cargarSugerenciasTodosLosBloques();
+            this.mostrarModalAjusteProductos();
+        } else {
+            this.sumTotal();
+        }
+    }
+
+    /** Cabecera, proveedor y totales iniciales (primer documento). */
+    aplicarCabeceraPrimerDocumento(jsonData: any) {
+        if (jsonData.identificacion.fecEmi) {
+            this.compra.fecha = jsonData.identificacion.fecEmi;
+        }
+
+        this.compra.id_usuario = this.apiService.auth_user().id;
+        this.compra.id_bodega = this.apiService.auth_user().id_bodega;
+
+        if (jsonData.identificacion.tipoDte) {
+            this.compra.tipo_documento =
+                this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
+        }
+
+        const documentoRow = (this.documentos || []).find(
+            (x: any) =>
+                x.nombre == this.compra.tipo_documento &&
+                x.id_sucursal == this.compra.id_sucursal
+        );
+        if (
+            documentoRow &&
+            documentoRow.correlativo != null &&
+            String(documentoRow.correlativo).trim() !== ''
+        ) {
+            this.compra.referencia = documentoRow.correlativo;
+        } else if (jsonData.identificacion.codigoGeneracion) {
+            this.compra.referencia = jsonData.identificacion.codigoGeneracion;
+        }
+        const codGen = jsonData.identificacion.codigoGeneracion;
+        if (codGen && documentoRow) {
+            const tag = `Código generación MH: ${codGen}`;
+            const obs = String(this.compra.observaciones || '');
+            if (!obs.includes(codGen)) {
+                this.compra.observaciones = obs ? `${obs}\n${tag}` : tag;
+            }
+        }
+
+        const proveedor = this.getProveedor(jsonData.emisor);
+        if (proveedor && proveedor.id) {
+            this.compra.id_proveedor = proveedor.id;
+        } else {
+            console.log('No se pudo asignar proveedor. Proveedor encontrado:', proveedor);
+        }
+
+        if (jsonData.resumen) {
+            this.compra.sub_total =
+                jsonData.resumen.subTotal || jsonData.resumen.subTotalVentas || 0;
+            this.compra.total =
+                jsonData.resumen.totalPagar || jsonData.resumen.montoTotalOperacion || 0;
+
+            if (jsonData.resumen.tributos) {
+                const iva = jsonData.resumen.tributos.find((t: any) => t.codigo === '20');
+                if (iva) {
+                    this.compra.iva = iva.valor;
+                    this.compra.cobrar_impuestos = true;
+                }
+            }
+
+            const percepcion = parseFloat(jsonData.resumen.ivaPerci1) || 0;
+            if (percepcion > 0) {
+                this.compra.percepcion = percepcion;
+                this.compra.cobrar_percepcion = true;
+                const sello =
+                    jsonData.selloRecibido ||
+                    jsonData.sello ||
+                    (jsonData.documento && jsonData.documento.selloRecibido);
+                if (sello) {
+                    this.compra.sello_mh = sello;
+                }
+            }
+        }
+    }
 
       getTipoDocumento(tipoDte: string) {
         const tiposDte = {
@@ -706,128 +856,141 @@ export class FacturacionCompraComponent implements OnInit {
         return proveedor;
       }
 
-      async procesarProductosDTE(cuerpoDocumento: any[]) {
-        this.compra.detalles = [];
-        this.productosNoEncontrados = [];
+    /**
+     * Resuelve líneas de un solo cuerpoDocumento (sin vaciar compra.detalles).
+     */
+    async resolverLineasDte(cuerpoDocumento: any[]): Promise<{
+        detalles: any[];
+        noEncontrados: any[];
+        todosEncontrados: boolean;
+    }> {
+        const detalles: any[] = [];
+        const noEncontrados: any[] = [];
         this.buscandoProductos = true;
-        
+
+        const idEmpresa = this.apiService.auth_user().id_empresa;
+        const items = cuerpoDocumento.map((item: any) => ({
+            numItem: item.numItem,
+            codigo: item.codigo,
+            descripcion: item.descripcion,
+        }));
+
         let todosEncontrados = true;
-    
-        // Procesar cada item de forma secuencial para evitar sobrecarga
-        for (const item of cuerpoDocumento) {
-            try {
-                const productoEncontrado = await this.buscarProductoOptimizado(item.codigo, item.descripcion);
-    
+
+        try {
+            const res: any = await this.apiService
+                .store('productos/resolver-importacion-dte', {
+                    id_empresa: idEmpresa,
+                    items,
+                })
+                .toPromise();
+
+            const resultados = Array.isArray(res?.resultados) ? res.resultados : [];
+
+            for (let i = 0; i < cuerpoDocumento.length; i++) {
+                const item = cuerpoDocumento[i];
+                const productoEncontrado =
+                    i < resultados.length ? resultados[i]?.producto ?? null : null;
+
                 if (productoEncontrado) {
-                    // Producto encontrado, agregar al detalle
-                    const detalle = this.crearDetalleDesdeItem(item, productoEncontrado);
-                    this.compra.detalles.push(detalle);
-                    // Guardar en cache
+                    detalles.push(this.crearDetalleDesdeItem(item, productoEncontrado));
                     this.productosEncontrados.push(productoEncontrado);
                 } else {
-                    // Producto no encontrado
-                    this.productosNoEncontrados.push({
+                    noEncontrados.push({
                         numItem: item.numItem,
                         codigo: item.codigo,
                         descripcion: item.descripcion,
                         cantidad: item.cantidad,
                         precioUni: item.precioUni,
                         productoSeleccionado: null,
-                        sugerencias: [] // Para almacenar sugerencias de búsqueda
+                        sugerencias: [],
                     });
                     todosEncontrados = false;
                 }
-            } catch (error) {
-                console.error('Error buscando producto:', error);
-                todosEncontrados = false;
             }
-        }
-    
-        this.buscandoProductos = false;
-    
-        if (!todosEncontrados) {
-            // Cargar sugerencias para productos no encontrados
-            await this.cargarSugerenciasProductos();
-            this.mostrarModalAjusteProductos();
-        } else {
-            this.sumTotal();
-            this.alertService.success('Productos importados', 'Todos los productos fueron reconocidos automáticamente.');
-        }
-    }
-
-    async buscarProductoOptimizado(codigo: string, descripcion: string): Promise<any> {
-        // Primero verificar cache local
-        const enCache = this.productosEncontrados.find(p => 
-            p.cod_proveed_prod === codigo || 
-            (p.nombre && descripcion && p.nombre.toLowerCase().includes(descripcion.toLowerCase()))
-        );
-        
-        if (enCache) return enCache;
-    
-        try {
-            // Búsqueda por código de proveedor
-            if (codigo) {
-                const porCodigo = await this.buscarPorCodigoProveedor(codigo).toPromise();
-                if (porCodigo && porCodigo.length > 0) {
-                    return porCodigo[0];
-                }
-            }
-    
-            // Búsqueda por nombre si no se encontró por código
-            if (descripcion) {
-                const porNombre = await this.buscarPorNombre(descripcion).toPromise();
-                if (porNombre && porNombre.length > 0) {
-                    return porNombre[0];
-                }
-            }
-    
-            return null;
         } catch (error) {
-            console.error('Error en búsqueda optimizada:', error);
-            return null;
-        }
-    }
-
-    buscarPorCodigoProveedor(codigo: string) {
-        return this.apiService.store('productos/buscar-por-codigo-proveedor', { 
-            cod_proveed_prod: codigo,
-            id_empresa: this.apiService.auth_user().id_empresa 
-        });
-    }
-    
-    // Servicio para buscar por nombre específico
-    buscarPorNombre(nombre: string) {
-        return this.apiService.store('productos/buscar-por-nombre', { 
-            nombre: nombre,
-            id_empresa: this.apiService.auth_user().id_empresa,
-            limite: 5 // Limitar resultados para performance
-        });
-    }
-
-    async cargarSugerenciasProductos() {
-        for (const item of this.productosNoEncontrados) {
-            try {
-                // Búsqueda amplia para sugerencias
-                const sugerencias = await this.buscarSugerencias(item.descripcion).toPromise();
-                item.sugerencias = sugerencias || [];
-            } catch (error) {
-                console.error('Error cargando sugerencias para:', item.descripcion, error);
-                item.sugerencias = [];
+            console.error('Error resolviendo productos del JSON:', error);
+            todosEncontrados = false;
+            this.alertService.error(
+                'No se pudieron resolver productos de un documento. Revise su conexión o intente de nuevo.'
+            );
+            for (const item of cuerpoDocumento) {
+                noEncontrados.push({
+                    numItem: item.numItem,
+                    codigo: item.codigo,
+                    descripcion: item.descripcion,
+                    cantidad: item.cantidad,
+                    precioUni: item.precioUni,
+                    productoSeleccionado: null,
+                    sugerencias: [],
+                });
             }
+        } finally {
+            this.buscandoProductos = false;
+        }
+
+        return { detalles, noEncontrados, todosEncontrados };
+    }
+
+    async cargarSugerenciasTodosLosBloques() {
+        for (const bloque of this.ajusteBloques) {
+            await this.cargarSugerenciasParaItems(bloque.items);
         }
     }
 
-    buscarSugerencias(termino: string) {
-        // Dividir el término en palabras y buscar coincidencias parciales
-        const palabras = termino.toLowerCase().split(' ').filter(p => p.length > 2);
-        const terminoBusqueda = palabras.join(' ');
-    
-        return this.apiService.store('productos/buscar-sugerencias', {
-            termino: terminoBusqueda,
-            palabras: palabras,
-            id_empresa: this.apiService.auth_user().id_empresa,
-            limite: 10
+    async cargarSugerenciasParaItems(items: any[]) {
+        const consultas: { termino: string; palabras: string[] }[] = [];
+        const indicesValidos: number[] = [];
+
+        items.forEach((item, index) => {
+            const descripcion = (item.descripcion || '').trim();
+            const palabras = descripcion
+                .toLowerCase()
+                .split(' ')
+                .filter((p: string) => p.length > 2);
+            let terminoBusqueda = palabras.join(' ');
+            if (terminoBusqueda.length < 2 && descripcion.length >= 2) {
+                terminoBusqueda = descripcion;
+            }
+            if (terminoBusqueda.length >= 2) {
+                consultas.push({ termino: terminoBusqueda, palabras });
+                indicesValidos.push(index);
+            }
         });
+
+        items.forEach((item) => {
+            item.sugerencias = [];
+        });
+
+        if (consultas.length === 0) {
+            return;
+        }
+
+        try {
+            const res: any = await this.apiService
+                .store('productos/buscar-sugerencias-lote', {
+                    id_empresa: this.apiService.auth_user().id_empresa,
+                    consultas,
+                    limite: 10,
+                })
+                .toPromise();
+
+            const resultados = Array.isArray(res?.resultados) ? res.resultados : [];
+            indicesValidos.forEach((idxOriginal, i) => {
+                items[idxOriginal].sugerencias = resultados[i] || [];
+            });
+        } catch (error) {
+            console.error('Error cargando sugerencias en lote:', error);
+        }
+    }
+
+    get itemsAjusteTabActiva(): any[] {
+        const b = this.ajusteBloques[this.ajusteTabActivo];
+        return b ? b.items : [];
+    }
+
+    get totalItemsConciliacion(): number {
+        return this.ajusteBloques.reduce((n, bloque) => n + bloque.items.length, 0);
     }
 
     buscarProductosModal(termino: string) {
@@ -878,43 +1041,53 @@ export class FacturacionCompraComponent implements OnInit {
 
     async confirmarAjusteProductos() {
         let todosAsignados = true;
-    
-        this.productosNoEncontrados.forEach((itemNoEncontrado: any) => {
-            if (itemNoEncontrado.productoSeleccionado && itemNoEncontrado.productoSeleccionado.id) {
-                const detalle = this.crearDetalleDesdeItem(itemNoEncontrado, itemNoEncontrado.productoSeleccionado);
-                this.compra.detalles.push(detalle);
-                // Agregar al cache para futuras búsquedas
-                this.productosEncontrados.push(itemNoEncontrado.productoSeleccionado);
-            } else {
-                todosAsignados = false;
+
+        for (const bloque of this.ajusteBloques) {
+            for (const itemNoEncontrado of bloque.items) {
+                if (
+                    itemNoEncontrado.productoSeleccionado &&
+                    itemNoEncontrado.productoSeleccionado.id
+                ) {
+                    const detalle = this.crearDetalleDesdeItem(
+                        itemNoEncontrado,
+                        itemNoEncontrado.productoSeleccionado
+                    );
+                    this.compra.detalles.push(detalle);
+                    this.productosEncontrados.push(itemNoEncontrado.productoSeleccionado);
+                } else {
+                    todosAsignados = false;
+                }
             }
-        });
-    
+        }
+
         if (!todosAsignados) {
-            this.alertService.error('Por favor, seleccione un producto para todos los items no encontrados.');
+            this.alertService.error(
+                'Por favor, seleccione un producto para todos los items pendientes en cada documento.'
+            );
             return;
         }
-    
-        // Cerrar modal y recalcular
+
         this.modalProductos.hide();
-        this.productosNoEncontrados = [];
+        this.ajusteBloques = [];
+        this.ajusteTabActivo = 0;
         this.sumTotal();
-        
+
         this.alertService.success('Productos asignados', 'Los productos han sido asignados correctamente.');
     }
 
     mostrarModalAjusteProductos() {
+        this.ajusteTabActivo = 0;
         this.modalProductos = this.modalService.show(this.productosAjusteTemplate, {
-            class: 'modal-xl', // Modal más grande para mejor visualización
-            backdrop: 'static'
+            class: 'modal-xl',
+            backdrop: 'static',
         });
     }
-    
-    // Cancelar ajuste
+
     cancelarAjusteProductos() {
         this.modalProductos.hide();
-        this.productosNoEncontrados = [];
-        
+        this.ajusteBloques = [];
+        this.ajusteTabActivo = 0;
+
         // Limpiar los totales ya que se cancela la importación
         this.compra.detalles = [];
         this.compra.sub_total = 0;
@@ -929,11 +1102,11 @@ export class FacturacionCompraComponent implements OnInit {
         this.alertService.warning('Importación cancelada', 'La importación de productos ha sido cancelada.');
     }
 
-    // Abrir ajuste manual
     abrirAjusteManual() {
         this.modalProductos.hide();
-        this.productosNoEncontrados = [];
-        
+        this.ajusteBloques = [];
+        this.ajusteTabActivo = 0;
+
         // Limpiar los totales ya que se cancela la importación
         this.compra.detalles = [];
         this.compra.sub_total = 0;
@@ -948,28 +1121,24 @@ export class FacturacionCompraComponent implements OnInit {
         this.alertService.info('Ajuste manual', 'Puede agregar productos manualmente usando el botón "Agregar Producto" en la parte superior.');
     }
     
-    // Métodos helper
     getProductosAsignados(): number {
-        const asignados = this.productosNoEncontrados.filter(item => {
-            const tieneProducto = item.productoSeleccionado && item.productoSeleccionado.id;
-            // console.log(`Item ${item.numItem}:`, {
-            //     productoSeleccionado: item.productoSeleccionado,
-            //     tieneId: item.productoSeleccionado?.id,
-            //     asignado: tieneProducto
-            // });
-            return tieneProducto;
-        }).length;
-        // console.log('Total asignados:', asignados);
-        return asignados;
+        let n = 0;
+        for (const bloque of this.ajusteBloques) {
+            n += bloque.items.filter(
+                (item) => item.productoSeleccionado && item.productoSeleccionado.id
+            ).length;
+        }
+        return n;
     }
-    
+
     getProductosPendientes(): number {
-        const pendientes = this.productosNoEncontrados.filter(item => {
-            const noTieneProducto = !item.productoSeleccionado || !item.productoSeleccionado.id;
-            return noTieneProducto;
-        }).length;
-        // console.log('Total pendientes:', pendientes);
-        return pendientes;
+        let n = 0;
+        for (const bloque of this.ajusteBloques) {
+            n += bloque.items.filter(
+                (item) => !item.productoSeleccionado || !item.productoSeleccionado.id
+            ).length;
+        }
+        return n;
     }
 
     // Método para comparar productos en ng-select
@@ -988,65 +1157,6 @@ export class FacturacionCompraComponent implements OnInit {
         }, 0);
     }
     
-    // Método para actualizar mapJsonToCompra con la nueva lógica
-    mapJsonToCompra(jsonData: any) {
-        if (jsonData.identificacion.fecEmi) {
-            this.compra.fecha = jsonData.identificacion.fecEmi;
-        }
-    
-        this.compra.id_usuario = this.apiService.auth_user().id;
-        this.compra.id_bodega = this.apiService.auth_user().id_bodega;
-    
-        if (jsonData.identificacion.tipoDte) {
-            this.compra.tipo_documento = this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
-        }
-    
-        // Ahora se asigna el  código de generación como numero de referencia
-        if (jsonData.identificacion.codigoGeneracion) {
-            this.compra.referencia = jsonData.identificacion.codigoGeneracion;
-        }
-    
-        let proveedor = this.getProveedor(jsonData.emisor);
-        if(proveedor && proveedor.id){
-            this.compra.id_proveedor = proveedor.id;
-            //console.log('Proveedor asignado:', proveedor.nombre_empresa || proveedor.nombre, 'ID:', proveedor.id);
-        } else {
-            console.log('No se pudo asignar proveedor. Proveedor encontrado:', proveedor);
-        }
-    
-        // Procesar totales del resumen
-        if (jsonData.resumen) {
-            this.compra.sub_total = jsonData.resumen.subTotal || jsonData.resumen.subTotalVentas || 0;
-            this.compra.total = jsonData.resumen.totalPagar || jsonData.resumen.montoTotalOperacion || 0;
-            
-            // Procesar IVA
-            if (jsonData.resumen.tributos) {
-                const iva = jsonData.resumen.tributos.find((t: any) => t.codigo === '20');
-                if (iva) {
-                    this.compra.iva = iva.valor;
-                    this.compra.cobrar_impuestos = true;
-                }
-            }
-
-            // Percepción (DTE.resumen.ivaPerci1): si trae percepción, asignar monto y sello a la compra
-            const percepcion = parseFloat(jsonData.resumen.ivaPerci1) || 0;
-            if (percepcion > 0) {
-                this.compra.percepcion = percepcion;
-                this.compra.cobrar_percepcion = true;
-                // Agregar el sello a la compra cuando el DTE tiene percepción
-                const sello = jsonData.selloRecibido || jsonData.sello || (jsonData.documento && jsonData.documento.selloRecibido);
-                if (sello) {
-                    this.compra.sello_mh = sello;
-                }
-            }
-        }
-    
-        // Procesar productos del cuerpoDocumento de forma optimizada
-        if (jsonData.cuerpoDocumento && jsonData.cuerpoDocumento.length > 0) {
-            this.procesarProductosDTE(jsonData.cuerpoDocumento);
-        }
-    }
-
     // Método para activar la búsqueda desde el template
     onSearchProducts(term: string) {
         this.searchProductos$.next(term);
@@ -1054,6 +1164,7 @@ export class FacturacionCompraComponent implements OnInit {
 
     // Métodos para crear productos nuevos
     openModalCrearProducto(template: TemplateRef<any>) {
+        this.crearProductoAlerta = null;
         this.nuevoProducto = {
             nombre: '',
             tipo: '',
@@ -1078,50 +1189,67 @@ export class FacturacionCompraComponent implements OnInit {
         this.modalCrearProducto = this.modalService.show(template, { class: 'modal-lg' });
     }
 
+    cerrarModalCrearProducto() {
+        this.crearProductoAlerta = null;
+        this.modalCrearProducto?.hide();
+    }
+
     cargarCategorias() {
         this.apiService.getAll('categorias/list').subscribe(
-            categorias => {
+            (categorias) => {
                 this.categorias = categorias;
             },
-            error => {
+            (error) => {
                 console.error('Error cargando categorías:', error);
-                this.alertService.error('Error cargando categorías');
+                this.crearProductoAlertaTipo = 'danger';
+                this.crearProductoAlerta =
+                    'No se pudieron cargar las categorías. Cierre el modal e intente de nuevo, o recargue la página.';
             }
         );
     }
 
-    crearProducto() {
-        // Debug: mostrar valores actuales
-        console.log('Valores del formulario:', {
-            nombre: this.nuevoProducto.nombre,
-            tipo: this.nuevoProducto.tipo,
-            costo: this.nuevoProducto.costo,
-            id_categoria: this.nuevoProducto.id_categoria
-        });
+    private mensajeErrorApiProducto(error: any): string {
+        if (error?.error?.error) {
+            return String(error.error.error);
+        }
+        if (error?.error?.message) {
+            return String(error.error.message);
+        }
+        if (typeof error?.error === 'string') {
+            return error.error;
+        }
+        if (error?.message) {
+            return String(error.message);
+        }
+        return 'No se pudo crear el producto. Intente de nuevo.';
+    }
 
-        // Validación más específica
-        const errores = [];
-        
+    crearProducto() {
+        this.crearProductoAlerta = null;
+
+        const errores: string[] = [];
+
         if (!this.nuevoProducto.nombre || this.nuevoProducto.nombre.trim() === '') {
             errores.push('Nombre');
         }
-        
+
         if (!this.nuevoProducto.tipo || this.nuevoProducto.tipo === '') {
             errores.push('Tipo');
         }
-        
+
         if (!this.apiService.isSupervisorLimitado()) {
             if (!this.nuevoProducto.costo || this.nuevoProducto.costo <= 0) {
                 errores.push('Costo');
             }
         }
-        
+
         if (!this.nuevoProducto.id_categoria || this.nuevoProducto.id_categoria === '') {
             errores.push('Categoría');
         }
 
         if (errores.length > 0) {
-            this.alertService.error(`Por favor, complete los campos obligatorios: ${errores.join(', ')}`);
+            this.crearProductoAlertaTipo = 'warning';
+            this.crearProductoAlerta = `Complete los campos obligatorios: ${errores.join(', ')}.`;
             return;
         }
 
@@ -1152,19 +1280,17 @@ export class FacturacionCompraComponent implements OnInit {
         // Crear el producto en el backend usando la ruta correcta
         this.apiService.store('producto', datosProducto).subscribe(
             (productoCreado: any) => {
-                // NO agregar automáticamente al DTE
-                // El producto solo estará disponible para asignar en la consolidación
-                
-                // Cerrar el modal
+                this.crearProductoAlerta = null;
                 this.modalCrearProducto.hide();
-                
-                // Mostrar mensaje de éxito
-                this.alertService.success('Producto creado', 'El producto ha sido creado exitosamente. Estará disponible para asignar en la consolidación.');
-                
+                this.alertService.success(
+                    'Producto creado',
+                    'El producto ha sido creado exitosamente. Estará disponible para asignar en la consolidación.'
+                );
                 this.creandoProducto = false;
             },
             (error) => {
-                this.alertService.error('Error al crear el producto: ' + error);
+                this.crearProductoAlertaTipo = 'danger';
+                this.crearProductoAlerta = this.mensajeErrorApiProducto(error);
                 this.creandoProducto = false;
             }
         );

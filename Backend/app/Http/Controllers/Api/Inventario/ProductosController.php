@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Exports\ShopifyExport;
+use App\Services\Inventario\ProductoImportacionDteService;
 use App\Services\ShopifyTransformer;
 use App\Services\ImpuestosService;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -40,9 +41,15 @@ class ProductosController extends Controller
 {
     protected $shopifyTransformer;
 
-    public function __construct(ShopifyTransformer $shopifyTransformer)
-    {
+    /** @var ProductoImportacionDteService */
+    protected $productoImportacionDteService;
+
+    public function __construct(
+        ShopifyTransformer $shopifyTransformer,
+        ProductoImportacionDteService $productoImportacionDteService
+    ) {
         $this->shopifyTransformer = $shopifyTransformer;
+        $this->productoImportacionDteService = $productoImportacionDteService;
     }
 
     public function index(Request $request)
@@ -1107,6 +1114,51 @@ class ProductosController extends Controller
     }
 
     /**
+     * Resuelve en bloque productos del DTE (código proveedor + fallback por nombre).
+     * Una sola petición HTTP en lugar de N llamadas por ítem.
+     */
+    public function resolverProductosImportacionDte(Request $request)
+    {
+        $request->validate([
+            'id_empresa' => 'required|integer',
+            'items' => 'required|array|min:1|max:500',
+            'items.*.codigo' => 'nullable|string',
+            'items.*.descripcion' => 'nullable|string',
+            'items.*.numItem' => 'nullable',
+        ]);
+
+        $resultados = $this->productoImportacionDteService->resolverImportacionDte(
+            (int) $request->id_empresa,
+            $request->items
+        );
+
+        return response()->json(['resultados' => $resultados], 200);
+    }
+
+    /**
+     * Sugerencias para varias consultas en una sola petición (mismo orden que consultas).
+     */
+    public function buscarSugerenciasLote(Request $request)
+    {
+        $request->validate([
+            'id_empresa' => 'required|integer',
+            'consultas' => 'required|array|min:1|max:200',
+            'consultas.*.termino' => 'required|string|min:2',
+            'consultas.*.palabras' => 'nullable|array',
+            'limite' => 'nullable|integer|max:20',
+        ]);
+
+        $limite = $request->limite ?? 10;
+        $resultados = $this->productoImportacionDteService->sugerenciasLote(
+            (int) $request->id_empresa,
+            $request->consultas,
+            $limite
+        );
+
+        return response()->json(['resultados' => $resultados], 200);
+    }
+
+    /**
      * Búsqueda por código de proveedor
      */
     public function buscarPorCodigoProveedor(Request $request)
@@ -1140,23 +1192,11 @@ class ProductosController extends Controller
         ]);
 
         $limite = $request->limite ?? 5;
-
-        $empresa = Empresa::find($request->id_empresa);
-        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-
-        $productos = Producto::where('enable', true)
-            ->where('id_empresa', $request->id_empresa)
-            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->with(['inventarios', 'precios'])
-            ->where(function ($q) use ($request, $incluirComponenteQuimico) {
-                $q->where('nombre', 'like', "%{$request->nombre}%");
-                if ($incluirComponenteQuimico) {
-                    $q->orWhere('componente_quimico', 'like', "%{$request->nombre}%");
-                }
-            })
-            ->orderBy('nombre', 'asc')
-            ->take($limite)
-            ->get();
+        $productos = $this->productoImportacionDteService->productosPorNombreFuzzy(
+            (int) $request->id_empresa,
+            $request->nombre,
+            $limite
+        );
 
         return response()->json($productos, 200);
     }
@@ -1174,49 +1214,12 @@ class ProductosController extends Controller
         ]);
 
         $limite = $request->limite ?? 10;
-        $termino = $request->termino;
-        $palabras = $request->palabras ?? [];
-
-        $empresa = Empresa::find($request->id_empresa);
-        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-
-        $query = Producto::where('enable', true)
-            ->where('id_empresa', $request->id_empresa)
-            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->with(['inventarios', 'lotes', 'precios']);
-
-        // Búsqueda principal por término completo
-        $query->where(function ($q) use ($termino, $incluirComponenteQuimico) {
-            $q->where('nombre', 'like', "%$termino%")
-                ->orWhere('codigo', 'like', "%$termino%")
-                ->orWhere('barcode', 'like', "%$termino%")
-                ->orWhere('etiquetas', 'like', "%$termino%")
-                ->orWhere('marca', 'like', "%$termino%")
-                ->orWhere('descripcion', 'like', "%$termino%");
-            if ($incluirComponenteQuimico) {
-                $q->orWhere('componente_quimico', 'like', "%$termino%");
-            }
-        });
-
-        // Si hay palabras específicas, buscar también por ellas
-        if (!empty($palabras)) {
-            $query->orWhere(function ($q) use ($palabras, $incluirComponenteQuimico) {
-                foreach ($palabras as $palabra) {
-                    if (strlen($palabra) > 2) {
-                        $q->orWhere('nombre', 'like', "%$palabra%")
-                            ->orWhere('descripcion', 'like', "%$palabra%")
-                            ->orWhere('etiquetas', 'like', "%$palabra%");
-                        if ($incluirComponenteQuimico) {
-                            $q->orWhere('componente_quimico', 'like', "%$palabra%");
-                        }
-                    }
-                }
-            });
-        }
-
-        $productos = $query->orderBy('nombre', 'asc')
-            ->take($limite)
-            ->get();
+        $productos = $this->productoImportacionDteService->productosSugerencias(
+            (int) $request->id_empresa,
+            $request->termino,
+            $request->palabras ?? [],
+            $limite
+        );
 
         return response()->json($productos, 200);
     }

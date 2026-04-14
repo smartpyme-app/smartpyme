@@ -167,3 +167,8 @@ a.fc-col-header-cell-cushion{
     min-width:180px;
     max-width:180px;
   }
+
+/* ng-select: el panel se pinta en body (appendTo) y debe quedar por encima de modales Bootstrap / ngx-bootstrap */
+.ng-dropdown-panel {
+  z-index: 10600 !important;
+}
