@@ -768,7 +768,7 @@ class DocumentationController extends Controller
                     "post" => [
                         "tags" => ["Paquetes"],
                         "summary" => "Importar paquetes en lote",
-                        "description" => "Crea paquetes en estado \"En bodega\" (misma lógica que la importación por Excel). Por cada ítem debe enviarse **id_sucursal** o **sucursal** (nombre exacto en base de datos, sin distinguir mayúsculas). Si ya existe un paquete con el mismo **wr** en la empresa, el ítem se omite (skipped). Máximo 200 ítems por solicitud. El usuario registrador se resuelve automáticamente (administrador o supervisor activo de la empresa).",
+                        "description" => "Crea paquetes en estado \"En bodega\" (misma lógica que la importación por Excel). Por cada ítem debe enviarse **id_sucursal** o **sucursal** (nombre exacto en base de datos, sin distinguir mayúsculas). Si ya existe un paquete con el mismo **wr** en la empresa, el ítem se omite (skipped). Máximo 500 ítems por solicitud. El usuario registrador se resuelve automáticamente (administrador o supervisor activo de la empresa).",
                         "security" => [["ApiKeyAuth" => []]],
                         "requestBody" => [
                             "required" => true,
@@ -781,7 +781,7 @@ class DocumentationController extends Controller
                                             "packages" => [
                                                 "type" => "array",
                                                 "minItems" => 1,
-                                                "maxItems" => 200,
+                                                "maxItems" => 500,
                                                 "items" => [
                                                     "type" => "object",
                                                     "required" => [
@@ -933,7 +933,7 @@ class DocumentationController extends Controller
                                 ]
                             ],
                             "400" => [
-                                "description" => "Solicitud inválida (ej. packages vacío o más de 200 ítems)",
+                                "description" => "Solicitud inválida (ej. packages vacío o más de 500 ítems)",
                                 "content" => [
                                     "application/json" => [
                                         "schema" => [
