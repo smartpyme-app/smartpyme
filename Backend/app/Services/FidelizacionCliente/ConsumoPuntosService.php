@@ -14,6 +14,22 @@ use Illuminate\Support\Facades\Queue;
 class ConsumoPuntosService
 {
     /**
+     * Tipo de fidelización a aplicar al cliente: el asignado en `id_tipo_cliente` o el default
+     * de la empresa efectiva (empresa padre si el cliente es de una sucursal con licencia).
+     * Debe coincidir con `Cliente::getTipoClienteEfectivo()` para que mínimo/máximo de canje
+     * y reglas de puntos no diverjan del CRM ni de la facturación.
+     */
+    private function resolveTipoClienteParaCliente(\App\Models\Ventas\Clientes\Cliente $cliente): ?TipoClienteEmpresa
+    {
+        $tipo = $cliente->getTipoClienteEfectivo();
+        if ($tipo && !$tipo->relationLoaded('tipoBase')) {
+            $tipo->load('tipoBase');
+        }
+
+        return $tipo;
+    }
+
+    /**
      * Procesar la acumulación de puntos para una venta
      *
      * @param Venta $venta
@@ -58,6 +74,12 @@ class ConsumoPuntosService
             return false;
         }
 
+        // 2b. Con canje de puntos en la misma venta no se acumulan puntos nuevos
+        if ($venta->tieneCanjeDePuntosEnVenta()) {
+            Log::debug('Venta con canje de puntos: no se acumulan puntos', ['venta_id' => $venta->id]);
+            return false;
+        }
+
         // 3. Verificar si ya existe una transacción de puntos para esta venta (más eficiente)
         $existeTransaccion = TransaccionPuntos::where('id_venta', $venta->id)
             ->where('tipo', TransaccionPuntos::TIPO_GANANCIA)
@@ -85,28 +107,15 @@ class ConsumoPuntosService
             return false;
         }
 
-        // 5. Obtener el cliente con su tipo de cliente (eager loading)
-        $cliente = $venta->cliente()->with('tipoCliente.tipoBase')->first();
+        // 5. Obtener el cliente (empresa: necesaria para default vía empresa padre en licencias)
+        $cliente = $venta->cliente()->with(['tipoCliente.tipoBase', 'empresa'])->first();
         if (!$cliente) {
             Log::warning('Cliente no encontrado para venta', ['venta_id' => $venta->id, 'cliente_id' => $venta->id_cliente]);
             return false;
         }
 
-        // 6. Obtener tipo de cliente efectivo (optimizado)
-        $tipoCliente = $cliente->tipoCliente;
-        if (!$tipoCliente) {
-            // Obtener tipo por defecto de la empresa (con cache)
-            $tipoCliente = cache()->remember(
-                "empresa_tipo_default_{$empresaId}",
-                now()->addMinutes(60),
-                function () use ($empresaId) {
-                    return TipoClienteEmpresa::where('id_empresa', $empresaId)
-                        ->where('is_default', true)
-                        ->with('tipoBase')
-                        ->first();
-                }
-            );
-        }
+        // 6. Tipo efectivo = asignado o default de empresa padre (no `id_empresa` solo de la venta)
+        $tipoCliente = $this->resolveTipoClienteParaCliente($cliente);
 
         if (!$tipoCliente) {
             Log::warning('No se pudo determinar tipo de cliente efectivo', [
@@ -274,9 +283,10 @@ class ConsumoPuntosService
      * @param int $empresaId
      * @param int $puntosACanjear
      * @param string $descripcion
+     * @param string $idempotencyToken Token de idempotencia opcional desde frontend
      * @return array
      */
-    public function canjearPuntos(int $clienteId, int $empresaId, int $puntosACanjear, string $descripcion = null): array
+    public function canjearPuntos(int $clienteId, int $empresaId, int $puntosACanjear, string $descripcion = null, string $idempotencyToken = null): array
     {
         try {
             // 1. Verificar que la empresa tiene fidelización habilitada
@@ -285,20 +295,15 @@ class ConsumoPuntosService
                 return ['success' => false, 'error' => 'La empresa no tiene habilitado el módulo de fidelización'];
             }
 
-            // 2. Obtener el cliente y su tipo
-            $cliente = \App\Models\Ventas\Clientes\Cliente::with('tipoCliente')->find($clienteId);
+            // 2. Cliente + empresa (misma resolución de tipo que CRM / getTipoClienteEfectivo)
+            $cliente = \App\Models\Ventas\Clientes\Cliente::with(['tipoCliente.tipoBase', 'empresa'])
+                ->find($clienteId);
             if (!$cliente) {
                 return ['success' => false, 'error' => 'Cliente no encontrado'];
             }
 
-            // 3. Obtener configuración del tipo de cliente
-            $tipoCliente = $cliente->tipoCliente;
-            if (!$tipoCliente) {
-                // Obtener tipo por defecto de la empresa
-                $tipoCliente = TipoClienteEmpresa::where('id_empresa', $empresaId)
-                    ->where('is_default', true)
-                    ->first();
-            }
+            // 3. Configuración de canje según tipo efectivo (no el default de id_empresa de la sucursal)
+            $tipoCliente = $this->resolveTipoClienteParaCliente($cliente);
 
             if (!$tipoCliente) {
                 return ['success' => false, 'error' => 'No se pudo determinar la configuración del cliente'];
@@ -319,29 +324,31 @@ class ConsumoPuntosService
 
             if ($puntosACanjear > $tipoCliente->maximo_canje) {
                 return [
-                    'success' => false, 
+                    'success' => false,
                     'error' => "El máximo de canje para este tipo de cliente es {$tipoCliente->maximo_canje} puntos",
                     'maximo_canje' => $tipoCliente->maximo_canje
                 ];
             }
 
-            // 5. Verificar saldo disponible del cliente
-            $puntosCliente = PuntosCliente::where('id_cliente', $clienteId)
-                ->where('id_empresa', $empresaId)
-                ->first();
+            // 5. Procesar el canje en una transacción (verificación de saldo dentro con lock)
+            return DB::transaction(function () use ($clienteId, $empresaId, $puntosACanjear, $descripcion, $tipoCliente, $idempotencyToken) {
+                // Obtener el cliente con bloqueo exclusivo para evitar race conditions
+                $puntosCliente = PuntosCliente::where('id_cliente', $clienteId)
+                    ->where('id_empresa', $empresaId)
+                    ->lockForUpdate()
+                    ->first();
 
-            if (!$puntosCliente || $puntosCliente->puntos_disponibles < $puntosACanjear) {
-                return [
-                    'success' => false, 
-                    'error' => 'Puntos insuficientes',
-                    'puntos_disponibles' => $puntosCliente ? $puntosCliente->puntos_disponibles : 0,
-                    'puntos_solicitados' => $puntosACanjear
-                ];
-            }
+                // Verificar saldo disponible DENTRO de la transacción con lock
+                if (!$puntosCliente || $puntosCliente->puntos_disponibles < $puntosACanjear) {
+                    return [
+                        'success' => false,
+                        'error' => 'Puntos insuficientes',
+                        'puntos_disponibles' => $puntosCliente ? $puntosCliente->puntos_disponibles : 0,
+                        'puntos_solicitados' => $puntosACanjear
+                    ];
+                }
 
-            // 6. Procesar el canje en una transacción
-            return DB::transaction(function () use ($clienteId, $empresaId, $puntosACanjear, $descripcion, $puntosCliente, $tipoCliente) {
-                return $this->procesarCanjeConFifo($clienteId, $empresaId, $puntosACanjear, $descripcion, $puntosCliente, $tipoCliente);
+                return $this->procesarCanjeConFifo($clienteId, $empresaId, $puntosACanjear, $descripcion, $puntosCliente, $tipoCliente, $idempotencyToken);
             });
 
         } catch (\Exception $e) {
@@ -366,11 +373,12 @@ class ConsumoPuntosService
      * @param string $descripcion
      * @param PuntosCliente $puntosCliente
      * @param TipoClienteEmpresa $tipoCliente
+     * @param string $idempotencyToken
      * @return array
      */
-    private function procesarCanjeConFifo(int $clienteId, int $empresaId, int $puntosACanjear, ?string $descripcion, PuntosCliente $puntosCliente, TipoClienteEmpresa $tipoCliente): array
+    private function procesarCanjeConFifo(int $clienteId, int $empresaId, int $puntosACanjear, ?string $descripcion, PuntosCliente $puntosCliente, TipoClienteEmpresa $tipoCliente, ?string $idempotencyToken): array
     {
-        // 1. Obtener ganancias disponibles ordenadas por FIFO (más antiguas primero, próximas a expirar primero)
+        // 1. Obtener ganancias disponibles ordenadas por FIFO con bloqueo exclusivo
         $gananciasDisponibles = TransaccionPuntos::where('id_cliente', $clienteId)
             ->where('id_empresa', $empresaId)
             ->where('tipo', TransaccionPuntos::TIPO_GANANCIA)
@@ -378,6 +386,8 @@ class ConsumoPuntosService
             ->whereRaw('puntos - puntos_consumidos > 0') // Solo con puntos disponibles
             ->orderBy('fecha_expiracion', 'asc') // Primero las que expiran pronto
             ->orderBy('created_at', 'asc') // Luego por orden de creación (FIFO)
+            ->orderBy('id', 'asc') // Orden determinístico final para evitar deadlocks
+            ->lockForUpdate() // Bloqueo exclusivo para evitar race conditions
             ->get();
 
         if ($gananciasDisponibles->isEmpty()) {
@@ -388,11 +398,39 @@ class ConsumoPuntosService
         $puntosAntes = $puntosCliente->puntos_disponibles;
         $puntosDespues = $puntosAntes - $puntosACanjear;
 
-        $idempotencyKey = TransaccionPuntos::generarIdempotencyKey(
-            $clienteId,
-            TransaccionPuntos::TIPO_CANJE,
-            'canje_' . time()
-        );
+        // Generar clave de idempotencia
+        // Si el frontend envía un token, usarlo directamente para idempotencia real
+        // Si no, generar UUID único (sin protección de duplicados - responsabilidad del frontend)
+        if ($idempotencyToken) {
+            $idempotencyKey = "canje_{$clienteId}_{$empresaId}_{$idempotencyToken}";
+
+            // Verificar si ya existe un canje con este token (protección anti-duplicados)
+            $canjeExistente = TransaccionPuntos::where('idempotency_key', $idempotencyKey)->first();
+
+            if ($canjeExistente) {
+                Log::info('Canje duplicado detectado por idempotency_token', [
+                    'cliente_id' => $clienteId,
+                    'empresa_id' => $empresaId,
+                    'idempotency_token' => $idempotencyToken,
+                    'canje_existente_id' => $canjeExistente->id
+                ]);
+
+                // Devolver el canje existente como exitoso (idempotencia correcta)
+                return [
+                    'success' => true,
+                    'transaccion_id' => $canjeExistente->id,
+                    'puntos_canjeados' => abs($canjeExistente->puntos),
+                    'valor_descuento' => $canjeExistente->monto_asociado,
+                    'puntos_despues' => $canjeExistente->puntos_despues,
+                    'mensaje' => 'Canje procesado previamente (idempotente)',
+                    'duplicado' => true
+                ];
+            }
+        } else {
+            // Sin token: generar UUID único (sin protección, cada request es considerado único)
+            $uuid = \Illuminate\Support\Str::uuid();
+            $idempotencyKey = "canje_{$clienteId}_{$empresaId}_{$uuid}";
+        }
 
         // Calcular el valor del descuento usando la configuración del tipo de cliente
         $valorDescuento = $tipoCliente->calcularDescuento($puntosACanjear);
@@ -503,16 +541,9 @@ class ConsumoPuntosService
             ];
         }
 
-        // Obtener el cliente y su tipo
-        $cliente = \App\Models\Ventas\Clientes\Cliente::with('tipoCliente')->find($clienteId);
-        $tipoCliente = $cliente ? $cliente->tipoCliente : null;
-        
-        if (!$tipoCliente) {
-            // Obtener tipo por defecto de la empresa
-            $tipoCliente = TipoClienteEmpresa::where('id_empresa', $empresaId)
-                ->where('is_default', true)
-                ->first();
-        }
+        $cliente = \App\Models\Ventas\Clientes\Cliente::with(['tipoCliente.tipoBase', 'empresa'])
+            ->find($clienteId);
+        $tipoCliente = $cliente ? $this->resolveTipoClienteParaCliente($cliente) : null;
 
         $puntosCliente = PuntosCliente::where('id_cliente', $clienteId)
             ->where('id_empresa', $empresaId)

@@ -127,6 +127,13 @@
                     </div>
                 </div>
 
+                <div class="form-group col-md-6 col-lg-5 without-label">
+                    <div class="form-switch bg-light-info rounded">
+                        <label>Genera comanda</label>
+                        <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="producto.genera_comanda" name="genera_comanda">
+                    </div>
+                </div>
+
                 <div class="form-group col-lg-12 mt-3">
                     <button [disabled]="guardar" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                         <span *ngIf="!guardar">Guardar</span>

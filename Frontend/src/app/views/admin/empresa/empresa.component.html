@@ -338,6 +338,23 @@
                                 (change)="onSubmit()" [(ngModel)]="empresa.modulo_paquetes" name="modulo_paquetes">
                         </div>
                     </div>
+
+                    <div *ngIf="tieneAccesoModuloRestaurantePedidos" class="form-group col-12 col-md-8 col-xl-6 mt-2">
+                        <h4 class="mb-2 fw-bold">Restaurantes y pedidos</h4>
+                        <p class="text-muted small mb-2">
+                            Su empresa tiene activa la funcionalidad <strong>Restaurantes y pedidos</strong> (asignada en el administrador).
+                            Elija qué entradas mostrar en el menú lateral de la aplicación.
+                        </p>
+                        <label for="vista_modulo_rp_select" class="form-label">Mostrar en el menú</label>
+                        <select class="form-select" id="vista_modulo_rp_select" name="vista_modulo_rest_ped"
+                            [ngModel]="getVistaModuloRestaurantePedidos()"
+                            (ngModelChange)="setVistaModuloRestaurantePedidos($event)">
+                            <option value="restaurante">Solo Restaurante (mesas, cocina)</option>
+                            <option value="pedidos">Solo Pedidos</option>
+                            <option value="ambos">Restaurante y Pedidos</option>
+                        </select>
+                    </div>
+
                     <hr>
                     <div class="row">
                         <h4 class="mb-0 fw-bold">Mostrar columnas</h4>
