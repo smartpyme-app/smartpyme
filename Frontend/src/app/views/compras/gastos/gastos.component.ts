@@ -14,7 +14,13 @@ import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import {
+  mensajeErrorHttpFeCr,
+  type FeCrErrorEmisionPayload,
+} from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
@@ -23,7 +29,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     selector: 'app-gastos',
     templateUrl: './gastos.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, CrearAbonoGastoComponent, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, CrearAbonoGastoComponent, LazyImageDirective, AlertsHaciendaComponent, NotificacionesContainerComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
@@ -315,33 +321,120 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
             });
     }
 
-    openDTE(template: TemplateRef<any>, gasto:any){
-        this.gasto = gasto;
-        this.openModal(template);
+    openDTE(template: TemplateRef<any>, gasto: any) {
+        this.openModal(template, gasto);
         this.alertService.modal = true;
-        if(!this.gasto.dte){
+        if (!this.gasto.dte) {
             this.emitirDTE();
         }
     }
 
+    puedeEmitirFeGasto(gasto: any): boolean {
+        if (this.facturacionElectronica.isCostaRicaFe()) {
+            return gasto.tipo_documento === 'Compra electrónica';
+        }
+        return gasto.tipo_documento === 'Sujeto excluido';
+    }
+
+    esFeCostaRica(): boolean {
+        return this.facturacionElectronica.isCostaRicaFe();
+    }
+
+    private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
+        return (
+            typeof e === 'object' &&
+            e !== null &&
+            'message' in e &&
+            'documento' in e &&
+            typeof (e as FeCrErrorEmisionPayload).message === 'string'
+        );
+    }
+
     imprimirDTEPDF(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/03/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        const tipoRuta = this.esFeCostaRica() ? '08' : '03';
+        const q = this.esFeCostaRica() ? '?tipo=gasto&token=' : '?token=';
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/' + tipoRuta + '/' + q + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/03/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        const tipoRuta = this.esFeCostaRica() ? '08' : '03';
+        const q = this.esFeCostaRica() ? '?tipo=gasto&token=' : '?token=';
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/' + tipoRuta + '/' + q + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     emitirDTE(){
         this.saving = true;
+        this.cdr.markForCheck();
         this.facturacionElectronica.emitirDTESujetoExcluidoGasto(this.gasto).then((gasto: any) => {
             this.gasto = gasto;
-            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            const idx = this.gastos.data?.findIndex((g: any) => g.id === gasto.id);
+            if (idx !== undefined && idx !== -1 && this.gastos.data) {
+                this.gastos.data[idx] = { ...gasto };
+            }
+            if (this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
+                this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+                this.saving = false;
+                this.enviarDTE();
+            } else {
+                const aceptada = gasto?.dte?.cr?.aceptada;
+                if (aceptada === false) {
+                    this.alertService.info(
+                        'Comprobante enviado',
+                        'Hacienda aún no lo marca como aceptado. Revise el estado en unos momentos.'
+                    );
+                } else {
+                    this.alertService.success('Comprobante electrónico', 'Enviado a Hacienda.');
+                }
+                this.saving = false;
+                setTimeout(() => this.closeModal(), 1500);
+            }
+            this.cdr.markForCheck();
+        }).catch((error: unknown) => {
             this.saving = false;
-            this.enviarDTE();
-        }).catch((error: any) => {
-            this.saving = false;
-            this.alertService.warning('Hubo un problema', error);
+            if (error && typeof error === 'object' && 'gasto' in error && (error as { gasto?: unknown }).gasto) {
+                const g = (error as { gasto: any }).gasto;
+                this.gasto = { ...g };
+                const i = this.gastos.data?.findIndex((x: any) => x.id === g.id);
+                if (i !== undefined && i !== -1 && this.gastos.data) {
+                    this.gastos.data[i] = { ...g };
+                }
+            }
+            let msg: string;
+            let feCrIntento: FeCrErrorEmisionPayload | undefined;
+            if (this.esPayloadErrorEmisionFeCr(error)) {
+                msg = error.message;
+                feCrIntento = error;
+            } else if (typeof error === 'string') {
+                msg = error;
+            } else {
+                msg = this.esFeCostaRica()
+                    ? mensajeErrorHttpFeCr(error)
+                    : String((error as { message?: unknown })?.message ?? error);
+            }
+            if ((error as { status?: number })?.status && !this.esFeCostaRica()) {
+                this.alertService.warning('Hubo un problema', error);
+            } else {
+                this.gasto = {
+                    ...this.gasto,
+                    errores: msg,
+                    ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
+                };
+                const j = this.gastos.data?.findIndex((v: any) => v.id === this.gasto.id);
+                if (j !== undefined && j !== -1 && this.gastos.data) {
+                    this.gastos.data[j] = { ...this.gasto };
+                }
+                if (this.esFeCostaRica()) {
+                    this.alertService.info(
+                        'Comprobante no emitido',
+                        feCrIntento
+                            ? 'Revise el mensaje abajo. Abra «XML del comprobante» (recomendado) o «JSON interno» si necesita depurar.'
+                            : 'Revise el mensaje en el recuadro de esta ventana.'
+                    );
+                } else {
+                    this.alertService.warning('Comprobante electrónico', msg);
+                }
+            }
+            this.cdr.detectChanges();
         });
     }
 

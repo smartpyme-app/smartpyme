@@ -53,6 +53,45 @@ export class CostaRicaFacturacionElectronicaService {
     return this.api.store('consultarFeCrVenta', { id: ventaId });
   }
 
+  /** FEC 08 — compra (documento «Compra electrónica»). */
+  emitirFacturaElectronicaCompra(compra: any): Promise<any> {
+    return this.postEmisionCompraGasto('emitirFeCrCompra', compra, 'compra');
+  }
+
+  /** FEC 08 — gasto/egreso (documento «Compra electrónica»). */
+  emitirFacturaElectronicaGasto(gasto: any): Promise<any> {
+    return this.postEmisionCompraGasto('emitirFeCrGasto', gasto, 'gasto');
+  }
+
+  private postEmisionCompraGasto(
+    endpoint: string,
+    doc: any,
+    kind: 'compra' | 'gasto'
+  ): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.api.store(endpoint, { id: doc.id }).subscribe({
+        next: (res: any) => {
+          const key = kind === 'compra' ? 'compra' : 'gasto';
+          if (res?.[key]) {
+            Object.assign(doc, res[key]);
+          }
+          if (res?.aceptada) {
+            resolve(doc);
+            return;
+          }
+          const msg =
+            typeof res?.detalle_estado?.messages === 'string'
+              ? res.detalle_estado.messages
+              : 'El comprobante no fue aceptado por Hacienda.';
+          reject({ message: msg, [key]: doc });
+        },
+        error: (err) => {
+          reject(errorEmisionFeCr(err));
+        },
+      });
+    });
+  }
+
   private postEmisionVenta(endpoint: string, venta: any): Promise<any> {
     return new Promise((resolve, reject) => {
       this.api.store(endpoint, { id: venta.id }).subscribe({

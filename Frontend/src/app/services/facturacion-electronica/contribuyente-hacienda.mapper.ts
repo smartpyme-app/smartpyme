@@ -10,7 +10,14 @@ export interface ContribuyenteActividadOption {
 }
 
 function pickActividadesArray(root: Record<string, unknown>): unknown[] | null {
-  const keys = ['actividadesEconomicas', 'actividades_economicas', 'ActividadesEconomicas', 'actividades'] as const;
+  /** Hacienda CR /fe/ae suele devolver `actividades` en la raíz del JSON. */
+  const keys = [
+    'actividades',
+    'actividadesEconomicas',
+    'actividades_economicas',
+    'ActividadesEconomicas',
+    'Actividades',
+  ] as const;
   for (const k of keys) {
     const v = root[k];
     if (Array.isArray(v)) {

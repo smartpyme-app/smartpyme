@@ -54,7 +54,11 @@
             "dazza-dev/dgt-xml-generator": {
                 "FE CR: XSD v4.4 — decimales, ImpuestoAsumidoEmisorFabrica siempre antes de ImpuestoNeto, taxes snake/camel (Emisor/Receptor antes de CondicionVenta)": "patches/dgt-xml-generator-fe-cr-xsd-v44.patch",
                 "FE CR: LineaDetalle — Detalle antes de TipoTransaccion (tiqueteElectronico / facturaElectronico v4.4)": "patches/dgt-xml-generator-linea-detalle-detalle-antes-tipo-transaccion.patch",
-                "FE CR: Tiquete — líneas sin TipoTransaccion (v4.4; plantilla items-ticket)": "patches/dgt-xml-generator-tiquete-lineas-sin-tipo-transaccion.patch"
+                "FE CR: Tiquete — líneas sin TipoTransaccion (v4.4; plantilla items-ticket)": "patches/dgt-xml-generator-tiquete-lineas-sin-tipo-transaccion.patch",
+                "FE CR: Factura electrónica de compras (08, FacturaElectronicaCompra v4.4)": "patches/dgt-xml-generator-fec-factura-electronica-compra.patch",
+                "FE CR: FEC — createDocument() compatible con BaseDocumentBuilder (PurchaseInvoice en unión de tipos)": "patches/dgt-xml-generator-fec-base-document-builder-return-type.patch",
+                "FE CR: FEC — CodigoActividadReceptor obligatorio en info.xml (tipo 08; minLength XSD)": "patches/dgt-xml-generator-info-fec-codigo-actividad-receptor.patch",
+                "FE CR: FEC LineaDetalle — orden XSD facturaElectronicaCompra (PrecioUnitario/MontoTotal antes de TipoTransaccion; plantilla items-fec)": "patches/dgt-xml-generator-fec-linea-detalle-xsd-orden.patch"
             }
         }
     },

@@ -24,6 +24,7 @@ use App\Services\FacturacionElectronica\FacturacionElectronicaCountryGate;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 
@@ -226,6 +227,34 @@ class MHDTEController extends Controller
             $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
             $clave = (string) ($dte['clave'] ?? $registro->codigo_generacion ?? '');
             $titulo = 'Nota de crédito electrónica';
+        } elseif (($tipo === '08' && $request->query('tipo') === 'compra') || ($tipo === '14' && $request->query('tipo') === 'compra')) {
+            $registro = Compra::query()->with(['empresa', 'proveedor'])->findOrFail($id);
+            $this->assertMismoEmpresaUsuarioCompraGasto($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                abort(404, 'No hay comprobante electrónico Costa Rica para esta compra.');
+            }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                abort(404, 'Esta compra no tiene factura electrónica de compras (FEC, tipo 08).');
+            }
+            $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
+            $clave = (string) ($dte['clave'] ?? $registro->codigo_generacion ?? '');
+            $titulo = 'Factura electrónica de compra';
+            $tipoDteRuta = '08';
+        } elseif ($tipo === '08' && $request->query('tipo') === 'gasto') {
+            $registro = Gasto::query()->with(['empresa', 'proveedor'])->findOrFail($id);
+            $this->assertMismoEmpresaUsuarioCompraGasto($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                abort(404, 'No hay comprobante electrónico Costa Rica para este egreso.');
+            }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                abort(404, 'Este egreso no tiene factura electrónica de compras (FEC, tipo 08).');
+            }
+            $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
+            $clave = (string) ($dte['clave'] ?? $registro->codigo_generacion ?? '');
+            $titulo = 'Factura electrónica de compra';
+            $tipoDteRuta = '08';
         } else {
             abort(400, 'Tipo de documento no disponible para PDF en FE Costa Rica.');
         }
@@ -257,7 +286,7 @@ class MHDTEController extends Controller
     /**
      * XML devuelto por Hacienda al consultar estado (si está almacenado en dte.cr).
      */
-    public function generarDteXmlCostaRica(int|string $id, string $tipo): JsonResponse|Response
+    public function generarDteXmlCostaRica(Request $request, int|string $id, string $tipo): JsonResponse|Response
     {
         $empresa = Auth::user()?->empresa;
         if (FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
@@ -292,6 +321,28 @@ class MHDTEController extends Controller
                 return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para esta devolución.'], 404);
             }
             $xml = $dte['cr']['estado_consulta']['response_xml'] ?? null;
+        } elseif (($tipo === '08' && $request->query('tipo') === 'compra') || ($tipo === '14' && $request->query('tipo') === 'compra')) {
+            $registro = Compra::findOrFail($id);
+            $this->assertMismoEmpresaUsuarioCompraGasto($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para esta compra.'], 404);
+            }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                return response()->json(['error' => 'Esta compra no tiene FEC (08).'], 404);
+            }
+            $xml = $dte['cr']['estado_consulta']['response_xml'] ?? null;
+        } elseif ($tipo === '08' && $request->query('tipo') === 'gasto') {
+            $registro = Gasto::findOrFail($id);
+            $this->assertMismoEmpresaUsuarioCompraGasto($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para este egreso.'], 404);
+            }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                return response()->json(['error' => 'Este egreso no tiene FEC (08).'], 404);
+            }
+            $xml = $dte['cr']['estado_consulta']['response_xml'] ?? null;
         } else {
             return response()->json(['error' => 'Tipo de documento no disponible.'], 400);
         }
@@ -309,6 +360,8 @@ class MHDTEController extends Controller
             $claveArchivo = (string) ($registro->codigo_generacion ?: $id);
         } elseif ($registro instanceof DevolucionVenta) {
             $claveArchivo = (string) ($registro->codigo_generacion ?: $id);
+        } elseif ($registro instanceof Compra || $registro instanceof Gasto) {
+            $claveArchivo = (string) ($registro->codigo_generacion ?: $id);
         }
         $fname = 'respuesta-hacienda-'.preg_replace('/\W+/', '-', $claveArchivo).'.xml';
 
@@ -322,6 +375,14 @@ class MHDTEController extends Controller
     }
 
     private function assertMismoEmpresaUsuario(Venta|DevolucionVenta $registro): void
+    {
+        $uid = Auth::user()?->id_empresa;
+        if ($uid === null || (int) $registro->id_empresa !== (int) $uid) {
+            abort(403);
+        }
+    }
+
+    private function assertMismoEmpresaUsuarioCompraGasto(Compra|Gasto $registro): void
     {
         $uid = Auth::user()?->id_empresa;
         if ($uid === null || (int) $registro->id_empresa !== (int) $uid) {
@@ -391,7 +452,35 @@ class MHDTEController extends Controller
             return response()->json($payload, 200);
         }
 
-        // Compras/gastos tipo 14 (sujeto excluido): no aplica CR en esta ruta
+        // FEC 08 — factura electrónica de compra (misma ruta que SV usa 14+sujeto excluido para compras)
+        if (($tipo === '08' && $request->query('tipo') === 'compra') || ($tipo === '14' && $request->query('tipo') === 'compra')) {
+            $registro = Compra::findOrFail($id);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para esta compra.'], 404);
+            }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                return response()->json(['error' => 'Esta compra no tiene FEC (08).'], 404);
+            }
+            $payload = $dte['documento'] ?? [];
+
+            return response()->json(is_array($payload) ? $payload : [], 200);
+        }
+
+        if ($tipo === '08' && $request->query('tipo') === 'gasto') {
+            $registro = Gasto::findOrFail($id);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para este egreso.'], 404);
+            }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                return response()->json(['error' => 'Este egreso no tiene FEC (08).'], 404);
+            }
+            $payload = $dte['documento'] ?? [];
+
+            return response()->json(is_array($payload) ? $payload : [], 200);
+        }
+
         return response()->json(['error' => 'Tipo de documento no disponible para descarga JSON en FE Costa Rica.'], 400);
     }
 

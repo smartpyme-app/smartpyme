@@ -142,12 +142,12 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && gasto.tipo_documento == 'Sujeto excluido' && gasto.estado != 'Anulada' && !gasto.sello_mh) {
+                                    @if (apiService.auth_user().empresa.facturacion_electronica && puedeEmitirFeGasto(gasto) && gasto.estado != 'Anulada' && !gasto.sello_mh) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, gasto)" tooltip="Emitir DTE">
                                             <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
                                         </a>
                                     }
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && gasto.tipo_documento == 'Sujeto excluido' && gasto.sello_mh) {
+                                    @if (apiService.auth_user().empresa.facturacion_electronica && puedeEmitirFeGasto(gasto) && gasto.sello_mh) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, gasto)" tooltip="Ver DTE">
                                             <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
                                         </a>
@@ -353,26 +353,54 @@
 
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">
-        <h5 class="modal-title mb-0">DTE </h5>
-        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+        <h5 class="modal-title mb-0">{{ esFeCostaRica() ? 'Comprobante electrónico (Costa Rica)' : 'DTE' }}</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false; gasto.errores = null;" aria-label="Close"></button>
     </div>
   <div class="modal-body">
+        <app-alerts-hacienda [errores]="gasto.errores"></app-alerts-hacienda>
+        @if (esFeCostaRica() && gasto.fe_cr_intento_emision?.xml_comprobante) {
+            <details class="small text-start mb-3 border rounded p-2 bg-light" open>
+                <summary class="cursor-pointer user-select-none">XML del comprobante (Hacienda / español, sin firma)</summary>
+                <pre class="small mt-2 mb-0 p-2 bg-white rounded overflow-auto border" style="max-height: 280px; white-space: pre-wrap;">{{ gasto.fe_cr_intento_emision.xml_comprobante }}</pre>
+            </details>
+        }
+        @if (esFeCostaRica() && gasto.fe_cr_intento_emision?.xml_comprobante_firmado) {
+            <details class="small text-start mb-3 border rounded p-2 bg-light">
+                <summary class="cursor-pointer user-select-none">XML firmado (avanzado)</summary>
+                <pre class="small mt-2 mb-0 p-2 bg-white rounded overflow-auto border" style="max-height: 200px; white-space: pre-wrap;">{{ gasto.fe_cr_intento_emision.xml_comprobante_firmado }}</pre>
+            </details>
+        }
+        @if (esFeCostaRica() && gasto.fe_cr_intento_emision?.documento) {
+            <details class="small text-start mb-3 border rounded p-2 bg-light">
+                <summary class="cursor-pointer user-select-none">JSON interno del comprobante (depuración)</summary>
+                <pre class="small mt-2 mb-0 p-2 bg-white rounded overflow-auto border" style="max-height: 280px; white-space: pre-wrap;">{{ gasto.fe_cr_intento_emision.documento | json }}</pre>
+            </details>
+        }
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 
-            @if (gasto.sello_mh) {
+            @if (esFeCostaRica() && gasto.codigo_generacion) {
+                <button type="button" (click)="imprimirDTEJSON(gasto)" class="mb-2 btn btn-primary btn-block">
+                    Ver JSON
+                </button>
+                <button type="button" (click)="imprimirDTEPDF(gasto)" class="mb-2 btn btn-primary btn-block">
+                    Ver PDF
+                </button>
+            }
+
+            @if (gasto.sello_mh && !esFeCostaRica()) {
                 <button (click)="imprimirDTEJSON(gasto)" class="mb-3 btn btn-primary btn-block">
                     Ver JSON
                 </button>
             }
 
-            @if (gasto.sello_mh) {
+            @if (gasto.sello_mh && !esFeCostaRica()) {
                 <button (click)="imprimirDTEPDF(gasto)" class="mb-3 btn btn-primary btn-block">
                     Ver PDF
                 </button>
             }
 
-            @if (gasto.sello_mh) {
+            @if (gasto.sello_mh && !esFeCostaRica()) {
                 <button [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
                     @if (!sending) {
                         <span>Enviar por correo</span>
@@ -383,10 +411,10 @@
                 </button>
             }
 
-            @if (!gasto.sello_mh) {
+            @if (!gasto.sello_mh && !(esFeCostaRica() && gasto.codigo_generacion)) {
                 <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
                     @if (!saving) {
-                        <span>Emitir</span>
+                        <span>{{ esFeCostaRica() ? 'Emitir comprobante' : 'Emitir' }}</span>
                     }
                     @if (saving) {
                         <span>Emitiendo...</span>

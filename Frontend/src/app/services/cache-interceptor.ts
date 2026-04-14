@@ -99,6 +99,11 @@ export class CacheInterceptor implements HttpInterceptor {
       return false;
     }
 
+    // Contribuyente /fe/ae: depende del NIT; no cachear (evita listas vacías pegadas o datos viejos).
+    if (url.includes('fe-cr/contribuyente')) {
+      return false;
+    }
+
     // Cachear otros endpoints GET por defecto
     return true;
   }

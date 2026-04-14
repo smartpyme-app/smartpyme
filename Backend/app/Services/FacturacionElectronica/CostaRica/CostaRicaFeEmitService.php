@@ -3,6 +3,8 @@
 namespace App\Services\FacturacionElectronica\CostaRica;
 
 use App\Exceptions\CostaRica\CostaRicaFeEmisionFallidaException;
+use App\Models\Compras\Compra;
+use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
@@ -67,6 +69,64 @@ final class CostaRicaFeEmitService
         $data = $this->mapper->buildTicketDocumentData($venta, $venta->empresa, $sec);
 
         return $this->enviarYPersistirVenta($venta, 'ticket', '04', 'TiqueteElectronico', $data);
+    }
+
+    /**
+     * FEC 08 — factura electrónica de compra (emisor = empresa, receptor = proveedor).
+     *
+     * @return array{clave: string, aceptada: bool, detalle_estado: array, compra: Compra}
+     */
+    public function emitirFacturaElectronicaCompraDesdeCompra(int $compraId): array
+    {
+        $compra = Compra::query()
+            ->with(['detalles.producto', 'proveedor', 'empresa', 'sucursal'])
+            ->findOrFail($compraId);
+
+        $empresa = $compra->empresa;
+        if ($empresa === null) {
+            throw new RuntimeException('La compra no tiene empresa asociada.');
+        }
+        $this->assertEmpresaCr($empresa);
+        if (! $this->esDocumentoCompraElectronicaCr($compra->tipo_documento)) {
+            throw new RuntimeException('El tipo de documento debe ser «Compra electrónica» para emitir FEC (08).');
+        }
+        if ($this->compraTieneClaveFeCr($compra)) {
+            throw new RuntimeException('La compra ya tiene comprobante electrónico emitido (clave registrada).');
+        }
+
+        $sec = $this->secuencial->siguienteFacturaElectronicaCompra($empresa);
+        $data = $this->mapper->buildFacturaElectronicaCompraDesdeCompra($compra, $empresa, $sec);
+
+        return $this->enviarYPersistirCompra($compra, 'fec', '08', 'FacturaElectronicaCompra', $data);
+    }
+
+    /**
+     * FEC 08 desde egreso/gasto con líneas de detalle.
+     *
+     * @return array{clave: string, aceptada: bool, detalle_estado: array, gasto: Gasto}
+     */
+    public function emitirFacturaElectronicaCompraDesdeGasto(int $gastoId): array
+    {
+        $gasto = Gasto::query()
+            ->with(['detalles', 'proveedor', 'empresa', 'sucursal'])
+            ->findOrFail($gastoId);
+
+        $empresa = $gasto->empresa;
+        if ($empresa === null) {
+            throw new RuntimeException('El gasto no tiene empresa asociada.');
+        }
+        $this->assertEmpresaCr($empresa);
+        if (! $this->esDocumentoCompraElectronicaCr($gasto->tipo_documento)) {
+            throw new RuntimeException('El tipo de documento debe ser «Compra electrónica» para emitir FEC (08).');
+        }
+        if ($this->gastoTieneClaveFeCr($gasto)) {
+            throw new RuntimeException('El gasto ya tiene comprobante electrónico emitido (clave registrada).');
+        }
+
+        $sec = $this->secuencial->siguienteFacturaElectronicaCompra($empresa);
+        $data = $this->mapper->buildFacturaElectronicaCompraDesdeGasto($gasto, $empresa, $sec);
+
+        return $this->enviarYPersistirGasto($gasto, 'fec', '08', 'FacturaElectronicaCompra', $data);
     }
 
     /**
@@ -369,6 +429,13 @@ final class CostaRicaFeEmitService
         return str_contains($n, 'ticket') || str_contains($n, 'tiquete');
     }
 
+    private function esDocumentoCompraElectronicaCr(?string $nombreDocumento): bool
+    {
+        $n = mb_strtolower(trim((string) $nombreDocumento), 'UTF-8');
+
+        return str_contains($n, 'compra electrónica') || str_contains($n, 'compra electronica');
+    }
+
     /**
      * @return array{clave: string, aceptada: bool, detalle_estado: array, venta: Venta}
      */
@@ -446,6 +513,154 @@ final class CostaRicaFeEmitService
     }
 
     /**
+     * @return array{clave: string, aceptada: bool, detalle_estado: array, compra: Compra}
+     */
+    private function enviarYPersistirCompra(Compra $compra, string $dgtType, string $tipoDte, string $tipoNombre, array $data): array
+    {
+        $empresa = $compra->empresa;
+        $client = $this->factory->make($empresa);
+        $this->configurarClienteEmisorReceptor($client, $data);
+
+        $client->setDocumentType($dgtType);
+        $client->setDocumentData($data);
+
+        try {
+            $envio = $client->sendDocument();
+        } catch (Throwable $e) {
+            Log::error('FE CR sendDocument FEC compra', ['compra' => $compra->id, 'tipo' => $dgtType, 'error' => $e->getMessage()]);
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                'Error al enviar el comprobante a Hacienda: '.$e->getMessage(),
+                $data,
+                null,
+                null,
+                $xmlSin,
+                $xmlFirm,
+                $e
+            );
+        }
+
+        $clave = $client->getDocumentKey();
+        $estado = XmlRespuestaHaciendaCr::normalizarResponseXmlEnEstado(
+            $client->checkStatusWithRetry($clave, 3, 2)
+        );
+        $aceptada = (bool) ($estado['success'] ?? false);
+
+        if (! $aceptada) {
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                $this->mensajeEstadoHaciendaNoAceptado($estado),
+                $data,
+                $clave,
+                $estado,
+                $xmlSin,
+                $xmlFirm
+            );
+        }
+
+        $compra->codigo_generacion = $clave;
+        $compra->tipo_dte = $tipoDte;
+        $compra->sello_mh = $clave;
+        $compra->dte = [
+            'pais' => 'CR',
+            'tipo' => $tipoNombre,
+            'clave' => $clave,
+            'documento' => $data,
+            'identificacion' => [
+                'codigoGeneracion' => $clave,
+                'tipoDte' => $tipoDte,
+            ],
+            'cr' => [
+                'aceptada' => true,
+                'envio' => $envio,
+                'estado_consulta' => $estado,
+            ],
+        ];
+        $compra->save();
+
+        return [
+            'clave' => $clave,
+            'aceptada' => true,
+            'detalle_estado' => $estado,
+            'compra' => $compra->fresh(),
+        ];
+    }
+
+    /**
+     * @return array{clave: string, aceptada: bool, detalle_estado: array, gasto: Gasto}
+     */
+    private function enviarYPersistirGasto(Gasto $gasto, string $dgtType, string $tipoDte, string $tipoNombre, array $data): array
+    {
+        $empresa = $gasto->empresa;
+        $client = $this->factory->make($empresa);
+        $this->configurarClienteEmisorReceptor($client, $data);
+
+        $client->setDocumentType($dgtType);
+        $client->setDocumentData($data);
+
+        try {
+            $envio = $client->sendDocument();
+        } catch (Throwable $e) {
+            Log::error('FE CR sendDocument FEC gasto', ['gasto' => $gasto->id, 'tipo' => $dgtType, 'error' => $e->getMessage()]);
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                'Error al enviar el comprobante a Hacienda: '.$e->getMessage(),
+                $data,
+                null,
+                null,
+                $xmlSin,
+                $xmlFirm,
+                $e
+            );
+        }
+
+        $clave = $client->getDocumentKey();
+        $estado = XmlRespuestaHaciendaCr::normalizarResponseXmlEnEstado(
+            $client->checkStatusWithRetry($clave, 3, 2)
+        );
+        $aceptada = (bool) ($estado['success'] ?? false);
+
+        if (! $aceptada) {
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                $this->mensajeEstadoHaciendaNoAceptado($estado),
+                $data,
+                $clave,
+                $estado,
+                $xmlSin,
+                $xmlFirm
+            );
+        }
+
+        $gasto->codigo_generacion = $clave;
+        $gasto->tipo_dte = $tipoDte;
+        $gasto->sello_mh = $clave;
+        $gasto->dte = [
+            'pais' => 'CR',
+            'tipo' => $tipoNombre,
+            'clave' => $clave,
+            'documento' => $data,
+            'identificacion' => [
+                'codigoGeneracion' => $clave,
+                'tipoDte' => $tipoDte,
+            ],
+            'cr' => [
+                'aceptada' => true,
+                'envio' => $envio,
+                'estado_consulta' => $estado,
+            ],
+        ];
+        $gasto->save();
+
+        return [
+            'clave' => $clave,
+            'aceptada' => true,
+            'detalle_estado' => $estado,
+            'gasto' => $gasto->fresh(),
+        ];
+    }
+
+    /**
      * Mensaje para error HTTP (misma idea que FE SV: no persistir DTE si Hacienda no aceptó).
      *
      * @param  array<string, mixed>  $estado
@@ -515,6 +730,16 @@ final class CostaRicaFeEmitService
     private function ventaTieneClaveFeCr(Venta $venta): bool
     {
         return trim((string) ($venta->codigo_generacion ?? '')) !== '';
+    }
+
+    private function compraTieneClaveFeCr(Compra $compra): bool
+    {
+        return trim((string) ($compra->codigo_generacion ?? '')) !== '';
+    }
+
+    private function gastoTieneClaveFeCr(Gasto $gasto): bool
+    {
+        return trim((string) ($gasto->codigo_generacion ?? '')) !== '';
     }
 
     private function devolucionTieneClaveFeCr(Devolucion $devolucion): bool

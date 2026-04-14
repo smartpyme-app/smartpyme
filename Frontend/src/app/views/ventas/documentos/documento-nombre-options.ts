@@ -13,6 +13,8 @@ export const DOCUMENTO_NOMBRE_OPCIONES_CR: DocumentoNombreOption[] = [
   { value: 'Cotización', label: 'Cotización' },
   { value: 'Recibo', label: 'Recibo' },
   { value: 'Orden de compra', label: 'Orden de compra' },
+  /** FEC 08 — compras y gastos (equivalente operativo a «Sujeto excluido» en SV). */
+  { value: 'Compra electrónica', label: 'Compra electrónica' },
   { value: 'Nota de crédito', label: 'Nota de crédito' },
   { value: 'Nota de débito', label: 'Nota de débito' },
   { value: 'Abono de Venta', label: 'Abono de Venta' },

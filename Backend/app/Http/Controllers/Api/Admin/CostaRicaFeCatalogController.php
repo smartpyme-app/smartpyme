@@ -55,8 +55,9 @@ class CostaRicaFeCatalogController extends Controller
 
     public function contribuyente(Request $request, CostaRicaHaciendaPublicApiService $api): JsonResponse
     {
+        // No usar min/max sobre el texto con guiones: puede superar 14 caracteres y fallar antes de normalizar.
         $request->validate([
-            'identificacion' => 'required|string|min:9|max:14',
+            'identificacion' => 'required|string|max:64',
         ]);
 
         $id = preg_replace('/\D/', '', (string) $request->input('identificacion'));
@@ -67,8 +68,26 @@ class CostaRicaFeCatalogController extends Controller
         }
 
         $result = $api->contribuyente($id);
+        $status = (int) ($result['status'] ?? 500);
 
-        return response()->json($result['data'], $result['status']);
+        // Hacienda /fe/ae: 400 = parámetro inválido; 404 = sin información. No propagar como 400 al SPA (rompe el select).
+        if ($status === 400 || $status === 404) {
+            return response()->json([
+                'nombre' => null,
+                'tipoIdentificacion' => null,
+                'regimen' => null,
+                'situacion' => null,
+                'actividades' => [],
+            ], 200);
+        }
+
+        if ($status < 200 || $status >= 300) {
+            $payload = is_array($result['data'] ?? null) ? $result['data'] : ['error' => 'Consulta de contribuyente no disponible'];
+
+            return response()->json($payload, $status >= 500 ? 502 : 422);
+        }
+
+        return response()->json($result['data'], 200);
     }
 
     public function exoneracion(Request $request, CostaRicaHaciendaPublicApiService $api): JsonResponse

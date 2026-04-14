@@ -31,7 +31,7 @@ class StoreOrdenCompraRequest extends FormRequest
             'total' => ['nullable', 'numeric', 'min:0'],
             'sub_total' => ['nullable', 'numeric', 'min:0'],
             'observaciones' => ['nullable', 'string'],
-            'referencia' => ['nullable', 'string'],
+            'referencia' => ['nullable', 'max:255'],
             'tipo_documento' => ['nullable', 'string'],
             'id_proyecto' => ['nullable', 'integer', 'exists:proyectos,id'],
             'cobrar_impuestos' => ['nullable', 'boolean'],
@@ -71,10 +71,6 @@ class StoreOrdenCompraRequest extends FormRequest
         // Sanitizar strings
         if ($this->has('observaciones')) {
             $this->merge(['observaciones' => trim($this->observaciones)]);
-        }
-
-        if ($this->has('referencia')) {
-            $this->merge(['referencia' => trim($this->referencia)]);
         }
 
         // Convertir valores numéricos

@@ -75,7 +75,7 @@ class CompraService
     public function incrementarCorrelativo(Compra $compra, string $tipoDocumento): void
     {
         // Solo incrementar para tipos específicos
-        if (!in_array($tipoDocumento, ['Orden de compra', 'Sujeto excluido'])) {
+        if (! in_array($tipoDocumento, ['Orden de compra', 'Sujeto excluido', 'Compra electrónica'], true)) {
             return;
         }
 

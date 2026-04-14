@@ -209,7 +209,8 @@
                         </div>
                         <div class="form-group col-6 col-lg-3">
                             <label for="nit">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT:' : 'Identificación fiscal:' }}</label>
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit">
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit"
+                                (ngModelChange)="onNitProveedorChange()">
                         </div>
                         <div class="form-group col-6 col-lg-3">
                             <label for="ncr">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NCR:' : 'Registro tributario:' }}</label>
@@ -226,11 +227,11 @@
                             </select>
                         </div>
                         <div class="form-group col-6 col-lg-9">
-                            <label for="giro">Giro:</label>
+                            <label for="giro">{{ esCostaRicaFe() ? 'Actividad económica' : 'Giro' }}:</label>
                             @if (!apiService.auth_user().empresa.facturacion_electronica) {
                               <input type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="proveedor.giro">
                             }
-                            @if (apiService.auth_user().empresa.facturacion_electronica) {
+                            @if (apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
                               <ng-select [(ngModel)]="proveedor.cod_giro" (change)="setGiro()" placeholder="Escribe aquí" class="form-select p-0" name="proveedor.cod_giro">
                                 @for (actividad_economica of actividad_economicas; track actividad_economica.cod) {
                                   <ng-option [value]="actividad_economica.cod">
@@ -238,6 +239,33 @@
                                   </ng-option>
                                 }
                               </ng-select>
+                            }
+                            @if (apiService.auth_user().empresa.facturacion_electronica && esCostaRicaFe()) {
+                              <ng-select
+                                class="form-select p-0"
+                                name="actividad_contribuyente_cr_modal_pv"
+                                id="actividad_contribuyente_cr_modal_pv"
+                                [items]="actividadesContribuyenteCr"
+                                bindLabel="label"
+                                [loading]="contribuyenteCargandoCr"
+                                [compareWith]="compareActividadContribuyenteCr"
+                                [searchFn]="actividadCrNgSelectSearchFn"
+                                [(ngModel)]="actividadContribuyenteSeleccionada"
+                                (change)="onActividadContribuyenteCrChange($event)"
+                                (open)="onActividadCrSelectOpen()"
+                                [clearable]="true"
+                                notFoundText="Sin resultados"
+                                placeholder="Seleccione actividad (según NIT en Hacienda)">
+                                <ng-template ng-label-tmp let-item="item">
+                                  <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item?.label">{{ item?.label }}</span>
+                                </ng-template>
+                                <ng-template ng-option-tmp let-item="item">
+                                  <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item.label">{{ item.label }}</span>
+                                </ng-template>
+                              </ng-select>
+                              <small class="form-text text-muted d-block mt-1">
+                                Las opciones salen de Hacienda según el NIT de arriba (9–12 dígitos). Si no aparece nada, verifique el NIT y abra de nuevo el listado o espere unos segundos.
+                              </small>
                             }
                         </div>
                         <div class="form-group col-6 col-lg-3">

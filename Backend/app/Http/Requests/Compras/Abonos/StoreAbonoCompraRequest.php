@@ -31,7 +31,7 @@ class StoreAbonoCompraRequest extends FormRequest
             'id_sucursal' => ['required', 'integer', 'exists:sucursales,id'],
             'id' => ['nullable', 'integer', 'exists:abonos_compras,id'],
             'detalle_banco' => ['nullable', 'string'],
-            'referencia' => ['nullable', 'string'],
+            'referencia' => ['nullable', 'max:255'],
             'mora' => ['nullable', 'numeric', 'min:0'],
             'comision' => ['nullable', 'numeric', 'min:0'],
             'nota' => ['nullable', 'string'],

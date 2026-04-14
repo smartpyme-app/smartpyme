@@ -13,6 +13,8 @@ Route::get('/fe-cr/distritos', [CostaRicaFeCatalogController::class, 'distritos'
 
 Route::post('/emitirFeCrVenta', [CostaRicaFeController::class, 'emitirFactura']);
 Route::post('/emitirFeCrTiqueteVenta', [CostaRicaFeController::class, 'emitirTiquete']);
+Route::post('/emitirFeCrCompra', [CostaRicaFeController::class, 'emitirFacturaElectronicaCompra']);
+Route::post('/emitirFeCrGasto', [CostaRicaFeController::class, 'emitirFacturaElectronicaGasto']);
 Route::post('/emitirFeCrNotaCreditoDevolucion', [CostaRicaFeController::class, 'emitirNotaCreditoDevolucion']);
 Route::post('/emitirFeCrNotaDebitoVenta', [CostaRicaFeController::class, 'emitirNotaDebito']);
 Route::post('/consultarFeCrVenta', [CostaRicaFeController::class, 'consultarEstadoVenta']);

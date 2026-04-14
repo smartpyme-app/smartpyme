@@ -13,6 +13,7 @@ final class CostaRicaSecuencialService
         'cr_secuencial_nota_credito',
         'cr_secuencial_nota_debito',
         'cr_secuencial_tiquete',
+        'cr_secuencial_factura_electronica_compra',
     ];
 
     public function siguienteFactura(Empresa $empresa): int
@@ -33,6 +34,12 @@ final class CostaRicaSecuencialService
     public function siguienteTiquete(Empresa $empresa): int
     {
         return $this->siguiente($empresa, 'cr_secuencial_tiquete');
+    }
+
+    /** Factura electrónica de compras (08, FEC). */
+    public function siguienteFacturaElectronicaCompra(Empresa $empresa): int
+    {
+        return $this->siguiente($empresa, 'cr_secuencial_factura_electronica_compra');
     }
 
     public function siguiente(Empresa $empresa, string $campo): int

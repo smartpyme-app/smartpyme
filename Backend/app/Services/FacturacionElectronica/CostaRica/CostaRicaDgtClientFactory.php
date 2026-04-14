@@ -22,8 +22,8 @@ final class CostaRicaDgtClientFactory
         if (! is_dir($basePath)) {
             mkdir($basePath, 0755, true);
         }
-        // dgt-cr escribe XML por tipo de documento en subcarpetas (p. ej. ticket/, invoice/).
-        foreach (['ticket', 'invoice', 'credit-note', 'debit-note'] as $sub) {
+        // dgt-cr escribe XML por tipo de documento en subcarpetas (invoice/, ticket/, fec/, etc.).
+        foreach (['ticket', 'invoice', 'credit-note', 'debit-note', 'fec'] as $sub) {
             $subPath = $basePath.DIRECTORY_SEPARATOR.$sub;
             if (! is_dir($subPath)) {
                 mkdir($subPath, 0755, true);

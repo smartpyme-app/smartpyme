@@ -71,12 +71,18 @@ export class FacturacionElectronicaService {
   }
 
   emitirDTESujetoExcluidoGasto(gasto: any): Promise<any> {
+    if (this.esCostaRica()) {
+      return this.costaRica.emitirFacturaElectronicaGasto(gasto);
+    }
     return this.esElSalvador()
       ? this.elSalvador.emitirDTESujetoExcluidoGasto(gasto)
       : this.rejectNoSoportado();
   }
 
   emitirDTESujetoExcluidoCompra(compra: any): Promise<any> {
+    if (this.esCostaRica()) {
+      return this.costaRica.emitirFacturaElectronicaCompra(compra);
+    }
     return this.esElSalvador()
       ? this.elSalvador.emitirDTESujetoExcluidoCompra(compra)
       : this.rejectNoSoportado();

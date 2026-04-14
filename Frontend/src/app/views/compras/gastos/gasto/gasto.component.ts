@@ -635,12 +635,13 @@ export class GastoComponent implements OnInit {
   }
 
   public selectTipoDocumento() {
-    if (this.gasto.tipo_documento == 'Sujeto excluido') {
+    if (this.gasto.tipo_documento == 'Sujeto excluido' || this.gasto.tipo_documento == 'Compra electrónica') {
       let documento = this.documentos.find(
         (x: any) => x.nombre == this.gasto.tipo_documento
       );
-      // console.log(documento);
-      this.gasto.referencia = documento.correlativo;
+      if (documento) {
+        this.gasto.referencia = documento.correlativo;
+      }
     }
   }
 
@@ -1034,6 +1035,7 @@ export class GastoComponent implements OnInit {
             '05': 'Nota de débito',
             '06': 'Nota de crédito',
             '07': 'Comprobante de retención',
+            '08': 'Compra electrónica',
             '11': 'Factura de exportación',
             '14': 'Sujeto excluido',
           };

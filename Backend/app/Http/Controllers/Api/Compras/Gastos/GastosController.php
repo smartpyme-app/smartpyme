@@ -225,7 +225,7 @@ class GastosController extends Controller
                 $this->sincronizarDetalleUnico($gasto, $request);
             }
 
-            if (!$request->id && $request->tipo_documento == 'Sujeto excluido') {
+            if (! $request->id && in_array($request->tipo_documento, ['Sujeto excluido', 'Compra electrónica'], true)) {
                 $documento = Documento::where('nombre', $gasto->tipo_documento)->where('id_sucursal', $gasto->id_sucursal)->first();
                 if ($documento) {
                     $documento->increment('correlativo');
