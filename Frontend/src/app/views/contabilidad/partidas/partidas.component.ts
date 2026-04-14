@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -18,7 +19,7 @@ import Swal from 'sweetalert2';
     templateUrl: './partidas.component.html',
     styleUrls: ['./partidas.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, NgSelectModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PartidasComponent extends BasePaginatedModalComponent implements OnInit {
@@ -45,6 +46,27 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     mes: new Date().getMonth() + 1,
     tipo: 'Ingreso'
   };
+
+  /**
+   * Catálogo para reportes: "Todas" + cuentas con etiqueta "código — nombre".
+   */
+  get opcionesTipoCuentaReporte(): Array<{ value: string | number; label: string }> {
+    const opciones: Array<{ value: string | number; label: string }> = [
+      { value: 'all', label: 'Todas las cuentas' },
+    ];
+    if (!Array.isArray(this.catalogo)) {
+      return opciones;
+    }
+    for (const c of this.catalogo) {
+      const codigo = c?.codigo ?? '';
+      const nombre = c?.nombre ?? '';
+      opciones.push({
+        value: c.id,
+        label: codigo ? `${codigo} — ${nombre}` : nombre || String(c.id),
+      });
+    }
+    return opciones;
+  }
 
   // NUEVO: Para mostrar totales
   public totalesGenerales: any = {
@@ -414,6 +436,12 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     this.filtrarPartidas();
   }
 
+  /** URL única por descarga para evitar caché HTTP (navegador/CDN) en reportes GET. */
+  private buildReportDownloadUrl(relativePath: string): string {
+    const token = this.apiService.auth_token();
+    return `${this.apiService.baseUrl}${relativePath}?token=${token}&_ts=${Date.now()}`;
+  }
+
   // Métodos existentes sin cambios...
   public imprimirDiarioAux() {
     if (
@@ -423,17 +451,16 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       this.reporte.tipo_cuenta
     ) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/libro/diario/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_cuenta +
-          '/' +
-          this.reporte.tipo_descarga +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_cuenta +
+            '/' +
+            this.reporte.tipo_descarga
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -443,17 +470,16 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   public imprimirMayor() {
     if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.concepto) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/libro/diario/mayor/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_cuenta +
-          '/' +
-          this.reporte.concepto +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_cuenta +
+            '/' +
+            this.reporte.concepto
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -468,17 +494,16 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       this.reporte.tipo_cuenta
     ) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/libro/diario/mayor/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_cuenta +
-          '/' +
-          this.reporte.tipo_descarga +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_cuenta +
+            '/' +
+            this.reporte.tipo_descarga
+        )
       );
     } else {
       console.error('Por favor, llenar los campos requeridos.');
@@ -488,15 +513,14 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   public imprimirMovCuenta() {
     if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.cuenta) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/movimiento/cuenta/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.cuenta +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.cuenta
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -511,17 +535,16 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       this.reporte.tipo_cuenta
     ) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/balance/comprobacion/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_cuenta +
-          '/' +
-          this.reporte.tipo_descarga +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_cuenta +
+            '/' +
+            this.reporte.tipo_descarga
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -535,15 +558,14 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       this.reporte.tipo_descarga
     ) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/balance/general/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_descarga +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_descarga
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -557,15 +579,14 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       this.reporte.tipo_descarga
     ) {
       window.open(
-        this.apiService.baseUrl +
+        this.buildReportDownloadUrl(
           '/api/reportes/estado/resultados/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_descarga +
-          '?token=' +
-          this.apiService.auth_token()
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.tipo_descarga
+        )
       );
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -588,10 +609,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   }
 
   public imprimirPartida(partida: any) {
-    window.open(
-      this.apiService.baseUrl + '/api/partidas/descargar/' + partida.id + '?token=' + this.apiService.auth_token(),
-      '_blank'
-    );
+    window.open(this.buildReportDownloadUrl('/api/partidas/descargar/' + partida.id), '_blank');
   }
 
   public descargarPartidaExcel(partida: any) {

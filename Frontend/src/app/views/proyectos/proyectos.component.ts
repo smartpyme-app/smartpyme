@@ -119,7 +119,7 @@ export class ProyectosComponent extends BaseCrudComponent<any> implements OnInit
     }
 
     override openModal(template: TemplateRef<any>, proyecto?: any) {
-        super.openLargeModal(template, proyecto);
+        super.openModal(template, proyecto, { class: 'modal-lg', backdrop: 'static' });
     }
 
     public openFilter(template: TemplateRef<any>) {

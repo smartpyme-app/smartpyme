@@ -5,11 +5,13 @@ import {
   SimpleChanges,
   TemplateRef,
   Input,
+  Output,
+  EventEmitter,
   ViewChild,
   inject,
 } from '@angular/core';
 
-import { Router, ActivatedRo,ute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -36,6 +38,8 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 export class ProductoInformacionComponent extends BaseModalComponent implements OnInit, OnChanges {
   @ViewChild('modalAtributo') modalAtributo!: TemplateRef<any>;
   @Input() producto: any = {};
+  /** Notifica al padre (p. ej. OnPush) cuando cambia tipo compuesto u otros datos mutados en el mismo objeto. */
+  @Output() productoActualizado = new EventEmitter<void>();
   /** Evita múltiples llamadas al pedir SKU sugerido */
   private skuCorrelativoPendiente = true;
   public categorias: any = [];
@@ -228,9 +232,14 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   public setCompuesto() {
     if (this.producto.tipo == 'Producto') {
       this.producto.tipo = 'Compuesto';
+      if (!Array.isArray(this.producto.composiciones)) {
+        this.producto.composiciones = [];
+      }
     } else {
       this.producto.tipo = 'Producto';
     }
+    this.productoActualizado.emit();
+    this.cdr.markForCheck();
   }
 
     public actualizarCostoPromedio(){

@@ -84,39 +84,6 @@
         <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>
       </div>
     </div>
-    <div class="form-group col-md-4 col-lg-2">
-      <label for="tipo_documento">Documento</label>
-      <select name="tipo_documento" (change)="selectTipoDocumento()" [(ngModel)]="compra.tipo_documento"
-              class="form-select">
-        @for (documento of documentos; track documento.nombre || $index) {
-          <option [value]="documento.nombre">{{ documento.nombre }}</option>
-        }
-      </select>
-    </div>
-    @if (compra.cotizacion == 0) {
-      <div class="form-group col-md-4 col-lg-2">
-        <label for="referencia">Num. Referencia</label>
-        <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia"
-               placeholder="Escribe aquí">
-      </div>
-    }
-    @if (compra.cotizacion == 1) {
-      <div class="form-group col-md-4 col-lg-2">
-        <label for="referencia">Correlativo</label>
-        <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia"
-               placeholder="Escribe aquí">
-      </div>
-    }
-    <div class="form-group col-md-4 col-lg-3">
-      <label for="id_bodega">Bodega</label>
-      <select name="id_bodega" [(ngModel)]="compra.id_bodega" class="form-select">
-        @for (bodega of bodegas; track bodega.id) {
-          <option [value]="bodega.id">
-            {{ bodega.nombre }}
-          </option>
-        }
-      </select>
-    </div>
     @if (apiService.auth_user().empresa.modulo_proyectos) {
       <div class="form-group col-md-12 col-lg-4">
         <label for="">Proyecto</label>
@@ -247,20 +214,20 @@
         @if (compra.cotizacion == 0) {
           <div class="form-group col-md-6 col-lg-3">
             <label for="forma_pago">Forma de pago</label>
-            <select name="forma_pago" [(ngModel)]="compra.forma_pago" class="form-select">
+            <select name="forma_pago" [(ngModel)]="compra.forma_pago" (change)="cambioMetodoDePago()" class="form-select">
               @for (forma of formaPagos; track forma.nombre || $index) {
                 <option [value]="forma.nombre">{{ forma.nombre }}</option>
               }
             </select>
           </div>
         }
-        @if (compra.forma_pago != 'Efectivo') {
+        @if (compra.forma_pago && compra.forma_pago !== 'Efectivo' && compra.forma_pago !== 'Wompi') {
           <div class="form-group col-md-6 col-lg-3">
             <label for="detalle_banco">Bancos</label>
             <select name="detalle_banco" [(ngModel)]="compra.detalle_banco" class="form-select">
               <option value="">Seleccione aquí</option>
-              @for (banco of bancos; track banco.nombre || $index) {
-                <option [value]="banco.nombre">{{ banco.nombre }}</option>
+              @for (banco of bancos; track banco.id) {
+                <option [value]="banco.nombre_banco">{{ banco.nombre_banco }}{{ banco.numero ? ' — ' + banco.numero : '' }}</option>
               }
             </select>
           </div>
@@ -511,9 +478,11 @@
                 <td class="text-center">
                   {{ item.cantidad }}
                 </td>
+                @if (!apiService.isSupervisorLimitado()) {
                 <td class="text-end">
                   {{ item.precioUni | currency }}
                 </td>
+                }
                 <td>
                   <!-- Mostrar sugerencias automáticas si las hay -->
                   @if (item.sugerencias && item.sugerencias.length > 0) {

@@ -70,16 +70,19 @@ export abstract class BaseFilteredPaginatedModalComponent extends BaseFilteredPa
 
   /**
    * Método helper para modales de confirmación
+   * Igual que openLargeModal: no usar this.openModal() para evitar recursión si una subclase lo sobrescribe.
    */
   openConfirmModal(template: TemplateRef<any>): void {
-    this.openModal(template, { size: 'sm', setAlertModal: false });
+    this.modalRef = this.modalManager.openModal(template, { size: 'sm', setAlertModal: false });
   }
 
   /**
    * Método helper para modales grandes
+   * Usa modalManager directamente: si se llamara this.openModal(), las subclases que
+   * sobrescriben openModal (p. ej. BaseCrudComponent o pantallas de usuarios) provocarían recursión infinita.
    */
   openLargeModal(template: TemplateRef<any>, config?: any): void {
-    this.openModal(template, {
+    this.modalRef = this.modalManager.openModal(template, {
       class: 'modal-lg',
       backdrop: 'static',
       ...config

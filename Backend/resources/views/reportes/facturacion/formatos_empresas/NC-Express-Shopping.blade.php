@@ -79,7 +79,7 @@
             <p id="nrc">{{ $cliente->ncr }}</p>
             <p id="giro">{{ \Illuminate\Support\Str::limit($cliente->giro, 20, $end = '...') }}</p>
             <p id="condicion">
-                @if ($venta->estado == 'Pagada')
+                @if (($venta->venta->estado ?? '') == 'Pagada')
                     X
                 @else
                     <span style="margin-left: 1.6cm;">X</span>

@@ -9,12 +9,13 @@ import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 @Component({
     selector: 'app-kardex',
     templateUrl: './kardex.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class KardexComponent implements OnInit, OnDestroy {

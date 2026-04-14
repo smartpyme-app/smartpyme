@@ -10,12 +10,15 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { CrearAjusteComponent } from '@shared/modals/crear-ajuste/crear-ajuste.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 @Component({
     selector: 'app-producto-inventarios',
     templateUrl: './producto-inventarios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, SumPipe],
+    imports: [CommonModule, RouterModule, FormsModule, SumPipe, CrearAjusteComponent, NotificacionesContainerComponent, TooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoInventariosComponent extends BaseModalComponent implements OnInit {
@@ -43,8 +46,9 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
     ngOnInit() {
     }
 
-    public setAjuste(event:any){
-        this.inventario.stock = event.stock_real;
+    /** El hijo actualiza la fila por referencia; solo forzamos detección de cambios. */
+    public setAjuste(_event: unknown): void {
+        this.cdr.markForCheck();
     }
 
     override openModal(template: TemplateRef<any>, inventario:any) {
@@ -62,13 +66,11 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
-        if(!this.inventario.id) {
-            this.inventario.stock = 0;
+        if (!this.inventario.id) {
             this.inventario.id_producto = this.producto.id;
-            this.inventario.id_bodega = this.inventario.id_bodega;
-            this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente.');
-        }else{
-            this.alertService.success('Inventario guardado', 'El inventario fue guardado exitosamente.');
+            this.inventario.stock = 0;
+            this.inventario.stock_minimo = this.inventario.stock_minimo ?? 0;
+            this.inventario.stock_maximo = this.inventario.stock_maximo ?? 0;
         }
         super.openModal(template, {class: 'modal-md'});
     }
@@ -77,14 +79,23 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
         this.loading = true;
         this.cdr.markForCheck();
 
-        this.apiService.store('inventario', this.inventario)
+        const payload = { ...this.inventario };
+        if (!payload.id) {
+            payload.stock = 0;
+        }
+
+        this.apiService.store('inventario', payload)
           .pipe(this.untilDestroyed())
-          .subscribe(inventario => {
-            if(!this.inventario.id) {
-                this.producto.inventarios.push(inventario);
-                this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente.');
+          .subscribe(invResp => {
+            if (!this.inventario.id) {
+                this.producto.inventarios.push(invResp);
+                this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente. Use «Agregar stock» para cargar existencias.');
             } else {
-                this.alertService.success('Inventario actualizado', 'El inventario fue actualizado exitosamente.');
+                const idx = this.producto.inventarios.findIndex((inv: any) => inv.id === invResp.id);
+                if (idx !== -1) {
+                    Object.assign(this.producto.inventarios[idx], invResp);
+                }
+                this.alertService.success('Inventario actualizado', 'Los límites de stock se guardaron correctamente.');
             }
 
             this.inventario = {};
@@ -117,8 +128,11 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
 
     }
 
-    obtenerIdSucursal(id:number) {
-        this.inventario.id_sucursal = this.bodegas.find((bodega:any) => bodega.id == id).id_sucursal;
+    obtenerIdSucursal(id: number | string | null | undefined) {
+        const b = this.bodegas.find((bodega: any) => bodega.id == id);
+        if (b) {
+            this.inventario.id_sucursal = b.id_sucursal;
+        }
     }
 
 }

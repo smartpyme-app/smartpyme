@@ -7,12 +7,13 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 
 @Component({
     selector: 'app-caja-ventas',
     templateUrl: './caja-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent],
     
 })
 

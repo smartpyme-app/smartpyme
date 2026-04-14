@@ -39,6 +39,8 @@ class VentasService
             throw new Exception('La venta no tiene sucursal asignada', 400);
         }
 
+        Partida::assertNoExisteParaOrigen('Venta', $venta->id, 'Ya existen partidas contables generadas para esta venta.');
+
         DB::beginTransaction();
 
         try {

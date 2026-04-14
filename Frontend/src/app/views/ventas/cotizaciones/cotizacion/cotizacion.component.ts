@@ -351,7 +351,6 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
     this.venta.id_usuario = this.apiService.auth_user().id;
     this.venta.id_vendedor = this.apiService.auth_user().id;
     this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
-    this.venta.id_bodega = this.apiService.auth_user().id_sucursal;
     this.venta.id_empresa = this.apiService.auth_user().id_empresa;
     let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
     if (corte) {
@@ -371,6 +370,7 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
       this.venta.cotizacion = 1;
       this.venta.estado = 'Pendiente';
       this.venta.tipo = 'cotizacion'; // Identificador para cotización
+      this.syncVentaCreditoConsignaFlagsFromEstado();
     }
 
     // if (this.route.snapshot.paramMap.get('id')!) {
@@ -960,6 +960,16 @@ if (
 
     this.apiService.store('facturacion', this.venta).pipe(this.untilDestroyed()).subscribe(
       (venta) => {
+        const detallesAntes = this.venta.detalles;
+        Object.assign(this.venta, venta);
+        if (
+          (!this.venta.detalles || !Array.isArray(this.venta.detalles) || this.venta.detalles.length === 0) &&
+          Array.isArray(detallesAntes) &&
+          detallesAntes.length > 0
+        ) {
+          this.venta.detalles = detallesAntes;
+        }
+
         // Si es cotización
         // if (this.facturarCotizacion) {
         //   this.apiService.read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!).subscribe(venta => {
@@ -1069,6 +1079,7 @@ if (
       .emitirDTE(this.venta)
       .then((venta) => {
         this.venta = venta;
+        this.syncVentaCreditoConsignaFlagsFromEstado();
         this.alertService.success(
           'DTE emitido.',
           'El documento ha sido emitido.'
@@ -1091,11 +1102,9 @@ if (
         this.router.navigate(['/venta/crear']);
       })
       .catch((error) => {
-        this.cargarDatosIniciales();
-        this.router.navigate(['/venta/crear']);
-
         this.emiting = false;
         this.alertService.warning('El documento no fue emitido.', error);
+        this.cdr.markForCheck();
       });
   }
 

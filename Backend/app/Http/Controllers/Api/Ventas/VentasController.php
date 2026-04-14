@@ -15,6 +15,8 @@ use Carbon\Carbon;
 use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumoPuntosService;
 
 use App\Models\Ventas\Venta;
+use App\Models\Ventas\Detalle;
+use App\Models\Ventas\DetalleCompuesto;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade as PDF;
 use App\Http\Requests\Ventas\StoreVentaRequest;
@@ -39,8 +41,11 @@ use App\Services\Ventas\CotizacionService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Caja;
 use App\Models\Admin\Documento;
 use App\Models\Ventas\Clientes\Cliente;
+use App\Models\Ventas\Impuesto;
+use App\Models\Ventas\MetodoDePago;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
@@ -1031,6 +1036,8 @@ class VentasController extends Controller
 
             DB::commit();
             $venta->refresh();
+            $venta->load(['detalles', 'cliente', 'impuestos']);
+
             return Response()->json($venta, 200);
         } catch (\Exception $e) {
             DB::rollback();
@@ -1540,6 +1547,7 @@ class VentasController extends Controller
                 });
             })
             ->where('cotizacion', 0)
+            ->with(['cliente'])
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')

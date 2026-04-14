@@ -10,6 +10,7 @@ use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Admin\Funcionalidad;
 use App\Models\Admin\EmpresaFuncionalidad;
 
+use App\Exports\CategoriasExport;
 use App\Imports\Categorias;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;

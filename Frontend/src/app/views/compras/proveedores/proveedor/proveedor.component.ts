@@ -49,16 +49,54 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
         super();
     }
 
+    private parseLocalJson(key: string): any[] {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) {
+                return [];
+            }
+            const data = JSON.parse(raw);
+            return Array.isArray(data) ? data : [];
+        } catch {
+            return [];
+        }
+    }
+
     ngOnInit() {
-        this.paises = JSON.parse(localStorage.getItem('paises')!);
-        this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
-        this.municipios = JSON.parse(localStorage.getItem('municipios')!);
-        this.distritos = JSON.parse(localStorage.getItem('distritos')!);
-        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+        this.paises = this.parseLocalJson('paises');
+        this.departamentos = this.parseLocalJson('departamentos');
+        this.municipios = this.parseLocalJson('municipios');
+        this.distritos = this.parseLocalJson('distritos');
+        this.actividad_economicas = this.parseLocalJson('actividad_economicas');
         
         // Verificar si tiene contabilidad habilitada
         this.verificarAccesoContabilidad();
-        
+
+        if (!this.municipios.length) {
+            this.apiService.getAll('municipios')
+                .pipe(this.untilDestroyed())
+                .subscribe((m) => {
+                    this.municipios = Array.isArray(m) ? m : [];
+                    this.cdr.markForCheck();
+                }, () => { this.cdr.markForCheck(); });
+        }
+        if (!this.distritos.length) {
+            this.apiService.getAll('distritos')
+                .pipe(this.untilDestroyed())
+                .subscribe((d) => {
+                    this.distritos = Array.isArray(d) ? d : [];
+                    this.cdr.markForCheck();
+                }, () => { this.cdr.markForCheck(); });
+        }
+        if (!this.departamentos.length) {
+            this.apiService.getAll('departamentos')
+                .pipe(this.untilDestroyed())
+                .subscribe((dep) => {
+                    this.departamentos = Array.isArray(dep) ? dep : [];
+                    this.cdr.markForCheck();
+                }, () => { this.cdr.markForCheck(); });
+        }
+
         this.loadAll();
     }
 

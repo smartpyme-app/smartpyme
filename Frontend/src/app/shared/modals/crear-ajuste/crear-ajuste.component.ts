@@ -9,12 +9,14 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 @Component({
     selector: 'app-crear-ajuste',
     templateUrl: './crear-ajuste.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, NotificacionesContainerComponent, TooltipModule],
     
 })
 export class CrearAjusteComponent extends BaseModalComponent implements OnInit {

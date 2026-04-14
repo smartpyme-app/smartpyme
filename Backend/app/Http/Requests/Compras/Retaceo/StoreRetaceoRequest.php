@@ -24,7 +24,7 @@ class StoreRetaceoRequest extends FormRequest
             'fecha' => 'required|date',
             'total_gastos' => 'required|numeric|min:0',
             'gastos' => 'required|array|min:1',
-            'gastos.*.id_gasto' => 'sometimes|nullable|integer|exists:gastos,id',
+            'gastos.*.id_gasto' => 'sometimes|nullable|integer|exists:egresos,id',
             'gastos.*.tipo_gasto' => 'sometimes|nullable|string|max:255',
             'gastos.*.monto' => 'required|numeric|min:0',
             'distribucion' => 'required|array|min:1',

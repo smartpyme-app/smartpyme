@@ -28,7 +28,7 @@ class StoreDocumentoRequest extends FormRequest
             'rangos' => ['nullable', 'string', 'max:255'],
             'numero_autorizacion' => ['nullable', 'string', 'max:255'],
             'resolucion' => ['nullable', 'string', 'max:255'],
-            'nota' => ['nullable', 'string', 'max:500'],
+            'nota' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'nuevaResolucion' => ['nullable', 'boolean'],
             'predeterminado' => ['nullable', 'boolean'],
             'prefijo' => ['nullable', 'string'],
@@ -58,7 +58,7 @@ class StoreDocumentoRequest extends FormRequest
             'rangos.max' => 'Los rangos no pueden exceder 255 caracteres.',
             'numero_autorizacion.max' => 'El número de autorización no puede exceder 255 caracteres.',
             'resolucion.max' => 'La resolución no puede exceder 255 caracteres.',
-            'nota.max' => 'La nota no puede exceder 500 caracteres.',
+            'nota.max' => 'La nota no puede exceder 1000 caracteres.',
             'fecha.date' => 'La fecha debe ser una fecha válida.',
             'caja_id.exists' => 'La caja seleccionada no existe.',
         ];

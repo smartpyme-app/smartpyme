@@ -77,15 +77,15 @@
             <p id="municipio"><b>Municipio:</b> {{ $cliente->municipio }}</p>
             <p id="departamento"><b>Departamento:</b> {{ $cliente->departamento }}</p>
         @endif
-        @if($venta->estado == 'Pagada')
+        @if(($venta->venta->estado ?? '') == 'Pagada')
             <p id="condicion"><b>Condición: </b>CONTADO</p>
-        @elseif($venta->estado == 'Pendiente')
+        @elseif(($venta->venta->estado ?? '') == 'Pendiente')
             <p id="condicion"><b>Condición: </b>CREDITO</p>
         @endif
         @if ($venta->id_cliente)
             <p id="nit"><b>DUI:</b> {{ $cliente->dui }}</p>
         @endif
-        <p id="vendedor"><b>Vendedor: </b>{{ $venta->venta->nombre_vendedor }}</p>
+        <p id="vendedor"><b>Vendedor: </b>{{ $venta->venta->nombre_vendedor ?? $venta->nombre_usuario ?? '' }}</p>
     </div>
 
     <table>
@@ -124,9 +124,9 @@
             <p id="municipio"><b>Municipio:</b> {{ $cliente->municipio }}</p>
             <p id="departamento"><b>Departamento:</b> {{ $cliente->departamento }}</p>
         @endif
-        @if($venta->estado == 'Pagada')
+        @if(($venta->venta->estado ?? '') == 'Pagada')
             <p id="condicion"><b>Condición: </b>CONTADO</p>
-        @elseif($venta->estado == 'Pendiente')
+        @elseif(($venta->venta->estado ?? '') == 'Pendiente')
             <p id="condicion"><b>Condición: </b>CREDITO</p>
         @endif
         @if ($venta->id_cliente)

@@ -169,17 +169,17 @@
                 </th>
               }
             }
-  <th class="text-end" *ngIf="esElSalvador">Viáticos</th>
-<th class="text-end">Total a Pagar</th>
-<th class="text-center">Acciones</th>
-</tr>
-</thead>
-<tbody>
-<tr *ngFor="let detalle of detalles">
-<td>
+            @if (esElSalvador) {
+              <th class="text-end">Viáticos</th>
+            }
+            <th class="text-end">Total a Pagar</th>
+            <th class="text-center">Acciones</th>
+          </tr>
         </thead>
+        <tbody>
           @for (detalle of detalles; track detalle.id) {
             <tr>
+              <td>
               {{ detalle.empleado?.nombres }} {{ detalle.empleado?.apellidos }}<br />
               <small class="text-muted">{{ detalle.empleado?.codigo }}</small>
             </td>
@@ -222,9 +222,11 @@
               }
             }
 
-              <td class="text-end" *ngIf="esElSalvador">
-                {{ detalle.viaticos | currency }}
-              </td>
+              @if (esElSalvador) {
+                <td class="text-end">
+                  {{ detalle.viaticos | currency }}
+                </td>
+              }
               <td class="text-end">
                 {{ getTotalAPagar(detalle) | currency }}
               </td>
@@ -305,10 +307,12 @@
                 </th>
               }
             }
-  <th class="text-end" *ngIf="esElSalvador">
-  {{ getTotalCampoReal('viaticos') | currency }}
-  </th>
-  <th class="text-end">
+            @if (esElSalvador) {
+              <th class="text-end">
+                {{ getTotalCampoReal('viaticos') | currency }}
+              </th>
+            }
+            <th class="text-end">
               {{ getTotalAPagarPlanilla() | currency }}
             </th>
             <th></th>

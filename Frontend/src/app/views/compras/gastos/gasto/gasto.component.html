@@ -98,7 +98,7 @@
                     </select>
                 </div>
             </div>
-            <div class="form-group col-md-4 col-lg-3" *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+            <div class="form-group col-md-4 col-lg-3" *ngIf="apiService.mostrarMenuConfigGastos(contabilidadHabilitada)">
                 <label for="id_categoria" class="w-100">Categoría</label>
                 <ng-select
                     name="id_categoria"
@@ -155,6 +155,28 @@
                 id="area_empresa"
                 placeholder="Ingrese el área de la empresa">
             </div>
+            @if (contabilidadHabilitada) {
+              <div class="form-group col-md-4 col-lg-3 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="es_retaceo_gasto">Es para retaceo</label>
+                  <input
+                    class="form-check-input float-end"
+                    type="checkbox"
+                    role="switch"
+                    [(ngModel)]="gasto.es_retaceo"
+                    name="es_retaceo"
+                    id="es_retaceo_gasto">
+                </div>
+              </div>
+            }
+            @if (contabilidadHabilitada && gasto.es_retaceo) {
+              <div class="form-group col-12">
+                <div class="alert alert-info py-2 px-3 mb-0">
+                  <i class="fa fa-info-circle me-2"></i>
+                  <small>Los gastos marcados como &quot;para retaceo&quot; aparecerán en la selección al crear un retaceo.</small>
+                </div>
+              </div>
+            }
             <div class="form-group col-md-4 col-lg-3" *ngIf="isColumnEnabled('columna_proyecto')">
                 <label for="num_identificacion">Número identificación:</label>
                 <input
@@ -208,7 +230,7 @@
                             <option *ngFor="let t of TIPOS_CATEGORIA" [value]="t">{{ t }}</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-6 col-lg-3" *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+                    <div class="form-group col-md-6 col-lg-3" *ngIf="apiService.mostrarMenuConfigGastos(contabilidadHabilitada)">
                         <label>Categoría:</label>
                         <ng-select
                             class="form-select p-0"

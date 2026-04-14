@@ -48,6 +48,8 @@ class CXPService
             throw new Exception('No se encontró la compra asociada al abono', 400);
         }
 
+        Partida::assertNoExisteParaOrigen('Abono de Compra', $cxp->id, 'Ya existen partidas contables generadas para este abono a compra.');
+
         DB::beginTransaction();
 
         try {

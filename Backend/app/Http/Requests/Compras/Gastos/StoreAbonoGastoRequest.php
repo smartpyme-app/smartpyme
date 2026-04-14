@@ -27,7 +27,7 @@ class StoreAbonoGastoRequest extends FormRequest
             'forma_pago' => ['required', 'string', 'max:255'],
             'detalle_banco' => ['required_unless:forma_pago,Efectivo', 'string'],
             'total' => ['required', 'numeric', 'min:0'],
-            'id_gasto' => ['required', 'integer', 'exists:gastos,id'],
+            'id_gasto' => ['required', 'integer', 'exists:egresos,id'],
             'id_usuario' => ['required', 'integer', 'exists:users,id'],
             'id_sucursal' => ['required', 'integer', 'exists:sucursales,id'],
             'id' => ['nullable', 'integer', 'exists:abonos_gastos,id'],

@@ -89,7 +89,7 @@ class ComprasController extends Controller
             ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
             ->when($request->id_bodega, fn($q) => $q->where('id_bodega', $request->id_bodega))
             ->when($request->id_usuario, fn($q) => $q->where('id_usuario', $request->id_usuario))
-            ->when($request->id_proveedor, fn($q) => $q->where('id_proveedor', $request->id_proveedor))
+            ->when($request->filled('id_proveedor'), fn($q) => $q->where('id_proveedor', (int) $request->id_proveedor))
             ->when($request->forma_pago, fn($q) => $q->where('forma_pago', $request->forma_pago))
             ->when($request->estado, fn($q) => $q->where('estado', $request->estado))
             ->when($request->metodo_pago, fn($q) => $q->where('metodo_pago', $request->metodo_pago))

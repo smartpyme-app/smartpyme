@@ -131,8 +131,9 @@ export class SharedDataService {
       const now = Date.now();
       const ttl = this.TTL.LISTAS_REFERENCIA;
 
-      // Si el cache es válido, retornar datos desde cache
-      if (now - cached.timestamp < ttl && cached.data.length > 0) {
+      // Caché válido si hubo fetch exitoso (timestamp > 0), sigue dentro del TTL y no hay otra carga en curso.
+      // Importante: las listas vacías [] también son válidas; exigir data.length > 0 provocaba un GET nuevo por cada suscriptor.
+      if (cached.timestamp > 0 && now - cached.timestamp < ttl && !cached.loading) {
         this.dataSubjects[cacheKey].next(cached.data);
         return this.dataSubjects[cacheKey].asObservable();
       }

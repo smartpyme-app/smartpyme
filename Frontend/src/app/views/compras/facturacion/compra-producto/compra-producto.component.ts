@@ -31,6 +31,8 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
     searchControl = new FormControl();
 
     public productos: PaginatedResponse<any> = {} as PaginatedResponse;
+    /** Resultados del buscador rápido (el modal sigue usando `productos` paginado). */
+    public productosBusqueda: any[] = [];
     public categorias:any = [];
     public sucursales:any = [];
     public detalle:any = {};
@@ -72,44 +74,36 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
         this.searchControl.valueChanges
               .pipe(
                 debounceTime(500),
-                filter((query: string) => query.trim().length > 0),
-                switchMap((query: any) =>
-                  this.apiService.getAll(`productos/buscar/${encodeURIComponent(query)}`).pipe(
+                filter((query: string | null | undefined) => query != null && String(query).trim().length > 0),
+                switchMap((query: string | null | undefined) => {
+                  const q = String(query).trim();
+                  const params: Record<string, string | number> = { query: q };
+                  if (this.compra?.id_bodega) {
+                    params['id_bodega'] = this.compra.id_bodega;
+                  } else if (this.compra?.id_sucursal) {
+                    params['id_sucursal'] = this.compra.id_sucursal;
+                  }
+                  return this.apiService.getAll('productos/buscar-by-query', params).pipe(
                     catchError(error => {
                       console.error('Error en la búsqueda:', error);
-                      this.productos = {} as PaginatedResponse; // Limpiar resultados en caso de error.
-                      this.loading = false; // Asegurar que el estado de carga se actualice.
-                      return of([]); // Retornar un observable vacío para que el flujo continúe.
+                      this.productosBusqueda = [];
+                      this.loading = false;
+                      this.cdr.markForCheck();
+                      return of([]);
                     })
-                  )
-                ),
+                  );
+                }),
                 this.untilDestroyed()
               )
-              .subscribe((results: any[]) => {
-                // Si results es un array, lo convertimos a PaginatedResponse
-                if (Array.isArray(results)) {
-                    this.productos = {
-                        data: results,
-                        current_page: 1,
-                        last_page: 1,
-                        per_page: results.length,
-                        total: results.length,
-                        from: 1,
-                        to: results.length,
-                        path: '',
-                        first_page_url: '',
-                        last_page_url: '',
-                        next_page_url: null,
-                        prev_page_url: null
-                    } as PaginatedResponse;
-                } else {
-                    this.productos = results || {} as PaginatedResponse;
-                }
+              .subscribe((results: any) => {
+                const list = Array.isArray(results) ? results : [];
+                this.productosBusqueda = list;
                 this.loading = false;
                 this.cdr.markForCheck();
 
-                if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) {
-                    this.selectProducto(results[0]);
+                const busqueda = String(this.searchControl.value ?? '').trim();
+                if (list.length === 1 && busqueda && list[0]?.codigo === busqueda) {
+                    this.selectProducto(list[0]);
                 }
               });
     }
@@ -263,6 +257,7 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
     onSubmit(){
         console.log(this.detalle);
         this.productos = {} as PaginatedResponse;
+        this.productosBusqueda = [];
         this.searchControl.setValue('');
         this.productoSelect.emit(this.detalle);
         if(this.modalRef){

@@ -51,6 +51,8 @@ class TransaccionesService
             throw new Exception('La cuenta bancaria no tiene cuenta contable asociada', 400);
         }
 
+        Partida::assertNoExisteParaOrigen('Transacción', $transaccion->id, 'Ya existen partidas contables generadas para esta transacción bancaria.');
+
         DB::beginTransaction();
 
         try {

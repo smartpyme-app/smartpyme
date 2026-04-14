@@ -17,6 +17,11 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 @Pipe({
     name: 'replace',
@@ -32,7 +37,16 @@ export class ReplacePipe implements PipeTransform {
     selector: 'app-reportes-automaticos',
     templateUrl: './reportes-automaticos.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [
+        CommonModule,
+        FormsModule,
+        ReplacePipe,
+        PopoverModule,
+        TooltipModule,
+        NgSelectModule,
+        PaginationComponent,
+        NotificacionesContainerComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })

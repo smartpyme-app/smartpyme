@@ -6,6 +6,7 @@ import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -38,10 +39,15 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
     public items: any = [];
     public notificaciones: any = [];
     public modules: any[] = [];
+    public contabilidadHabilitada: boolean = false;
 
     searchControl = new FormControl();
 
-    constructor(public apiService: ApiService, public alertService: AlertService) {
+    constructor(
+        public apiService: ApiService,
+        public alertService: AlertService,
+        private funcionalidadesService: FuncionalidadesService
+    ) {
         super();
     }
 
@@ -113,6 +119,21 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
 
         this.loadNotificaciones();
         this.loadModules();
+        this.verificarAccesoContabilidad();
+    }
+
+    verificarAccesoContabilidad(): void {
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = acceso;
+                },
+                error: (error) => {
+                    console.error('Error al verificar acceso a contabilidad:', error);
+                    this.contabilidadHabilitada = false;
+                }
+            });
     }
 
 

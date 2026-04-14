@@ -69,17 +69,18 @@ export abstract class BasePaginatedModalComponent extends BasePaginatedComponent
    * Método helper para modales de confirmación
    */
   openConfirmModal(template: TemplateRef<any>): void {
-    this.openModal(template, { size: 'sm', setAlertModal: false });
+    this.modalRef = this.modalManager.openModal(template, { size: 'sm', setAlertModal: false });
   }
 
   /**
    * Método helper para modales grandes
+   * No delegar en this.openModal(): las subclases que lo sobrescriben causarían recursión.
    */
   openLargeModal(template: TemplateRef<any>, config?: any): void {
-    this.openModal(template, { 
-      size: 'lg', 
+    this.modalRef = this.modalManager.openModal(template, {
+      size: 'lg',
       backdrop: 'static',
-      ...config 
+      ...config
     });
   }
 }

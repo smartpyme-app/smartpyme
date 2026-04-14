@@ -1,4 +1,9 @@
 <div class="row" *ngIf="producto.tipo == 'Compuesto'">
+    @if (!producto.id) {
+    <div class="alert alert-info mb-3">
+      Guarde el producto con el botón <strong>Guardar</strong> para poder agregar productos a la composición.
+    </div>
+    }
     <h6 class="my-3 font-weight-bold">
         Composiciones
 
@@ -28,9 +33,9 @@
                     </td>
                 </tr>
                 }
-                @if (!loading && producto?.composiciones.length == 0) {
+                @if (!loading && (producto?.composiciones?.length ?? 0) === 0) {
                 <tr>
-                    <td colspan="5" class="text-center">
+                    <td colspan="8" class="text-center">
                         <span class="text-muted">No tiene productos agregados</span>
                     </td>
                 </tr>

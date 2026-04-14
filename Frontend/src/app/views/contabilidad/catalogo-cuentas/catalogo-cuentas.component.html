@@ -11,7 +11,7 @@
             @if (cuentas?.total) {
               <span class="text-muted d-flex align-items-center gap-2">
                 Mostrando
-                <select name="paginate" class="form-select w-auto" (change)="filtrarCuentas()" [(ngModel)]="filtros.paginate">
+                <select name="paginate" class="form-select w-auto" (change)="filtrarCuentas(true)" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
                     <option value="50">50</option>
@@ -25,8 +25,9 @@
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'catalogo-cuentas'"></app-importar-excel>
-                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCuentas()" autocomplete="off">
-                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCuentas(true)" autocomplete="off">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar código, nombre, rubro…" [(ngModel)]="filtros.buscador">
+                    <button type="submit" class="btn btn-default" title="Buscar"><i class="fa fa-search"></i></button>
                 </form>
                 <!-- <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button> -->
             </div>
@@ -89,7 +90,7 @@
             </table>
         </div>
 
-        @if (cuentas?.last_page > 1) {
+        @if (cuentas?.total > 0) {
           <div class="col-12">
             <app-pagination [items]="cuentas" (setPagination)="setPagination($event)"></app-pagination>
           </div>
@@ -106,7 +107,7 @@
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
-    <form autocomplete="off" (ngSubmit)="filtrarCuentas()">
+    <form autocomplete="off" (ngSubmit)="filtrarCuentas(true)">
         <div class="row">
 
             <div class="form-group col-sm-6">

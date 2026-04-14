@@ -444,7 +444,14 @@ class DevolucionVentasController extends Controller
     }
 
     public function generarDoc($id){
-        $venta = Devolucion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
+        $venta = Devolucion::where('id', $id)
+            ->with([
+                'detalles',
+                'cliente',
+                'empresa.currency',
+                'venta.vendedor',
+            ])
+            ->firstOrFail();
 
         if(Auth::user()->id_empresa == 187 && $venta->nombre_documento == "Nota de crédito"){//187  OK V2
 

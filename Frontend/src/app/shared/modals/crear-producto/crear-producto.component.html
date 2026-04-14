@@ -81,7 +81,7 @@
                     </div>
                   </div>
                 }
-                @if (apiService.auth_user().empresa.valor_inventario != 'promedio') {
+                @if (apiService.auth_user().empresa.valor_inventario != 'promedio' && (!apiService.isSupervisorLimitado() || producto.tipo == 'Materia prima')) {
                   <div class="form-group col-md-4 col-lg-3">
                     <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Última compra)</small></label>
                     <div class="input-group">
@@ -90,7 +90,7 @@
                     </div>
                   </div>
                 }
-                @if (apiService.auth_user().empresa.valor_inventario == 'promedio') {
+                @if (apiService.auth_user().empresa.valor_inventario == 'promedio' && (!apiService.isSupervisorLimitado() || producto.tipo == 'Materia prima')) {
                   <div class="form-group col-md-4 col-lg-3">
                     <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Promedio)</small></label>
                     <div class="input-group">
@@ -99,6 +99,7 @@
                     </div>
                   </div>
                 }
+                @if (!apiService.isSupervisorLimitado()) {
                 @if (!loading && producto.tipo != 'Materia prima') {
                   <div class="form-group col-md-4 col-lg-3">
                     <label for="tipo_impuesto">Ganancia</label>
@@ -125,6 +126,7 @@
                         <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">
                     </div>
                   </div>
+                }
                 }
 
                 <h6 class="my-3 font-weight-bold w-100">Descripción</h6>

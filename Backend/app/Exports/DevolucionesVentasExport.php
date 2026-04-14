@@ -39,7 +39,13 @@ class DevolucionesVentasExport implements FromCollection, WithHeadings, WithMapp
 
     public function collection()
     {
-        $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
+        $request = $this->request ?? request();
+        if (!$request) {
+            $request = new Request();
+        }
+
+        $orden = $request->input('orden', 'fecha');
+        $direccion = $request->input('direccion', 'desc');
         
         $ventas = Devolucion::when($request->buscador, function($query) use ($request){
                             return $query->where('observaciones', 'like', '%'.$request->buscador.'%');
@@ -65,7 +71,7 @@ class DevolucionesVentasExport implements FromCollection, WithHeadings, WithMapp
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy($orden, $direccion)
                     ->orderBy('id', 'desc')
                     ->get();
 
@@ -81,7 +87,7 @@ class DevolucionesVentasExport implements FromCollection, WithHeadings, WithMapp
               $row->cliente()->pluck('nit')->first(),
               $row->venta()->first()->nombre_documento,
               $row->venta()->first()->correlativo,
-              $row->estado,
+              ($row->enable ? 'Activa' : 'Anulada'),
               round($row->total, 2),
               $row->empresa()->pluck('nombre')->first(),
               $row->observaciones,

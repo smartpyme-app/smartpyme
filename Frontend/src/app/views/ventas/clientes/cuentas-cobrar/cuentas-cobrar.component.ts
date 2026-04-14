@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TruncatePipe } from '@pipes/truncate.pipe';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -12,7 +15,7 @@ import { ApiService } from '@services/api.service';
   selector: 'app-cuentas-cobrar',
   templateUrl: './cuentas-cobrar.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, ModalModule]
+  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, ModalModule, PopoverModule, TruncatePipe, PaginationComponent]
 })
 export class CuentasCobrarComponent implements OnInit {
 
@@ -227,8 +230,34 @@ export class CuentasCobrarComponent implements OnInit {
         }
     }
 
+    montoTotalVenta(venta: any): number {
+        const raw = venta?.total;
+        if (raw === null || raw === undefined || raw === '') {
+            return 0;
+        }
+        const n = typeof raw === 'number' ? raw : parseFloat(String(raw).replace(',', ''));
+        return Number.isFinite(n) ? n : 0;
+    }
+
+    etiquetaCliente(venta: any): string {
+        if (venta?.nombre_cliente) {
+            return String(venta.nombre_cliente);
+        }
+        const c = venta?.cliente;
+        if (c) {
+            if (c.tipo === 'Empresa' && c.nombre_empresa) {
+                return String(c.nombre_empresa);
+            }
+            const nombre = [c.nombre, c.apellido].filter(Boolean).join(' ').trim();
+            if (nombre) {
+                return nombre;
+            }
+        }
+        return 'Consumidor Final';
+    }
+
     getSaldo(venta: any): number {
-        const total = parseFloat(venta?.total || 0);
+        const total = this.montoTotalVenta(venta);
         const abonos = parseFloat(venta?.abonos_sum_total || 0);
         const devoluciones = parseFloat(venta?.devoluciones_sum_total || 0);
         return Math.round((total - abonos - devoluciones) * 100) / 100;

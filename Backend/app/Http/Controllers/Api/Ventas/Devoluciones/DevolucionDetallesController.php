@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Ventas\Devoluciones;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-use App\Models\Ventas\DevolucionDetalle as Detalle;
+use App\Models\Ventas\Devoluciones\Detalle;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Http\Requests\Ventas\Devoluciones\StoreDetalleDevolucionVentaRequest;

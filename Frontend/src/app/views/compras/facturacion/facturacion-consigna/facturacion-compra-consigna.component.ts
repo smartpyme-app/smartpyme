@@ -156,16 +156,21 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
     }
 
     public cambioMetodoDePago() {
-        if (this.apiService.isModuloBancos() && this.compra.forma_pago && this.compra.forma_pago !== 'Efectivo') {
-            const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.compra.forma_pago);
+        const fp = this.compra.forma_pago;
+        if (fp === 'Efectivo' || fp === 'Wompi') {
+            this.compra.detalle_banco = '';
+            this.cdr.markForCheck();
+            return;
+        }
+        if (this.apiService.isModuloBancos() && fp) {
+            const formaPagoSeleccionada = this.formaPagos.find((f: any) => f.nombre === fp);
             if (formaPagoSeleccionada?.banco?.nombre_banco) {
                 this.compra.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
             } else {
                 this.compra.detalle_banco = '';
             }
-        } else if (this.compra.forma_pago === 'Efectivo') {
-            this.compra.detalle_banco = '';
         }
+        this.cdr.markForCheck();
     }
 
     public updateTotal(detalle:any){

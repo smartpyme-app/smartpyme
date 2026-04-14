@@ -3,16 +3,32 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { ModalModule } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { SharedDataService } from '@services/shared-data.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { FilterPipe } from '@pipes/filter.pipe';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
     selector: 'app-admin-usuarios',
     templateUrl: './admin-usuarios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [
+        CommonModule,
+        RouterModule,
+        FormsModule,
+        NgSelectModule,
+        TooltipModule,
+        ModalModule,
+        FilterPipe,
+        NotificacionesContainerComponent,
+        PaginationComponent,
+    ],
 
 })
 
@@ -34,7 +50,8 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
     constructor(
         apiService:ApiService,
         alertService:AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private sharedDataService: SharedDataService
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'admin-usuario',
@@ -76,9 +93,16 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
                 this.empresas = empresas;
             }, error => {this.alertService.error(error); });
 
-    this.apiService.getAll('sucursales/list').subscribe((sucursales) => {
-      this.sucursalesList = sucursales;
-    }, (error) => { this.alertService.error(error); });
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (sucursales) => {
+                    this.sucursalesList = sucursales;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
     }
 
     public override loadAll(closeFilterModal = false){
@@ -88,8 +112,9 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
             .subscribe(usuarios => {
                 this.usuarios = usuarios;
                 this.usuarios.data.forEach((usuario:any) => {
-                    usuario.rol_name = usuario.roles[0].name;
-                    usuario.rol_id = usuario.roles[0].id;
+                    const rol = usuario.roles?.[0];
+                    usuario.rol_name = rol?.name ?? '';
+                    usuario.rol_id = rol?.id ?? usuario.rol_id;
                 });
                 this.loading = false;
                 if (closeFilterModal) {
@@ -110,35 +135,59 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
     }
 
   openFilterModal(template: TemplateRef<any>) {
-    this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+    this.modalRef = this.modalManager.openModal(template, { class: 'modal-lg' });
   }
 
     override openModal(template: TemplateRef<any>, usuario?: any) {
-        this.usuario = usuario || {};
+        // Copia superficial para no mutar la fila de la tabla al editar.
+        this.usuario = usuario ? { ...usuario } : {};
 
         if (!this.usuario.id) {
             this.usuario.rol_id = 2;
         }
 
-        this.apiService.getAll('sucursales/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(sucursales => {
-                this.sucursalesList = sucursales;
-                this.setSucursales();
-            }, error => {this.alertService.error(error); });
+        const afterSucursales = () => {
+            this.setSucursales();
+        };
 
-        this.apiService.getAll('bodegas/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(bodegas => {
-                this.bodegas = bodegas;
-            }, error => {this.alertService.error(error); });
+        if (this.sucursalesList?.length) {
+            afterSucursales();
+        } else {
+            this.apiService.getAll('sucursales/list')
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: (sucursales) => {
+                        this.sucursalesList = sucursales;
+                        afterSucursales();
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                    }
+                });
+        }
 
-        super.openLargeModal(template, usuario);
+        // Una sola fuente / caché compartida; evita tormentas de GET si el modal o varios suscriptores piden la lista varias veces.
+        this.sharedDataService.getBodegas()
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (bodegas) => {
+                    this.bodegas = bodegas;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
+
+        super.openLargeModal(template);
     }
 
-    setSucursales(){
-        this.sucursales = this.sucursalesList.filter((item:any) => item.id_empresa == this.usuario.id_empresa);
-        this.usuario.id_sucursal = this.sucursales[0]?.id;
+    setSucursales(): void {
+        this.sucursales = this.sucursalesList.filter((item: any) => item.id_empresa == this.usuario.id_empresa);
+        const current = this.usuario.id_sucursal;
+        const stillValid = this.sucursales.some((s: any) => String(s.id) === String(current));
+        if (!stillValid && this.sucursales.length) {
+            this.usuario.id_sucursal = this.sucursales[0].id;
+        }
     }
 
     selectSucursal(){
@@ -174,20 +223,8 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
         this.showpassword2 = !this.showpassword2;
     }
 
-    public onSubmit() {
-        this.saving = true;
-        // Guardamos al usuario
-        this.apiService.store('admin-usuario', this.usuario).subscribe(usuario => {
-            this.loadAll();
-            this.saving = false;
-            if(!this.usuario.id){
-                this.alertService.success('Usuario creado', 'El usuario fue añadido exitosamente.');
-            }else{
-                this.alertService.success('Usuario guardado', 'El usuario fue guardado exitosamente.');
-            }
-            this.modalRef?.hide();
-        },error => {this.alertService.error(error); this.saving = false; });
-
+    public override async onSubmit(item?: any, isStatusChange: boolean = false): Promise<void> {
+        await super.onSubmit(item, isStatusChange);
     }
 
     public setEstado(usuario:any){

@@ -9,12 +9,14 @@ import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { SumPipe } from '@pipes/sum.pipe';
+import { FilterPipe } from '@pipes/filter.pipe';
 
 @Component({
     selector: 'app-buscador-productos',
     templateUrl: './buscador-productos.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule],
+    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule, SumPipe, FilterPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BuscadorProductosComponent implements OnInit {

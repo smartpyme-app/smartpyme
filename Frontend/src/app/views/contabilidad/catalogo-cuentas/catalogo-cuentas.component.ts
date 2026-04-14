@@ -8,6 +8,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -16,7 +17,7 @@ import Swal from 'sweetalert2';
     selector: 'app-catalogo-cuentas',
     templateUrl: './catalogo-cuentas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
@@ -78,10 +79,14 @@ export class CatalogoCuentasComponent extends BaseCrudComponent<any> implements 
         this.filtros.orden = 'id';
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
-        this.filtrarCuentas();
+        this.filtros.page = 1;
+        this.filtrarCuentas(false);
     }
 
-    public filtrarCuentas(){
+    public filtrarCuentas(resetPage: boolean = false) {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
         this.apiService.getAll('catalogo/cuentas', this.filtros)
           .pipe(this.untilDestroyed())

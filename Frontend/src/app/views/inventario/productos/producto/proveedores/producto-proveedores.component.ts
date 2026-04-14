@@ -10,12 +10,15 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 @Component({
     selector: 'app-producto-proveedores',
     templateUrl: './producto-proveedores.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, TruncatePipe, TooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoProveedoresComponent extends BaseModalComponent implements OnInit {
@@ -50,9 +53,9 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
         }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
-    override openModal(template: TemplateRef<any>, proveedor:any) {
-        this.proveedor = proveedor;
-        this.proveedor.id_proveedor = '';
+    override openModal(template: TemplateRef<any>, proveedor: any) {
+        this.proveedor = proveedor && Object.keys(proveedor).length ? { ...proveedor } : {};
+        this.proveedor.id_proveedor = null;
         super.openModal(template, {class: 'modal-md'});
     }
 

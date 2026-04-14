@@ -154,20 +154,7 @@ export class GastoComponent implements OnInit {
         }
       });
 
-    if (this.apiService.isGastosCategoriasPersonalizadasHabilitadas()) {
-      this.apiService.getAll('gastos/categorias/list').subscribe(
-        (categorias) => {
-          this.categorias = categorias;
-          this.loading = false;
-        },
-        (error) => {
-          this.alertService.error(error);
-          this.loading = false;
-        }
-      );
-    }
-
-    // Los bancos y categorías se cargarán después de verificar contabilidad
+    // Categorías: se cargan en cargarCategorias() tras verificar contabilidad (y si hay categorías personalizadas en empresa).
 
     this.sharedDataService.getProveedores()
       .pipe(this.untilDestroyed())
@@ -226,14 +213,8 @@ export class GastoComponent implements OnInit {
         (gasto) => {
           this.gasto = gasto;
 
-          // Inicializar el campo credito basándose en el estado
-          // credito = false significa pendiente (toggle apagado)
-          // credito = true significa no pendiente (toggle encendido)
-          if (this.gasto.estado === 'Pendiente') {
-            this.gasto.credito = false;
-          } else {
-            this.gasto.credito = true;
-          }
+          // Alineado con setCredito(): credito true = Pendiente (switch "Pendiente" encendido)
+          this.syncGastoCreditoFromEstado();
 
           // console.log('Gasto completo:', this.gasto);
           // console.log('otros_impuestos raw:', this.gasto.otros_impuestos);
@@ -297,9 +278,9 @@ export class GastoComponent implements OnInit {
 
           if (this.apiService.isGastosCategoriasPersonalizadasHabilitadas()) {
             this.cargarDepartamentosYAreas();
-            if (this.gasto.id_categoria != null && this.gasto.id_categoria !== '') {
-              this.gasto.id_categoria = Number(this.gasto.id_categoria);
-            }
+          }
+          if (this.gasto.id_categoria != null && this.gasto.id_categoria !== '') {
+            this.gasto.id_categoria = Number(this.gasto.id_categoria);
           }
 
           if (this.gasto.detalles && this.gasto.detalles.length > 1) {
@@ -379,6 +360,7 @@ export class GastoComponent implements OnInit {
         .subscribe(
           (gasto) => {
             this.gasto = gasto;
+            this.syncGastoCreditoFromEstado();
             this.gasto.fecha = this.apiService.date();
             this.gasto.id = null;
 
@@ -394,7 +376,7 @@ export class GastoComponent implements OnInit {
               this.loadAreasPorDepartamento(this.gasto.id_departamento);
             }
 
-            if(this.gasto.otros_impuestos) {
+            if (this.gasto.otros_impuestos) {
               this.mostrar_otros_impuestos = true;
               this.cargarImpuestosSeleccionados();
             }
@@ -548,24 +530,9 @@ export class GastoComponent implements OnInit {
     }
   }
 
-  public setPendiente(event: any) {
-    // El toggle representa "Pendiente": cuando está encendido (true), está pendiente
-    // Cuando está apagado (false), no está pendiente (ya pagado)
-    const estaPendiente = event.target.checked;
-
-    if (estaPendiente) {
-      // Si está pendiente (toggle encendido), deshabilitar fecha de pago y limpiar el valor
-      this.gasto.estado = 'Pendiente';
-      this.gasto.credito = false;
-      this.gasto.fecha_pago = null;
-    } else {
-      // Si no está pendiente (toggle apagado), habilitar fecha de pago y establecer fecha actual si no tiene
-      this.gasto.estado = 'Confirmado';
-      this.gasto.credito = true;
-      if (!this.gasto.fecha_pago) {
-        this.gasto.fecha_pago = moment().format('YYYY-MM-DD');
-      }
-    }
+  private syncGastoCreditoFromEstado(): void {
+    if (!this.gasto) return;
+    this.gasto.credito = this.gasto.estado === 'Pendiente';
   }
 
 
@@ -802,32 +769,32 @@ export class GastoComponent implements OnInit {
         this.gasto.otros_impuestos = [];
     }
 
-    // Manejar campos según contabilidad
-    if (!this.contabilidadHabilitada) {
-      // Sin contabilidad: usar campo tipo, limpiar id_categoria
+    const usarCategoriaBd = this.apiService.mostrarMenuConfigGastos(this.contabilidadHabilitada);
+    const categoriasPersonalizadas = this.apiService.isGastosCategoriasPersonalizadasHabilitadas();
+
+    // Sin selector de categoría BD: solo tipo libre; con contabilidad se prioriza id_categoria sobre tipo
+    if (!usarCategoriaBd) {
       if (this.gasto.id_categoria) {
         this.gasto.id_categoria = null;
       }
-      // Asegurar que tipo esté presente
       if (!this.gasto.tipo) {
         this.gasto.tipo = '';
       }
-    } else {
-      // Con contabilidad: usar id_categoria, limpiar tipo si es necesario
-      if (this.gasto.tipo && !this.gasto.id_categoria) {
-        // Si hay tipo pero no id_categoria, limpiar tipo
-        this.gasto.tipo = '';
-      }
+    } else if (this.contabilidadHabilitada && this.gasto.tipo && !this.gasto.id_categoria) {
+      this.gasto.tipo = '';
     }
 
     const payload: any = { ...this.gasto };
-    if (!this.apiService.isGastosCategoriasPersonalizadasHabilitadas()) {
+    if (!usarCategoriaBd) {
       delete payload.id_categoria;
-      delete payload.id_area_empresa;
     } else if (payload.id_categoria != null && payload.id_categoria !== '') {
       payload.id_categoria = Number(payload.id_categoria);
     } else {
       payload.id_categoria = null;
+    }
+
+    if (!categoriasPersonalizadas) {
+      delete payload.id_area_empresa;
     }
     if (this.varios_items && this.detalles.length > 0) {
       payload.varios_items = true;
@@ -850,7 +817,7 @@ export class GastoComponent implements OnInit {
           area_empresa: d.area_empresa || null,
           id_proyecto: d.id_proyecto || null,
         };
-        if (this.apiService.isGastosCategoriasPersonalizadasHabilitadas()) {
+        if (usarCategoriaBd) {
           const ic = d.id_categoria;
           line.id_categoria = ic != null && ic !== '' ? Number(ic) : null;
         }
@@ -1603,8 +1570,7 @@ export class GastoComponent implements OnInit {
   }
 
   cargarCategorias() {
-    // Solo cargar categorías si tiene contabilidad habilitada
-    if (this.contabilidadHabilitada) {
+    if (this.apiService.mostrarMenuConfigGastos(this.contabilidadHabilitada)) {
       this.apiService.getAll('gastos/categorias/list')
         .pipe(this.untilDestroyed())
         .subscribe(

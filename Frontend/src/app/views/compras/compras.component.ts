@@ -37,6 +37,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     public compras:any = [];
     public compra:any = {};
     public formaPagos:any = [];
+    /** Cuentas bancarias para el modal de edición (mismo origen que facturación de compra). */
+    public bancos: any[] = [];
     public documentos:any = [];
     public proveedores:any = [];
     public usuarios:any = [];
@@ -107,6 +109,27 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         this.destroy$.complete();
     }
 
+    private parseOptionalIdParam(params: Record<string, string | undefined>, key: string): number | null {
+        const raw = params[key];
+        if (raw === undefined || raw === null || raw === '') {
+            return null;
+        }
+        const n = Number(raw);
+        return Number.isFinite(n) && n > 0 ? n : null;
+    }
+
+    /** Parámetros listos para GET/export (sin null/undefined/'' para no confundir al backend ni la caché HTTP). */
+    private filtrosParaApi(): Record<string, unknown> {
+        const out: Record<string, unknown> = {};
+        for (const key of Object.keys(this.filtros)) {
+            const v = this.filtros[key];
+            if (v !== '' && v !== null && v !== undefined) {
+                out[key] = v;
+            }
+        }
+        return out;
+    }
+
     ngOnInit() {
         this.searchSubject$.pipe(
             debounceTime(400),
@@ -121,7 +144,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                 buscador: params['buscador'] || '',
                 id_proyecto: +params['id_proyecto'] || '',
                 id_documento: +params['id_documento'] || '',
-                id_proveedor: +params['id_proveedor'] || '',
+                id_proveedor: this.parseOptionalIdParam(params, 'id_proveedor'),
                 id_sucursal: +params['id_sucursal'] || '',
                 id_usuario: +params['id_usuario'] || '',
                 forma_pago: params['forma_pago'] || '',
@@ -156,7 +179,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
     public override loadAll() {
         this.filtros.id_sucursal = '';
-        this.filtros.id_proveedor = '';
+        this.filtros.id_proveedor = null;
         this.filtros.id_usuario = '';
         this.filtros.id_usuario = '';
         this.filtros.id_canal = '';
@@ -205,15 +228,11 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
         this.loading = true;
 
-        if(!this.filtros.id_proveedor){
-            this.filtros.id_proveedor = '';
-        }
-
         if(!this.filtros.id_usuario){
             this.filtros.id_usuario = '';
         }
 
-        this.apiService.getAll('compras', this.filtros)
+        this.apiService.getAll('compras', this.filtrosParaApi())
             .pipe(this.untilDestroyed())
             .subscribe(compras => {
                 this.compras = compras;
@@ -253,6 +272,25 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
     public override delete(id: number) {
         super.delete(id);
+    }
+
+    /** Sincroniza banco al cambiar forma de pago en el modal (igual que en facturación de compra). */
+    public cambioMetodoDePagoCompraModal(): void {
+        const fp = this.compra?.forma_pago;
+        if (fp === 'Efectivo' || fp === 'Wompi') {
+            this.compra.detalle_banco = '';
+            this.cdr.markForCheck();
+            return;
+        }
+        if (this.apiService.isModuloBancos() && fp) {
+            const sel = this.formaPagos.find((f: any) => f.nombre === fp);
+            if (sel?.banco?.nombre_banco) {
+                this.compra.detalle_banco = sel.banco.nombre_banco;
+            } else {
+                this.compra.detalle_banco = '';
+            }
+        }
+        this.cdr.markForCheck();
     }
 
     public openModalEdit(template: TemplateRef<any>, compra:any) {
@@ -320,9 +358,27 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                             });
                     }
 
-                    // Abrir el modal pasando compraCompleta como parámetro
-                    // BaseCrudComponent hará una copia con { ...item }, pero eso está bien para las propiedades de primer nivel
-                    this.openModal(template, compraCompleta);
+                    const abrirModalEdicion = () => {
+                        this.openModal(template, compraCompleta);
+                        this.cdr.markForCheck();
+                    };
+
+                    if (!this.bancos.length) {
+                        this.apiService.getAll('banco/cuentas/list')
+                            .pipe(this.untilDestroyed())
+                            .subscribe({
+                                next: (cuentas) => {
+                                    this.bancos = cuentas;
+                                    abrirModalEdicion();
+                                },
+                                error: (err) => {
+                                    this.alertService.error(err);
+                                    abrirModalEdicion();
+                                }
+                            });
+                    } else {
+                        abrirModalEdicion();
+                    }
                 },
                 error: (error) => {
                     this.alertService.error(error);
@@ -369,7 +425,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
     public descargarCompras(){
         this.downloadingCompras = true; this.saving = true;
-        this.apiService.export('compras/exportar', this.filtros)
+        this.apiService.export('compras/exportar', this.filtrosParaApi())
             .pipe(this.untilDestroyed())
             .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -389,7 +445,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
     public descargarDetalles(){
         this.downloadingDetalles = true; this.saving = true;
-        this.apiService.export('compras-detalles/exportar', this.filtros)
+        this.apiService.export('compras-detalles/exportar', this.filtrosParaApi())
             .pipe(this.untilDestroyed())
             .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

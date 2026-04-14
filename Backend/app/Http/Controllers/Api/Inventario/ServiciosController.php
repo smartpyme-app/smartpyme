@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Admin\Empresa;
+use App\Models\Compras\Compra;
+use App\Models\Inventario\Ajuste;
 use App\Models\Inventario\Producto as Servicio;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;

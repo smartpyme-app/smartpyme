@@ -181,3 +181,8 @@ a.fc-col-header-cell-cushion{
     z-index: 10001 !important;
   }
 
+/* ng-select en modales: este proyecto usa .modal con z-index ~10000 */
+.ng-dropdown-panel {
+  z-index: 10050 !important;
+}
+

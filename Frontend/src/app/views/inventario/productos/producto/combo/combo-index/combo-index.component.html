@@ -50,12 +50,14 @@
         routerLink="/productos">Todos</button>
       <button class="tcla-F3 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary"
         [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/producto-combos">Combos</button>
-      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()"
-        routerLink="/ajustes">Ajustes</button>
-      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
-        routerLink="/traslados">Traslados</button>
-      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
-        routerLink="/consignas">Consignas</button>
+      @if (apiService.canAccederOperacionesInventario()) {
+        <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()"
+          routerLink="/ajustes">Ajustes</button>
+        <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+          routerLink="/traslados">Traslados</button>
+        <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+          routerLink="/consignas">Consignas</button>
+      }
     </div>
     <div class="col-md-6 d-flex justify-content-end gap-2">
       <select name="estado" (change)="filtrar()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">

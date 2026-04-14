@@ -235,13 +235,4 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
                  empresa.shopify_status === 'connected');
     }
 
-    /**
-     * Verifica si el usuario puede ver las opciones de inventario
-     * Oculta ciertas opciones para Supervisores de la empresa 324
-     */
-    public puedeVerOpcionesInventario(): boolean {
-        const user = this.apiService.auth_user();
-        return !(user?.tipo === 'Supervisor' && user?.id_empresa === 324);
-    }
-
 }

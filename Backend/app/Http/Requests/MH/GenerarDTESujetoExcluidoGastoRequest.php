@@ -20,7 +20,7 @@ class GenerarDTESujetoExcluidoGastoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id' => ['required', 'integer', 'exists:gastos,id'],
+            'id' => ['required', 'integer', 'exists:egresos,id'],
         ];
     }
 

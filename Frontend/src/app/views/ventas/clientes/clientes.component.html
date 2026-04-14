@@ -100,7 +100,8 @@
                         <td class="d-none d-md-table-cell">
                           <span *ngIf="cliente.habilita_credito" class="badge bg-info py-2" style="font-size: 0.75rem;"
                             [title]="'Límite: ' + (cliente.limite_credito ? ('$' + cliente.limite_credito) : 'Sin límite')">
-                            {{ cliente.dias_credito }} días
+                            <ng-container *ngIf="cliente.dias_credito != null && cliente.dias_credito !== ''; else creditoSinPlazo">{{ cliente.dias_credito }} días</ng-container>
+                            <ng-template #creditoSinPlazo>Crédito</ng-template>
                           </span>
                           <span *ngIf="!cliente.habilita_credito" class="text-muted">—</span>
                         </td>

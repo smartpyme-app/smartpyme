@@ -15,6 +15,7 @@
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
+                <app-importar-excel (loadAll)="loadAll()" [nombre]="'ventas'"></app-importar-excel>
                 <!-- <button tooltip="Descargar ventas" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button> -->
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarVentas()" autocomplete="off">
                     <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
@@ -214,7 +215,7 @@
                     <option value="">Todos</option>
                     @for (documento of documentos; track documento.id) {
                         <option [value]="documento.id">
-                            {{ documento.nombre | filter:'id_sucursal':venta.id_sucursal }}
+                            {{ documento.nombre }}
                         </option>
                     }
                 </select>

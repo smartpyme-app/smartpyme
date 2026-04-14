@@ -121,11 +121,11 @@
                         <label for="impuesto.id_cuenta_contable_ventas">Cuenta contable para ventas:</label>
                         <ng-select [(ngModel)]="impuesto.id_cuenta_contable_ventas" class="form-select p-0" name="impuesto.id_cuenta_contable_ventas">
                             <ng-option value="">Seleccione aquí</ng-option>
-                            @for (cuenta of catalogo; track cuenta.id) {
-                                <ng-option [value]="cuenta.id">
+                            @for (cuentaCatalogo of catalogo; track cuentaCatalogo.id) {
+                                <ng-option [value]="cuentaCatalogo.id">
                                     <div class="d-flex align-items-center">
-                                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
-                                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                                        <span style="width: 75px;">{{ cuentaCatalogo.codigo }} </span>
+                                        <span class="col-8"> - {{ cuentaCatalogo.nombre }}</span>
                                     </div>
                                 </ng-option>
                             }
@@ -135,11 +135,11 @@
                         <label for="impuesto.id_cuenta_contable_compras">Cuenta contable para compras:</label>
                         <ng-select [(ngModel)]="impuesto.id_cuenta_contable_compras" class="form-select p-0" name="impuesto.id_cuenta_contable_compras">
                             <ng-option value="">Seleccione aquí</ng-option>
-                            @for (cuenta of catalogo; track cuenta.id) {
-                                <ng-option [value]="cuenta.id">
+                            @for (cuentaCatalogo of catalogo; track cuentaCatalogo.id) {
+                                <ng-option [value]="cuentaCatalogo.id">
                                     <div class="d-flex align-items-center">
-                                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
-                                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                                        <span style="width: 75px;">{{ cuentaCatalogo.codigo }} </span>
+                                        <span class="col-8"> - {{ cuentaCatalogo.nombre }}</span>
                                     </div>
                                 </ng-option>
                             }

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Inventario\Categorias\SubCategoria;
 
+use App\Exports\SubCategoriasExport;
 use App\Imports\SubCategorias;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Inventario\Categorias\SubCategorias\StoreSubCategoriaRequest;
@@ -93,10 +94,10 @@ class SubCategoriasController extends Controller
 
     public function export(Request $request){
 
-      $categorias = new CategoriasExport();
-      $categorias->filter($request);
+      $export = new SubCategoriasExport();
+      $export->filter($request);
 
-      return Excel::download($categorias, 'categorias.xlsx');
+      return Excel::download($export, 'subcategorias.xlsx');
     }
 
 

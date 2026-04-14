@@ -52,6 +52,7 @@ export class CrearDepartamentoComponent extends BaseModalComponent implements On
         } else {
             this.departamento = {};
             this.departamento.estado = 1;
+            this.departamento.activo = true;
             this.departamento.id_empresa = this.apiService.auth_user().id_empresa;
         }
         

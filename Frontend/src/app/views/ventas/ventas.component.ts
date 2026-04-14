@@ -76,6 +76,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public usuarios: any = [];
   public sucursales: any = [];
   public formaPagos: any = [];
+  /** Cuentas bancarias (mismo origen que facturación) para elegir banco al editar venta. */
+  public bancos: any[] = [];
   public documentos: any = [];
   public canales: any = [];
   public proyectos: any = [];
@@ -523,6 +525,27 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
             this.openModal(template, ventaCopia, { class: 'modal-xl' });
           };
 
+          const ensureBancos = (next: () => void) => {
+            if (this.bancos.length) {
+              next();
+              return;
+            }
+            this.apiService
+              .getAll('banco/cuentas/list')
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (bancos) => {
+                  this.bancos = bancos;
+                  this.cdr.markForCheck();
+                  next();
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                  next();
+                }
+              });
+          };
+
           // Cargar datos auxiliares (en paralelo cuando aplique)
           if (!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos) {
             this.sharedDataService.getProyectos()
@@ -587,22 +610,23 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
               });
           }
 
-          // Métodos de pago: usar el mismo endpoint que en facturación (formas-de-pago/list) y esperar a que carguen antes de abrir el modal
+          // Métodos de pago y cuentas bancarias antes de abrir (para el desplegable de banco al editar)
           if (!this.formaPagos.length) {
             this.apiService.getAll('formas-de-pago/list')
               .pipe(this.untilDestroyed())
               .subscribe({
                 next: (formaPagos) => {
                   this.formaPagos = formaPagos;
-                  abrirModalCuandoListo();
+                  this.cdr.markForCheck();
+                  ensureBancos(abrirModalCuandoListo);
                 },
                 error: (error) => {
                   this.alertService.error(error);
-                  abrirModalCuandoListo();
+                  ensureBancos(abrirModalCuandoListo);
                 }
               });
           } else {
-            abrirModalCuandoListo();
+            ensureBancos(abrirModalCuandoListo);
           }
         },
         error: (error) => {
@@ -611,6 +635,22 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
           this.cdr.markForCheck();
         }
       });
+  }
+
+  /** Al cambiar método de pago en el modal de edición, mostrar/ocultar banco y sincronizar como en facturación. */
+  public onVentaFormaPagoChange(): void {
+    const fp = this.venta?.forma_pago;
+    if (fp && fp !== 'Efectivo' && fp !== 'Wompi' && fp !== 'Multiple') {
+      const sel = this.formaPagos.find((f: any) => f.nombre === fp);
+      if (sel?.banco?.nombre_banco) {
+        this.venta.detalle_banco = sel.banco.nombre_banco;
+      } else {
+        this.venta.detalle_banco = '';
+      }
+    } else {
+      this.venta.detalle_banco = '';
+    }
+    this.cdr.markForCheck();
   }
 
   public openFilter(template: TemplateRef<any>) {

@@ -805,8 +805,8 @@
             </div>
         </form>
     </tab>
-    @if (empresa.facturacion_electronica) {
-      <tab heading="Facturación electrónica">
+    <tab heading="Facturación electrónica" (selectTab)="onTabSelect($event)">
+      @if (empresa.facturacion_electronica) {
         <section class="bg-white rounded p-3 mb-3">
             <div class="row">
                 <div class="form-group col-md-6 col-lg-4">
@@ -955,6 +955,14 @@
         </section>
          }
 
+      } @else {
+        <section class="bg-white rounded p-4 mb-3">
+          <div class="alert alert-secondary mb-0">
+            <i class="fa fa-info-circle me-2"></i>
+            La facturación electrónica no está habilitada para su empresa. Si su plan la incluye, actívela con soporte o desde la configuración comercial de su cuenta.
+          </div>
+        </section>
+      }
     </tab>
     <tab heading="Integraciones" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
@@ -1039,8 +1047,7 @@
                 }
             </div>
         </section>
-      </tab>
-    }
+ </tab>
     <tab heading="WooCommerce" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
             <div class="row">

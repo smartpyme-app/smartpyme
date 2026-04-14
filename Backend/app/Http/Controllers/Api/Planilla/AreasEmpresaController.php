@@ -45,7 +45,7 @@ class AreasEmpresaController extends Controller
         }
 
         // Filtro por estado/activo
-        if ($request->has('estado') && $request->estado !== '') {
+        if ($request->filled('estado')) {
             $query->where('activo', $request->estado);
         }
 
@@ -207,7 +207,7 @@ class AreasEmpresaController extends Controller
             });
         }
 
-        if ($request->has('estado') && $request->estado !== '') {
+        if ($request->filled('estado')) {
             $query->where('activo', $request->estado);
         }
 

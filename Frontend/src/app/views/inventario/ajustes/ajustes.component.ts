@@ -392,11 +392,6 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
         );
     }
 
-    public puedeVerOpcionesInventario(): boolean {
-        const user = this.apiService.auth_user();
-        return !(user?.tipo === 'Supervisor' && user?.id_empresa === 324);
-    }
-
     getNombreCompleto(producto: any): string {
         if (this.tieneShopify && producto.nombre_variante) {
             return `${producto.nombre} ${producto.nombre_variante}`;

@@ -133,7 +133,7 @@ export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit 
     }
 
     override openModal(template: TemplateRef<any>, paquete?: any) {
-        super.openLargeModal(template, paquete);
+        super.openModal(template, paquete, { class: 'modal-lg', backdrop: 'static' });
     }
 
     public openFilter(template: TemplateRef<any>) {

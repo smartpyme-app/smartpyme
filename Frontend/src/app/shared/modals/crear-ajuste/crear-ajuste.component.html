@@ -1,10 +1,10 @@
-<a class="btn btn-light" (click)="openModalAjuste(majuste)" tooltip="Ajustar stock de inventario">
-    <i class="fa fa-pencil-alt"></i>
+<a class="btn btn-light" (click)="openModalAjuste(majuste)" tooltip="Agregar o ajustar stock" href="javascript:void(0)">
+    <i class="fa fa-sliders-h"></i>
 </a>
 
 <ng-template #majuste>
   <div class="modal-header justify-content-between">
-    <h5 class="modal-title mb-0">Ajuste de stock </h5>
+    <h5 class="modal-title mb-0">Agregar / ajustar stock</h5>
     <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
   </div>
   <div class="modal-body">

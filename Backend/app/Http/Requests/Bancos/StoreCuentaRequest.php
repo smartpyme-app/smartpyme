@@ -32,6 +32,7 @@ class StoreCuentaRequest extends FormRequest
             'tipo' => ['required', 'string', 'max:255'],
             'saldo' => ['required', 'numeric'],
             'id_empresa' => ['required', 'integer', 'exists:empresas,id'],
+            'id_cuenta_contable' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
         ];
     }
 
@@ -65,6 +66,14 @@ class StoreCuentaRequest extends FormRequest
         // Convertir saldo a float
         if ($this->has('saldo')) {
             $this->merge(['saldo' => (float) $this->saldo]);
+        }
+
+        if (auth()->check() && ! $this->filled('id_empresa')) {
+            $this->merge(['id_empresa' => (int) auth()->user()->id_empresa]);
+        }
+
+        if ($this->has('numero') && $this->numero !== null && $this->numero !== '') {
+            $this->merge(['numero' => is_string($this->numero) ? trim($this->numero) : (string) $this->numero]);
         }
     }
 }

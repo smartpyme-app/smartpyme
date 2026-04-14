@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Usuarios</h2>
-    <button (click)="openModal(musuario, {})"  tooltip="Crear canal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir usuario</button>
+    <button type="button" (click)="openModal(musuario, {})" tooltip="Crear canal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir usuario</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -35,7 +35,7 @@
 
     <div class="d-flex mb-3">
         <div class="col d-flex gap-2">
-            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
+            <button type="button" class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
             <!-- <button class="btn btn-default">Traslados</button> -->
         </div>
         <div class="col d-flex gap-2 justify-content-end">
@@ -86,7 +86,7 @@
                         <td>{{usuario.rol_name}}</td>
                         <td>{{usuario.empresa.nombre}}</td>
                         <td>
-                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(usuario)" [(ngModel)]="usuario.enable" [ngClass]="{'bg-light-danger' : usuario?.enable == '0', 'bg-light-success' : usuario?.enable == '1'}">
+                            <select class="form-select w-auto border-0" (change)="setEstado(usuario)" [(ngModel)]="usuario.enable" [ngModelOptions]="{standalone: true}" [ngClass]="{'bg-light-danger' : usuario?.enable == '0', 'bg-light-success' : usuario?.enable == '1'}">
                                 <option value="1">Activo</option>
                                 <option value="0">Inactivo</option>
                             </select>
@@ -99,9 +99,9 @@
                                     <i class="fa fa-trash"></i>
                                 </a>
                             } -->
-                                <a class="btn btn-default" (click)="openModal(musuario, usuario)" data-toggle="tooltip" title="Ver">
+                                <button type="button" class="btn btn-default" (click)="openModal(musuario, usuario)" tooltip="Editar usuario">
                                     <i class="fa fa-arrow-right"></i>
-                                </a>
+                                </button>
                             </div>
                         </td>
 

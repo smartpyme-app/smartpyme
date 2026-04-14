@@ -126,9 +126,11 @@ export class DepartamentoEmpresaComponent extends BaseCrudComponent<any> impleme
             if (this.modalRef) {
                 this.closeModal();
             }
+            this.cdr.markForCheck();
         }, error => {
             this.alertService.error(error); 
             this.loading = false;
+            this.cdr.markForCheck();
         });
     }
 
@@ -292,8 +294,10 @@ export class DepartamentoEmpresaComponent extends BaseCrudComponent<any> impleme
               .pipe(this.untilDestroyed())
               .subscribe(sucursales => { 
                 this.sucursales = sucursales;
+                this.cdr.markForCheck();
             }, error => {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
             });
         }
     }
@@ -303,8 +307,10 @@ export class DepartamentoEmpresaComponent extends BaseCrudComponent<any> impleme
           .pipe(this.untilDestroyed())
           .subscribe(areas => { 
             this.areas = areas;
+            this.cdr.markForCheck();
         }, error => {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         });
     }
 

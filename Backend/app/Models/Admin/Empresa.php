@@ -209,7 +209,9 @@ class Empresa extends Model
     }
 
     public function getGenerarPartidasAttribute(){
-        return $this->contabilidad()->pluck('generar_partidas')->first();
+        $valor = $this->contabilidad()->pluck('generar_partidas')->first();
+
+        return $valor ?: 'Manual';
     }
 
 

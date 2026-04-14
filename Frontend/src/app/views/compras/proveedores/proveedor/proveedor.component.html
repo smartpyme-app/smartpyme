@@ -112,7 +112,7 @@
                         }
                         @if (apiService.auth_user().empresa.facturacion_electronica) {
                           <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
-                            @for (municipio of municipios | filter:'nombre_departamento':proveedor.departamento; track municipio.cod) {
+                            @for (municipio of municipios | filter:'cod_departamento':proveedor.cod_departamento; track municipio.cod) {
                               <ng-option [value]="municipio.cod">
                                 {{ municipio.nombre }}
                               </ng-option>
@@ -245,7 +245,7 @@
                         }
                         @if (apiService.auth_user().empresa.facturacion_electronica) {
                           <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
-                            @for (municipio of municipios | filter:'nombre_departamento':proveedor.departamento; track municipio.cod) {
+                            @for (municipio of municipios | filter:'cod_departamento':proveedor.cod_departamento; track municipio.cod) {
                               <ng-option [value]="municipio.cod">
                                 {{ municipio.nombre }}
                               </ng-option>

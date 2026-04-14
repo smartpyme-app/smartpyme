@@ -199,16 +199,19 @@
               }
             </td>
             <td class="text-center">
-              <span
-                class="btn"
+              <button
+                type="button"
+                class="btn btn-link text-dark p-0 border-0 shadow-none"
+                style="outline: none;"
                 [popover]="accionesTemplate"
                 [outsideClick]="true"
                 tooltip="Acciones"
                 container="body"
+                placement="left"
                 [popoverContext]="{ config: config }"
               >
-                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-              </span>
+                <i class="fa fa-ellipsis-vertical fa-fw" aria-hidden="true"></i>
+              </button>
             </td>
             </tr>
           }

@@ -26,10 +26,9 @@ class StoreImpuestoRequest extends FormRequest
             'id' => ['nullable', 'integer', 'exists:impuestos,id'],
             'id_cuenta_contable_ventas' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_contable_compras' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
-            'aplica_ventas'    => ['sometimes, boolean'],
-            'aplica_gastos'    => ['sometimes, boolean'],
-            'aplica_compras'   => ['sometimes, boolean']
-
+            'aplica_ventas' => ['sometimes', 'boolean'],
+            'aplica_gastos' => ['sometimes', 'boolean'],
+            'aplica_compras' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -66,6 +65,10 @@ class StoreImpuestoRequest extends FormRequest
         // Convertir valores numéricos
         if ($this->has('porcentaje')) {
             $this->merge(['porcentaje' => (float) $this->porcentaje]);
+        }
+
+        if (auth()->check() && ! $this->filled('id_empresa')) {
+            $this->merge(['id_empresa' => (int) auth()->user()->id_empresa]);
         }
     }
 }

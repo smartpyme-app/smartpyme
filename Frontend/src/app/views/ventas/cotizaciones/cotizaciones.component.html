@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Cotizaciones</h2>
-  @if (apiService.canCreateTest('ventas.cotizaciones.crear')) {
+  @if (apiService.canCreateTest('ventas.cotizaciones.crear') && !apiService.restriccionesCotizacionesVendedoresActivas()) {
       <button routerLink="/cotizacion/crear" [queryParams]="{ cotizacion:1 }" tooltip="Crear cotizacion (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cotización</button>
   }
 </section>

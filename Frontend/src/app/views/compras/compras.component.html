@@ -49,8 +49,8 @@
                 <option value="Consigna">Consigna</option>
                 <option value="Pagada">Pagada</option>
             </select>
-            <ng-select name="id_proveedor" (change)="filtrarCompras()" [(ngModel)]="filtros.id_proveedor" class="form-select p-0 border-0 bg-default w-auto">
-                <ng-option value="">Proveedor</ng-option>
+            <ng-select name="id_proveedor" (change)="filtrarCompras()" [(ngModel)]="filtros.id_proveedor"
+                class="form-select p-0 border-0 bg-default w-auto" [clearable]="true" placeholder="Proveedor">
                 @for (proveedor of proveedores; track proveedor.id) {
                     <ng-option [value]="proveedor.id">
                         {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
@@ -321,8 +321,8 @@
 
             <div class="form-group col-md-12">
                 <label for="filtros.proveedor">Proveedor:</label>
-                <ng-select [(ngModel)]="filtros.id_proveedor" class="form-select p-0" name="filtros.id_proveedor">
-                    <ng-option value="">Todos</ng-option>
+                <ng-select [(ngModel)]="filtros.id_proveedor" class="form-select p-0" name="filtros.id_proveedor"
+                    [clearable]="true" placeholder="Todos los proveedores">
                     @for (proveedor of proveedores; track proveedor.id) {
                         <ng-option [value]="proveedor.id">
                             {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
@@ -430,12 +430,23 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="forma_pago">Método de pago:</label>
-                <select name="forma_pago" [(ngModel)]="compra.forma_pago" class="form-select">
+                <select name="forma_pago" [(ngModel)]="compra.forma_pago" (change)="cambioMetodoDePagoCompraModal()" class="form-select">
                     @for (forma of formaPagos; track forma.id) {
                         <option [value]="forma.nombre">{{ forma.nombre }}</option>
                     }
                 </select>
             </div>
+            @if (compra.forma_pago && compra.forma_pago !== 'Efectivo' && compra.forma_pago !== 'Wompi') {
+                <div class="form-group col-md-6">
+                    <label for="detalle_banco">Bancos</label>
+                    <select name="detalle_banco" [(ngModel)]="compra.detalle_banco" class="form-select">
+                        <option value="">Seleccione aquí</option>
+                        @for (banco of bancos; track banco.id) {
+                            <option [value]="banco.nombre_banco">{{ banco.nombre_banco }}{{ banco.numero ? ' — ' + banco.numero : '' }}</option>
+                        }
+                    </select>
+                </div>
+            }
             <div class="form-group col-md-6">
                 <label for="tipo_documento">Documento</label>
                 <select name="tipo_documento" [(ngModel)]="compra.tipo_documento" class="form-select">

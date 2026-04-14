@@ -1,8 +1,9 @@
-import { Component, OnInit, Input, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Input, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -11,10 +12,10 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     selector: 'app-producto-imagenes',
     templateUrl: './producto-imagenes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, FormsModule, TooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProductoImagenesComponent implements OnInit {
+export class ProductoImagenesComponent implements OnInit, OnChanges {
 
     @Input() producto: any = {};
     public imagen:any = {};
@@ -32,11 +33,29 @@ export class ProductoImagenesComponent implements OnInit {
     ) { }
 
     ngOnInit() {
+        this.ensureImagenes();
+    }
 
+    ngOnChanges(changes: SimpleChanges) {
+        if (changes['producto']) {
+            this.ensureImagenes();
+        }
+    }
+
+    private ensureImagenes(): void {
+        if (this.producto && !Array.isArray(this.producto.imagenes)) {
+            this.producto.imagenes = [];
+        }
     }
 
 
     setFile(event:any) {
+        if (!this.producto?.id) {
+            this.alertService.error('Guarde el producto antes de subir imágenes.');
+            event.target.value = '';
+            return;
+        }
+        this.ensureImagenes();
         this.imagen.file = event.target.files[0];
         this.imagen.id_producto = this.producto.id;
         // this.imagen.orden = this.imagenes.length + 1;
@@ -75,6 +94,7 @@ export class ProductoImagenesComponent implements OnInit {
             this.apiService.delete('producto/imagen/', imagen.id)
               .pipe(this.untilDestroyed())
               .subscribe(data => {
+                this.ensureImagenes();
                 for (let i = 0; i < this.producto.imagenes.length; i++) { 
                     if (this.producto.imagenes[i].id == data.id )
                         this.producto.imagenes.splice(i, 1);

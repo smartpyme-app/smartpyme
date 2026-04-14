@@ -30,7 +30,7 @@
             </ul>
         </form>
     </div>
-    <div style="min-height: 60vh;">
+    <div style="min-height: 45vh;">
         <ul class="list-unstyled ps-0">
             <!-- <li *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' && apiService.hasPermission('inteligencia_negocios.ver')" tourAnchor="tour.reportes" id="tour.reportes" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
@@ -145,11 +145,14 @@
                             @if (apiService.hasPermission('gastos.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
                             }
-                            @if (contabilidadHabilitada && apiService.hasPermission('gastos.categorias.ver')) {
+                            @if (apiService.mostrarMenuConfigGastos(contabilidadHabilitada) && apiService.hasPermission('gastos.categorias.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/folder.png" class="icon me-2">Categorias</a></li>
                             }
-                            @if (contabilidadHabilitada && apiService.hasPermission('gastos.departamentos.ver')) {
+                            @if (apiService.mostrarMenuConfigGastos(contabilidadHabilitada) && apiService.hasPermission('gastos.departamentos.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/departamentos-empresa']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/building-cog.png" class="icon me-2">Departamentos</a></li>
+                            }
+                            @if (apiService.mostrarMenuConfigGastos(contabilidadHabilitada) && apiService.hasPermission('gastos.departamentos.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/areas-empresa']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/2-layers.png" class="icon me-2">Áreas</a></li>
                             }
                         </ul>
                     </div>
@@ -271,7 +274,7 @@
         </ul>
 
     </div>
-    <div style="min-height: 20vh;">
+    <div style="min-height: 35vh;">
         <ul class="list-unstyled ps-0 border-top pt-2">
             <!-- <li tourAnchor="tour.crear_venta" id="tour.crear_venta" *ngIf="apiService.auth_user().tipo != 'Contador' && apiService.hasPermission('ventas.crear')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/venta/crear']" tooltip="Crear venta" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-primary"><img appLazyImage="/assets/icons/plus-stroke.png" class="icon me-2">Crear venta</a></li> -->
             @if (apiService.validateRole('usuario_contador', false) && apiService.hasPermission('ventas.crear')) {
@@ -295,6 +298,7 @@
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/sucursales']" tooltip="Sucursales" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/home.png" class="icon me-2">Sucursales</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/reportes-automaticos']" tooltip="Reportes automáticos" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/inbox-stroke.png" class="icon me-2">Reportes automáticos</a></li>
                   </ul>
                 </div>
             </li>

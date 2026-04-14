@@ -10,12 +10,14 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 @Component({
     selector: 'app-producto-composicion',
     templateUrl: './producto-composicion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, NotificacionesContainerComponent, TooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoComposicionComponent extends BaseModalComponent implements OnInit {
@@ -82,6 +84,11 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
     }
 
     onSubmit(){
+        if (!this.producto?.id) {
+            this.alertService.error('Guarde el producto primero para poder agregar composiciones.');
+            return;
+        }
+
         if (!this.composicion.id_compuesto) {
             this.alertService.error('Debe seleccionar un producto');
             return;

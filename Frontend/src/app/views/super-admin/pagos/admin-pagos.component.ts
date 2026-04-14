@@ -118,7 +118,8 @@ export class AdminPagosComponent extends BaseCrudComponent<any> implements OnIni
                 this.pago.fecha_proximo_pago = formatDate(this.pago.fecha_proximo_pago, 'yyyy-MM-dd', 'en');
             }
         }
-        super.openLargeModal(template, pago);
+        // No pasar `pago` como segundo argumento: openLargeModal hace spread del config y mezclaría el modelo con opciones de ngx-bootstrap.
+        super.openLargeModal(template);
     }
 
     override closeModal(){

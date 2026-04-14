@@ -32,17 +32,6 @@ export class CacheInterceptor implements HttpInterceptor {
       return next.handle(req);
     }
 
-    let token = this.apiService.auth_token();
-    const httpRequest = req.clone({
-      headers: new HttpHeaders({
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'Expires': 'Sat, 01 Jan 2000 00:00:00 GMT',
-        'Content-Type':  'application/json',
-        'Authorization': 'Bearer ' + token
-      })
-    });
-
     // Extraer parámetros de la petición
     const params = this.extractParams(req);
 

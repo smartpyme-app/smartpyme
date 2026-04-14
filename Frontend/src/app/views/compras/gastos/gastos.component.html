@@ -50,8 +50,8 @@
                 <option value="Anulada">Anulada</option>
                 <option value="Pagado">Pagado</option>
             </select>
-            <ng-select name="id_proveedor" (change)="filtrarGastos()" [(ngModel)]="filtros.id_proveedor" class="form-select p-0 border-0 bg-default  w-auto">
-                <ng-option value="">Proveedor</ng-option>
+            <ng-select name="id_proveedor" (change)="filtrarGastos()" [(ngModel)]="filtros.id_proveedor"
+                class="form-select p-0 border-0 bg-default  w-auto" [clearable]="true" placeholder="Proveedor">
                 @for (proveedor of proveedores; track proveedor.id) {
                     <ng-option [value]="proveedor.id">
                         {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}
@@ -227,8 +227,8 @@
 
             <div class="form-group col-lg-6">
                 <label for="filtros.proveedor">Proveedor:</label>
-                <ng-select [(ngModel)]="filtros.id_proveedor" class="form-select p-0" name="filtros.id_proveedor">
-                    <ng-option value="">Todos</ng-option>
+                <ng-select [(ngModel)]="filtros.id_proveedor" class="form-select p-0" name="filtros.id_proveedor"
+                    [clearable]="true" placeholder="Todos los proveedores">
                     @for (proveedor of proveedores; track proveedor.id) {
                         <ng-option [value]="proveedor.id">
                             {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Inventario;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Inventario\Codigo;
+use App\Models\Inventario\Promociones\Promocion;
 use App\Http\Requests\Inventario\Codigos\StoreCodigoRequest;
 
 class CodigosController extends Controller

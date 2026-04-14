@@ -34,6 +34,9 @@ class CreateSuscriptionRequest extends FormRequest
             'direccion_factura' => ['nullable', 'string', 'max:500'],
             'requiere_factura' => ['nullable', 'boolean'],
             'motivo_cancelacion' => ['nullable', 'string', 'max:500'],
+            'comentarios' => ['nullable', 'string'],
+            'monto_mensual' => ['nullable', 'numeric', 'min:0'],
+            'monto_anual' => ['nullable', 'numeric', 'min:0'],
             'estado_ultimo_pago' => ['nullable', 'string'],
         ];
     }
@@ -100,6 +103,10 @@ class CreateSuscriptionRequest extends FormRequest
 
         if ($this->has('motivo_cancelacion')) {
             $this->merge(['motivo_cancelacion' => trim($this->motivo_cancelacion)]);
+        }
+
+        if ($this->has('comentarios') && is_string($this->comentarios)) {
+            $this->merge(['comentarios' => trim($this->comentarios)]);
         }
 
         // Convertir valores numéricos

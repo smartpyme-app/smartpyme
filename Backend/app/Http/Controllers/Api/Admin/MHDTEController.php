@@ -20,6 +20,7 @@ use App\Models\MH\MHAnulacion;
 use App\Models\MH\MHContingencia;
 use App\Models\MH\MHSujetoExcluidoGasto;
 use App\Models\MH\MHSujetoExcluidoCompra;
+use App\Models\MH\MH;
 
 use Mail;
 use JWTAuth;

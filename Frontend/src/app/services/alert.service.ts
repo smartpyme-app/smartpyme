@@ -24,18 +24,8 @@ export class AlertService {
 
     warning(titulo: any = null, message: any) {
         console.log(message);
-
-        if (message?.error?.error) {
-            message = message.error.error;
-        } else if (message?.error) {
-            message = message.error;
-        } else if (message?.message) {
-            message = message.message;
-        } else {
-            message = message;
-        }
-
-        this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': titulo, 'mensaje' : message});
+        const mensaje = this.normalizeUnknownError(message);
+        this.alertSubject.next({ tipo: 'alert-warning', titulo, mensaje });
     }
 
     info(titulo: any = null, message: any) {
@@ -67,8 +57,15 @@ export class AlertService {
             this.router.navigate(['/login']);
         }
         else if(message.status == 400) {
-            const mensaje = message.error?.error ?? message.error?.message ?? (typeof message.error === 'string' ? message.error : 'Solicitud incorrecta');
-            this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.statusText || 'Lo sentimos', 'mensaje' : mensaje});
+            const body = message.error ?? {};
+            const mensaje = body.message ?? body.error ?? (typeof body === 'string' ? body : undefined);
+            const titulo = body.titulo || 'Lo sentimos';
+            const tipo = body.titulo ? 'alert-info' : 'alert-danger';
+            this.alertSubject.next({
+                tipo,
+                titulo,
+                mensaje: mensaje ?? 'No se pudo completar la operación.',
+            });
         }
         else if(message.status == 422) {
             // Manejar diferentes formatos de errores de validación
@@ -136,10 +133,78 @@ export class AlertService {
             }, 0);
         }
         else if(message.status == 500) {
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});
+            const mensaje = message.error?.message
+                ? message.error.message
+                : this.normalizeUnknownError(message);
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
         }
         else {
-            this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Lo sentimos', 'mensaje' : message});
+            const mensaje = this.normalizeUnknownError(message);
+            this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
+        }
+    }
+
+    /**
+     * Convierte errores HTTP, objetos Laravel u otros valores en texto legible (evita "[object Object]").
+     */
+    private normalizeUnknownError(message: any): string {
+        if (message == null) {
+            return 'Ocurrió un error inesperado.';
+        }
+        if (typeof message === 'string') {
+            return message;
+        }
+        if (typeof message === 'number' || typeof message === 'boolean') {
+            return String(message);
+        }
+        if (Array.isArray(message)) {
+            return message.map((e) => this.normalizeUnknownError(e)).join('<br>');
+        }
+        // HttpErrorResponse u objeto con status + error
+        if (message.error != null && typeof message === 'object') {
+            const body = message.error;
+            if (typeof body === 'string') {
+                return body;
+            }
+            if (body && typeof body === 'object') {
+                if (body.errors && typeof body.errors === 'object') {
+                    const parts: string[] = [];
+                    Object.keys(body.errors).forEach((key) => {
+                        const v = (body.errors as any)[key];
+                        const label = this.translateFieldName(key);
+                        if (Array.isArray(v)) {
+                            v.forEach((err: string) => parts.push(`- ${label}: ${err}`));
+                        } else {
+                            parts.push(`- ${label}: ${v}`);
+                        }
+                    });
+                    if (parts.length) {
+                        return parts.join('<br>');
+                    }
+                }
+                if (body.message && typeof body.message === 'string') {
+                    return body.message;
+                }
+                if (body.error) {
+                    if (typeof body.error === 'string') {
+                        return body.error;
+                    }
+                    if (Array.isArray(body.error)) {
+                        return body.error.map((e: string) => `- ${e}`).join('<br>');
+                    }
+                }
+                if (body.descripcionMsg) {
+                    return String(body.descripcionMsg);
+                }
+            }
+        }
+        if (message.message && typeof message.message === 'string') {
+            return message.message;
+        }
+        try {
+            return JSON.stringify(message);
+        } catch {
+            return 'Ocurrió un error inesperado.';
         }
     }
 
@@ -161,6 +226,7 @@ export class AlertService {
             'fecha': 'Fecha',
             'descripcion': 'Descripción',
             'detalle': 'Detalle',
+            'detalles': 'Productos / líneas',
             'forma_pago': 'Forma de pago',
             'estado': 'Estado'
         };

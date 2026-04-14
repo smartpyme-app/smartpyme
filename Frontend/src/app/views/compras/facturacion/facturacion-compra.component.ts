@@ -341,6 +341,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                     }
                     this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
                     this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
+                    this.syncCompraCreditoConsignaFlagsFromEstado();
                     this.loading = false;
                     this.cdr.markForCheck();
                 }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
@@ -367,6 +368,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 this.compra.fecha_pago = this.apiService.date();
                 this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
                 this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
+                this.syncCompraCreditoConsignaFlagsFromEstado();
                 this.compra.id = null;
                 this.compra.tipo_documento = null;
                 this.compra.referencia = null;
@@ -559,17 +561,30 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         }
     }
 
+    /** Alinea switches UI con `estado` al cargar (credito/consigna no vienen del API). */
+    private syncCompraCreditoConsignaFlagsFromEstado(): void {
+        if (!this.compra) return;
+        const e = this.compra.estado;
+        this.compra.consigna = e === 'Consigna';
+        this.compra.credito = e === 'Pendiente' || e === 'Consigna';
+    }
+
     public cambioMetodoDePago() {
-        if (this.apiService.isModuloBancos() && this.compra.forma_pago && this.compra.forma_pago !== 'Efectivo') {
-            const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.compra.forma_pago);
+        const fp = this.compra.forma_pago;
+        if (fp === 'Efectivo' || fp === 'Wompi') {
+            this.compra.detalle_banco = '';
+            this.cdr.markForCheck();
+            return;
+        }
+        if (this.apiService.isModuloBancos() && fp) {
+            const formaPagoSeleccionada = this.formaPagos.find((f: any) => f.nombre === fp);
             if (formaPagoSeleccionada?.banco?.nombre_banco) {
                 this.compra.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
             } else {
                 this.compra.detalle_banco = '';
             }
-        } else if (this.compra.forma_pago === 'Efectivo') {
-            this.compra.detalle_banco = '';
         }
+        this.cdr.markForCheck();
     }
 
     public setBodega(){
@@ -578,6 +593,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
     public updatecompra(compra:any) {
         this.compra = compra;
+        this.syncCompraCreditoConsignaFlagsFromEstado();
         this.sumTotal();
     }
 

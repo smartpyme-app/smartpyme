@@ -430,7 +430,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.venta.id_usuario = this.apiService.auth_user().id;
     this.venta.id_vendedor = this.apiService.auth_user().id;
     this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
-    this.venta.id_bodega = this.apiService.auth_user().id_sucursal;
     this.venta.id_empresa = this.apiService.auth_user().id_empresa;
     let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
     if (corte) {
@@ -453,6 +452,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       this.venta.estado = 'Pendiente';
       this.venta.tipo = 'cotizacion'; // Identificador para cotización
       this.venta.observaciones = this.venta.id_empresa == 2 ? 'Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \nPagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \nDisponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \nPropiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \nLimitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \nDuración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \nSituaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \nRenovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \nPolítica de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \nBrindar capacitaciones y soporte técnico a usuarios de negocios. \nGarantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \nOfrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\nBrindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
+      this.syncVentaCreditoConsignaFlagsFromEstado();
     }
 
     if (this.route.snapshot.paramMap.get('id')) {
@@ -467,6 +467,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.venta.cotizacion = isCotizacion ? 1 : 0;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+            this.syncVentaCreditoConsignaFlagsFromEstado();
             this.sumTotal();
 
             // Obtener todos los custom_field_ids únicos de los detalles
@@ -515,6 +516,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
             }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+            this.syncVentaCreditoConsignaFlagsFromEstado();
             this.venta.fecha = this.apiService.date();
             this.venta.fecha_pago = this.apiService.date();
             this.venta.id_documento = null;
@@ -574,6 +576,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               this.venta.cotizacion = 0;
               this.venta.num_cotizacion = this.venta.id;
               this.venta.id = null;
+              this.syncVentaCreditoConsignaFlagsFromEstado();
               this.venta.detalles.forEach((detalle: any) => {
                 detalle.id = null;
               });
@@ -1163,8 +1166,17 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         }
     }
 
+    /** Alinea switches UI con `estado` al cargar (credito/consigna no vienen del API). */
+    private syncVentaCreditoConsignaFlagsFromEstado(): void {
+        if (!this.venta) return;
+        const e = this.venta.estado;
+        this.venta.consigna = e === 'Consigna';
+        this.venta.credito = e === 'Pendiente' || e === 'Consigna';
+    }
+
     public updateVenta(venta: any) {
         this.venta = venta;
+        this.syncVentaCreditoConsignaFlagsFromEstado();
         this.sumTotal();
     }
 
@@ -1342,11 +1354,33 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       });
     }
 
+    if (!this.venta.detalles || !Array.isArray(this.venta.detalles) || this.venta.detalles.length === 0) {
+      this.alertService.warning(
+        'Faltan productos',
+        'Agregue al menos un producto o servicio en el detalle antes de procesar la venta.'
+      );
+      this.saving = false;
+      this.cdr.markForCheck();
+      return;
+    }
+
     this.apiService.store('facturacion', this.venta).subscribe(
       (venta) => {
         // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
         // para que en un siguiente guardado se envíe el mismo correlativo.
+        const detallesAntes = this.venta.detalles;
         Object.assign(this.venta, venta);
+        if (
+          (!this.venta.detalles || !Array.isArray(this.venta.detalles) || this.venta.detalles.length === 0) &&
+          Array.isArray(detallesAntes) &&
+          detallesAntes.length > 0
+        ) {
+          this.venta.detalles = detallesAntes;
+        }
+
+        if (this.venta.cotizacion != 1) {
+          this.generarPartidaVentaSiAutomatico(venta);
+        }
 
         // Si es cotización
         // if (this.facturarCotizacion) {
@@ -1403,22 +1437,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               'Venta creada',
               'La venta fue añadida exitosamente.'
             );
-
-            //Generar partida contable
-            if (
-              this.apiService.auth_user().empresa.generar_partidas == 'Auto'
-            ) {
-              this.apiService
-                .store('contabilidad/partida/venta', venta)
-                .pipe(this.untilDestroyed())
-                .subscribe(
-                  (venta) => { this.cdr.markForCheck(); },
-                  (error) => {
-                    this.alertService.error(error);
-                    this.cdr.markForCheck();
-                  }
-                );
-            }
           }
         }
 
@@ -1434,6 +1452,19 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         this.cdr.markForCheck();
       }
     );
+  }
+
+  private generarPartidaVentaSiAutomatico(ventaGuardada: any): void {
+    if (this.apiService.auth_user().empresa.generar_partidas !== 'Auto') {
+      return;
+    }
+    this.apiService.store('contabilidad/partida/venta', ventaGuardada).pipe(this.untilDestroyed()).subscribe({
+      next: () => { this.cdr.markForCheck(); },
+      error: (error) => {
+        this.alertService.error(error);
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   //Limpiar
@@ -1472,6 +1503,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       .emitirDTE(this.venta)
       .then((venta) => {
         this.venta = venta;
+        this.syncVentaCreditoConsignaFlagsFromEstado();
         this.alertService.success(
           'DTE emitido.',
           'El documento ha sido emitido.'
@@ -1483,10 +1515,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
         window.open(
           this.apiService.baseUrl +
-          '/api/reporte/facturacion/' +
-          venta.id +
-          '?token=' +
-          this.apiService.auth_token(),
+            '/api/reporte/facturacion/' +
+            venta.id +
+            '?token=' +
+            this.apiService.auth_token(),
           'Impresión',
           'width=400'
         );
@@ -1494,11 +1526,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         this.router.navigate(['/venta/crear']);
       })
       .catch((error) => {
-        this.cargarDatosIniciales();
-        this.router.navigate(['/venta/crear']);
-
+        // La venta ya quedó guardada; no limpiar el formulario para permitir reintentar emisión o revisar datos.
         this.emiting = false;
         this.alertService.warning('El documento no fue emitido.', error);
+        this.cdr.markForCheck();
       });
   }
 

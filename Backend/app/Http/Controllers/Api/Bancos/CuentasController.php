@@ -54,7 +54,15 @@ class CuentasController extends Controller
         else
             $cuenta = new Cuenta;
 
-        $cuenta->fill($request->all());
+        $cuenta->fill($request->only([
+            'numero',
+            'nombre_banco',
+            'tipo',
+            'correlativo_cheques',
+            'saldo',
+            'id_cuenta_contable',
+            'id_empresa',
+        ]));
         $cuenta->save();
 
         return Response()->json($cuenta, 200);

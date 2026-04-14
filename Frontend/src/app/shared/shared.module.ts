@@ -13,8 +13,6 @@ import { AlertService } from '@services/alert.service';
 import { PipesModule } from '@pipes/pipes.module';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
-import { NgxEchartsModule } from 'ngx-echarts';
-import * as echarts from 'echarts';
 import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
 import { LazyImageDirective } from '../directives/lazy-image.directive';
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
@@ -40,6 +38,7 @@ import { CrearAbonoGastoComponent } from './modals/crear-abono-gasto/crear-abono
 // CrearEventoComponent removido - solo se usa en citas, los componentes lo importan directamente
 // CrearProyectoComponent removido - los componentes lo importan directamente cuando lo necesitan
 import { CrearImpuestoComponent } from './modals/crear-impuesto/crear-impuesto.component';
+import { CrearProyectoComponent } from './modals/crear-proyecto/crear-proyecto.component';
 // VerHistorialButtonComponent removido - solo se usa en planillas (módulo lazy)
 // ThreedsModalComponent removido - solo se usa en auth, los componentes lo importan directamente
 // AlertsHaciendaComponent removido - solo se usa en módulos lazy
@@ -110,6 +109,7 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     CrearAbonoCompraComponent,
     CrearAbonoGastoComponent,
     CrearImpuestoComponent,
+    CrearProyectoComponent,
     CrearDepartamentoComponent,
     CrearAreaEmpresaComponent,
     VerHistorialButtonComponent,
@@ -120,11 +120,6 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     TooltipModule.forRoot(),
     TypeaheadModule.forRoot(),
     ModalModule.forRoot(),
-    NgxEchartsModule.forRoot({ echarts }),
-    TooltipModule.forRoot(),
-    FocusModule.forRoot(),
-    TypeaheadModule.forRoot(),
-    ModalModule.forRoot()
   ],
   exports: [
     CommonModule,
@@ -162,9 +157,8 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearAbonoGastoComponent,
-    // CrearEventoComponent removido
     CrearImpuestoComponent,
-    // CrearProyectoComponent removido
+    CrearProyectoComponent,
     // ThreedsModalComponent removido
     // VerHistorialButtonComponent removido - solo se usa en planillas (módulo lazy)
     // SafeHtmlPipe ahora es standalone (exportado como import standalone)
@@ -178,7 +172,6 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     NotFoundComponent,
     CrearDepartamentoComponent,
     CrearAreaEmpresaComponent,
-    CrearProyectoComponent,
     ThreedsModalComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
@@ -190,7 +183,6 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     DescargarInventarioComponent,
     AlertsHaciendaComponent,
     SelectSearchComponent,
-    NgxEchartsModule,
     ActivarLotesMasivoComponent
   ],
   providers: [

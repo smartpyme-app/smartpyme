@@ -46,6 +46,13 @@ class StoreCategoriaRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // La empresa siempre es la del usuario autenticado (el front no siempre envía id_empresa).
+        if (auth()->check() && ! $this->filled('id_empresa')) {
+            $this->merge([
+                'id_empresa' => (int) auth()->user()->id_empresa,
+            ]);
+        }
+
         // Sanitizar nombre
         if ($this->has('nombre')) {
             $this->merge([

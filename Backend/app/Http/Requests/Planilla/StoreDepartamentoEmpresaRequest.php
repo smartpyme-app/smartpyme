@@ -17,13 +17,14 @@ class StoreDepartamentoEmpresaRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      */
-    public function rules(): array
+       public function rules(): array
     {
         return [
             'id' => ['sometimes', 'nullable', 'integer', 'exists:departamentos_empresa,id'],
             'nombre' => ['required', 'string', 'max:100'],
             'descripcion' => ['nullable', 'string'],
-            'activo' => ['required', 'boolean'],
+            // El front histórico envía `estado` (1/0) sin `activo`; se normaliza en prepareForValidation.
+            'activo' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -35,7 +36,6 @@ class StoreDepartamentoEmpresaRequest extends FormRequest
         return [
             'nombre.required' => 'El nombre es requerido.',
             'nombre.max' => 'El nombre no puede exceder 100 caracteres.',
-            'activo.required' => 'El campo activo es requerido.',
             'activo.boolean' => 'El campo activo debe ser un booleano.',
         ];
     }
@@ -48,6 +48,12 @@ class StoreDepartamentoEmpresaRequest extends FormRequest
         // Sanitizar nombre
         if ($this->has('nombre')) {
             $this->merge(['nombre' => trim($this->nombre)]);
+        }
+
+        if (! $this->has('activo') || $this->input('activo') === '' || $this->input('activo') === null) {
+            $estado = $this->input('estado');
+            $activo = ! in_array($estado, [0, '0', false, 'false'], true);
+            $this->merge(['activo' => $activo]);
         }
     }
 }

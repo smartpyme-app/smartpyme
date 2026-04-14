@@ -3,6 +3,7 @@ import { Routes, RouterModule, NoPreloading } from '@angular/router';
 
 import { AuthGuard } from './guards/auth.guard';
 import { SubscriptionGuard } from './guards/SuscriptionGuard.guard';
+import { NotFoundComponent } from './shared/404/not-found.component';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',

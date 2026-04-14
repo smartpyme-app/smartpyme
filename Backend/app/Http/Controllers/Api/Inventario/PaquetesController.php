@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Inventario\Paquete;
 use App\Models\Ventas\Clientes\Cliente;
+use App\Models\Ventas\Detalle as DetalleVenta;
 
 use App\Imports\Paquetes;
 use App\Exports\PaquetesExport;

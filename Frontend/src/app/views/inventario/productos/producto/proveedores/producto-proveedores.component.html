@@ -62,13 +62,18 @@
             <p class="col-12"><span class="fw-medium">Producto:</span> {{ producto.nombre }}</p>
             <div class="mb-3 col-12"> 
                 <label for="" class="fw-medium">Proveedor:</label>
-                <div class="input-group">
-                    <ng-select name="id_proveedor" [(ngModel)]="proveedor.id_proveedor" class="form-select p-0">
-                        <ng-option value="">Seleccione aquí</ng-option>
-                        @for (proveedor of proveedores; track proveedor.id) {
-                        <ng-option [value]="proveedor.id">
-                            {{ proveedor.tipo == 'Persona' ? proveedor.nombre_completo : proveedor.nombre_empresa }}
-                        </ng-option>
+                <div class="input-group flex-nowrap">
+                    <ng-select
+                        name="id_proveedor"
+                        [(ngModel)]="proveedor.id_proveedor"
+                        class="form-select p-0 flex-grow-1"
+                        [clearable]="true"
+                        placeholder="Seleccione aquí"
+                        notFoundText="Sin resultados">
+                        @for (p of proveedores; track p.id) {
+                            <ng-option [value]="p.id">
+                                {{ p.tipo == 'Persona' ? p.nombre_completo : p.nombre_empresa }}
+                            </ng-option>
                         }
                     </ng-select>
                     <app-crear-proveedor [id_proveedor]="proveedor.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>

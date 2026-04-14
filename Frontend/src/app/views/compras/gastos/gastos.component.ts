@@ -77,6 +77,26 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
         this.filtrarGastos();
     }
 
+    private parseOptionalIdParam(params: Record<string, string | undefined>, key: string): number | null {
+        const raw = params[key];
+        if (raw === undefined || raw === null || raw === '') {
+            return null;
+        }
+        const n = Number(raw);
+        return Number.isFinite(n) && n > 0 ? n : null;
+    }
+
+    private filtrosParaApi(): Record<string, unknown> {
+        const out: Record<string, unknown> = {};
+        for (const key of Object.keys(this.filtros)) {
+            const v = this.filtros[key];
+            if (v !== '' && v !== null && v !== undefined) {
+                out[key] = v;
+            }
+        }
+        return out;
+    }
+
     public override setPagination(event: any): void {
         this.filtros.page = event.page;
         this.filtrarGastos();
@@ -91,7 +111,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
                 buscador: params['buscador'] || '',
                 id_proyecto: +params['id_proyecto'] || '',
                 id_documento: +params['id_documento'] || '',
-                id_proveedor: +params['id_proveedor'] || '',
+                id_proveedor: this.parseOptionalIdParam(params, 'id_proveedor'),
                 id_sucursal: +params['id_sucursal'] || '',
                 id_usuario: +params['id_usuario'] || '',
                 forma_pago: params['forma_pago'] || '',
@@ -129,7 +149,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public override loadAll() {
         this.filtros.id_sucursal = '';
-        this.filtros.id_proveedor = '';
+        this.filtros.id_proveedor = null;
         this.filtros.id_usuario = '';
         this.filtros.id_proyecto = '';
         this.filtros.forma_pago = '';
@@ -168,15 +188,11 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
 
         this.loading = true;
 
-        if(!this.filtros.id_proveedor){
-            this.filtros.id_proveedor = '';
-        }
-
         if(!this.filtros.id_usuario){
             this.filtros.id_usuario = '';
         }
 
-        this.apiService.getAll('gastos', this.filtros)
+        this.apiService.getAll('gastos', this.filtrosParaApi())
             .pipe(this.untilDestroyed())
             .subscribe(gastos => {
                 this.gastos = gastos;
@@ -246,7 +262,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('gastos/exportar', this.filtros)
+        this.apiService.export('gastos/exportar', this.filtrosParaApi())
             .pipe(this.untilDestroyed())
             .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

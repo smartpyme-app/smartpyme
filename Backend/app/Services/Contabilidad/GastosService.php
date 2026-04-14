@@ -45,6 +45,8 @@ class GastosService
             throw new Exception('La categoría del gasto no tiene una cuenta contable configurada', 400);
         }
 
+        Partida::assertNoExisteParaOrigen('Gasto', $gastoCompleto->id, 'Ya existen partidas contables generadas para este gasto.');
+
         DB::beginTransaction();
 
         try {

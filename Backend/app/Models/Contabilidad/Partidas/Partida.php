@@ -169,6 +169,35 @@ class Partida extends Model
         });
     }
 
+    /**
+     * ¿Ya existe al menos una partida ligada al documento origen?
+     * (Ej.: una venta puede tener dos partidas —ingresos y costo— con la misma referencia e id;
+     * si existe cualquiera, no se debe volver a generar el lote.)
+     */
+    public static function existeParaDocumentoOrigen(string $referencia, $idReferencia): bool
+    {
+        if ($idReferencia === null || $idReferencia === '') {
+            return false;
+        }
+
+        return static::where('referencia', $referencia)
+            ->where('id_referencia', $idReferencia)
+            ->exists();
+    }
+
+    /**
+     * @throws \Exception cuando ya hay partida(s) para ese origen
+     */
+    public static function assertNoExisteParaOrigen(string $referencia, $idReferencia, ?string $mensaje = null): void
+    {
+        if (self::existeParaDocumentoOrigen($referencia, $idReferencia)) {
+            throw new \Exception(
+                $mensaje ?? 'Ya existen partidas contables generadas para este documento. No se puede duplicar.',
+                400
+            );
+        }
+    }
+
     public function getRutaReferenciaAttribute(){
         if ($this->referencia == 'Venta') {
             return 'venta';

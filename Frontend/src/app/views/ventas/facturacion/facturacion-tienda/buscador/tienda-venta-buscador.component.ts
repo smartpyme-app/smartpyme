@@ -8,6 +8,7 @@ import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
+import { FilterPipe } from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -16,7 +17,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
     selector: 'app-tienda-venta-buscador',
     templateUrl: './tienda-venta-buscador.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SumPipe, FilterPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent implements OnInit {

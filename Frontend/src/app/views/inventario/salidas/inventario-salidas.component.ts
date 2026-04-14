@@ -290,19 +290,10 @@ export class InventarioSalidasComponent extends BaseCrudComponent<any> implement
     }
 
     /**
-     * Verifica si el usuario puede ver las opciones de inventario
-     * Oculta ciertas opciones para Supervisores de la empresa 324
-     */
-    public puedeVerOpcionesInventario(): boolean {
-        const user = this.apiService.auth_user();
-        return !(user?.tipo === 'Supervisor' && user?.id_empresa === 324);
-    }
-
-    /**
      * Verifica si el usuario puede crear salidas
      */
     public puedeCrearSalida(): boolean {
-        return this.apiService.canCreate() && this.puedeVerOpcionesInventario();
+        return this.apiService.puedeCrearOperacionesInventarioEnUi();
     }
 
 }

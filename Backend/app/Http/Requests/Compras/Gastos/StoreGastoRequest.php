@@ -20,14 +20,14 @@ class StoreGastoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id' => 'sometimes|nullable|integer|exists:gastos,id',
+            'id' => 'sometimes|nullable|integer|exists:egresos,id',
             'fecha' => 'required|date',
             'concepto' => 'sometimes|nullable|string|max:255',
             'tipo_documento' => 'required|string|max:255',
             'forma_pago' => 'required|string|max:255',
             'estado' => 'required|string|max:255',
             'total' => 'required|numeric|min:0',
-            'id_categoria' => 'required|integer|exists:categorias_gastos,id',
+            'id_categoria' => 'required|integer|exists:gastos_categorias,id',
             'id_proveedor' => 'required|integer|exists:proveedores,id',
             'id_usuario' => 'required|integer|exists:users,id',
             'id_sucursal' => 'required|integer|exists:sucursales,id',

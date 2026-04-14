@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Compras\Detalle as DetalleCompra;
+use App\Models\Inventario\Ajuste;
+use App\Models\Inventario\Inventario;
 use Illuminate\Support\Facades\Crypt;
 
 use App\Exports\ConsignasExport;

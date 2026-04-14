@@ -40,7 +40,7 @@ export class CrearCategoriaGastoComponent extends BaseModalComponent implements 
 
     public onSubmit() {
         this.loading = true;
-        this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
+        this.categoria.id_empresa = Number(this.apiService.auth_user().id_empresa);
         this.apiService.store('gastos/categoria', this.categoria)
             .pipe(this.untilDestroyed())
             .subscribe(categoria => {

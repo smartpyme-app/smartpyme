@@ -1,6 +1,6 @@
 <div class="row">
     <h6 class="my-3 font-weight-bold">Inventario <span class="badge bg-default text-dark">{{ producto.inventarios | sum:'stock' }} unidades</span>
-        <a class="btn btn-default float-end" (click)="openModal(mbodega, {})" tooltip="Agregar bodega">
+        <a class="btn btn-default float-end" (click)="openModal(mbodega, {})" tooltip="Agregar inventario en una bodega">
             <i class="fa fa-plus"></i> Agregar inventario
         </a>
     </h6>
@@ -13,20 +13,20 @@
                     <th class="text-center d-none d-lg-table-cell">Stock mínino</th>
                     <th class="text-center d-none d-lg-table-cell">Stock máximo</th>
                     <th class="text-center">Stock</th>
-                    <th width="100" class="text-center"><i class="fa fa-cog"></i> </th>
+                    <th class="text-center" style="width: 100px;"><i class="fa fa-cog"></i></th>
                 </tr>
             </thead>
             <tbody>
                 @if (loading) {
                     <tr>
-                        <td colspan="5" class="text-center">
+                        <td colspan="6" class="text-center">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
                 }
                 @if (!loading && producto?.inventarios.length == 0) {
                     <tr>
-                        <td colspan="5" class="text-center">
+                        <td colspan="6" class="text-center">
                             <span class="text-muted">No tiene inventarios configurados</span>
                         </td>
                     </tr>
@@ -35,15 +35,15 @@
                     <tr>
                         <td>{{ bodega.nombre_bodega }}</td>
                         <td>{{ bodega.nombre_sucursal }}</td>
-                        <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_minimo }}</span></td>
-                        <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_maximo }}</span></td>
+                        <td class="text-center d-none d-lg-table-cell">{{ bodega.stock_minimo }}</td>
+                        <td class="text-center d-none d-lg-table-cell">{{ bodega.stock_maximo }}</td>
                         <td class="text-center">{{ bodega.stock | number:'1.2' }}</td>
                         <td class="text-center">
-                            <div class="d-flex gap-2 justify-content-center">
-                                <a class="btn btn-light" (click)="openModal(mbodega, bodega)" tooltip="Configurar inventario">
-                                    <i class="fa fa-sliders-h"></i>
-                                </a>
+                            <div class="d-flex gap-2 justify-content-center align-items-center">
                                 <app-crear-ajuste [producto]="producto" [inventario]="bodega" (setAjuste)="setAjuste($event)"></app-crear-ajuste>
+                                <a class="btn btn-light" (click)="openModal(mbodega, bodega)" tooltip="Editar inventario" href="javascript:void(0)">
+                                    <i class="fa fa-pencil-alt"></i>
+                                </a>
                             </div>
                         </td>
                     </tr>
@@ -56,30 +56,41 @@
 
 <ng-template #mbodega>
   <div class="modal-header">
-    <h3 class="modal-title text-center">{{ producto.nombre }}</h3>
+    <h3 class="modal-title text-center w-100">
+        @if (inventario.id) {
+            <span>Editar inventario</span>
+        } @else {
+            <span>Agregar inventario</span>
+        }
+        <br>
+        <small class="text-muted fw-normal">{{ producto.nombre }}</small>
+    </h3>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="onSubmit()">
         <app-notificaciones-container></app-notificaciones-container>
+        <p class="text-muted small mb-3">
+            La cantidad en existencias se define en el modal <strong>Agregar stock</strong>, no aquí.
+        </p>
         <div class="row">
             <div class="form-group col-md-12">
                 <label for="id_bodega">Bodega:</label>
-                <select [(ngModel)]="inventario.id_bodega" class="form-select" name="id_bodega" (change)="obtenerIdSucursal(inventario.id_bodega)">
+                <select [(ngModel)]="inventario.id_bodega" class="form-select" name="id_bodega" (change)="obtenerIdSucursal(inventario.id_bodega)" [disabled]="!!inventario.id">
                     <option value="">Seleccione aquí</option>
-                    @for (bodega of bodegas; track bodega.id) {
-                        <option [ngValue]="bodega.id">{{ bodega.nombre }}</option>
+                    @for (b of bodegasDisponibles; track b.id) {
+                        <option [ngValue]="b.id">{{ b.nombre }}</option>
                     }
                 </select>
                 <small class="text-muted" *ngIf="bodegasDisponibles.length === 0 && bodegas.length > 0">El producto ya tiene inventario en todas las bodegas.</small>
             </div>
             <div class="form-group col-md-6">
-                <label for="stock_minimo">Stock minimo:</label>
-                <input type="number" [(ngModel)]="inventario.stock_minimo" class="form-control" name="stock_minimo">
+                <label for="stock_minimo">Stock mínimo:</label>
+                <input type="number" [(ngModel)]="inventario.stock_minimo" class="form-control" name="stock_minimo" min="0" step="0.01">
             </div>
             <div class="form-group col-md-6">
-                <label for="stock_maximo">Stock maximo:</label>
-                <input type="number" [(ngModel)]="inventario.stock_maximo" class="form-control" name="stock_maximo">
+                <label for="stock_maximo">Stock máximo:</label>
+                <input type="number" [(ngModel)]="inventario.stock_maximo" class="form-control" name="stock_maximo" min="0" step="0.01">
             </div>
         </div>
 
@@ -96,4 +107,3 @@
     </form>
   </div>
 </ng-template>
-

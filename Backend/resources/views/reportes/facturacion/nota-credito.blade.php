@@ -78,7 +78,12 @@
                         </p>
                     </td>
                     <td>
-                        @if($venta->empresa->pais == 'El Salvador')
+                        @php
+                            $empresaNota = $venta->relationLoaded('empresa') && $venta->empresa
+                                ? $venta->empresa
+                                : $venta->empresa()->with('currency')->first();
+                        @endphp
+                        @if(($empresaNota->pais ?? '') == 'El Salvador')
                             <p>NCR:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
                             <p>DUI:{{ $venta->cliente()->pluck('dui')->first() }}</p>
                         @else

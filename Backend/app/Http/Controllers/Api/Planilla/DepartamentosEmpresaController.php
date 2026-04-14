@@ -19,9 +19,11 @@ class DepartamentosEmpresaController extends Controller
         $query = DepartamentoEmpresa::where('id_empresa', $request->user()->id_empresa)
             ->where('activo', true);
 
-        if ($request->has('buscador')) {
-            $query->where('nombre', 'LIKE', "%{$request->buscador}%")
-                  ->orWhere('descripcion', 'LIKE', "%{$request->buscador}%");
+        if ($request->filled('buscador')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('nombre', 'LIKE', "%{$request->buscador}%")
+                    ->orWhere('descripcion', 'LIKE', "%{$request->buscador}%");
+            });
         }
 
         if ($request->has('estado')) {

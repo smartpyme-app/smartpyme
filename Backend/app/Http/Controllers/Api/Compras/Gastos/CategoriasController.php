@@ -16,13 +16,14 @@ class CategoriasController extends Controller
         return (int) auth()->user()->id_empresa;
     }
 
-    public function index() {
-
+    public function index()
+    {
         $categorias = Categoria::with('cuenta')
             ->where('id_empresa', $this->idEmpresaUsuario())
             ->orderBy('nombre', 'asc')->get();
 
         return Response()->json($categorias, 200);
+    }
 
     /**
      * Listado compacto para selectores (misma tabla y filtro por empresa).
@@ -38,19 +39,20 @@ class CategoriasController extends Controller
 
     public function store(StoreCategoriaRequest $request)
     {
-
-        if($request->id)
+        if ($request->id) {
             $categoria = Categoria::findOrFail($request->id);
-        else
-            $categoria = new Categoria;
-            $categoria->id_empresa = $idEmpresa;
+        } else {
+            $categoria = new Categoria();
+            $categoria->id_empresa = $this->idEmpresaUsuario();
         }
 
         $categoria->nombre = $request->nombre;
+        $categoria->id_cuenta_contable = $request->filled('id_cuenta_contable')
+            ? (int) $request->input('id_cuenta_contable')
+            : null;
         $categoria->save();
 
-        return Response()->json($categoria, 200);
-
+        return Response()->json($categoria->load('cuenta'), 200);
     }
 
     public function delete($id)
@@ -62,6 +64,5 @@ class CategoriasController extends Controller
 
         return Response()->json($categoria, 201);
     }
-
 
 }

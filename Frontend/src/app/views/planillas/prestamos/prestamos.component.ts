@@ -1,11 +1,19 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { ModalModule } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-prestamos',
+  standalone: true,
   templateUrl: './prestamos.component.html',
+  imports: [CommonModule, FormsModule, ModalModule, TooltipModule, NgSelectModule, PaginationComponent],
 })
 export class PrestamosComponent implements OnInit {
   tabActivo: 'listado' | 'estado-cuenta' | 'crear' | 'abono' = 'listado';
@@ -48,7 +56,8 @@ export class PrestamosComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   openFilter(template: TemplateRef<any>) {
@@ -97,9 +106,11 @@ export class PrestamosComponent implements OnInit {
         this.empleados = res?.data ?? res ?? [];
         if (Array.isArray(res) && res.length) this.empleados = res;
         this.loadingEmpleados = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.loadingEmpleados = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -120,11 +131,19 @@ export class PrestamosComponent implements OnInit {
     if (this.filtros.estado) params.estado = this.filtros.estado;
     this.apiService.getAll('planillas/prestamos', params).subscribe({
       next: (res: any) => {
-        this.prestamos = res?.data ? res : { data: res, total: (res?.length ?? 0) };
+        if (res && typeof res === 'object' && Array.isArray(res.data) && (res.total !== undefined || res.current_page !== undefined)) {
+          this.prestamos = res;
+        } else if (Array.isArray(res)) {
+          this.prestamos = { data: res, total: res.length, last_page: 1, current_page: 1 };
+        } else {
+          this.prestamos = { data: [], total: 0, last_page: 1, current_page: 1 };
+        }
         this.loadingPrestamos = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.loadingPrestamos = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -238,13 +257,15 @@ export class PrestamosComponent implements OnInit {
     const params: any = { paginate: this.filtros.paginate };
     if (this.filtros.id_empleado) params.id_empleado = this.filtros.id_empleado;
     if (this.filtros.estado) params.estado = this.filtros.estado;
-    this.apiService.paginate(url, params).subscribe({
+       this.apiService.paginate(url, params).subscribe({
       next: (res: any) => {
         this.prestamos = res;
         this.loadingPrestamos = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.loadingPrestamos = false;
+        this.cdr.markForCheck();
       },
     });
   }

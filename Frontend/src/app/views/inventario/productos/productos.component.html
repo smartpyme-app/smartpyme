@@ -55,19 +55,11 @@
         <div class="d-flex gap-2 flex-wrap">
             <button class="tcla-F3 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()"
                 routerLink="/productos">Todos</button>
-            @if (!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)) {
+            @if (apiService.canAccederOperacionesInventario()) {
                 <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
-            }
-            @if (!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)) {
                 <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
-            }
-            @if (!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)) {
                 <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas">Consignas</button>
-            }
-            @if (!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)) {
                 <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
-            }
-            @if (!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)) {
                 <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
             }
         </div>

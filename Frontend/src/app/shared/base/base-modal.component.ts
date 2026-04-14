@@ -79,7 +79,7 @@ export abstract class BaseModalComponent extends BaseComponent {
    * @param template - TemplateRef del modal
    */
   openConfirmModal(template: TemplateRef<any>): void {
-    this.openModal(template, { size: 'sm', setAlertModal: false });
+    this.modalRef = this.modalManager.openModal(template, { size: 'sm', setAlertModal: false });
   }
 
   /**
@@ -88,10 +88,10 @@ export abstract class BaseModalComponent extends BaseComponent {
    * @param config - Configuración adicional opcional
    */
   openLargeModal(template: TemplateRef<any>, config?: ModalConfig): void {
-    this.openModal(template, { 
-      size: 'lg', 
+    this.modalRef = this.modalManager.openModal(template, {
+      size: 'lg',
       backdrop: 'static',
-      ...config 
+      ...config
     });
   }
 

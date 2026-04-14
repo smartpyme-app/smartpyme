@@ -58,6 +58,18 @@ export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit
 
     ngOnInit() {
         this.loadAll();
+        this.apiService.getAll('catalogo/list')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (catalogo) => {
+                    this.catalogo = catalogo;
+                    this.cdr.markForCheck();
+                },
+                error: (err) => {
+                    this.alertService.error(err);
+                    this.cdr.markForCheck();
+                },
+            });
     }
 
     public override loadAll() {

@@ -428,7 +428,8 @@ class OrdenCompraService
         ];
 
         foreach ($filtros as $filtro) {
-            if ($request->has($filtro)) {
+            // Evitar where('estado','') u otros vacíos: has() es true con string vacío en query params.
+            if ($request->filled($filtro)) {
                 $query->where($filtro, $request->$filtro);
             }
         }

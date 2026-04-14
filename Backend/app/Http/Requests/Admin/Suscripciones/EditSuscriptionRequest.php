@@ -31,6 +31,9 @@ class EditSuscriptionRequest extends FormRequest
             'nombre_factura' => ['nullable', 'string'],
             'direccion_factura' => ['nullable', 'string'],
             'motivo_cancelacion' => ['nullable', 'string'],
+            'comentarios' => ['nullable', 'string'],
+            'monto_mensual' => ['nullable', 'numeric', 'min:0'],
+            'monto_anual' => ['nullable', 'numeric', 'min:0'],
             'nit' => ['nullable', 'string'],
             'estado_ultimo_pago' => ['nullable', 'string'],
         ];
@@ -80,6 +83,10 @@ class EditSuscriptionRequest extends FormRequest
 
         if ($this->has('nit')) {
             $this->merge(['nit' => trim($this->nit)]);
+        }
+
+        if ($this->has('comentarios') && is_string($this->comentarios)) {
+            $this->merge(['comentarios' => trim($this->comentarios)]);
         }
 
         // Convertir valores numéricos

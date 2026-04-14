@@ -10,6 +10,7 @@ import { ProductoComposicionComponent } from './composicion/producto-composicion
 import { ProductoInventariosComponent } from './inventario/producto-inventarios.component';
 import { ProductoPreciosComponent } from './precios/producto-precios.component';
 import { ProductoProveedoresComponent } from './proveedores/producto-proveedores.component';
+import { ProductoImagenesComponent } from './imagenes/producto-imagenes.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -19,7 +20,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     selector: 'app-producto',
     templateUrl: './producto.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ProductoInformacionComponent, ProductoComposicionComponent, ProductoInventariosComponent, ProductoPreciosComponent, ProductoProveedoresComponent],
+    imports: [CommonModule, RouterModule, FormsModule, ProductoInformacionComponent, ProductoComposicionComponent, ProductoInventariosComponent, ProductoPreciosComponent, ProductoProveedoresComponent, ProductoImagenesComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductoComponent implements OnInit {
@@ -46,6 +47,12 @@ export class ProductoComponent implements OnInit {
 		        this.loading = true;
 		        this.apiService.read('producto/', params.id).subscribe(producto => {
 		            this.producto = producto;
+                if (!Array.isArray(this.producto.imagenes)) {
+                  this.producto.imagenes = [];
+                }
+                if (this.producto.tipo === 'Compuesto' && !Array.isArray(this.producto.composiciones)) {
+                  this.producto.composiciones = [];
+                }
                 const pct = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '') ? Number(producto.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
                 this.producto.impuesto = Number(pct) / 100;
                 this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
@@ -73,6 +80,9 @@ export class ProductoComponent implements OnInit {
 
 	}
 
-
+  /** Para OnPush: el hijo muta `producto` (misma referencia), p. ej. al activar producto compuesto. */
+  trackProductoMutado(): void {
+    this.cdr.markForCheck();
+  }
 
 }

@@ -53,11 +53,11 @@
                 <label for="cuenta.id_cuenta_contable">Cuenta del catálogo:</label>
                 <ng-select [(ngModel)]="cuenta.id_cuenta_contable" class="form-select p-0" name="cuenta.id_cuenta_contable">
                     <ng-option value="">Seleccione aquí</ng-option>
-                    @for (cuenta of catalogo; track cuenta.id || $index) {
-                      <ng-option [value]="cuenta.id">
+                    @for (cuentaCatalogo of catalogo; track cuentaCatalogo.id) {
+                      <ng-option [value]="cuentaCatalogo.id">
                         <div class="d-flex align-items-center">
-                            <span style="width: 75px;">{{ cuenta.codigo }} </span>
-                            <span class="col-8"> - {{ cuenta.nombre }}</span>
+                            <span style="width: 75px;">{{ cuentaCatalogo.codigo }} </span>
+                            <span class="col-8"> - {{ cuentaCatalogo.nombre }}</span>
                         </div>
                       </ng-option>
                     }

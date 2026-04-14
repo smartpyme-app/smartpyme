@@ -63,10 +63,10 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="10" class="text-center" *ngIf="cobros?.total < 1 && !loading">
+                        <td colspan="9" class="text-center" *ngIf="cobros?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene cobros registrados</span>
                         </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
+                        <td colspan="9" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -74,8 +74,8 @@
                     <tr *ngFor="let venta of cobros?.data">
                         <td>{{ venta.fecha | date:'dd/MM/yyyy' }}</td>
                         <td>
-                            <a *ngIf="venta.id_cliente" [routerLink]="['/cliente/editar', venta.id_cliente]" class="text-decoration-none text-dark">{{ venta.nombre_cliente | truncate:30 }}</a>
-                            <span *ngIf="!venta.id_cliente">{{ venta.nombre_cliente | truncate:30 }}</span>
+                            <a *ngIf="venta.id_cliente" [routerLink]="['/cliente/editar', venta.id_cliente]" class="text-decoration-none text-dark">{{ etiquetaCliente(venta) | truncate:30 }}</a>
+                            <span *ngIf="!venta.id_cliente">{{ etiquetaCliente(venta) | truncate:30 }}</span>
                         </td>
                         <td class="d-none d-md-table-cell">{{ (venta.nombre_documento || venta.tipo_documento) }} #{{ venta.correlativo }}</td>
                         <td class="d-none d-md-table-cell">{{ venta.nombre_vendedor || '-' }}</td>
@@ -88,55 +88,42 @@
                             <span *ngIf="venta.estado != 'Pendiente'" class="text-muted">-</span>
                         </td>
                         <td>
-                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning': venta?.estado == 'Pendiente', 'bg-success': venta?.estado == 'Pagada'}" [popover]="popTemplate" [outsideClick]="true">
+                            <span
+                                class="badge py-2 px-2 border-0 shadow-none d-inline-block text-dark"
+                                style="font-size: 0.8rem; cursor: pointer; outline: none;"
+                                [ngClass]="{'bg-warning': venta?.estado == 'Pendiente', 'bg-success': venta?.estado == 'Pagada'}"
+                                [popover]="tplEstadoVenta"
+                                [popoverContext]="{ venta: venta }"
+                                [outsideClick]="true"
+                                container="body"
+                                placement="bottom">
                                 {{ venta.estado }}
                             </span>
-                            <ng-template #popTemplate>
-                                <button class="btn btn-default btn-sm" (click)="setEstado(venta, 'Pagada')">Pagada</button>
-                                <button class="btn btn-default btn-sm" (click)="setEstado(venta, 'Pendiente')">Pendiente</button>
-                            </ng-template>
                         </td>
                         <td class="text-right">
-                            <span [popover]="popTotalTemplate" placement="left" triggers="mouseenter:mouseleave">
-                                {{ venta.total | currency }}
+                            <span
+                                class="text-dark d-inline-block border-bottom border-secondary border-opacity-50"
+                                style="cursor: help; outline: none;"
+                                [popover]="tplSaldoVenta"
+                                [popoverContext]="{ venta: venta }"
+                                placement="left"
+                                triggers="mouseenter:mouseleave"
+                                container="body">
+                                {{ montoTotalVenta(venta) | currency }}
                             </span>
-                            <ng-template #popTotalTemplate>
-                                <table class="w-100 table table-sm mb-0">
-                                    <tbody>
-                                        <tr>
-                                            <td>Total</td>
-                                            <td class="text-end">{{ venta.total | currency }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Abonos</td>
-                                            <td class="text-end">{{ (venta.abonos_sum_total || 0) | currency }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Devoluciones</td>
-                                            <td class="text-end">{{ (venta.devoluciones_sum_total || 0) | currency }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Saldo</strong></td>
-                                            <td class="text-end"><strong>{{ getSaldo(venta) | currency }}</strong></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </ng-template>
                         </td>
                         <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="list-group border-0">
-                                    <a routerLink="/venta/{{ venta.id }}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-arrow-right"></i> Ver detalle
-                                    </a>
-                                    <a *ngIf="venta.id_cliente" [routerLink]="['/cliente/editar', venta.id_cliente]" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-user"></i> Ver cliente
-                                    </a>
-                                </div>
-                            </ng-template>
+                            <button type="button"
+                                class="btn btn-link text-dark p-0 border-0 shadow-none"
+                                style="outline: none;"
+                                [popover]="tplAccionesVenta"
+                                [popoverContext]="{ venta: venta }"
+                                [outsideClick]="true"
+                                container="body"
+                                placement="left"
+                                tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw" aria-hidden="true"></i>
+                            </button>
                         </td>
                     </tr>
                 </tbody>
@@ -148,6 +135,47 @@
         </div>
     </div>
 </section>
+
+<ng-template #tplEstadoVenta let-venta="venta">
+    <div class="d-flex flex-column gap-1 p-1">
+        <button type="button" class="btn btn-default btn-sm" (click)="setEstado(venta, 'Pagada')">Pagada</button>
+        <button type="button" class="btn btn-default btn-sm" (click)="setEstado(venta, 'Pendiente')">Pendiente</button>
+    </div>
+</ng-template>
+
+<ng-template #tplSaldoVenta let-venta="venta">
+    <table class="w-100 table table-sm mb-0">
+        <tbody>
+            <tr>
+                <td>Total</td>
+                <td class="text-end">{{ montoTotalVenta(venta) | currency }}</td>
+            </tr>
+            <tr>
+                <td>Abonos</td>
+                <td class="text-end">{{ (venta.abonos_sum_total || 0) | currency }}</td>
+            </tr>
+            <tr>
+                <td>Devoluciones</td>
+                <td class="text-end">{{ (venta.devoluciones_sum_total || 0) | currency }}</td>
+            </tr>
+            <tr>
+                <td><strong>Saldo</strong></td>
+                <td class="text-end"><strong>{{ getSaldo(venta) | currency }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</ng-template>
+
+<ng-template #tplAccionesVenta let-venta="venta">
+    <div class="list-group border-0">
+        <a routerLink="/venta/{{ venta.id }}" class="list-group-item list-group-item-action border-0 click">
+            <i class="fa fa-fw fa-arrow-right"></i> Ver detalle
+        </a>
+        <a *ngIf="venta.id_cliente" [routerLink]="['/cliente/editar', venta.id_cliente]" class="list-group-item list-group-item-action border-0 click">
+            <i class="fa fa-fw fa-user"></i> Ver cliente
+        </a>
+    </div>
+</ng-template>
 
 <ng-template #mfilter>
     <div class="modal-header">

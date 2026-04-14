@@ -63,7 +63,8 @@ export class GastosCategoriasComponent extends BaseCrudComponent<any> implements
             this.categorias = categorias;
             this.loading = false;
             this.filtrado = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     protected aplicarFiltros(): void {
@@ -99,7 +100,7 @@ export class GastosCategoriasComponent extends BaseCrudComponent<any> implements
         }).then((result) => {
           if (result.isConfirmed) {
                 this.loading = true;
-                this.apiService.delete('categoria/', itemToDelete)
+                this.apiService.delete('gastos/categoria/', itemToDelete)
                   .pipe(this.untilDestroyed())
                   .subscribe(data => {
                     const index = this.categorias.findIndex((c: any) => c.id === data.id);

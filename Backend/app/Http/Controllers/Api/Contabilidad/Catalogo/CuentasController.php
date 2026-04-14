@@ -17,31 +17,84 @@ class CuentasController extends Controller
 
 
     public function index(Request $request) {
-        $perPage = $request->get('paginate', 10); // Número de cuentas por página
-        $page = $request->get('page', 1);
+        $perPage = max(1, min(500, (int) $request->get('paginate', 10)));
+        $page = max(1, (int) $request->get('page', 1));
+        $buscador = trim((string) $request->get('buscador', ''));
 
-        // Obtener todas las cuentas y construir jerarquía completa
         $todasLasCuentas = Cuenta::orderBy('codigo')->get();
+
+        if ($buscador !== '') {
+            $todasLasCuentas = $this->filtrarCuentasPorBuscador($todasLasCuentas, $buscador);
+        }
+
         $cuentasJerarquicas = $this->ordenarJerarquicamente($todasLasCuentas);
 
-        // Paginar el resultado jerárquico final
         $total = count($cuentasJerarquicas);
         $offset = ($page - 1) * $perPage;
         $cuentasPaginadas = array_slice($cuentasJerarquicas, $offset, $perPage);
 
-        // Preparar respuesta paginada
+        $lastPage = $total > 0 ? max(1, (int) ceil($total / $perPage)) : 1;
+        $from = $total > 0 ? $offset + 1 : 0;
+        $to = $total > 0 ? $offset + count($cuentasPaginadas) : 0;
+
         $response = [
             'data' => $cuentasPaginadas,
-            'current_page' => (int)$page,
-            'per_page' => (int)$perPage,
+            'current_page' => $total > 0 ? $page : 1,
+            'per_page' => $perPage,
             'total' => $total,
-            'last_page' => ceil($total / $perPage),
-            'from' => $offset + 1,
-            'to' => $offset + count($cuentasPaginadas),
+            'last_page' => $lastPage,
+            'from' => $from,
+            'to' => $to,
             'path' => request()->url()
         ];
 
         return response()->json($response, 200);
+    }
+
+    /**
+     * Reduce el conjunto a cuentas que coinciden con el texto y sus ancestros (árbol legible).
+     *
+     * @param \Illuminate\Support\Collection<int, Cuenta> $todasLasCuentas
+     * @return \Illuminate\Support\Collection<int, Cuenta>
+     */
+    private function filtrarCuentasPorBuscador($todasLasCuentas, string $buscador)
+    {
+        $buscadorNorm = mb_strtolower($buscador, 'UTF-8');
+        $byId = $todasLasCuentas->keyBy('id');
+        $includeIds = [];
+
+        foreach ($todasLasCuentas as $cuenta) {
+            if (!$this->cuentaCoincideBuscador($cuenta, $buscadorNorm)) {
+                continue;
+            }
+            $actual = $cuenta;
+            while ($actual) {
+                $includeIds[$actual->id] = true;
+                $pid = $actual->id_cuenta_padre;
+                $actual = ($pid && isset($byId[$pid])) ? $byId[$pid] : null;
+            }
+        }
+
+        return $todasLasCuentas->filter(function ($c) use ($includeIds) {
+            return isset($includeIds[$c->id]);
+        })->values();
+    }
+
+    private function cuentaCoincideBuscador(Cuenta $cuenta, string $buscadorNorm): bool
+    {
+        $campos = [
+            (string) $cuenta->codigo,
+            (string) $cuenta->nombre,
+            (string) $cuenta->rubro,
+            (string) $cuenta->naturaleza,
+        ];
+        foreach ($campos as $valor) {
+            if ($valor !== '' && mb_strpos(mb_strtolower($valor, 'UTF-8'), $buscadorNorm, 0, 'UTF-8') !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -36,6 +36,9 @@ interface UserPermissions {
 
 @Injectable()
 export class ApiService {
+  /** Empresa 324: inventario operaciones solo Administrador. */
+  private static readonly EMPRESA_ID_INVENTARIO_OPERACIONES_SOLO_ADMIN = 324;
+
   public appUrl: string = environment.APP_URL;
   public baseUrl: string = environment.API_URL;
   public apiUrl = this.baseUrl + '/api/';
@@ -365,6 +368,11 @@ export class ApiService {
         return customConfig?.configuraciones?.gastos_categorias_personalizadas === true;
     }
 
+    /** Sidebar Gastos: categorías, departamentos y áreas si hay contabilidad en el plan o categorías personalizadas en empresa. */
+    mostrarMenuConfigGastos(contabilidadHabilitada: boolean): boolean {
+        return contabilidadHabilitada || this.isGastosCategoriasPersonalizadasHabilitadas();
+    }
+
     /** Indica si mostrar estado de cuenta del cliente en facturación está habilitado */
     isEstadoCuentaEnFacturacionHabilitado(): boolean {
         const empresa = this.auth_user()?.empresa;
@@ -388,118 +396,6 @@ export class ApiService {
             : empresa.custom_empresa;
         return customConfig?.configuraciones?.sku_correlativo_automatico === true;
     }
-
-
-    auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
-
-    date():string{let today = new Date(); let dd = today.getDate(); let mm = today.getMonth()+1; let d; let m; var yyyy = today.getFullYear(); if(dd<10){d='0'+dd;}else{d= dd;} if(mm<10){m='0'+mm;} else{m=mm;} let date:string = yyyy+'-'+m+'-'+d; return date; }
-
-    dataURItoBlob(dataURI: any) {
-        let byteString: any;
-        if (dataURI.split(',')[0].indexOf('base64') >= 0) {
-            byteString = atob(dataURI.split(',')[1]);
-        } else {
-            byteString = unescape(dataURI.split(',')[1]);
-        }
-        const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
-        const ia = new Uint8Array(byteString.length);
-        for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-        }
-        return new Blob([ia], {type: mimeString});
-    }
-
-    datetime():string{let today = new Date(); let dd = today.getDate(); let mm = today.getMonth()+1; let hh = today.getHours(); let min = today.getMinutes(); let sec = today.getSeconds(); let d; let m; let h; let se; var yyyy = today.getFullYear(); if(dd<10){d='0'+dd;}else{d= dd;} if(mm<10){m='0'+mm;} else{m=mm;} if(sec<10){se='0'+sec;} else{se=sec;} let datetime:string = yyyy+'-'+m+'-'+d + ' ' + hh + ':' + min + ':' + se; return datetime; }
-
-    slug(str:any) { if (str) { str = str.replace(/^\s+|\s+$/g, ''); str = str.toLowerCase(); var from = "àáäâèéëêìíïîòóöôùúüûñç·/_,:;"; var to   = "aaaaeeeeiiiioooouuuunc------"; for (var i=0, l=from.length ; i<l ; i++) {str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i)); } str = str.replace(/[^a-z0-9 -]/g, '') .replace(/\s+/g, '-') .replace(/-+/g, '-'); return str; }}
-
-    toggleTheme(){
-
-        if (localStorage.getItem('SP_theme') == 'light') {
-            localStorage.setItem('SP_theme', 'dark');
-        }else{
-            localStorage.setItem('SP_theme', 'light');
-        }
-        this.loadTheme();
-    }
-
-    loadTheme(){
-        let theme:any = localStorage.getItem('SP_theme');
-        if (!theme){
-            localStorage.setItem('SP_theme', 'light');
-        }
-        if (localStorage.getItem('SP_theme') == 'dark') {
-            $('body').attr('data-theme-version', 'dark');
-            $('.icon-theme').removeClass('far');
-            $('.icon-theme').addClass('fas');
-        }else{
-            $('body').attr('data-theme-version', 'light');
-            $('.icon-theme').removeClass('fas');
-            $('.icon-theme').addClass('far');
-        }
-    }
-
-    loadData(){
-
-        this.getAll('formas-de-pago').subscribe(metodospago => {
-            localStorage.setItem('metodospago', JSON.stringify(metodospago));
-        }, error => {this.alertService.error(error);});
-
-        this.getAll('paises').subscribe(paises => {
-            localStorage.setItem('paises', JSON.stringify(paises));
-        }, error => {this.alertService.error(error); });
-
-        this.getAll('municipios').subscribe(municipios => {
-            localStorage.setItem('municipios', JSON.stringify(municipios));
-        }, error => {this.alertService.error(error); });
-
-        this.getAll('distritos').subscribe(distritos => {
-            localStorage.setItem('distritos', JSON.stringify(distritos));
-        }, error => {this.alertService.error(error); });
-
-        this.getAll('departamentos').subscribe(departamentos => {
-            localStorage.setItem('departamentos', JSON.stringify(departamentos));
-        }, error => {this.alertService.error(error); });
-
-        this.getAll('actividades_economicas').subscribe(actividad_economicas => {
-            localStorage.setItem('actividad_economicas', JSON.stringify(actividad_economicas));
-        }, error => {this.alertService.error(error); });
-
-        this.getAll('unidades').subscribe(medidas => {
-            localStorage.setItem('unidades_medidas', JSON.stringify(medidas));
-        }, error => {this.alertService.error(error);});
-    }
-
-    isAdmin(){
-        let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
-            return true;
-        return false;
-    }
-
-    isAdminCreate(){
-        let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador')
-            return true;
-        return false;
-    }
-
-    canCreate() {
-        let usuario = this.auth_user();
-        if (
-            usuario.tipo == 'Administrador' ||
-            usuario.tipo == 'Supervisor'
-            || usuario.tipo == 'Supervisor Limitado'
-        )
-            return true;
-        return false;
-    }
-
-    /**
-     * Empresa donde las rutas y la navegación de ajustes/traslados/consignas/entradas-salidas
-     * quedan reservadas solo al rol Administrador.
-     */
-    private static readonly EMPRESA_ID_INVENTARIO_OPERACIONES_SOLO_ADMIN = 324;
 
     esEmpresaInventarioOperacionesSoloAdministrador(): boolean {
         const id = this.auth_user()?.id_empresa;
@@ -528,65 +424,6 @@ export class ApiService {
         return usuario?.tipo === 'Administrador';
     }
 
-    canEdit(){
-        let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
-            return true;
-        return false;
-    }
-
-    canChange(){
-        let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'
-            // || usuario.tipo == 'Supervisor Limitado'
-        )
-            return true;
-        return false;
-    }
-
-    canDelete(){
-        let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
-            return true;
-        return false;
-    }
-
-    generateGoogleCalendarLink(event: any): string {
-        const startDate = moment(event.startDate).utc().format('YYYYMMDDTHHmmss[Z]');
-        const endDate = moment(event.endDate).utc().format('YYYYMMDDTHHmmss[Z]');
-        const calendarLink = `https://www.google.com/calendar/event?action=TEMPLATE&dates=${startDate}/${endDate}&text=${encodeURIComponent(event.title)}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
-        return calendarLink;
-    }
-
-    getPosition(): Promise<any> {
-       return new Promise((resolve, reject) => {
-           navigator.geolocation.getCurrentPosition(resp => {
-                   resolve({lng: resp.coords.longitude, lat: resp.coords.latitude});
-               },
-               err => {
-                   reject(err);
-             });
-       });
-    }
-
-    isSupervisorLimitado() {
-        let usuario = this.auth_user();
-        if (usuario.tipo == 'Supervisor Limitado') return true;
-        return false;
-    }
-
-    isVentasLimitado() {
-        let usuario = this.auth_user();
-        if (usuario.tipo == 'Ventas Limitado') return true;
-        return false;
-    }
-
-    isVentas() {
-        let usuario = this.auth_user();
-        if (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado') return true;
-        return false;
-    }
-
     /** Empresa activó bloquear facturar/editar/gestionar cotizaciones para vendedores (Mi cuenta). */
     empresaBloqueaCotizacionesVendedores(): boolean {
         const u = this.auth_user();
@@ -600,79 +437,5 @@ export class ApiService {
      */
     restriccionesCotizacionesVendedoresActivas(): boolean {
         return this.isVentas() && this.empresaBloqueaCotizacionesVendedores();
-    }
-
-    private loadConstants() {
-        this.http.get<any>(this.apiUrl + 'constants').subscribe(
-          (constants) => {
-            localStorage.setItem('SP_constants', JSON.stringify(constants));
-          },
-          (error) => {
-            console.error('Error cargando constantes:', error);
-          }
-        );
-    }
-
-    getConstants() {
-        const constants = localStorage.getItem('SP_constants');
-        return constants ? JSON.parse(constants) : null;
-    }
-
-    generatePayrollSlips(planillaId: number): Observable<Blob> {
-        return this.http
-          .get(`${this.apiUrl}planillas/${planillaId}/boletas`, {
-            responseType: 'blob',
-          })
-          .pipe(
-            map((response) => {
-              return new Blob([response], { type: 'application/pdf' });
-            }),
-            catchError((error) => {
-              console.error('Error downloading payroll slips:', error);
-              return throwError(() => error);
-            })
-          );
-    }
-
-    generateIndividualPayrollSlip(detalleId: number): Observable<Blob> {
-        return this.http
-          .get(`${this.apiUrl}planillas/detalles/${detalleId}/boleta`, {
-            responseType: 'blob',
-          })
-          .pipe(
-            map((response) => {
-              return new Blob([response], { type: 'application/pdf' });
-            }),
-            catchError((error) => {
-              console.error('Error downloading payroll slip:', error);
-              return throwError(() => error);
-            })
-          );
-    }
-
-    private handleError(error: HttpErrorResponse) {
-      return throwError(error);
-    }
-
-    getUserData(userId: number) {
-        return this.http.get<any>(`${this.apiUrl}me/${userId}`).pipe(
-            map((response: any) => {
-              if (response && response.user) {
-                localStorage.setItem('SP_auth_user', JSON.stringify(response.user));
-                return response.user;
-              }
-              return null;
-            }),
-            catchError(this.handleError)
-        );
-    }
-
-    getActividadesEconomicas() {
-        return this.http.get<any>(`${this.apiUrl}actividades-economicas/excel`).pipe(
-            map((response: any) => {
-                return response;
-            }),
-            catchError(this.handleError)
-        );
     }
 }

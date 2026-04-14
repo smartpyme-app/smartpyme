@@ -19,7 +19,8 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 export class AreaEmpresaComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public areas: any = {};
+    /** Objeto paginado de Laravel; evitar `{}` para que la tabla no quede en blanco sin mensaje. */
+    public areas: any = { data: [], total: 0 };
     public area: any = {};
     public departamento: any = {};
     public savingDepartamento: boolean = false;
@@ -175,9 +176,11 @@ export class AreaEmpresaComponent extends BaseCrudComponent<any> implements OnIn
             if (this.modalRef) {
                 this.closeModal();
             }
+            this.cdr.markForCheck();
         }, error => {
             this.alertService.error(error); 
             this.loading = false;
+            this.cdr.markForCheck();
         });
     }
 
@@ -289,10 +292,9 @@ export class AreaEmpresaComponent extends BaseCrudComponent<any> implements OnIn
         }
 
         this.savingDepartamento = true;
-        
-        // Asegurar que activo tenga un valor por defecto
-        if (!this.departamento.activo) {
-            this.departamento.activo = '1';
+
+        if (this.departamento.estado === undefined || this.departamento.estado === null || this.departamento.estado === '') {
+            this.departamento.estado = '1';
         }
 
         // Asignar la sucursal del área si está seleccionada
@@ -326,8 +328,10 @@ export class AreaEmpresaComponent extends BaseCrudComponent<any> implements OnIn
               .pipe(this.untilDestroyed())
               .subscribe(sucursales => { 
                 this.sucursales = sucursales;
+                this.cdr.markForCheck();
             }, error => {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
             });
         }
     }
@@ -346,9 +350,11 @@ export class AreaEmpresaComponent extends BaseCrudComponent<any> implements OnIn
               .pipe(this.untilDestroyed())
               .subscribe(departamentos => { 
                 this.departamentos = departamentos;
+                this.cdr.markForCheck();
                 resolve(departamentos);
             }, error => {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
                 reject(error);
             });
         });
@@ -371,7 +377,7 @@ export class AreaEmpresaComponent extends BaseCrudComponent<any> implements OnIn
         this.departamento = {
             nombre: '',
             descripcion: '',
-            activo: '1'
+            estado: '1',
         };
     }
     public limpiarFiltroDepartamento() {
