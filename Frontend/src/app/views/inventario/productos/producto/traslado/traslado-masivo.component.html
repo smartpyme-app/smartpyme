@@ -162,7 +162,7 @@
     <div class="row mt-3">
         <div class="col-md-12 text-end">
             <button type="submit" (click)="openModalConfirmar(mConfirmar)"
-                    [disabled]="saving || !conceptoTrasladoValido() || hayFilasConCantidadOStockInvalidosParaTraslado() || productosParaTraslado.length === 0"
+                    [disabled]="saving || !conceptoTrasladoValido() || hayFilasConErrorImportacion() || hayFilasConCantidadOStockInvalidosParaTraslado() || productosParaTraslado.length === 0"
                     class="btn btn-primary">
                 <span *ngIf="!saving">
                     Realizar traslado

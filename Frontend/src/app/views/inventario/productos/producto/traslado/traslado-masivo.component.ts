@@ -200,6 +200,11 @@ export class TrasladoMasivoComponent implements OnInit {
         return this.seleccionados.some(p => this.cantidadTrasladoInputInvalida(p));
     }
 
+    /** Alguna fila con error en la vista previa de importación: no se permite traslado hasta quitarlas o reimportar. */
+    public hayFilasConErrorImportacion(): boolean {
+        return this.seleccionados.some(p => p.importacion_preview_ok === false);
+    }
+
     public validarCantidadTraslado(producto: any) {
         this.aplicarReglasCantidadTraslado(producto, { avisoSuperaStock: true });
         this.actualizarProductosParaTraslado();
@@ -288,6 +293,14 @@ export class TrasladoMasivoComponent implements OnInit {
 
         this.sanearCantidadesEnListado();
 
+        if (this.hayFilasConErrorImportacion()) {
+            this.alertService.warning(
+                'Hay al menos una fila con error en el listado. Quite esas filas o corrija el Excel y vuelva a importar antes de realizar el traslado.',
+                'Errores en importación'
+            );
+            return;
+        }
+
         if (this.hayFilasConCantidadOStockInvalidosParaTraslado()) {
             this.alertService.warning(
                 'Hay productos con cantidad a trasladar inválida o sin stock en origen. Corrija las cantidades (enteras entre 1 y el stock), quite filas con error o ajuste el Excel y vuelva a importar.',
@@ -315,6 +328,14 @@ export class TrasladoMasivoComponent implements OnInit {
         }
 
         this.sanearCantidadesEnListado();
+
+        if (this.hayFilasConErrorImportacion()) {
+            this.alertService.warning(
+                'Hay al menos una fila con error en el listado. Quite esas filas o corrija el Excel antes de confirmar.',
+                'Errores en importación'
+            );
+            return;
+        }
 
         if (this.hayFilasConCantidadOStockInvalidosParaTraslado()) {
             this.alertService.warning(
