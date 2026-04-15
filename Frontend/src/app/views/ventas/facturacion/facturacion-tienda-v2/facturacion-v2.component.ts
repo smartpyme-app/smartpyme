@@ -3,16 +3,20 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { BuscadorClientesComponent } from '@shared/parts/buscador-clientes/buscador-clientes.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
+import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
+import { MetodosDePagoComponent } from '../facturacion-tienda/metodos-de-pago/metodos-de-pago.component';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
@@ -24,12 +28,15 @@ import * as moment from 'moment';
   imports: [
     CommonModule,
     FormsModule,
+    NgSelectModule,
     RouterModule,
     CurrencyPipe,
     DecimalPipe,
     FilterPipe,
     BuscadorClientesComponent,
     CrearClienteComponent,
+    CrearProyectoComponent,
+    MetodosDePagoComponent,
     VentaDetallesV2Component
   ],
   providers: [SumPipe],
@@ -63,6 +70,17 @@ export class FacturacionV2Component implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  /** Códigos nota 10.1 DGT (ejemplos frecuentes; ver documentación oficial para el caso concreto). */
+  public readonly feCrTiposDocumentoExoneracion: { codigo: string; nombre: string }[] = [
+    { codigo: '01', nombre: 'Compras autorizadas por Dirección General de Hacienda' },
+    { codigo: '02', nombre: 'Ventas de mercancía en casos especiales' },
+    { codigo: '03', nombre: 'Casos especiales de venta de bienes o prestación de servicios' },
+    { codigo: '04', nombre: 'Órgano de las corporaciones municipales' },
+    { codigo: '08', nombre: 'Exoneración a Zona Franca' },
+    { codigo: '09', nombre: 'Servicios complementarios exportación (RLIVA)' },
+    { codigo: '99', nombre: 'Otros (especificar en documento otro)' },
+  ];
+
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
 
@@ -74,7 +92,7 @@ export class FacturacionV2Component implements OnInit {
 
   constructor(
     public apiService: ApiService,
-    public mhService: MHService,
+    private facturacionElectronica: FacturacionElectronicaService,
     private alertService: AlertService,
     private modalService: BsModalService,
     private sumPipe: SumPipe,
@@ -306,6 +324,7 @@ export class FacturacionV2Component implements OnInit {
     this.venta.id_vendedor = this.apiService.auth_user().id;
     this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.venta.id_empresa = this.apiService.auth_user().id_empresa;
+    this.initFeCrExoneracionVenta();
     let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
     if (corte) {
       this.venta.fecha = JSON.parse(sessionStorage.getItem('SP_corte')!).fecha;
@@ -338,6 +357,7 @@ export class FacturacionV2Component implements OnInit {
             this.venta = venta;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+            this.initFeCrExoneracionVenta();
             this.sumTotal();
           },
           (error) => {
@@ -367,6 +387,7 @@ export class FacturacionV2Component implements OnInit {
               this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
             }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+            this.initFeCrExoneracionVenta();
             this.syncVentaCreditoConsignaFlagsFromEstado();
             this.venta.fecha = this.apiService.date();
             this.venta.fecha_pago = this.apiService.date();
@@ -408,12 +429,16 @@ export class FacturacionV2Component implements OnInit {
             (venta) => {
               this.venta = venta;
               this.normalizarDetallesTipoGravado(this.venta);
-              if(!this.venta.cliente){
-                  this.venta.cliente = {};
-              }else{
-                this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
+              if (!this.venta.cliente) {
+                this.venta.cliente = {};
+              } else {
+                this.venta.cliente.nombre =
+                  this.venta.cliente.tipo == 'Empresa'
+                    ? this.venta.cliente.nombre_empresa
+                    : this.venta.cliente.nombre_completo;
               }
               this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+              this.initFeCrExoneracionVenta();
               this.venta.fecha = this.apiService.date();
               this.venta.fecha_pago = this.apiService.date();
               this.venta.id_documento = null;
@@ -427,39 +452,33 @@ export class FacturacionV2Component implements OnInit {
               this.venta.id = null;
               this.syncVentaCreditoConsignaFlagsFromEstado();
 
-              // Obtener porcentaje de IVA para conversión de precios
-              const porcentajeIvaTotal = this.venta.cobrar_impuestos 
-                ? (this.apiService.auth_user()?.empresa?.iva || 0)
+              const porcentajeIvaTotal = this.venta.cobrar_impuestos
+                ? this.apiService.auth_user()?.empresa?.iva || 0
                 : 0;
-              
-              // Ajustar precios de los detalles para v2 (precios incluyen IVA)
+
               this.venta.detalles.forEach((detalle: any) => {
                 detalle.id = null;
-                
-                // Si el detalle no tiene precio_iva, asumir que precio es sin IVA (versión anterior)
-                // y calcular precio_iva
+
                 if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
                   if (porcentajeIvaTotal > 0) {
-                    // El precio actual es sin IVA, calcular precio con IVA
                     detalle.precio_iva = (parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
                   } else {
-                    // Sin IVA, precio_iva es igual a precio
                     detalle.precio_iva = parseFloat(detalle.precio || 0).toFixed(4);
                   }
                 } else {
-                  // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
                   if (porcentajeIvaTotal > 0) {
-                    const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal);
+                    const precioSinIvaCalculado = this.calcularPrecioSinIva(
+                      parseFloat(detalle.precio_iva),
+                      porcentajeIvaTotal,
+                    );
                     detalle.precio = precioSinIvaCalculado.toFixed(4);
                   } else {
                     detalle.precio = parseFloat(detalle.precio_iva).toFixed(4);
                   }
                 }
-                
-                // Asegurar que precio_iva esté como número
+
                 detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
-                
-                // Recalcular total del detalle usando precio sin IVA
+
                 const precioSinIva = parseFloat(detalle.precio || 0);
                 detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
                 detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
@@ -468,18 +487,16 @@ export class FacturacionV2Component implements OnInit {
                 detalle.gravada = detalle.tipo_gravado === 'gravada' ? detalle.total : 0;
                 detalle.exenta = detalle.tipo_gravado === 'exenta' ? detalle.total : 0;
                 detalle.no_sujeta = detalle.tipo_gravado === 'no_sujeta' ? detalle.total : 0;
-                
-                // Calcular total_iva para visualización (solo gravada lleva IVA)
+
                 if (detalle.tipo_gravado === 'gravada' && this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
                   detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
                 } else {
                   detalle.total_iva = detalle.total;
                 }
               });
-              
+
               this.sumTotal();
 
-              // Para proyectos
               if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
                 this.venta.detalles = [];
               }
@@ -487,7 +504,7 @@ export class FacturacionV2Component implements OnInit {
             (error) => {
               this.alertService.error(error);
               this.loading = false;
-            }
+            },
           );
       }
     }
@@ -722,6 +739,48 @@ export class FacturacionV2Component implements OnInit {
       return 0;
     }
     return precioConIva - this.calcularPrecioSinIva(precioConIva, porcentajeIva);
+  }
+
+  esFeCostaRicaFacturacion(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+  }
+
+  /** Catálogo MH (incoterm, recinto, régimen) y DTE 11: solo El Salvador. */
+  esFacturacionElSalvador(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
+  }
+
+  /** Datos de exoneración DGT (se guardan en ventas.fe_cr_exoneracion). */
+  initFeCrExoneracionVenta(): void {
+    if (!this.esFeCostaRicaFacturacion()) {
+      return;
+    }
+    const base = {
+      aplica: false,
+      tipo_documento_ex: '',
+      numero_documento: '',
+      nombre_institucion: '',
+      tarifa_exonerada: 13,
+      numero_articulo: '',
+      numero_inciso: '',
+      documento_otro: '',
+    };
+    const cur = this.venta?.fe_cr_exoneracion;
+    if (!cur || typeof cur !== 'object') {
+      this.venta.fe_cr_exoneracion = { ...base };
+      return;
+    }
+    this.venta.fe_cr_exoneracion = { ...base, ...cur };
+  }
+
+  onCobrarImpuestosChange(): void {
+    if (this.venta.cobrar_impuestos && this.venta.fe_cr_exoneracion) {
+      this.venta.fe_cr_exoneracion.aplica = false;
+    }
+    if (!this.venta.cobrar_impuestos) {
+      this.initFeCrExoneracionVenta();
+    }
+    this.sumTotal();
   }
 
   public sumTotal() {
@@ -1104,7 +1163,7 @@ export class FacturacionV2Component implements OnInit {
         this.venta.id_documento = documento.id;
         this.venta.correlativo = documento.correlativo;
 
-        if (this.venta.nombre_documento == 'Factura de exportación') {
+        if (this.venta.nombre_documento == 'Factura de exportación' && this.esFacturacionElSalvador()) {
             this.apiService.getAll('recintos').subscribe(
                 (recintos) => {
                     this.recintos = recintos;
@@ -1323,7 +1382,7 @@ export class FacturacionV2Component implements OnInit {
 
   emitirDTE() {
     this.emiting = true;
-    this.mhService
+    this.facturacionElectronica
       .emitirDTE(this.venta)
       .then((venta) => {
         this.venta = venta;
@@ -1332,7 +1391,7 @@ export class FacturacionV2Component implements OnInit {
           'DTE emitido.',
           'El documento ha sido emitido.'
         );
-        if(this.venta.id_cliente){
+        if (this.venta.id_cliente && this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
             this.enviarDTE();
         }
         this.emiting = false;
@@ -1349,9 +1408,16 @@ export class FacturacionV2Component implements OnInit {
         this.cargarDatosIniciales();
         this.router.navigate(['/ventas-v2/crear']);
       })
-      .catch((error) => {
+      .catch((error: any) => {
+        this.cargarDatosIniciales();
+        this.router.navigate(['/ventas-v2/crear']);
+
         this.emiting = false;
-        this.alertService.warning('El documento no fue emitido.', error);
+        if (error?.venta) {
+          this.venta = error.venta;
+        }
+        const msg = typeof error === 'string' ? error : error?.message ?? error;
+        this.alertService.warning('El documento no fue emitido.', msg);
       });
   }
 

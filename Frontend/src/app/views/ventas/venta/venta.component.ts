@@ -13,6 +13,7 @@ import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
@@ -64,6 +65,11 @@ export class VentaComponent implements OnInit {
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
         this.loadAll();
+    }
+
+    /** Detalle MH exportación (incoterm, recinto, etc.): solo El Salvador. */
+    esFacturacionElSalvador(): boolean {
+        return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
     }
 
     // public loadAll(){

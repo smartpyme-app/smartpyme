@@ -18,6 +18,8 @@ class Producto extends Model
         'descripcion',
         'descripcion_completa',
         'codigo',
+        'codigo_cabys',
+        'descripcion_cabys',
         'barcode',
         'medida',
         'precio',

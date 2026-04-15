@@ -10,8 +10,10 @@ export const environment = {
   // API_URL: 'https://apiconta.smartpyme.site',
   // API_URL: 'https://apitest.smartpyme.site',
   APP_URL: 'http://localhost:4200',
-  goApiUrl:    'http://localhost:8080',     // la nueva API de Go
-  goApiSecret: 'cdd5761bffbff3f7e6f93c6c1adcdc911d786b91b646e5d19f9f4a5d4a4bbc33'
+  goApiUrl: 'http://localhost:8080',
+  goApiSecret: 'cdd5761bffbff3f7e6f93c6c1adcdc911d786b91b646e5d19f9f4a5d4a4bbc33',
+  /** API pública Hacienda CR (CABYS); CORS *. El buscador CABYS llama aquí desde el navegador para evitar bloqueo al IP del backend. */
+  haciendaPublicApiUrl: 'https://api.hacienda.go.cr',
 };
 
 /*

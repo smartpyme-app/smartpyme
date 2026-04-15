@@ -6,7 +6,7 @@
                 <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar por nombre o código'">
             </div>
             <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
-              <a href="javascript:void(0);" class="list-group-item d-flex gap-2" (click)="selectProducto(producto)" *ngFor=" let producto of productosBusqueda">
+              <a href="javascript:void(0);" class="list-group-item d-flex gap-2" (click)="selectProducto(producto)" *ngFor="let producto of productosBusqueda">
                 <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px">
                 <p class="mb-0">
                     {{ getNombreCompleto(producto) }} <br>

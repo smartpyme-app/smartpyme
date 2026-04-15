@@ -2,20 +2,23 @@ import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, inject  } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
 
+import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 import { DuplicateCheckService } from '@services/duplicate-check.service';
+import { FeCrUbicacionService } from '@services/fe-cr-ubicacion.service';
 import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-crear-cliente',
     templateUrl: './crear-cliente.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe],
 
 })
 export class CrearClienteComponent extends BaseModalComponent implements OnInit {
@@ -47,9 +50,26 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         public apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
-        private duplicateCheckService: DuplicateCheckService
+        private duplicateCheckService: DuplicateCheckService,
+        private feCrUbic: FeCrUbicacionService,
     ) {
         super(modalManager, alertService);
+    }
+
+    esCostaRicaFe(): boolean {
+        return this.feCrUbic.esCostaRicaFe();
+    }
+
+    municipiosFiltradosCr(): any[] {
+        return this.feCrUbic.municipiosPorProvincia(this.municipios, this.cliente?.cod_departamento);
+    }
+
+    distritosFiltradosCr(): any[] {
+        return this.feCrUbic.distritosPorCanton(
+            this.distritos,
+            this.cliente?.cod_departamento,
+            this.cliente?.cod_municipio,
+        );
     }
 
     puedeEditarCreditoCliente(): boolean {
@@ -75,11 +95,19 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     }
 
     ngOnInit() {
-        this.paises = JSON.parse(localStorage.getItem('paises')!);
-        this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
-        this.distritos = JSON.parse(localStorage.getItem('distritos')!);
-        this.municipios = JSON.parse(localStorage.getItem('municipios')!);
-        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+        this.paises = JSON.parse(localStorage.getItem('paises') || '[]');
+        this.departamentos = JSON.parse(localStorage.getItem('departamentos') || '[]');
+        this.distritos = JSON.parse(localStorage.getItem('distritos') || '[]');
+        this.municipios = JSON.parse(localStorage.getItem('municipios') || '[]');
+        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas') || '[]');
+
+        this.feCrUbic.cargarCatalogosYLs().subscribe((r) => {
+            if (r) {
+                this.departamentos = r.dep;
+                this.municipios = r.mun;
+                this.distritos = r.dis;
+            }
+        });
 
         // Cargar vendedores
         this.apiService.getAll('usuarios/list').subscribe(
@@ -166,7 +194,12 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         console.log(distrito);
         if(distrito){
             this.cliente.cod_municipio = distrito.cod_municipio;
-            this.setMunicipio();
+            const mun = this.municipios.find(
+                (m: any) => m.cod == distrito.cod_municipio && m.cod_departamento == distrito.cod_departamento,
+            );
+            if (mun) {
+                this.cliente.municipio = mun.nombre;
+            }
             this.cliente.distrito = distrito.nombre;
             this.cliente.cod_distrito = distrito.cod;
         }

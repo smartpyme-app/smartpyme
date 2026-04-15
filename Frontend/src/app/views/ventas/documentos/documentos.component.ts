@@ -10,6 +10,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { documentoNombreOpciones, DocumentoNombreOption } from './documento-nombre-options';
 
 @Component({
     selector: 'app-documentos',
@@ -30,6 +31,10 @@ export class DocumentosComponent extends BaseCrudComponent<any> implements OnIni
 
     public nuevaResolucion:boolean = false;
     public change:boolean = false;
+
+    opcionesNombreDocumento(): DocumentoNombreOption[] {
+        return documentoNombreOpciones(this.apiService.auth_user()?.empresa);
+    }
 
     constructor(
         apiService: ApiService,

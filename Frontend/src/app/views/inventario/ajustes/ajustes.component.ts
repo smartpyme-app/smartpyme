@@ -198,17 +198,49 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
     public lotes: any[] = [];
     public loadingLotes: boolean = false;
 
-    public productoSelect(producto: any) {
-        this.producto = producto;
-        this.ajuste.id_producto = producto.id;
-        this.ajuste.costo = producto.costo;
-        this.ajuste.lote_id = null;
-        this.lotes = [];
-
-        // Si el producto tiene inventario por lotes, cargar los lotes
-        if (this.producto?.inventario_por_lotes && this.ajuste.id_bodega) {
-            this.cargarLotes();
+    /** Al elegir producto en el ng-select (mismo patrón que traslados). */
+    public setProducto(): void {
+        const id = this.ajuste?.id_producto;
+        if (id == null || id === '') {
+            this.limpiarProducto();
+            return;
         }
+        const p = this.productos?.find((item: any) => item.id == id);
+        if (p) {
+            this.productoSelect(p);
+        }
+    }
+
+    public productoSelect(producto: any) {
+        const aplicar = (p: any) => {
+            this.producto = p;
+            this.ajuste.id_producto = p.id;
+            this.ajuste.costo = p.costo;
+            this.ajuste.lote_id = null;
+            this.lotes = [];
+
+            if (this.producto?.inventario_por_lotes && this.ajuste.id_bodega) {
+                this.cargarLotes();
+            }
+            this.cdr.markForCheck();
+        };
+
+        if (producto?.inventarios && Array.isArray(producto.inventarios)) {
+            aplicar(producto);
+            return;
+        }
+
+        this.apiService
+            .getAll(`productos/${producto.id}/inventarios`)
+            .pipe(this.untilDestroyed())
+            .subscribe(
+                (inventarios) => {
+                    aplicar({ ...producto, inventarios: Array.isArray(inventarios) ? inventarios : [] });
+                },
+                () => {
+                    aplicar({ ...producto, inventarios: [] });
+                }
+            );
     }
 
     public limpiarProducto() {
@@ -221,6 +253,7 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
         this.ajuste.ajuste = null;
         this.lotes = [];
         this.sucursal = {};
+        this.cdr.markForCheck();
     }
 
     public setBodega(){

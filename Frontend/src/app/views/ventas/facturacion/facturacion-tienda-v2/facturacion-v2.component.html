@@ -98,7 +98,7 @@
     </div>
 </section>
 
-<section class="card border-0 p-3 mb-3" *ngIf="venta.cotizacion != 1 && venta.nombre_documento == 'Factura de exportación'">
+<section class="card border-0 p-3 mb-3" *ngIf="venta.cotizacion != 1 && venta.nombre_documento == 'Factura de exportación' && esFacturacionElSalvador()">
     <div class="row">
         <h6 class="mt-3">Detalles de exportación</h6>
         <div class="form-group col-md-6 col-lg-4">
@@ -305,7 +305,7 @@
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
               <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onCobrarImpuestosChange()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
@@ -326,6 +326,64 @@
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_propina" name="cobrar_propina">
             </div>
         </div>
+        @if (esFeCostaRicaFacturacion() && venta.cobrar_impuestos === false) {
+          <div class="col-12">
+            <div class="card border-info mb-3">
+              <div class="card-body py-3">
+                <h6 class="card-title text-info mb-2">Facturación electrónica Costa Rica — exoneración de IVA</h6>
+                <p class="small text-muted mb-3">Si la venta sin IVA está amparada en una autorización de exoneración ante Hacienda, active la opción y complete los datos. El comprobante seguirá sin líneas de IVA; la información se guarda y se adjunta al JSON del DTE para trazabilidad.</p>
+                <div class="form-switch bg-light-info rounded mb-3">
+                  <label for="fe_cr_exon_aplica">Usar documento de exoneración ante Hacienda</label>
+                  <input
+                    class="form-check-input float-end"
+                    type="checkbox"
+                    role="switch"
+                    id="fe_cr_exon_aplica"
+                    name="fe_cr_exon_aplica"
+                    [(ngModel)]="venta.fe_cr_exoneracion.aplica"
+                  />
+                </div>
+                @if (venta.fe_cr_exoneracion?.aplica) {
+                  <div class="row g-2">
+                    <div class="form-group col-md-6 col-lg-4">
+                      <label for="fe_cr_tipo_doc">Tipo de documento EX</label>
+                      <select class="form-select" id="fe_cr_tipo_doc" name="fe_cr_tipo_doc" [(ngModel)]="venta.fe_cr_exoneracion.tipo_documento_ex">
+                        <option value="">Seleccione…</option>
+                        @for (t of feCrTiposDocumentoExoneracion; track t.codigo) {
+                          <option [value]="t.codigo">{{ t.codigo }} — {{ t.nombre }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-4">
+                      <label for="fe_cr_num_doc">Número de documento / autorización</label>
+                      <input type="text" class="form-control" id="fe_cr_num_doc" name="fe_cr_num_doc" [(ngModel)]="venta.fe_cr_exoneracion.numero_documento" placeholder="Ej. AL-XXXXXXXX-XX" autocomplete="off">
+                    </div>
+                    <div class="form-group col-md-6 col-lg-4">
+                      <label for="fe_cr_inst">Institución u órgano emisor</label>
+                      <input type="text" class="form-control" id="fe_cr_inst" name="fe_cr_inst" [(ngModel)]="venta.fe_cr_exoneracion.nombre_institucion" autocomplete="off">
+                    </div>
+                    <div class="form-group col-md-4 col-lg-2">
+                      <label for="fe_cr_tarifa">Tarifa exonerada (%)</label>
+                      <input type="number" class="form-control" id="fe_cr_tarifa" name="fe_cr_tarifa" [(ngModel)]="venta.fe_cr_exoneracion.tarifa_exonerada" min="0" step="0.01">
+                    </div>
+                    <div class="form-group col-md-4 col-lg-2">
+                      <label for="fe_cr_art">Nº artículo (si aplica)</label>
+                      <input type="text" class="form-control" id="fe_cr_art" name="fe_cr_art" [(ngModel)]="venta.fe_cr_exoneracion.numero_articulo" placeholder="0 o vacío">
+                    </div>
+                    <div class="form-group col-md-4 col-lg-2">
+                      <label for="fe_cr_inc">Nº inciso (si aplica)</label>
+                      <input type="text" class="form-control" id="fe_cr_inc" name="fe_cr_inc" [(ngModel)]="venta.fe_cr_exoneracion.numero_inciso" placeholder="0 o vacío">
+                    </div>
+                    <div class="form-group col-12">
+                      <label for="fe_cr_otro">Tipo / documento «otro» (solo si tipo 99)</label>
+                      <input type="text" class="form-control" id="fe_cr_otro" name="fe_cr_otro" [(ngModel)]="venta.fe_cr_exoneracion.documento_otro" autocomplete="off">
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
             <label for="forma_pago">Método de pago</label>
             <div class="input-group flex-nowrap">

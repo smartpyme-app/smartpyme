@@ -3,560 +3,502 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-
-use App\Models\MH\ActividadEconomica;
-use App\Models\MH\Departamento;
-use App\Models\MH\Municipio;
-use App\Models\MH\Unidad;
-
-use Illuminate\Support\Facades\Http;
-use App\Models\MH\MHCCF;
-use App\Models\MH\MHFactura;
-use App\Models\MH\MHFacturaExportacion;
-use App\Models\MH\MHNotaCredito;
-use App\Models\MH\MHNotaDebito;
-use App\Models\MH\MHAnulacion;
-use App\Models\MH\MHContingencia;
-use App\Models\MH\MHSujetoExcluidoGasto;
-use App\Models\MH\MHSujetoExcluidoCompra;
-use App\Models\MH\MH;
-
-use Mail;
-use JWTAuth;
-use App\Models\Ventas\Venta;
-use App\Models\Compras\Compra;
-use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
-use App\Models\Compras\Gastos\Gasto;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
-use App\Http\Requests\MH\GenerarDTERequest;
-use App\Http\Requests\MH\GenerarDTENotaCreditoRequest;
-use App\Http\Requests\MH\GenerarDTESujetoExcluidoGastoRequest;
-use App\Http\Requests\MH\GenerarDTESujetoExcluidoCompraRequest;
-use App\Http\Requests\MH\GenerarContingenciaRequest;
-use App\Http\Requests\MH\GenerarDTEAnuladoRequest;
 use App\Http\Requests\MH\AnularDTERequest;
 use App\Http\Requests\MH\AnularDTESujetoExcluidoRequest;
-use App\Http\Requests\MH\GenerarDTEPDFRequest;
-use App\Http\Requests\MH\GenerarDTEJSONRequest;
-use App\Http\Requests\MH\EnviarDTERequest;
 use App\Http\Requests\MH\ConsultarDTERequest;
-// Usamos app('dompdf.wrapper') en lugar de Facade para evitar errores de clase no encontrada en producción
+use App\Http\Requests\MH\EnviarDTERequest;
+use App\Http\Requests\MH\GenerarContingenciaRequest;
+use App\Http\Requests\MH\GenerarDTEAnuladoRequest;
+use App\Http\Requests\MH\GenerarDTENotaCreditoRequest;
+use App\Http\Requests\MH\GenerarDTERequest;
+use App\Http\Requests\MH\GenerarDTESujetoExcluidoCompraRequest;
+use App\Http\Requests\MH\GenerarDTESujetoExcluidoGastoRequest;
+use App\Http\Requests\MH\GenerarDTEJSONRequest;
+use App\Http\Requests\MH\GenerarDTEPDFRequest;
+use App\Models\Compras\Compra;
+use App\Models\Compras\Gastos\Gasto;
+use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
+use App\Models\Ventas\Venta;
+use App\Services\FacturacionElectronica\ElSalvador\ElSalvadorDteService;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryGate;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 
 class MHDTEController extends Controller
 {
+    public function __construct(
+        private readonly ElSalvadorDteService $elSalvadorDte
+    ) {}
 
-
-    public function generarDTE(GenerarDTERequest $request){
+    public function generarDTE(GenerarDTERequest $request)
+    {
         $venta = Venta::where('id', $request->id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
 
-        if (!$venta->sucursal()->pluck('cod_estable_mh')->first()) {
-            return Response()->json(['error' => 'Falta configurar los datos de la sucursal.'], 400);
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($venta->empresa)) {
+            return $guard;
         }
 
-        if ($venta->nombre_documento == 'Crédito fiscal') {
-            $mh = new MHCCF;
-            $DTE = $mh->generarDTE($venta);
-        }
-
-        elseif ($venta->nombre_documento == 'Factura') {
-            $mh = new MHFactura;
-            $DTE = $mh->generarDTE($venta);
-        }
-
-        elseif ($venta->nombre_documento == 'Factura de exportación') {
-            $mh = new MHFacturaExportacion;
-            $DTE = $mh->generarDTE($venta);
-        }
-        else{
-            return Response()->json(['error' => 'El tipo de documento no puede emitirse, debe ser uno de los permitidos.'], 400);
-        }
-
-        return Response()->json($DTE, 200);
+        return $this->elSalvadorDte->generarDTE($venta);
     }
 
-    public function generarDTENotaCredito(GenerarDTENotaCreditoRequest $request){
+    public function generarDTENotaCredito(GenerarDTENotaCreditoRequest $request)
+    {
         $devolucion = DevolucionVenta::where('id', $request->id)->with('detalles', 'cliente', 'empresa', 'venta')->firstOrFail();
 
-        // if (!$devolucion->venta || !$devolucion->venta->sello_mh) {
-        if (!$devolucion->venta) {
-            // return response()->json(['error' => 'La venta de este documento no ha sido emitida a hacienda.'], 400);
-            return response()->json(['error' => 'La devolución no tiene una venta asignada.'], 400);
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($devolucion->empresa)) {
+            return $guard;
         }
 
-        if ($devolucion->nombre_documento == 'Nota de crédito') {
-            $mh = new MHNotaCredito;
-            $DTE = $mh->generarDTE($devolucion);
-        }
-
-        else if ($devolucion->nombre_documento == 'Nota de débito') {
-            $mh = new MHNotaDebito;
-            $DTE = $mh->generarDTE($devolucion);
-        }
-        else{
-            return response()->json(['error' => 'Tipo de documento no valido, debe de ser Nota de crédito o nota de débito.'], 400);
-        }
-        return Response()->json($DTE, 200);
+        return $this->elSalvadorDte->generarDTENotaCredito($devolucion);
     }
 
-    public function generarDTESujetoExcluidoGasto(GenerarDTESujetoExcluidoGastoRequest $request){
+    public function generarDTESujetoExcluidoGasto(GenerarDTESujetoExcluidoGastoRequest $request)
+    {
         $gasto = Gasto::where('id', $request->id)->with('proveedor', 'empresa')->firstOrFail();
-        $mh = new MHSujetoExcluidoGasto;
-        $DTE = $mh->generarDTE($gasto);
 
-        return Response()->json($DTE, 200);
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($gasto->empresa)) {
+            return $guard;
+        }
+
+        return $this->elSalvadorDte->generarDTESujetoExcluidoGasto($gasto);
     }
 
-    public function generarDTESujetoExcluidoCompra(GenerarDTESujetoExcluidoCompraRequest $request){
+    public function generarDTESujetoExcluidoCompra(GenerarDTESujetoExcluidoCompraRequest $request)
+    {
         $compra = Compra::where('id', $request->id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
-        $mh = new MHSujetoExcluidoCompra;
-        $DTE = $mh->generarDTE($compra);
 
-        return Response()->json($DTE, 200);
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($compra->empresa)) {
+            return $guard;
+        }
+
+        return $this->elSalvadorDte->generarDTESujetoExcluidoCompra($compra);
     }
 
-    public function generarContingencia(GenerarContingenciaRequest $request){
-
+    public function generarContingencia(GenerarContingenciaRequest $request)
+    {
         $ventas = Venta::whereIn('id', [$request->id])
             ->withAccessorRelations()
             ->with('detalles', 'empresa')
             ->get();
         $empresa = $ventas[0]->empresa;
 
-        $DTEs = collect();
-
-        foreach ($ventas as $venta) {
-
-            if ($venta->nombre_documento == 'Crédito fiscal') {
-                $mh = new MHCCF;
-                $DTE = $mh->generarDTE($venta);
-            }
-
-            if ($venta->nombre_documento == 'Factura') {
-                $mh = new MHFactura;
-                $DTE = $mh->generarDTE($venta);
-            }
-
-            if (isset($DTE)) {
-                $DTEs->push($DTE);
-            }
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($empresa)) {
+            return $guard;
         }
 
-        if (count($DTEs) == 0)
-            return Response()->json(['error' => 'Lo sentimos, no se genero ningún DTE', 'code' => 500], 500);
-
-        $mh = new MHContingencia;
-        $response = $mh->generarDTE($empresa, $DTEs, 3);
-
-        return Response()->json($response, 200);
+        return $this->elSalvadorDte->generarContingencia($request);
     }
 
-    public function generarDTEAnulado(GenerarDTEAnuladoRequest $request){
-
+    public function generarDTEAnulado(GenerarDTEAnuladoRequest $request)
+    {
         if ($request->tipo_dte == '05' || $request->tipo_dte == '06') {
-            $venta = DevolucionVenta::where('id', $request->id)->firstOrFail();
-        }else{
-            $venta = Venta::where('id', $request->id)->firstOrFail();
+            $registro = DevolucionVenta::where('id', $request->id)->with('empresa')->firstOrFail();
+        } else {
+            $registro = Venta::where('id', $request->id)->with('empresa')->firstOrFail();
         }
 
-        // Guardar los datos de anulación si vienen en el request
-        if ($request->has('fecha_anulacion')) {
-            $venta->fecha_anulacion = $request->fecha_anulacion;
-        }
-        if ($request->has('tipo_anulacion')) {
-            $venta->tipo_anulacion = $request->tipo_anulacion;
-        }
-        if ($request->has('motivo_anulacion')) {
-            $venta->motivo_anulacion = $request->motivo_anulacion;
-        }
-        if ($request->has('codigo_generacion_remplazo')) {
-            $venta->codigo_generacion_remplazo = $request->codigo_generacion_remplazo;
-        }
-        if ($request->has('fecha_anulacion') || $request->has('tipo_anulacion') || $request->has('motivo_anulacion') || $request->has('codigo_generacion_remplazo')) {
-            $venta->save();
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($registro->empresa)) {
+            return $guard;
         }
 
-        $mh = new MHAnulacion;
-        $DTEAnular = $mh->generarDTE($venta, $venta->dte);
-
-        return Response()->json($DTEAnular, 200);
-
+        return $this->elSalvadorDte->generarDTEAnulado($request);
     }
 
-    public function generarDTEAnuladoSujetoExcluidoCompra(GenerarDTESujetoExcluidoCompraRequest $request){
-        $compra = Compra::where('id', $request->id)->firstOrFail();
+    public function generarDTEAnuladoSujetoExcluidoCompra(GenerarDTESujetoExcluidoCompraRequest $request)
+    {
+        $compra = Compra::where('id', $request->id)->with('empresa')->firstOrFail();
 
-        $mh = new MHAnulacion;
-        $DTEAnular = $mh->generarDTE($compra, $compra->dte);
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($compra->empresa)) {
+            return $guard;
+        }
 
-        return Response()->json($DTEAnular, 200);
-
+        return $this->elSalvadorDte->generarDTEAnuladoSujetoExcluidoCompra($compra);
     }
 
-    public function generarDTEAnuladoSujetoExcluidoGasto(GenerarDTESujetoExcluidoGastoRequest $request){
-        $gasto = Gasto::where('id', $request->id)->firstOrFail();
+    public function generarDTEAnuladoSujetoExcluidoGasto(GenerarDTESujetoExcluidoGastoRequest $request)
+    {
+        $gasto = Gasto::where('id', $request->id)->with('empresa')->firstOrFail();
 
-        $mh = new MHAnulacion;
-        $DTEAnular = $mh->generarDTE($gasto, $gasto->dte);
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($gasto->empresa)) {
+            return $guard;
+        }
 
-        return Response()->json($DTEAnular, 200);
-
+        return $this->elSalvadorDte->generarDTEAnuladoSujetoExcluidoGasto($gasto);
     }
 
-    public function generarTicket($id){
-
+    public function generarTicket($id)
+    {
         $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
 
-        $DTE = $venta->dte;
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($venta->empresa)) {
+            return $guard;
+        }
 
-        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
-
-        return view('reportes.DTE-Ticket', compact('venta', 'DTE'));
-
+        return $this->elSalvadorDte->generarTicket($venta);
     }
 
+    public function anularDTE(AnularDTERequest $request)
+    {
+        $venta = Venta::where('id', $request->id)->with('empresa')->firstOrFail();
 
-    public function anularDTE(AnularDTERequest $request){
-        $venta = Venta::where('id', $request->id)->firstOrFail();
-        $DTE = json_decode($venta->dte, true);
-
-        $mh = new MH;
-
-        $auth = $mh->auth($venta->empresa);
-
-        if ($auth['status'] == "ERROR") {
-            return response()->json(['error' => [$auth['body']['descripcionMsg']]], 422);
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($venta->empresa)) {
+            return $guard;
         }
 
-        $mh->venta = $venta;
-
-        $DTEAnular = $mh->generarDTEAnulado($DTE);
-        // return $DTEAnular;
-
-        if (isset($DTEAnular['status']) == "ERROR") {
-            return response()->json($DTEAnular, 500);
-        }
-
-        $DTEFirmado = $mh->firmarDTE($DTEAnular);
-
-        if ($DTEFirmado['status'] == "ERROR") {
-            return response()->json($DTEFirmado, 500);
-        }
-
-        // return Response()->json($DTEAnular, 500);
-        $DTEEnviado = $mh->anularDTE($auth, $DTE, $DTEFirmado);
-
-        if (isset($DTEEnviado['estado']) == 'PROCESADO' && isset($DTEEnviado['selloRecibido'])) {
-            $DTEAnular['sello'] = $DTEEnviado['selloRecibido'];
-            $DTEAnular['firmaElectronica'] = $DTEFirmado['body'];
-
-            $v = Venta::findOrFail($venta->id);
-            $v->estado = 'Anulada';
-            $v->dte_invalidacion = $DTEAnular;
-            // Guardar los datos de anulación si vienen en el request
-            if ($request->has('fecha_anulacion')) {
-                $v->fecha_anulacion = $request->fecha_anulacion;
-            }
-            if ($request->has('tipo_anulacion')) {
-                $v->tipo_anulacion = $request->tipo_anulacion;
-            }
-            if ($request->has('motivo_anulacion')) {
-                $v->motivo_anulacion = $request->motivo_anulacion;
-            }
-            if ($request->has('codigo_generacion_remplazo')) {
-                $v->codigo_generacion_remplazo = $request->codigo_generacion_remplazo;
-            }
-            $v->save();
-
-
-            return Response()->json($DTEEnviado, 200);
-        }
-
-        return Response()->json($DTEEnviado, 500);
-
+        return $this->elSalvadorDte->anularDTE($request);
     }
 
-    public function anularDTESujetoExcluido(AnularDTESujetoExcluidoRequest $request){
-        $gasto = Gasto::where('id', $request->id)->firstOrFail();
-        $DTE = json_decode($gasto->dte, true);
+    public function anularDTESujetoExcluido(AnularDTESujetoExcluidoRequest $request)
+    {
+        $gasto = Gasto::where('id', $request->id)->with('empresa')->firstOrFail();
 
-        $mh = new MH;
-
-        $auth = $mh->auth($gasto->empresa);
-
-        if ($auth['status'] == "ERROR") {
-            return response()->json(['error' => [$auth['body']['descripcionMsg']]], 422);
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($gasto->empresa)) {
+            return $guard;
         }
 
-        $mh->gasto = $gasto;
-
-        $DTEAnular = $mh->generarDTEAnulado($DTE);
-        // return $DTEAnular;
-
-        if (isset($DTEAnular['status']) == "ERROR") {
-            return response()->json($DTEAnular, 500);
-        }
-
-        $DTEFirmado = $mh->firmarDTE($DTEAnular);
-
-        if ($DTEFirmado['status'] == "ERROR") {
-            return response()->json($DTEFirmado, 500);
-        }
-
-        // return Response()->json($DTEAnular, 500);
-        $DTEEnviado = $mh->anularDTE($auth, $DTE, $DTEFirmado);
-
-        if (isset($DTEEnviado['estado']) == 'PROCESADO' && isset($DTEEnviado['selloRecibido'])) {
-            $DTEAnular['sello'] = $DTEEnviado['selloRecibido'];
-            $DTEAnular['firmaElectronica'] = $DTEFirmado['body'];
-
-            $c = Gasto::findOrFail($gasto->id);
-            $c->estado = 'Anulada';
-            $c->dte_invalidacion = $DTEAnular;
-            $c->save();
-
-
-            return Response()->json($DTEEnviado, 200);
-        }
-
-        return Response()->json($DTEEnviado, 500);
-
+        return $this->elSalvadorDte->anularDTESujetoExcluido($request);
     }
 
-    public function generarDTEPDF($id, $tipo, GenerarDTEPDFRequest $request){
+    public function generarDTEPDF($id, $tipo, GenerarDTEPDFRequest $request)
+    {
+        $empresa = Auth::user()?->empresa;
+        if (FacturacionElectronicaCountryResolver::codPais($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            return $this->generarDtePdfCostaRica($id, (string) $tipo, $request);
+        }
 
-        if ($tipo == '01' || $tipo == '03' || $tipo == '11') {
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($empresa)) {
+            return $guard;
+        }
+
+        return $this->elSalvadorDte->generarDTEPDF($id, $tipo, $request);
+    }
+
+    /**
+     * PDF resumen del comprobante CR (payload guardado en BD), misma ruta que SV (/reporte/dte/...).
+     */
+    private function generarDtePdfCostaRica(int|string $id, string $tipo, GenerarDTEPDFRequest $request): Response
+    {
+        $id = (int) $id;
+        $registro = null;
+        $documento = [];
+        $clave = '';
+        $titulo = 'Comprobante electrónico';
+        $tipoDteRuta = (string) $tipo;
+
+        if (in_array($tipo, ['01', '04', '11'], true)) {
+            $registro = Venta::query()->with(['empresa', 'cliente'])->findOrFail($id);
+            $this->assertMismoEmpresaUsuario($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                abort(404, 'No hay comprobante electrónico Costa Rica para este registro.');
+            }
+            $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
+            $clave = (string) ($dte['clave'] ?? $registro->codigo_generacion ?? '');
+            $titulo = match ($tipo) {
+                '04' => 'Tiquete electrónico',
+                '11' => 'Factura de exportación',
+                default => 'Factura electrónica',
+            };
+        } elseif ($tipo === '02') {
+            $registro = Venta::query()->with(['empresa', 'cliente'])->findOrFail($id);
+            $this->assertMismoEmpresaUsuario($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                abort(404, 'No hay comprobante electrónico Costa Rica para este registro.');
+            }
+            $nd = $dte['cr']['nota_debito'] ?? null;
+            if (! is_array($nd)) {
+                abort(404, 'No hay nota de débito electrónica asociada.');
+            }
+            $documento = is_array($nd['documento'] ?? null) ? $nd['documento'] : [];
+            $clave = (string) ($nd['clave'] ?? '');
+            $titulo = 'Nota de débito electrónica';
+        } elseif (in_array($tipo, ['03', '05', '06'], true)) {
+            $registro = DevolucionVenta::query()->with(['empresa', 'cliente'])->findOrFail($id);
+            $this->assertMismoEmpresaUsuario($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                abort(404, 'No hay comprobante electrónico Costa Rica para esta devolución.');
+            }
+            $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
+            $clave = (string) ($dte['clave'] ?? $registro->codigo_generacion ?? '');
+            $titulo = 'Nota de crédito electrónica';
+        } elseif (($tipo === '08' && $request->query('tipo') === 'compra') || ($tipo === '14' && $request->query('tipo') === 'compra')) {
+            $registro = Compra::query()->with(['empresa', 'proveedor'])->findOrFail($id);
+            $this->assertMismoEmpresaUsuarioCompraGasto($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                abort(404, 'No hay comprobante electrónico Costa Rica para esta compra.');
+            }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                abort(404, 'Esta compra no tiene factura electrónica de compras (FEC, tipo 08).');
+            }
+            $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
+            $clave = (string) ($dte['clave'] ?? $registro->codigo_generacion ?? '');
+            $titulo = 'Factura electrónica de compra';
+            $tipoDteRuta = '08';
+        } elseif ($tipo === '08' && $request->query('tipo') === 'gasto') {
+            $registro = Gasto::query()->with(['empresa', 'proveedor'])->findOrFail($id);
+            $this->assertMismoEmpresaUsuarioCompraGasto($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                abort(404, 'No hay comprobante electrónico Costa Rica para este egreso.');
+            }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                abort(404, 'Este egreso no tiene factura electrónica de compras (FEC, tipo 08).');
+            }
+            $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
+            $clave = (string) ($dte['clave'] ?? $registro->codigo_generacion ?? '');
+            $titulo = 'Factura electrónica de compra';
+            $tipoDteRuta = '08';
+        } else {
+            abort(400, 'Tipo de documento no disponible para PDF en FE Costa Rica.');
+        }
+
+        // En DGT la factura de exportación puede emitirse con tipo 01 en el XML; el PDF debe reflejar
+        // el documento de venta (catálogo 11 — factura electrónica de exportación).
+        if (
+            $registro instanceof Venta
+            && in_array($tipo, ['01', '11'], true)
+            && trim((string) ($registro->nombre_documento ?? '')) === 'Factura de exportación'
+        ) {
+            $tipoDteRuta = '11';
+            $titulo = 'Factura de exportación';
+        }
+
+        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.FE-CR-Comprobante', [
+            'registro' => $registro,
+            'documento' => $documento,
+            'clave' => $clave,
+            'titulo' => $titulo,
+            'tipoDteCodigo' => $tipoDteRuta,
+        ]);
+        $pdf->setPaper('US Letter', 'portrait');
+        $nombre = $clave !== '' ? $clave : 'comprobante-cr';
+
+        return $pdf->stream($nombre.'.pdf');
+    }
+
+    /**
+     * XML devuelto por Hacienda al consultar estado (si está almacenado en dte.cr).
+     */
+    public function generarDteXmlCostaRica(Request $request, int|string $id, string $tipo): JsonResponse|Response
+    {
+        $empresa = Auth::user()?->empresa;
+        if (FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            return response()->json(['error' => 'Solo aplica a empresas con facturación Costa Rica.'], 400);
+        }
+
+        $id = (int) $id;
+        $xml = null;
+
+        if (in_array($tipo, ['01', '04', '11'], true)) {
             $registro = Venta::findOrFail($id);
-        }
-
-        if ($tipo == '05' || $tipo == '06') {
-            $registro = DevolucionVenta::findOrFail($id);
-        }
-
-        if ($tipo == '14') {
-            if ($request->tipo == 'compra') {
-                $registro = Compra::findOrFail($id);
+            $this->assertMismoEmpresaUsuario($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para este registro.'], 404);
             }
-            if ($request->tipo == 'gasto') {
-                $registro = Gasto::findOrFail($id);
-            }
-        }
-
-        if (!$registro) {
-            return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
-        }
-
-        $DTE = $registro->dte;
-
-        if (!$DTE) {
-            return response()->json(['error' => 'El registro no tiene DTE.'], 404);
-        }
-
-        $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
-
-        // Si esta anulado
-        if ($registro->dte_invalidacion) {
-            $DTE = $registro->dte_invalidacion;
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
-            $pdf->setPaper('US Letter', 'portrait');
-            return $pdf->stream($DTE['identificacion']['codigoGeneracion'] . '.pdf');
-        }
-
-        if ($DTE['identificacion']['tipoDte'] == '01') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
-            $pdf->setPaper('US Letter', 'portrait');
-            // return view('reportes.DTE-Factura', compact('registro', 'DTE'));
-        }
-        if ($DTE['identificacion']['tipoDte'] == '14') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
-            $pdf->setPaper('US Letter', 'portrait');
-            // return view('reportes.DTE-Factura', compact('registro', 'DTE'));
-        }
-        if ($DTE['identificacion']['tipoDte'] == '03') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
-            $pdf->setPaper('US Letter', 'portrait');
-            // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
-
-        }
-        if ($DTE['identificacion']['tipoDte'] == '11') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
-            $pdf->setPaper('US Letter', 'portrait');
-            // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
-
-        }
-        if ($DTE['identificacion']['tipoDte'] == '05') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
-            $pdf->setPaper('US Letter', 'portrait');
-            // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
-
-        }
-        if ($DTE['identificacion']['tipoDte'] == '06') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Debito', compact('registro', 'DTE'));
-            $pdf->setPaper('US Letter', 'portrait');
-            // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
-
-        }
-
-        return $pdf->stream($DTE['identificacion']['codigoGeneracion'] . '.pdf');
-
-    }
-
-    public function generarDTEJSON($id, $tipo, GenerarDTEJSONRequest $request){
-
-        if ($tipo == '01' || $tipo == '03' || $tipo == '11') {
+            $xml = $dte['cr']['estado_consulta']['response_xml'] ?? null;
+        } elseif ($tipo === '02') {
             $registro = Venta::findOrFail($id);
-        }
-
-        if ($tipo == '05' || $tipo == '06') {
+            $this->assertMismoEmpresaUsuario($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para este registro.'], 404);
+            }
+            $nd = $dte['cr']['nota_debito'] ?? null;
+            $xml = is_array($nd) ? ($nd['estado_consulta']['response_xml'] ?? null) : null;
+        } elseif (in_array($tipo, ['03', '05', '06'], true)) {
             $registro = DevolucionVenta::findOrFail($id);
-        }
-
-        if ($tipo == '14') {
-            if ($request->tipo == 'compra') {
-                $registro = Compra::findOrFail($id);
+            $this->assertMismoEmpresaUsuario($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para esta devolución.'], 404);
             }
-            if ($request->tipo == 'gasto') {
-                $registro = Gasto::findOrFail($id);
+            $xml = $dte['cr']['estado_consulta']['response_xml'] ?? null;
+        } elseif (($tipo === '08' && $request->query('tipo') === 'compra') || ($tipo === '14' && $request->query('tipo') === 'compra')) {
+            $registro = Compra::findOrFail($id);
+            $this->assertMismoEmpresaUsuarioCompraGasto($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para esta compra.'], 404);
             }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                return response()->json(['error' => 'Esta compra no tiene FEC (08).'], 404);
+            }
+            $xml = $dte['cr']['estado_consulta']['response_xml'] ?? null;
+        } elseif ($tipo === '08' && $request->query('tipo') === 'gasto') {
+            $registro = Gasto::findOrFail($id);
+            $this->assertMismoEmpresaUsuarioCompraGasto($registro);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para este egreso.'], 404);
+            }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                return response()->json(['error' => 'Este egreso no tiene FEC (08).'], 404);
+            }
+            $xml = $dte['cr']['estado_consulta']['response_xml'] ?? null;
+        } else {
+            return response()->json(['error' => 'Tipo de documento no disponible.'], 400);
         }
 
-        if (!$registro) {
-            return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
+        if (! is_string($xml) || trim($xml) === '') {
+            return response()->json([
+                'error' => 'No hay XML de respuesta de Hacienda guardado. Use «Consultar estado en Hacienda» y vuelva a intentar.',
+            ], 404);
         }
 
-        if ($registro->dte_invalidacion)
-            $DTE = $registro->dte_invalidacion;
-        else
-            $DTE = $registro->dte;
+        $xml = XmlRespuestaHaciendaCr::normalizar($xml);
 
-        return Response()->json($DTE, 200);
+        $claveArchivo = (string) $id;
+        if ($registro instanceof Venta) {
+            $claveArchivo = (string) ($registro->codigo_generacion ?: $id);
+        } elseif ($registro instanceof DevolucionVenta) {
+            $claveArchivo = (string) ($registro->codigo_generacion ?: $id);
+        } elseif ($registro instanceof Compra || $registro instanceof Gasto) {
+            $claveArchivo = (string) ($registro->codigo_generacion ?: $id);
+        }
+        $fname = 'respuesta-hacienda-'.preg_replace('/\W+/', '-', $claveArchivo).'.xml';
 
+        // text/plain evita que Chrome/Firefox ejecuten el validador XML del navegador, que falla con
+        // respuestas de Hacienda aunque el XML sea usable (p. ej. segunda <?xml o PI mezclados).
+        return response()->make($xml, 200, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+            'Content-Disposition' => 'inline; filename="'.$fname.'"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
+    private function assertMismoEmpresaUsuario(Venta|DevolucionVenta $registro): void
+    {
+        $uid = Auth::user()?->id_empresa;
+        if ($uid === null || (int) $registro->id_empresa !== (int) $uid) {
+            abort(403);
+        }
+    }
 
-    public function enviarDTE(EnviarDTERequest $request){
+    private function assertMismoEmpresaUsuarioCompraGasto(Compra|Gasto $registro): void
+    {
+        $uid = Auth::user()?->id_empresa;
+        if ($uid === null || (int) $registro->id_empresa !== (int) $uid) {
+            abort(403);
+        }
+    }
 
-        if ($request->tipo_dte == '01' || $request->tipo_dte == '03' || $request->tipo_dte == '11') {
-            $registro = Venta::with('cliente')->where('id', $request->id)->firstOrFail();
-            $correo = $registro->cliente ? $registro->cliente->correo : null;
+    public function generarDTEJSON($id, $tipo, GenerarDTEJSONRequest $request)
+    {
+        $empresa = Auth::user()?->empresa;
+        if (FacturacionElectronicaCountryResolver::codPais($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            return $this->generarDteJsonCostaRica($id, (string) $tipo, $request);
         }
 
-        if ($request->tipo_dte == '05' || $request->tipo_dte == '06') {
-            $registro = DevolucionVenta::with('cliente')->where('id', $request->id)->firstOrFail();
-            $correo = $registro->cliente ? $registro->cliente->correo : null;
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($empresa)) {
+            return $guard;
         }
 
-        if ($request->tipo_dte == '14') {
-            if ($request->tipo == 'compra') {
-                $registro = Compra::with('proveedor')->where('id', $request->id)->firstOrFail();
-                $proveedor = $registro->proveedor()->first();
-                $correo = $proveedor ? $proveedor->correo : null;
+        return $this->elSalvadorDte->generarDTEJSON($id, $tipo, $request);
+    }
+
+    /**
+     * Misma ruta que El Salvador (/reporte/dte-json/...): devuelve el JSON del comprobante guardado en BD.
+     * El payload enviado a DGT queda en dte.documento (venta / devolución) o en dte.cr.nota_debito.documento.
+     */
+    private function generarDteJsonCostaRica(int|string $id, string $tipo, GenerarDTEJSONRequest $request): JsonResponse
+    {
+        $id = (int) $id;
+
+        // Factura / tiquete / exportación: venta
+        if (in_array($tipo, ['01', '04', '11'], true)) {
+            $registro = Venta::findOrFail($id);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para este registro.'], 404);
             }
-            if ($request->tipo == 'gasto') {
-                $registro = Gasto::with('proveedor')->where('id', $request->id)->firstOrFail();
-                $proveedor = $registro->proveedor()->first();
-                $correo = $proveedor ? $proveedor->correo : null;
+            $payload = $dte['documento'] ?? $dte;
+
+            return response()->json($payload, 200);
+        }
+
+        // Nota de débito (02): misma venta factura, datos en dte.cr.nota_debito
+        if ($tipo === '02') {
+            $venta = Venta::findOrFail($id);
+            $dte = $venta->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para este registro.'], 404);
             }
-        }
-
-        if (!$registro) {
-            return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
-        }
-
-        $DTE = $registro->dte;
-
-        if (!$DTE) {
-            return response()->json(['error' => 'El registro no tiene DTE.'], 404);
-        }
-
-        $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
-
-
-        if ($registro->dte_invalidacion) {
-            $DTE = $registro->dte_invalidacion;
-            $nombre = $DTE['documento']['nombre'];
-
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
-            $pdfContent = $pdf->output();
-
-            if ($correo) {
-                Mail::send('mails.DTE-Anulado', ['DTE' => $DTE, 'nombre' => $nombre ], function ($m) use ($pdfContent, $DTE, $correo, $nombre) {
-                    $m->from('noreply@smartpyme.sv', $DTE['emisor']['nombre'] )
-                    ->to($correo, $nombre)
-                    ->attachData($pdfContent, $DTE['identificacion']['codigoGeneracion'] . '.pdf', [
-                        'mime' => 'application/pdf',
-                    ])
-                    ->attachData(json_encode($DTE), $DTE['identificacion']['codigoGeneracion'] . '.json', [
-                                'mime' => 'application/json',
-                    ])
-                    ->subject('Documento Tributario Electrónico Anulado');
-                });
-
-                return Response()->json($DTE, 200);
+            $nd = $dte['cr']['nota_debito'] ?? null;
+            if (! is_array($nd)) {
+                return response()->json(['error' => 'No hay nota de débito electrónica asociada.'], 404);
             }
-            return Response()->json(['error' => 'El cliente no tienen correo'], 400);
+            $payload = $nd['documento'] ?? $nd;
+
+            return response()->json($payload, 200);
         }
 
-        if ($DTE['identificacion']['tipoDte'] == '01') {
-           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
-        }
-        elseif ($DTE['identificacion']['tipoDte'] == '11') {
-           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
+        // Nota de crédito (devolución): 03 (tipo_dte CR), 05/06 (misma convención que pantalla devoluciones SV)
+        if (in_array($tipo, ['03', '05', '06'], true)) {
+            $registro = DevolucionVenta::findOrFail($id);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para esta devolución.'], 404);
+            }
+            $payload = $dte['documento'] ?? $dte;
 
-        }
-        elseif ($DTE['identificacion']['tipoDte'] == '05') {
-           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
-
-        }
-        elseif ($DTE['identificacion']['tipoDte'] == '14') {
-           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
-
-        }
-        elseif ($DTE['identificacion']['tipoDte'] == '03') {
-           $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
-
+            return response()->json($payload, 200);
         }
 
-        $pdfContent = $pdf->output();
+        // FEC 08 — factura electrónica de compra (misma ruta que SV usa 14+sujeto excluido para compras)
+        if (($tipo === '08' && $request->query('tipo') === 'compra') || ($tipo === '14' && $request->query('tipo') === 'compra')) {
+            $registro = Compra::findOrFail($id);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para esta compra.'], 404);
+            }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                return response()->json(['error' => 'Esta compra no tiene FEC (08).'], 404);
+            }
+            $payload = $dte['documento'] ?? [];
 
-        if($DTE['identificacion']['tipoDte'] == '01' || $DTE['identificacion']['tipoDte'] == '05' || $DTE['identificacion']['tipoDte'] == '03' || $DTE['identificacion']['tipoDte'] == '11'){
-            $nombre = $DTE['receptor']['nombre'];
-        }
-        if($DTE['identificacion']['tipoDte'] == '14'){
-            $nombre = $DTE['sujetoExcluido']['nombre'];
-        }
-
-        if ($correo) {
-            Mail::send('mails.DTE', ['DTE' => $DTE, 'nombre' => $nombre ], function ($m) use ($pdfContent, $DTE, $correo, $nombre) {
-                $m->from('noreply@smartpyme.sv', $DTE['emisor']['nombre'] )
-                ->to($correo, $nombre)
-                ->attachData($pdfContent, $DTE['identificacion']['codigoGeneracion'] . '.pdf', [
-                    'mime' => 'application/pdf',
-                ])
-                ->attachData(json_encode($DTE), $DTE['identificacion']['codigoGeneracion'] . '.json', [
-                            'mime' => 'application/json',
-                ])
-                ->subject('Documento Tributario Electrónico');
-            });
-
-            return Response()->json($DTE, 200);
-        }else{
-            // return Response()->json($DTE, 200);
-            return Response()->json(['error' => 'Registro sin correo electrónico'], 400);
+            return response()->json(is_array($payload) ? $payload : [], 200);
         }
 
+        if ($tipo === '08' && $request->query('tipo') === 'gasto') {
+            $registro = Gasto::findOrFail($id);
+            $dte = $registro->dte;
+            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+                return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para este egreso.'], 404);
+            }
+            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
+                return response()->json(['error' => 'Este egreso no tiene FEC (08).'], 404);
+            }
+            $payload = $dte['documento'] ?? [];
+
+            return response()->json(is_array($payload) ? $payload : [], 200);
+        }
+
+        return response()->json(['error' => 'Tipo de documento no disponible para descarga JSON en FE Costa Rica.'], 400);
+    }
+
+    public function enviarDTE(EnviarDTERequest $request)
+    {
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail(Auth::user()?->empresa)) {
+            return $guard;
+        }
+
+        return $this->elSalvadorDte->enviarDTE($request);
     }
 
     public function consultarDTE(ConsultarDTERequest $request)
     {
-        $response = Http::get('https://admin.factura.gob.sv/prod/consultas/publica/simple/1', [
-            'codigoGeneracion' => $request->codigoGeneracion,
-            'fechaEmi' => $request->fechaEmi,
-            'ambiente' => $request->ambiente,
-        ]);
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail(Auth::user()?->empresa)) {
+            return $guard;
+        }
 
-        return $response->json();
+        return response()->json($this->elSalvadorDte->consultarDTE($request));
     }
-
-
 }

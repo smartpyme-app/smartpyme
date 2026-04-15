@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -29,7 +29,6 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
         NotificacionesContainerComponent,
         PaginationComponent,
     ],
-
 })
 
 export class AdminUsuariosComponent extends BaseCrudComponent<any> implements OnInit {
@@ -134,12 +133,16 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
             }, error => {this.alertService.error(error); });
     }
 
-  openFilterModal(template: TemplateRef<any>) {
-    this.modalRef = this.modalManager.openModal(template, { class: 'modal-lg' });
-  }
+    openFilterModal(template: TemplateRef<any>) {
+        this.modalRef = this.modalManager.openModal(template, { class: 'modal-lg' });
+    }
 
-    override openModal(template: TemplateRef<any>, usuario?: any) {
-        // Copia superficial para no mutar la fila de la tabla al editar.
+    /**
+     * Abre el modal de usuario. No usar super.openLargeModal(template, usuario) aquí:
+     * la base llama a this.openModal(template, { class, backdrop, ... }) y al estar este
+     * método sustituido antes, se re-entraba la carga de listas en bucle (muchas peticiones).
+     */
+    openUsuarioModal(template: TemplateRef<any>, usuario?: any) {
         this.usuario = usuario ? { ...usuario } : {};
 
         if (!this.usuario.id) {
@@ -166,12 +169,12 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
                 });
         }
 
-        // Una sola fuente / caché compartida; evita tormentas de GET si el modal o varios suscriptores piden la lista varias veces.
         this.sharedDataService.getBodegas()
             .pipe(this.untilDestroyed())
             .subscribe({
                 next: (bodegas) => {
                     this.bodegas = bodegas;
+                    this.syncBodegaPorSucursal();
                 },
                 error: (error) => {
                     this.alertService.error(error);
@@ -188,10 +191,24 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
         if (!stillValid && this.sucursales.length) {
             this.usuario.id_sucursal = this.sucursales[0].id;
         }
+        this.syncBodegaPorSucursal();
     }
 
-    selectSucursal(){
-        this.usuario.id_bodega = this.bodegas[0]?.id;
+    selectSucursal() {
+        this.syncBodegaPorSucursal();
+    }
+
+    private syncBodegaPorSucursal() {
+        if (!this.bodegas?.length) {
+            return;
+        }
+        const list = this.bodegas.filter((b: any) =>
+            b.id_sucursal == this.usuario.id_sucursal && b.id_empresa == this.usuario.id_empresa
+        );
+        const ok = list.some((b: any) => b.id == this.usuario.id_bodega);
+        if (!ok && list.length) {
+            this.usuario.id_bodega = list[0].id;
+        }
     }
 
     public descargarUsuarios(): void {

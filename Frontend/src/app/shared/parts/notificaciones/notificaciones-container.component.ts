@@ -39,7 +39,11 @@ export class NotificacionesContainerComponent implements OnInit {
                 this.untilDestroyed()
             )
             .subscribe(message => {
-                if (message && message.titulo) {
+                const tieneTexto =
+                    message &&
+                    ((message.titulo != null && String(message.titulo).trim() !== '') ||
+                        (message.mensaje != null && String(message.mensaje).trim() !== ''));
+                if (tieneTexto) {
                     // Para errores de validación (422), siempre mostrar incluso si hay modal
                     const isError = message.tipo === 'alert-warning' || message.tipo === 'alert-danger';
                     

@@ -441,10 +441,12 @@ class ComprasController extends Controller
         }
 
 
-        // Incrementar el correlarivo de Sujeto excluido
-        if (!$request->id && $request->tipo_documento == 'Sujeto excluido') {
+        // Incrementar el correlativo de Sujeto excluido (SV) o Compra electrónica (CR FEC)
+        if (! $request->id && in_array($request->tipo_documento, ['Sujeto excluido', 'Compra electrónica'], true)) {
             $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
-            $documento->increment('correlativo');
+            if ($documento) {
+                $documento->increment('correlativo');
+            }
         }
 
         DB::commit();

@@ -1,0 +1,118 @@
+diff --git a/src/Factories/DocumentBuilderFactory.php b/src/Factories/DocumentBuilderFactory.php
+--- a/src/Factories/DocumentBuilderFactory.php
++++ b/src/Factories/DocumentBuilderFactory.php
+@@ -8,6 +8,7 @@ use DazzaDev\DgtXmlGenerator\Builders\DebitNoteBuilder;
+ use DazzaDev\DgtXmlGenerator\Builders\InvoiceBuilder;
+ use DazzaDev\DgtXmlGenerator\Builders\ReceiverMessageBuilder;
+ use DazzaDev\DgtXmlGenerator\Builders\TicketBuilder;
++use DazzaDev\DgtXmlGenerator\Builders\PurchaseInvoiceBuilder;
+ use InvalidArgumentException;
+ 
+ class DocumentBuilderFactory
+@@ -21,6 +22,8 @@ class DocumentBuilderFactory
+ 
+     public const RECEIVER_MESSAGE = 'receiver-message';
+ 
++    public const FEC = 'fec';
++
+     /**
+      * Create a document builder based on document type name
+      */
+@@ -32,6 +35,7 @@ class DocumentBuilderFactory
+             self::DEBIT_NOTE => new DebitNoteBuilder($documentData),
+             self::TICKET => new TicketBuilder($documentData),
+             self::RECEIVER_MESSAGE => new ReceiverMessageBuilder($documentData),
++            self::FEC => new PurchaseInvoiceBuilder($documentData),
+             default => throw new InvalidArgumentException("Unsupported document type: {$documentType}")
+         };
+     }
+diff --git a/src/Builders/PurchaseInvoiceBuilder.php b/src/Builders/PurchaseInvoiceBuilder.php
+new file mode 100644
+index 0000000..a1b2c3d
+--- /dev/null
++++ b/src/Builders/PurchaseInvoiceBuilder.php
+@@ -0,0 +1,31 @@
++<?php
++
++namespace DazzaDev\DgtXmlGenerator\Builders;
++
++use DazzaDev\DgtXmlGenerator\Models\PurchaseInvoice\PurchaseInvoice;
++
++class PurchaseInvoiceBuilder extends BaseDocumentBuilder
++{
++    /**
++     * Create document instance
++     */
++    protected function createDocument(): PurchaseInvoice
++    {
++        return new PurchaseInvoice($this->documentData);
++    }
++
++    /**
++     * Get document type for XML generation (Twig view name without .xml.twig)
++     */
++    protected function getDocumentType(): string
++    {
++        return 'fec';
++    }
++
++    /**
++     * @return PurchaseInvoice
++     */
++    public function getPurchaseInvoice(): PurchaseInvoice
++    {
++        return $this->document;
++    }
++}
+diff --git a/src/Models/PurchaseInvoice/PurchaseInvoice.php b/src/Models/PurchaseInvoice/PurchaseInvoice.php
+new file mode 100644
+index 0000000..b2c3d4e
+--- /dev/null
++++ b/src/Models/PurchaseInvoice/PurchaseInvoice.php
+@@ -0,0 +1,28 @@
++<?php
++
++namespace DazzaDev\DgtXmlGenerator\Models\PurchaseInvoice;
++
++use DazzaDev\DgtXmlGenerator\Models\Document;
++
++/**
++ * Factura electrónica de compras (08) — emisor = comprador, receptor = proveedor.
++ */
++class PurchaseInvoice extends Document
++{
++    /**
++     * PurchaseInvoice constructor
++     */
++    public function __construct(array $data = [])
++    {
++        $this->setDocumentType('08');
++
++        if (empty($data)) {
++            parent::__construct($data);
++        }
++    }
++
++    public function toArray(): array
++    {
++        return parent::toArray();
++    }
++}
+diff --git a/src/Views/fec.xml.twig b/src/Views/fec.xml.twig
+new file mode 100644
+index 0000000..c3d4e5f
+--- /dev/null
++++ b/src/Views/fec.xml.twig
+@@ -0,0 +1,12 @@
++{% apply spaceless %}<?xml version="1.0" encoding="UTF-8" ?>
++<FacturaElectronicaCompra
++  xmlns="https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/facturaElectronicaCompra"
++  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++  xsi:schemaLocation="https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/facturaElectronicaCompra"
++>
++  {% include 'Components/info.xml.twig' %} {% include
++  'Components/items.xml.twig' %} {% include 'Components/summary.xml.twig' %} {%
++  include 'Components/referenced-document.xml.twig' %} {% include
++  'Components/additional-info.xml.twig' %}
++</FacturaElectronicaCompra>
++{% endapply %}

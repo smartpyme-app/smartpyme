@@ -82,4 +82,31 @@ return [
         'webhook_secret' => env('SHOPIFY_WEBHOOK_SECRET'),
     ],
 
+    /*
+    | Ruta al ejecutable openssl.exe (Windows). FE Costa Rica (dgt-cr-signer) invoca el CLI.
+    | Ej.: C:\Program Files\OpenSSL-Win64\bin\openssl.exe — si null, se buscan rutas típicas.
+    */
+    'openssl_bin' => env('OPENSSL_BIN'),
+
+    /*
+    | API pública Hacienda CR (catálogo CABYS, contribuyente, exoneraciones, tipo de cambio).
+    | Límites: ver https://api.hacienda.go.cr/docs/ — usar caché y evitar ráfagas.
+    */
+    'hacienda_cr' => [
+        'base_url' => env('HACIENDA_CR_API_BASE_URL', 'https://api.hacienda.go.cr'),
+        'timeout_seconds' => (int) env('HACIENDA_CR_HTTP_TIMEOUT', 25),
+        // Hacienda a veces bloquea User-Agent genéricos; un navegador reciente reduce rechazos WAF.
+        'user_agent' => env(
+            'HACIENDA_CR_USER_AGENT',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 SmartPyme-FE-CR/1'
+        ),
+        'cache' => [
+            'cabys_codigo_seconds' => (int) env('HACIENDA_CR_CACHE_CABYS_CODIGO', 21600),
+            'cabys_query_seconds' => (int) env('HACIENDA_CR_CACHE_CABYS_Q', 3600),
+            'contribuyente_seconds' => (int) env('HACIENDA_CR_CACHE_CONTRIBUYENTE', 43200),
+            'exoneracion_seconds' => (int) env('HACIENDA_CR_CACHE_EXONERACION', 7200),
+            'tipo_cambio_seconds' => (int) env('HACIENDA_CR_CACHE_TC_DOLAR', 1800),
+        ],
+    ],
+
 ];

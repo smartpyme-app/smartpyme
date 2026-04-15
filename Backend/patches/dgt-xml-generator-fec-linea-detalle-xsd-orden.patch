@@ -1,0 +1,64 @@
+diff --git a/src/Views/fec.xml.twig b/src/Views/fec.xml.twig
+--- a/src/Views/fec.xml.twig
++++ b/src/Views/fec.xml.twig
+@@ -5,7 +5,7 @@
+   xsi:schemaLocation="https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/facturaElectronicaCompra"
+ >
+   {% include 'Components/info.xml.twig' %} {% include
+-  'Components/items.xml.twig' %} {% include 'Components/summary.xml.twig' %} {%
++  'Components/items-fec.xml.twig' %} {% include 'Components/summary.xml.twig' %} {%
+   include 'Components/referenced-document.xml.twig' %} {% include
+   'Components/additional-info.xml.twig' %}
+ </FacturaElectronicaCompra>
+diff --git a/src/Views/Components/items-fec.xml.twig b/src/Views/Components/items-fec.xml.twig
+new file mode 100644
+index 0000000..a1b2c3d4
+--- /dev/null
++++ b/src/Views/Components/items-fec.xml.twig
+@@ -0,0 +1,47 @@
++<DetalleServicio>
++  {% for item in line_items %}
++  <LineaDetalle>
++    <NumeroLinea>{{ loop.index }}</NumeroLinea>
++    {% if item.customs_tariff_code %}
++    <PartidaArancelaria>{{ item.customs_tariff_code }}</PartidaArancelaria>
++    {% endif %}
++    <CodigoCABYS>{{ item.cabys_code }}</CodigoCABYS>
++    {% if item.commercial_codes and item.commercial_codes|length > 0 %} {% for
++    commercial_code in item.commercial_codes|slice(0,5) %}
++    <CodigoComercial>
++      <Tipo>{{ commercial_code.type.code }}</Tipo>
++      <Codigo>{{ commercial_code.code }}</Codigo>
++    </CodigoComercial>
++    {% endfor %} {% endif %}
++    <Cantidad>{{ (item.quantity|default(0))|number_format(3, '.', '') }}</Cantidad>
++    <UnidadMedida>{{ item.unit_measure.code }}</UnidadMedida>
++    {% if item.commercial_unit_measure %}
++    <UnidadMedidaComercial>{{
++      item.commercial_unit_measure
++    }}</UnidadMedidaComercial>
++    {% endif %} {% if item.vin_or_serial_numbers and
++    item.vin_or_serial_numbers|length > 0 %} {% for vin in
++    item.vin_or_serial_numbers %}
++    <NumeroVINoSerie>{{ vin }}</NumeroVINoSerie>
++    {% endfor %} {% endif %} {% if item.medication_registration %}
++    <RegistroMedicamento>{{
++      item.medication_registration
++    }}</RegistroMedicamento>
++    {% endif %} {% if item.pharmaceutical_form %}
++    <FormaFarmaceutica>{{ item.pharmaceutical_form.code }}</FormaFarmaceutica>
++    {% endif %}
++    <Detalle>{{ item.description }}</Detalle>
++    <PrecioUnitario>{{ (item.unit_price|default(0))|number_format(5, '.', '') }}</PrecioUnitario>
++    <MontoTotal>{{ (item.total_amount|default(0))|number_format(5, '.', '') }}</MontoTotal>
++    {% include 'Components/discounts.xml.twig' with { 'discounts':
++    item.discounts } %}
++    <SubTotal>{{ (item.sub_total|default(0))|number_format(5, '.', '') }}</SubTotal>
++    <BaseImponible>{{ (item.taxable_base|default(0))|number_format(5, '.', '') }}</BaseImponible>
++    {% include 'Components/taxes.xml.twig' with { 'node': 'Impuesto',
++    'nodeAmount': 'Monto', 'taxes': item.taxes } %}
++    <ImpuestoNeto>{{ (item.total_tax|default(0))|number_format(5, '.', '') }}</ImpuestoNeto>
++    <MontoTotalLinea>{{ (item.total|default(0))|number_format(5, '.', '') }}</MontoTotalLinea>
++  </LineaDetalle>
++  {% endfor %}
++</DetalleServicio>

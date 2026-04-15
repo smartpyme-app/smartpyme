@@ -236,7 +236,7 @@ class ProductosController extends Controller
             });
         }
 
-        $productos = $query->limit($limit)->get();
+        $productos = $query->with('inventarios')->limit($limit)->get();
 
         // Log::info('Búsqueda de productos: ' . $search . ' - Resultados: ' . $productos->count());
 

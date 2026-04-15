@@ -224,7 +224,7 @@
                                             <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
                                         </a>
                                     }
-                                    @if (apiService.auth_user().empresa.fe_ambiente == '00' && apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh) {
+                                    @if (!esFeCostaRica() && apiService.auth_user().empresa.fe_ambiente == '00' && apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="emitirEnContingencia(venta)" tooltip="Emitir DTE en contingencia">
                                             <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE en contingencia
                                         </a>
@@ -288,12 +288,12 @@
                                             <i class="fa fa-edit"></i> Generar partida contable
                                         </a>
                                     }
-                                    @if (canEditVentas() && venta.nombre_documento == 'Crédito fiscal') {
+                                    @if (canEditVentas() && ((!esFeCostaRica() && venta.nombre_documento == 'Crédito fiscal') || (esFeCostaRica() && esVentaFacturaParaNotasCr(venta)))) {
                                         <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_credito'}" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-folder-minus"></i> Hacer nota de crédito
                                         </a>
                                     }
-                                    @if (canEditVentas() && venta.nombre_documento == 'Crédito fiscal') {
+                                    @if (canEditVentas() && ((!esFeCostaRica() && venta.nombre_documento == 'Crédito fiscal') || (esFeCostaRica() && esVentaFacturaParaNotasCr(venta)))) {
                                         <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_debito'}" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-folder-plus"></i> Hacer nota de débito
                                         </a>
@@ -732,7 +732,7 @@
 
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">
-        <h5 class="modal-title mb-0">DTE </h5>
+        <h5 class="modal-title mb-0">{{ esFeCostaRica() ? 'Comprobante electrónico (Costa Rica)' : 'DTE' }}</h5>
         <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;"
             aria-label="Close"></button>
     </div>
@@ -741,19 +741,28 @@
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 
-            @if (venta.sello_mh) {
+            @if (esFeCostaRica() && venta.codigo_generacion) {
+                <button type="button" (click)="imprimirDTEPDF(venta)" class="mb-2 btn btn-primary btn-block">
+                    Ver PDF
+                </button>
+                <button type="button" (click)="imprimirDTEXML(venta)" class="mb-3 btn btn-outline-secondary btn-block" title="XML de respuesta de Hacienda si ya consultó el estado">
+                    Ver XML
+                </button>
+            }
+
+            @if (venta.sello_mh && !esFeCostaRica()) {
                 <button (click)="imprimirDTEJSON(venta)" class="mb-3 btn btn-primary btn-block">
                     Ver JSON
                 </button>
             }
 
-            @if (venta.sello_mh) {
+            @if (venta.sello_mh && !esFeCostaRica()) {
                 <button (click)="imprimirDTEPDF(venta)" class="mb-3 btn btn-primary btn-block">
                     Ver PDF
                 </button>
             }
 
-            @if (venta.sello_mh) {
+            @if (venta.sello_mh && !esFeCostaRica()) {
                 <button [disabled]="sending" (click)="enviarDTE(venta)"
                     class="mb-3 btn btn-primary btn-block">
                     @if (!sending) {
@@ -765,7 +774,39 @@
                 </button>
             }
 
-            @if (!venta?.sello_mh) {
+            @if (esFeCostaRica() && puedeEmitirNotaDebitoCr(venta)) {
+                <div class="border rounded p-3 mb-3 text-start">
+                    <p class="small fw-semibold mb-2">Nota de débito (ajuste de montos)</p>
+                    <div class="mb-2">
+                        <label class="form-label small" for="ndMotivoVenta">Motivo (opcional)</label>
+                        <input id="ndMotivoVenta" type="text" class="form-control form-control-sm" [(ngModel)]="ndMotivo" name="ndMotivo" maxlength="500" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small" for="ndMontoVenta">Monto línea (IVA incl.)</label>
+                        <input id="ndMontoVenta" type="number" class="form-control form-control-sm" [(ngModel)]="ndMontoLinea" name="ndMontoLinea" min="0.01" step="0.01" />
+                    </div>
+                    <button type="button" [disabled]="saving" (click)="emitirNotaDebitoFeCr()" class="btn btn-primary btn-sm w-100">
+                        @if (!saving) {
+                            <span>Emitir nota de débito</span>
+                        }
+                        @if (saving) {
+                            <span>Emitiendo...</span>
+                        }
+                    </button>
+                </div>
+            }
+
+            @if (esFeCostaRica() && tieneNotaDebitoCr(venta)) {
+                <p class="small fw-semibold mb-2 text-start">Nota de débito</p>
+                <button type="button" (click)="imprimirDTEPDF(venta, '02')" class="mb-2 btn btn-primary btn-block">
+                    Ver PDF
+                </button>
+                <button type="button" (click)="imprimirDTEXML(venta, '02')" class="mb-3 btn btn-outline-secondary btn-block" title="XML de respuesta de Hacienda si ya consultó el estado">
+                    Ver XML
+                </button>
+            }
+
+            @if (!venta?.sello_mh && !(esFeCostaRica() && venta.codigo_generacion)) {
                 <div class="w-100">
                     @if (consulting) {
                         <p class="alert alert-info">El DTE ya fue emitido, se consultará por el sello
@@ -773,7 +814,7 @@
                     }
                     <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary w-100">
                         @if (!saving && !consulting) {
-                            <span>Emitir</span>
+                            <span>{{ esFeCostaRica() ? 'Emitir comprobante' : 'Emitir' }}</span>
                         }
                         @if (saving) {
                             <span>Emitiendo...</span>

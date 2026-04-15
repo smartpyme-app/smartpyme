@@ -32,7 +32,7 @@ class FacturacionCompraRequest extends FormRequest
             'detalles.*.cantidad' => 'required|numeric|min:0.01',
             'detalles.*.costo' => 'required|numeric|min:0',
             'detalles.*.total' => 'required|numeric|min:0',
-            'referencia' => 'required_if:estado,"Pre-compra"|nullable|string|max:255',
+            'referencia' => 'required_if:estado,"Pre-compra"|nullable|max:255',
             'id_usuario' => 'required|integer|exists:users,id',
             'id_empresa' => 'required|integer|exists:empresas,id',
         ];

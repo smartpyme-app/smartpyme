@@ -24,8 +24,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { finalize } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
+import { map, debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { mapCabysApiResponseToOptions, CabysSelectOption } from '@services/facturacion-electronica/cabys-hacienda.mapper';
+import { HaciendaCabysClientService } from '@services/facturacion-electronica/hacienda-cabys-client.service';
 
 @Component({
     selector: 'app-producto-informacion',
@@ -62,6 +66,15 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   nuevoAtributo: any = {};
   guardandoAtributo: boolean = false;
 
+  /** CABYS (CR): mismo patrón que búsqueda de productos en ajustes — Subject + array `cabysItems`. */
+  cabysInput$ = new Subject<string>();
+  cabysItems: CabysSelectOption[] = [];
+  cabysLoading = false;
+  cabysSeleccionado: CabysSelectOption | null = null;
+
+  readonly compareCabys = (a: CabysSelectOption, b: CabysSelectOption): boolean =>
+    !!(a && b && a.codigo === b.codigo);
+
   constructor(
     public apiService: ApiService,
     protected override alertService: AlertService,
@@ -70,7 +83,8 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private zone: NgZone
+    private zone: NgZone,
+    private haciendaCabys: HaciendaCabysClientService,
   ) {
     super(modalManager, alertService);
     // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -80,6 +94,36 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   ngOnInit() {
     this.loadAtributes();
     this.usuario = this.apiService.auth_user();
+
+    this.cabysInput$
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        switchMap((term: string) => {
+          const t = (term ?? '').trim();
+          if (t.length < 3) {
+            return of([]);
+          }
+          this.cabysLoading = true;
+          this.cdr.markForCheck();
+
+          return this.haciendaCabys.getCabysByQuery(t, 20).pipe(
+            map((body) => mapCabysApiResponseToOptions(body)),
+            catchError(() => of([])),
+            finalize(() => {
+              this.cabysLoading = false;
+              this.cdr.markForCheck();
+            }),
+          );
+        }),
+        this.untilDestroyed(),
+      )
+      .subscribe((items) => {
+        this.cabysItems = [...items];
+        this.cdr.detectChanges();
+      });
+
+    this.syncCabysSeleccionFromProducto();
 
     this.apiService.getAll('categorias/padre')
       .pipe(this.untilDestroyed())
@@ -141,9 +185,10 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     this.cdr.detectChanges();
   }
 
-  ngOnChanges(changes: SimpleChanges) {
+  ngOnChanges(changes: SimpleChanges): void {
     if (changes['producto']) {
       this.intentarCargarSkuSugerido();
+      this.syncCabysSeleccionFromProducto();
     }
   }
 
@@ -175,6 +220,37 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
         this.skuCorrelativoPendiente = true;
       }
     );
+  }
+
+  esEmpresaCostaRica(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+  }
+
+  onCabysSelectChange(item: CabysSelectOption | null): void {
+    if (item) {
+      this.producto.codigo_cabys = item.codigo;
+      this.producto.descripcion_cabys = item.descripcion;
+    } else {
+      this.producto.codigo_cabys = null;
+      this.producto.descripcion_cabys = null;
+    }
+    this.cdr.markForCheck();
+  }
+
+  private syncCabysSeleccionFromProducto(): void {
+    const raw = this.producto?.codigo_cabys;
+    const digits = raw != null && raw !== '' ? String(raw).replace(/\D/g, '') : '';
+    if (digits.length === 13) {
+      const desc = String(this.producto?.descripcion_cabys ?? '').trim();
+      this.cabysSeleccionado = {
+        codigo: digits,
+        descripcion: desc,
+        label: desc ? `${digits} — ${desc}` : digits,
+      };
+    } else {
+      this.cabysSeleccionado = null;
+    }
+    this.cdr.detectChanges();
   }
 
   public loadAtributes() {

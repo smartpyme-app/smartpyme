@@ -12,8 +12,14 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import {
+  mensajeErrorHttpFeCr,
+  type FeCrErrorEmisionPayload,
+} from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { SharedDataService } from '@services/shared-data.service';
+import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
@@ -26,7 +32,7 @@ declare var $:any;
     selector: 'app-compras',
     templateUrl: './compras.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, LazyImageDirective, AlertsHaciendaComponent, NotificacionesContainerComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
@@ -47,6 +53,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     public buscador:any = '';
     public override saving:boolean = false;
     public sending:boolean = false;
+    public consulting:boolean = false;
     public downloadingDetalles:boolean = false;
     public downloadingCompras:boolean = false;
     public modalRefAcumulado: any;
@@ -64,7 +71,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
     constructor(
         apiService: ApiService,
-        public mhService: MHService,
+        private facturacionElectronica: FacturacionElectronicaService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private router: Router,
@@ -541,33 +548,178 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         this.openModal(template);
     }
 
-    openDTE(template: TemplateRef<any>, compra:any){
-        this.compra = compra;
-        this.openModal(template);
+    openDTE(template: TemplateRef<any>, compra: any) {
+        /** Pasar `compra` a openModal: si solo se llama openModal(template), BaseCrudComponent pisa `this.compra` con un ítem nuevo sin `id`. */
+        this.openModal(template, compra);
         this.alertService.modal = true;
-        if(!this.compra.dte){
+        if (!this.compra.dte) {
             this.emitirDTE();
         }
     }
 
+    /** SV: Sujeto excluido; CR: Compra electrónica (FEC 08). */
+    puedeEmitirFeCompra(compra: any): boolean {
+        if (this.facturacionElectronica.isCostaRicaFe()) {
+            return compra.tipo_documento === 'Compra electrónica';
+        }
+        return compra.tipo_documento === 'Sujeto excluido';
+    }
+
+    esFeCostaRica(): boolean {
+        return this.facturacionElectronica.isCostaRicaFe();
+    }
+
+    private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
+        return (
+            typeof e === 'object' &&
+            e !== null &&
+            'message' in e &&
+            'documento' in e &&
+            typeof (e as FeCrErrorEmisionPayload).message === 'string'
+        );
+    }
+
     imprimirDTEPDF(compra:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + compra.id + '/14/' + '?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        const tipoRuta = this.esFeCostaRica() ? '08' : '14';
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + compra.id + '/' + tipoRuta + '/' + '?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(compra:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + compra.id + '/14/' + '?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        const tipoRuta = this.esFeCostaRica() ? '08' : '14';
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + compra.id + '/' + tipoRuta + '/' + '?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    imprimirDTEXML(compra: any) {
+        const tipoRuta = this.esFeCostaRica() ? '08' : '14';
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-xml/' + compra.id + '/' + tipoRuta + '/' + '?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    consultarDTE(): void {
+        if (this.esFeCostaRica()) {
+            this.consultarDTECostaRica();
+            return;
+        }
+        this.alertService.info('Consultar estado', 'Use el flujo de facturación de su país.');
+    }
+
+    consultarDTECostaRica(): void {
+        this.consulting = true;
+        this.cdr.markForCheck();
+        this.facturacionElectronica
+            .consultarEstadoFeCrCompra(this.compra.id)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (res: any) => {
+                    if (res?.compra) {
+                        this.compra = { ...res.compra };
+                        const idx = this.compras.data?.findIndex((c: any) => c.id === res.compra.id);
+                        if (idx !== undefined && idx !== -1 && this.compras.data) {
+                            this.compras.data[idx] = { ...res.compra };
+                        }
+                    }
+                    const ok = !!res?.detalle_estado?.success;
+                    const messages = res?.detalle_estado?.messages;
+                    if (res?.rechazado) {
+                        this.alertService.warning(
+                            'Comprobante rechazado en Hacienda',
+                            typeof messages === 'string' && messages
+                                ? messages
+                                : 'Se quitó la clave en el sistema; corrija los datos y vuelva a emitir.'
+                        );
+                    } else if (ok) {
+                        this.alertService.success('Estado en Hacienda', 'Comprobante aceptado.');
+                    } else {
+                        this.alertService.info(
+                            'Estado en Hacienda',
+                            typeof messages === 'string' && messages
+                                ? messages
+                                : 'Aún no consta como aceptado o está en proceso.'
+                        );
+                    }
+                    this.consulting = false;
+                    this.cdr.markForCheck();
+                },
+                error: (err) => {
+                    this.consulting = false;
+                    this.alertService.error(err);
+                    this.cdr.markForCheck();
+                },
+            });
     }
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTESujetoExcluidoCompra(this.compra).then((compra) => {
+        this.cdr.markForCheck();
+        this.facturacionElectronica.emitirDTESujetoExcluidoCompra(this.compra).then((compra) => {
             this.compra = compra;
-            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            const idx = this.compras.data?.findIndex((c: any) => c.id === compra.id);
+            if (idx !== undefined && idx !== -1 && this.compras.data) {
+                this.compras.data[idx] = { ...compra };
+            }
+            if (this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
+                this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+                this.saving = false;
+                this.enviarDTE();
+            } else {
+                const aceptada = compra?.dte?.cr?.aceptada;
+                if (aceptada === false) {
+                    this.alertService.info(
+                        'Comprobante enviado',
+                        'Hacienda aún no lo marca como aceptado. Revise el estado en unos momentos.'
+                    );
+                } else {
+                    this.alertService.success('Comprobante electrónico', 'Enviado a Hacienda.');
+                }
+                this.saving = false;
+                setTimeout(() => this.closeModal(), 1500);
+            }
+            this.cdr.markForCheck();
+        }).catch((error: unknown) => {
             this.saving = false;
-            this.enviarDTE();
-        }).catch((error) => {
-            this.saving = false;
-            this.alertService.warning('Hubo un problema', error);
+            if (error && typeof error === 'object' && 'compra' in error && (error as { compra?: unknown }).compra) {
+                const c = (error as { compra: any }).compra;
+                this.compra = { ...c };
+                const i = this.compras.data?.findIndex((x: any) => x.id === c.id);
+                if (i !== undefined && i !== -1 && this.compras.data) {
+                    this.compras.data[i] = { ...c };
+                }
+            }
+            let msg: string;
+            let feCrIntento: FeCrErrorEmisionPayload | undefined;
+            if (this.esPayloadErrorEmisionFeCr(error)) {
+                msg = error.message;
+                feCrIntento = error;
+            } else if (typeof error === 'string') {
+                msg = error;
+            } else {
+                msg = this.esFeCostaRica()
+                    ? mensajeErrorHttpFeCr(error)
+                    : String((error as { message?: unknown })?.message ?? error);
+            }
+            if ((error as { status?: number })?.status && !this.esFeCostaRica()) {
+                this.alertService.warning('Hubo un problema', error);
+            } else {
+                this.compra = {
+                    ...this.compra,
+                    errores: msg,
+                    ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
+                };
+                const j = this.compras.data?.findIndex((v: any) => v.id === this.compra.id);
+                if (j !== undefined && j !== -1 && this.compras.data) {
+                    this.compras.data[j] = { ...this.compra };
+                }
+                if (this.esFeCostaRica()) {
+                    this.alertService.info(
+                        'Comprobante no emitido',
+                        feCrIntento
+                            ? 'Revise el mensaje abajo. Abra «XML del comprobante» (recomendado) o «JSON interno» si necesita depurar.'
+                            : 'Revise el mensaje en el recuadro de esta ventana.'
+                    );
+                } else {
+                    this.alertService.warning('Comprobante electrónico', msg);
+                }
+            }
+            this.cdr.detectChanges();
         });
     }
 
@@ -589,6 +741,13 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
     anularDTE(compra:any){
         this.compra = compra;
+        if (this.esFeCostaRica()) {
+            if (confirm('¿Confirma anular la compra?')) {
+                compra.estado = 'Anulada';
+                this.onSubmit();
+            }
+            return;
+        }
         if(compra.dte){
             if (confirm('¿Confirma anular la compra y el DTE?')) {
                 this.compra = compra;
@@ -598,13 +757,13 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                     .subscribe(dte => {
                         // this.alertService.success('DTE generado.');
                         this.compra.dte_invalidacion = dte;
-                        this.mhService.firmarDTE(dte)
+                        this.facturacionElectronica.firmarDTE(dte)
                             .pipe(this.untilDestroyed())
                             .subscribe(dteFirmado => {
                                 this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
                                 // this.alertService.success('DTE firmado.');
 
-                                this.mhService.anularDTE(this.compra, dteFirmado.body)
+                                this.facturacionElectronica.anularDTE(this.compra, dteFirmado.body)
                                     .pipe(this.untilDestroyed())
                                     .subscribe(dte => {
                                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {

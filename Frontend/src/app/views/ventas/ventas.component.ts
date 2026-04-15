@@ -10,7 +10,13 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import {
+  mensajeErrorHttpFeCr,
+  type FeCrErrorEmisionPayload,
+} from '@services/facturacion-electronica/fe-cr-http-error.util';
+import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { SharedDataService } from '@services/shared-data.service';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
@@ -27,7 +33,7 @@ import { debounceTime, takeUntil } from 'rxjs/operators';
     selector: 'app-ventas',
     templateUrl: './ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, NotificacionesContainerComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
@@ -71,6 +77,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return this.apiService.canCreateTest(this.permisoVentasCrear);
   }
 
+  public esFeCostaRica(): boolean {
+    return this.facturacionElectronica.isCostaRicaFe();
+  }
+
   public clientes: any = [];
   public usuario: any = {};
   public usuarios: any = [];
@@ -84,6 +94,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public override filtros: any = {};
   public filtrado: boolean = false;
   public consulting: boolean = false;
+  /** Nota de débito CR (02) — modal DTE */
+  public ndMotivo = '';
+  public ndMontoLinea: number | null = null;
+  public consultingNd = false;
   public categorias: any[] = [];
   public marcas: any[] = [];
   public numeros_ids: any = [];
@@ -155,7 +169,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
   constructor(
     protected override apiService: ApiService,
-    private mhService: MHService,
+    private facturacionElectronica: FacturacionElectronicaService,
     protected override alertService: AlertService,
     private modalService: BsModalService,
     private router: Router,
@@ -1111,43 +1125,121 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
     openDTE(template: TemplateRef<any>, venta:any){
         this.venta = venta;
+        this.ndMotivo = '';
+        this.ndMontoLinea = null;
+        this.alertService.modal = true;
         this.openModal(template);
         if(!this.venta.dte){
             this.emitirDTE();
         }
     }
 
-  imprimirDTEPDF(venta: any) {
-    window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+  imprimirDTEPDF(venta: any, tipoDte?: string) {
+    const t = tipoDte ?? venta.tipo_dte;
+    window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
   }
 
-  imprimirDTEJSON(venta: any) {
-    window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+  imprimirDTEJSON(venta: any, tipoDte?: string) {
+    const t = tipoDte ?? venta.tipo_dte;
+    window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+  }
+
+  /** XML de respuesta de Hacienda (Costa Rica), si existe tras consultar estado. */
+  imprimirDTEXML(venta: any, tipoDte?: string) {
+    const t = tipoDte ?? venta.tipo_dte;
+    window.open(this.apiService.baseUrl + '/api/reporte/dte-xml/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+  }
+
+  private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
+    return (
+      typeof e === 'object' &&
+      e !== null &&
+      'message' in e &&
+      'documento' in e &&
+      typeof (e as FeCrErrorEmisionPayload).message === 'string'
+    );
   }
 
   emitirDTE() {
     this.saving = true;
-    this.mhService.emitirDTE(this.venta).then((ventaActualizada) => {
+    this.cdr.markForCheck();
+    this.facturacionElectronica.emitirDTE(this.venta).then((ventaActualizada) => {
       this.venta = { ...ventaActualizada };
       const index = this.ventas.data.findIndex((v: any) => v.id === ventaActualizada.id);
       if (index !== -1) {
         this.ventas.data[index] = { ...ventaActualizada };
       }
 
-      this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+      if (this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
+        this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+        this.saving = false;
+        this.enviarDTE(this.venta);
+      } else {
+        const aceptada = ventaActualizada?.dte?.cr?.aceptada;
+        if (aceptada === false) {
+          this.alertService.info(
+            'Comprobante enviado',
+            'Hacienda aún no lo marca como aceptado. Use «Consultar estado en Hacienda» en unos momentos.'
+          );
+        } else {
+          this.alertService.success('Comprobante electrónico', 'Enviado a Hacienda.');
+        }
+        this.saving = false;
+        setTimeout(() => this.modalRef?.hide(), 1500);
+      }
+      this.cdr.markForCheck();
+    }).catch((error: any) => {
       this.saving = false;
-      this.enviarDTE(this.venta);
-    }).catch((error) => {
-      this.saving = false;
+      if (error?.venta) {
+        this.venta = { ...error.venta };
+        const index = this.ventas.data.findIndex((v: any) => v.id === error.venta.id);
+        if (index !== -1) {
+          this.ventas.data[index] = { ...error.venta };
+        }
+      }
       console.log(error);
+      let msg: string;
+      let feCrIntento: FeCrErrorEmisionPayload | undefined;
+      if (this.esPayloadErrorEmisionFeCr(error)) {
+        msg = error.message;
+        feCrIntento = error;
+        console.warn('FE CR — JSON del comprobante intentado a emitir:', error.documento);
+        if (error.xml_comprobante) {
+          console.warn('FE CR — XML del comprobante (sin firma):', error.xml_comprobante);
+        }
+      } else if (typeof error === 'string') {
+        msg = error;
+      } else {
+        msg = this.esFeCostaRica()
+          ? mensajeErrorHttpFeCr(error)
+          : String(error?.message ?? error);
+      }
       if (error == '[identificacion.codigoGeneracion] YA EXISTE UN REGISTRO CON ESE VALOR') {
         this.consultarDTE();
-      }
-      else if (error.status) {
+      } else if (error?.status && !this.esFeCostaRica()) {
         this.alertService.warning('Hubo un problema', error);
       } else {
-        this.venta.errores = error;
+        this.venta = {
+          ...this.venta,
+          errores: msg,
+          ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
+        };
+        const idx = this.ventas.data.findIndex((v: any) => v.id === this.venta.id);
+        if (idx !== -1) {
+          this.ventas.data[idx] = { ...this.venta };
+        }
+        if (this.esFeCostaRica()) {
+          this.alertService.info(
+            'Comprobante no emitido',
+            feCrIntento
+              ? 'Revise el mensaje abajo. Abra «XML del comprobante» (recomendado) o «JSON interno» si necesita depurar.'
+              : 'Revise el mensaje en el recuadro rojo de esta ventana.'
+          );
+        } else {
+          this.alertService.warning('Comprobante electrónico', msg);
+        }
       }
+      this.cdr.detectChanges();
     });
   }
 
@@ -1165,7 +1257,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   emitirEnContingencia(venta: any) {
     this.venta = venta;
     this.saving = true;
-    this.mhService.emitirDTEContingencia(this.venta).then((venta) => {
+    this.facturacionElectronica.emitirDTEContingencia(this.venta).then((venta) => {
       this.venta = venta;
       this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
       this.saving = false;
@@ -1256,7 +1348,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
       // this.alertService.success('DTE generado.');
       this.venta.dte_invalidacion = dte;
-      this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+      this.facturacionElectronica.firmarDTE(dte).subscribe(dteFirmado => {
         this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
 
         if (dteFirmado.status == 'ERROR') {
@@ -1265,7 +1357,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
           return;
         }
 
-        this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
+        this.facturacionElectronica.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
           if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
             this.venta.dte_invalidacion.sello = dte.selloRecibido;
             this.venta.sello_mh = dte.selloRecibido;
@@ -1335,6 +1427,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   }
 
   consultarDTE() {
+    if (this.facturacionElectronica.isCostaRicaFe()) {
+      this.consultarDTECostaRica();
+      return;
+    }
     this.consulting = true;
     let data = {
       codigoGeneracion: this.venta.dte.identificacion.codigoGeneracion,
@@ -1372,6 +1468,193 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         this.alertService.warning('Hubo un problema', error);
       });
     }, 1000);
+  }
+
+  consultarDTECostaRica(): void {
+    this.consulting = true;
+    this.cdr.markForCheck();
+    this.facturacionElectronica
+      .consultarEstadoFeCrVenta(this.venta.id)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (res: any) => {
+          if (res?.venta) {
+            this.venta = { ...res.venta };
+            const index = this.ventas.data.findIndex((v: any) => v.id === res.venta.id);
+            if (index !== -1) {
+              this.ventas.data[index] = { ...res.venta };
+            }
+          }
+          const ok = !!res?.detalle_estado?.success;
+          const messages = res?.detalle_estado?.messages;
+          if (res?.rechazado) {
+            this.alertService.warning(
+              'Comprobante rechazado en Hacienda',
+              typeof messages === 'string' && messages
+                ? messages
+                : 'Se quitó la clave en el sistema; corrija los datos y vuelva a emitir.'
+            );
+          } else if (ok) {
+            this.alertService.success('Estado en Hacienda', 'Comprobante aceptado.');
+          } else {
+            this.alertService.info(
+              'Estado en Hacienda',
+              typeof messages === 'string' && messages
+                ? messages
+                : 'Aún no consta como aceptado o está en proceso.'
+            );
+          }
+          this.consulting = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.consulting = false;
+          this.alertService.error(err);
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  /**
+   * En FE CR las NC/ND emitidas referencian hoy el comprobante como tipo 01 (factura).
+   * No aplican a tiquete 04 hasta que el backend envíe la referencia correcta.
+   */
+  esVentaFacturaParaNotasCr(venta: any): boolean {
+    if (!this.esFeCostaRica() || !venta) {
+      return false;
+    }
+    const n = String(venta.nombre_documento || '').toLowerCase();
+    return !n.includes('ticket') && !n.includes('tiquete');
+  }
+
+  puedeEmitirNotaDebitoCr(venta: any): boolean {
+    if (!this.esFeCostaRica() || !venta?.codigo_generacion) {
+      return false;
+    }
+    if (!this.esVentaFacturaParaNotasCr(venta)) {
+      return false;
+    }
+    const dte = venta.dte;
+    if (!dte?.cr?.aceptada) {
+      return false;
+    }
+    return !venta?.dte?.cr?.nota_debito?.clave;
+  }
+
+  tieneNotaDebitoCr(venta: any): boolean {
+    if (!this.esFeCostaRica()) {
+      return !!venta?.dte?.cr?.nota_debito?.clave;
+    }
+    return (
+      this.esVentaFacturaParaNotasCr(venta) && !!venta?.dte?.cr?.nota_debito?.clave
+    );
+  }
+
+  emitirNotaDebitoFeCr(): void {
+    const m = Number(this.ndMontoLinea);
+    if (!m || m <= 0) {
+      this.alertService.error('Indique un monto mayor a cero para la línea de nota de débito.');
+      return;
+    }
+    this.saving = true;
+    this.cdr.markForCheck();
+    this.facturacionElectronica
+      .emitirNotaDebitoVenta(this.venta, this.ndMotivo ?? '', m)
+      .then((v) => {
+        this.venta = { ...v };
+        const index = this.ventas.data.findIndex((x: any) => x.id === v.id);
+        if (index !== -1) {
+          this.ventas.data[index] = { ...v };
+        }
+        this.ndMotivo = '';
+        this.ndMontoLinea = null;
+        this.alertService.success('Nota de débito', 'Comprobante enviado a Hacienda.');
+        this.saving = false;
+        this.cdr.markForCheck();
+      })
+      .catch((error: any) => {
+        this.saving = false;
+        let msg: string;
+        let feCrIntento: FeCrErrorEmisionPayload | undefined;
+        if (this.esPayloadErrorEmisionFeCr(error)) {
+          msg = error.message;
+          feCrIntento = error;
+        } else if (typeof error === 'string') {
+          msg = error;
+        } else {
+          msg = this.esFeCostaRica()
+            ? mensajeErrorHttpFeCr(error)
+            : String(error?.message ?? error);
+        }
+        if (error?.venta) {
+          this.venta = { ...error.venta };
+          const idx = this.ventas.data.findIndex((x: any) => x.id === error.venta.id);
+          if (idx !== -1) {
+            this.ventas.data[idx] = { ...error.venta };
+          }
+        }
+        this.venta = {
+          ...this.venta,
+          errores: msg,
+          ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
+        };
+        const idx = this.ventas.data.findIndex((x: any) => x.id === this.venta.id);
+        if (idx !== -1) {
+          this.ventas.data[idx] = { ...this.venta };
+        }
+        this.alertService.info(
+          'Nota de débito no emitida',
+          feCrIntento
+            ? 'Revise el mensaje abajo. Abra «XML del comprobante» o «JSON interno» si necesita depurar.'
+            : 'Revise el mensaje en el recuadro de esta ventana.'
+        );
+        this.cdr.markForCheck();
+      });
+  }
+
+  consultarNotaDebitoFeCr(): void {
+    this.consultingNd = true;
+    this.cdr.markForCheck();
+    this.facturacionElectronica
+      .consultarEstadoFeCrNotaDebitoVenta(this.venta.id)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (res: any) => {
+          if (res?.venta) {
+            this.venta = { ...res.venta };
+            const index = this.ventas.data.findIndex((v: any) => v.id === res.venta.id);
+            if (index !== -1) {
+              this.ventas.data[index] = { ...res.venta };
+            }
+          }
+          const ok = !!res?.detalle_estado?.success;
+          const messages = res?.detalle_estado?.messages;
+          if (res?.rechazado) {
+            this.alertService.warning(
+              'Nota de débito rechazada en Hacienda',
+              typeof messages === 'string' && messages
+                ? messages
+                : 'Se quitó la nota de débito en el sistema; corrija los datos y vuelva a emitir.'
+            );
+          } else if (ok) {
+            this.alertService.success('Estado en Hacienda', 'Nota de débito aceptada.');
+          } else {
+            this.alertService.info(
+              'Estado en Hacienda',
+              typeof messages === 'string' && messages
+                ? messages
+                : 'Aún no consta como aceptada o está en proceso.'
+            );
+          }
+          this.consultingNd = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.consultingNd = false;
+          this.alertService.error(err);
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   public limpiarFiltros() {

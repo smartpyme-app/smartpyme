@@ -18,11 +18,11 @@
             <span *ngIf="producto.tipo == 'Servicio'" class="text-muted">—</span>
             <span *ngIf="producto.tipo != 'Servicio'">
                 <span *ngIf="producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0">
-                    <strong>{{ producto.lotes | filter:'id_bodega':venta.id_bodega | sum:'stock' }}</strong>
+                    <strong>{{ producto.lotes | filter:'id_bodega':venta?.id_bodega | sum:'stock' }}</strong>
                     <small class="d-block text-muted">en stock</small>
                 </span>
                 <span *ngIf="!producto.inventario_por_lotes || !producto.lotes || producto.lotes.length == 0">
-                    <strong>{{ producto.inventarios | filter:'id_bodega':venta.id_bodega | sum:'stock' }}</strong>
+                    <strong>{{ producto.inventarios | filter:'id_bodega':venta?.id_bodega | sum:'stock' }}</strong>
                     <small class="d-block text-muted">en stock</small>
                 </span>
             </span>

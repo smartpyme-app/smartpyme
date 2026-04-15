@@ -1,0 +1,18 @@
+diff --git a/src/Views/Components/items.xml.twig b/src/Views/Components/items.xml.twig
+--- a/src/Views/Components/items.xml.twig
++++ b/src/Views/Components/items.xml.twig
+@@ -27,11 +27,13 @@
+     {% endif %} {% if item.pharmaceutical_form %}
+     <FormaFarmaceutica>{{ item.pharmaceutical_form.code }}</FormaFarmaceutica>
+-    {% endif %} {% if item.transaction_type.code %}
+-    <TipoTransaccion>{{ item.transaction_type.code }}</TipoTransaccion>
+-    {% endif %}
++    {% endif %}
++    {# XSD v4.4 tiqueteElectronico: Detalle antes de TipoTransaccion (LineaDetalle). Misma secuencia factura v4.4. #}
+     <Detalle>{{ item.description }}</Detalle>
++    {% if item.transaction_type and item.transaction_type.code %}
++    <TipoTransaccion>{{ item.transaction_type.code }}</TipoTransaccion>
++    {% endif %}
+     <PrecioUnitario>{{ (item.unit_price|default(0))|number_format(5, '.', '') }}</PrecioUnitario>
+     <MontoTotal>{{ (item.total_amount|default(0))|number_format(5, '.', '') }}</MontoTotal>
+     {% include 'Components/discounts.xml.twig' with { 'discounts':

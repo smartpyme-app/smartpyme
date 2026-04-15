@@ -51,6 +51,16 @@
     <label for="cod_proveed_prod">Código de proveedor</label>
     <p>{{producto.cod_proveed_prod}}</p>
   </div>
+  @if (esEmpresaCostaRica() && producto.codigo_cabys) {
+  <div class="form-group col-12">
+    <hr style="width: 95%; border-top: 2px solid #d7e2ff; margin: 12px auto;">
+    <label>CABYS (Costa Rica)</label>
+    <p class="mb-0"><strong>{{ producto.codigo_cabys }}</strong></p>
+    @if (producto.descripcion_cabys) {
+    <p class="text-muted small mb-0">{{ producto.descripcion_cabys }}</p>
+    }
+  </div>
+  }
 </div>
 </div>
 

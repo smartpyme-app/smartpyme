@@ -306,26 +306,36 @@
 
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">
-        <h5 class="modal-title mb-0">DTE </h5>
+        <h5 class="modal-title mb-0">{{ esFeCostaRica() ? 'Comprobante electrónico (CR)' : 'DTE' }}</h5>
         <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
     </div>
   <div class="modal-body">
+        <app-alerts-hacienda [errores]="venta.errores"></app-alerts-hacienda>
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 
-            @if (venta.sello_mh) {
+            @if (esFeCostaRica() && venta.codigo_generacion) {
+                <button type="button" (click)="imprimirDTEPDF(venta)" class="mb-2 btn btn-primary btn-block">
+                    Ver PDF
+                </button>
+                <button type="button" (click)="imprimirDTEXML(venta)" class="mb-3 btn btn-outline-secondary btn-block" title="XML de respuesta de Hacienda si ya consultó el estado">
+                    Ver XML
+                </button>
+            }
+
+            @if (venta.sello_mh && !esFeCostaRica()) {
                 <button (click)="imprimirDTEJSON(venta)" class="mb-3 btn btn-primary btn-block">
                     Ver JSON
                 </button>
             }
 
-            @if (venta.sello_mh) {
+            @if (venta.sello_mh && !esFeCostaRica()) {
                 <button (click)="imprimirDTEPDF(venta)" class="mb-3 btn btn-primary btn-block">
                     Ver PDF
                 </button>
             }
 
-            @if (venta.sello_mh) {
+            @if (venta.sello_mh && !esFeCostaRica()) {
                 <button [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
                     @if (!sending) {
                         <span>Enviar por correo</span>
@@ -336,10 +346,10 @@
                 </button>
             }
 
-            @if (!venta.sello_mh) {
+            @if (!venta.sello_mh && !(esFeCostaRica() && venta.codigo_generacion)) {
                 <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
                     @if (!saving) {
-                        <span>Emitir</span>
+                        <span>{{ esFeCostaRica() ? 'Emitir comprobante' : 'Emitir' }}</span>
                     }
                     @if (saving) {
                         <span>Emitiendo...</span>

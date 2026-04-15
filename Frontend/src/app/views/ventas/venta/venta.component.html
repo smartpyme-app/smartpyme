@@ -89,7 +89,7 @@
     </div>
 
 </div>
-@if (venta.nombre_documento == 'Factura de exportación') {
+@if (venta.nombre_documento == 'Factura de exportación' && esFacturacionElSalvador()) {
     <div class="card border-0">
         <div class="card-body">
             <div class="row">
@@ -288,23 +288,25 @@
     <div class="card border-0">
         <div class="card-body">
             <div class="row">
-                <h6 class="col-12"> Detalles de DTE</h6>
+                <h6 class="col-12">{{ venta.dte?.pais === 'CR' ? 'Comprobante electrónico (Costa Rica)' : 'Detalles de DTE' }}</h6>
                 <div class="form-group col-lg-4">
                     <label class="fw-medium">Tipo de dte</label>
                     <p>{{ venta.tipo_dte }}</p>
                 </div>
                 <div class="form-group col-lg-4">
-                    <label class="fw-medium">Sello MH</label>
-                    <p>{{ venta.sello_mh }}</p>
+                    <label class="fw-medium">{{ venta.dte?.pais === 'CR' ? 'Estado' : 'Sello MH' }}</label>
+                    <p>{{ venta.dte?.pais === 'CR' ? (venta.dte?.cr?.aceptada ? 'Aceptado por Hacienda' : 'Pendiente / revisar') : venta.sello_mh }}</p>
                 </div>
                 <div class="form-group col-lg-4">
-                    <label class="fw-medium"> Codigo de Generación </label>
+                    <label class="fw-medium">{{ venta.dte?.pais === 'CR' ? 'Clave' : 'Codigo de Generación' }}</label>
                     <p>{{ venta.codigo_generacion }}</p>
                 </div>
+                @if (venta.dte?.pais !== 'CR') {
                 <div class="form-group col-lg-4">
                     <label class="fw-medium">Numero de control</label>
                     <p>{{ venta.numero_control }}</p>
                 </div>
+                }
             </div>
         </div>
     </div>

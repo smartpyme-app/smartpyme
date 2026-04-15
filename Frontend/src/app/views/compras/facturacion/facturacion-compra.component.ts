@@ -26,6 +26,7 @@ import { firstValueFrom } from 'rxjs';
 import * as moment from 'moment';
 import { DetalleComprasComponent } from '@views/reportes/compras/detalle/detalle-compras.component';
 import Swal from 'sweetalert2';
+import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 
 @Component({
     selector: 'app-facturacion-compra',
@@ -248,6 +249,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         'Recibo',
         'Factura de exportación'
       ];
+      if (resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR) {
+        documentosPermitidos.push('Compra electrónica');
+      }
 
         this.sharedDataService.getDocumentos()
           .pipe(this.untilDestroyed())
@@ -598,9 +602,11 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
 
     public selectTipoDocumento(){
-        if(this.compra.tipo_documento == 'Sujeto excluido'){
+        if(this.compra.tipo_documento == 'Sujeto excluido' || this.compra.tipo_documento == 'Compra electrónica'){
             let documento = this.documentos.find((x:any) => x.nombre == this.compra.tipo_documento);
-            this.compra.referencia = documento.correlativo;
+            if (documento) {
+                this.compra.referencia = documento.correlativo;
+            }
         }
     }
 
@@ -906,7 +912,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       '06': 'Nota de crédito',
       '07': 'Comprobante de retención',
       '11': 'Factura de exportación',
-      '14': 'Sujeto excluido'
+      '14': 'Sujeto excluido',
+      '08': 'Compra electrónica'
     };
     return tiposDte[tipoDte as keyof typeof tiposDte] || 'Factura';
   }

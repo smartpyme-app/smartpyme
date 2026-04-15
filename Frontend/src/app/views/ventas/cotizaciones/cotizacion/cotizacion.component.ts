@@ -13,7 +13,8 @@ import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proy
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { SharedDataService } from '@services/shared-data.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -89,7 +90,7 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
 
   constructor(
     public apiService: ApiService,
-    public mhService: MHService,
+    private facturacionElectronica: FacturacionElectronicaService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
     private sumPipe: SumPipe,
@@ -848,13 +849,18 @@ if (
     }
   }
 
+  /** Catálogo MH (incoterm, recinto, régimen) y DTE 11: solo El Salvador. */
+  esFacturacionElSalvador(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
+  }
+
   public setDocumento(id_documento: any) {
     let documento = this.documentos.find((x: any) => x.id == id_documento);
     this.venta.nombre_documento = documento.nombre;
     this.venta.id_documento = documento.id;
     this.venta.correlativo = documento.correlativo;
 
-    if (this.venta.nombre_documento == 'Factura de exportación') {
+    if (this.venta.nombre_documento == 'Factura de exportación' && this.esFacturacionElSalvador()) {
       this.apiService.getAll('recintos').pipe(this.untilDestroyed()).subscribe(
         (recintos) => {
           this.recintos = recintos;
@@ -1075,7 +1081,7 @@ if (
 
   emitirDTE() {
     this.emiting = true;
-    this.mhService
+    this.facturacionElectronica
       .emitirDTE(this.venta)
       .then((venta) => {
         this.venta = venta;
@@ -1084,7 +1090,7 @@ if (
           'DTE emitido.',
           'El documento ha sido emitido.'
         );
-        if(this.venta.id_cliente){
+        if (this.venta.id_cliente && this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
             this.enviarDTE();
         }
         this.emiting = false;
@@ -1101,9 +1107,16 @@ if (
         this.cargarDatosIniciales();
         this.router.navigate(['/venta/crear']);
       })
-      .catch((error) => {
+      .catch((error: any) => {
+        this.cargarDatosIniciales();
+        this.router.navigate(['/venta/crear']);
+
         this.emiting = false;
-        this.alertService.warning('El documento no fue emitido.', error);
+        if (error?.venta) {
+          this.venta = error.venta;
+        }
+        const msg = typeof error === 'string' ? error : error?.message ?? error;
+        this.alertService.warning('El documento no fue emitido.', msg);
         this.cdr.markForCheck();
       });
   }

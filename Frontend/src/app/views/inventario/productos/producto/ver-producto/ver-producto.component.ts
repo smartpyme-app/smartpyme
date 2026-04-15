@@ -10,6 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
+import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 
 @Component({
     selector: 'app-ver-producto',
@@ -30,6 +31,10 @@ export class VerProductoComponent {
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(public apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute, private cdr: ChangeDetectorRef){}
+
+  esEmpresaCostaRica(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+  }
 
   ngOnInit(){
     let param = this.route.snapshot.params;

@@ -1,0 +1,21 @@
+diff --git a/src/Builders/BaseDocumentBuilder.php b/src/Builders/BaseDocumentBuilder.php
+--- a/src/Builders/BaseDocumentBuilder.php
++++ b/src/Builders/BaseDocumentBuilder.php
+@@ -8,6 +8,7 @@ use DazzaDev\DgtXmlGenerator\Models\DebitNote\DebitNote;
+ use DazzaDev\DgtXmlGenerator\Models\Document;
+ use DazzaDev\DgtXmlGenerator\Models\Entities\Issuer;
+ use DazzaDev\DgtXmlGenerator\Models\Entities\Receiver;
+ use DazzaDev\DgtXmlGenerator\Models\Invoice\Invoice;
++use DazzaDev\DgtXmlGenerator\Models\PurchaseInvoice\PurchaseInvoice;
+ use DazzaDev\DgtXmlGenerator\Models\Ticket\Ticket;
+ use DazzaDev\DgtXmlGenerator\XmlHelper;
+ use DOMDocument;
+@@ -51,7 +52,7 @@ abstract class BaseDocumentBuilder
+     /**
+      * Create document instance (must be implemented by child classes)
+      */
+-    abstract protected function createDocument(): Invoice|CreditNote|DebitNote|Ticket;
++    abstract protected function createDocument(): Invoice|CreditNote|DebitNote|Ticket|PurchaseInvoice;
+ 
+     /**
+      * Get document type for XML generation (must be implemented by child classes)

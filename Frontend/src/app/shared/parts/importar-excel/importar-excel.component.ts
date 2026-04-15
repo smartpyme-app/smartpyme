@@ -7,10 +7,11 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
-import { NotificacionesContainerComponent } from '../notificaciones/notificaciones-container.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 @Component({
   selector: 'app-importar-excel',
+  templateUrl: './importar-excel.component.html',
   standalone: true,
   imports: [
     CommonModule,
@@ -19,7 +20,6 @@ import { NotificacionesContainerComponent } from '../notificaciones/notificacion
     NotificacionesContainerComponent,
     ImportarExcelComponent,
   ],
-  templateUrl: './importar-excel.component.html'
 })
 export class ImportarExcelComponent implements OnInit {
 

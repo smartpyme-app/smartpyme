@@ -11,14 +11,22 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
 
 @Component({
     selector: 'app-producto-proveedores',
     templateUrl: './producto-proveedores.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, TruncatePipe, TooltipModule],
+    imports: [
+        CommonModule,
+        RouterModule,
+        FormsModule,
+        NgSelectModule,
+        TooltipModule,
+        TruncatePipe,
+        CrearProveedorComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoProveedoresComponent extends BaseModalComponent implements OnInit {

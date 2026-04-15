@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
+import { pareceErrorHaciendaCr } from './facturacion-electronica/hacienda-cr-error.parser';
 
 @Injectable({
   providedIn: 'root',
@@ -24,7 +25,13 @@ export class AlertService {
 
     warning(titulo: any = null, message: any) {
         console.log(message);
-        const mensaje = this.normalizeUnknownError(message);
+        let mensaje = this.normalizeUnknownError(message);
+        if (typeof mensaje === 'string' && pareceErrorHaciendaCr(mensaje)) {
+            const primera = mensaje.split(/\n/).find((l) => l.trim().length > 0)?.trim() ?? mensaje;
+            mensaje =
+                (primera.length > 220 ? `${primera.slice(0, 220)}…` : primera) +
+                ' — Abra «Emitir / ver comprobante» desde Ventas para ver la explicación detallada.';
+        }
         this.alertSubject.next({ tipo: 'alert-warning', titulo, mensaje });
     }
 
@@ -35,12 +42,6 @@ export class AlertService {
 
     error(message: any) {
         console.log(message);
-
-        // Para errores de validación (422), siempre mostrar el alert incluso si hay modal abierto
-        if(message.status == 422) {
-            // Forzar modal a false ANTES de procesar el error
-            this.modal = false;
-        }
 
         if(message.status == 0) {
             const mensaje = 'No hay conexión con el servidor. Posibles causas: timeout (la operación tardó demasiado), CORS, o el servidor no está disponible. Intente nuevamente.';
@@ -79,6 +80,14 @@ export class AlertService {
                     errorTitle = 'Corrige los siguientes errores';
                 } else {
                     errorMessage = message.error.error;
+                    if (typeof errorMessage === 'string' && pareceErrorHaciendaCr(errorMessage)) {
+                        const primera =
+                            errorMessage.split(/\n/).find((l) => l.trim().length > 0)?.trim() ?? errorMessage;
+                        errorMessage =
+                            (primera.length > 220 ? `${primera.slice(0, 220)}…` : primera) +
+                            ' — En Ventas, abra el comprobante para ver el error explicado en detalle.';
+                        errorTitle = 'Hacienda rechazó el comprobante';
+                    }
                 }
             }
             // Formato 2: message.error.message (común en Laravel)
@@ -127,10 +136,6 @@ export class AlertService {
             // Emitir el alert inmediatamente
             this.alertSubject.next(alertData);
 
-            // Asegurar que el modal no bloquee la visualización del error
-            setTimeout(() => {
-                this.modal = false;
-            }, 0);
         }
         else if(message.status == 500) {
             const mensaje = message.error?.message
