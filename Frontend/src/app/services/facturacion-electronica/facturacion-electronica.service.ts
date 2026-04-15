@@ -128,4 +128,35 @@ export class FacturacionElectronicaService {
       ? this.costaRica.consultarEstadoVenta(ventaId)
       : this.throwNoSoportadoObs();
   }
+
+  consultarEstadoFeCrDevolucion(devolucionId: number): Observable<any> {
+    return this.esCostaRica()
+      ? this.costaRica.consultarEstadoDevolucion(devolucionId)
+      : this.throwNoSoportadoObs();
+  }
+
+  consultarEstadoFeCrCompra(compraId: number): Observable<any> {
+    return this.esCostaRica()
+      ? this.costaRica.consultarEstadoCompra(compraId)
+      : this.throwNoSoportadoObs();
+  }
+
+  consultarEstadoFeCrGasto(gastoId: number): Observable<any> {
+    return this.esCostaRica()
+      ? this.costaRica.consultarEstadoGasto(gastoId)
+      : this.throwNoSoportadoObs();
+  }
+
+  /** Consulta estado de la ND (02) asociada a la venta (dte.cr.nota_debito). */
+  consultarEstadoFeCrNotaDebitoVenta(ventaId: number): Observable<any> {
+    return this.esCostaRica()
+      ? this.costaRica.consultarEstadoNotaDebitoVenta(ventaId)
+      : this.throwNoSoportadoObs();
+  }
+
+  emitirNotaDebitoVenta(venta: any, motivo: string, montoLinea: number): Promise<any> {
+    return this.esCostaRica()
+      ? this.costaRica.emitirNotaDebitoVenta(venta, motivo, montoLinea)
+      : this.rejectNoSoportado();
+  }
 }

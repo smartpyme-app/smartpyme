@@ -51,6 +51,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     public buscador:any = '';
     public override saving:boolean = false;
     public sending:boolean = false;
+    public consulting:boolean = false;
     public downloadingDetalles:boolean = false;
     public downloadingCompras:boolean = false;
     public modalRefAcumulado: any;
@@ -532,6 +533,64 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + compra.id + '/' + tipoRuta + '/' + '?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
+    imprimirDTEXML(compra: any) {
+        const tipoRuta = this.esFeCostaRica() ? '08' : '14';
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-xml/' + compra.id + '/' + tipoRuta + '/' + '?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    consultarDTE(): void {
+        if (this.esFeCostaRica()) {
+            this.consultarDTECostaRica();
+            return;
+        }
+        this.alertService.info('Consultar estado', 'Use el flujo de facturación de su país.');
+    }
+
+    consultarDTECostaRica(): void {
+        this.consulting = true;
+        this.cdr.markForCheck();
+        this.facturacionElectronica
+            .consultarEstadoFeCrCompra(this.compra.id)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (res: any) => {
+                    if (res?.compra) {
+                        this.compra = { ...res.compra };
+                        const idx = this.compras.data?.findIndex((c: any) => c.id === res.compra.id);
+                        if (idx !== undefined && idx !== -1 && this.compras.data) {
+                            this.compras.data[idx] = { ...res.compra };
+                        }
+                    }
+                    const ok = !!res?.detalle_estado?.success;
+                    const messages = res?.detalle_estado?.messages;
+                    if (res?.rechazado) {
+                        this.alertService.warning(
+                            'Comprobante rechazado en Hacienda',
+                            typeof messages === 'string' && messages
+                                ? messages
+                                : 'Se quitó la clave en el sistema; corrija los datos y vuelva a emitir.'
+                        );
+                    } else if (ok) {
+                        this.alertService.success('Estado en Hacienda', 'Comprobante aceptado.');
+                    } else {
+                        this.alertService.info(
+                            'Estado en Hacienda',
+                            typeof messages === 'string' && messages
+                                ? messages
+                                : 'Aún no consta como aceptado o está en proceso.'
+                        );
+                    }
+                    this.consulting = false;
+                    this.cdr.markForCheck();
+                },
+                error: (err) => {
+                    this.consulting = false;
+                    this.alertService.error(err);
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
     emitirDTE(){
         this.saving = true;
         this.cdr.markForCheck();
@@ -626,6 +685,13 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
     anularDTE(compra:any){
         this.compra = compra;
+        if (this.esFeCostaRica()) {
+            if (confirm('¿Confirma anular la compra?')) {
+                compra.estado = 'Anulada';
+                this.onSubmit();
+            }
+            return;
+        }
         if(compra.dte){
             if (confirm('¿Confirma anular la compra y el DTE?')) {
                 this.compra = compra;

@@ -279,19 +279,16 @@
         <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
     </div>
   <div class="modal-body">
+        <app-alerts-hacienda [errores]="venta.errores"></app-alerts-hacienda>
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 
             @if (esFeCostaRica() && venta.codigo_generacion) {
-                <p class="small text-muted text-break mb-2"><strong>Clave:</strong> {{ venta.codigo_generacion }}</p>
-                <button type="button" (click)="imprimirDTEJSON(venta)" class="mb-2 btn btn-primary btn-block">
-                    Ver JSON (comprobante)
-                </button>
                 <button type="button" (click)="imprimirDTEPDF(venta)" class="mb-2 btn btn-primary btn-block">
-                    Ver PDF (resumen)
+                    Ver PDF
                 </button>
-                <button type="button" (click)="imprimirDTEXML(venta)" class="mb-3 btn btn-outline-secondary btn-block" title="Disponible si ya consultó el estado y Hacienda devolvió XML">
-                    Ver XML respuesta Hacienda
+                <button type="button" (click)="imprimirDTEXML(venta)" class="mb-3 btn btn-outline-secondary btn-block" title="XML de respuesta de Hacienda si ya consultó el estado">
+                    Ver XML
                 </button>
             }
 

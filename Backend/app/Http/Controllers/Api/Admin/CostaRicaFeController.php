@@ -135,6 +135,58 @@ class CostaRicaFeController extends Controller
         }
     }
 
+    public function consultarEstadoDevolucion(EmitirFeCrDevolucionRequest $request, CostaRicaFeEmitService $emitService): JsonResponse
+    {
+        try {
+            $resultado = $emitService->consultarEstadoDevolucion((int) $request->id);
+
+            return response()->json($resultado, 200);
+        } catch (Throwable $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function consultarEstadoCompra(EmitirFeCrCompraRequest $request, CostaRicaFeEmitService $emitService): JsonResponse
+    {
+        try {
+            $resultado = $emitService->consultarEstadoCompra((int) $request->id);
+
+            return response()->json($resultado, 200);
+        } catch (Throwable $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function consultarEstadoGasto(EmitirFeCrGastoRequest $request, CostaRicaFeEmitService $emitService): JsonResponse
+    {
+        try {
+            $resultado = $emitService->consultarEstadoGasto((int) $request->id);
+
+            return response()->json($resultado, 200);
+        } catch (Throwable $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function consultarEstadoNotaDebitoVenta(EmitirFeCrVentaRequest $request, CostaRicaFeEmitService $emitService): JsonResponse
+    {
+        try {
+            $resultado = $emitService->consultarEstadoNotaDebitoVenta((int) $request->id);
+
+            return response()->json($resultado, 200);
+        } catch (Throwable $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
     /**
      * @return array{
      *   error: string,

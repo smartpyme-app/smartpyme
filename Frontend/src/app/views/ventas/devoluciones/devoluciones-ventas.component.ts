@@ -8,6 +8,11 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import {
+  mensajeErrorHttpFeCr,
+  type FeCrErrorEmisionPayload,
+} from '@services/facturacion-electronica/fe-cr-http-error.util';
+import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
@@ -19,7 +24,7 @@ import Swal from 'sweetalert2';
     selector: 'app-devoluciones-ventas',
     templateUrl: './devoluciones-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, AlertsHaciendaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
@@ -39,6 +44,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
     public documentos: any = [];
     public modalAbierto: boolean = false;
     public modalCerrandose: boolean = false;
+    public consulting: boolean = false;
 
     constructor(
         apiService: ApiService, 
@@ -195,7 +201,8 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         super.openModal(template);
     }
 
-    override openModal(template: TemplateRef<any>) {
+    /** Modal «nueva devolución»: carga ventas sin devolución. Para DTE use {@link openDTE} que llama `super.openModal` con la fila. */
+    override openModal(template: TemplateRef<any>, item?: any, modalConfig?: any): void {
         this.id_venta = null;
         this.loading = true;
         this.apiService.getAll('ventas/sin-devolucion')
@@ -205,7 +212,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                 this.loading = false;
                 this.cdr.markForCheck();
             }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
-        super.openModal(template);
+        super.openModal(template, item, modalConfig);
     }
 
     public imprimir(venta: any) {
@@ -235,8 +242,8 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
     // DTE
 
     openDTE(template: TemplateRef<any>, venta: any) {
-        this.venta = venta;
-        this.openModal(template);
+        /** `this.openModal` está sobrescrito para el modal de alta; usar `super` para asignar la devolución con `id` (BaseCrudComponent). */
+        super.openModal(template, venta);
         if (!this.venta.dte) {
             this.emitirDTE();
         }
@@ -270,26 +277,137 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         window.open(this.apiService.baseUrl + '/api/reporte/dte-xml/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
+    private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
+        return (
+            typeof e === 'object' &&
+            e !== null &&
+            'message' in e &&
+            'documento' in e &&
+            typeof (e as FeCrErrorEmisionPayload).message === 'string'
+        );
+    }
+
     emitirDTE() {
         this.saving = true;
+        this.cdr.markForCheck();
         this.facturacionElectronica.emitirDTENotaCredito(this.venta).then((doc) => {
             this.venta = doc;
-            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
-            this.saving = false;
+            const idx = this.ventas.data?.findIndex((v: any) => v.id === doc.id);
+            if (idx !== undefined && idx !== -1 && this.ventas.data) {
+                this.ventas.data[idx] = { ...doc };
+            }
             if (this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
+                this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+                this.saving = false;
                 this.enviarDTE(this.venta);
             } else {
-                this.cdr.markForCheck();
+                const aceptada = doc?.dte?.cr?.aceptada;
+                if (aceptada === false) {
+                    this.alertService.info(
+                        'Comprobante enviado',
+                        'Hacienda aún no lo marca como aceptado. Use «Consultar estado en Hacienda» en unos momentos.'
+                    );
+                } else {
+                    this.alertService.success('Comprobante electrónico', 'Enviado a Hacienda.');
+                }
+                this.saving = false;
             }
+            this.cdr.markForCheck();
         }).catch((error: any) => {
             this.saving = false;
             if (error?.devolucion) {
-                this.venta = error.devolucion;
+                this.venta = { ...error.devolucion };
+                const i = this.ventas.data?.findIndex((v: any) => v.id === error.devolucion.id);
+                if (i !== undefined && i !== -1 && this.ventas.data) {
+                    this.ventas.data[i] = { ...error.devolucion };
+                }
             }
-            const msg = typeof error === 'string' ? error : error?.message ?? 'Hubo un problema';
-            this.alertService.warning('Comprobante electrónico', msg);
+            let msg: string;
+            let feCrIntento: FeCrErrorEmisionPayload | undefined;
+            if (this.esPayloadErrorEmisionFeCr(error)) {
+                msg = error.message;
+                feCrIntento = error;
+            } else if (typeof error === 'string') {
+                msg = error;
+            } else {
+                msg = this.esFeCostaRica()
+                    ? mensajeErrorHttpFeCr(error)
+                    : String(error?.message ?? error);
+            }
+            if (this.esFeCostaRica()) {
+                this.venta = {
+                    ...this.venta,
+                    errores: msg,
+                    ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
+                };
+                const idx = this.ventas.data?.findIndex((v: any) => v.id === this.venta.id);
+                if (idx !== undefined && idx !== -1 && this.ventas.data) {
+                    this.ventas.data[idx] = { ...this.venta };
+                }
+                this.alertService.info(
+                    'Comprobante no emitido',
+                    feCrIntento
+                        ? 'Revise el mensaje abajo. Abra «XML del comprobante» o «JSON interno» si necesita depurar.'
+                        : 'Revise el mensaje en el recuadro de esta ventana.'
+                );
+            } else {
+                this.alertService.warning('Comprobante electrónico', msg);
+            }
             this.cdr.markForCheck();
         });
+    }
+
+    consultarDTE(): void {
+        if (this.esFeCostaRica()) {
+            this.consultarDTECostaRica();
+            return;
+        }
+        this.alertService.info('Consultar estado', 'Use el flujo de facturación de su país.');
+    }
+
+    consultarDTECostaRica(): void {
+        this.consulting = true;
+        this.cdr.markForCheck();
+        this.facturacionElectronica
+            .consultarEstadoFeCrDevolucion(this.venta.id)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (res: any) => {
+                    if (res?.devolucion) {
+                        this.venta = { ...res.devolucion };
+                        const index = this.ventas.data?.findIndex((v: any) => v.id === res.devolucion.id);
+                        if (index !== undefined && index !== -1 && this.ventas.data) {
+                            this.ventas.data[index] = { ...res.devolucion };
+                        }
+                    }
+                    const ok = !!res?.detalle_estado?.success;
+                    const messages = res?.detalle_estado?.messages;
+                    if (res?.rechazado) {
+                        this.alertService.warning(
+                            'Comprobante rechazado en Hacienda',
+                            typeof messages === 'string' && messages
+                                ? messages
+                                : 'Se quitó la clave en el sistema; corrija los datos y vuelva a emitir.'
+                        );
+                    } else if (ok) {
+                        this.alertService.success('Estado en Hacienda', 'Comprobante aceptado.');
+                    } else {
+                        this.alertService.info(
+                            'Estado en Hacienda',
+                            typeof messages === 'string' && messages
+                                ? messages
+                                : 'Aún no consta como aceptado o está en proceso.'
+                        );
+                    }
+                    this.consulting = false;
+                    this.cdr.markForCheck();
+                },
+                error: (err) => {
+                    this.consulting = false;
+                    this.alertService.error(err);
+                    this.cdr.markForCheck();
+                },
+            });
     }
 
     enviarDTE(venta: any) {
@@ -315,6 +433,12 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
 
     anularDTE(venta: any) {
         this.venta = venta;
+        if (this.esFeCostaRica()) {
+            if (confirm('¿Confirma anular la devolución?')) {
+                this.setEstado(venta, '0');
+            }
+            return;
+        }
         if (venta.dte) {
             if (confirm('¿Confirma anular la devolución y el DTE?')) {
                 this.venta = venta;

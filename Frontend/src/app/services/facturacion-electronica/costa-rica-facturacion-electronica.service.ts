@@ -53,6 +53,55 @@ export class CostaRicaFacturacionElectronicaService {
     return this.api.store('consultarFeCrVenta', { id: ventaId });
   }
 
+  consultarEstadoDevolucion(devolucionId: number): Observable<any> {
+    return this.api.store('consultarFeCrDevolucion', { id: devolucionId });
+  }
+
+  consultarEstadoCompra(compraId: number): Observable<any> {
+    return this.api.store('consultarFeCrCompra', { id: compraId });
+  }
+
+  consultarEstadoGasto(gastoId: number): Observable<any> {
+    return this.api.store('consultarFeCrGasto', { id: gastoId });
+  }
+
+  consultarEstadoNotaDebitoVenta(ventaId: number): Observable<any> {
+    return this.api.store('consultarFeCrNotaDebitoVenta', { id: ventaId });
+  }
+
+  /**
+   * Nota de débito 02 sobre venta con factura/tiquete CR ya aceptado.
+   */
+  emitirNotaDebitoVenta(venta: any, motivo: string, montoLinea: number): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.api
+        .store('emitirFeCrNotaDebitoVenta', {
+          id: venta.id,
+          motivo: motivo ?? '',
+          monto_linea: montoLinea,
+        })
+        .subscribe({
+          next: (res: any) => {
+            if (res?.venta) {
+              Object.assign(venta, res.venta);
+            }
+            if (res?.aceptada) {
+              resolve(venta);
+              return;
+            }
+            const msg =
+              typeof res?.detalle_estado?.messages === 'string'
+                ? res.detalle_estado.messages
+                : 'El comprobante no fue aceptado por Hacienda.';
+            reject({ message: msg, venta });
+          },
+          error: (err) => {
+            reject(errorEmisionFeCr(err));
+          },
+        });
+    });
+  }
+
   /** FEC 08 — compra (documento «Compra electrónica»). */
   emitirFacturaElectronicaCompra(compra: any): Promise<any> {
     return this.postEmisionCompraGasto('emitirFeCrCompra', compra, 'compra');

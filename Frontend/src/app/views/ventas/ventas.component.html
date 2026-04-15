@@ -278,12 +278,12 @@
                                             <i class="fa fa-edit"></i> Generar partida contable
                                         </a>
                                     }
-                                    @if (canEditVentas() && venta.nombre_documento == 'Crédito fiscal') {
+                                    @if (canEditVentas() && ((!esFeCostaRica() && venta.nombre_documento == 'Crédito fiscal') || (esFeCostaRica() && esVentaFacturaParaNotasCr(venta)))) {
                                         <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_credito'}" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-folder-minus"></i> Hacer nota de crédito
                                         </a>
                                     }
-                                    @if (canEditVentas() && venta.nombre_documento == 'Crédito fiscal') {
+                                    @if (canEditVentas() && ((!esFeCostaRica() && venta.nombre_documento == 'Crédito fiscal') || (esFeCostaRica() && esVentaFacturaParaNotasCr(venta)))) {
                                         <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_debito'}" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-folder-plus"></i> Hacer nota de débito
                                         </a>
@@ -581,36 +581,15 @@
     </div>
     <div class="modal-body">
         <app-alerts-hacienda [errores]="venta.errores"></app-alerts-hacienda>
-        @if (esFeCostaRica() && venta.fe_cr_intento_emision?.xml_comprobante) {
-            <details class="small text-start mb-3 border rounded p-2 bg-light" open>
-                <summary class="cursor-pointer user-select-none">XML del comprobante (Hacienda / español, sin firma)</summary>
-                <pre class="small mt-2 mb-0 p-2 bg-white rounded overflow-auto border" style="max-height: 280px; white-space: pre-wrap;">{{ venta.fe_cr_intento_emision.xml_comprobante }}</pre>
-            </details>
-        }
-        @if (esFeCostaRica() && venta.fe_cr_intento_emision?.xml_comprobante_firmado) {
-            <details class="small text-start mb-3 border rounded p-2 bg-light">
-                <summary class="cursor-pointer user-select-none">XML firmado (avanzado)</summary>
-                <pre class="small mt-2 mb-0 p-2 bg-white rounded overflow-auto border" style="max-height: 200px; white-space: pre-wrap;">{{ venta.fe_cr_intento_emision.xml_comprobante_firmado }}</pre>
-            </details>
-        }
-        @if (esFeCostaRica() && venta.fe_cr_intento_emision?.documento) {
-            <details class="small text-start mb-3 border rounded p-2 bg-light">
-                <summary class="cursor-pointer user-select-none">JSON interno del comprobante (depuración)</summary>
-                <pre class="small mt-2 mb-0 p-2 bg-white rounded overflow-auto border" style="max-height: 280px; white-space: pre-wrap;">{{ venta.fe_cr_intento_emision.documento | json }}</pre>
-            </details>
-        }
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 
             @if (esFeCostaRica() && venta.codigo_generacion) {
-                <button type="button" (click)="imprimirDTEJSON(venta)" class="mb-2 btn btn-primary btn-block">
-                    Ver JSON
-                </button>
                 <button type="button" (click)="imprimirDTEPDF(venta)" class="mb-2 btn btn-primary btn-block">
                     Ver PDF
                 </button>
-                <button type="button" (click)="imprimirDTEXML(venta)" class="mb-3 btn btn-outline-secondary btn-block" title="Disponible si ya consultó el estado y Hacienda devolvió XML">
-                    Ver XML respuesta Hacienda
+                <button type="button" (click)="imprimirDTEXML(venta)" class="mb-3 btn btn-outline-secondary btn-block" title="XML de respuesta de Hacienda si ya consultó el estado">
+                    Ver XML
                 </button>
             }
 
@@ -638,15 +617,35 @@
                 </button>
             }
 
-            @if (esFeCostaRica() && venta.codigo_generacion) {
-                <button type="button" [disabled]="consulting || saving" (click)="consultarDTE()"
-                    class="mb-3 btn btn-outline-primary btn-block">
-                    @if (!consulting) {
-                        <span>Consultar estado en Hacienda</span>
-                    }
-                    @if (consulting) {
-                        <span>Consultando...</span>
-                    }
+            @if (esFeCostaRica() && puedeEmitirNotaDebitoCr(venta)) {
+                <div class="border rounded p-3 mb-3 text-start">
+                    <p class="small fw-semibold mb-2">Nota de débito (ajuste de montos)</p>
+                    <div class="mb-2">
+                        <label class="form-label small" for="ndMotivoVenta">Motivo (opcional)</label>
+                        <input id="ndMotivoVenta" type="text" class="form-control form-control-sm" [(ngModel)]="ndMotivo" name="ndMotivo" maxlength="500" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small" for="ndMontoVenta">Monto línea (IVA incl.)</label>
+                        <input id="ndMontoVenta" type="number" class="form-control form-control-sm" [(ngModel)]="ndMontoLinea" name="ndMontoLinea" min="0.01" step="0.01" />
+                    </div>
+                    <button type="button" [disabled]="saving" (click)="emitirNotaDebitoFeCr()" class="btn btn-primary btn-sm w-100">
+                        @if (!saving) {
+                            <span>Emitir nota de débito</span>
+                        }
+                        @if (saving) {
+                            <span>Emitiendo...</span>
+                        }
+                    </button>
+                </div>
+            }
+
+            @if (esFeCostaRica() && tieneNotaDebitoCr(venta)) {
+                <p class="small fw-semibold mb-2 text-start">Nota de débito</p>
+                <button type="button" (click)="imprimirDTEPDF(venta, '02')" class="mb-2 btn btn-primary btn-block">
+                    Ver PDF
+                </button>
+                <button type="button" (click)="imprimirDTEXML(venta, '02')" class="mb-3 btn btn-outline-secondary btn-block" title="XML de respuesta de Hacienda si ya consultó el estado">
+                    Ver XML
                 </button>
             }
 

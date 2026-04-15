@@ -39,6 +39,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
     public gasto:any = {};
     public override saving:boolean = false;
     public sending:boolean = false;
+    public consulting:boolean = false;
     public downloading:boolean = false;
     public clientes:any = [];
     public usuarios:any = [];
@@ -362,6 +363,65 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
         window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/' + tipoRuta + '/' + q + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
+    imprimirDTEXML(gasto: any) {
+        const tipoRuta = this.esFeCostaRica() ? '08' : '03';
+        const q = this.esFeCostaRica() ? '?tipo=gasto&token=' : '?token=';
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-xml/' + gasto.id + '/' + tipoRuta + '/' + q + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    consultarDTE(): void {
+        if (this.esFeCostaRica()) {
+            this.consultarDTECostaRica();
+            return;
+        }
+        this.alertService.info('Consultar estado', 'Use el flujo de facturación de su país.');
+    }
+
+    consultarDTECostaRica(): void {
+        this.consulting = true;
+        this.cdr.markForCheck();
+        this.facturacionElectronica
+            .consultarEstadoFeCrGasto(this.gasto.id)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (res: any) => {
+                    if (res?.gasto) {
+                        this.gasto = { ...res.gasto };
+                        const idx = this.gastos.data?.findIndex((g: any) => g.id === res.gasto.id);
+                        if (idx !== undefined && idx !== -1 && this.gastos.data) {
+                            this.gastos.data[idx] = { ...res.gasto };
+                        }
+                    }
+                    const ok = !!res?.detalle_estado?.success;
+                    const messages = res?.detalle_estado?.messages;
+                    if (res?.rechazado) {
+                        this.alertService.warning(
+                            'Comprobante rechazado en Hacienda',
+                            typeof messages === 'string' && messages
+                                ? messages
+                                : 'Se quitó la clave en el sistema; corrija los datos y vuelva a emitir.'
+                        );
+                    } else if (ok) {
+                        this.alertService.success('Estado en Hacienda', 'Comprobante aceptado.');
+                    } else {
+                        this.alertService.info(
+                            'Estado en Hacienda',
+                            typeof messages === 'string' && messages
+                                ? messages
+                                : 'Aún no consta como aceptado o está en proceso.'
+                        );
+                    }
+                    this.consulting = false;
+                    this.cdr.markForCheck();
+                },
+                error: (err) => {
+                    this.consulting = false;
+                    this.alertService.error(err);
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
     emitirDTE(){
         this.saving = true;
         this.cdr.markForCheck();
@@ -461,6 +521,13 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
 
     anularDTE(gasto:any){
         this.gasto = gasto;
+        if (this.esFeCostaRica()) {
+            if (confirm('¿Confirma anular el egreso?')) {
+                gasto.estado = 'Anulada';
+                this.onSubmit();
+            }
+            return;
+        }
         if(gasto.dte){
             if (confirm('¿Confirma anular la gasto y el DTE?')) {
                 this.gasto = gasto;

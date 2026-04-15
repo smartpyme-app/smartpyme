@@ -1,0 +1,26 @@
+diff --git a/src/Views/credit-note.xml.twig b/src/Views/credit-note.xml.twig
+index 8bfef9ee3..a1b2c3d4e 100644
+--- a/src/Views/credit-note.xml.twig
++++ b/src/Views/credit-note.xml.twig
+@@ -5,7 +5,7 @@
+   xsi:schemaLocation="https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/notaCreditoElectronica"
+ >
+   {% include 'Components/info.xml.twig' %} {% include
+-  'Components/items.xml.twig' %} {% include 'Components/summary.xml.twig' %} {%
++  'Components/items-ticket.xml.twig' %} {% include 'Components/summary.xml.twig' %} {%
+   include 'Components/referenced-document.xml.twig' %} {% include
+   'Components/additional-info.xml.twig' %}
+ </NotaCreditoElectronica>
+diff --git a/src/Views/debit-note.xml.twig b/src/Views/debit-note.xml.twig
+index 8bfef9ee3..b2c3d4e5f 100644
+--- a/src/Views/debit-note.xml.twig
++++ b/src/Views/debit-note.xml.twig
+@@ -5,7 +5,7 @@
+   xsi:schemaLocation="https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/notaDebitoElectronica"
+ >
+   {% include 'Components/info.xml.twig' %} {% include
+-  'Components/items.xml.twig' %} {% include 'Components/summary.xml.twig' %} {%
++  'Components/items-ticket.xml.twig' %} {% include 'Components/summary.xml.twig' %} {%
+   include 'Components/referenced-document.xml.twig' %} {% include
+   'Components/additional-info.xml.twig' %}
+ </NotaDebitoElectronica>

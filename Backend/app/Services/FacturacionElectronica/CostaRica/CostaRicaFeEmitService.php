@@ -11,6 +11,7 @@ use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use DazzaDev\DgtCr\Client;
 use DOMDocument;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use ReflectionClass;
 use ReflectionException;
@@ -237,6 +238,10 @@ final class CostaRicaFeEmitService
 
         if (! $this->ventaFeCrAceptada($venta)) {
             throw new RuntimeException('La venta debe tener factura electrónica aceptada para emitir nota de débito.');
+        }
+        $dtePrev = is_array($venta->dte) ? $venta->dte : [];
+        if (! empty(trim((string) (($dtePrev['cr']['nota_debito']['clave'] ?? ''))))) {
+            throw new RuntimeException('Esta venta ya tiene una nota de débito electrónica registrada.');
         }
         if ($montoLinea <= 0) {
             throw new RuntimeException('El monto de la línea debe ser mayor a cero.');
@@ -887,16 +892,98 @@ final class CostaRicaFeEmitService
     /**
      * Consulta el estado del comprobante en Hacienda y actualiza la venta (dte.cr; sello_mh = clave).
      *
-     * @return array{venta: Venta, detalle_estado: array<string, mixed>}
+     * @return array{venta: Venta, detalle_estado: array<string, mixed>, rechazado?: true}
      */
     public function consultarEstadoVenta(int $ventaId): array
     {
         $venta = $this->cargarVenta($ventaId);
+
+        return $this->consultarEstadoFeCrModelo(
+            $venta,
+            $venta->empresa,
+            'La venta no tiene clave de comprobante; emita primero el comprobante electrónico.',
+            'venta'
+        );
+    }
+
+    /**
+     * @return array{devolucion: Devolucion, detalle_estado: array<string, mixed>, rechazado?: true}
+     */
+    public function consultarEstadoDevolucion(int $devolucionId): array
+    {
+        $devolucion = Devolucion::query()
+            ->with(['empresa'])
+            ->findOrFail($devolucionId);
+        $empresa = $devolucion->empresa;
+        if ($empresa === null) {
+            throw new RuntimeException('La devolución no tiene empresa asociada.');
+        }
+
+        return $this->consultarEstadoFeCrModelo(
+            $devolucion,
+            $empresa,
+            'La devolución no tiene clave de comprobante; emita primero la nota de crédito electrónica.',
+            'devolucion'
+        );
+    }
+
+    /**
+     * @return array{compra: Compra, detalle_estado: array<string, mixed>, rechazado?: true}
+     */
+    public function consultarEstadoCompra(int $compraId): array
+    {
+        $compra = Compra::query()
+            ->with(['empresa'])
+            ->findOrFail($compraId);
+        $empresa = $compra->empresa;
+        if ($empresa === null) {
+            throw new RuntimeException('La compra no tiene empresa asociada.');
+        }
+
+        return $this->consultarEstadoFeCrModelo(
+            $compra,
+            $empresa,
+            'La compra no tiene clave de comprobante; emita primero el comprobante electrónico (FEC).',
+            'compra'
+        );
+    }
+
+    /**
+     * @return array{gasto: Gasto, detalle_estado: array<string, mixed>, rechazado?: true}
+     */
+    public function consultarEstadoGasto(int $gastoId): array
+    {
+        $gasto = Gasto::query()
+            ->with(['empresa'])
+            ->findOrFail($gastoId);
+        $empresa = $gasto->empresa;
+        if ($empresa === null) {
+            throw new RuntimeException('El egreso no tiene empresa asociada.');
+        }
+
+        return $this->consultarEstadoFeCrModelo(
+            $gasto,
+            $empresa,
+            'El egreso no tiene clave de comprobante; emita primero el comprobante electrónico (FEC).',
+            'gasto'
+        );
+    }
+
+    /**
+     * Consulta el estado de la nota de débito (02) en Hacienda y actualiza dte.cr.nota_debito.
+     *
+     * @return array{venta: Venta, detalle_estado: array<string, mixed>, rechazado?: true}
+     */
+    public function consultarEstadoNotaDebitoVenta(int $ventaId): array
+    {
+        $venta = $this->cargarVenta($ventaId);
         $this->assertEmpresaCr($venta->empresa);
 
-        $clave = trim((string) ($venta->codigo_generacion ?? ''));
+        $dte = is_array($venta->dte) ? $venta->dte : [];
+        $nd = is_array($dte['cr']['nota_debito'] ?? null) ? $dte['cr']['nota_debito'] : [];
+        $clave = trim((string) ($nd['clave'] ?? ''));
         if ($clave === '') {
-            throw new RuntimeException('La venta no tiene clave de comprobante; emita primero el comprobante electrónico.');
+            throw new RuntimeException('No hay nota de débito electrónica registrada para esta venta.');
         }
 
         $client = $this->factory->make($venta->empresa);
@@ -905,10 +992,8 @@ final class CostaRicaFeEmitService
         $status = strtolower(trim((string) ($estado['status'] ?? '')));
 
         if ($status === 'rechazado') {
-            $venta->codigo_generacion = null;
-            $venta->sello_mh = null;
-            $venta->tipo_dte = null;
-            $venta->dte = null;
+            unset($dte['cr']['nota_debito']);
+            $venta->dte = $dte;
             $venta->save();
 
             return [
@@ -918,9 +1003,52 @@ final class CostaRicaFeEmitService
             ];
         }
 
-        $venta->sello_mh = $clave;
+        $nd['aceptada'] = $aceptada;
+        $nd['estado_consulta'] = $estado;
+        $dte['cr']['nota_debito'] = $nd;
+        $venta->dte = $dte;
+        $venta->save();
 
-        $dte = is_array($venta->dte) ? $venta->dte : [];
+        return [
+            'venta' => $venta->fresh(),
+            'detalle_estado' => $estado,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function consultarEstadoFeCrModelo(Model $model, $empresa, string $mensajeSinClave, string $responseKey): array
+    {
+        $this->assertEmpresaCr($empresa);
+
+        $clave = trim((string) ($model->codigo_generacion ?? ''));
+        if ($clave === '') {
+            throw new RuntimeException($mensajeSinClave);
+        }
+
+        $client = $this->factory->make($empresa);
+        $estado = $this->checkStatusConReintentosSinPersistirXml($client, $clave, 3, 2);
+        $aceptada = (bool) ($estado['success'] ?? false);
+        $status = strtolower(trim((string) ($estado['status'] ?? '')));
+
+        if ($status === 'rechazado') {
+            $model->codigo_generacion = null;
+            $model->sello_mh = null;
+            $model->tipo_dte = null;
+            $model->dte = null;
+            $model->save();
+
+            return [
+                $responseKey => $model->fresh(),
+                'detalle_estado' => $estado,
+                'rechazado' => true,
+            ];
+        }
+
+        $model->sello_mh = $clave;
+
+        $dte = is_array($model->dte) ? $model->dte : [];
         if (($dte['pais'] ?? null) !== 'CR') {
             $dte['pais'] = 'CR';
         }
@@ -928,11 +1056,11 @@ final class CostaRicaFeEmitService
         $cr['aceptada'] = $aceptada;
         $cr['estado_consulta'] = $estado;
         $dte['cr'] = $cr;
-        $venta->dte = $dte;
-        $venta->save();
+        $model->dte = $dte;
+        $model->save();
 
         return [
-            'venta' => $venta->fresh(),
+            $responseKey => $model->fresh(),
             'detalle_estado' => $estado,
         ];
     }

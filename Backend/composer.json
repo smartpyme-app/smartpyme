@@ -58,7 +58,8 @@
                 "FE CR: Factura electrónica de compras (08, FacturaElectronicaCompra v4.4)": "patches/dgt-xml-generator-fec-factura-electronica-compra.patch",
                 "FE CR: FEC — createDocument() compatible con BaseDocumentBuilder (PurchaseInvoice en unión de tipos)": "patches/dgt-xml-generator-fec-base-document-builder-return-type.patch",
                 "FE CR: FEC — CodigoActividadReceptor obligatorio en info.xml (tipo 08; minLength XSD)": "patches/dgt-xml-generator-info-fec-codigo-actividad-receptor.patch",
-                "FE CR: FEC LineaDetalle — orden XSD facturaElectronicaCompra (PrecioUnitario/MontoTotal antes de TipoTransaccion; plantilla items-fec)": "patches/dgt-xml-generator-fec-linea-detalle-xsd-orden.patch"
+                "FE CR: FEC LineaDetalle — orden XSD facturaElectronicaCompra (PrecioUnitario/MontoTotal antes de TipoTransaccion; plantilla items-fec)": "patches/dgt-xml-generator-fec-linea-detalle-xsd-orden.patch",
+                "FE CR: Nota crédito/débito — líneas como tiquete (sin TipoTransaccion por línea; XSD notaCreditoElectronica/notaDebitoElectronica v4.4)": "patches/dgt-xml-generator-nota-credito-debito-lineas-items-ticket.patch"
             }
         }
     },

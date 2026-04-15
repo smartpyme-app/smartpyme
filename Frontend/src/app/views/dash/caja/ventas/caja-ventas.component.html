@@ -310,40 +310,15 @@
     </div>
   <div class="modal-body">
         <app-alerts-hacienda [errores]="venta.errores"></app-alerts-hacienda>
-        @if (esFeCostaRica() && venta.fe_cr_intento_emision?.xml_comprobante) {
-            <details class="small text-start mb-3 border rounded p-2 bg-light" open>
-                <summary class="cursor-pointer user-select-none">XML del comprobante (Hacienda / español, sin firma)</summary>
-                <pre class="small mt-2 mb-0 p-2 bg-white rounded overflow-auto border" style="max-height: 280px; white-space: pre-wrap;">{{ venta.fe_cr_intento_emision.xml_comprobante }}</pre>
-            </details>
-        }
-        @if (esFeCostaRica() && venta.fe_cr_intento_emision?.xml_comprobante_firmado) {
-            <details class="small text-start mb-3 border rounded p-2 bg-light">
-                <summary class="cursor-pointer user-select-none">XML firmado (avanzado)</summary>
-                <pre class="small mt-2 mb-0 p-2 bg-white rounded overflow-auto border" style="max-height: 200px; white-space: pre-wrap;">{{ venta.fe_cr_intento_emision.xml_comprobante_firmado }}</pre>
-            </details>
-        }
-        @if (esFeCostaRica() && venta.fe_cr_intento_emision?.documento) {
-            <details class="small text-start mb-3 border rounded p-2 bg-light">
-                <summary class="cursor-pointer user-select-none">JSON interno del comprobante (depuración)</summary>
-                <pre class="small mt-2 mb-0 p-2 bg-white rounded overflow-auto border" style="max-height: 280px; white-space: pre-wrap;">{{ venta.fe_cr_intento_emision.documento | json }}</pre>
-            </details>
-        }
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 
             @if (esFeCostaRica() && venta.codigo_generacion) {
-                <p class="small text-muted text-break mb-2">Clave: {{ venta.codigo_generacion }}</p>
-            }
-
-            @if (esFeCostaRica() && venta.codigo_generacion) {
-                <button type="button" (click)="imprimirDTEJSON(venta)" class="mb-2 btn btn-primary btn-block">
-                    Ver JSON (comprobante)
-                </button>
                 <button type="button" (click)="imprimirDTEPDF(venta)" class="mb-2 btn btn-primary btn-block">
-                    Ver PDF (resumen)
+                    Ver PDF
                 </button>
-                <button type="button" (click)="imprimirDTEXML(venta)" class="mb-3 btn btn-outline-secondary btn-block" title="Disponible si ya consultó el estado y Hacienda devolvió XML">
-                    Ver XML respuesta Hacienda
+                <button type="button" (click)="imprimirDTEXML(venta)" class="mb-3 btn btn-outline-secondary btn-block" title="XML de respuesta de Hacienda si ya consultó el estado">
+                    Ver XML
                 </button>
             }
 
@@ -366,17 +341,6 @@
                     }
                     @if (sending) {
                         <span>Enviando...</span>
-                    }
-                </button>
-            }
-
-            @if (esFeCostaRica() && venta.codigo_generacion) {
-                <button type="button" [disabled]="saving" (click)="consultarFeCr()" class="mb-3 btn btn-outline-primary btn-block">
-                    @if (!saving) {
-                        <span>Consultar estado en Hacienda</span>
-                    }
-                    @if (saving) {
-                        <span>Consultando...</span>
                     }
                 </button>
             }
