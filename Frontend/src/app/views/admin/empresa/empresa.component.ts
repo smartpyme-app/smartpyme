@@ -12,7 +12,6 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
-import { map, distinctUntilChanged } from 'rxjs/operators';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { PipesModule } from '@pipes/pipes.module';
@@ -38,6 +38,8 @@ import { debounceTime, takeUntil } from 'rxjs/operators';
 
 })
 export class VentasComponent extends BaseCrudComponent<any> implements OnInit, OnDestroy {
+  private readonly facturacionElectronica = inject(FacturacionElectronicaService);
+
   private destroy$ = new Subject<void>();
   private searchSubject$ = new Subject<void>();
   public ventas: any = {};
@@ -169,7 +171,6 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
   constructor(
     protected override apiService: ApiService,
-    private facturacionElectronica: FacturacionElectronicaService,
     protected override alertService: AlertService,
     private modalService: BsModalService,
     private router: Router,
