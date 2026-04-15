@@ -139,8 +139,8 @@ class MHFacturaExportacion extends Model
             "correo" => $this->empresa->correo,
             "tipoItemExpor" => $this->venta->detalles()->first()->producto()->pluck('tipo')->first() == 'Servicio' ? 2 : 1,
             // "tipoItemExpor" => (int) $this->venta->tipo_item_export,
-            "recintoFiscal" => $this->venta->recinto_fiscal ?? NULL, //Punto de Aduana
-            "regimen" => $this->venta->regimen ?? NULL,
+            "recintoFiscal" => !empty($this->venta->recinto_fiscal) ? $this->venta->recinto_fiscal : NULL, //Punto de Aduana
+            "regimen" => !empty($this->venta->regimen) ? $this->venta->regimen : NULL,
         ];
     }
 
