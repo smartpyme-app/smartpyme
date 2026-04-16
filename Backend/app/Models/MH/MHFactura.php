@@ -285,7 +285,7 @@ class MHFactura extends Model
                 "tributos" => NULL,
                 "psv" => 0,
                 "noGravado" => 0,
-                "ivaItem" => floatval(number_format($this->venta->iva, 2, '.', ''))
+                "ivaItem" => floatval(number_format($this->venta->iva, 4, '.', ''))
             ]);
 
             return $detalles;
@@ -397,7 +397,7 @@ class MHFactura extends Model
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format($detalle->gravada > 0 ? round($ventaItem * 0.13 / 1.13, 2) : 0, 2, '.', ''))
+                    "ivaItem" => floatval(number_format($detalle->gravada > 0 ? round($ventaItem * 0.13 / 1.13, 4) : 0, 4, '.', ''))
                   ]);
             }
         }
