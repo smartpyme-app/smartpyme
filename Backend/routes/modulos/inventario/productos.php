@@ -110,8 +110,11 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::get('/productos/exportar/shopify',          [ProductosController::class, 'exportarShopifyTemplate']);
     //productos/importar-shopify
     Route::post('/producto/importar-shopify',          [ProductosController::class, 'importarShopify']);
-    //productos/exportar-traslado
+    //productos/exportar-traslado (GET: plantilla por IDs; POST: listado con stocks y cantidades desde la UI)
     Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
+    Route::post('/productos/exportar-traslado',         [ProductosController::class, 'exportarPlantillaTraslado']);
+    //productos/traslado-masivo/importar/vista-previa
+    Route::post('/productos/traslado-masivo/importar/vista-previa', [ProductosController::class, 'vistaPreviaImportarTrasladosMasivos']);
     //productos/traslado-masivo/importar
     Route::post('/productos/traslado-masivo/importar',          [ProductosController::class, 'importarTrasladosMasivos']);
     //productos/traslado-masivo post

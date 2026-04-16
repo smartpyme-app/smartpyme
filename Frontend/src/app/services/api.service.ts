@@ -77,6 +77,32 @@ export class ApiService {
         );
     }
 
+    /** Exportación Excel vía POST (cuerpo JSON), p. ej. listado con columnas calculadas en cliente. */
+    exportPost(url: string, body: any): Observable<Blob> {
+        return this.http.post(this.apiUrl + url, body, { responseType: 'blob' }).pipe(
+            timeout(120000),
+            catchError((error) => {
+                if (error.error instanceof Blob && error.error.type?.includes('application/json')) {
+                    return from<string>(error.error.text()).pipe(
+                        switchMap((text: string) => {
+                            try {
+                                const errJson = JSON.parse(text);
+                                return throwError(() => ({
+                                    ...error,
+                                    status: error.status,
+                                    error: { message: errJson.error || errJson.message || text }
+                                }));
+                            } catch (_) {
+                                return throwError(() => ({ ...error, error: { message: text } }));
+                            }
+                        })
+                    );
+                }
+                return throwError(() => error);
+            })
+        );
+    }
+
     exportWithUrl(url: string, filtros: any): Observable<any> {
         return this.http.get(this.apiUrl + url, { params: filtros });
     }
