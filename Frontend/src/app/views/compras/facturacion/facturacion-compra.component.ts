@@ -260,12 +260,17 @@ export class FacturacionCompraComponent implements OnInit {
                 this.loading = true;
                 this.apiService.read('compra/', params.id).subscribe(compra => {
                     this.compra = compra;
-                    // Asegurar que impuestos existe y es un array
-                    if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos)) {
-                        this.compra.impuestos = this.impuestos || [];
+                    // El API no envía catálogo de impuestos; si aún no hay filas, usar plantilla cargada desde /impuestos
+                    if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos) || this.compra.impuestos.length === 0) {
+                        this.compra.impuestos = this.impuestos?.length ? this.impuestos : [];
                     }
-                    this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
-                    this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
+                    const ivaNum = Number(this.compra.iva);
+                    const empresaCobraIva = this.apiService.auth_user().empresa.cobra_iva == 'Si';
+                    this.compra.cobrar_impuestos = ivaNum > 0
+                        || (empresaCobraIva && this.compra.tipo_operacion === 'Gravada');
+                    this.compra.cobrar_percepcion = Number(this.compra.percepcion) > 0;
+                    // Si /impuestos respondió antes que esta lectura, los montos quedaron en 0; recalcular siempre
+                    this.sumTotal();
                     this.loading = false;
                 }, error => {this.alertService.error(error); this.loading = false;});
             }
@@ -278,8 +283,8 @@ export class FacturacionCompraComponent implements OnInit {
             this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
                 this.compra = compra;
                 // Asegurar que impuestos existe y es un array, y usar los impuestos filtrados
-                if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos)) {
-                    this.compra.impuestos = this.impuestos || [];
+                if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos) || this.compra.impuestos.length === 0) {
+                    this.compra.impuestos = this.impuestos?.length ? this.impuestos : [];
                 } else {
                     // Filtrar los impuestos para mantener solo los que aplican a compras
                     this.compra.impuestos = this.compra.impuestos.filter((impuesto: any) => 
@@ -288,8 +293,12 @@ export class FacturacionCompraComponent implements OnInit {
                 }
                 this.compra.fecha = this.apiService.date();
                 this.compra.fecha_pago = this.apiService.date();
-                this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
-                this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
+                const ivaNumDup = Number(this.compra.iva);
+                const empresaCobraIvaDup = this.apiService.auth_user().empresa.cobra_iva == 'Si';
+                this.compra.cobrar_impuestos = ivaNumDup > 0
+                    || (empresaCobraIvaDup && this.compra.tipo_operacion === 'Gravada');
+                this.compra.cobrar_percepcion = Number(this.compra.percepcion) > 0;
+                this.sumTotal();
                 this.compra.id = null;
                 this.compra.tipo_documento = null;
                 this.compra.referencia = null;
@@ -308,8 +317,14 @@ export class FacturacionCompraComponent implements OnInit {
             this.facturarCotizacion = true;
             this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
                 this.compra = compra;
-                this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
-                this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
+                if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos) || this.compra.impuestos.length === 0) {
+                    this.compra.impuestos = this.impuestos?.length ? this.impuestos : [];
+                }
+                const ivaNumFc = Number(this.compra.iva);
+                const empresaCobraIvaFc = this.apiService.auth_user().empresa.cobra_iva == 'Si';
+                this.compra.cobrar_impuestos = ivaNumFc > 0
+                    || (empresaCobraIvaFc && this.compra.tipo_operacion === 'Gravada');
+                this.compra.cobrar_percepcion = Number(this.compra.percepcion) > 0;
                 this.compra.fecha = this.apiService.date();
                 this.compra.fecha_pago = this.apiService.date();
                 this.compra.tipo_documento = null;
@@ -321,6 +336,7 @@ export class FacturacionCompraComponent implements OnInit {
                 this.compra.detalles.forEach((detalle:any) => {
                     detalle.id = null;
                 });
+                this.sumTotal();
             }, error => {this.alertService.error(error); this.loading = false;});
         }
 
