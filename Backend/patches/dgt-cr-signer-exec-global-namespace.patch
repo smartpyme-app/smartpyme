@@ -1,0 +1,12 @@
+﻿diff --git a/src/Certificate.php b/src/Certificate.php
+--- a/src/Certificate.php
++++ b/src/Certificate.php
+@@ -464,7 +464,7 @@
+         $output = [];
+         $returnCode = 0;
+ 
+-        exec($command.' 2>&1', $output, $returnCode);
++        \exec($command.' 2>&1', $output, $returnCode);
+ 
+         if ($returnCode !== 0) {
+             throw new UnsupportedPkcs12Exception('OpenSSL command failed: '.implode("\n", $output));
