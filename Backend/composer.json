@@ -83,7 +83,14 @@
     "scripts": {
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php scripts/fix-dgt-cr-signer-exec.php"
+        ],
+        "post-install-cmd": [
+            "@php scripts/fix-dgt-cr-signer-exec.php"
+        ],
+        "post-update-cmd": [
+            "@php scripts/fix-dgt-cr-signer-exec.php"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
