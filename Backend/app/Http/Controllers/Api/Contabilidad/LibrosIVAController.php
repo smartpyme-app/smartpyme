@@ -318,7 +318,7 @@ class LibrosIVAController extends Controller
 
         if ($formato === 'pdf') {
             $pdf = app('dompdf.wrapper')->loadView(
-                'reportes.contabilidad.libro-consumidores',
+                'reportes.contabilidad.el_salvador.libro-consumidores',
                 [
                     'libroconsumidores' => $libroconsumidores,
                     'request' => $request,
@@ -478,7 +478,7 @@ class LibrosIVAController extends Controller
 
         if ($formato === 'pdf') {
             $pdf = app('dompdf.wrapper')->loadView(
-                'reportes.contabilidad.libro-contribuyentes',
+                'reportes.contabilidad.el_salvador.libro-contribuyentes',
                 [
                     'librocontribuyentes' => $librocontribuyentes,
                     'request' => $request,
@@ -765,7 +765,7 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.contabilidad.el_salvador.libro-compras', compact('librocompras', 'request'));
             $pdf->setPaper('US Letter', 'landscape');
 
             return $pdf->stream('libro-compras.pdf');
