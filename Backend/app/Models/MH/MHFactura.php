@@ -353,7 +353,7 @@ class MHFactura extends Model
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format(round($ventaItem * 0.13 / 1.13, 2), 2, '.', ''))
+                    "ivaItem" => floatval(number_format(round($ventaItem * 0.13 / 1.13, 2), 4, '.', ''))
                   ]);
 
                 $detalles->push([
