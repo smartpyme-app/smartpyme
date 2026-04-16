@@ -335,7 +335,7 @@ class MHFactura extends Model
                 $precioUni = round(floatval($detalle->precio), 4);
                 $cantidad = round(floatval($detalle->cantidad), 2);
                 $montoDescu = round(floatval($detalle->descuento), 2);
-                $ventaItem = round($precioUni * $cantidad - $montoDescu, 2);
+                $ventaItem = round($precioUni * $cantidad - $montoDescu, 4);
                 $detalles->push([
                     "numItem" => count($detalles) + 1,
                     "tipoItem" => $detalle->tipo_item,
