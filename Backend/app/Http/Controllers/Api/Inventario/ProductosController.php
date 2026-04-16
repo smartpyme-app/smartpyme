@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
+use App\Exports\PlantillaProductosImportExport;
 use App\Exports\ShopifyExport;
 use App\Services\Inventario\ProductoImportacionDteService;
 use App\Services\ShopifyTransformer;
@@ -582,6 +583,17 @@ class ProductosController extends Controller
         Excel::import($import, $request->file);
 
         return Response()->json($import->getRowCount(), 200);
+    }
+
+    /**
+     * Plantilla Excel para importación de productos: columnas base + una columna de stock por bodega activa (nombre y sucursal visibles en el encabezado).
+     */
+    public function plantillaImportacionProductos()
+    {
+        return Excel::download(
+            new PlantillaProductosImportExport(),
+            'plantilla_importacion_productos.xlsx'
+        );
     }
 
     public function importarWooCommerce(Request $request)

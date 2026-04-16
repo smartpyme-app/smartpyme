@@ -93,6 +93,7 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::get('/producto/ventas/{id}',          [ProductosController::class, 'ventas']);
 
     Route::post('/productos/importar',          [ProductosController::class, 'import']);
+    Route::get('/productos/plantilla-importacion', [ProductosController::class, 'plantillaImportacionProductos']);
     Route::get('/productos/exportar',          [ProductosController::class, 'export']);
     //exportar-plantilla
     Route::get('/productos/exportar-plantilla', [ProductosController::class, 'exportarPlantilla']);
