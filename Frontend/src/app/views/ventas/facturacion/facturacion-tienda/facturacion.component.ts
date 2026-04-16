@@ -578,12 +578,14 @@ export class FacturacionComponent implements OnInit {
           detalle.precio = parseFloat(producto.precio);
           detalle.costo = parseFloat(producto.costo);
           detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-          detalle.gravada = detalle.total;
+          detalle.descuento = 0;
           detalle.id_vendedor = this.venta.id_vendedor;
           detalle.exenta = 0;
           detalle.no_sujeta = 0;
           detalle.cuenta_a_terceros = 0;
           detalle.total = detalle.precio * detalle.cantidad;
+          // Base gravada para IVA: debe asignarse después de total (antes quedaba NaN y sumTotal dejaba IVA en 0)
+          detalle.gravada = detalle.total;
           this.venta.detalles.push(detalle);
           this.sumTotal();
         } else {
