@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
+use App\Exports\PlantillaProductosImportExport;
 use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
 use App\Services\Inventario\ProductoImportacionDteService;
@@ -159,7 +160,7 @@ class ProductosController extends Controller
                 }
             })
             ->orderByRaw("
-                CASE 
+                CASE
                     WHEN nombre LIKE ? THEN 1
                     ELSE 2
                 END
@@ -585,6 +586,17 @@ class ProductosController extends Controller
         return Response()->json($import->getRowCount(), 200);
     }
 
+    /**
+     * Plantilla Excel para importación de productos: columnas base + una columna de stock por bodega activa (nombre y sucursal visibles en el encabezado).
+     */
+    public function plantillaImportacionProductos()
+    {
+        return Excel::download(
+            new PlantillaProductosImportExport(),
+            'plantilla_importacion_productos.xlsx'
+        );
+    }
+
     public function importarWooCommerce(Request $request)
     {
         $request->validate([
@@ -770,8 +782,8 @@ class ProductosController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => $request->habilitar 
-                ? 'Inventario por lotes habilitado masivamente' 
+            'message' => $request->habilitar
+                ? 'Inventario por lotes habilitado masivamente'
                 : 'Inventario por lotes deshabilitado masivamente',
             'productos_actualizados' => $productosActualizados
         ]);
