@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Exports\PlantillaProductosImportExport;
+use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
 use App\Services\Inventario\ProductoImportacionDteService;
 use App\Services\ShopifyTransformer;
@@ -159,7 +160,7 @@ class ProductosController extends Controller
                 }
             })
             ->orderByRaw("
-                CASE 
+                CASE
                     WHEN nombre LIKE ? THEN 1
                     ELSE 2
                 END
@@ -781,8 +782,8 @@ class ProductosController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => $request->habilitar 
-                ? 'Inventario por lotes habilitado masivamente' 
+            'message' => $request->habilitar
+                ? 'Inventario por lotes habilitado masivamente'
                 : 'Inventario por lotes deshabilitado masivamente',
             'productos_actualizados' => $productosActualizados
         ]);
@@ -831,14 +832,38 @@ class ProductosController extends Controller
 
     public function exportarPlantillaTraslado(Request $request)
     {
-        $request->request->add(['productos_ids' => explode(',', $request->productos_ids)]);
+        if ($request->isMethod('post')) {
+            $lineas = $request->input('lineas');
+            if (!is_array($lineas)) {
+                return response()->json(['error' => 'Se esperaba un arreglo «lineas» con el listado a exportar.'], 422);
+            }
+            if (count($lineas) === 0) {
+                return response()->json(['error' => 'No hay líneas para exportar.'], 422);
+            }
+            if (count($lineas) > 5000) {
+                return response()->json(['error' => 'El listado supera el máximo permitido para exportar (5000 líneas).'], 422);
+            }
+
+            return Excel::download(
+                new TrasladoLineasUiExport($lineas),
+                'traslado_inventario_' . date('Ymd_His') . '.xlsx'
+            );
+        }
+
+        $raw = $request->input('productos_ids');
+        if ($raw === null || $raw === '') {
+            $productosIds = [];
+        } elseif (is_array($raw)) {
+            $productosIds = array_values(array_filter(array_map('intval', $raw)));
+        } else {
+            $productosIds = array_values(array_filter(array_map('intval', explode(',', (string) $raw))));
+        }
+
         $filtros = [
             'id_bodega_origen' => $request->id_bodega_origen,
             'id_bodega_destino' => $request->id_bodega_destino,
-            'productos_ids' => $request->productos_ids
+            'productos_ids' => $productosIds,
         ];
-
-        Log::info($filtros);
 
         return Excel::download(
             new PlantillaInventarioMasivoExport($filtros),
@@ -1027,6 +1052,43 @@ class ProductosController extends Controller
         }
     }
 
+    public function vistaPreviaImportarTrasladosMasivos(Request $request)
+    {
+        $request->validate([
+            'archivo' => 'required|file',
+            'concepto' => 'required|string',
+            'id_bodega_origen' => 'required|numeric',
+            'id_bodega_destino' => 'required|numeric|different:id_bodega_origen',
+        ]);
+
+        $importador = new TrasladosImport(
+            $request->concepto,
+            true,
+            $request->id_bodega_origen,
+            $request->id_bodega_destino
+        );
+        Excel::import($importador, $request->file('archivo'));
+
+        $filas = array_values(array_filter(
+            $importador->getFilasVistaPrevia(),
+            function ($f) {
+                return ($f['error'] ?? null) !== 'Fila vacía o sin datos.';
+            }
+        ));
+
+        $filasOk = count(array_filter($filas, function ($f) {
+            return !empty($f['ok']);
+        }));
+        $filasError = count($filas) - $filasOk;
+
+        return Response()->json([
+            'filas' => $filas,
+            'total_filas' => count($filas),
+            'filas_ok' => $filasOk,
+            'filas_error' => $filasError,
+        ], 200);
+    }
+
     public function importarTrasladosMasivos(Request $request)
     {
         $request->validate([
@@ -1036,7 +1098,12 @@ class ProductosController extends Controller
             'id_bodega_destino' => 'required|numeric|different:id_bodega_origen',
         ]);
 
-        $importador = new TrasladosImport($request->concepto);
+        $importador = new TrasladosImport(
+            $request->concepto,
+            false,
+            $request->id_bodega_origen,
+            $request->id_bodega_destino
+        );
         Excel::import($importador, $request->file('archivo'));
 
 

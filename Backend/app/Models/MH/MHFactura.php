@@ -285,7 +285,7 @@ class MHFactura extends Model
                 "tributos" => NULL,
                 "psv" => 0,
                 "noGravado" => 0,
-                "ivaItem" => floatval(number_format($this->venta->iva, 2, '.', ''))
+                "ivaItem" => floatval(number_format($this->venta->iva, 4, '.', ''))
             ]);
 
             return $detalles;
@@ -335,7 +335,7 @@ class MHFactura extends Model
                 $precioUni = round(floatval($detalle->precio), 4);
                 $cantidad = round(floatval($detalle->cantidad), 2);
                 $montoDescu = round(floatval($detalle->descuento), 2);
-                $ventaItem = round($precioUni * $cantidad - $montoDescu, 2);
+                $ventaItem = round($precioUni * $cantidad - $montoDescu, 4);
                 $detalles->push([
                     "numItem" => count($detalles) + 1,
                     "tipoItem" => $detalle->tipo_item,
@@ -353,7 +353,7 @@ class MHFactura extends Model
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format(round($ventaItem * 0.13 / 1.13, 2), 2, '.', ''))
+                    "ivaItem" => floatval(number_format(round($ventaItem * 0.13 / 1.13, 4), 4, '.', ''))
                   ]);
 
                 $detalles->push([
@@ -397,7 +397,7 @@ class MHFactura extends Model
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format($detalle->gravada > 0 ? round($ventaItem * 0.13 / 1.13, 2) : 0, 2, '.', ''))
+                    "ivaItem" => floatval(number_format($detalle->gravada > 0 ? round($ventaItem * 0.13 / 1.13, 4) : 0, 4, '.', ''))
                   ]);
             }
         }
