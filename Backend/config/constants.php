@@ -19,7 +19,7 @@ return [
     'TIPO_PAGO_AUTOMATICO' => 'Automatico',
     'TIPO_PAGO_MANUAL' => 'Manual',
 
-    // Días de mora con acceso (1..N); el bloqueo aplica desde el día N+1 (p. ej. N=3 → sin acceso el 4.º día).
+    // Días tras el vencimiento con acceso (1..N); suspensión desde el día N+1 si siguen saldos pendientes (p. ej. N=3).
     'DIAS_PRORROGA_SUSCRIPCION' => 3,
     
     'ESTADO_SUSCRIPCION_ACTIVO' => 'Activo',

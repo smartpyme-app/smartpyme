@@ -7,7 +7,6 @@ use App\Models\Suscripcion;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use App\Notifications\SuscripcionNotification;
 
 class VerificarSuscripcion extends Command
 {
@@ -139,7 +138,7 @@ class VerificarSuscripcion extends Command
             return;
         }
 
-        // Prórroga = N días con acceso (morosidad días 1..N); bloqueo desde el día N+1 (p. ej. N=3 → bloqueo al 4.º día).
+        // Prórroga = N días con acceso; suspensión desde el día N+1 si siguen saldos pendientes con el sistema.
         if ($diasVencidos > $diasProrroga) {
             $this->desactivarCuenta($suscripcion);
 
@@ -226,10 +225,10 @@ class VerificarSuscripcion extends Command
         if (!$usuario) return;
 
         $mensajes = [
-            'primera_alerta' => 'Tu suscripción ha vencido. Por favor, realiza el pago para mantener el servicio activo.',
-            'alerta_critica' => '¡IMPORTANTE! Tu cuenta será desactivada pronto por falta de pago.',
-            'desactivacion' => 'Tu cuenta ha sido desactivada por falta de pago. Contacta con soporte para reactivarla.',
-            'cancelado' => 'Tu cuenta ha sido cancelada por falta de pago. Contacta con soporte para reactivarla.'
+            'primera_alerta' => 'Tu suscripción requiere atención: hay saldos pendientes con el sistema. Regulariza tu situación para mantener el servicio activo.',
+            'alerta_critica' => 'Importante: si persisten saldos pendientes con el sistema, tu acceso podría verse limitado pronto.',
+            'desactivacion' => 'Tu cuenta está suspendida por saldos pendientes con el sistema. Contacta a soporte para regularizar tu situación.',
+            'cancelado' => 'Tu suscripción fue cancelada por saldos pendientes con el sistema. Contacta a soporte para revisar opciones.'
         ];
 
         Log::channel('suscripciones')->info("Enviando notificación de vencimiento para suscripción {$suscripcion->id}: {$mensajes[$tipo]}");

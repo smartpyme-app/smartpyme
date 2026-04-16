@@ -38,7 +38,7 @@ export class SubscriptionGuard implements CanActivate {
       return false;
     }
 
-    // Tras el vencimiento: acceso solo con mora días 1..N; desde el día N+1 sin pago se redirige al paywall.
+    // Tras el vencimiento: acceso solo en período de gracia (días 1..N); desde el día N+1 con saldos pendientes se redirige al paywall.
     if (estadoSuscripcion === 'activo' && userData.dias_faltantes < 0 && Math.abs(userData.dias_faltantes) > AppConstants.DIAS_PRORROGA_SUSCRIPCION) {
       this.router.navigate(['/paywall']);
       return false;

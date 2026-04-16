@@ -1,6 +1,6 @@
 export const AppConstants = {
 
-    /** Días de mora con acceso (1..N); bloqueo desde |días| > N (debe coincidir con Backend config/constants.php). */
+    /** Días tras el vencimiento con acceso (1..N); suspensión desde |días| > N (coincidir con Backend config/constants.php). */
     DIAS_PRORROGA_SUSCRIPCION: 3,
 
     ESTADOS_SUSCRIPCION: {
