@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router, CanActivate } from '@angular/router';
 import { ApiService } from '@services/api.service';
+import { AppConstants } from '../constants/app.constants';
 
 @Injectable({
   providedIn: 'root'
@@ -37,8 +38,8 @@ export class SubscriptionGuard implements CanActivate {
       return false;
     }
 
-    // Verificar si han pasado más de 10 días desde el vencimiento
-    if (estadoSuscripcion === 'activo' && userData.dias_faltantes < 0 && Math.abs(userData.dias_faltantes) >= 10) {
+    // Tras el vencimiento: acceso solo con mora días 1..N; desde el día N+1 sin pago se redirige al paywall.
+    if (estadoSuscripcion === 'activo' && userData.dias_faltantes < 0 && Math.abs(userData.dias_faltantes) > AppConstants.DIAS_PRORROGA_SUSCRIPCION) {
       this.router.navigate(['/paywall']);
       return false;
     }

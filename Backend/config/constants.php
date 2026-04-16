@@ -19,7 +19,8 @@ return [
     'TIPO_PAGO_AUTOMATICO' => 'Automatico',
     'TIPO_PAGO_MANUAL' => 'Manual',
 
-    'DIAS_PRORROGA_SUSCRIPCION' => 10,
+    // Días de mora con acceso (1..N); el bloqueo aplica desde el día N+1 (p. ej. N=3 → sin acceso el 4.º día).
+    'DIAS_PRORROGA_SUSCRIPCION' => 3,
     
     'ESTADO_SUSCRIPCION_ACTIVO' => 'Activo',
     'ESTADO_SUSCRIPCION_INACTIVO' => 'Inactivo',

@@ -18,6 +18,9 @@ export class LayoutComponent {
   public visibleAlertMessage: boolean = false;
 
   readonly ESTADOS_SUSCRIPCION = AppConstants.ESTADOS_SUSCRIPCION;
+  readonly DIAS_PRORROGA_SUSCRIPCION = AppConstants.DIAS_PRORROGA_SUSCRIPCION;
+  /** Primer día sin acceso por mora = prórroga + 1 (p. ej. 3 días de gracia → bloqueo el 4.º día). */
+  readonly DIAS_MOROSIDAD_HASTA_BLOQUEO = AppConstants.DIAS_PRORROGA_SUSCRIPCION + 1;
 
   constructor(
     public apiService: ApiService,
@@ -189,7 +192,7 @@ getMensajeSuscripcion(): { mensaje: string; tipo: string } {
 
   // Si los días son negativos, significa que ya pasó el tiempo
   const diasVencidos = Math.abs(diasRestantes);
-  if (diasVencidos >= 10) {
+  if (diasVencidos > this.DIAS_PRORROGA_SUSCRIPCION) {
     if (this.isAdmin()) {
       return {
         mensaje: 'Tu cuenta ha sido desactivada por falta de pago.',

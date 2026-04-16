@@ -143,9 +143,9 @@
           <span class="badge text-dark py-2 cursor-pointer badge-suscripcion" (click)="dismissAlert()">Entendido</span>
         </div>
 
-        <!-- Suscripción en período de gracia (1-9 días después de vencer) -->
+        <!-- Período de gracia: mora días 1..N (N = DIAS_PRORROGA_SUSCRIPCION); día N+1 ya no aplica este banner -->
         <div
-          *ngIf="usuario.dias_faltantes < 0 && usuario.dias_faltantes > -10 && visibleAlertMessage"
+          *ngIf="usuario.dias_faltantes < 0 && usuario.dias_faltantes > -DIAS_MOROSIDAD_HASTA_BLOQUEO && visibleAlertMessage"
           class="alert alert-danger text-dark rounded-0 m-0 p-2 text-center d-flex justify-content-between align-items-center"
         >
           <!-- Contenido para administradores -->
@@ -153,7 +153,7 @@
             <div class="text-dark text-center w-100">
               <i class="fas fa-exclamation-triangle me-2"></i>
               Tu cuenta será desactivada en
-              {{ 10 + usuario.dias_faltantes }} días si no renuevas tu
+              {{ DIAS_MOROSIDAD_HASTA_BLOQUEO + usuario.dias_faltantes }} días si no renuevas tu
               suscripción.
               <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark">Renueva inmediatamente</a>
             </div>
@@ -163,7 +163,7 @@
             <span class="text-decoration-none text-dark d-block text-center">
               <i class="fas fa-exclamation-triangle me-2"></i>
               La cuenta de la empresa será desactivada en
-              {{ 10 + usuario.dias_faltantes }} días.
+              {{ DIAS_MOROSIDAD_HASTA_BLOQUEO + usuario.dias_faltantes }} días.
               <span class="fw-bold"
                 >Contacta al administrador con urgencia</span
               >
@@ -172,9 +172,9 @@
           <span class="badge text-dark py-2 cursor-pointer badge-suscripcion" (click)="dismissAlert()">Entendido</span>
         </div>
 
-        <!-- Cuenta desactivada (10+ días sin pago) -->
+        <!-- Sin acceso por mora: día N+1 en adelante (DIAS_MOROSIDAD_HASTA_BLOQUEO) -->
         <div
-          *ngIf="usuario.dias_faltantes <= -10 && visibleAlertMessage"
+          *ngIf="usuario.dias_faltantes <= -DIAS_MOROSIDAD_HASTA_BLOQUEO && visibleAlertMessage"
           class="alert bg-dark text-white rounded-0 m-0 p-2 text-center position-relative"
         >
           <!-- Contenido para administradores -->
