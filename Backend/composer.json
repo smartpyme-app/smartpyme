@@ -64,7 +64,8 @@
                 "FE CR: FEC — CodigoActividadReceptor obligatorio en info.xml (tipo 08; minLength XSD)": "patches/dgt-xml-generator-info-fec-codigo-actividad-receptor.patch",
                 "FE CR: FEC LineaDetalle — orden XSD facturaElectronicaCompra (PrecioUnitario/MontoTotal antes de TipoTransaccion; plantilla items-fec)": "patches/dgt-xml-generator-fec-linea-detalle-xsd-orden.patch",
                 "FE CR: Nota crédito/débito — líneas como tiquete (sin TipoTransaccion por línea; XSD notaCreditoElectronica/notaDebitoElectronica v4.4)": "patches/dgt-xml-generator-nota-credito-debito-lineas-items-ticket.patch",
-                "FE CR: taxes.xml en líneas — include only (items-ticket / items-fec; aísla contexto)": "patches/dgt-xml-generator-taxes-include-only-items-ticket-y-fec.patch"
+                "FE CR: taxes.xml en líneas — include only (items-ticket / items-fec; aísla contexto)": "patches/dgt-xml-generator-taxes-include-only-items-ticket-y-fec.patch",
+                "FE CR: TotalDesgloseImpuesto — sin Tarifa si node=TotalDesgloseImpuesto (XSD v4.4; además del flag)": "patches/dgt-xml-generator-taxes-total-desglose-sin-tarifa-or-node.patch"
             }
         }
     },

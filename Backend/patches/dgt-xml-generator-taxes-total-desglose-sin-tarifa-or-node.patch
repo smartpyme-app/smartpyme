@@ -1,0 +1,14 @@
+diff --git a/src/Views/Components/taxes.xml.twig b/src/Views/Components/taxes.xml.twig
+--- a/src/Views/Components/taxes.xml.twig
++++ b/src/Views/Components/taxes.xml.twig
+@@ -10,8 +10,8 @@
+   {% if impIvaType %}
+   <CodigoTarifaIVA>{{ impIvaType.code }}</CodigoTarifaIVA>
+   {% endif %}
+-  {# TotalDesgloseImpuesto (resumen): XSD sin Tarifa; summary pasa fe_cr_es_total_desglose + include only. #}
+-  {% if fe_cr_es_total_desglose|default(false) %}
++  {# TotalDesgloseImpuesto v4.4: sin Tarifa en resumen (sí en Impuesto de línea). OR node por despliegues sin flag. #}
++  {% if fe_cr_es_total_desglose|default(false) or node == 'TotalDesgloseImpuesto' %}
+   <{{ nodeAmount }}>{{ (tax.amount|default(0))|number_format(2, '.', '') }}</{{ nodeAmount }}>
+   {% else %}
+   {% if tax.rate %}
