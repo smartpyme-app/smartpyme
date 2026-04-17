@@ -51,8 +51,20 @@ return [
     'TIPO_USUARIO_VENDEDOR' => 'Vendedor',
     'TIPO_USUARIO_ALMACEN' => 'Almacén',
 
-    'MAIL_CC_ADDRESS_1' => 'gabrielaq@smartpyme.sv',
+    'MAIL_CC_ADDRESS_1' => 'jennifer.d@smartpyme.sv',
     'MAIL_CC_ADDRESS_2' => 'contact@smartpyme.sv',
+
+    /** Destinatarios de reportes internos de suscripciones (equipo SmartPyme). */
+    'MAIL_EQUIPO_REPORTES_SUSCRIPCION' => [
+        'jose.e@smartpyme.sv',
+        // 'jennifer.d@smartpyme.sv',
+        // 'karla.b@smartpyme.sv',
+        // 'alejandro.a@smartpyme.sv',
+    ],
+
+    /** Reporte mensual de flujo de caja (Excel): entradas esperadas por quincena. */
+    'MAIL_REPORTE_FLUJO_CAJA_MENSUAL' => "alejandro.a@smartpyme.sv",
+    // 'alejandro.a@smartpyme.sv',
 
     'FRECUENCIA_PAGO_MENSUAL' => 'Mensual',
     'FRECUENCIA_PAGO_TRIMESTRAL' => 'Trimestral',
