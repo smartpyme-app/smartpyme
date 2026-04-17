@@ -207,6 +207,25 @@ export class SharedDataService {
   }
 
   /**
+   * Claves de listas de negocio cacheadas en memoria (correlativos, terceros, catálogos operativos).
+   * Tras POST/PUT/PATCH/DELETE se invalidan todas para forzar datos al día.
+   */
+  private static readonly OPERATIONAL_LIST_CACHE_KEYS: readonly string[] = [
+    'sucursales',
+    'formasDePago',
+    'documentos',
+    'documentosPorNombre',
+    'usuarios',
+    'proyectos',
+    'categorias',
+    'marcas',
+    'clientes',
+    'proveedores',
+    'canales',
+    'bodegas'
+  ];
+
+  /**
    * Invalida el cache de un tipo específico de datos
    */
   invalidateCache(cacheKey: string): void {
@@ -233,6 +252,13 @@ export class SharedDataService {
     if (endpoint) {
       this.cacheService.invalidatePattern(endpoint);
     }
+  }
+
+  /**
+   * Invalida todas las listas operativas en memoria (próximo get* hace GET de red).
+   */
+  invalidateOperationalListCaches(): void {
+    SharedDataService.OPERATIONAL_LIST_CACHE_KEYS.forEach(key => this.invalidateCache(key));
   }
 
   /**

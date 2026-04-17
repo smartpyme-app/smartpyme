@@ -317,8 +317,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
         // Al editar cotización/venta no sobrescribir impuestos para no volver a agregarlos
         const esEdicion = !!this.route.snapshot.paramMap.get('id');
-        if (!esEdicion && (!this.venta.impuestos || this.venta.iva == 0)) {
-          this.venta.impuestos = this.impuestos;
+        const sinImpuestosEnVenta =
+          !this.venta.impuestos ||
+          !Array.isArray(this.venta.impuestos) ||
+          this.venta.impuestos.length === 0;
+        if (!esEdicion && sinImpuestosEnVenta && this.impuestos.length > 0) {
+          this.venta.impuestos = [...this.impuestos];
           this.sumTotal();
         }
         this.cdr.markForCheck();
@@ -346,43 +350,52 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public cargarDocumentos() {
     this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe(
       (documentos) => {
-        this.documentos = documentos;
-        this.documentos = this.documentos.filter(
+        let list = (documentos || []).filter(
           (doc: any) => doc.id_sucursal == this.venta.id_sucursal
         );
-        if (!this.venta.id_documento && !this.venta.correlativo) {
-          let documento = this.documentos.find(
-            (x: any) => x.predeterminado == 1
-          );
-          if (documento) {
-            this.venta.id_documento = documento.id;
-            this.venta.correlativo = documento.correlativo;
-          } else {
-            this.venta.id_documento = documentos[0].id;
-            this.venta.correlativo = documentos[0].correlativo;
-          }
 
-          if (this.venta.cotizacion == 1) {
-            this.documentos = this.documentos;
-            this.documentos = this.documentos.filter(
-              (x: any) => x.nombre == 'Cotización'
-            );
-            let documento = this.documentos.find(
-              (x: any) => x.nombre == 'Cotización'
-            );
-            if (documento) {
-              this.venta.id_documento = documento.id;
-              this.venta.correlativo = documento.correlativo;
-            }
-            //si no existe el documento de cotizacion decirle que debe crearlo
-            if (!documento) {
-              this.alertService.error('Debe crear un documento de cotización');
-            }
+        if (this.venta.cotizacion == 1) {
+          list = list.filter((x: any) => x.nombre == 'Cotización');
+          if (list.length === 0) {
+            this.alertService.error('Debe crear un documento de cotización');
+          }
+        } else {
+          list = list.filter(
+            (doc: any) =>
+              doc.nombre === 'Factura' ||
+              doc.nombre === 'Crédito fiscal' ||
+              doc.nombre === 'Factura de exportación' ||
+              doc.nombre === 'Factura comercial' ||
+              doc.nombre === 'Ticket' ||
+              doc.nombre === 'Recibo' ||
+              doc.nombre === 'Sujeto excluido'
+          );
+        }
+
+        this.documentos = list;
+
+        const docActual = this.documentos.find(
+          (x: any) => x.id == this.venta.id_documento
+        );
+
+        if (!docActual) {
+          const pred = this.documentos.find((x: any) => x.predeterminado == 1);
+          if (pred) {
+            this.setDocumento(pred.id);
+          } else if (this.documentos.length > 0) {
+            this.setDocumento(this.documentos[0].id);
           } else {
-            this.documentos = this.documentos.filter(
-              (doc: any) =>
-                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Factura comercial' || doc.nombre === 'Ticket' || doc.nombre === 'Recibo' || doc.nombre === 'Sujeto excluido'
-            );
+            this.venta.id_documento = null;
+            this.venta.correlativo = null;
+            this.venta.nombre_documento = undefined;
+          }
+        } else {
+          this.venta.nombre_documento = docActual.nombre;
+          if (
+            this.venta.correlativo == null ||
+            this.venta.correlativo === ''
+          ) {
+            this.venta.correlativo = docActual.correlativo;
           }
         }
         this.cdr.markForCheck();
@@ -901,16 +914,26 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   public sumTotal() {
-    if (
-      this.venta.cobrar_impuestos &&
-      (!this.venta.impuestos || this.venta.impuestos.length === 0)
-    ) {
-      this.alertService.warning(
-        'Configuración requerida',
-        'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
-      );
-      this.venta.cobrar_impuestos = false;
-      return;
+    if (this.venta.cobrar_impuestos) {
+      const sinImpuestosEnVenta =
+        !this.venta.impuestos ||
+        !Array.isArray(this.venta.impuestos) ||
+        this.venta.impuestos.length === 0;
+      if (sinImpuestosEnVenta && this.impuestos?.length > 0) {
+        this.venta.impuestos = [...this.impuestos];
+      }
+      if (
+        !this.venta.impuestos ||
+        !Array.isArray(this.venta.impuestos) ||
+        this.venta.impuestos.length === 0
+      ) {
+        this.alertService.warning(
+          'Configuración requerida',
+          'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA (con “Aplica en ventas” activo).'
+        );
+        this.venta.cobrar_impuestos = false;
+        return;
+      }
     }
 
     // Asegurar que detalles existe y es un array
@@ -1297,7 +1320,19 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     }
 
     public setDocumento(id_documento: any) {
-        let documento = this.documentos.find((x: any) => x.id == id_documento);
+        if (
+          id_documento === undefined ||
+          id_documento === null ||
+          id_documento === ''
+        ) {
+          return;
+        }
+        const documento = this.documentos.find(
+          (x: any) => x.id == id_documento
+        );
+        if (!documento) {
+          return;
+        }
         this.venta.nombre_documento = documento.nombre;
         this.venta.id_documento = documento.id;
         this.venta.correlativo = documento.correlativo;
@@ -1473,14 +1508,24 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       return;
     }
 
-    if (
-      this.venta.cobrar_impuestos &&
-      (!this.venta.impuestos || this.venta.impuestos.length === 0)
-    ) {
-      this.alertService.error(
-        'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
-      );
-      return;
+    if (this.venta.cobrar_impuestos) {
+      const sinImpuestosEnVenta =
+        !this.venta.impuestos ||
+        !Array.isArray(this.venta.impuestos) ||
+        this.venta.impuestos.length === 0;
+      if (sinImpuestosEnVenta && this.impuestos?.length > 0) {
+        this.venta.impuestos = [...this.impuestos];
+      }
+      if (
+        !this.venta.impuestos ||
+        !Array.isArray(this.venta.impuestos) ||
+        this.venta.impuestos.length === 0
+      ) {
+        this.alertService.error(
+          'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA (con “Aplica en ventas” activo).'
+        );
+        return;
+      }
     }
     Swal.fire({
       title:

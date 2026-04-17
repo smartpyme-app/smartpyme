@@ -30,8 +30,8 @@
         </div>
         <div class="form-group col-md-4 col-lg-2">
             <label for="id_documento">Documento</label>
-            <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
-                <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+            <select name="id_documento" [(ngModel)]="venta.id_documento" (ngModelChange)="setDocumento($event)" class="form-select">
+                <option *ngFor="let documento of documentos" [ngValue]="documento.id">{{ documento.nombre }}</option>
             </select>
         </div>
         <div class="form-group col-md-4 col-lg-2">
