@@ -11,6 +11,7 @@ use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use DazzaDev\DgtCr\Client;
 use DOMDocument;
+use DOMXPath;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use ReflectionClass;
@@ -162,6 +163,7 @@ final class CostaRicaFeEmitService
 
         $client->setDocumentType('credit-note');
         $client->setDocumentData($data);
+        $this->sanearXmlTotalDesgloseImpuestoEnDocumentoDgt($client);
 
         try {
             $envio = $client->sendDocument();
@@ -327,6 +329,7 @@ final class CostaRicaFeEmitService
         $this->configurarClienteEmisorReceptor($client, $data);
         $client->setDocumentType('debit-note');
         $client->setDocumentData($data);
+        $this->sanearXmlTotalDesgloseImpuestoEnDocumentoDgt($client);
 
         try {
             $envio = $client->sendDocument();
@@ -452,6 +455,7 @@ final class CostaRicaFeEmitService
 
         $client->setDocumentType($dgtType);
         $client->setDocumentData($data);
+        $this->sanearXmlTotalDesgloseImpuestoEnDocumentoDgt($client);
 
         try {
             $envio = $client->sendDocument();
@@ -528,6 +532,7 @@ final class CostaRicaFeEmitService
 
         $client->setDocumentType($dgtType);
         $client->setDocumentData($data);
+        $this->sanearXmlTotalDesgloseImpuestoEnDocumentoDgt($client);
 
         try {
             $envio = $client->sendDocument();
@@ -602,6 +607,7 @@ final class CostaRicaFeEmitService
 
         $client->setDocumentType($dgtType);
         $client->setDocumentData($data);
+        $this->sanearXmlTotalDesgloseImpuestoEnDocumentoDgt($client);
 
         try {
             $envio = $client->sendDocument();
@@ -755,6 +761,48 @@ final class CostaRicaFeEmitService
     private function soloDigitos(string $s): string
     {
         return preg_replace('/\D/', '', $s) ?? '';
+    }
+
+    /**
+     * XSD v4.4: dentro de {@code TotalDesgloseImpuesto} no va {@code Tarifa} (solo en {@code Impuesto} por línea).
+     * El generador Twig/parches en algunos despliegues aún la emite; se elimina en el DOM antes de firmar/enviar.
+     */
+    private function sanearXmlTotalDesgloseImpuestoEnDocumentoDgt(Client $client): void
+    {
+        try {
+            $ref = new ReflectionClass($client);
+            if (! $ref->hasProperty('document')) {
+                return;
+            }
+            $prop = $ref->getProperty('document');
+            $prop->setAccessible(true);
+            $document = $prop->getValue($client);
+            if ($document === null || ! is_object($document) || ! method_exists($document, 'getDocumentXml')) {
+                return;
+            }
+            $dom = $document->getDocumentXml();
+            if (! $dom instanceof DOMDocument || $dom->documentElement === null) {
+                return;
+            }
+            $xpath = new DOMXPath($dom);
+            $nodes = $xpath->query('//*[local-name()="TotalDesgloseImpuesto"]');
+            if ($nodes === false) {
+                return;
+            }
+            foreach ($nodes as $tdi) {
+                $toRemove = [];
+                foreach ($tdi->childNodes as $child) {
+                    if ($child->nodeType === XML_ELEMENT_NODE && $child->localName === 'Tarifa') {
+                        $toRemove[] = $child;
+                    }
+                }
+                foreach ($toRemove as $n) {
+                    $tdi->removeChild($n);
+                }
+            }
+        } catch (Throwable) {
+            // No interrumpir emisión si el saneo falla; Hacienda seguirá validando.
+        }
     }
 
     /**
