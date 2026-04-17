@@ -24,6 +24,7 @@ class Suscripcion extends Model
         'estado_ultimo_pago',
         'fecha_ultimo_pago',
         'fecha_proximo_pago',
+        'acceso_temporal_hasta',
         'fin_periodo_prueba',
         'fecha_cancelacion',
         'motivo_cancelacion',
@@ -39,6 +40,7 @@ class Suscripcion extends Model
     protected $dates = [
         'fecha_ultimo_pago',
         'fecha_proximo_pago',
+        'acceso_temporal_hasta',
         'fin_periodo_prueba',
         'fecha_cancelacion',
         'ultimo_intento_cobro',
@@ -167,7 +169,16 @@ class Suscripcion extends Model
         $diasFaltantes = $this->calcularDiasFaltantesPrueba();
         return $diasFaltantes;
     }
-    
 
+    /**
+     * Acceso de excepción concedido por administración (vigente ahora).
+     */
+    public function accesoTemporalVigente(): bool
+    {
+        if (!$this->acceso_temporal_hasta) {
+            return false;
+        }
 
+        return Carbon::parse($this->acceso_temporal_hasta)->greaterThan(Carbon::now());
+    }
 }

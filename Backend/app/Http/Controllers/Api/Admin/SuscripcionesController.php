@@ -9,6 +9,7 @@ use App\Models\OrdenPago;
 use App\Models\Plan;
 use App\Models\Suscripcion;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -296,7 +297,6 @@ class SuscripcionesController extends Controller
             $validated = $request->validate([
                 'id' => 'required|exists:suscripciones,id',
                 'usuario_id' => 'required|exists:users,id',
-                'fecha_proximo_pago' => 'required|date',
                 'fin_periodo_prueba' => 'required|date',
                 'estado' => 'required|string',
                 'monto' => 'required|numeric',
@@ -326,8 +326,8 @@ class SuscripcionesController extends Controller
                 $empresa->save();
             }
 
+            // fecha_proximo_pago no se edita aquí: solo vía «Pago recibido» o integraciones.
             $datosActualizacion = [
-                'fecha_proximo_pago' => $validated['fecha_proximo_pago'],
                 'estado_ultimo_pago' => $request->input('estado_ultimo_pago'),
                 'estado' => $validated['estado'],
                 'usuario_id' => $validated['usuario_id'],
@@ -376,6 +376,122 @@ class SuscripcionesController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar la suscripción'
+            ], 500);
+        }
+    }
+
+    /**
+     * Registra pago manual (transferencia/efectivo): próxima fecha = hoy + N días (sin editar día a día en formulario).
+     */
+    public function registrarPagoRecibido(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'id' => 'required|exists:suscripciones,id',
+            ]);
+            $suscripcion = Suscripcion::findOrFail($validated['id']);
+            $dias = max(1, (int) config('constants.DIAS_PAGO_RECIBIDO_PROXIMO_CICLO', 30));
+
+            $suscripcion->fecha_proximo_pago = Carbon::now()->addDays($dias);
+            $suscripcion->fecha_ultimo_pago = Carbon::now();
+            $suscripcion->estado_ultimo_pago = config('constants.ESTADO_ORDEN_PAGO_COMPLETADO');
+            $suscripcion->acceso_temporal_hasta = null;
+            $suscripcion->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pago registrado. Próxima fecha de cobro actualizada.',
+                'data' => $suscripcion->fresh()->load('plan', 'empresa'),
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en registrarPagoRecibido: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo registrar el pago',
+            ], 500);
+        }
+    }
+
+    /**
+     * Extiende acceso a la plataforma sin mover fecha_proximo_pago (suma N días desde hoy o desde el fin del acceso temporal vigente).
+     */
+    public function concederAccesoTemporal(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'id' => 'required|exists:suscripciones,id',
+            ]);
+            $suscripcion = Suscripcion::findOrFail($validated['id']);
+            $dias = max(1, (int) config('constants.DIAS_ACCESO_TEMPORAL_ADMIN', 2));
+
+            $base = Carbon::now();
+            if ($suscripcion->acceso_temporal_hasta) {
+                $fin = Carbon::parse($suscripcion->acceso_temporal_hasta);
+                if ($fin->greaterThan($base)) {
+                    $base = $fin;
+                }
+            }
+            $suscripcion->acceso_temporal_hasta = $base->copy()->addDays($dias);
+            $suscripcion->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Acceso temporal concedido.',
+                'data' => $suscripcion->fresh()->load('plan', 'empresa'),
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en concederAccesoTemporal: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo conceder el acceso temporal',
+            ], 500);
+        }
+    }
+
+    /**
+     * Quita el acceso temporal de excepción (vuelve a aplicar solo la regla de mora / paywall).
+     */
+    public function cancelarAccesoTemporal(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'id' => 'required|exists:suscripciones,id',
+            ]);
+            $suscripcion = Suscripcion::findOrFail($validated['id']);
+            $suscripcion->acceso_temporal_hasta = null;
+            $suscripcion->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Acceso temporal cancelado.',
+                'data' => $suscripcion->fresh()->load('plan', 'empresa'),
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en cancelarAccesoTemporal: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo cancelar el acceso temporal',
             ], 500);
         }
     }

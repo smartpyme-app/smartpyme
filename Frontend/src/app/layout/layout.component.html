@@ -67,6 +67,31 @@
           usuario.tiene_suscripcion
         "
       >
+        <!-- Acceso temporal concedido por admin: ya aplicaría suspensión por mora, pero sigue vigente la excepción -->
+        <div
+          *ngIf="bannerAccesoTemporalActivo() && visibleAlertMessage"
+          class="alert alert-info text-dark rounded-0 m-0 p-2 text-center position-relative"
+        >
+          <ng-container *ngIf="isAdmin()">
+            <div class="text-dark text-center w-100">
+              <i class="fas fa-unlock-alt me-2"></i>
+              Acceso temporal activo hasta el
+              {{ usuario.acceso_temporal_hasta | date : "dd/MM/yyyy HH:mm" }}.
+              Regulariza tus saldos pendientes con el sistema antes de que expire.
+              <a href="/suscripcion" class="fw-bold text-decoration-none text-dark ms-1">Ver suscripción</a>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="!isAdmin()">
+            <span class="text-decoration-none text-dark d-block text-center">
+              <i class="fas fa-unlock-alt me-2"></i>
+              La empresa tiene acceso temporal hasta el
+              {{ usuario.acceso_temporal_hasta | date : "dd/MM/yyyy" }}.
+              <span class="fw-bold">Contacta al administrador para regularizar el pago.</span>
+            </span>
+          </ng-container>
+          <span class="badge text-dark py-2 cursor-pointer badge-suscripcion" (click)="dismissAlert()">Entendido</span>
+        </div>
+
         <!-- Acceso suspendido por saldos pendientes (día 4+): admin y usuarios -->
         <div
           *ngIf="bannerCuentaSuspendidaPorSaldosPendientes() && visibleAlertMessage"

@@ -21,6 +21,12 @@ return [
 
     // Días tras el vencimiento con acceso (1..N); suspensión desde el día N+1 si siguen saldos pendientes (p. ej. N=3).
     'DIAS_PRORROGA_SUSCRIPCION' => 3,
+
+    /** Días que suma la acción admin «Conceder acceso temporal» (sin mover fecha_proximo_pago). */
+    'DIAS_ACCESO_TEMPORAL_ADMIN' => 2,
+
+    /** Días hasta la próxima fecha de pago al registrar «Pago recibido» (transferencia/efectivo). */
+    'DIAS_PAGO_RECIBIDO_PROXIMO_CICLO' => 30,
     
     'ESTADO_SUSCRIPCION_ACTIVO' => 'Activo',
     'ESTADO_SUSCRIPCION_INACTIVO' => 'Inactivo',

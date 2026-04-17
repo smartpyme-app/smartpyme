@@ -85,10 +85,31 @@ export class LayoutComponent {
     );
   }
 
+  /** Acceso de excepción (admin) vigente: permite usar la app aunque ya aplicaría suspensión por mora. */
+  accesoTemporalVigente(): boolean {
+    const h = this.usuario?.acceso_temporal_hasta;
+    if (!h) {
+      return false;
+    }
+    return new Date(h).getTime() > Date.now();
+  }
+
   /** Cuenta con acceso suspendido por saldos pendientes con el sistema (p. ej. dias_faltantes <= -4 con prórroga 3). */
   bannerCuentaSuspendidaPorSaldosPendientes(): boolean {
+    if (this.accesoTemporalVigente()) {
+      return false;
+    }
     return (
       this.condicionBaseSuscripcionPagada() &&
+      this.usuario.dias_faltantes <= -this.DIAS_UMBRAL_SUSPENSION_ACCESO
+    );
+  }
+
+  /** Aviso informativo: mora que ya suspendiría, pero sigue vigente un acceso temporal concedido. */
+  bannerAccesoTemporalActivo(): boolean {
+    return (
+      this.condicionBaseSuscripcionPagada() &&
+      this.accesoTemporalVigente() &&
       this.usuario.dias_faltantes <= -this.DIAS_UMBRAL_SUSPENSION_ACCESO
     );
   }

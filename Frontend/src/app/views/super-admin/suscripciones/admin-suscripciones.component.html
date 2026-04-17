@@ -372,6 +372,33 @@
                     <i class="fa fa-fw fa-edit"></i>Editar suscripcion
                   </a>
                   <a
+                    *ngIf="empresa.suscripcion"
+                    (click)="pagoRecibido(empresa.suscripcion); $event.preventDefault()"
+                    class="list-group-item list-group-item-action border-0 click text-success"
+                    href="#"
+                  >
+                    <i class="fa fa-fw fa-money-bill-wave text-success"></i>
+                    Pago recibido
+                  </a>
+                  <a
+                    *ngIf="empresa.suscripcion"
+                    (click)="concederAccesoTemporal(empresa.suscripcion); $event.preventDefault()"
+                    class="list-group-item list-group-item-action border-0 click text-primary"
+                    href="#"
+                  >
+                    <i class="fa fa-fw fa-clock text-primary"></i>
+                    Conceder acceso temporal
+                  </a>
+                  <a
+                    *ngIf="empresa.suscripcion?.acceso_temporal_hasta"
+                    (click)="cancelarAccesoTemporal(empresa.suscripcion); $event.preventDefault()"
+                    class="list-group-item list-group-item-action border-0 click text-danger"
+                    href="#"
+                  >
+                    <i class="fa fa-fw fa-times-circle text-danger"></i>
+                    Cancelar acceso temporal
+                  </a>
+                  <a
                     *ngIf="
                       empresa.suscripcion &&
                       empresa.suscripcion.estado.toLowerCase() != 'cancelado' &&
@@ -637,15 +664,86 @@
           </small>
         </div>
 
-        <div class="form-group col-md-6 mb-3">
-          <label class="form-label">Fecha Próximo Pago:</label>
-          <input
-            type="date"
-            class="form-control"
-            [(ngModel)]="suscripcion.fecha_proximo_pago"
-            name="fecha_proximo_pago"
-            required
-          />
+        <div class="col-12 mb-3">
+          <div class="row g-3 align-items-start">
+            <div class="col-md-6">
+              <label class="form-label">Fecha próximo pago</label>
+              <div class="form-control bg-light border">
+                <span *ngIf="suscripcion?.fecha_proximo_pago">{{
+                  suscripcion.fecha_proximo_pago | date : "dd/MM/yyyy"
+                }}</span>
+                <span *ngIf="!suscripcion?.fecha_proximo_pago" class="text-muted"
+                  >—</span
+                >
+                <span
+                  *ngIf="suscripcion?.acceso_temporal_hasta"
+                  class="d-block small text-muted mt-1"
+                >
+                  Acceso temporal hasta:
+                  {{
+                    suscripcion.acceso_temporal_hasta
+                      | date : "dd/MM/yyyy HH:mm"
+                  }}
+                </span>
+              </div>
+              <small class="text-muted d-block mt-1">
+                No editable manualmente. Use las acciones al lado o las
+                integraciones de pago.
+              </small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-2">Acciones de cobro y acceso</label>
+              <div
+                class="d-flex flex-row flex-wrap gap-2 align-items-center justify-content-start"
+              >
+                <button
+                  type="button"
+                  class="btn btn-success btn-sm"
+                  [disabled]="
+                    saving ||
+                    accionPagoId === suscripcion?.id ||
+                    accionCancelarAccesoId === suscripcion?.id
+                  "
+                  (click)="pagoRecibido(suscripcion)"
+                >
+                  <i class="fas fa-money-bill-wave me-1"></i>
+                  Pago recibido
+                </button>
+                <button
+                  type="button"
+                  tooltip="{{ tieneAccesoTemporalVigente(suscripcion) ? 'Renovara el acceso temporal por 2 días más' : 'Concedera acceso temporal por 2 días' }}"
+                  class="btn btn-outline-primary btn-sm"
+                  [disabled]="
+                    saving ||
+                    accionAccesoId === suscripcion?.id ||
+                    accionCancelarAccesoId === suscripcion?.id
+                  "
+                  (click)="concederAccesoTemporal(suscripcion)"
+                >
+                  <i class="fas fa-clock me-1"></i>
+                  {{
+                    tieneAccesoTemporalVigente(suscripcion)
+                      ? "Extender acceso"
+                      : "Conceder acceso"
+                  }}
+                </button>
+                <button
+                  *ngIf="suscripcion?.acceso_temporal_hasta"
+                  type="button"
+                  tooltip="Cancelar acceso temporal"
+                  class="btn btn-outline-danger btn-sm"
+                  [disabled]="
+                    saving ||
+                    accionCancelarAccesoId === suscripcion?.id ||
+                    accionAccesoId === suscripcion?.id
+                  "
+                  (click)="cancelarAccesoTemporal(suscripcion)"
+                >
+                  <i class="fas fa-times me-1"></i>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="form-group col-md-6 mb-3">

@@ -38,18 +38,32 @@ export class SubscriptionGuard implements CanActivate {
       return false;
     }
 
-    // Tras el vencimiento: acceso solo en período de gracia (días 1..N); desde el día N+1 con saldos pendientes se redirige al paywall.
+    const accesoTemporal = this.accesoTemporalVigente(userData);
+
+    // Tras el vencimiento: acceso solo en período de gracia (días 1..N); desde el día N+1 con saldos pendientes se redirige al paywall,
+    // salvo acceso temporal concedido por administración (sin cambiar fecha de pago).
     if (estadoSuscripcion === 'activo' && userData.dias_faltantes < 0 && Math.abs(userData.dias_faltantes) > AppConstants.DIAS_PRORROGA_SUSCRIPCION) {
-      this.router.navigate(['/paywall']);
-      return false;
+      if (!accesoTemporal) {
+        this.router.navigate(['/paywall']);
+        return false;
+      }
     }
 
-    // Verificar si está pendiente y sin días restantes
+    // Pendiente y fecha vencida: bloquear salvo acceso temporal vigente
     if (estadoSuscripcion === 'pendiente' && userData.dias_faltantes <= 0) {
-      this.router.navigate(['/paywall']);
-      return false;
+      if (!accesoTemporal) {
+        this.router.navigate(['/paywall']);
+        return false;
+      }
     }
 
     return true;
+  }
+
+  private accesoTemporalVigente(userData: any): boolean {
+    if (!userData?.acceso_temporal_hasta) {
+      return false;
+    }
+    return new Date(userData.acceso_temporal_hasta).getTime() > Date.now();
   }
 }
