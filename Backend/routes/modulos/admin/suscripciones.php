@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Route;
     Route::post('/suscripcion/getUsersSelect', [SuscripcionesController::class, 'getUsersSelect']);
     Route::post('/suscripcion/activar',        [SuscripcionesController::class, 'activateSystem']);
     Route::post('/suscripcion/suspender',      [SuscripcionesController::class, 'suspendSystem']);
+    Route::get('/suscripciones/{id}/ordenes-pago-pendientes', [SuscripcionesController::class, 'getOrdenesPagoPendientes']);
     Route::get('/suscripciones/{id}/pagos',    [SuscripcionesController::class, 'getHistorialPagos']);
     Route::get('/suscripcion/{id}/recibo-suscripcion',     [EmpresasController::class, 'printReciboSuscripcion']);
     Route::post('/suscripcion/pago-recurrente',     [EmpresasController::class, 'updatePagoRecurrente']);

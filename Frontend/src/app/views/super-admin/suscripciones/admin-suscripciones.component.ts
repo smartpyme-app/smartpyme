@@ -19,14 +19,34 @@ interface Plan {
   monto: number;
 }
 
+interface OrdenPagoVentaResumen {
+  id: number;
+  correlativo: string;
+  fecha: string;
+  estado: string;
+  total: string | number;
+  forma_pago?: string;
+  condicion?: string;
+  num_cotizacion?: string | null;
+  documento_nombre?: string | null;
+}
+
 interface OrdenPago {
+  id?: number;
   id_orden: string;
+  id_venta?: number | null;
   fecha_transaccion: string;
   monto: string;
   metodo_pago?: string;
   estado: string;
   codigo_autorizacion?: string;
   comprobante_url?: string;
+  plan?: string;
+  tipo_pago?: string;
+  nombre_cliente?: string;
+  email_cliente?: string;
+  created_at?: string;
+  venta?: OrdenPagoVentaResumen | null;
 }
 
 @Component({
@@ -88,6 +108,16 @@ export class AdminSuscripcionesComponent implements OnInit {
   ];
 
   modalRef!: BsModalRef;
+
+  /** Confirmación «Pago recibido» (modal propio, no SweetAlert). */
+  modalRefPagoRecibido?: BsModalRef;
+  suscripcionPagoPendiente: any = null;
+  empresaNombrePagoModal = '';
+  ordenesPagoPendientesModal: OrdenPago[] = [];
+  loadingOrdenesPendientesModal = false;
+  ordenPagoSeleccionadoId: number | null = null;
+
+  readonly diasPagoRecibidoUi = AppConstants.DIAS_PAGO_RECIBIDO_PROXIMO_CICLO;
 
   constructor(
     public apiService: ApiService,
@@ -373,26 +403,93 @@ export class AdminSuscripcionesComponent implements OnInit {
     );
   }
 
-  public pagoRecibido(suscripcion: any): void {
+  public pagoRecibido(
+    template: TemplateRef<any>,
+    suscripcion: any,
+    nombreEmpresa?: string
+  ): void {
     if (!suscripcion?.id) {
       return;
     }
-    const dias = AppConstants.DIAS_PAGO_RECIBIDO_PROXIMO_CICLO;
-    Swal.fire({
-      title: '¿Registrar pago recibido?',
-      html: `Se fijará la <strong>próxima fecha de pago</strong> a <strong>${dias} días</strong> a partir de hoy y se actualizará el último pago. Si había acceso temporal de excepción, se anulará.`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, registrar',
-      cancelButtonText: 'Cancelar',
-    }).then((r) => {
-      if (!r.isConfirmed) {
-        return;
-      }
-      this.accionPagoId = suscripcion.id;
-      this.apiService.store('suscripcion/pago-recibido', { id: suscripcion.id }).subscribe({
+    this.suscripcionPagoPendiente = suscripcion;
+    this.empresaNombrePagoModal =
+      nombreEmpresa ||
+      suscripcion?.empresa?.nombre ||
+      '';
+    this.ordenesPagoPendientesModal = [];
+    this.ordenPagoSeleccionadoId = null;
+    this.cargarOrdenesPagoPendientesModal(suscripcion.id);
+
+    this.modalRefPagoRecibido = this.modalService.show(template, {
+      class: 'modal-dialog-centered',
+      ignoreBackdropClick: true,
+    });
+  }
+
+  private cargarOrdenesPagoPendientesModal(suscripcionId: number): void {
+    this.loadingOrdenesPendientesModal = true;
+    this.apiService
+      .getAll(`suscripciones/${suscripcionId}/ordenes-pago-pendientes`)
+      .subscribe({
+        next: (rows: OrdenPago[]) => {
+          this.ordenesPagoPendientesModal = Array.isArray(rows) ? rows : [];
+          if (this.ordenesPagoPendientesModal.length === 1) {
+            const only = this.ordenesPagoPendientesModal[0];
+            if (only?.id != null) {
+              this.ordenPagoSeleccionadoId = only.id;
+            }
+          }
+          this.loadingOrdenesPendientesModal = false;
+        },
+        error: () => {
+          this.ordenesPagoPendientesModal = [];
+          this.loadingOrdenesPendientesModal = false;
+          this.alertService.error(
+            'No se pudieron cargar las órdenes pendientes. Puedes registrar el pago igualmente si no aplica ninguna.'
+          );
+        },
+      });
+  }
+
+  public cerrarModalPagoRecibido(): void {
+    this.modalRefPagoRecibido?.hide();
+    this.modalRefPagoRecibido = undefined;
+    this.suscripcionPagoPendiente = null;
+    this.empresaNombrePagoModal = '';
+    this.ordenesPagoPendientesModal = [];
+    this.ordenPagoSeleccionadoId = null;
+    this.loadingOrdenesPendientesModal = false;
+  }
+
+  public ejecutarPagoRecibido(): void {
+    const suscripcion = this.suscripcionPagoPendiente;
+    if (!suscripcion?.id) {
+      this.cerrarModalPagoRecibido();
+      return;
+    }
+
+    if (
+      this.ordenesPagoPendientesModal.length > 0 &&
+      this.ordenPagoSeleccionadoId == null
+    ) {
+      this.alertService.error(
+        'Selecciona la orden o factura pendiente que quedó pagada con este abono.'
+      );
+      return;
+    }
+
+    this.accionPagoId = suscripcion.id;
+    const payload: { id: number; orden_pago_id?: number } = {
+      id: suscripcion.id,
+    };
+    if (this.ordenPagoSeleccionadoId != null) {
+      payload.orden_pago_id = this.ordenPagoSeleccionadoId;
+    }
+
+    this.apiService.store('suscripcion/pago-recibido', payload).subscribe({
         next: () => {
           this.accionPagoId = null;
+          this.cerrarModalPagoRecibido();
           this.alertService.success(
             'Listo',
             'Pago registrado y próxima fecha de pago actualizada.'
@@ -411,7 +508,6 @@ export class AdminSuscripcionesComponent implements OnInit {
           this.alertService.error(err);
         },
       });
-    });
   }
 
   /** True si existe fecha de acceso temporal aún no vencida (para alertas al extender). */
