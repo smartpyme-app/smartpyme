@@ -1,0 +1,13 @@
+diff --git a/src/Views/Components/taxes.xml.twig b/src/Views/Components/taxes.xml.twig
+--- a/src/Views/Components/taxes.xml.twig
++++ b/src/Views/Components/taxes.xml.twig
+@@ -10,7 +10,8 @@
+   {% if impIvaType %}
+   <CodigoTarifaIVA>{{ impIvaType.code }}</CodigoTarifaIVA>
+   {% endif %}
+-  {% if node == 'TotalDesgloseImpuesto' %}
++  {# TotalDesgloseImpuesto: XSD no incluye Tarifa; solo TotalMontoImpuesto tras Codigo/CodigoTarifaIVA. Usar nodeAmount porque `node` puede no coincidir tras include en algunos entornos. #}
++  {% if nodeAmount == 'TotalMontoImpuesto' %}
+   <{{ nodeAmount }}>{{ (tax.amount|default(0))|number_format(2, '.', '') }}</{{ nodeAmount }}>
+   {% else %}
+   {% if tax.rate %}

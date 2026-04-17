@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { SumPipe }     from '@pipes/sum.pipe';
+import { inventariosParaStockVenta } from '@shared/utils/inventario-venta.util';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
@@ -139,7 +140,7 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
                 'precio_sin_iva': precioSinIva.toFixed(4)
             });
         this.detalle.costo          = parseFloat(paquete.costo);
-        paquete.inventarios        = paquete.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+        paquete.inventarios = inventariosParaStockVenta(paquete.inventarios, this.venta);
         if(paquete.inventarios.length > 0 && this.detalle.tipo != 'Servicio'){
             this.detalle.stock          = parseFloat(this.sumPipe.transform(paquete.inventarios, 'stock'));
         }else{
@@ -180,7 +181,7 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
             this.detalle.id_vendedor = paquete.id_asesor;
             this.venta.id_vendedor = paquete.id_asesor;
             this.detalle.costo          = parseFloat(this.servicio.costo);
-            this.servicio.inventarios        = this.servicio.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+            this.servicio.inventarios = inventariosParaStockVenta(this.servicio.inventarios, this.venta);
             if(this.servicio.inventarios.length > 0 && this.servicio.tipo != 'Servicio'){
                 this.detalle.stock          = parseFloat(this.sumPipe.transform(this.servicio.inventarios, 'stock'));
             }else{

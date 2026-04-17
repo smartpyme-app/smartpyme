@@ -10,6 +10,7 @@ import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
+import { inventariosParaStockVenta } from '@shared/utils/inventario-venta.util';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -152,7 +153,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         }else{
             this.detalle.costo          = parseFloat(producto.costo);
         }
-        producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+        producto.inventarios = inventariosParaStockVenta(producto.inventarios, this.venta);
         if(producto.inventarios.length > 0){
             this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         }else{
@@ -187,7 +188,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
             }else{
                 this.detalle.costo          = parseFloat(producto.costo);
             }
-            producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+            producto.inventarios = inventariosParaStockVenta(producto.inventarios, this.venta);
 
             // Si el producto tiene inventario por lotes, calcular stock de lotes
             if (producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0) {
