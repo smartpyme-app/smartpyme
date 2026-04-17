@@ -8,7 +8,9 @@ import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
-import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { xmlComprobanteDesdeRechazoFeCr } from '@services/facturacion-electronica/fe-cr-http-error.util';
+import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { RestauranteService } from '@services/restaurante.service';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -1319,6 +1321,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
     }
 
+    esFeCostaRicaFacturacion(): boolean {
+        return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+    }
+
     public setDocumento(id_documento: any) {
         if (
           id_documento === undefined ||
@@ -1784,6 +1790,14 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         this.emiting = false;
         if (error?.venta) {
           this.venta = error.venta;
+        }
+        const xml = xmlComprobanteDesdeRechazoFeCr(error);
+        if (this.esFeCostaRicaFacturacion() && xml) {
+          abrirVentanaTextoFeCr(xml, 'application/xml', 'XML comprobante CR');
+          this.alertService.info(
+            'Depuración FE',
+            'Se abrió una ventana con el XML del intento de emisión (sin firma o según respuesta del servidor).'
+          );
         }
         const msg = typeof error === 'string' ? error : error?.message ?? error;
         this.alertService.warning('El documento no fue emitido.', msg);

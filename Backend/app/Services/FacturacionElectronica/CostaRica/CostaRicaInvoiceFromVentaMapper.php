@@ -95,6 +95,13 @@ final class CostaRicaInvoiceFromVentaMapper
         $data = $this->buildDocumentData($venta, $empresa, $secuencial);
         $data['receiver'] = $this->receptorGenericoTiquete($empresa);
 
+        // XSD v4.4 tiquete: LineaDetalle no incluye TipoTransaccion; quitar clave para que Twig/plantilla no emita el nodo.
+        $data['line_items'] = array_map(function (array $line): array {
+            unset($line['transaction_type']);
+
+            return $line;
+        }, $data['line_items']);
+
         return $data;
     }
 

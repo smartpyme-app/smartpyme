@@ -12,6 +12,8 @@ import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { xmlComprobanteDesdeRechazoFeCr } from '@services/facturacion-electronica/fe-cr-http-error.util';
+import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
 import { BuscadorClientesComponent } from '@shared/parts/buscador-clientes/buscador-clientes.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
@@ -1692,6 +1694,14 @@ export class FacturacionV2Component implements OnInit {
         this.emiting = false;
         if (error?.venta) {
           this.venta = error.venta;
+        }
+        const xml = xmlComprobanteDesdeRechazoFeCr(error);
+        if (this.esFeCostaRicaFacturacion() && xml) {
+          abrirVentanaTextoFeCr(xml, 'application/xml', 'XML comprobante CR');
+          this.alertService.info(
+            'Depuración FE',
+            'Se abrió una ventana con el XML del intento de emisión (sin firma o según respuesta del servidor).'
+          );
         }
         const msg = typeof error === 'string' ? error : error?.message ?? error;
         this.alertService.warning('El documento no fue emitido.', msg);

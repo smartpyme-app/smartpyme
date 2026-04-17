@@ -199,8 +199,11 @@ class CostaRicaFeController extends Controller
      */
     private function payloadErrorEmisionFeCr(CostaRicaFeEmisionFallidaException $e): array
     {
+        $msg = $e->getMessage();
+
         return [
-            'error' => $e->getMessage(),
+            'error' => $msg,
+            'message' => $msg,
             'documento' => $e->getDocumento(),
             'clave' => $e->getClave(),
             'detalle_estado' => $e->getDetalleEstado(),

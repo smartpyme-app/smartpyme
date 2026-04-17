@@ -739,6 +739,19 @@
     <div class="modal-body">
         <app-alerts-hacienda [errores]="venta.errores"></app-alerts-hacienda>
         <app-notificaciones-container></app-notificaciones-container>
+        @if (esFeCostaRica() && venta.fe_cr_intento_emision?.xml_comprobante) {
+            <div class="mb-3 text-start small">
+                <p class="text-muted mb-2">Depuración: XML generado en el intento fallido (según respuesta del servidor).</p>
+                <button type="button" (click)="abrirXmlIntentoEmisionFeCr()" class="mb-2 btn btn-outline-secondary btn-block">
+                    Ver XML del comprobante (intento)
+                </button>
+                @if (venta.fe_cr_intento_emision?.documento) {
+                    <button type="button" (click)="abrirJsonIntentoEmisionFeCr()" class="btn btn-outline-secondary btn-block">
+                        Ver JSON interno (payload)
+                    </button>
+                }
+            </div>
+        }
         <div class="d-grid">
 
             @if (esFeCostaRica() && venta.codigo_generacion) {
@@ -746,7 +759,7 @@
                     Ver PDF
                 </button>
                 <button type="button" (click)="imprimirDTEXML(venta)" class="mb-3 btn btn-outline-secondary btn-block" title="XML de respuesta de Hacienda si ya consultó el estado">
-                    Ver XML
+                    Ver XML (respuesta Hacienda)
                 </button>
             }
 

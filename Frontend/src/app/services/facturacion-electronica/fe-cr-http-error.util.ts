@@ -140,6 +140,18 @@ export function errorEmisionFeCr(err: unknown): string | FeCrErrorEmisionPayload
   return message;
 }
 
+/**
+ * Si el reject de emitir FE CR trae XML (422 con excepción de emisión), devuelve el string; si no, null.
+ * Útil al abrir el XML en ventana sin pasar otra vez por HttpErrorResponse.
+ */
+export function xmlComprobanteDesdeRechazoFeCr(error: unknown): string | null {
+  if (typeof error !== 'object' || error === null) {
+    return null;
+  }
+  const x = (error as Record<string, unknown>)['xml_comprobante'];
+  return typeof x === 'string' && x.length > 0 ? x : null;
+}
+
 /** Texto para mostrar al usuario desde el reject de emitir FE (string o payload con message). */
 export function mensajeEmitirFeCrParaUsuario(err: unknown): string {
   if (typeof err === 'string') {
