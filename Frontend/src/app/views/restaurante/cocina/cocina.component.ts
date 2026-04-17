@@ -3,6 +3,7 @@ import { RestauranteService } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
 
 @Component({
+  standalone: false,
   selector: 'app-cocina',
   templateUrl: './cocina.component.html',
   styleUrls: ['./cocina.component.css']

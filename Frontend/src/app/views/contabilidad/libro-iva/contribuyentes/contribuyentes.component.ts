@@ -3,11 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
-import { ModalManagerService } from '@services/modal-manager.service';
+import { ModalManagerService, ModalConfig } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { SumPipe } from '@pipes/sum.pipe';
 import { TruncatePipe } from '@pipes/truncate.pipe';
@@ -31,7 +30,6 @@ export class ContribuyentesComponent extends BaseModalComponent implements OnIni
     public override loading:boolean = false;
     public downloading:boolean = false;
     public filtros:any = {};
-    modalRef!: BsModalRef;
     /** Valor del select en el modal de descargas */
     public tipoDescarga: string = '';
 
@@ -39,7 +37,7 @@ export class ContribuyentesComponent extends BaseModalComponent implements OnIni
         public apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
-        private modalService: BsModalService, private router: Router,
+        private router: Router,
         private cdr: ChangeDetectorRef
     ) {
         super(modalManager, alertService);
@@ -101,13 +99,13 @@ export class ContribuyentesComponent extends BaseModalComponent implements OnIni
         this.cdr.markForCheck();
     }
 
-    public openModal(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+    public override openModal(template: TemplateRef<any>, config?: ModalConfig): void {
+        super.openModal(template, config);
     }
 
     public openDescargasModal(template: TemplateRef<any>): void {
         this.tipoDescarga = '';
-        this.modalRef = this.modalService.show(template, {
+        this.modalRef = this.modalManager.openModal(template, {
             class: 'modal-md',
             backdrop: true,
             ignoreBackdropClick: false,

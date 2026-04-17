@@ -14,6 +14,7 @@ import { RestauranteService, PedidoCanal } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
 
 @Component({
+  standalone: false,
   selector: 'app-pedidos-lista',
   templateUrl: './pedidos-lista.component.html',
   styleUrls: ['./pedidos-lista.component.css']

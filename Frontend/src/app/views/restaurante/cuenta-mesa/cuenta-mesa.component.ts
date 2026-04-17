@@ -7,6 +7,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
+  standalone: false,
   selector: 'app-cuenta-mesa',
   templateUrl: './cuenta-mesa.component.html',
   styleUrls: ['./cuenta-mesa.component.css']

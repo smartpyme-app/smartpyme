@@ -19,6 +19,7 @@ interface LineaLocal {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-pedido-form',
   templateUrl: './pedido-form.component.html',
   styleUrls: ['./pedido-form.component.css']

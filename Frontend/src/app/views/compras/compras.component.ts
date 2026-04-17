@@ -15,6 +15,7 @@ import { CompraJsonBulkService } from '@services/compra-json-bulk.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import {
   mensajeErrorHttpFeCr,
   type FeCrErrorEmisionPayload,
@@ -75,39 +76,6 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     public downloadingRentabilidad:boolean = false;
     public contabilidadHabilitada: boolean = false;
 
-    constructor(
-        apiService: ApiService,
-        private facturacionElectronica: FacturacionElectronicaService,
-        alertService: AlertService,
-        modalManager: ModalManagerService,
-        private router: Router,
-        private route: ActivatedRoute,
-        private sharedDataService: SharedDataService,
-        private funcionalidadesService: FuncionalidadesService,
-        private cdr: ChangeDetectorRef
-    ){
-        super(apiService, alertService, modalManager, {
-            endpoint: 'compra',
-            itemsProperty: 'compras',
-            itemProperty: 'compra',
-            reloadAfterSave: false,
-            reloadAfterDelete: false,
-            messages: {
-                created: 'La compra fue guardada exitosamente.',
-                updated: 'La compra fue guardada exitosamente.',
-                deleted: 'Compra eliminada exitosamente.',
-                createTitle: 'Compra guardada',
-                updateTitle: 'Compra guardada',
-                deleteTitle: 'Compra eliminada',
-                deleteConfirm: '¿Desea eliminar el Registro?'
-            },
-            afterSave: () => {
-                this.compra = {};
-                this.filtrarCompras();
-            }
-        });
-    }
-
     protected aplicarFiltros(): void {
         this.filtrarCompras();
     }
@@ -131,15 +99,39 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     public permiteImportacionMasivaComprasJson = false;
 
     constructor(
-        public apiService: ApiService,
+        protected override apiService: ApiService,
         public mhService: MHService,
-        private alertService: AlertService,
+        private facturacionElectronica: FacturacionElectronicaService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
         private modalService: BsModalService,
         private router: Router,
         private route: ActivatedRoute,
+        private sharedDataService: SharedDataService,
         private compraJsonBulk: CompraJsonBulkService,
-        private funcionalidadesService: FuncionalidadesService
+        private funcionalidadesService: FuncionalidadesService,
+        private cdr: ChangeDetectorRef
     ) {
+        super(apiService, alertService, modalManager, {
+            endpoint: 'compra',
+            itemsProperty: 'compras',
+            itemProperty: 'compra',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La compra fue guardada exitosamente.',
+                updated: 'La compra fue guardada exitosamente.',
+                deleted: 'Compra eliminada exitosamente.',
+                createTitle: 'Compra guardada',
+                updateTitle: 'Compra guardada',
+                deleteTitle: 'Compra eliminada',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            },
+            afterSave: () => {
+                this.compra = {};
+                this.filtrarCompras();
+            }
+        });
         this.bulkSearchProductos$
             .pipe(
                 debounceTime(300),

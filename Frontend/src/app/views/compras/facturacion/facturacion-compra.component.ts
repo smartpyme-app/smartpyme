@@ -27,6 +27,7 @@ import * as moment from 'moment';
 import { DetalleComprasComponent } from '@views/reportes/compras/detalle/detalle-compras.component';
 import Swal from 'sweetalert2';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { BsModalRef } from 'ngx-bootstrap/modal';
 
 @Component({
     selector: 'app-facturacion-compra',
@@ -74,7 +75,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     public ajusteTabActivo = 0;
     public modalProductos!: BsModalRef;
     public productosNoEncontrados: any[] = [];
-    public modalProductos!: any; // BsModalRef
+    public productosEncontrados: any[] = [];
     public buscandoProductos: boolean = false;
     public contabilidadHabilitada: boolean = false;
 
@@ -886,22 +887,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.jsonFileInput.nativeElement.value = '';
       }
     });
-    this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+    this.modalRef = this.modalManager.openModal(template, { class: 'modal-lg' });
   }
 
-  /**
-   * Maneja la selección de archivo JSON
-   */
-  handleFileInput(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.jsonContent = e.target.result;
-      };
-      reader.readAsText(file);
-    }
-  }
     /** Un solo archivo: carga el contenido en jsonContent y guarda etiqueta para conciliación. */
     handleFileInput(event: Event) {
         const input = event.target as HTMLInputElement;
@@ -987,7 +975,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.ajusteBloques = [];
         this.ajusteTabActivo = 0;
 
-        this.aplicarCabeceraPrimerDocumento(data);
+        await this.aplicarCabeceraPrimerDocumento(data);
 
         const cuerpo = data.cuerpoDocumento;
         if (cuerpo && cuerpo.length > 0) {
@@ -1007,7 +995,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
 
     /** Cabecera, proveedor y totales iniciales (primer documento). */
-    aplicarCabeceraPrimerDocumento(jsonData: any) {
+    async aplicarCabeceraPrimerDocumento(jsonData: any) {
         if (jsonData.identificacion.fecEmi) {
             this.compra.fecha = jsonData.identificacion.fecEmi;
         }
@@ -1043,7 +1031,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             }
         }
 
-        const proveedor = this.getProveedor(jsonData.emisor);
+        const proveedor = await this.getProveedor(jsonData.emisor);
         if (proveedor && proveedor.id) {
             this.compra.id_proveedor = proveedor.id;
         } else {
@@ -1078,19 +1066,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             }
         }
     }
-
-      getTipoDocumento(tipoDte: string) {
-        const tiposDte = {
-          '01': 'Factura',
-          '03': 'Crédito fiscal',
-          '05': 'Nota de débito',
-          '06': 'Nota de crédito',
-          '07': 'Comprobante de retención',
-          '11': 'Factura de exportación',
-          '14': 'Sujeto excluido'
-        };
-        return tiposDte[tipoDte as keyof typeof tiposDte] || 'Factura';
-      }
 
       async getProveedor(proveedor: any): Promise<any> {
         try {
@@ -1327,7 +1302,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
   async buscarProductoOptimizado(codigo: string, descripcion: string): Promise<any> {
     // Primero verificar cache local
-    const enCache = this.productosEncontrados.find(p =>
+    const enCache = this.productosEncontrados.find((p: any) =>
       p.cod_proveed_prod === codigo ||
       (p.nombre && descripcion && p.nombre.toLowerCase().includes(descripcion.toLowerCase()))
     );
@@ -1499,7 +1474,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
     mostrarModalAjusteProductos() {
         this.ajusteTabActivo = 0;
-        this.modalProductos = this.modalService.show(this.productosAjusteTemplate, {
+        this.modalProductos = this.modalManager.openModal(this.productosAjusteTemplate, {
             class: 'modal-xl',
             backdrop: 'static',
         });
@@ -1643,11 +1618,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             this.procesarProductosDTE(jsonData.cuerpoDocumento);
         }
     }
-
-  // Método para activar la búsqueda desde el template
-  onSearchProducts(term: string) {
-    this.searchProductos$.next(term);
-  }
 
     // Métodos para crear productos nuevos
     openModalCrearProducto(template: TemplateRef<any>) {

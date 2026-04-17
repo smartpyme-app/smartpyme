@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, Change
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -12,13 +13,12 @@ import { debounceTime, switchMap, filter, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
-import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-traslado-masivo',
     templateUrl: './traslado-masivo.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, LazyImageDirective],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, TooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TrasladoMasivoComponent extends BaseModalComponent implements OnInit {
@@ -50,8 +50,6 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
     };
     public bodegasMap: Map<string, string> = new Map();
 
-    modalRef!: BsModalRef;
-
     public importModalCargando = false;
     private rowUidSeq = 0;
 
@@ -59,7 +57,6 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
         public apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
-        private modalService: BsModalService,
         private sumPipe: SumPipe,
         private cdr: ChangeDetectorRef
     ) {
@@ -532,7 +529,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
             return;
         }
 
-        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+        this.modalRef = this.modalManager.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
 
     /**
@@ -569,7 +566,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
                 this.aplicarFilasImportacionAListado(filas);
                 this.trasladoInventario.detalle = concepto;
 
-                this.modalRef.hide();
+                this.modalRef?.hide();
 
                 if (filasOk === 0 && total > 0) {
                     this.alertService.warning(

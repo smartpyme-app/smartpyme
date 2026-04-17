@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { map, catchError, retry, timeout } from 'rxjs/operators';
-import { Observable, throwError } from 'rxjs';
+import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
+import { Observable, throwError, from } from 'rxjs';
 import { environment } from './../../environments/environment';
 import { AlertService } from '@services/alert.service';
 
@@ -48,6 +48,18 @@ export class HttpService {
   get(url: string): Observable<any> {
     return this.http
       .get<any>(this.apiUrl + url)
+      .pipe(retry(0), catchError(this.handleError));
+  }
+
+  getAsText(url: string): Observable<string> {
+    return this.http
+      .get(this.apiUrl + url, { responseType: 'text' })
+      .pipe(retry(0), catchError(this.handleError));
+  }
+
+  putToUrl(url: string, model: any): Observable<any> {
+    return this.http
+      .put<any>(this.apiUrl + url, model)
       .pipe(retry(0), catchError(this.handleError));
   }
 
@@ -120,8 +132,54 @@ export class HttpService {
       .pipe(retry(0), catchError(this.handleError));
   }
 
-  export(url: string, filtros: any): Observable<Blob> {
-    return this.http.get(this.apiUrl + url, { responseType: 'blob', params: filtros });
+  export(url: string, filtros: any, timeoutMs: number = 120000): Observable<Blob> {
+    return this.http.get(this.apiUrl + url, { responseType: 'blob', params: filtros }).pipe(
+      timeout(timeoutMs),
+      catchError((error) => {
+        if (error.error instanceof Blob && error.error.type?.includes('application/json')) {
+          return from<string>(error.error.text()).pipe(
+            switchMap((text: string) => {
+              try {
+                const errJson = JSON.parse(text);
+                return throwError(() => ({
+                  ...error,
+                  status: error.status,
+                  error: { message: errJson.error || errJson.message || text },
+                }));
+              } catch (_) {
+                return throwError(() => ({ ...error, error: { message: text } }));
+              }
+            }),
+          );
+        }
+        return throwError(() => error);
+      }),
+    );
+  }
+
+  exportPost(url: string, body: any, timeoutMs: number = 120000): Observable<Blob> {
+    return this.http.post(this.apiUrl + url, body, { responseType: 'blob' }).pipe(
+      timeout(timeoutMs),
+      catchError((error) => {
+        if (error.error instanceof Blob && error.error.type?.includes('application/json')) {
+          return from<string>(error.error.text()).pipe(
+            switchMap((text: string) => {
+              try {
+                const errJson = JSON.parse(text);
+                return throwError(() => ({
+                  ...error,
+                  status: error.status,
+                  error: { message: errJson.error || errJson.message || text },
+                }));
+              } catch (_) {
+                return throwError(() => ({ ...error, error: { message: text } }));
+              }
+            }),
+          );
+        }
+        return throwError(() => error);
+      }),
+    );
   }
 
   exportWithUrl(url: string, filtros: any): Observable<any> {

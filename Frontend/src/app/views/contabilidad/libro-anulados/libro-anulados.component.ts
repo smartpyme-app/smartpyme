@@ -26,7 +26,6 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
     public override loading:boolean = false;
     public downloading:boolean = false;
     public filtros:any = {};
-    modalRef!: BsModalRef;
     public tipoDescarga: string = '';
 
     constructor(
@@ -92,13 +91,9 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
         return this.ivas.some((item:any) => !item.nit_nrc);
     }
 
-    public override openModal(template: TemplateRef<any>, config?: any) {
-        super.openModal(template, config);
-    }
-
     public openDescargasModal(template: TemplateRef<any>): void {
         this.tipoDescarga = '';
-        this.modalRef = this.modalService.show(template, {
+        this.modalRef = this.modalManager.openModal(template, {
             class: 'modal-md',
             backdrop: true,
             ignoreBackdropClick: false,

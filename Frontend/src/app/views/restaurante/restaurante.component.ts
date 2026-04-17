@@ -6,6 +6,7 @@ import { RestauranteService, Mesa, Reserva } from '@services/restaurante.service
 import { AlertService } from '@services/alert.service';
 
 @Component({
+  standalone: false,
   selector: 'app-restaurante',
   templateUrl: './restaurante.component.html',
   styleUrls: ['./restaurante.component.css']
