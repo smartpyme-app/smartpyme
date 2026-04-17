@@ -460,6 +460,22 @@
                         </div>
                       </div>
                     }
+                    <div *ngIf="tieneAccesoModuloRestaurantePedidos" class="form-group col-12 col-md-8 col-xl-6 mt-2">
+                        <h4 class="mb-2 fw-bold">Restaurantes y pedidos</h4>
+                        <p class="text-muted small mb-2">
+                            Su empresa tiene activa la funcionalidad <strong>Restaurantes y pedidos</strong> (asignada en el administrador).
+                            Elija qué entradas mostrar en el menú lateral de la aplicación.
+                        </p>
+                        <label for="vista_modulo_rp_select" class="form-label">Mostrar en el menú</label>
+                        <select class="form-select" id="vista_modulo_rp_select" name="vista_modulo_rest_ped"
+                            [ngModel]="getVistaModuloRestaurantePedidos()"
+                            (ngModelChange)="setVistaModuloRestaurantePedidos($event)">
+                            <option value="restaurante">Solo Restaurante (mesas, cocina)</option>
+                            <option value="pedidos">Solo Pedidos</option>
+                            <option value="ambos">Restaurante y Pedidos</option>
+                        </select>
+                    </div>
+
                     <hr>
                     <div class="row">
                         <h4 class="mb-0 fw-bold">Mostrar columnas</h4>
@@ -540,6 +556,41 @@
                         </div>
                     </div>
 
+                    <hr>
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Cotizaciones</h4>
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="cotizacion_mostrar_descripcion" class="form-label">
+                                    <strong>Mostrar descripción en cotizaciones</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="cotizacion_mostrar_descripcion"
+                                    [checked]="isCotizacionMostrarDescripcionEnabled()"
+                                    (change)="toggleCotizacionMostrarDescripcion()"
+                                    name="cotizacion_mostrar_descripcion">
+                            </div>
+                            <small class="text-muted">
+                                Incluye la descripción de cada línea al imprimir o exportar la cotización.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="cotizacion_mostrar_imagenes_productos" class="form-label">
+                                    <strong>Mostrar imágenes de productos</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="cotizacion_mostrar_imagenes_productos"
+                                    [checked]="isCotizacionMostrarImagenesProductosEnabled()"
+                                    (change)="toggleCotizacionMostrarImagenesProductos()"
+                                    name="cotizacion_mostrar_imagenes_productos">
+                            </div>
+                            <small class="text-muted">
+                                Muestra la imagen del producto en la cotización cuando exista.
+                            </small>
+                        </div>
+                    </div>
+
                   <div class="row" *ngIf="apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Super Admin'">
                     <h4 class="mb-0 fw-bold">Cotizaciones y vendedores</h4>
                     <div class="form-group col-md-12 col-xl-8 without-label">
@@ -608,6 +659,7 @@
                     }
 
 
+                    <hr>
                     <h4 class="mb-0 fw-bold">Facturación</h4>
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Calcular el IVA por defecto.</p>
@@ -1131,15 +1183,23 @@
 
                 <div class="col-12 mb-5" *ngIf="empresa.modulo_paquetes">
                     <h5 class="mb-3">Notificación al facturar paquetes (webhook)</h5>
-                    <p class="text-muted small mb-3">
-                        Cuando un paquete pasa a estado Facturado por una venta, SmartPYME puede enviar un POST JSON a la URL que indique.
-                        Opcional: firma HMAC en la cabecera <code>X-SmartPyme-Signature</code> (prefijo <code>sha256=</code>) y/o token Bearer.
-                    </p>
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" role="switch" id="webhook_paquete_enabled"
-                            [(ngModel)]="empresa.webhook_paquete_venta_enabled" name="webhook_paquete_venta_enabled"
-                            (change)="onSubmit()">
-                        <label class="form-check-label" for="webhook_paquete_enabled">Activar envío al facturar paquete</label>
+                    <div class="row">
+                        <div class="form-group col-12 col-xl-8 without-label mb-3">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="webhook_paquete_enabled" class="form-label">
+                                    <strong>Activar envío al facturar paquete</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="webhook_paquete_enabled"
+                                    [(ngModel)]="empresa.webhook_paquete_venta_enabled"
+                                    name="webhook_paquete_venta_enabled"
+                                    (change)="onSubmit()">
+                            </div>
+                            <small class="text-muted">
+                                Cuando un paquete pasa a estado Facturado por una venta, SmartPYME puede enviar un POST JSON a la URL que indique.
+                                Opcional: firma HMAC en la cabecera <code>X-SmartPyme-Signature</code> (prefijo <code>sha256=</code>) y/o token Bearer.
+                            </small>
+                        </div>
                     </div>
                     <div class="form-group mb-3">
                         <label class="form-label" for="webhook_paquete_url">URL del endpoint (HTTPS recomendado)</label>

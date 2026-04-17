@@ -9,7 +9,9 @@ use Illuminate\Support\ServiceProvider;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Paquete;
 use App\Models\Inventario\Producto;
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
+use App\Observers\FidelizacionCliente\ClienteNivelObserver;
 use App\Observers\InventarioObserver;
 use App\Observers\PaqueteWebhookObserver;
 use App\Observers\FidelizacionCliente\VentaObserver;
@@ -46,6 +48,7 @@ class AppServiceProvider extends ServiceProvider
         $this->ensureOpenSslCliOnPathWindows();
 
         // Registrar el observer de Inventario
+        Cliente::observe(ClienteNivelObserver::class);
         Inventario::observe(InventarioObserver::class);
 
         // Observer para acumulación de puntos de fidelización

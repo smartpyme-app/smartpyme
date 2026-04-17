@@ -26,13 +26,19 @@ class PlantillaInventarioMasivoExport implements FromQuery, WithHeadings, WithMa
 
     public function query()
     {
+        $ids = $this->filtros['productos_ids'] ?? [];
+        $ids = is_array($ids) ? array_values(array_filter(array_map('intval', $ids))) : [];
+
         $query = Producto::query()
-            ->with(['inventarios', 'categoria', 'composiciones'])
-            ->when($this->filtros['productos_ids'] ?? null, function ($q, $productos_ids) {
-                return $q->whereIn('id', $productos_ids);
-            })
-            ->orderBy('nombre', 'asc');
-        return $query;
+            ->with(['inventarios', 'categoria', 'composiciones']);
+
+        if (!empty($ids)) {
+            $query->whereIn('id', $ids);
+        } else {
+            $query->whereRaw('0 = 1');
+        }
+
+        return $query->orderBy('nombre', 'asc');
     }
 
     public function headings(): array

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-    
+
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
@@ -29,6 +29,8 @@ export class LibroComprasComponent extends BaseModalComponent implements OnInit 
     public override loading:boolean = false;
     public downloading:boolean = false;
     public filtros:any = {};
+    modalRef!: BsModalRef;
+    public tipoDescarga: string = '';
 
     constructor(
         public apiService: ApiService,
@@ -95,6 +97,49 @@ export class LibroComprasComponent extends BaseModalComponent implements OnInit 
 
     public override openModal(template: TemplateRef<any>, config?: any) {
         super.openModal(template, config);
+    }
+
+    public openDescargasModal(template: TemplateRef<any>): void {
+        this.tipoDescarga = '';
+        this.modalRef = this.modalService.show(template, {
+            class: 'modal-md',
+            backdrop: true,
+            ignoreBackdropClick: false,
+        });
+    }
+
+    public cerrarModalDescargas(): void {
+        this.modalRef?.hide();
+        this.tipoDescarga = '';
+    }
+
+    public ejecutarDescargaSeleccionada(): void {
+        if (!this.tipoDescarga) {
+            this.alertService.warning('Seleccione un tipo', 'Elija una opción en el listado.');
+            return;
+        }
+        switch (this.tipoDescarga) {
+            case 'libro_excel':
+                this.descargarLibro();
+                break;
+            case 'libro_pdf':
+                this.descargarLibroPDF();
+                break;
+            case 'anexo_csv':
+                this.descargarAnexo();
+                break;
+            case 'percepcion_excel':
+                this.descargarLibroPercepcion();
+                break;
+            case 'anexo_percepcion_csv':
+                this.descargarAnexoPercepcion();
+                break;
+            default:
+                this.alertService.warning('Opción no válida', 'Seleccione otra opción.');
+                return;
+        }
+        this.modalRef?.hide();
+        this.tipoDescarga = '';
     }
 
     private manejarErrorDescarga(error: any): void {

@@ -5,6 +5,7 @@
 
 <section class="card border-0 p-3 mb-3">
     <div class="row">
+        <!-- Bodega origen / destino: ya no se muestran en UI (filtros se mantienen en código / localStorage)
         <div class="form-group col-md-4 col-lg-3">
             <label for="id_bodega_origen">Bodega origen</label>
             <select name="id_bodega_origen" [(ngModel)]="filtros.id_bodega_origen" (change)="cambiarBodegaOrigen()" class="form-select">
@@ -27,86 +28,71 @@
                 }
             </select>
         </div>
-        <div class="form-group col-md-4 col-lg-4">
+        -->
+        <div class="form-group col-12">
             <label for="concepto">Concepto del traslado</label>
-            <input type="text" class="form-control" placeholder="Escribe aquí el motivo del traslado" [(ngModel)]="trasladoInventario.detalle" name="concepto">
-        </div>
-    </div>
-    @if (filtros.id_bodega_origen && filtros.id_bodega_destino) {
-    <div class="row mt-3">
-        <div class="col-md-12">
-            <div class="d-flex gap-2">
-                <!-- Barra de búsqueda -->
-                <div class="input-group flex-grow-1">
-                    <span class="input-group-text bg-white border-end-0"><i class="fa fa-search"></i></span>
-                    <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control border-start-0" 
-                           placeholder="Buscar producto por nombre o código">
+            <!-- Sin overflow en el mismo flex que los botones: evita que Popper/ngx-bootstrap calcule el tooltip abajo o desalineado. -->
+            <div class="d-flex flex-nowrap align-items-stretch gap-2 w-100">
+                <div class="flex-grow-1 min-w-0">
+                    <input type="text" id="concepto" class="form-control w-100" placeholder="Escribe aquí el motivo del traslado" [(ngModel)]="trasladoInventario.detalle" name="concepto">
                 </div>
-                
-                <!-- Botones de acción pegados a la barra de búsqueda -->
-                <button class="btn btn-default tcla-F3" tooltip="Exportar lista" (click)="exportarPlantilla()" [disabled]="downloading || seleccionados.length === 0">
-                    <i class="fa fa-download"></i>
-                </button>
-                <button class="btn btn-default tcla-F3" tooltip="Importar traslado" (click)="openModalImportar(mImportar)">
-                    <i class="fa fa-upload"></i>
-                </button>
-                @if (seleccionados.length > 0) {
-                <button class="btn btn-default tcla-F3" tooltip="Limpiar selección" (click)="limpiarSeleccion()">
-                    <i class="fa fa-trash-alt"></i>
-                </button>
-                }
+                <div class="d-flex flex-shrink-0 align-items-center gap-2">
+                    <button type="button" class="btn btn-default tcla-F3"
+                            tooltip="Descargar plantilla de importación (Excel)"
+                            placement="top"
+                            container="body"
+                            boundariesElement="window"
+                            [adaptivePosition]="false"
+                            (click)="descargarPlantillaImportacion()"
+                            [disabled]="downloading || saving || !conceptoTrasladoValido() || !filtros.id_bodega_origen || !filtros.id_bodega_destino">
+                        <i class="fa fa-download"></i>
+                    </button>
+                    <button type="button" class="btn btn-default tcla-F3"
+                            tooltip="Importar traslado"
+                            placement="top"
+                            container="body"
+                            boundariesElement="window"
+                            [adaptivePosition]="false"
+                            (click)="openModalImportar(mImportar)"
+                            [disabled]="saving || !conceptoTrasladoValido() || !filtros.id_bodega_origen || !filtros.id_bodega_destino">
+                        <i class="fa fa-upload"></i>
+                    </button>
+                </div>
             </div>
-            
-            <!-- Dropdown de resultados de búsqueda -->
-            @if (searchControl.value?.length > 0) {
-            <ul class="list-group opciones" style="position: absolute; width: 100%; z-index: 1000; margin-top: 0">
-                @if (loading) {
-                <li class="list-group-item text-center">
-                    <small>Buscando productos...</small>
-                </li>
-                }
-                @if (!loading && productos.length === 0 && searchControl.value?.length > 0) {
-                <li class="list-group-item text-center">
-                    <small>No se encontraron productos</small>
-                </li>
-                }
-                @for (producto of productos; track producto.id) {
-                <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)">
-                    <img style="width: 45px; height: 45px;" [appLazyImage]="apiService.baseUrl + '/img/' + producto.img"
-                         class="rounded-circle img-fluid col-1">
-                    <span id="producto_nombre" class="col-7 ps-2">
-                        {{ getNombreCompleto(producto) }} <br>
-                        <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span></small>
-                    </span>
-                    <span class="col-2 text-center" id="stock">
-                        @if (getStockOrigen(producto) > 0) {
-                        <span class="badge bg-success">{{ getStockOrigen(producto) }} en origen</span>
-                        }
-                        @if (getStockOrigen(producto) <= 0) {
-                        <span class="badge bg-danger">Sin stock</span>
-                        }
-                    </span>
-                    <span class="col-2 text-end">
-                        <span class="badge bg-light text-dark p-1">{{ getStockDestino(producto) }} en destino</span>
-                    </span>
-                </a>
-                }
-            </ul>
-            }
+            <p class="small text-muted mb-0 mt-2" *ngIf="!conceptoTrasladoValido()">
+                Escriba el <strong>concepto del traslado</strong> para habilitar la plantilla y la importación.
+            </p>
         </div>
     </div>
-    }
-    @if (!filtros.id_bodega_origen || !filtros.id_bodega_destino) {
-    <div class="alert alert-info d-flex align-items-center mt-3">
+    <div class="d-flex justify-content-end gap-2 mt-2 flex-wrap" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
+        <!-- <button type="button" class="btn btn-default tcla-F3" tooltip="Exportar lista actual a Excel" (click)="exportarPlantilla()" [disabled]="downloading || seleccionados.length === 0">
+            <i class="fa fa-download"></i>
+            <span class="d-none d-sm-inline ms-1">Exportar lista</span>
+        </button> -->
+        <button type="button" class="btn btn-default tcla-F3"
+                tooltip="Limpiar listado"
+                placement="top"
+                container="body"
+                boundariesElement="window"
+                [adaptivePosition]="false"
+                *ngIf="seleccionados.length > 0" (click)="limpiarSeleccion()">
+            <i class="fa fa-trash-alt"></i>
+            <span class="d-none d-sm-inline ms-1">Limpiar</span>
+        </button>
+    </div>
+    <!--
+    <div class="alert alert-info d-flex align-items-center mt-3" *ngIf="!filtros.id_bodega_origen || !filtros.id_bodega_destino">
         <i class="fa fa-info-circle me-2"></i>
         <span>Seleccione la bodega origen y destino para realizar el traslado de inventario.</span>
     </div>
-    }
+    -->
 </section>
 
-@if (filtros.id_bodega_origen && filtros.id_bodega_destino) {
-<section class="card border-0 p-3 mb-3">
-    <h6 class="mt-3">Productos a trasladar</h6>
+<section class="card border-0 p-3 mb-3" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
+    <h6 class="mt-3 mb-1">Productos a trasladar</h6>
+    <p *ngIf="listadoTieneFilasDeImportacion()" class="small text-muted mb-2">
+        Listado cargado desde archivo. Ajuste cantidades si lo necesita y pulse <strong>Realizar traslado</strong> para procesar.
+    </p>
     <div class="row">
         <div class="col-md-12 table-responsive">
             <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
@@ -117,23 +103,21 @@
                         <th class="text-center">Stock Origen</th>
                         <th class="text-center">Stock Destino</th>
                         <th class="text-center">Cantidad a trasladar</th>
+                        <th class="text-center">Estado</th>
                         <th class="text-center">Acción</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @if (seleccionados.length === 0) {
-                    <tr>
-                        <td colspan="6" class="text-center py-3">
+                    <tr *ngIf="seleccionados.length === 0">
+                        <td colspan="7" class="text-center py-3">
                             <i class="fa fa-info-circle me-1 text-muted"></i>
-                            Busque y agregue productos para realizar el traslado
+                            Escriba el <strong>concepto del traslado</strong> y use <strong>Importar</strong> (junto al concepto) para cargar un Excel; la vista previa aparecerá aquí.
                         </td>
                     </tr>
-                    }
-                    @for (producto of seleccionados; track producto.id) {
-                    <tr>
+                    <tr *ngFor="let producto of seleccionados" [class.table-danger]="producto.importacion_preview_ok === false" [class.table-success]="producto.importacion_preview_ok === true">
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <img [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" class="rounded-circle" width="40px">
+                                <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px" alt="">
                                 <span>{{ producto.nombre }}</span>
                             </div>
                         </td>
@@ -148,11 +132,22 @@
                             <input
                                 type="number"
                                 class="form-control text-center"
+                                [class.is-invalid]="cantidadTrasladoInputInvalida(producto)"
                                 [(ngModel)]="producto.cantidad_traslado"
                                 (change)="validarCantidadTraslado(producto)"
-                                min="1"
-                                [max]="producto.stock_origen"
-                                step="1">
+                                (blur)="validarCantidadTraslado(producto)"
+                                inputmode="numeric"
+                                [min]="puedeEditarCantidadTraslado(producto) ? 1 : 0"
+                                [max]="producto.stock_origen > 0 ? producto.stock_origen : 0"
+                                step="1"
+                                [disabled]="!puedeEditarCantidadTraslado(producto)"
+                                [title]="!puedeEditarCantidadTraslado(producto) ? (producto.importacion_preview_ok === false ? 'Fila con error de importación' : 'Sin stock en bodega origen') : 'Entero entre 1 y ' + (producto.stock_origen || 0)">
+                        </td>
+                        <td class="text-center">
+                            <span *ngIf="producto.importacion_preview_ok === false" class="badge bg-danger">Error</span>
+                            <span *ngIf="producto.importacion_preview_ok === true" class="badge bg-success">Listo</span>
+                            <span *ngIf="producto.importacion_preview_ok === undefined" class="text-muted">—</span>
+                            <small *ngIf="producto.importacion_preview_error" class="d-block text-danger text-start mt-1">{{ producto.importacion_preview_error }}</small>
                         </td>
                         <td class="text-center">
                             <div class="btn-group">
@@ -162,7 +157,6 @@
                             </div>
                         </td>
                     </tr>
-                    }
                 </tbody>
             </table>
         </div>
@@ -172,7 +166,7 @@
     <div class="row mt-3">
         <div class="col-md-12 text-end">
             <button type="submit" (click)="openModalConfirmar(mConfirmar)"
-                    [disabled]="saving || productosParaTraslado.length === 0 || !trasladoInventario.detalle"
+                    [disabled]="saving || !conceptoTrasladoValido() || hayFilasConErrorImportacion() || hayFilasConCantidadOStockInvalidosParaTraslado() || productosParaTraslado.length === 0"
                     class="btn btn-primary">
                 @if (!saving) {
                 <span>
@@ -197,14 +191,16 @@
     <div class="modal-body">
         <div class="mb-3">
             <label for="detalle" class="form-label">Descripción del traslado:</label>
-            <input type="text" class="form-control" [(ngModel)]="trasladoInventario.detalle" 
+            <input type="text" class="form-control" [(ngModel)]="trasladoInventario.detalle"
                 placeholder="Ej: Traslado de inventario entre sucursales" required>
         </div>
-        
+
         <div class="alert alert-info">
             <p class="mb-1"><strong>Resumen de traslado:</strong></p>
+            <!--
             <p class="mb-1">De: <strong>{{ getNombreBodega(filtros.id_bodega_origen) }}</strong></p>
             <p class="mb-1">A: <strong>{{ getNombreBodega(filtros.id_bodega_destino) }}</strong></p>
+            -->
             <p class="mb-1">Productos a trasladar: <strong>{{ productosParaTraslado.length }}</strong></p>
         </div>
 
@@ -236,7 +232,7 @@
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
         <button type="button" class="btn btn-primary"
-                [disabled]="!trasladoInventario.detalle || productosParaTraslado.length === 0 || saving"
+                [disabled]="!conceptoTrasladoValido() || productosParaTraslado.length === 0 || saving"
                 (click)="realizarTraslado()">
             @if (!saving) {
             <span>Confirmar Traslado</span>
@@ -256,9 +252,10 @@
     <div class="modal-body">
         <form #importForm="ngForm">
             <div class="mb-3">
-                <label for="detalle_import" class="form-label">Descripción del traslado:</label>
-                <input type="text" id="detalle_import" class="form-control" ngModel name="detalle" 
+                <label for="detalle_import" class="form-label">Concepto del traslado</label>
+                <input type="text" id="detalle_import" class="form-control" [(ngModel)]="trasladoInventario.detalle" name="conceptoTrasladoImport"
                     placeholder="Ej: Traslado masivo de inventario" required>
+                <small class="text-muted">Es el mismo concepto que escribió arriba; puede editarlo aquí antes de cargar el archivo.</small>
             </div>
             <div class="mb-3">
                 <label for="archivo" class="form-label">Archivo Excel:</label>
@@ -266,27 +263,22 @@
                 <small class="text-muted">Solo se aceptan archivos Excel (.xlsx, .xls) o CSV.</small>
             </div>
         </form>
-        
-        <div class="alert alert-info mt-3">
+
+        <div class="alert alert-info mt-3 mb-0">
             <h6 class="mb-2"><i class="fa fa-info-circle"></i> Instrucciones:</h6>
             <ol class="mb-0 ps-3">
-                <li>Descargue la lista actual usando el botón "Exportar lista"</li>
-                <li>Modifique <strong>únicamente</strong> la columna "Cantidad a Trasladar"</li>
-                <li>Guarde el archivo sin cambiar su formato o estructura</li>
-                <li>Suba el archivo modificado en este formulario</li>
+                <li>Completar el Excel según la plantilla; en especial la columna <strong>Cantidad a Trasladar</strong> (y bodegas/código según corresponda).</li>
+                <li>Seleccione el archivo y pulse <strong>Cargar en listado</strong>: la vista previa quedará en <strong>Productos a trasladar</strong> (puede ajustar cantidades en la tabla).</li>
+                <li>Revise el listado y pulse <strong>Realizar traslado</strong> en la pantalla principal para ejecutar el traslado.</li>
             </ol>
         </div>
     </div>
-    <div class="modal-footer">
+    <div class="modal-footer flex-wrap gap-2">
         <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
-        <button type="button" class="btn btn-primary" [disabled]="!importForm.valid || saving"
-        (click)="importarTraslado(fileInput, importForm.value.detalle)">
-            @if (!saving) {
-            <span>Importar Traslado</span>
-            }
-            @if (saving) {
-            <span>Importando...</span>
-            }
+        <button type="button" class="btn btn-primary" [disabled]="!importForm.valid || importModalCargando || saving"
+                (click)="cargarImportacionAlListado(fileInput, trasladoInventario.detalle)">
+            <span *ngIf="!importModalCargando">Cargar en listado</span>
+            <span *ngIf="importModalCargando">Revisando…</span>
         </button>
     </div>
 </ng-template>

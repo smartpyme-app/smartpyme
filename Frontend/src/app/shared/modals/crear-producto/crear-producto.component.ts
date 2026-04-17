@@ -19,6 +19,8 @@ import { BaseModalComponent } from '../../base/base-modal.component';
 })
 export class CrearProductoComponent extends BaseModalComponent implements OnInit {
     @Input() producto: any = {};
+    /** Si es true, el usuario puede elegir Producto, Servicio o Compuesto (p. ej. facturación / importación JSON de compras). */
+    @Input() permitirElegirTipo = false;
     @Output() update = new EventEmitter();
     public categorias: any[] = [];
     public medidas: any[] = [];
@@ -52,8 +54,11 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
 
     override openModal(template: TemplateRef<any>) {
         this.producto = {};
-        super.openModal(template, {
-            class: 'modal-lg',
+        if (this.permitirElegirTipo) {
+            this.producto.tipo = 'Producto';
+        }
+      super.openModal(template, {
+        class: 'modal-lg',
             backdrop: 'static',
             keyboard: false,
             ignoreBackdropClick: true
@@ -118,7 +123,16 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
             }
         }
 
-        this.producto.tipo = 'Producto';
+        if (this.permitirElegirTipo) {
+            const t = this.producto.tipo;
+            this.producto.tipo =
+                t === 'Servicio' || t === 'Compuesto' || t === 'Producto' ? t : 'Producto';
+        } else {
+            this.producto.tipo = 'Producto';
+        }
+        if (this.producto.tipo === 'Servicio' && !this.producto.medida) {
+            this.producto.medida = 'Unidad';
+        }
         // this.producto.empresa_id = this.apiService.auth_user().empresa_id;
         this.producto.id_empresa = this.apiService.auth_user().id_empresa;
 
@@ -128,8 +142,14 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
             this.guardar = false;
             this.producto = producto;
             this.update.emit(producto);
-            this.closeModal();
-            this.alertService.success('Producto creado', 'El producto fue añadido exitosamente.');
+            this.modalRef?.hide();
+            const esServicio = producto.tipo === 'Servicio';
+            this.alertService.success(
+                esServicio ? 'Servicio creado' : 'Producto creado',
+                esServicio
+                    ? 'El servicio fue añadido exitosamente.'
+                    : 'El producto fue añadido exitosamente.'
+            );
         }, error => {
             this.alertService.error(error);
             this.guardar = false;

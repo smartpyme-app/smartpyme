@@ -38,14 +38,47 @@ class TipoClienteEmpresaController extends Controller
                 ], 400);
             }
 
-            // Obtener parámetros de paginación
+            // Obtener parámetros de paginación y filtros
             $perPage = (int) $request->input('paginate', 25);
             $page = (int) $request->input('page', 1);
 
             $query = TipoClienteEmpresa::with(['tipoBase'])
-                ->porEmpresaConLicencia($empresaId)
-                ->orderBy('nivel')
-                ->orderBy('created_at');
+                ->porEmpresaConLicencia($empresaId);
+
+            // Buscador: nombre personalizado, nombre/code del tipo base, nivel
+            if ($request->filled('search')) {
+                $term = $request->search;
+                $query->where(function ($q) use ($term) {
+                    $q->where('nombre_personalizado', 'like', "%{$term}%")
+                        ->orWhereHas('tipoBase', function ($sub) use ($term) {
+                            $sub->where('nombre', 'like', "%{$term}%")
+                                ->orWhere('code', 'like', "%{$term}%");
+                        });
+                    if (is_numeric($term)) {
+                        $q->orWhere('nivel', (int) $term);
+                    }
+                });
+            }
+
+            // Filtro por estado (Activo/Inactivo)
+            if ($request->filled('estado')) {
+                if ($request->estado === 'Activo') {
+                    $query->where('activo', true);
+                } elseif ($request->estado === 'Inactivo') {
+                    $query->where('activo', false);
+                }
+            }
+
+            // Filtro por tipo (Personalizado/Basado)
+            if ($request->filled('tipo')) {
+                if ($request->tipo === 'Personalizado') {
+                    $query->whereNull('id_tipo_base');
+                } elseif ($request->tipo === 'Basado') {
+                    $query->whereNotNull('id_tipo_base');
+                }
+            }
+
+            $query->orderBy('nivel')->orderBy('created_at');
 
             $tiposCliente = $query->paginate($perPage, ['*'], 'page', $page);
 
@@ -53,11 +86,19 @@ class TipoClienteEmpresaController extends Controller
             $tiposCliente->getCollection()->transform(function ($tipo) {
                 return [
                     'id' => $tipo->id,
+                    'id_tipo_base' => $tipo->id_tipo_base,
                     'nivel' => $tipo->nivel,
                     'nombre_efectivo' => $tipo->nombre_efectivo,
                     'descripcion_efectiva' => $tipo->descripcion_efectiva,
                     'code_efectivo' => $tipo->code_efectivo,
                     'activo' => $tipo->activo,
+                    'tipo_base' => $tipo->tipoBase ? [
+                        'id' => $tipo->tipoBase->id,
+                        'code' => $tipo->tipoBase->code,
+                        'nombre' => $tipo->tipoBase->nombre,
+                        'descripcion' => $tipo->tipoBase->descripcion,
+                        'orden' => $tipo->tipoBase->orden,
+                    ] : null,
                     'puntos_por_dolar' => $tipo->puntos_por_dolar,
                     'valor_punto' => $tipo->valor_punto,
                     'minimo_canje' => $tipo->minimo_canje,
@@ -157,19 +198,32 @@ class TipoClienteEmpresaController extends Controller
             $empresaEfectiva = $this->licenciaService->getEmpresaEfectiva($empresa);
             $empresaEfectivaId = $empresaEfectiva->id;
 
-            // Validar que no exista otro tipo con el mismo nivel como default
-            if ($request->is_default) {
-                $existingDefault = TipoClienteEmpresa::porEmpresa($empresaEfectivaId)
-                    ->porNivel($request->nivel)
-                    ->where('is_default', true)
-                    ->first();
-
-                if ($existingDefault) {
+            // Validar consistencia nivel/orden cuando se usa tipo base
+            if ($request->id_tipo_base) {
+                $tipoBase = TipoClienteBase::find($request->id_tipo_base);
+                if (!$tipoBase) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Ya existe un tipo de cliente por defecto para el nivel ' . $request->nivel
+                        'message' => 'Tipo de cliente base no encontrado'
                     ], 400);
                 }
+                if (!$tipoBase->activo) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se puede usar un tipo de cliente base desactivado'
+                    ], 400);
+                }
+                if ((int) $request->nivel !== (int) $tipoBase->orden) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "El nivel debe coincidir con el tipo base seleccionado ({$tipoBase->nombre} = nivel {$tipoBase->orden})"
+                    ], 400);
+                }
+            }
+
+            // Un solo default por empresa: desmarcar los demás antes de crear
+            if ($request->is_default) {
+                $this->quitarDefaultDeOtrosTipos($empresaEfectivaId, null);
             }
 
             DB::beginTransaction();
@@ -187,6 +241,10 @@ class TipoClienteEmpresaController extends Controller
                 'is_default' => $request->is_default ?? false,
                 'configuracion_avanzada' => $request->configuracion_avanzada ?? [],
             ]);
+
+            if ($request->is_default) {
+                $this->sincronizarNivelClientesSinTipo($empresa, $request->nivel);
+            }
 
             DB::commit();
 
@@ -242,26 +300,40 @@ class TipoClienteEmpresaController extends Controller
             $tipoCliente = TipoClienteEmpresa::porEmpresaConLicencia($empresaId)
                 ->findOrFail($id);
 
-            // Validar que no exista otro tipo con el mismo nivel como default
-            if ($request->is_default && !$tipoCliente->is_default) {
-                $existingDefault = TipoClienteEmpresa::porEmpresa($empresaId)
-                    ->porNivel($request->nivel)
-                    ->where('is_default', true)
-                    ->where('id', '!=', $id)
-                    ->first();
-
-                if ($existingDefault) {
+            // Validar consistencia nivel/orden cuando se usa tipo base
+            if ($request->id_tipo_base) {
+                $tipoBase = TipoClienteBase::find($request->id_tipo_base);
+                if (!$tipoBase) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Ya existe un tipo de cliente por defecto para el nivel ' . $request->nivel
+                        'message' => 'Tipo de cliente base no encontrado'
+                    ], 400);
+                }
+                if (!$tipoBase->activo) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se puede usar un tipo de cliente base desactivado'
+                    ], 400);
+                }
+                if ((int) $request->nivel !== (int) $tipoBase->orden) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "El nivel debe coincidir con el tipo base seleccionado ({$tipoBase->nombre} = nivel {$tipoBase->orden})"
                     ], 400);
                 }
             }
 
+            // Un solo default por empresa: desmarcar los demás antes de actualizar
+            if ($request->is_default && !$tipoCliente->is_default) {
+                $this->quitarDefaultDeOtrosTipos($tipoCliente->id_empresa, $id);
+            }
+
             DB::beginTransaction();
 
+            $idTipoBase = $request->filled('id_tipo_base') ? $request->id_tipo_base : $tipoCliente->id_tipo_base;
+
             $tipoCliente->update([
-                'id_tipo_base' => $request->id_tipo_base,
+                'id_tipo_base' => $idTipoBase,
                 'nivel' => $request->nivel,
                 'nombre_personalizado' => $request->nombre_personalizado,
                 'activo' => $request->activo ?? $tipoCliente->activo,
@@ -272,6 +344,13 @@ class TipoClienteEmpresaController extends Controller
                 'is_default' => $request->is_default ?? $tipoCliente->is_default,
                 'configuracion_avanzada' => $request->configuracion_avanzada ?? $tipoCliente->configuracion_avanzada,
             ]);
+
+            if (($request->is_default ?? $tipoCliente->is_default)) {
+                $empresa = $request->user()->empresa;
+                if ($empresa) {
+                    $this->sincronizarNivelClientesSinTipo($empresa, $request->nivel ?? $tipoCliente->nivel);
+                }
+            }
 
             DB::commit();
 
@@ -338,6 +417,41 @@ class TipoClienteEmpresaController extends Controller
                 'message' => 'Error al cambiar el estado: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Quita is_default de todos los tipos de la empresa excepto el indicado.
+     * Un solo tipo por defecto por empresa (sin importar nivel).
+     *
+     * @param int $empresaId ID de la empresa efectiva
+     * @param int|null $excluirTipoId ID del tipo a excluir (el que será el nuevo default)
+     */
+    private function quitarDefaultDeOtrosTipos(int $empresaId, ?int $excluirTipoId): void
+    {
+        $query = TipoClienteEmpresa::where('id_empresa', $empresaId)
+            ->where('is_default', true);
+
+        if ($excluirTipoId !== null) {
+            $query->where('id', '!=', $excluirTipoId);
+        }
+
+        $query->update(['is_default' => false]);
+    }
+
+    /**
+     * Sincroniza clientes.nivel para clientes sin tipo asignado cuando cambia el default.
+     */
+    private function sincronizarNivelClientesSinTipo($empresa, int $nivel): void
+    {
+        $empresasLicenciaIds = $this->licenciaService->getEmpresasLicenciaIds($empresa);
+        if (empty($empresasLicenciaIds)) {
+            return;
+        }
+
+        DB::table('clientes')
+            ->whereNull('id_tipo_cliente')
+            ->whereIn('id_empresa', $empresasLicenciaIds)
+            ->update(['nivel' => $nivel]);
     }
 
     /**

@@ -14,7 +14,7 @@ class ClienteResource extends JsonResource
     {
         $puntosCliente = $this->puntosCliente;
         $ultimaVenta = $this->ventas->first();
-        $tipoCliente = $this->tipoCliente;
+        $tipoCliente = $this->resource->getTipoClienteEfectivo();
 
         return [
             'id' => $this->id,
@@ -43,7 +43,7 @@ class ClienteResource extends JsonResource
             'ultima_compra' => $ultimaVenta ? $ultimaVenta->created_at->format('Y-m-d') : null,
             'total_compras' => $this->ventas()->count(),
             'total_gastado' => $this->ventas()->sum('total'),
-            'nivel_actual' => $tipoCliente ? $tipoCliente->nivel : 1,
+            'nivel_actual' => $this->nivel ?? ($tipoCliente ? $tipoCliente->nivel : 1),
             'fecha_registro' => $this->created_at->format('Y-m-d'),
             'fecha_ultima_actividad' => $puntosCliente ? $puntosCliente->fecha_ultima_actividad : null,
         ];

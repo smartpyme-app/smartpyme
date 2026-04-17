@@ -32,7 +32,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Models\Inventario\Composiciones\Composicion;
+use App\Exports\PlantillaProductosImportExport;
+use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
+use App\Services\Inventario\ProductoImportacionDteService;
 use App\Services\ShopifyTransformer;
 use App\Services\ImpuestosService;
 use App\Services\Inventario\ShopifyImportService;
@@ -60,16 +63,21 @@ class ProductosController extends Controller
     protected $productoService;
     protected $categoriaService;
 
+    /** @var ProductoImportacionDteService */
+    protected $productoImportacionDteService;
+
     public function __construct(
         ShopifyTransformer $shopifyTransformer,
         ShopifyImportService $shopifyImportService,
         ProductoService $productoService,
-        CategoriaService $categoriaService
+        CategoriaService $categoriaService,
+        ProductoImportacionDteService $productoImportacionDteService
     ) {
         $this->shopifyTransformer = $shopifyTransformer;
         $this->shopifyImportService = $shopifyImportService;
         $this->productoService = $productoService;
         $this->categoriaService = $categoriaService;
+        $this->productoImportacionDteService = $productoImportacionDteService;
     }
 
     public function index(Request $request)
@@ -649,6 +657,17 @@ class ProductosController extends Controller
         return Response()->json($import->getRowCount(), 200);
     }
 
+    /**
+     * Plantilla Excel para importación de productos: columnas base + una columna de stock por bodega activa (nombre y sucursal visibles en el encabezado).
+     */
+    public function plantillaImportacionProductos()
+    {
+        return Excel::download(
+            new PlantillaProductosImportExport(),
+            'plantilla_importacion_productos.xlsx'
+        );
+    }
+
     public function importarWooCommerce(Request $request)
     {
         $request->validate([
@@ -879,14 +898,38 @@ class ProductosController extends Controller
 
     public function exportarPlantillaTraslado(Request $request)
     {
-        $request->request->add(['productos_ids' => explode(',', $request->productos_ids)]);
+        if ($request->isMethod('post')) {
+            $lineas = $request->input('lineas');
+            if (!is_array($lineas)) {
+                return response()->json(['error' => 'Se esperaba un arreglo «lineas» con el listado a exportar.'], 422);
+            }
+            if (count($lineas) === 0) {
+                return response()->json(['error' => 'No hay líneas para exportar.'], 422);
+            }
+            if (count($lineas) > 5000) {
+                return response()->json(['error' => 'El listado supera el máximo permitido para exportar (5000 líneas).'], 422);
+            }
+
+            return Excel::download(
+                new TrasladoLineasUiExport($lineas),
+                'traslado_inventario_' . date('Ymd_His') . '.xlsx'
+            );
+        }
+
+        $raw = $request->input('productos_ids');
+        if ($raw === null || $raw === '') {
+            $productosIds = [];
+        } elseif (is_array($raw)) {
+            $productosIds = array_values(array_filter(array_map('intval', $raw)));
+        } else {
+            $productosIds = array_values(array_filter(array_map('intval', explode(',', (string) $raw))));
+        }
+
         $filtros = [
             'id_bodega_origen' => $request->id_bodega_origen,
             'id_bodega_destino' => $request->id_bodega_destino,
-            'productos_ids' => $request->productos_ids
+            'productos_ids' => $productosIds,
         ];
-
-        Log::info($filtros);
 
         return Excel::download(
             new PlantillaInventarioMasivoExport($filtros),
@@ -1066,10 +1109,52 @@ class ProductosController extends Controller
         }
     }
 
+    public function vistaPreviaImportarTrasladosMasivos(Request $request)
+    {
+        $request->validate([
+            'archivo' => 'required|file',
+            'concepto' => 'required|string',
+            'id_bodega_origen' => 'required|numeric',
+            'id_bodega_destino' => 'required|numeric|different:id_bodega_origen',
+        ]);
+
+        $importador = new TrasladosImport(
+            $request->concepto,
+            true,
+            $request->id_bodega_origen,
+            $request->id_bodega_destino
+        );
+        Excel::import($importador, $request->file('archivo'));
+
+        $filas = array_values(array_filter(
+            $importador->getFilasVistaPrevia(),
+            function ($f) {
+                return ($f['error'] ?? null) !== 'Fila vacía o sin datos.';
+            }
+        ));
+
+        $filasOk = count(array_filter($filas, function ($f) {
+            return !empty($f['ok']);
+        }));
+        $filasError = count($filas) - $filasOk;
+
+        return Response()->json([
+            'filas' => $filas,
+            'total_filas' => count($filas),
+            'filas_ok' => $filasOk,
+            'filas_error' => $filasError,
+        ], 200);
+    }
+
     public function importarTrasladosMasivos(ImportarTrasladosMasivosRequest $request)
     {
 
-        $importador = new TrasladosImport($request->concepto);
+        $importador = new TrasladosImport(
+            $request->concepto,
+            false,
+            $request->id_bodega_origen,
+            $request->id_bodega_destino
+        );
         Excel::import($importador, $request->file('archivo'));
 
 
@@ -1154,6 +1239,51 @@ class ProductosController extends Controller
     }
 
     /**
+     * Resuelve en bloque productos del DTE (código proveedor + fallback por nombre).
+     * Una sola petición HTTP en lugar de N llamadas por ítem.
+     */
+    public function resolverProductosImportacionDte(Request $request)
+    {
+        $request->validate([
+            'id_empresa' => 'required|integer',
+            'items' => 'required|array|min:1|max:500',
+            'items.*.codigo' => 'nullable|string',
+            'items.*.descripcion' => 'nullable|string',
+            'items.*.numItem' => 'nullable',
+        ]);
+
+        $resultados = $this->productoImportacionDteService->resolverImportacionDte(
+            (int) $request->id_empresa,
+            $request->items
+        );
+
+        return response()->json(['resultados' => $resultados], 200);
+    }
+
+    /**
+     * Sugerencias para varias consultas en una sola petición (mismo orden que consultas).
+     */
+    public function buscarSugerenciasLote(Request $request)
+    {
+        $request->validate([
+            'id_empresa' => 'required|integer',
+            'consultas' => 'required|array|min:1|max:200',
+            'consultas.*.termino' => 'required|string|min:2',
+            'consultas.*.palabras' => 'nullable|array',
+            'limite' => 'nullable|integer|max:20',
+        ]);
+
+        $limite = $request->limite ?? 10;
+        $resultados = $this->productoImportacionDteService->sugerenciasLote(
+            (int) $request->id_empresa,
+            $request->consultas,
+            $limite
+        );
+
+        return response()->json(['resultados' => $resultados], 200);
+    }
+
+    /**
      * Búsqueda por código de proveedor
      */
     public function buscarPorCodigoProveedor(BuscarPorCodigoProveedorRequest $request)
@@ -1178,23 +1308,11 @@ class ProductosController extends Controller
     {
 
         $limite = $request->limite ?? 5;
-
-        $empresa = Empresa::find($request->id_empresa);
-        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-
-        $productos = Producto::where('enable', true)
-            ->where('id_empresa', $request->id_empresa)
-            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->with(['inventarios', 'precios'])
-            ->where(function ($q) use ($request, $incluirComponenteQuimico) {
-                $q->where('nombre', 'like', "%{$request->nombre}%");
-                if ($incluirComponenteQuimico) {
-                    $q->orWhere('componente_quimico', 'like', "%{$request->nombre}%");
-                }
-            })
-            ->orderBy('nombre', 'asc')
-            ->take($limite)
-            ->get();
+        $productos = $this->productoImportacionDteService->productosPorNombreFuzzy(
+            (int) $request->id_empresa,
+            $request->nombre,
+            $limite
+        );
 
         return response()->json($productos, 200);
     }
@@ -1206,49 +1324,12 @@ class ProductosController extends Controller
     {
 
         $limite = $request->limite ?? 10;
-        $termino = $request->termino;
-        $palabras = $request->palabras ?? [];
-
-        $empresa = Empresa::find($request->id_empresa);
-        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-
-        $query = Producto::where('enable', true)
-            ->where('id_empresa', $request->id_empresa)
-            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->with(['inventarios', 'lotes', 'precios']);
-
-        // Búsqueda principal por término completo
-        $query->where(function ($q) use ($termino, $incluirComponenteQuimico) {
-            $q->where('nombre', 'like', "%$termino%")
-                ->orWhere('codigo', 'like', "%$termino%")
-                ->orWhere('barcode', 'like', "%$termino%")
-                ->orWhere('etiquetas', 'like', "%$termino%")
-                ->orWhere('marca', 'like', "%$termino%")
-                ->orWhere('descripcion', 'like', "%$termino%");
-            if ($incluirComponenteQuimico) {
-                $q->orWhere('componente_quimico', 'like', "%$termino%");
-            }
-        });
-
-        // Si hay palabras específicas, buscar también por ellas
-        if (!empty($palabras)) {
-            $query->orWhere(function ($q) use ($palabras, $incluirComponenteQuimico) {
-                foreach ($palabras as $palabra) {
-                    if (strlen($palabra) > 2) {
-                        $q->orWhere('nombre', 'like', "%$palabra%")
-                            ->orWhere('descripcion', 'like', "%$palabra%")
-                            ->orWhere('etiquetas', 'like', "%$palabra%");
-                        if ($incluirComponenteQuimico) {
-                            $q->orWhere('componente_quimico', 'like', "%$palabra%");
-                        }
-                    }
-                }
-            });
-        }
-
-        $productos = $query->orderBy('nombre', 'asc')
-            ->take($limite)
-            ->get();
+        $productos = $this->productoImportacionDteService->productosSugerencias(
+            (int) $request->id_empresa,
+            $request->termino,
+            $request->palabras ?? [],
+            $limite
+        );
 
         return response()->json($productos, 200);
     }

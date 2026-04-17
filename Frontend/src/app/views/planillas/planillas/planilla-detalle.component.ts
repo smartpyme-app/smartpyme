@@ -554,7 +554,9 @@ export class PlanillaDetalleComponent implements OnInit {
       this.detalleSeleccionado.viaticos = 0;
     }
     this.listaHorasExtraES = [];
-    if (this.esElSalvador) {
+    const tipoContratoEdicion = this.detalleSeleccionado.empleado?.tipo_contrato || 1;
+    const sinHorasExtraPorContrato = tipoContratoEdicion === 4; // servicios profesionales: sin HE en planilla
+    if (this.esElSalvador && !sinHorasExtraPorContrato) {
       const dhe = detalle.detalle_horas_extra;
       if (dhe && typeof dhe === 'object' && ['diurna', 'nocturna', 'dia_descanso', 'dia_asueto'].every((k) => k in dhe)) {
         const obj = dhe as Record<string, number>;
@@ -583,6 +585,10 @@ export class PlanillaDetalleComponent implements OnInit {
         if (def.dia_descanso > 0) this.listaHorasExtraES.push({ tipo: 'dia_descanso', horas: def.dia_descanso });
         if (def.dia_asueto > 0) this.listaHorasExtraES.push({ tipo: 'dia_asueto', horas: def.dia_asueto });
       }
+    } else if (this.esElSalvador && sinHorasExtraPorContrato) {
+      this.detalleSeleccionado.detalle_horas_extra = this.getDetalleHorasExtraDefault();
+      this.detalleSeleccionado.horas_extra = 0;
+      this.detalleSeleccionado.monto_horas_extra = 0;
     }
     this.calcularTotales();
     this.cdr.markForCheck();
@@ -761,10 +767,13 @@ export class PlanillaDetalleComponent implements OnInit {
 
     this.saving = true;
 
+    const tipoContratoGuardar = this.detalleSeleccionado.empleado?.tipo_contrato || 1;
+    const sinHorasExtraGuardar = tipoContratoGuardar === 4;
+
     const datosActualizados: any = {
       // Datos de entrada
-      horas_extra: this.detalleSeleccionado.horas_extra || 0,
-      monto_horas_extra: this.detalleSeleccionado.monto_horas_extra || 0,
+      horas_extra: sinHorasExtraGuardar ? 0 : (this.detalleSeleccionado.horas_extra || 0),
+      monto_horas_extra: sinHorasExtraGuardar ? 0 : (this.detalleSeleccionado.monto_horas_extra || 0),
       comisiones: this.detalleSeleccionado.comisiones || 0,
       bonificaciones: this.detalleSeleccionado.bonificaciones || 0,
       otros_ingresos: this.detalleSeleccionado.otros_ingresos || 0,
@@ -818,17 +827,27 @@ export class PlanillaDetalleComponent implements OnInit {
       }));
     }
     if (this.esElSalvador) {
-      const dhe = this.listaHorasExtraES?.length
-        ? this.getDetalleHorasExtraDesdeLista()
-        : (this.detalleSeleccionado.detalle_horas_extra as Record<string, number> | null);
-      if (dhe) {
+      if (sinHorasExtraGuardar) {
         datosActualizados.detalle_horas_extra = {
-          diurna: Number(dhe['diurna']) || 0,
-          nocturna: Number(dhe['nocturna']) || 0,
-          dia_descanso: Number(dhe['dia_descanso']) || 0,
-          dia_asueto: Number(dhe['dia_asueto']) || 0,
-          dia_descanso_dias: Number(dhe['dia_descanso_dias']) || 0,
+          diurna: 0,
+          nocturna: 0,
+          dia_descanso: 0,
+          dia_asueto: 0,
+          dia_descanso_dias: 0,
         };
+      } else {
+        const dhe = this.listaHorasExtraES?.length
+          ? this.getDetalleHorasExtraDesdeLista()
+          : (this.detalleSeleccionado.detalle_horas_extra as Record<string, number> | null);
+        if (dhe) {
+          datosActualizados.detalle_horas_extra = {
+            diurna: Number(dhe['diurna']) || 0,
+            nocturna: Number(dhe['nocturna']) || 0,
+            dia_descanso: Number(dhe['dia_descanso']) || 0,
+            dia_asueto: Number(dhe['dia_asueto']) || 0,
+            dia_descanso_dias: Number(dhe['dia_descanso_dias']) || 0,
+          };
+        }
       }
     }
 
@@ -1382,9 +1401,16 @@ export class PlanillaDetalleComponent implements OnInit {
     }
     this.detalleSeleccionado.salario_devengado = Number(salarioDevengado.toFixed(2));
 
-    // Horas extra: El Salvador — monto desde lista. Día descanso (Art. 175): por hora solo 1.5×; día compensatorio (8×V) se suma una vez por cada día de descanso.
+    // Horas extra: servicios profesionales (tipo 4) no liquidan HE aquí; por obra (tipo 3) sí — relación laboral (C.T. art. 26, 169)
     let montoHorasExtra = 0;
-    if (this.esElSalvador) {
+    if (esServiciosProfesionales) {
+      horasExtra = 0;
+      this.detalleSeleccionado.horas_extra = 0;
+      this.detalleSeleccionado.monto_horas_extra = 0;
+      if (this.esElSalvador) {
+        this.detalleSeleccionado.detalle_horas_extra = this.getDetalleHorasExtraDefault();
+      }
+    } else if (this.esElSalvador) {
       const dhe = this.getDetalleHorasExtraDesdeLista();
       this.detalleSeleccionado.detalle_horas_extra = { diurna: dhe.diurna, nocturna: dhe.nocturna, dia_descanso: dhe.dia_descanso, dia_asueto: dhe.dia_asueto };
       const lista = this.listaHorasExtraES || [];
@@ -1395,7 +1421,7 @@ export class PlanillaDetalleComponent implements OnInit {
       montoHorasExtra += diaDescansoDias * (8 * V); // día compensatorio remunerado (una vez por día de descanso trabajado)
       this.detalleSeleccionado.horas_extra = Number(horasExtra.toFixed(2));
     } else if (horasExtra > 0) {
-      const valorHoraNormal = salarioBase / 30 / 8;
+      const valorHoraNormal = this.getValorHoraNormalES();
       montoHorasExtra = horasExtra * (valorHoraNormal * 1.25);
     }
     this.detalleSeleccionado.monto_horas_extra = Number(montoHorasExtra.toFixed(2));
@@ -1961,38 +1987,38 @@ export class PlanillaDetalleComponent implements OnInit {
 
   public calcularValorHora(): number {
     if (!this.detalleSeleccionado) return 0;
-
-    const salarioBase = Number(this.detalleSeleccionado.salario_base) || 0;
-
-    let salarioBaseAjustado = salarioBase;
-    let diasReferencia = 30;
-
-    if (this.planilla.tipo_planilla === 'quincenal') {
-      salarioBaseAjustado = salarioBase / 2;
-      diasReferencia = 15;
-    } else if (this.planilla.tipo_planilla === 'semanal') {
-      salarioBaseAjustado = salarioBase / 4.33;
-      diasReferencia = 7;
-    }
-
-    const valorHoraNormal = salarioBaseAjustado / diasReferencia / 8;
-    const valorHoraExtra = valorHoraNormal * 1.25; // 25% de recargo
-
-    return Number(valorHoraExtra.toFixed(2));
+    const valorHoraNormal = this.getValorHoraNormalES();
+    return Number((valorHoraNormal * 1.25).toFixed(2));
   }
 
-  /** Valor hora ordinaria para cálculos El Salvador (salario_base / 30 / 8 para mensual). */
+  /**
+   * Valor hora ordinaria (ES y fallback otros países).
+   * Por obra: salario_base ya es el total del período de planilla — no dividir como salario mensual.
+   */
   public getValorHoraNormalES(): number {
     if (!this.detalleSeleccionado || !this.planilla) return 0;
     const salarioBase = Number(this.detalleSeleccionado.salario_base) || 0;
+    const esPorObra = (this.detalleSeleccionado.empleado?.tipo_contrato || 1) === 3;
+
     let salarioBaseAjustado = salarioBase;
     let diasReferencia = 30;
-    if (this.planilla.tipo_planilla === 'quincenal') {
-      salarioBaseAjustado = salarioBase / 2;
-      diasReferencia = 15;
-    } else if (this.planilla.tipo_planilla === 'semanal') {
-      salarioBaseAjustado = salarioBase / 4.33;
-      diasReferencia = 7;
+
+    if (esPorObra) {
+      if (this.planilla.tipo_planilla === 'quincenal') {
+        diasReferencia = 15;
+      } else if (this.planilla.tipo_planilla === 'semanal') {
+        diasReferencia = 7;
+      } else {
+        diasReferencia = 30;
+      }
+    } else {
+      if (this.planilla.tipo_planilla === 'quincenal') {
+        salarioBaseAjustado = salarioBase / 2;
+        diasReferencia = 15;
+      } else if (this.planilla.tipo_planilla === 'semanal') {
+        salarioBaseAjustado = salarioBase / 4.33;
+        diasReferencia = 7;
+      }
     }
     const valorHoraNormal = salarioBaseAjustado / diasReferencia / 8;
     return Number(valorHoraNormal);

@@ -26,8 +26,10 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
     public override loading:boolean = false;
     public downloading:boolean = false;
     public filtros:any = {};
+    modalRef!: BsModalRef;
+    public tipoDescarga: string = '';
 
-    constructor( 
+    constructor(
         public apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
@@ -36,7 +38,7 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
         super(modalManager, alertService);
     }
 
-    ngOnInit() {   
+    ngOnInit() {
         const currentYear = new Date().getFullYear(); // Obtener el año actual
         const currentMonth = new Date().getMonth() + 1;
         // Crear un array con el año actual y los 10 años anteriores
@@ -49,12 +51,12 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
         this.filtros.anio = currentYear;
         this.filtros.mes = currentMonth;
         this.filtros.time = 'day';
-        
+
         this.setTime();
 
         this.apiService.getAll('sucursales/list')
           .pipe(this.untilDestroyed())
-          .subscribe(sucursales => { 
+          .subscribe(sucursales => {
             this.sucursales = sucursales;
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
@@ -71,7 +73,7 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
         this.loading = true;
         this.apiService.getAll('libro-iva/anulados', this.filtros)
           .pipe(this.untilDestroyed())
-          .subscribe(ivas => { 
+          .subscribe(ivas => {
             this.ivas = ivas;
             this.loading = false;
             this.cdr.markForCheck();
@@ -92,6 +94,40 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
 
     public override openModal(template: TemplateRef<any>, config?: any) {
         super.openModal(template, config);
+    }
+
+    public openDescargasModal(template: TemplateRef<any>): void {
+        this.tipoDescarga = '';
+        this.modalRef = this.modalService.show(template, {
+            class: 'modal-md',
+            backdrop: true,
+            ignoreBackdropClick: false,
+        });
+    }
+
+    public cerrarModalDescargas(): void {
+        this.modalRef?.hide();
+        this.tipoDescarga = '';
+    }
+
+    public ejecutarDescargaSeleccionada(): void {
+        if (!this.tipoDescarga) {
+            this.alertService.warning('Seleccione un tipo', 'Elija una opción en el listado.');
+            return;
+        }
+        switch (this.tipoDescarga) {
+            case 'libro_excel':
+                this.descargarLibro();
+                break;
+            case 'anexo_csv':
+                this.descargarAnexo();
+                break;
+            default:
+                this.alertService.warning('Opción no válida', 'Seleccione otra opción.');
+                return;
+        }
+        this.modalRef?.hide();
+        this.tipoDescarga = '';
     }
 
     private manejarErrorDescarga(error: any): void {

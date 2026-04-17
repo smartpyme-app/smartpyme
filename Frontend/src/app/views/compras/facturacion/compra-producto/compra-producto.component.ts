@@ -191,8 +191,8 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
     }
 
     onProductoCreated(producto: any) {
-        // Aquí puedes manejar el producto creado si es necesario
         producto.id_producto    = producto.id;
+        producto.tipo = producto.tipo || 'Producto';
 
         // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
         producto.nombre_producto = this.getNombreCompleto(producto);

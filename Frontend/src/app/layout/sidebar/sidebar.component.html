@@ -192,6 +192,7 @@
                             @if (apiService.hasPermission('ventas.formas_pago.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
                             }
+                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Libros fiscales</a></li>
                         </ul>
                     </div>
                 </li>
@@ -268,6 +269,27 @@
               <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/organizacion/empresas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/briefcase.png" class="icon me-2">Empresas</a></li>
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/organizacion/empresas/usuarios']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Usuarios</a></li>
+              </ul>
+            </div>
+          </li>
+          <li *ngIf="mostrarMenuRestaurante" class="mb-1">
+            <button (click)="toggleRestaurante()" tooltip="Restaurante" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!restauranteIsCollapsed" aria-controls="collapseRestaurante">
+              <img src="/assets/icons/layout.png" class="icon me-2">Restaurante
+            </button>
+            <div [collapse]="restauranteIsCollapsed" [isAnimated]="true">
+              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/restaurante']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/grid.png" class="icon me-2">Mapa de Mesas</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/restaurante/cocina']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coffee.png" class="icon me-2">Pantalla Cocina</a></li>
+              </ul>
+            </div>
+          </li>
+          <li *ngIf="mostrarMenuPedidos" class="mb-1">
+            <button (click)="togglePedidos()" tooltip="Pedidos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!pedidosIsCollapsed" aria-controls="collapsePedidos">
+              <img src="/assets/icons/shopping-cart.png" class="icon me-2">Pedidos
+            </button>
+            <div [collapse]="pedidosIsCollapsed" [isAnimated]="true">
+              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/pedidos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Pedidos</a></li>
               </ul>
             </div>
           </li>

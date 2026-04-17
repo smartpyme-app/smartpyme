@@ -1,10 +1,15 @@
-<!-- Breadcrumb -->
-<div class="breadcrumb">
-    <a routerLink="/dashboard">Dashboard</a>
-    <span>›</span>
-    <a routerLink="/fidelizacion/clientes">Clientes</a>
-    <span>›</span>
-    <span>Vista 360° - {{ cliente.nombre || 'Cliente' }}</span>
+<!-- Header con Breadcrumb y Regresar -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="breadcrumb mb-0">
+        <a routerLink="/dashboard">Dashboard</a>
+        <span>›</span>
+        <a routerLink="/fidelizacion/clientes">Clientes</a>
+        <span>›</span>
+        <span>Vista 360° - {{ cliente.nombre || 'Cliente' }}</span>
+    </div>
+    <button class="btn btn-light text-danger" (click)="goBack()">
+        <i class="fa fa-arrow-left"></i> Regresar
+    </button>
 </div>
 
 <!-- Loading State -->
@@ -273,9 +278,14 @@
                                 <h4>{{ transaction.title }}</h4>
                                 <div class="transaction-date">{{ transaction.date }} • {{ transaction.reference }}</div>
                             </div>
-                            <div class="transaction-amount">${{ formatNumber(transaction.amount) }}</div>
+                            <div class="transaction-amount">
+                                <ng-container *ngIf="transaction.amountKind === 'points'; else montoCompra">
+                                    {{ formatPuntosHistorial(transaction) }}
+                                </ng-container>
+                                <ng-template #montoCompra>{{ formatCurrency(transaction.amount) }}</ng-template>
+                            </div>
                             <div class="transaction-status" [ngClass]="transaction.status">
-                                {{ transaction.status === 'completed' ? 'Completada' : 'Descuento' }}
+                                {{ transactionStatusLabel(transaction) }}
                             </div>
                         </div>
                     </div>

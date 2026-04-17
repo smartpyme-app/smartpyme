@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             UserRoleSeeder::class,
             FidelizacionFuncionalidadSeeder::class,
+            MHTableSeeder::class,
+            RestauranteFuncionalidadSeeder::class,
             // PaquetesTableSeeder::class,
             // EmpresaTableSeeder::class,
             // UsersTableSeeder::class,
@@ -40,4 +42,4 @@ class DatabaseSeeder extends Seeder
         ]);
     }
 }
-        
+

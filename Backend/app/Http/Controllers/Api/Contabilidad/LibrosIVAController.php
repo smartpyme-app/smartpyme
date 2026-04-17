@@ -11,22 +11,23 @@ use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
-use App\Exports\Contabilidad\LibroContribuyentesExport;
-use App\Exports\Contabilidad\AnexoContribuyentesExport;
-use App\Exports\Contabilidad\LibroConsumidoresExport;
-use App\Exports\Contabilidad\AnexoConsumidoresExport;
-use App\Exports\Contabilidad\LibroAnuladosExport;
-use App\Exports\Contabilidad\AnexoAnuladosExport;
-use App\Exports\Contabilidad\LibroSujetosExcluidosExport;
-use App\Exports\Contabilidad\AnexoSujetosExcluidosExport;
-use App\Exports\Contabilidad\LibroComprasExport;
-use App\Exports\Contabilidad\AnexoComprasExport;
-use App\Exports\Contabilidad\GlobalDttesExport;
-use App\Exports\Contabilidad\NotasCreditoDebitoExport;
-use App\Exports\Contabilidad\LibroRetencion1Export;
-use App\Exports\Contabilidad\AnexoRetencion1Export;
-use App\Exports\Contabilidad\LibroPercepcion1Export;
-use App\Exports\Contabilidad\AnexoPercepcion1Export;
+use App\Exports\Contabilidad\ElSalvador\LibroContribuyentesExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoContribuyentesExport;
+use App\Exports\Contabilidad\ElSalvador\LibroConsumidoresExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoConsumidoresExport;
+use App\Exports\Contabilidad\ElSalvador\LibroAnuladosExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoAnuladosExport;
+use App\Exports\Contabilidad\ElSalvador\LibroSujetosExcluidosExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoSujetosExcluidosExport;
+use App\Exports\Contabilidad\ElSalvador\LibroComprasExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoComprasExport;
+use App\Exports\Contabilidad\ElSalvador\GlobalDttesExport;
+use App\Exports\Contabilidad\GlobalDttesPdfExport;
+use App\Exports\Contabilidad\ElSalvador\NotasCreditoDebitoExport;
+use App\Exports\Contabilidad\ElSalvador\LibroRetencion1Export;
+use App\Exports\Contabilidad\ElSalvador\AnexoRetencion1Export;
+use App\Exports\Contabilidad\ElSalvador\LibroPercepcion1Export;
+use App\Exports\Contabilidad\ElSalvador\AnexoPercepcion1Export;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
@@ -158,7 +159,7 @@ class LibrosIVAController extends Controller
 
         if ($formato === 'pdf') {
             $pdf = app('dompdf.wrapper')->loadView(
-                'reportes.contabilidad.libro-consumidores',
+                'reportes.contabilidad.el_salvador.libro-consumidores',
                 [
                     'libroconsumidores' => $libroconsumidores,
                     'request' => $request,
@@ -318,7 +319,7 @@ class LibrosIVAController extends Controller
 
         if ($formato === 'pdf') {
             $pdf = app('dompdf.wrapper')->loadView(
-                'reportes.contabilidad.libro-contribuyentes',
+                'reportes.contabilidad.el_salvador.libro-contribuyentes',
                 [
                     'librocontribuyentes' => $librocontribuyentes,
                     'request' => $request,
@@ -605,7 +606,7 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.contabilidad.el_salvador.libro-compras', compact('librocompras', 'request'));
             $pdf->setPaper('US Letter', 'landscape');
 
             return $pdf->stream('libro-compras.pdf');
@@ -785,6 +786,57 @@ class LibrosIVAController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Excepción al exportar DTEs: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
+                ->header('Content-Type', 'text/plain');
+        }
+    }
+
+    /**
+     * ZIP con un PDF por DTE (mismos filtros que descargar-dttes JSON).
+     */
+    public function exportGlobalDttesPdf(Request $request)
+    {
+        try {
+            @set_time_limit(0);
+
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            $export = new GlobalDttesPdfExport();
+            $export->filter($request);
+            $result = $export->generateZip();
+
+            if (!$result['success']) {
+                Log::error('Error al generar ZIP PDF DTEs: ' . $result['message']);
+
+                return response($result['message'], 400)
+                    ->header('Content-Type', 'text/plain');
+            }
+
+            $filePath = storage_path('app/' . $result['path']);
+
+            if (!file_exists($filePath)) {
+                Log::error('Archivo ZIP PDF no encontrado: ' . $filePath);
+
+                return response('Archivo no encontrado', 404)
+                    ->header('Content-Type', 'text/plain');
+            }
+
+            $fileContent = file_get_contents($filePath);
+            @unlink($filePath);
+
+            return response($fileContent, 200)
+                ->header('Content-Type', 'application/zip')
+                ->header('Content-Disposition', 'attachment; filename="' . $result['filename'] . '"')
+                ->header('Content-Length', strlen($fileContent))
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
+        } catch (\Exception $e) {
+            Log::error('Excepción al exportar DTEs PDF: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
 
             return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)

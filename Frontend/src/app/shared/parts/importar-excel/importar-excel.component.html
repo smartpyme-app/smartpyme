@@ -25,8 +25,14 @@
               <div class="alert bg-info text-center">
                 <p>Seleccionar un archivo de Excel con el listado de sus {{ this.nombre.replace('-', ' ') }}, debe tener la misma estructura de la plantilla que se comparte a continuación. <br>
 
-                  <!-- Plantilla normal para otros componentes -->
-                  <span *ngIf="this.nombre !== 'ventas'">
+                  <!-- Productos: plantilla dinámica por bodega (requiere sesión) -->
+                  <span *ngIf="this.nombre === 'productos'">
+                    Descargue la plantilla con una columna de stock por cada bodega activa (con nombre de bodega y sucursal):
+                    <a role="button" href="#" class="link-primary" (click)="descargarPlantillaImportacionProductos($event)">Descargar plantilla</a>
+                  </span>
+
+                  <!-- Plantilla estática (documento en /docs) -->
+                  <span *ngIf="this.nombre !== 'ventas' && this.nombre !== 'productos'">
                     Puede descargar la plantilla de Excel acá:
                     <a [href]="plantillaUrlConCache" target="_blank">Descargar plantilla</a>
                   </span>

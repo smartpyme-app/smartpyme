@@ -10,6 +10,7 @@ import { ApiService } from '@services/api.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { RestauranteService } from '@services/restaurante.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { SharedDataService } from '@services/shared-data.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
@@ -90,6 +91,13 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public mensajeErrorBanco: string = '';
   public contabilidadHabilitada: boolean = false;
 
+  /** Pre-cuenta restaurante: al facturar desde cuenta-mesa */
+  preCuentaId: number | null = null;
+  sesionId: number | null = null;
+
+  /** Pedido canal (Spoties / manual): al facturar desde listado de pedidos */
+  pedidoCanalId: number | null = null;
+
   // Información de puntos canjeados
   public puntosCanjeados: number = 0;
   public descuentoPuntos: number = 0;
@@ -132,7 +140,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     private router: Router,
     private sharedDataService: SharedDataService,
     private fidelizacionService: FidelizacionService,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private restauranteService: RestauranteService
   ) {
     super(modalManager, alertService);
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
@@ -456,6 +465,76 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       this.syncVentaCreditoConsignaFlagsFromEstado();
     }
 
+    // Pre-cuenta restaurante: state o queryParams (respaldo por si state se pierde)
+    const navState = history.state as any;
+    const qp = this.route.snapshot.queryParamMap;
+    const preCuentaIdFromState = navState?.preCuentaId;
+    const preCuentaIdFromQuery = qp.get('pre_cuenta');
+    const preCuentaIdVal = preCuentaIdFromState ?? (preCuentaIdFromQuery ? +preCuentaIdFromQuery : null);
+    if (preCuentaIdVal) {
+      this.preCuentaId = preCuentaIdVal;
+      this.sesionId = navState?.sesionId ?? (qp.get('sesion') ? +qp.get('sesion')! : null);
+      const detalles = navState?.preCuentaData?.detalles ?? [];
+      if (detalles.length) {
+        const iva = this.apiService.auth_user()?.empresa?.iva ?? 0;
+        this.venta.observaciones = ((this.venta.observaciones || '') + ' Mesa ' + (navState.preCuentaData.mesa_numero || '')).trim();
+        this.venta.detalles = detalles.map((d: any) => {
+          const sub = (d.cantidad || 0) * (parseFloat(d.precio) || 0);
+          return {
+            id_producto: d.id_producto,
+            cantidad: d.cantidad,
+            precio: parseFloat(d.precio).toFixed(4),
+            descripcion: d.descripcion || '',
+            costo: 0,
+            descuento: 0,
+            descuento_porcentaje: 0,
+            sub_total: sub.toFixed(4),
+            total: sub.toFixed(4),
+            tipo_gravado: 'gravada',
+            porcentaje_impuesto: iva,
+            gravada: 0,
+            exenta: 0,
+            no_sujeta: 0,
+            iva: 0,
+          };
+        });
+        this.normalizarDetallesTipoGravado(this.venta);
+        this.sumTotal();
+        const pctPropinaEmpresa = parseFloat(String(this.apiService.auth_user()?.empresa?.propina_porcentaje ?? '')) || 0;
+        if (pctPropinaEmpresa > 0) {
+          this.venta.cobrar_propina = true;
+          this.sumTotal();
+        }
+      }
+    } else {
+      const pedidoCanalFromState = navState?.pedidoCanalId;
+      const pedidoCanalFromQuery = qp.get('pedido_canal');
+      const pedidoCanalIdVal =
+        pedidoCanalFromState ?? (pedidoCanalFromQuery ? +pedidoCanalFromQuery : null);
+      if (pedidoCanalIdVal) {
+        this.pedidoCanalId = pedidoCanalIdVal;
+        const pdata = navState?.pedidoCanalData;
+        if (pdata?.detalles?.length) {
+          this.aplicarPedidoCanalAFactura({
+            pedido_id: pedidoCanalIdVal,
+            cliente_id: pdata.cliente_id,
+            id_sucursal: pdata.id_sucursal,
+            fecha: pdata.fecha,
+            canal: pdata.canal,
+            referencia_externa: pdata.referencia_externa,
+            observaciones: pdata.observaciones,
+            detalles: pdata.detalles
+          });
+        } else {
+          this.restauranteService.prepararFacturaPedidoCanal(pedidoCanalIdVal).subscribe({
+            next: (data) => this.aplicarPedidoCanalAFactura(data),
+            error: (e) => this.alertService.error(e)
+          });
+        }
+      }
+    }
+
+    // Para editar cotizaciones Pre-venta
     if (this.route.snapshot.paramMap.get('id')) {
       this.editar = true;
       const endpoint = this.venta.cotizacion == 1 ? 'cotizacion/' : 'venta/';
@@ -653,12 +732,14 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           detalle.precio = parseFloat(producto.precio);
           detalle.costo = parseFloat(producto.costo);
           detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-          detalle.gravada = detalle.total;
+          detalle.descuento = 0;
           detalle.id_vendedor = this.venta.id_vendedor;
           detalle.exenta = 0;
           detalle.no_sujeta = 0;
           detalle.cuenta_a_terceros = 0;
           detalle.total = detalle.precio * detalle.cantidad;
+          // Base gravada para IVA: debe asignarse después de total (antes quedaba NaN y sumTotal dejaba IVA en 0)
+          detalle.gravada = detalle.total;
           this.venta.detalles.push(detalle);
           this.sumTotal();
           this.cdr.markForCheck();
@@ -1275,6 +1356,113 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         });
     }
 
+  private navegarPostFacturaPreCuenta(ventaId: number) {
+    if (!this.preCuentaId) {
+      this.alertService.warning('No se pudo vincular la pre-cuenta', 'ID de pre-cuenta no disponible.');
+      this.router.navigate(['/restaurante']);
+      return;
+    }
+    this.restauranteService.marcarPreCuentaFacturada(this.preCuentaId, ventaId).subscribe({
+      next: (res: any) => {
+        const dest = res?.sesion_cerrada ? ['/restaurante'] : (this.sesionId ? ['/restaurante/cuenta', this.sesionId] : ['/restaurante']);
+        this.router.navigate(dest);
+        this.alertService.success('Factura creada', res?.sesion_cerrada ? 'Pre-cuenta facturada. Mesa liberada.' : 'Pre-cuenta marcada como facturada.');
+      },
+      error: (err) => {
+        const msg = err?.error?.error || err?.error?.message || err?.message || err;
+        this.alertService.error(msg ?? 'Error al marcar pre-cuenta como facturada');
+        this.router.navigate(['/restaurante']);
+      }
+    });
+  }
+
+  private aplicarPedidoCanalAFactura(data: {
+    pedido_id: number;
+    cliente_id?: number | null;
+    id_sucursal?: number | null;
+    fecha?: string | null;
+    canal?: string | null;
+    referencia_externa?: string | null;
+    observaciones?: string | null;
+    detalles: any[];
+  }): void {
+    this.pedidoCanalId = data.pedido_id;
+    if (data.id_sucursal) {
+      this.venta.id_sucursal = data.id_sucursal;
+    }
+    if (data.fecha) {
+      this.venta.fecha = data.fecha;
+      this.venta.fecha_pago = data.fecha;
+    }
+    const partes: string[] = [`Pedido canal #${data.pedido_id}`];
+    if (data.canal) {
+      partes.push(`Canal: ${data.canal}`);
+    }
+    if (data.referencia_externa) {
+      partes.push(`Ref: ${data.referencia_externa}`);
+    }
+    if (data.observaciones) {
+      partes.push(String(data.observaciones));
+    }
+    this.venta.observaciones = partes.join('. ');
+
+    const detalles = data.detalles || [];
+    if (detalles.length) {
+      const iva = this.apiService.auth_user()?.empresa?.iva ?? 0;
+      this.venta.detalles = detalles.map((d: any) => {
+        const precio = parseFloat(String(d.precio)) || 0;
+        const cant = parseFloat(String(d.cantidad)) || 0;
+        const descLine = parseFloat(String(d.descuento ?? 0)) || 0;
+        const sub = Math.max(0, cant * precio - descLine);
+        return {
+          id_producto: d.id_producto,
+          cantidad: cant,
+          precio: precio.toFixed(4),
+          descripcion: d.descripcion || '',
+          costo: 0,
+          descuento: descLine.toFixed(4),
+          descuento_porcentaje: 0,
+          sub_total: sub.toFixed(4),
+          total: sub.toFixed(4),
+          tipo_gravado: 'gravada',
+          porcentaje_impuesto: iva,
+          gravada: 0,
+          exenta: 0,
+          no_sujeta: 0,
+          iva: 0,
+        };
+      });
+      this.normalizarDetallesTipoGravado(this.venta);
+      this.sumTotal();
+    }
+
+    if (data.cliente_id) {
+      this.apiService.read('cliente/', data.cliente_id as number).subscribe({
+        next: (c) => this.setCliente(c),
+        error: () => {},
+      });
+    }
+  }
+
+  private navegarPostFacturaPedidoCanal(ventaId: number) {
+    if (!this.pedidoCanalId) {
+      this.alertService.warning('No se pudo vincular el pedido', 'ID de pedido no disponible.');
+      this.router.navigate(['/pedidos']);
+      return;
+    }
+    this.restauranteService.marcarPedidoCanalFacturado(this.pedidoCanalId, ventaId).subscribe({
+      next: () => {
+        this.router.navigate(['/pedidos']);
+        this.alertService.success('Factura creada', 'El pedido quedó marcado como facturado.');
+      },
+      error: (err) => {
+        const msg = err?.error?.error || err?.error?.message || err?.message || err;
+        this.alertService.error(msg ?? 'Error al vincular la venta con el pedido');
+        this.router.navigate(['/pedidos']);
+      },
+    });
+  }
+
   public onFacturar() {
     // Validar que si el método de pago requiere banco, este esté seleccionado
     this.mensajeErrorBanco = '';
@@ -1426,9 +1614,15 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               'Impresión',
               'width=400'
             );
-            this.cargarDatosIniciales();
-            //this.loadData();
-            this.router.navigate(['/venta/crear']);
+            if (this.preCuentaId && this.venta.id) {
+              this.navegarPostFacturaPreCuenta(this.venta.id);
+            } else if (this.pedidoCanalId && this.venta.id) {
+              this.navegarPostFacturaPedidoCanal(this.venta.id);
+            } else {
+              this.cargarDatosIniciales();
+              this.loadData();
+              this.router.navigate(['/venta/crear']);
+            }
           }
         } else {
           if (this.venta.cotizacion == 1) {
@@ -1437,6 +1631,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               'Cotización creada',
               'La cotizacion fue añadida exitosamente.'
             );
+          } else if (this.preCuentaId && this.venta.id) {
+            this.navegarPostFacturaPreCuenta(this.venta.id);
+          } else if (this.pedidoCanalId && this.venta.id) {
+            this.navegarPostFacturaPedidoCanal(this.venta.id);
           } else {
             this.router.navigate(['/ventas']);
             this.alertService.success(
@@ -1528,8 +1726,14 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           'Impresión',
           'width=400'
         );
-        this.cargarDatosIniciales();
-        this.router.navigate(['/venta/crear']);
+        if (this.preCuentaId && this.venta.id) {
+          this.navegarPostFacturaPreCuenta(this.venta.id);
+        } else if (this.pedidoCanalId && this.venta.id) {
+          this.navegarPostFacturaPedidoCanal(this.venta.id);
+        } else {
+          this.cargarDatosIniciales();
+          this.router.navigate(['/venta/crear']);
+        }
       })
       .catch((error: any) => {
         this.emiting = false;

@@ -85,7 +85,20 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
       if (params['tipoId']) {
         this.loadTipoCliente(params['tipoId']);
       }
-      this.loadAll();
+      this.loadTiposCliente();
+    });
+    // QueryParams como fuente de verdad - nivel y filtros se envían al API
+    this.route.queryParams.subscribe(queryParams => {
+      this.filtros.nivel = queryParams['nivel'] ?? '';
+      this.filtros.estado = queryParams['estado'] ?? '';
+      this.filtros.buscador = queryParams['search'] ?? this.filtros.buscador;
+      this.filtros.orden = queryParams['order'] ?? this.filtros.orden;
+      this.filtros.direccion = queryParams['direction'] ?? this.filtros.direccion;
+      this.filtros.tipo_cliente = queryParams['tipo_cliente'] ?? '';
+      this.filtros.puntos_min = queryParams['puntos_min'] ?? '';
+      this.filtros.puntos_max = queryParams['puntos_max'] ?? '';
+      this.pagination.current_page = parseInt(queryParams['page'] || '1', 10);
+      this.loadClientes();
     });
   }
 
@@ -97,8 +110,20 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
   }
 
   loadAll(): void {
-    this.loadClientes();
-    this.loadTiposCliente();
+    // Limpiar todos los filtros y recargar
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        page: null,
+        nivel: null,
+        estado: null,
+        search: null,
+        tipo_cliente: null,
+        puntos_min: null,
+        puntos_max: null
+      },
+      queryParamsHandling: ''
+    });
   }
 
   /**
@@ -124,18 +149,23 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
     this.loading = true;
     
     // Preparar parámetros para la consulta
-    const params = {
+    const params: Record<string, string | number> = {
       page: this.pagination.current_page,
       paginate: this.filtros.paginate,
       ...(this.filtros.buscador && { search: this.filtros.buscador }),
       ...(this.filtros.tipo_cliente && { tipo_cliente: this.filtros.tipo_cliente }),
-      ...(this.filtros.nivel && { nivel: this.filtros.nivel }),
       ...(this.filtros.puntos_min && { puntos_min: this.filtros.puntos_min }),
       ...(this.filtros.puntos_max && { puntos_max: this.filtros.puntos_max }),
-      ...(this.filtros.estado && { estado: this.filtros.estado }),
+      ...(this.filtros.estado !== '' && this.filtros.estado !== null && this.filtros.estado !== undefined && { estado: this.filtros.estado }),
       ...(this.filtros.orden && { order: this.filtros.orden }),
       ...(this.filtros.direccion && { direction: this.filtros.direccion })
     };
+    // nivel: enviar cuando hay valor 1, 2 o 3 (select devuelve string)
+    const nivelVal = this.filtros.nivel;
+    const nivelNum = nivelVal != null && nivelVal !== '' ? parseInt(String(nivelVal).trim(), 10) : NaN;
+    if (!isNaN(nivelNum) && nivelNum >= 1 && nivelNum <= 3) {
+      params['nivel'] = nivelNum;
+    }
     
     // Determinar qué método usar según si hay un tipo específico
     const routeParams = this.route.snapshot.params;
@@ -277,12 +307,61 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Filtrar clientes
+   * Cambio de paginación: recargar con nuevo tamaño (sin depender de router)
+   */
+  onPaginateChange(): void {
+    this.pagination.current_page = 1;
+    this.loadClientes();
+  }
+
+  /**
+   * Limpiar solo los filtros avanzados (tipo, nivel, puntos, estado) sin afectar búsqueda ni orden
+   */
+  limpiarFiltrosAvanzados(): void {
+    this.filtros.tipo_cliente = '';
+    this.filtros.nivel = '';
+    this.filtros.puntos_min = '';
+    this.filtros.puntos_max = '';
+    this.filtros.estado = '';
+    this.modalRef?.hide();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        page: 1,
+        nivel: null,
+        estado: null,
+        tipo_cliente: null,
+        puntos_min: null,
+        puntos_max: null,
+        search: this.filtros.buscador || null,
+        order: this.filtros.orden !== 'nombre' ? this.filtros.orden : null,
+        direction: this.filtros.orden !== 'nombre' ? this.filtros.direccion : null
+      },
+      queryParamsHandling: ''
+    });
+  }
+
+  /**
+   * Filtrar clientes - actualiza URL con queryParams para que la petición incluya los filtros
    */
   filtrarClientes(): void {
     this.filtros.buscador = this.filtros.buscador.trim();
-    this.pagination.current_page = 1; // Reset a la primera página al filtrar
-    this.loadClientes();
+    this.modalRef?.hide();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        page: 1,
+        nivel: this.filtros.nivel || null,
+        estado: this.filtros.estado !== '' && this.filtros.estado != null ? this.filtros.estado : null,
+        search: this.filtros.buscador || null,
+        order: this.filtros.orden !== 'nombre' ? this.filtros.orden : null,
+        direction: this.filtros.orden !== 'nombre' ? this.filtros.direccion : null,
+        tipo_cliente: this.filtros.tipo_cliente || null,
+        puntos_min: this.filtros.puntos_min || null,
+        puntos_max: this.filtros.puntos_max || null
+      },
+      queryParamsHandling: ''
+    });
   }
 
   /**
@@ -308,9 +387,10 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
       // Si es la misma columna, cambiar dirección
       this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
     } else {
-      // Si es una columna diferente, establecer como ascendente por defecto
+      // Puntos: por defecto DESC para que los que tienen más aparezcan primero
+      const defaulDesc = ['puntos_disponibles', 'puntos_acumulados'].includes(columna);
       this.filtros.orden = columna;
-      this.filtros.direccion = 'asc';
+      this.filtros.direccion = defaulDesc ? 'desc' : 'asc';
     }
     this.filtrarClientes();
   }
@@ -348,8 +428,18 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
    */
   changePage(page: number): void {
     if (page >= 1 && page <= this.pagination.last_page) {
-      this.pagination.current_page = page;
-      this.loadClientes();
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {
+          page,
+          nivel: this.filtros.nivel || null,
+          estado: this.filtros.estado || null,
+          search: this.filtros.buscador || null,
+          order: this.filtros.orden !== 'nombre' ? this.filtros.orden : null,
+          direction: this.filtros.orden !== 'nombre' ? this.filtros.direccion : null
+        },
+        queryParamsHandling: ''
+      });
     }
   }
 

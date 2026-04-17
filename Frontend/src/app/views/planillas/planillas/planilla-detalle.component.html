@@ -494,8 +494,10 @@
               <strong>Contrato Por Obra:</strong>
               <ul class="mb-0 mt-2">
                 <li>El campo "Monto Total del Período" es editable - ingrese el monto exacto ganado en este período.</li>
+                <li>Puede registrar los <strong>días laborados</strong> del período (informativo en la planilla; el monto devengado no se prorratea por días).</li>
                 <li>No se aplican descuentos de ISSS ni AFP.</li>
                 <li>Solo se aplica retención de renta del 10% sobre el total de ingresos.</li>
+                <li>Es contrato <strong>laboral</strong>: si hay jornada extraordinaria, puede registrarla en la sección de horas extra (valor hora ordinaria se calcula a partir del monto del período).</li>
               </ul>
             </div>
 
@@ -505,8 +507,10 @@
               <strong>Servicios Profesionales:</strong>
               <ul class="mb-0 mt-2">
                 <li>El salario base es MENSUAL - se dividirá automáticamente según tipo de planilla (quincenal /2, semanal /4.33).</li>
+                <li>Puede registrar <strong>días laborados</strong> del período para recibo o control; no cambian el cálculo del honorario devengado en este módulo.</li>
                 <li>No se aplican descuentos de ISSS ni AFP.</li>
                 <li>Solo se aplica retención de renta del 10% sobre el total de ingresos.</li>
+                <li>No se registran horas extra aquí (relación típicamente civil / por resultado). Si en la práctica hubiera subordinación de hecho, conviene asesoría laboral.</li>
               </ul>
             </div>
           }
@@ -593,8 +597,7 @@
                     }
                   </div>
 
-                  <div class="mb-3" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 3 &&
-                                          detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                  <div class="mb-3">
                     <label>Días Laborados:</label>
                     <div class="input-group">
                       <input type="number" class="form-control"
@@ -606,7 +609,7 @@
                       />
                       <span class="input-group-text">días</span>
                     </div>
-                    <small class="text-muted">
+                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 3">
                       De
                       @if (planilla.tipo_planilla === 'mensual') {
                         <span>30 días mensuales</span>
@@ -617,6 +620,12 @@
                       @if (planilla.tipo_planilla === 'semanal') {
                         <span>7 días semanales</span>
                       }
+                    </small>
+                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 3">
+                      Máximo según tipo de planilla (mensual 30, quincenal 15, semanal 7). No altera el monto total devengado.
+                    </small>
+                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                      Útil para constancia en recibo o control interno. El honorario devengado sigue calculándose solo con el mensual y el tipo de planilla (no se prorratea por estos días).
                     </small>
                   </div>
 
@@ -656,8 +665,8 @@
                     </small>
                   </div>
 
-                  <!-- Horas extra: agregar por tipo (solo El Salvador) -->
-                  <ng-container *ngIf="esElSalvador">
+                  <!-- Horas extra: no en servicios profesionales (relación civil); sí en por obra (relación laboral, C.T.) -->
+                  <ng-container *ngIf="esElSalvador && detalleSeleccionado?.empleado?.tipo_contrato !== 4">
                     <div class="mb-3">
                       <label class="d-block mb-2"><i class="fa fa-clock me-1"></i> Horas extra (El Salvador)</label>
                       <p class="text-muted small mb-2">Valor hora ordinaria: ${{ getValorHoraNormalES() | number : "1.2-2" }}. Agregue filas eligiendo tipo y cantidad de horas.</p>
@@ -703,8 +712,8 @@
                       </small>
                     </div>
                   </ng-container>
-                  <!-- Horas extra único (otros países) -->
-                  <div class="mb-3" *ngIf="!esElSalvador">
+                  <!-- Horas extra único (otros países; no servicios profesionales) -->
+                  <div class="mb-3" *ngIf="!esElSalvador && detalleSeleccionado?.empleado?.tipo_contrato !== 4">
                     <label>Horas Extra:</label>
                     <div class="input-group">
                       <input type="number" class="form-control"

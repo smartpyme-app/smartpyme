@@ -20,6 +20,8 @@ use App\Exports\ClientesEmpresasPlantillaExport;
 use App\Exports\ClientesExtranjerosPlantillaExport;
 use App\Imports\ClientesExtranjeros;
 use App\Models\Ventas\Clientes\ContactoCliente;
+use App\Models\Admin\EmpresaFuncionalidad;
+use App\Services\FidelizacionCliente\LicenciaFidelizacionService;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
 use Illuminate\Support\Facades\Log;
@@ -31,11 +33,14 @@ use App\Services\Ventas\ClienteService;
 
 class ClientesController extends Controller
 {
+    /** @var LicenciaFidelizacionService */
+    protected $licenciaFidelizacionService;
     protected $clienteService;
 
-    public function __construct(ClienteService $clienteService)
+    public function __construct(ClienteService $clienteService, LicenciaFidelizacionService $licenciaFidelizacionService)
     {
         $this->clienteService = $clienteService;
+        $this->licenciaFidelizacionService = $licenciaFidelizacionService;
     }
 
     public function index(Request $request)
@@ -223,6 +228,9 @@ class ClientesController extends Controller
         $cliente->fill($data);
         $cliente->save();
 
+        if (!$request->id) {
+            $this->crearPuntosClienteSiFidelizacion($cliente);
+        }
 
         if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
             if ($request->id) {
@@ -550,5 +558,34 @@ class ClientesController extends Controller
         }
         $tipo = Auth::user()->tipo ?? '';
         return in_array($tipo, ['Administrador', 'Supervisor', 'Supervisor Limitado'], true);
+    }
+
+    /**
+     * Crear PuntosCliente para el cliente si la empresa tiene fidelización habilitada.
+     */
+    private function crearPuntosClienteSiFidelizacion(Cliente $cliente): void
+    {
+        try {
+            $empresa = $cliente->empresa;
+            if (!$empresa) {
+                return;
+            }
+
+            $empresaEfectiva = $this->licenciaFidelizacionService->getEmpresaEfectiva($empresa);
+
+            $tieneFidelizacion = EmpresaFuncionalidad::where('id_empresa', $empresaEfectiva->id)
+                ->whereHas('funcionalidad', fn ($q) => $q->where('slug', 'fidelizacion-clientes'))
+                ->where('activo', true)
+                ->exists();
+
+            if ($tieneFidelizacion) {
+                $this->licenciaFidelizacionService->crearOActualizarPuntosCliente($cliente, $empresa);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo crear PuntosCliente al crear cliente', [
+                'cliente_id' => $cliente->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -31,7 +31,69 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
 
         $this->bodegas = Bodega::where('id_empresa', $this->usuario->id_empresa)
             ->where('activo', true)
+            ->orderBy('id_sucursal')
+            ->orderBy('id')
             ->get();
+    }
+
+    private function parseBodegaIdFromStockColumnKey(string $key): ?int
+    {
+        $key = (string) $key;
+
+        if (preg_match('/^stock_bodega_(\d+)/', $key, $m)) {
+            return (int) $m[1];
+        }
+        if (preg_match('/^stock_(\d+)/', $key, $m)) {
+            return (int) $m[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, float> id_bodega => stock
+     */
+    private function extractStockValuesByBodegaId(array $row): array
+    {
+        $allowedIds = $this->bodegas->pluck('id')->all();
+        $allowedSet = array_fill_keys($allowedIds, true);
+        $out = [];
+
+        foreach ($row as $key => $value) {
+            $idBodega = $this->parseBodegaIdFromStockColumnKey((string) $key);
+            if ($idBodega === null || !isset($allowedSet[$idBodega])) {
+                continue;
+            }
+            if ($value === null || $value === '') {
+                continue;
+            }
+            if (!is_numeric($value)) {
+                continue;
+            }
+            $qty = (float) $value;
+            if ($qty < 0) {
+                continue;
+            }
+            $out[$idBodega] = $qty;
+        }
+
+        return $out;
+    }
+
+    private function normalizarStockLegacy($value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (!is_numeric($value)) {
+            return null;
+        }
+        $qty = (float) $value;
+        if ($qty < 0) {
+            return null;
+        }
+
+        return $qty;
     }
 
     public function model(array $row)
@@ -73,7 +135,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
             $id_subcategoria = $subcategoria->id;
         }
 
-        if ($row['proveedor_nombre']) {
+        if (!empty($row['proveedor_nombre'])) {
             $id_proveedor = Proveedor::where(function ($query) use ($row) {
                 $query->where('nombre', $row['proveedor_nombre'])
                     ->where('apellido', $row['proveedor_apellido']);
@@ -113,7 +175,17 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
         $producto->precio = $row['precio_sin_iva'];
         $producto->costo = $row['costo'];
         $producto->costo_promedio = $row['costo'];
-        $producto->stock = $row['sucursal_1_stock'];
+
+        $explicitStocks = $this->extractStockValuesByBodegaId($row);
+        $usaStockPorId = count($explicitStocks) > 0;
+
+        if ($usaStockPorId) {
+            $producto->stock = array_sum($explicitStocks);
+        } else {
+            $s1 = $this->normalizarStockLegacy($row['sucursal_1_stock'] ?? null);
+            $producto->stock = $s1 ?? 0;
+        }
+
         $producto->id_categoria = $id_categoria;
         $producto->id_subcategoria = $id_subcategoria ?? null;
         $producto->codigo = $row['codigo'];
@@ -139,42 +211,66 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
             ->get()
             ->keyBy('id_bodega');
 
-        if (isset($bodegas[0]) && isset($row['sucursal_1_stock'])) {
-            $this->procesarInventarioBodega(
-                $inventariosExistentes->get($bodegas[0]->id),
-                $bodegas[0],
-                $row['sucursal_1_stock'],
-                $producto->id
-            );
-        }
-
-        if (isset($bodegas[1]) && isset($row['sucursal_2_stock'])) {
-            $this->procesarInventarioBodega(
-                $inventariosExistentes->get($bodegas[1]->id),
-                $bodegas[1],
-                $row['sucursal_2_stock'],
-                $producto->id
-            );
-        }
-
-        if (isset($bodegas[2]) && isset($row['sucursal_3_stock'])) {
-            $this->procesarInventarioBodega(
-                $inventariosExistentes->get($bodegas[2]->id),
-                $bodegas[2],
-                $row['sucursal_3_stock'],
-                $producto->id
-            );
-        }
-
-        // ✅ Procesar bodegas adicionales (desde la 4ta en adelante)
-        if ($bodegas->count() > 3) {
-            for ($i = 3; $i < $bodegas->count(); $i++) {
+        if ($usaStockPorId) {
+            $bodegasPorId = $bodegas->keyBy('id');
+            foreach ($explicitStocks as $idBodega => $stock) {
+                $bodega = $bodegasPorId->get($idBodega);
+                if (!$bodega) {
+                    continue;
+                }
                 $this->procesarInventarioBodega(
-                    $inventariosExistentes->get($bodegas[$i]->id),
-                    $bodegas[$i],
-                    0, // Stock inicial en 0 para bodegas adicionales
+                    $inventariosExistentes->get($idBodega),
+                    $bodega,
+                    $stock,
                     $producto->id
                 );
+            }
+        } else {
+            if (isset($bodegas[0])) {
+                $s = $this->normalizarStockLegacy($row['sucursal_1_stock'] ?? null);
+                if ($s !== null) {
+                    $this->procesarInventarioBodega(
+                        $inventariosExistentes->get($bodegas[0]->id),
+                        $bodegas[0],
+                        $s,
+                        $producto->id
+                    );
+                }
+            }
+
+            if (isset($bodegas[1])) {
+                $s = $this->normalizarStockLegacy($row['sucursal_2_stock'] ?? null);
+                if ($s !== null) {
+                    $this->procesarInventarioBodega(
+                        $inventariosExistentes->get($bodegas[1]->id),
+                        $bodegas[1],
+                        $s,
+                        $producto->id
+                    );
+                }
+            }
+
+            if (isset($bodegas[2])) {
+                $s = $this->normalizarStockLegacy($row['sucursal_3_stock'] ?? null);
+                if ($s !== null) {
+                    $this->procesarInventarioBodega(
+                        $inventariosExistentes->get($bodegas[2]->id),
+                        $bodegas[2],
+                        $s,
+                        $producto->id
+                    );
+                }
+            }
+
+            if ($bodegas->count() > 3) {
+                for ($i = 3; $i < $bodegas->count(); $i++) {
+                    $this->procesarInventarioBodega(
+                        $inventariosExistentes->get($bodegas[$i]->id),
+                        $bodegas[$i],
+                        0,
+                        $producto->id
+                    );
+                }
             }
         }
 
@@ -219,7 +315,6 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
             'nombre' => 'required|string',
             'precio_sin_iva' => 'required|numeric',
             'costo' => 'required|numeric',
-            'sucursal_*_stock' => 'nullable|numeric|min:0',
             'categoria' => 'required|string',
             'proveedor_apellido' => 'required_with:proveedor_nombre',
         ];

@@ -47,6 +47,7 @@ class Producto extends Model
         'shopify_inventory_item_id',
         'syncing_from_shopify',
         'last_shopify_sync',
+        'genera_comanda',
         'cod_proveed_prod',
         'talla',
         'color',
@@ -63,6 +64,7 @@ class Producto extends Model
         'last_woocommerce_sync' => 'datetime',
         'imported_from_woocommerce_csv' => 'boolean',
         'inventario_por_lotes' => 'boolean',
+        'genera_comanda' => 'boolean',
     ];
 
     protected static function boot()

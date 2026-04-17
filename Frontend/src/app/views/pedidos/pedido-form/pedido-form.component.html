@@ -1,0 +1,115 @@
+<div class="container-fluid py-4">
+  <div class="row mb-3">
+    <div class="col">
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="volver()">
+        <i class="fa fa-arrow-left me-1"></i> Volver al listado
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="cargando" class="text-center py-5">
+    <span class="spinner-border spinner-border-sm me-2"></span> Cargando pedido...
+  </div>
+
+  <div *ngIf="!cargando" class="row">
+    <div class="col-lg-10 col-xl-8">
+      <h2 class="mb-3">{{ modoEdicion ? 'Editar pedido' : 'Nuevo pedido' }}</h2>
+
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="pf_fecha">Fecha</label>
+              <input id="pf_fecha" type="date" class="form-control" [(ngModel)]="fecha" name="fecha">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="pf_canal">Canal</label>
+              <input id="pf_canal" type="text" class="form-control" [(ngModel)]="canal" name="canal" placeholder="Ej. Pedidos Ya">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="pf_ref">Referencia externa</label>
+              <input id="pf_ref" type="text" class="form-control" [(ngModel)]="referenciaExterna" name="ref" placeholder="ID en plataforma">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="pf_cli">Cliente (opcional)</label>
+              <select id="pf_cli" class="form-select" [(ngModel)]="clienteId" name="clienteId">
+                <option [ngValue]="null">— Sin cliente —</option>
+                <option *ngFor="let c of clientes" [ngValue]="c.id">
+                  {{ c.tipo == 'Empresa' ? c.nombre_empresa : c.nombre_completo }}
+                </option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="pf_obs">Observaciones</label>
+              <textarea id="pf_obs" class="form-control" rows="2" [(ngModel)]="observaciones" name="obs"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-light">
+          <strong>Productos</strong>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Agregar producto</label>
+            <app-buscador-productos (selectProducto)="onProductoSelect($event)"></app-buscador-productos>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th style="width:100px">Cantidad</th>
+                  <th style="width:110px">Precio</th>
+                  <th style="width:110px">Desc.</th>
+                  <th style="width:110px">Total línea</th>
+                  <th>Notas</th>
+                  <th style="width:50px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="!lineas.length">
+                  <td colspan="7" class="text-muted text-center py-3">Agregue productos con el buscador.</td>
+                </tr>
+                <tr *ngFor="let l of lineas; let i = index">
+                  <td>{{ l.nombre }}</td>
+                  <td>
+                    <input type="number" class="form-control form-control-sm" min="0.0001" step="any" [(ngModel)]="l.cantidad" [name]="'c'+i">
+                  </td>
+                  <td>
+                    <input type="number" class="form-control form-control-sm" min="0" step="any" [(ngModel)]="l.precio" [name]="'p'+i">
+                  </td>
+                  <td>
+                    <input type="number" class="form-control form-control-sm" min="0" step="any" [(ngModel)]="l.descuento" [name]="'d'+i">
+                  </td>
+                  <td class="text-end">{{ totalLinea(l) | number:'1.2-2' }}</td>
+                  <td>
+                    <input type="text" class="form-control form-control-sm" [(ngModel)]="l.notas" [name]="'n'+i" placeholder="Notas / ID pedido">
+                  </td>
+                  <td>
+                    <button type="button" class="btn btn-sm btn-outline-danger" (click)="quitarLinea(i)"><i class="fa fa-times"></i></button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="text-end mt-2 fw-bold" *ngIf="lineas.length">
+            Total: {{ totalPedido() | number:'1.2-2' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary" [disabled]="guardando" (click)="guardar()">
+          <span *ngIf="!guardando">Guardar</span>
+          <span *ngIf="guardando">Guardando...</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" [disabled]="guardando" (click)="volver()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>

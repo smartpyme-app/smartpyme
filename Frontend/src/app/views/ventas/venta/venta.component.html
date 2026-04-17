@@ -249,6 +249,15 @@
                             <td class="text-end"><b> {{ venta.cuenta_a_terceros | currency}}</b> </td>
                         </tr>
                     }
+                    @if((venta?.descuento_puntos && +venta.descuento_puntos > 0) || (venta?.puntos_canjeados && +venta.puntos_canjeados > 0)){
+                      <tr>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                          <b>Descuento por puntos</b>
+                          <small class="text-muted d-block" *ngIf="venta?.puntos_canjeados">{{ venta.puntos_canjeados }} pts canjeados</small>
+                        </td>
+                        <td class="text-end text-success"><b>{{ venta?.descuento_puntos | currency:'USD':'symbol':'1.2' }}</b></td>
+                      </tr>
+                    }
                     @if (venta.propina > 0) {
                         <tr>
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Propina:</b></td>

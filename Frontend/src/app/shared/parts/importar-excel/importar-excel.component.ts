@@ -1,8 +1,10 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
@@ -21,7 +23,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
     ImportarExcelComponent,
   ],
 })
-export class ImportarExcelComponent implements OnInit {
+export class ImportarExcelComponent implements OnInit, OnDestroy {
 
     @Input() tipo:string = 'button';
     @Input() nombre:string = '';
@@ -36,6 +38,8 @@ export class ImportarExcelComponent implements OnInit {
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
+
+    private readonly destroy$ = new Subject<void>();
 
     /** URL de la plantilla con parámetro de versión para evitar caché del navegador */
     get plantillaUrlConCache(): string {
@@ -53,6 +57,11 @@ export class ImportarExcelComponent implements OnInit {
         this.calcularPlantillaUrl();
     }
 
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
+
     /**
      * Calcula la URL de la plantilla según el tipo y el país de la empresa
      * Para clientes-personas y clientes-empresas, usa plantillas generales si no es El Salvador
@@ -60,6 +69,11 @@ export class ImportarExcelComponent implements OnInit {
      */
     calcularPlantillaUrl(): void {
         const nombreArchivo = this.nombre.toLowerCase();
+
+        if (nombreArchivo === 'productos') {
+            this.plantillaUrl = '';
+            return;
+        }
 
         // Manejo especial para ventas
         if (nombreArchivo === 'ventas') {
@@ -267,10 +281,24 @@ export class ImportarExcelComponent implements OnInit {
         this.resetState();
     }
 
+    public descargarPlantillaImportacionProductos(event: Event): void {
+        event.preventDefault();
+        this.apiService.download('productos/plantilla-importacion')
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (blob) => {
+                    this.apiService.downloadFile(blob, 'plantilla_importacion_productos.xlsx');
+                },
+                error: () => {
+                    this.alertService.error('Error al descargar la plantilla de productos');
+                },
+            });
+    }
+
     public downloadTemplate() {
         const url = `${this.nombre.toLowerCase()}/plantilla`;
         this.apiService.download(url)
-          .pipe(this.untilDestroyed())
+          .pipe(takeUntil(this.destroy$))
           .subscribe({
             next: (response) => {
                 const blob = new Blob([response], {
