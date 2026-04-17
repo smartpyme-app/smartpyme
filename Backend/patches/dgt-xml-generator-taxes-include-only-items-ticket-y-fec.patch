@@ -1,0 +1,24 @@
+diff --git a/src/Views/Components/items-ticket.xml.twig b/src/Views/Components/items-ticket.xml.twig
+--- a/src/Views/Components/items-ticket.xml.twig
++++ b/src/Views/Components/items-ticket.xml.twig
+@@ -39,8 +39,8 @@
+     <SubTotal>{{ (item.sub_total|default(0))|number_format(5, '.', '') }}</SubTotal>
+     <BaseImponible>{{ (item.taxable_base|default(0))|number_format(5, '.', '') }}</BaseImponible>
+     {% include 'Components/taxes.xml.twig' with { 'node': 'Impuesto',
+-    'nodeAmount': 'Monto', 'taxes': item.taxes } %}
++    'nodeAmount': 'Monto', 'taxes': item.taxes } only %}
+     {% set assumed = item.assumed_factory_tax ?? 0 %}
+     <ImpuestoAsumidoEmisorFabrica>{{ assumed|number_format(2, '.', '') }}</ImpuestoAsumidoEmisorFabrica>
+     <ImpuestoNeto>{{ (item.total_tax|default(0))|number_format(5, '.', '') }}</ImpuestoNeto>
+diff --git a/src/Views/Components/items-fec.xml.twig b/src/Views/Components/items-fec.xml.twig
+--- a/src/Views/Components/items-fec.xml.twig
++++ b/src/Views/Components/items-fec.xml.twig
+@@ -39,8 +39,8 @@
+     <SubTotal>{{ (item.sub_total|default(0))|number_format(5, '.', '') }}</SubTotal>
+     <BaseImponible>{{ (item.taxable_base|default(0))|number_format(5, '.', '') }}</BaseImponible>
+     {% include 'Components/taxes.xml.twig' with { 'node': 'Impuesto',
+-    'nodeAmount': 'Monto', 'taxes': item.taxes } %}
++    'nodeAmount': 'Monto', 'taxes': item.taxes } only %}
+     {# XSD facturaElectronicaCompra LineaDetalle: Impuesto* → ImpuestoNeto → MontoTotalLinea (sin ImpuestoAsumidoEmisorFabrica en línea; sí en facturaElectronica/tiquete). #}
+     <ImpuestoNeto>{{ (item.total_tax|default(0))|number_format(5, '.', '') }}</ImpuestoNeto>
+     <MontoTotalLinea>{{ (item.total|default(0))|number_format(5, '.', '') }}</MontoTotalLinea>
