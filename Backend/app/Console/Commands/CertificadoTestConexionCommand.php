@@ -15,32 +15,36 @@ class CertificadoTestConexionCommand extends Command
 
     public function handle(): int
     {
-        $host = env('EC2_HOST');
-        $user = env('EC2_USER');
-        $keyPath = env('EC2_KEY_PATH');
-        $root = env('EC2_UPLOADS_PATH');
+        // Usar config(), no env(): con `php artisan config:cache` en producción, env() fuera de /config suele devolver null.
+        $diskConfig = config('filesystems.disks.uploads_ec2', []);
+        $host = $diskConfig['host'] ?? null;
+        $user = $diskConfig['username'] ?? null;
+        $keyPath = $diskConfig['privateKey'] ?? null;
+        $root = $diskConfig['root'] ?? null;
+
+        $hintCache = ' En producción, tras editar .env, ejecute: php artisan config:cache';
 
         if ($host === null || $host === '') {
-            $this->error('EC2_HOST no está configurado. Defínalo en .env para probar la conexión SFTP.');
+            $this->error('EC2_HOST no está configurado (o la caché de config está desactualizada). Defínalo en .env y vuelva a generar la caché.'.$hintCache);
 
             return self::FAILURE;
         }
 
         if ($user === null || $user === '') {
-            $this->error('EC2_USER no está configurado en .env.');
+            $this->error('EC2_USER no está configurado en .env (o en la caché de config).'.$hintCache);
 
             return self::FAILURE;
         }
 
         if ($keyPath === null || $keyPath === '') {
-            $this->error('EC2_KEY_PATH no está configurado en .env.');
+            $this->error('EC2_KEY_PATH no está configurado en .env (o en la caché de config).'.$hintCache);
 
             return self::FAILURE;
         }
 
         if (! is_readable($keyPath)) {
             $this->error(sprintf(
-                'No se puede leer la llave privada en "%s". Compruebe la ruta y los permisos (recomendado: chmod 600).',
+                'No se puede leer la llave privada en "%s". Compruebe la ruta en el servidor, que el archivo exista y los permisos (recomendado: chmod 600).',
                 $keyPath
             ));
 
@@ -48,7 +52,7 @@ class CertificadoTestConexionCommand extends Command
         }
 
         if ($root === null || $root === '') {
-            $this->error('EC2_UPLOADS_PATH no está configurado en .env.');
+            $this->error('EC2_UPLOADS_PATH no está configurado en .env (o en la caché de config).'.$hintCache);
 
             return self::FAILURE;
         }
