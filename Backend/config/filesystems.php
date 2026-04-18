@@ -72,6 +72,16 @@ return [
             'visibility' => 'public',
         ],
 
+        'uploads_ec2' => [
+            'driver' => 'sftp',
+            'host' => env('EC2_HOST'),
+            'username' => env('EC2_USER'),
+            'privateKey' => env('EC2_KEY_PATH'),
+            'root' => env('EC2_UPLOADS_PATH'),
+            'port' => 22,
+            'timeout' => 30,
+        ],
+
     ],
 
     /*

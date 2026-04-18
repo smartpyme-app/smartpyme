@@ -15,6 +15,7 @@
 use App\Http\Controllers\Api\Admin\EmpresasController;
 use App\Http\Controllers\Api\Admin\EmpresasFuncionalidadesController;
 use App\Http\Controllers\Api\Admin\SuscripcionesController;
+use App\Http\Controllers\Api\CertificadoController;
 use App\Http\Controllers\Api\Constants\ConstantsController;
 use App\Http\Controllers\n1co\EstadoController;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,8 @@ require base_path('routes/modulos/n1co/suscripciones-n1co.php');
 require base_path('routes/modulos/auth.php');
 
 Route::group(['middleware' => ['jwt.auth']], function () {
+
+	Route::post('/certificados/subir', [CertificadoController::class, 'subir']);
 
 	Route::get('constants', [ConstantsController::class, 'getAppConstants']);
 
