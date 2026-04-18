@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, TemplateRef, DestroyRef, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, TemplateRef, DestroyRef, inject, ChangeDetectorRef, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
-import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {
     ContribuyenteActividadOption,
     mapContribuyenteAeResponseToActividades,
@@ -71,6 +71,15 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public subiendoCertCr: boolean = false;
     /** Hay al menos un .p12 en servidor (FE Costa Rica). */
     public tieneCertificadoFeCr: boolean = false;
+    /** Subida de certificado al servidor SFTP (FE El Salvador / EC2). */
+    public subiendoCertificadoSv: boolean = false;
+    /** Archivo elegido en el input; se envía solo al pulsar «Subir certificado». */
+    public archivoCertificadoSv: File | null = null;
+    /** Nombre final en el servidor tras el último envío exitoso (respuesta API). */
+    public ultimoCertificadoSvGuardado: string | null = null;
+
+    @ViewChild('feSvCertificadoInput')
+    private feSvCertificadoInputRef?: ElementRef<HTMLInputElement>;
     public canales: any = [];
     public tieneAccesoPropina: boolean = false;
     public tieneAccesoModuloRestaurantePedidos: boolean = false;
@@ -530,6 +539,15 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         return resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR;
     }
 
+    public esElSalvadorFe(): boolean {
+        return resolveCodigoPaisFe(this.empresa) === FE_PAIS_SV;
+    }
+
+    /** NIT de la empresa solo dígitos (mismo criterio que el backend para el nombre de archivo). */
+    public nitEmpresaFeSv(): string {
+        return String(this.empresa?.nit ?? '').replace(/\D/g, '');
+    }
+
     /** Cantones DGT filtrados por provincia (cod_departamento). */
     public municipiosFiltradosCr(): any[] {
         const c = this.empresa?.cod_departamento;
@@ -773,6 +791,78 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         }
         this.reconciliarSeleccionActividadContribuyenteCr();
         this.cdr.markForCheck();
+    }
+
+    public onArchivoCertificadoSvSeleccionado(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0] ?? null;
+        this.archivoCertificadoSv = file;
+        if (!file) {
+            this.cdr.markForCheck();
+            return;
+        }
+        const allowed = ['pdf', 'crt', 'pem', 'p12', 'cer'];
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (!ext || !allowed.includes(ext)) {
+            this.alertService.warning('Archivo no válido', 'Use pdf, crt, pem, p12 o cer.');
+            this.limpiarSeleccionCertificadoSv();
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            this.alertService.warning('Archivo demasiado grande', 'El tamaño máximo es 5 MB.');
+            this.limpiarSeleccionCertificadoSv();
+            return;
+        }
+        this.cdr.markForCheck();
+    }
+
+    public enviarCertificadoFeSv(): void {
+        const file = this.archivoCertificadoSv;
+        if (!file) {
+            this.alertService.warning('Certificado', 'Seleccione un archivo antes de subir.');
+            return;
+        }
+        const nit = this.nitEmpresaFeSv();
+        if (!nit) {
+            this.alertService.warning('NIT requerido', 'Registre el NIT de la empresa en la pestaña Datos generales antes de subir el certificado.');
+            return;
+        }
+        const fd = new FormData();
+        fd.append('archivo', file);
+        fd.append('nit', nit);
+        this.subiendoCertificadoSv = true;
+        this.cdr.markForCheck();
+        this.apiService.upload('certificados/subir', fd)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (res: { success?: boolean; message?: string; filename?: string }) => {
+                    this.subiendoCertificadoSv = false;
+                    if (res?.success) {
+                        this.ultimoCertificadoSvGuardado = res.filename ?? null;
+                        const detalle = res.filename
+                            ? `${res.message ?? 'Archivo enviado correctamente.'} Nombre en el servidor: ${res.filename}.`
+                            : (res.message ?? 'Archivo enviado correctamente.');
+                        this.alertService.success('Certificado', detalle);
+                        this.limpiarSeleccionCertificadoSv();
+                    } else {
+                        this.alertService.warning('Certificado', res?.message ?? 'No se pudo completar la subida.');
+                    }
+                    this.cdr.markForCheck();
+                },
+                error: (e) => {
+                    this.subiendoCertificadoSv = false;
+                    this.alertService.error(e);
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
+    private limpiarSeleccionCertificadoSv(): void {
+        this.archivoCertificadoSv = null;
+        const el = this.feSvCertificadoInputRef?.nativeElement;
+        if (el) {
+            el.value = '';
+        }
     }
 
     public subirCertificadoFeCr(event: Event): void {

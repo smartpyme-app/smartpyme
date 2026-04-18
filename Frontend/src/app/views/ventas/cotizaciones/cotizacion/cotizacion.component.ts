@@ -56,6 +56,7 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
   public sucursales: any = [];
   public bodegas: any = [];
   public impuestos: any = [];
+  private impuestosCatalogoCargado = false;
   public recintos: any = [];
   public regimenes: any = [];
   public incoterms: any = [];
@@ -234,13 +235,20 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
     this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
       (impuestos) => {
         this.impuestos = impuestos;
+        this.impuestosCatalogoCargado = true;
         this.cdr.markForCheck();
-        if (!this.venta.impuestos || this.venta.iva == 0) {
-          this.venta.impuestos = this.impuestos;
+        const esEdicion = !!this.route.snapshot.paramMap.get('id');
+        const sinImpuestosEnVenta =
+          !this.venta.impuestos ||
+          !Array.isArray(this.venta.impuestos) ||
+          this.venta.impuestos.length === 0;
+        if (!esEdicion && sinImpuestosEnVenta && this.impuestos.length > 0) {
+          this.venta.impuestos = [...this.impuestos];
           this.sumTotal();
         }
       },
       (error) => {
+        this.impuestosCatalogoCargado = true;
         this.alertService.error(error);
         this.cdr.markForCheck();
       }
@@ -518,6 +526,7 @@ if (
   this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
     (impuestos) => {
       this.impuestos = impuestos;
+      this.impuestosCatalogoCargado = true;
 
       this.apiService.read(
         'cotizacionVentas/',
@@ -601,6 +610,7 @@ if (
       );
     },
     (error) => {
+      this.impuestosCatalogoCargado = true;
       this.alertService.error(error);
     }
   );
@@ -904,14 +914,29 @@ if (
   }
 
   public onFacturar() {
-    if (
-      this.venta.cobrar_impuestos &&
-      (!this.venta.impuestos || this.venta.impuestos.length === 0)
-    ) {
-      this.alertService.error(
-        'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
-      );
-      return;
+    if (!this.venta.impuestos || !Array.isArray(this.venta.impuestos)) {
+      this.venta.impuestos = [];
+    }
+    if (this.venta.cobrar_impuestos) {
+      if (this.venta.impuestos.length === 0 && this.impuestos?.length > 0) {
+        this.venta.impuestos = [...this.impuestos];
+      }
+      if (this.venta.impuestos.length === 0) {
+        if (!this.impuestosCatalogoCargado) {
+          this.alertService.warning(
+            'Cargando datos',
+            'Espere a que termine de cargar el catálogo de impuestos e intente de nuevo.'
+          );
+          return;
+        }
+        if (this.impuestos.length === 0) {
+          this.alertService.error(
+            'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
+          );
+          return;
+        }
+        this.venta.impuestos = [...this.impuestos];
+      }
     }
     Swal.fire({
       title:

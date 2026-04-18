@@ -1024,6 +1024,49 @@
                     </div>
                 </div>
             </div>
+            @if (esElSalvadorFe()) {
+            <div class="row mt-3">
+                <div class="col-12 mb-2">
+                    <h6 class="mb-0 fw-bold"><i class="fa fa-certificate me-2 text-secondary"></i>Certificado MH (pruebas/producción)</h6>
+                </div>
+                <div class="form-group col-md-6 col-lg-5">
+                    <label for="fe_sv_nit_lectura">NIT de la empresa</label>
+                    <input id="fe_sv_nit_lectura" type="text" class="form-control bg-light" [value]="nitEmpresaFeSv()"
+                        readonly tabindex="-1" autocomplete="off">
+                    <small class="form-text text-muted">Solo lectura. El archivo en el servidor se guarda como este NIT más la extensión (ej. 06141234561234.crt).</small>
+                </div>
+                <div class="form-group col-md-6 col-lg-7">
+                    <label for="fe_sv_certificado_archivo">Certificado (servidor de firmado)</label>
+                    <input #feSvCertificadoInput id="fe_sv_certificado_archivo" type="file" class="form-control"
+                        accept=".pdf,.crt,.pem,.p12,.cer,application/pdf,application/x-pkcs12"
+                        (change)="onArchivoCertificadoSvSeleccionado($event)"
+                        [disabled]="subiendoCertificadoSv || !nitEmpresaFeSv()">
+                    @if (archivoCertificadoSv) {
+                    <small class="form-text text-muted d-block mt-1">Seleccionado: <strong>{{ archivoCertificadoSv.name }}</strong></small>
+                    }
+                    <button type="button" class="btn btn-primary mt-2"
+                        (click)="enviarCertificadoFeSv()"
+                        [disabled]="!archivoCertificadoSv || subiendoCertificadoSv || !nitEmpresaFeSv()">
+                        @if (!subiendoCertificadoSv) {
+                        <span>Subir certificado</span>
+                        }
+                        @if (subiendoCertificadoSv) {
+                        <span>Subiendo…</span>
+                        }
+                    </button>
+                    @if (ultimoCertificadoSvGuardado) {
+                    <small class="form-text text-success d-block mt-2">
+                        Último envío correcto al servidor: <strong>{{ ultimoCertificadoSvGuardado }}</strong>
+                    </small>
+                    }
+                </div>
+            </div>
+            <div class="alert alert-light border mt-2 mb-0">
+                <small>
+                    <i class="fa fa-info-circle me-1"></i> Si vuelve a subir el mismo tipo de archivo (misma extensión) para este NIT, el anterior se reemplaza automáticamente (p. ej. certificado de pruebas y luego el de producción).
+                </small>
+            </div>
+            }
             @if (esCostaRicaFe()) {
             <div class="row mt-2">
                 <div class="form-group col-md-8 col-lg-6">

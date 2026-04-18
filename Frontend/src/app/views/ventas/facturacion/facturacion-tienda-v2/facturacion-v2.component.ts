@@ -58,6 +58,7 @@ export class FacturacionV2Component implements OnInit {
   public sucursales: any = [];
   public bodegas: any = [];
   public impuestos: any = [];
+  private impuestosVentaCatalogoCargado = false;
   public recintos: any = [];
   public regimenes: any = [];
   public incoterms: any = [];
@@ -227,6 +228,7 @@ export class FacturacionV2Component implements OnInit {
       (impuestos) => {
         // Filtrar solo los impuestos que aplican a ventas
         this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
+        this.impuestosVentaCatalogoCargado = true;
         // Al editar cotización/venta no sobrescribir impuestos para no volver a agregarlos
         const esEdicion = !!this.route.snapshot.paramMap.get('id');
         const sinImpuestosEnVenta =
@@ -239,6 +241,7 @@ export class FacturacionV2Component implements OnInit {
         }
       },
       (error) => {
+        this.impuestosVentaCatalogoCargado = true;
         this.alertService.error(error);
       }
     );
@@ -1376,6 +1379,36 @@ export class FacturacionV2Component implements OnInit {
       this.mensajeErrorBanco = 'Debe seleccionar un banco para este método de pago.';
       this.alertService.error('Debe seleccionar un banco para este método de pago.');
       return;
+    }
+
+    if (this.venta.cobrar_impuestos) {
+      const vacios =
+        !this.venta.impuestos ||
+        !Array.isArray(this.venta.impuestos) ||
+        this.venta.impuestos.length === 0;
+      if (vacios && this.impuestos?.length > 0) {
+        this.venta.impuestos = [...this.impuestos];
+      }
+      const aunVacios =
+        !this.venta.impuestos ||
+        !Array.isArray(this.venta.impuestos) ||
+        this.venta.impuestos.length === 0;
+      if (aunVacios) {
+        if (!this.impuestosVentaCatalogoCargado) {
+          this.alertService.warning(
+            'Cargando datos',
+            'Espere a que termine de cargar el catálogo de impuestos e intente de nuevo.'
+          );
+          return;
+        }
+        if (this.impuestos.length === 0) {
+          this.alertService.error(
+            'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA (con “Aplica en ventas” activo).'
+          );
+          return;
+        }
+        this.venta.impuestos = [...this.impuestos];
+      }
     }
 
     if (
