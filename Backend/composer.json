@@ -20,7 +20,7 @@
 
         "dazza-dev/dgt-cr": "^1.0",
         "dazza-dev/laravel-dgt-cr": "1.0",
-        "dazza-dev/dgt-xml-generator": "dev-main as 1.0.0",
+        "dazza-dev/dgt-xml-generator": "v1.0.1",
 
         "doctrine/dbal": "^3.9",
         "guzzlehttp/guzzle": "^7.0.1",
