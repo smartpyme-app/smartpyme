@@ -341,7 +341,7 @@ class MHFactura extends Model
                     "tipoItem" => $detalle->tipo_item,
                     "numeroDocumento" => NULL,
                     "cantidad" => floatval(number_format($cantidad, 2, '.', '')),
-                    "codigo" => $detalle->codigo,
+                    "codigo" => filled($detalle->codigo) ? $detalle->codigo : null,
                     "codTributo" => $detalle->codTributo,
                     "uniMedida" => $detalle->cod_medida,
                     "descripcion" => $detalle->nombre_producto,
