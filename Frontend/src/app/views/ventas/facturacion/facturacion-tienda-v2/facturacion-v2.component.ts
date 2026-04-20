@@ -47,6 +47,12 @@ export class FacturacionV2Component implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  /**
+   * Si el usuario movió el switch de retención IVA 1%, no aplicar la regla automática (gran contribuyente + monto)
+   * hasta cambiar de cliente o iniciar un documento nuevo desde carga inicial.
+   */
+  private retencionIvaGcUsuarioDecidio = false;
+
   preCuentaId: number | null = null;
   sesionId: number | null = null;
   pedidoCanalId: number | null = null;
@@ -268,6 +274,7 @@ export class FacturacionV2Component implements OnInit {
 
   public cargarDatosIniciales() {
     this.venta = {};
+    this.retencionIvaGcUsuarioDecidio = false;
     this.venta.fecha = this.apiService.date();
     this.venta.fecha_pago = this.apiService.date();
     this.venta.forma_pago = 'Efectivo';
@@ -411,6 +418,7 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.sumTotal();
@@ -435,6 +443,7 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
                 this.venta.cliente = {};
@@ -481,6 +490,7 @@ export class FacturacionV2Component implements OnInit {
           .subscribe(
             (venta) => {
               this.venta = venta;
+              this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);
               if(!this.venta.cliente){
                   this.venta.cliente = {};
@@ -943,14 +953,23 @@ export class FacturacionV2Component implements OnInit {
         if (!c || c.tipo_contribuyente !== 'Grande') {
             return;
         }
+        if (this.retencionIvaGcUsuarioDecidio) {
+            return;
+        }
         const sub = parseFloat(this.venta.sub_total) || 0;
         const min = this.montoMinimoRetencionIvaGc();
-        this.venta.retencion = sub > min;
+        this.venta.retencion = sub >= min;
+    }
+
+    public onRetencionIvaManualChange(): void {
+        this.retencionIvaGcUsuarioDecidio = true;
+        this.sumTotal();
     }
 
     // Cliente
     public setCliente(cliente:any){
         if(cliente.id){
+            this.retencionIvaGcUsuarioDecidio = false;
             cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
             this.venta.id_cliente = cliente.id;
             this.venta.cliente = cliente;

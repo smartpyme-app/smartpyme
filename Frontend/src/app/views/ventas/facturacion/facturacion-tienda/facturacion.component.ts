@@ -47,6 +47,12 @@ export class FacturacionComponent implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  /**
+   * Si el usuario movió el switch de retención IVA 1%, no aplicar la regla automática (gran contribuyente + monto)
+   * hasta cambiar de cliente o iniciar un documento nuevo desde carga inicial.
+   */
+  private retencionIvaGcUsuarioDecidio = false;
+
   /** Pre-cuenta restaurante: al facturar desde cuenta-mesa */
   preCuentaId: number | null = null;
   sesionId: number | null = null;
@@ -275,6 +281,7 @@ export class FacturacionComponent implements OnInit {
 
   public cargarDatosIniciales() {
     this.venta = {};
+    this.retencionIvaGcUsuarioDecidio = false;
     this.venta.fecha = this.apiService.date();
     this.venta.fecha_pago = this.apiService.date();
     this.venta.forma_pago = 'Efectivo';
@@ -418,6 +425,7 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.sumTotal();
@@ -442,6 +450,7 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
                 this.venta.cliente = {};
@@ -488,6 +497,7 @@ export class FacturacionComponent implements OnInit {
           .subscribe(
             (venta) => {
               this.venta = venta;
+              this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);
               if(!this.venta.cliente){
                   this.venta.cliente = {};
@@ -856,27 +866,37 @@ export class FacturacionComponent implements OnInit {
     }
   }
 
-    /** Monto mínimo (USD u otra moneda de la empresa) para aplicar retención IVA 1% automática a clientes gran contribuyente. */
+    /** Umbral de subtotal (USD u otra moneda de la empresa): retención IVA 1% automática en GC si el subtotal alcanza este monto (por defecto 100). */
     private montoMinimoRetencionIvaGc(): number {
         const v = this.apiService.auth_user()?.empresa?.monto_minimo_retencion_iva_gc;
         const n = parseFloat(v);
         return !isNaN(n) && n >= 0 ? n : 100;
     }
 
-    /** Activa o desactiva la retención según subtotal y tipo de contribuyente del cliente. */
+    /** Activa o desactiva la retención según subtotal y tipo de contribuyente del cliente (si el usuario no la ajustó a mano). */
     private sincronizarRetencionGranContribuyente(): void {
         const c = this.venta?.cliente;
         if (!c || c.tipo_contribuyente !== 'Grande') {
             return;
         }
+        if (this.retencionIvaGcUsuarioDecidio) {
+            return;
+        }
         const sub = parseFloat(this.venta.sub_total) || 0;
         const min = this.montoMinimoRetencionIvaGc();
-        this.venta.retencion = sub > min;
+        this.venta.retencion = sub >= min;
+    }
+
+    /** El usuario movió el switch de retención IVA: no volver a imponer la regla automática en cada recálculo. */
+    public onRetencionIvaManualChange(): void {
+        this.retencionIvaGcUsuarioDecidio = true;
+        this.sumTotal();
     }
 
     // Cliente
     public setCliente(cliente:any){
         if(cliente.id){
+            this.retencionIvaGcUsuarioDecidio = false;
             cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
             this.venta.id_cliente = cliente.id;
             this.venta.cliente = cliente;

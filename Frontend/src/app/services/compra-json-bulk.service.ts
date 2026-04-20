@@ -407,7 +407,7 @@ export class CompraJsonBulkService {
         if (prov?.tipo_contribuyente === 'Grande') {
             const sub = parseFloat(compra.sub_total) || 0;
             const min = parseFloat(this.apiService.auth_user()?.empresa?.monto_minimo_retencion_iva_gc) || 100;
-            compra.retencion = sub > min;
+            compra.retencion = sub >= min;
         }
 
         compra.percepcion = compra.cobrar_percepcion ? compra.sub_total * 0.01 : 0;
