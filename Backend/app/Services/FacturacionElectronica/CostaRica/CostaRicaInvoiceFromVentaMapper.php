@@ -962,7 +962,8 @@ final class CostaRicaInvoiceFromVentaMapper
         $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
         $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
 
-        $lineItems = $compra->detalles->map(fn (DetalleCompra $d) => $this->lineaCompra($d, $empresa, $compra))->all();
+        // Índices 0..n-1: el resumen empareja por índice con detalles; sin values() el map puede conservar keys del modelo y desalinear servicios vs mercancías (-111 Hacienda).
+        $lineItems = array_values($compra->detalles->map(fn (DetalleCompra $d) => $this->lineaCompra($d, $empresa, $compra))->all());
 
         return [
             'date' => $dateIso,
@@ -1015,7 +1016,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
         $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
 
-        $lineItems = $gasto->detalles->map(fn (DetalleEgreso $d) => $this->lineaGastoFec($d, $empresa, $gasto))->all();
+        $lineItems = array_values($gasto->detalles->map(fn (DetalleEgreso $d) => $this->lineaGastoFec($d, $empresa, $gasto))->all());
 
         return [
             'date' => $dateIso,
@@ -1488,6 +1489,7 @@ final class CostaRicaInvoiceFromVentaMapper
     private function resumenCompraAlineadoLineas(Compra $compra, array $lineItems): array
     {
         $compra->loadMissing(['detalles.producto']);
+        $lineItems = array_values($lineItems);
 
         $taxedGoods = 0.0;
         $taxedServices = 0.0;
@@ -1580,6 +1582,7 @@ final class CostaRicaInvoiceFromVentaMapper
      */
     private function resumenGastoFecAlineadoLineas(Gasto $gasto, array $lineItems): array
     {
+        $lineItems = array_values($lineItems);
         $taxedServices = 0.0;
         foreach ($lineItems as $line) {
             if (! is_array($line)) {
