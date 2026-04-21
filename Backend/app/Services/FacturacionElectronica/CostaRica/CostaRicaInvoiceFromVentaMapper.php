@@ -184,7 +184,7 @@ final class CostaRicaInvoiceFromVentaMapper
         // Catálogo DGT tipos-transaccion.json: 01 = «Venta normal de bienes y servicios» (general), no significa «solo mercancía».
         // Los códigos 02–05 son autoconsumo u otros; no son «02=servicio». Hacienda cuadra TotalServGravados vs TotalMercanciasGravadas
         // según línea (p. ej. Unid vs Sp), no cambiando 01↔02 en tipo transacción. Mantener 01 en venta corriente.
-        $esServicio = $this->esLineaServicioVentaFe($producto);
+        $esServicio = $this->esUnidadServicioLineaVentaCr($producto, $empresa, $cabys);
 
         $line = [
             'cabys_code' => $cabys,
@@ -362,14 +362,53 @@ final class CostaRicaInvoiceFromVentaMapper
         );
     }
 
+    /**
+     * Ubicación fiscal del emisor. Por defecto: código distrito INEC 5 dígitos (facturacion_fe.emisor_distrito).
+     * Opcional: facturacion_fe.emisor_provincia_manual, emisor_canton_manual, emisor_distrito_manual (1 + 2 + 2 dígitos)
+     * si debe coincidir exactamente con lo que muestra ATV/DGT y evitar -37.
+     */
     private function ubicacionEmisor(Empresa $empresa): array
     {
+        $manual = $this->ubicacionEmisorDesdeComponentesManualesCr($empresa);
+        if ($manual !== null) {
+            return $manual;
+        }
+
         $dis = $this->resolverDistritoCostaRicaCincoDigitos($empresa);
 
         return [
             'province' => (int) $dis[0],
             'canton' => substr($dis, 0, 3),
             'district' => $dis,
+        ];
+    }
+
+    /**
+     * @return array{province: int, canton: string, district: string}|null
+     */
+    private function ubicacionEmisorDesdeComponentesManualesCr(Empresa $empresa): ?array
+    {
+        $prov = $empresa->getCustomConfigValue('facturacion_fe', 'emisor_provincia_manual', null);
+        $can = $empresa->getCustomConfigValue('facturacion_fe', 'emisor_canton_manual', null);
+        $dist = $empresa->getCustomConfigValue('facturacion_fe', 'emisor_distrito_manual', null);
+        if ($prov === null || $prov === '' || $can === null || $can === '' || $dist === null || $dist === '') {
+            return null;
+        }
+        $p = (int) preg_replace('/\D/', '', (string) $prov);
+        $c2 = str_pad(substr(preg_replace('/\D/', '', (string) $can), 0, 2), 2, '0', STR_PAD_LEFT);
+        $d2 = str_pad(substr(preg_replace('/\D/', '', (string) $dist), 0, 2), 2, '0', STR_PAD_LEFT);
+        if ($p < 1 || $p > 7) {
+            return null;
+        }
+        $dis5 = (string) $p.$c2.$d2;
+        if (strlen($dis5) !== 5 || preg_match('/^[1-7]\d{4}$/', $dis5) !== 1) {
+            return null;
+        }
+
+        return [
+            'province' => $p,
+            'canton' => substr($dis5, 0, 3),
+            'district' => $dis5,
         ];
     }
 
@@ -648,7 +687,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $pct = (float) ($detalle->porcentaje_impuesto ?? 0);
         [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $ivaMonto > 0);
 
-        $esServicio = $this->esLineaServicioVentaFe($producto);
+        $esServicio = $this->esUnidadServicioLineaVentaCr($producto, $empresa, $cabys);
 
         // transaction_type 01 = catálogo DGT «Venta normal de bienes y servicios»; no usar 02 pensando que es «servicio».
         $line = [
@@ -770,7 +809,11 @@ final class CostaRicaInvoiceFromVentaMapper
      */
     private function resumenAlineadoALineas(Venta $venta, array $lineItems): array
     {
-        $venta->loadMissing(['detalles.producto']);
+        $venta->loadMissing(['detalles.producto', 'empresa']);
+        $empresa = $venta->empresa;
+        if (! $empresa instanceof Empresa) {
+            throw new InvalidArgumentException('La venta no tiene empresa para el resumen FE CR.');
+        }
 
         $taxedGoods = 0.0;
         $taxedServices = 0.0;
@@ -787,8 +830,10 @@ final class CostaRicaInvoiceFromVentaMapper
                 continue;
             }
 
-            // Misma regla que {@see linea()} (producto/servicio); no solo el array de línea — evita -111 vs Hacienda.
-            $esServicio = $this->esLineaServicioVentaFe($detalle->producto);
+            $cabysRes = $this->resolverCabysLinea($detalle->producto, $empresa);
+            $esServicio = strlen($cabysRes) === 13
+                ? $this->esUnidadServicioLineaVentaCr($detalle->producto, $empresa, $cabysRes)
+                : $this->esLineaServicioVentaFe($detalle->producto);
             $clas = $this->clasificarDetalleVentaCr($detalle);
 
             if ($clas === 'gravada') {
@@ -880,6 +925,32 @@ final class CostaRicaInvoiceFromVentaMapper
         }
 
         return $um === 'Sp';
+    }
+
+    /**
+     * Unid vs Sp en línea de venta: misma lógica que {@see linea()} y lo que Hacienda usa en -111 (suelen alinear por CABYS).
+     * CABYS 83131xxxxxxx (p. ej. 8313100000100) se trata como servicio (Sp): la validación DGT suma gravados en servicios.
+     * Opcional: facturacion_fe.cabys_prefijos_servicio = array de prefijos numéricos (ej. ["83131", "85102"]).
+     */
+    private function esUnidadServicioLineaVentaCr(?Producto $producto, Empresa $empresa, string $cabys13): bool
+    {
+        $cabys13 = preg_replace('/\D/', '', $cabys13);
+        if (strlen($cabys13) === 13) {
+            $prefijos = $empresa->getCustomConfigValue('facturacion_fe', 'cabys_prefijos_servicio', null);
+            if (is_array($prefijos)) {
+                foreach ($prefijos as $pref) {
+                    $p = preg_replace('/\D/', '', (string) $pref);
+                    if ($p !== '' && str_starts_with($cabys13, $p)) {
+                        return true;
+                    }
+                }
+            }
+            if (str_starts_with($cabys13, '83131')) {
+                return true;
+            }
+        }
+
+        return $this->esLineaServicioVentaFe($producto);
     }
 
     /**
