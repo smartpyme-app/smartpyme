@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8813d8dee2a4b8db5d88bf3d89399bd6",
+    "content-hash": "31a720b035e0ec6a5fd7370f4eff4f49",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -771,16 +771,16 @@
         },
         {
             "name": "dazza-dev/dgt-xml-generator",
-            "version": "v1.0.1",
+            "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/davidsp-sv/dgt-xml-generator.git",
-                "reference": "58634653c91d1f398398e2ec3986edadb3380481"
+                "reference": "6fc81bd01c7fc3281be277f0f9a8dc96ba1293d9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/davidsp-sv/dgt-xml-generator/zipball/58634653c91d1f398398e2ec3986edadb3380481",
-                "reference": "58634653c91d1f398398e2ec3986edadb3380481",
+                "url": "https://api.github.com/repos/davidsp-sv/dgt-xml-generator/zipball/6fc81bd01c7fc3281be277f0f9a8dc96ba1293d9",
+                "reference": "6fc81bd01c7fc3281be277f0f9a8dc96ba1293d9",
                 "shasum": ""
             },
             "require": {
@@ -791,6 +791,7 @@
                 "phpstan/phpstan": "^2.1",
                 "phpunit/phpunit": "^10.0"
             },
+            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -834,9 +835,9 @@
                 "factura electrónica"
             ],
             "support": {
-                "source": "https://github.com/davidsp-sv/dgt-xml-generator/tree/v1.0.1"
+                "source": "https://github.com/davidsp-sv/dgt-xml-generator/tree/main"
             },
-            "time": "2026-04-18T21:12:21+00:00"
+            "time": "2026-04-21T03:11:01+00:00"
         },
         {
             "name": "dazza-dev/laravel-dgt-cr",
@@ -11833,9 +11834,18 @@
             "time": "2025-11-17T20:03:58+00:00"
         }
     ],
-    "aliases": [],
+    "aliases": [
+        {
+            "package": "dazza-dev/dgt-xml-generator",
+            "version": "dev-main",
+            "alias": "1.0.1",
+            "alias_normalized": "1.0.1.0"
+        }
+    ],
     "minimum-stability": "dev",
-    "stability-flags": {},
+    "stability-flags": {
+        "dazza-dev/dgt-xml-generator": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
