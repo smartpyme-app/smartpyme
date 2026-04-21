@@ -900,10 +900,8 @@ export class GastoComponent implements OnInit {
         }
 
         // Referencia
-        if (jsonData.identificacion.numeroControl) {
-          this.gasto.referencia = jsonData.identificacion.numeroControl
-            .split('-')
-            .pop();
+        if (jsonData.identificacion.codigoGeneracion) {
+          this.gasto.referencia = jsonData.identificacion.codigoGeneracion;
         }
 
         // Tipo de documento
