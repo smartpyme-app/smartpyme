@@ -249,7 +249,8 @@ final class CostaRicaFeEmitService
 
         $sec = $this->secuencial->siguienteNotaDebito($empresa);
         $saleCond = '01';
-        $header = $this->mapper->encabezadoDocumento($empresa, (string) $venta->fecha, $sec, $saleCond);
+        $venta->loadMissing('sucursal');
+        $header = $this->mapper->encabezadoDocumento($empresa, (string) $venta->fecha, $sec, $saleCond, $venta->sucursal);
 
         $claveFactura = (string) $venta->codigo_generacion;
         $fechaFactura = \Carbon\Carbon::parse($venta->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');

@@ -16,7 +16,7 @@ final class CostaRicaCreditNoteFromDevolucionMapper
 
     public function buildDocumentData(Devolucion $devolucion, Empresa $empresa, Venta $facturaOriginal, int $secuencialNc): array
     {
-        $devolucion->loadMissing(['detalles.producto', 'cliente']);
+        $devolucion->loadMissing(['detalles.producto', 'cliente', 'sucursal']);
 
         if ($devolucion->detalles->isEmpty()) {
             throw new InvalidArgumentException('La devolución no tiene líneas de detalle.');
@@ -30,7 +30,7 @@ final class CostaRicaCreditNoteFromDevolucionMapper
         $fechaFactura = Carbon::parse($facturaOriginal->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
 
         $saleCond = '01';
-        $header = $this->invoiceMapper->encabezadoDocumento($empresa, (string) $devolucion->fecha, $secuencialNc, $saleCond);
+        $header = $this->invoiceMapper->encabezadoDocumento($empresa, (string) $devolucion->fecha, $secuencialNc, $saleCond, $devolucion->sucursal);
 
         $facturaOriginal->loadMissing('cliente');
         $receiver = $this->invoiceMapper->receptorDatosVenta($facturaOriginal, $empresa);

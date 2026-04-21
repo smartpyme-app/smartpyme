@@ -3,6 +3,7 @@
 namespace App\Services\FacturacionElectronica\CostaRica;
 
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Sucursal;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Compras\Gastos\DetalleEgreso;
@@ -22,7 +23,9 @@ use InvalidArgumentException;
  *
  * Reutiliza campos de empresa ya usados para FE (y formularios): cod_actividad_economica, giro,
  * Ubicación emisor/receptor en XML: código distrito CR de 5 dígitos (facturacion_fe.emisor_distrito o cod_distrito si ya es CR).
- * No usar distrito/municipio de El Salvador rellenado a 5 dígitos. cod_estable, cod_estable_mh,
+ * No usar distrito/municipio de El Salvador rellenado a 5 dígitos. Establecimiento (3 dígitos) y terminal / punto de
+ * venta (5 dígitos) en la clave DGT: igual que FE de SV, por sucursal de la venta/compra/gasto ({@see Sucursal::cod_estable_mh},
+ * {@see Sucursal::codigo_punto_venta}); si no hay sucursal o los campos vienen vacíos: empresa.cod_estable y empresa.cod_estable_mh.
  * mh_*. CABYS por línea: producto.codigo_cabys, producto.codigo (13 dígitos); fallback solo
  * custom_empresa.facturacion_fe.cabys_default (13 dígitos). Actividad del emisor: cod_actividad_economica
  * según Hacienda; se normaliza al formato del catálogo DGT (actividades-economicas.json), p. ej. "7020.0", no "070200".
@@ -37,7 +40,7 @@ final class CostaRicaInvoiceFromVentaMapper
 
     public function buildDocumentData(Venta $venta, Empresa $empresa, int $secuencialFactura): array
     {
-        $venta->loadMissing(['detalles.producto', 'cliente']);
+        $venta->loadMissing(['detalles.producto', 'cliente', 'sucursal']);
 
         if ($venta->detalles->isEmpty()) {
             throw new InvalidArgumentException('La venta no tiene líneas de detalle.');
@@ -47,14 +50,15 @@ final class CostaRicaInvoiceFromVentaMapper
         $fecha = Carbon::now('America/Costa_Rica');
         $dateIso = $fecha->format('Y-m-d\TH:i:sP');
 
-        $est = $this->codigoEstablecimiento3($empresa);
-        $ter = $this->codigoTerminal5($empresa);
+        [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $venta->sucursal);
         $seq = str_pad((string) $secuencialFactura, 10, '0', STR_PAD_LEFT);
 
         $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
         $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
 
-        $lineItems = $venta->detalles->map(fn (Detalle $d) => $this->linea($d, $empresa, $venta))->all();
+        // Índices 0..n-1: el resumen y Hacienda (-111) emparejan líneas con el XML; sin array_values el map puede conservar
+        // keys no secuenciales y desalinear servicios gravados vs mercancías gravadas.
+        $lineItems = array_values($venta->detalles->map(fn (Detalle $d) => $this->linea($d, $empresa, $venta))->all());
 
         $payload = [
             'date' => $dateIso,
@@ -96,11 +100,11 @@ final class CostaRicaInvoiceFromVentaMapper
         $data['receiver'] = $this->receptorGenericoTiquete($empresa);
 
         // XSD v4.4 tiquete: LineaDetalle no incluye TipoTransaccion; quitar clave para que Twig/plantilla no emita el nodo.
-        $data['line_items'] = array_map(function (array $line): array {
+        $data['line_items'] = array_values(array_map(function (array $line): array {
             unset($line['transaction_type']);
 
             return $line;
-        }, $data['line_items']);
+        }, $data['line_items']));
 
         return $data;
     }
@@ -122,13 +126,14 @@ final class CostaRicaInvoiceFromVentaMapper
 
     /**
      * Encabezado común (fecha de un registro de venta/devolución).
+     *
+     * @param  Sucursal|null  $sucursal  Sucursal de la operación (NC, ND, etc.); determina establecimiento y punto de venta como en FE SV.
      */
-    public function encabezadoDocumento(Empresa $empresa, string $fechaIsoAmericaCr, int $secuencial, string $saleCondition = '01'): array
+    public function encabezadoDocumento(Empresa $empresa, string $fechaIsoAmericaCr, int $secuencial, string $saleCondition = '01', ?Sucursal $sucursal = null): array
     {
         $fecha = Carbon::parse($fechaIsoAmericaCr)->timezone('America/Costa_Rica');
         $dateIso = $fecha->format('Y-m-d\TH:i:sP');
-        $est = $this->codigoEstablecimiento3($empresa);
-        $ter = $this->codigoTerminal5($empresa);
+        [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $sucursal);
         $seq = str_pad((string) $secuencial, 10, '0', STR_PAD_LEFT);
         $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
         $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
@@ -252,16 +257,44 @@ final class CostaRicaInvoiceFromVentaMapper
         ]];
     }
 
-    private function codigoEstablecimiento3(Empresa $empresa): string
+    /**
+     * Código establecimiento (3 dígitos) y terminal / punto de venta (5 dígitos) para XML y clave DGT.
+     * Misma fuente que FE de SV: sucursal de la operación; respaldo en empresa.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function establecimientoYTerminalCr(Empresa $empresa, ?Sucursal $sucursal): array
     {
-        $digits = preg_replace('/\D/', '', (string) ($empresa->cod_estable ?? ''));
+        $rawEst = '';
+        $rawTer = '';
+        if ($sucursal !== null) {
+            $rawEst = trim((string) ($sucursal->cod_estable_mh ?? ''));
+            $rawTer = trim((string) ($sucursal->codigo_punto_venta ?? ''));
+        }
 
-        return str_pad(substr($digits !== '' ? $digits : '1', 0, 3), 3, '0', STR_PAD_LEFT);
+        if ($rawEst === '') {
+            $rawEst = (string) ($empresa->cod_estable ?? '');
+        }
+        if ($rawTer === '') {
+            $rawTer = (string) ($empresa->cod_estable_mh ?? '');
+        }
+
+        return [$this->normalizarCodigoEstablecimiento3($rawEst), $this->normalizarTerminal5($rawTer)];
     }
 
-    private function codigoTerminal5(Empresa $empresa): string
+    private function normalizarCodigoEstablecimiento3(string $raw): string
     {
-        $digits = preg_replace('/\D/', '', (string) ($empresa->cod_estable_mh ?? ''));
+        $digits = preg_replace('/\D/', '', $raw) ?? '';
+        if ($digits === '') {
+            $digits = '1';
+        }
+
+        return str_pad(substr($digits, 0, 3), 3, '0', STR_PAD_LEFT);
+    }
+
+    private function normalizarTerminal5(string $raw): string
+    {
+        $digits = preg_replace('/\D/', '', $raw) ?? '';
         if ($digits === '') {
             return '00001';
         }
@@ -746,6 +779,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $nsGoods = 0.0;
         $nsServices = 0.0;
 
+        $lineItems = array_values($lineItems);
         $detalles = $venta->detalles->values();
         foreach ($detalles as $idx => $detalle) {
             $line = $lineItems[$idx] ?? null;
@@ -753,7 +787,7 @@ final class CostaRicaInvoiceFromVentaMapper
                 continue;
             }
 
-            $esServicio = ($line['unit_measure'] ?? '') === 'Sp';
+            $esServicio = $this->lineaUsaUnidadServicioCr($line);
             $clas = $this->clasificarDetalleVentaCr($detalle);
 
             if ($clas === 'gravada') {
@@ -833,11 +867,38 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
+     * Coherente con {@see linea()}: UnidadMedida Sp = servicio gravado en resumen; otro código = mercancía.
+     *
+     * @param  array<string, mixed>  $line
+     */
+    private function lineaUsaUnidadServicioCr(array $line): bool
+    {
+        $um = $line['unit_measure'] ?? null;
+        if (is_array($um)) {
+            return ($um['code'] ?? '') === 'Sp';
+        }
+
+        return $um === 'Sp';
+    }
+
+    /**
      * Servicio vs bien para Unid vs Sp y totales del resumen: debe alinearse con cómo Hacienda agrupa la línea (evita -111).
      * El catálogo DGT de tipo de transacción (01, 02…) no es «01=mercancía / 02=servicio»; el 01 es venta general.
      * Por defecto se trata como mercancía (Unid) salvo tipo/medida claramente de servicio — no usar palabras sueltas en
      * descripcion_cabys (muchas descripciones oficiales incluyen «servicio» y generaban Sp erróneo en productos físicos).
      */
+    /**
+     * Línea de FEC compra (08): sin producto asociado suele tratarse como servicio/gasto; evita Unid por defecto y -111 con Hacienda.
+     */
+    private function esLineaServicioCompraFec(?Producto $producto): bool
+    {
+        if ($producto === null) {
+            return true;
+        }
+
+        return $this->esLineaServicioCr($producto);
+    }
+
     private function esLineaServicioCr(?Producto $producto): bool
     {
         if ($producto === null) {
@@ -945,7 +1006,7 @@ final class CostaRicaInvoiceFromVentaMapper
      */
     public function buildFacturaElectronicaCompraDesdeCompra(Compra $compra, Empresa $empresa, int $secuencial): array
     {
-        $compra->loadMissing(['detalles.producto', 'proveedor']);
+        $compra->loadMissing(['detalles.producto', 'proveedor', 'sucursal']);
         if ($compra->detalles->isEmpty()) {
             throw new InvalidArgumentException('La compra no tiene líneas de detalle para FEC.');
         }
@@ -956,8 +1017,7 @@ final class CostaRicaInvoiceFromVentaMapper
 
         $fecha = Carbon::now('America/Costa_Rica');
         $dateIso = $fecha->format('Y-m-d\TH:i:sP');
-        $est = $this->codigoEstablecimiento3($empresa);
-        $ter = $this->codigoTerminal5($empresa);
+        [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $compra->sucursal);
         $seq = str_pad((string) $secuencial, 10, '0', STR_PAD_LEFT);
         $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
         $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
@@ -999,7 +1059,7 @@ final class CostaRicaInvoiceFromVentaMapper
      */
     public function buildFacturaElectronicaCompraDesdeGasto(Gasto $gasto, Empresa $empresa, int $secuencial): array
     {
-        $gasto->loadMissing(['detalles', 'proveedor']);
+        $gasto->loadMissing(['detalles', 'proveedor', 'sucursal']);
         if ($gasto->detalles->isEmpty()) {
             throw new InvalidArgumentException('El gasto no tiene líneas de detalle para FEC.');
         }
@@ -1010,8 +1070,7 @@ final class CostaRicaInvoiceFromVentaMapper
 
         $fecha = Carbon::now('America/Costa_Rica');
         $dateIso = $fecha->format('Y-m-d\TH:i:sP');
-        $est = $this->codigoEstablecimiento3($empresa);
-        $ter = $this->codigoTerminal5($empresa);
+        [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $gasto->sucursal);
         $seq = str_pad((string) $secuencial, 10, '0', STR_PAD_LEFT);
         $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
         $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
@@ -1284,7 +1343,7 @@ final class CostaRicaInvoiceFromVentaMapper
         }
         [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $ivaMonto > 0.00001);
 
-        $esServicio = $this->esLineaServicioCr($producto);
+        $esServicio = $this->esLineaServicioCompraFec($producto);
 
         $desc = $detalle->nombre_producto ?? ($producto->nombre ?? 'Ítem');
 
@@ -1503,7 +1562,8 @@ final class CostaRicaInvoiceFromVentaMapper
             if (! is_array($line)) {
                 continue;
             }
-            $esServicio = ($line['unit_measure'] ?? '') === 'Sp';
+            // Misma regla que ventas y que el XML (Sp vs Unid); evita -111 si unit_measure circula como array ['code'=>'Sp'].
+            $esServicio = $this->lineaUsaUnidadServicioCr($line);
             $clas = $this->clasificarDetalleCompraCr($detalle);
             if ($clas === 'gravada') {
                 $monto = round((float) ($line['taxable_base'] ?? $line['sub_total'] ?? 0), 2);
