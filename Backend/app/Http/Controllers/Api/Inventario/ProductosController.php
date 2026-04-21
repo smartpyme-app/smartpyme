@@ -832,6 +832,7 @@ class ProductosController extends Controller
 
     public function exportarPlantillaTraslado(Request $request)
     {
+        // Flujo nuevo: exportar líneas ya armadas en UI (POST JSON con «lineas»).
         if ($request->isMethod('post')) {
             $lineas = $request->input('lineas');
             if (!is_array($lineas)) {
@@ -850,7 +851,9 @@ class ProductosController extends Controller
             );
         }
 
-        $raw = $request->input('productos_ids');
+        // Flujo clásico (GET): plantilla según bodegas; productos_ids opcional (lista separada por comas o array).
+        // Compatibilidad con clientes que envían productos_ids como string "1,2,3" en query o body.
+        $raw = $request->input('productos_ids', $request->query('productos_ids'));
         if ($raw === null || $raw === '') {
             $productosIds = [];
         } elseif (is_array($raw)) {
@@ -860,8 +863,8 @@ class ProductosController extends Controller
         }
 
         $filtros = [
-            'id_bodega_origen' => $request->id_bodega_origen,
-            'id_bodega_destino' => $request->id_bodega_destino,
+            'id_bodega_origen' => $request->input('id_bodega_origen', $request->query('id_bodega_origen')),
+            'id_bodega_destino' => $request->input('id_bodega_destino', $request->query('id_bodega_destino')),
             'productos_ids' => $productosIds,
         ];
 
