@@ -673,6 +673,17 @@ final class CostaRicaFeEmitService
      */
     private function mensajeEstadoHaciendaNoAceptado(array $estado): string
     {
+        $base = $this->textoBaseMensajeEstadoHaciendaNoAceptado($estado);
+        $consejos = $this->consejosMensajesHaciendaCr($estado);
+
+        return $consejos === '' ? $base : $base."\n\n".$consejos;
+    }
+
+    /**
+     * @param  array<string, mixed>  $estado
+     */
+    private function textoBaseMensajeEstadoHaciendaNoAceptado(array $estado): string
+    {
         $msg = $estado['messages'] ?? null;
         if (is_string($msg) && trim($msg) !== '') {
             return trim($msg);
@@ -684,6 +695,16 @@ final class CostaRicaFeEmitService
                     $parts[] = trim($m);
                 } elseif ($m !== null && ! is_array($m)) {
                     $parts[] = trim((string) $m);
+                } elseif (is_array($m)) {
+                    $nested = [];
+                    foreach ($m as $cell) {
+                        if (is_string($cell) || is_int($cell) || is_float($cell)) {
+                            $nested[] = trim((string) $cell);
+                        }
+                    }
+                    if ($nested !== []) {
+                        $parts[] = implode(', ', $nested);
+                    }
                 }
             }
             if ($parts !== []) {
@@ -701,6 +722,65 @@ final class CostaRicaFeEmitService
         }
 
         return 'El comprobante no fue aceptado por el Ministerio de Hacienda. No se registró como emitido.';
+    }
+
+    /**
+     * Añade orientación cuando Hacienda devuelve códigos frecuentes (-99 consecutivo duplicado, -37 ubicación emisor).
+     *
+     * @param  array<string, mixed>  $estado
+     */
+    private function consejosMensajesHaciendaCr(array $estado): string
+    {
+        $hints = [];
+        if ($this->estadoContieneCodigoHacienda($estado, -99)) {
+            $hints[] = 'Sugerencia (código -99): el consecutivo del XML ya existe en Hacienda. Sincronice el secuencial en la empresa (custom_empresa.facturacion_fe): para tiquete electrónico use cr_secuencial_tiquete; para factura cr_secuencial_factura; y el campo correspondiente a cada tipo de comprobante. El valor debe ser mayor o igual al último consecutivo ya aceptado en el Ministerio para ese tipo.';
+        }
+        if ($this->estadoContieneCodigoHacienda($estado, -37)) {
+            $hints[] = 'Sugerencia (código -37): provincia, cantón y distrito del emisor deben coincidir con el domicilio fiscal registrado en la DGT. Revise facturacion_fe.emisor_distrito (código INEC de 5 dígitos) o emisor_provincia_manual, emisor_canton_manual y emisor_distrito_manual.';
+        }
+
+        return implode("\n", $hints);
+    }
+
+    /**
+     * Detecta si el estado o los mensajes estructurados incluyen un código numérico de Hacienda (p. ej. -99, -37).
+     *
+     * @param  array<string, mixed>  $estado
+     */
+    private function estadoContieneCodigoHacienda(array $estado, int $codigo): bool
+    {
+        if ($this->valorContieneCodigoHacienda($estado['messages'] ?? null, $codigo)) {
+            return true;
+        }
+        $xml = $estado['response_xml'] ?? null;
+        if (is_string($xml) && str_contains($xml, (string) $codigo)) {
+            return true;
+        }
+
+        return $this->valorContieneCodigoHacienda($estado, $codigo);
+    }
+
+    private function valorContieneCodigoHacienda(mixed $value, int $codigo): bool
+    {
+        if (is_int($value) || is_float($value)) {
+            return (int) $value === $codigo;
+        }
+        if (is_string($value)) {
+            return preg_match('/\b'.preg_quote((string) $codigo, '/').'\b/', $value) === 1;
+        }
+        if (! is_array($value)) {
+            return false;
+        }
+        foreach ($value as $k => $v) {
+            if (($k === 'codigo' || $k === 'Codigo') && (is_int($v) || is_string($v)) && (int) $v === $codigo) {
+                return true;
+            }
+            if ($this->valorContieneCodigoHacienda($v, $codigo)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function configurarClienteEmisorReceptor(\DazzaDev\DgtCr\Client $client, array $data): void
