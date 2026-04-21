@@ -209,11 +209,11 @@ final class CostaRicaFeEmitService
                 'codigoGeneracion' => $clave,
                 'tipoDte' => '03',
             ],
-            'cr' => [
+            'cr' => array_merge([
                 'aceptada' => true,
                 'envio' => $envio,
                 'estado_consulta' => $estado,
-            ],
+            ], $this->metadataXmlCr($client)),
         ];
         $devolucion->save();
 
@@ -364,13 +364,13 @@ final class CostaRicaFeEmitService
         }
 
         $dte = is_array($venta->dte) ? $venta->dte : [];
-        $dte['cr']['nota_debito'] = [
+        $dte['cr']['nota_debito'] = array_merge([
             'clave' => $clave,
             'aceptada' => true,
             'documento' => $data,
             'envio' => $envio,
             'estado_consulta' => $estado,
-        ];
+        ], $this->metadataXmlCr($client));
         $venta->dte = $dte;
         $venta->save();
 
@@ -502,11 +502,11 @@ final class CostaRicaFeEmitService
                 'codigoGeneracion' => $clave,
                 'tipoDte' => $tipoDte,
             ],
-            'cr' => [
+            'cr' => array_merge([
                 'aceptada' => true,
                 'envio' => $envio,
                 'estado_consulta' => $estado,
-            ],
+            ], $this->metadataXmlCr($client)),
         ];
         $venta->save();
 
@@ -576,11 +576,11 @@ final class CostaRicaFeEmitService
                 'codigoGeneracion' => $clave,
                 'tipoDte' => $tipoDte,
             ],
-            'cr' => [
+            'cr' => array_merge([
                 'aceptada' => true,
                 'envio' => $envio,
                 'estado_consulta' => $estado,
-            ],
+            ], $this->metadataXmlCr($client)),
         ];
         $compra->save();
 
@@ -650,11 +650,11 @@ final class CostaRicaFeEmitService
                 'codigoGeneracion' => $clave,
                 'tipoDte' => $tipoDte,
             ],
-            'cr' => [
+            'cr' => array_merge([
                 'aceptada' => true,
                 'envio' => $envio,
                 'estado_consulta' => $estado,
-            ],
+            ], $this->metadataXmlCr($client)),
         ];
         $gasto->save();
 
@@ -895,6 +895,25 @@ final class CostaRicaFeEmitService
         } catch (ReflectionException|Throwable) {
             return null;
         }
+    }
+
+    /**
+     * Para adjuntar en correo al cliente: XML firmado con la clave de Hacienda.
+     *
+     * @return array<string, string>
+     */
+    private function metadataXmlCr(Client $client): array
+    {
+        [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+        $out = [];
+        if (is_string($xmlFirm) && $xmlFirm !== '') {
+            $out['xml_comprobante_firmado'] = $xmlFirm;
+        }
+        if (is_string($xmlSin) && $xmlSin !== '') {
+            $out['xml_comprobante_sin_firma'] = $xmlSin;
+        }
+
+        return $out;
     }
 
     /**

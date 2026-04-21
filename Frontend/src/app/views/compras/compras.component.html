@@ -640,6 +640,17 @@
                 </button>
             }
 
+            @if (esFeCostaRica() && compra.codigo_generacion) {
+                <button [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
+                    @if (!sending) {
+                        <span>Enviar por correo</span>
+                    }
+                    @if (sending) {
+                        <span>Enviando...</span>
+                    }
+                </button>
+            }
+
             @if (!compra.sello_mh && !(esFeCostaRica() && compra.codigo_generacion)) {
                 <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
                     @if (!saving) {

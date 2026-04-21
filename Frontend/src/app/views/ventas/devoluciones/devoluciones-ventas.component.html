@@ -315,6 +315,17 @@
                 </button>
             }
 
+            @if (esFeCostaRica() && venta.codigo_generacion) {
+                <button [disabled]="sending" (click)="enviarDTE(venta)" class="mb-3 btn btn-primary btn-block">
+                    @if (!sending) {
+                        <span>Enviar por correo</span>
+                    }
+                    @if (sending) {
+                        <span>Enviando...</span>
+                    }
+                </button>
+            }
+
             @if (!venta.sello_mh && !(esFeCostaRica() && venta.codigo_generacion)) {
                 <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
                     @if (!saving) {

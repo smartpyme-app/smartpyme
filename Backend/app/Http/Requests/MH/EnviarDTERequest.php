@@ -21,8 +21,8 @@ class EnviarDTERequest extends FormRequest
     {
         return [
             'id' => ['required', 'integer'],
-            'tipo_dte' => ['required', 'string', 'in:01,03,05,06,11,14'],
-            'tipo' => ['required_if:tipo_dte,14', 'string', 'in:compra,gasto'],
+            'tipo_dte' => ['required', 'string', 'in:01,02,03,04,05,06,08,11,14'],
+            'tipo' => ['required_if:tipo_dte,14,08', 'nullable', 'string', 'in:compra,gasto'],
         ];
     }
 
@@ -35,8 +35,8 @@ class EnviarDTERequest extends FormRequest
             'id.required' => 'El ID del registro es requerido.',
             'id.integer' => 'El ID del registro debe ser un número entero.',
             'tipo_dte.required' => 'El tipo de DTE es requerido.',
-            'tipo_dte.in' => 'El tipo de DTE debe ser uno de: 01, 03, 05, 06, 11, 14.',
-            'tipo.required_if' => 'El tipo es requerido cuando el tipo de DTE es 14.',
+            'tipo_dte.in' => 'El tipo de DTE debe ser uno de: 01, 02, 03, 04, 05, 06, 08, 11, 14.',
+            'tipo.required_if' => 'El tipo es requerido cuando el tipo de DTE es 14 u 08 (compra electrónica).',
             'tipo.in' => 'El tipo debe ser compra o gasto.',
         ];
     }

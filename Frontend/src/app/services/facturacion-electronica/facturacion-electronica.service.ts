@@ -99,6 +99,9 @@ export class FacturacionElectronicaService {
   }
 
   enviarDTE(doc: any, dteFirmado: any): Observable<any> {
+    if (this.esCostaRica()) {
+      return this.api.store('enviarDTE', doc);
+    }
     return this.esElSalvador()
       ? this.elSalvador.enviarDTE(doc, dteFirmado)
       : this.throwNoSoportadoObs();

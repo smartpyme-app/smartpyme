@@ -787,6 +787,18 @@
                 </button>
             }
 
+            @if (esFeCostaRica() && venta.codigo_generacion) {
+                <button [disabled]="sending" (click)="enviarDTE(venta)"
+                    class="mb-3 btn btn-primary btn-block">
+                    @if (!sending) {
+                        <span>Enviar por correo</span>
+                    }
+                    @if (sending) {
+                        <span>Enviando...</span>
+                    }
+                </button>
+            }
+
             @if (esFeCostaRica() && puedeEmitirNotaDebitoCr(venta)) {
                 <div class="border rounded p-3 mb-3 text-start">
                     <p class="small fw-semibold mb-2">Nota de débito (ajuste de montos)</p>

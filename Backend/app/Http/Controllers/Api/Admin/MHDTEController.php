@@ -19,6 +19,8 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeComprobantePdfService;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeCorreoService;
 use App\Services\FacturacionElectronica\ElSalvador\ElSalvadorDteService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryGate;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
@@ -27,11 +29,14 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use RuntimeException;
 
 class MHDTEController extends Controller
 {
     public function __construct(
-        private readonly ElSalvadorDteService $elSalvadorDte
+        private readonly ElSalvadorDteService $elSalvadorDte,
+        private readonly CostaRicaFeComprobantePdfService $costaRicaFePdf,
+        private readonly CostaRicaFeCorreoService $costaRicaFeCorreo,
     ) {}
 
     public function generarDTE(GenerarDTERequest $request)
@@ -182,105 +187,23 @@ class MHDTEController extends Controller
      */
     private function generarDtePdfCostaRica(int|string $id, string $tipo, GenerarDTEPDFRequest $request): Response
     {
-        $id = (int) $id;
-        $registro = null;
-        $documento = [];
-        $clave = '';
-        $titulo = 'Comprobante electrónico';
-        $tipoDteRuta = (string) $tipo;
-
-        if (in_array($tipo, ['01', '04', '11'], true)) {
-            $registro = Venta::query()->with(['empresa', 'cliente'])->findOrFail($id);
-            $this->assertMismoEmpresaUsuario($registro);
-            $dte = $registro->dte;
-            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
-                abort(404, 'No hay comprobante electrónico Costa Rica para este registro.');
-            }
-            $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
-            $clave = (string) ($dte['clave'] ?? $registro->codigo_generacion ?? '');
-            $titulo = match ($tipo) {
-                '04' => 'Tiquete electrónico',
-                '11' => 'Factura de exportación',
-                default => 'Factura electrónica',
-            };
-        } elseif ($tipo === '02') {
-            $registro = Venta::query()->with(['empresa', 'cliente'])->findOrFail($id);
-            $this->assertMismoEmpresaUsuario($registro);
-            $dte = $registro->dte;
-            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
-                abort(404, 'No hay comprobante electrónico Costa Rica para este registro.');
-            }
-            $nd = $dte['cr']['nota_debito'] ?? null;
-            if (! is_array($nd)) {
-                abort(404, 'No hay nota de débito electrónica asociada.');
-            }
-            $documento = is_array($nd['documento'] ?? null) ? $nd['documento'] : [];
-            $clave = (string) ($nd['clave'] ?? '');
-            $titulo = 'Nota de débito electrónica';
-        } elseif (in_array($tipo, ['03', '05', '06'], true)) {
-            $registro = DevolucionVenta::query()->with(['empresa', 'cliente'])->findOrFail($id);
-            $this->assertMismoEmpresaUsuario($registro);
-            $dte = $registro->dte;
-            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
-                abort(404, 'No hay comprobante electrónico Costa Rica para esta devolución.');
-            }
-            $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
-            $clave = (string) ($dte['clave'] ?? $registro->codigo_generacion ?? '');
-            $titulo = 'Nota de crédito electrónica';
-        } elseif (($tipo === '08' && $request->query('tipo') === 'compra') || ($tipo === '14' && $request->query('tipo') === 'compra')) {
-            $registro = Compra::query()->with(['empresa', 'proveedor'])->findOrFail($id);
-            $this->assertMismoEmpresaUsuarioCompraGasto($registro);
-            $dte = $registro->dte;
-            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
-                abort(404, 'No hay comprobante electrónico Costa Rica para esta compra.');
-            }
-            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
-                abort(404, 'Esta compra no tiene factura electrónica de compras (FEC, tipo 08).');
-            }
-            $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
-            $clave = (string) ($dte['clave'] ?? $registro->codigo_generacion ?? '');
-            $titulo = 'Factura electrónica de compra';
-            $tipoDteRuta = '08';
-        } elseif ($tipo === '08' && $request->query('tipo') === 'gasto') {
-            $registro = Gasto::query()->with(['empresa', 'proveedor'])->findOrFail($id);
-            $this->assertMismoEmpresaUsuarioCompraGasto($registro);
-            $dte = $registro->dte;
-            if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
-                abort(404, 'No hay comprobante electrónico Costa Rica para este egreso.');
-            }
-            if ((string) ($dte['identificacion']['tipoDte'] ?? $registro->tipo_dte ?? '') !== '08') {
-                abort(404, 'Este egreso no tiene factura electrónica de compras (FEC, tipo 08).');
-            }
-            $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
-            $clave = (string) ($dte['clave'] ?? $registro->codigo_generacion ?? '');
-            $titulo = 'Factura electrónica de compra';
-            $tipoDteRuta = '08';
-        } else {
-            abort(400, 'Tipo de documento no disponible para PDF en FE Costa Rica.');
+        $uid = Auth::user()?->id_empresa;
+        if ($uid === null) {
+            abort(403);
+        }
+        try {
+            $datos = $this->costaRicaFePdf->datosVistaParaPdf(
+                (int) $id,
+                (string) $tipo,
+                $request->query('tipo'),
+                (int) $uid
+            );
+        } catch (RuntimeException $e) {
+            $msg = $e->getMessage();
+            abort(str_contains($msg, 'No autorizado') ? 403 : 404, $msg);
         }
 
-        // En DGT la factura de exportación puede emitirse con tipo 01 en el XML; el PDF debe reflejar
-        // el documento de venta (catálogo 11 — factura electrónica de exportación).
-        if (
-            $registro instanceof Venta
-            && in_array($tipo, ['01', '11'], true)
-            && trim((string) ($registro->nombre_documento ?? '')) === 'Factura de exportación'
-        ) {
-            $tipoDteRuta = '11';
-            $titulo = 'Factura de exportación';
-        }
-
-        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.FE-CR-Comprobante', [
-            'registro' => $registro,
-            'documento' => $documento,
-            'clave' => $clave,
-            'titulo' => $titulo,
-            'tipoDteCodigo' => $tipoDteRuta,
-        ]);
-        $pdf->setPaper('US Letter', 'portrait');
-        $nombre = $clave !== '' ? $clave : 'comprobante-cr';
-
-        return $pdf->stream($nombre.'.pdf');
+        return $this->costaRicaFePdf->pdfStreamResponse($datos);
     }
 
     /**
@@ -486,7 +409,17 @@ class MHDTEController extends Controller
 
     public function enviarDTE(EnviarDTERequest $request)
     {
-        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail(Auth::user()?->empresa)) {
+        $empresa = Auth::user()?->empresa;
+        if (FacturacionElectronicaCountryResolver::codPais($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            $uid = Auth::user()?->id_empresa;
+            if ($uid === null) {
+                return response()->json(['error' => 'No autenticado.'], 401);
+            }
+
+            return $this->costaRicaFeCorreo->enviarComprobante($request, $empresa, (int) $uid);
+        }
+
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($empresa)) {
             return $guard;
         }
 
