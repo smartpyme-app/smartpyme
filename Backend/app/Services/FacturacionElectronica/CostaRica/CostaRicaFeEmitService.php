@@ -738,6 +738,9 @@ final class CostaRicaFeEmitService
         if ($this->estadoContieneCodigoHacienda($estado, -37)) {
             $hints[] = 'Sugerencia (código -37): provincia, cantón y distrito del emisor deben coincidir con el domicilio fiscal registrado en la DGT. Revise facturacion_fe.emisor_distrito (código INEC de 5 dígitos) o emisor_provincia_manual, emisor_canton_manual y emisor_distrito_manual.';
         }
+        if ($this->estadoContieneCodigoHacienda($estado, -111)) {
+            $hints[] = 'Sugerencia (código -111): los totales de servicios vs mercancías gravadas deben coincidir con las líneas del XML (UnidadMedida Sp vs Unid y CABYS). En FEC, un CABYS de servicios (p. ej. 83131…) debe ir como servicio; revise tipo de producto y facturacion_fe.cabys_prefijos_servicio si aplica.';
+        }
 
         return implode("\n", $hints);
     }

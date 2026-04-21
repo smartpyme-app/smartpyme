@@ -979,6 +979,31 @@ final class CostaRicaInvoiceFromVentaMapper
         return $this->esLineaServicioCr($producto);
     }
 
+    /**
+     * Sp vs Unid en FEC compra: misma regla que {@see linea()} en ventas y que {@see resumenCompraAlineadoLineas}.
+     * Si el producto está como mercancía pero el CABYS es de servicios (p. ej. 83131…), Hacienda agrupa el gravado en servicios; con Unid el resumen quedaba en mercancías y dispara -111.
+     */
+    private function esUnidadServicioLineaCompraFec(?Producto $producto, Empresa $empresa, string $cabys13): bool
+    {
+        $cabys13 = preg_replace('/\D/', '', $cabys13);
+        if (strlen($cabys13) === 13) {
+            $prefijos = $empresa->getCustomConfigValue('facturacion_fe', 'cabys_prefijos_servicio', null);
+            if (is_array($prefijos)) {
+                foreach ($prefijos as $pref) {
+                    $p = preg_replace('/\D/', '', (string) $pref);
+                    if ($p !== '' && str_starts_with($cabys13, $p)) {
+                        return true;
+                    }
+                }
+            }
+            if (str_starts_with($cabys13, '83131')) {
+                return true;
+            }
+        }
+
+        return $this->esLineaServicioCompraFec($producto);
+    }
+
     private function esLineaServicioCr(?Producto $producto): bool
     {
         if ($producto === null) {
@@ -1423,7 +1448,7 @@ final class CostaRicaInvoiceFromVentaMapper
         }
         [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $ivaMonto > 0.00001);
 
-        $esServicio = $this->esLineaServicioCompraFec($producto);
+        $esServicio = $this->esUnidadServicioLineaCompraFec($producto, $empresa, $cabys);
 
         $desc = $detalle->nombre_producto ?? ($producto->nombre ?? 'Ítem');
 
