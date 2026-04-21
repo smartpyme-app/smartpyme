@@ -126,7 +126,7 @@
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{number_format($detalle->precio , 2) }}</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">  @if ($detalle->descuento > 0) {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->descuento, 2) }} <small style="font-size: 12px;">({{ $porcentaje_descuento }}%)</small> @endif</td>
-                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->total, 2) }}</th>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->total, 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>

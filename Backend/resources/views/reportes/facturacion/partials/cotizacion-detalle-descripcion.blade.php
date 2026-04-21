@@ -20,7 +20,34 @@
         $imgRel = null;
     }
     $imgAbs = $imgRel ? public_path('img/' . $imgRel) : null;
-    $imgOk = $imgAbs && @file_exists($imgAbs);
+    // $imgOk = $imgAbs && @file_exists($imgAbs); comentamos el anterior
+
+    
+    //aqui empieza el nuevo codigo
+    // DomPDF suele cargar bien URLs remotas (como asset() del logo) pero falla con rutas
+    // absolutas según chroot/open_basedir. Data URI evita HTTP y rutas en el HTML.
+    $imgSrc = null;
+    if ($imgAbs && is_file($imgAbs) && is_readable($imgAbs)) {
+        $ext = strtolower(pathinfo($imgAbs, PATHINFO_EXTENSION));
+        $mimePorExt = [
+            'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png',
+            'gif' => 'image/gif', 'webp' => 'image/webp',
+        ];
+        $mime = $mimePorExt[$ext] ?? null;
+        if (! $mime && function_exists('mime_content_type')) {
+            $detectado = @mime_content_type($imgAbs);
+            if ($detectado && stripos($detectado, 'image/') === 0) {
+                $mime = $detectado;
+            }
+        }
+        $mime = $mime ?: 'image/jpeg';
+        $binario = @file_get_contents($imgAbs);
+        if ($binario !== false && $binario !== '') {
+            $imgSrc = 'data:' . $mime . ';base64,' . base64_encode($binario);
+        }
+    }
+    $imgOk = $imgSrc !== null;
+    // aqui termina el nuevo codigo
 
     $producto = $detalle->producto;
     $textoDetalleProducto = '';
@@ -51,7 +78,8 @@
         <tr>
             <td style="width: 76px; vertical-align: top; border: none; padding: 0 12px 0 0;">
                 @if($imgOk)
-                    <img src="{{ $imgAbs }}" alt=""
+                {{-- codigo anterior: <img src="{{ $imgAbs }}" alt=""  --}}
+                    <img src="{{ $imgSrc }}" alt=""
                          style="display: block; width: 64px; height: 64px; object-fit: contain; border: 1px solid #c8c8c8; padding: 2px; background: #fff;">
                 @endif
             </td>
@@ -74,7 +102,8 @@
     </table>
 @else
     @if($imgOk)
-        <img src="{{ $imgAbs }}" alt=""
+      {{-- codigo anterior: <img src="{{ $imgAbs }}" alt="" --}}
+        <img src="{{ $imgSrc }}" alt=""
              style="float: left; max-width: 56px; max-height: 56px; object-fit: contain; margin-right: 10px; margin-bottom: 4px;">
     @endif
     {{ $lineaTexto }}
