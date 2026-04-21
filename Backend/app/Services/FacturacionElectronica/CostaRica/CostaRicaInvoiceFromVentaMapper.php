@@ -184,7 +184,7 @@ final class CostaRicaInvoiceFromVentaMapper
         // Catálogo DGT tipos-transaccion.json: 01 = «Venta normal de bienes y servicios» (general), no significa «solo mercancía».
         // Los códigos 02–05 son autoconsumo u otros; no son «02=servicio». Hacienda cuadra TotalServGravados vs TotalMercanciasGravadas
         // según línea (p. ej. Unid vs Sp), no cambiando 01↔02 en tipo transacción. Mantener 01 en venta corriente.
-        $esServicio = $this->esLineaServicioCr($producto);
+        $esServicio = $this->esLineaServicioVentaFe($producto);
 
         $line = [
             'cabys_code' => $cabys,
@@ -648,7 +648,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $pct = (float) ($detalle->porcentaje_impuesto ?? 0);
         [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $ivaMonto > 0);
 
-        $esServicio = $this->esLineaServicioCr($producto);
+        $esServicio = $this->esLineaServicioVentaFe($producto);
 
         // transaction_type 01 = catálogo DGT «Venta normal de bienes y servicios»; no usar 02 pensando que es «servicio».
         $line = [
@@ -787,11 +787,12 @@ final class CostaRicaInvoiceFromVentaMapper
                 continue;
             }
 
-            $esServicio = $this->lineaUsaUnidadServicioCr($line);
+            // Misma regla que {@see linea()} (producto/servicio); no solo el array de línea — evita -111 vs Hacienda.
+            $esServicio = $this->esLineaServicioVentaFe($detalle->producto);
             $clas = $this->clasificarDetalleVentaCr($detalle);
 
             if ($clas === 'gravada') {
-                $monto = round((float) ($line['taxable_base'] ?? $line['sub_total'] ?? 0), 2);
+                $monto = round((float) ($line['taxable_base'] ?? $line['sub_total'] ?? 0), 5);
             } else {
                 $monto = $this->montoDetallePorClasificacionCr($detalle, $clas);
             }
@@ -867,7 +868,7 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
-     * Coherente con {@see linea()}: UnidadMedida Sp = servicio gravado en resumen; otro código = mercancía.
+     * Coherente con {@see linea()} cuando `unit_measure` ya viene normalizado (p. ej. array con code).
      *
      * @param  array<string, mixed>  $line
      */
@@ -882,11 +883,19 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
-     * Servicio vs bien para Unid vs Sp y totales del resumen: debe alinearse con cómo Hacienda agrupa la línea (evita -111).
-     * El catálogo DGT de tipo de transacción (01, 02…) no es «01=mercancía / 02=servicio»; el 01 es venta general.
-     * Por defecto se trata como mercancía (Unid) salvo tipo/medida claramente de servicio — no usar palabras sueltas en
-     * descripcion_cabys (muchas descripciones oficiales incluyen «servicio» y generaban Sp erróneo en productos físicos).
+     * Venta / nota crédito (línea desde detalle de venta): misma regla Unid vs Sp que {@see linea()} para cuadrar resumen con Hacienda (-111).
+     * Sin producto en el detalle se usa Sp (servicio), coherente con muchas líneas POS sin inventario.
+     * El catálogo DGT «tipo transacción» 01 no define mercancía vs servicio; eso lo marca la unidad de medida en línea.
      */
+    private function esLineaServicioVentaFe(?Producto $producto): bool
+    {
+        if ($producto === null) {
+            return true;
+        }
+
+        return $this->esLineaServicioCr($producto);
+    }
+
     /**
      * Línea de FEC compra (08): sin producto asociado suele tratarse como servicio/gasto; evita Unid por defecto y -111 con Hacienda.
      */
