@@ -49,6 +49,18 @@ interface OrdenPago {
   venta?: OrdenPagoVentaResumen | null;
 }
 
+interface VentaBusquedaSuscripcion {
+  id: number;
+  correlativo: string;
+  fecha: string;
+  estado: string;
+  total: string | number;
+  forma_pago?: string;
+  condicion?: string;
+  num_cotizacion?: string | null;
+  documento_nombre?: string | null;
+}
+
 @Component({
   selector: 'app-admin-suscripciones',
   templateUrl: './admin-suscripciones.component.html',
@@ -113,11 +125,33 @@ export class AdminSuscripcionesComponent implements OnInit {
   modalRefPagoRecibido?: BsModalRef;
   suscripcionPagoPendiente: any = null;
   empresaNombrePagoModal = '';
+  /** Fila empresa (listado) o empresa anidada en detalle — para `monto_mensual` al estimar factura. */
+  empresaMontosPagoModal: any = null;
   ordenesPagoPendientesModal: OrdenPago[] = [];
   loadingOrdenesPendientesModal = false;
   ordenPagoSeleccionadoId: number | null = null;
 
-  readonly diasPagoRecibidoUi = AppConstants.DIAS_PAGO_RECIBIDO_PROXIMO_CICLO;
+  /** Cobertura del pago (próximo cobro = hoy + N meses en servidor). */
+  pagoModalMesesCobertura = 1;
+  readonly mesesCoberturaOpcionesPago: { meses: number; etiqueta: string }[] = [
+    { meses: 1, etiqueta: '1 mes' },
+    { meses: 2, etiqueta: '2 meses' },
+    { meses: 3, etiqueta: '3 meses' },
+    { meses: 6, etiqueta: '6 meses' },
+    { meses: 12, etiqueta: '1 año' },
+    { meses: 24, etiqueta: '2 años' },
+  ];
+
+  /** Cómo se concilia el cobro con el ERP. */
+  pagoModalDocumentoOrigen: 'orden' | 'venta' | 'ninguno' = 'ninguno';
+
+  ventasBusquedaPagoModal: VentaBusquedaSuscripcion[] = [];
+  ventaBusquedaPagoTexto = '';
+  ventaSeleccionadaPagoId: number | null = null;
+  loadingVentasBusquedaPagoModal = false;
+
+  /** Solo con origen «ninguno»: genera factura en ERP por plan × meses. */
+  crearVentaManualPago = false;
 
   constructor(
     public apiService: ApiService,
@@ -406,22 +440,32 @@ export class AdminSuscripcionesComponent implements OnInit {
   public pagoRecibido(
     template: TemplateRef<any>,
     suscripcion: any,
-    nombreEmpresa?: string
+    nombreEmpresa?: string,
+    empresaMontos?: any
   ): void {
     if (!suscripcion?.id) {
       return;
     }
     this.suscripcionPagoPendiente = suscripcion;
+    this.empresaMontosPagoModal =
+      empresaMontos ?? suscripcion?.empresa ?? null;
     this.empresaNombrePagoModal =
       nombreEmpresa ||
       suscripcion?.empresa?.nombre ||
+      empresaMontos?.nombre ||
       '';
     this.ordenesPagoPendientesModal = [];
     this.ordenPagoSeleccionadoId = null;
+    this.pagoModalMesesCobertura = 1;
+    this.pagoModalDocumentoOrigen = 'ninguno';
+    this.ventasBusquedaPagoModal = [];
+    this.ventaBusquedaPagoTexto = '';
+    this.ventaSeleccionadaPagoId = null;
+    this.crearVentaManualPago = false;
     this.cargarOrdenesPagoPendientesModal(suscripcion.id);
 
     this.modalRefPagoRecibido = this.modalService.show(template, {
-      class: 'modal-dialog-centered',
+      class: 'modal-dialog-centered modal-lg',
       ignoreBackdropClick: true,
     });
   }
@@ -433,11 +477,16 @@ export class AdminSuscripcionesComponent implements OnInit {
       .subscribe({
         next: (rows: OrdenPago[]) => {
           this.ordenesPagoPendientesModal = Array.isArray(rows) ? rows : [];
-          if (this.ordenesPagoPendientesModal.length === 1) {
-            const only = this.ordenesPagoPendientesModal[0];
-            if (only?.id != null) {
-              this.ordenPagoSeleccionadoId = only.id;
+          if (this.ordenesPagoPendientesModal.length > 0) {
+            this.pagoModalDocumentoOrigen = 'orden';
+            if (this.ordenesPagoPendientesModal.length === 1) {
+              const only = this.ordenesPagoPendientesModal[0];
+              if (only?.id != null) {
+                this.ordenPagoSeleccionadoId = only.id;
+              }
             }
+          } else {
+            this.pagoModalDocumentoOrigen = 'ninguno';
           }
           this.loadingOrdenesPendientesModal = false;
         },
@@ -456,9 +505,93 @@ export class AdminSuscripcionesComponent implements OnInit {
     this.modalRefPagoRecibido = undefined;
     this.suscripcionPagoPendiente = null;
     this.empresaNombrePagoModal = '';
+    this.empresaMontosPagoModal = null;
     this.ordenesPagoPendientesModal = [];
     this.ordenPagoSeleccionadoId = null;
     this.loadingOrdenesPendientesModal = false;
+    this.pagoModalMesesCobertura = 1;
+    this.pagoModalDocumentoOrigen = 'ninguno';
+    this.ventasBusquedaPagoModal = [];
+    this.ventaBusquedaPagoTexto = '';
+    this.ventaSeleccionadaPagoId = null;
+    this.crearVentaManualPago = false;
+    this.loadingVentasBusquedaPagoModal = false;
+  }
+
+  public setDocumentoOrigenPago(
+    modo: 'orden' | 'venta' | 'ninguno'
+  ): void {
+    this.pagoModalDocumentoOrigen = modo;
+    if (modo !== 'orden') {
+      this.ordenPagoSeleccionadoId = null;
+    }
+    if (modo !== 'venta') {
+      this.ventaSeleccionadaPagoId = null;
+    }
+    if (modo !== 'ninguno') {
+      this.crearVentaManualPago = false;
+    }
+    if (modo === 'orden' && this.ordenesPagoPendientesModal.length === 1) {
+      const only = this.ordenesPagoPendientesModal[0];
+      if (only?.id != null) {
+        this.ordenPagoSeleccionadoId = only.id;
+      }
+    }
+    if (modo === 'venta') {
+      this.buscarVentasParaPagoModal();
+    }
+  }
+
+  public fechaProximoPagoPreview(): Date {
+    const d = new Date();
+    d.setMonth(d.getMonth() + (this.pagoModalMesesCobertura || 1));
+    return d;
+  }
+
+  public montoEstimadoCrearVentaModal(): number | null {
+    const s = this.suscripcionPagoPendiente;
+    if (!s) {
+      return null;
+    }
+    const emp = this.empresaMontosPagoModal;
+    const mensual = Number(
+      emp?.monto_mensual ??
+        s?.empresa?.monto_mensual ??
+        s?.plan?.precio ??
+        s?.monto ??
+        0
+    );
+    if (!mensual || mensual <= 0) {
+      return null;
+    }
+    return Math.round(mensual * (this.pagoModalMesesCobertura || 1) * 100) / 100;
+  }
+
+  public buscarVentasParaPagoModal(): void {
+    const suscripcion = this.suscripcionPagoPendiente;
+    if (!suscripcion?.id) {
+      return;
+    }
+    this.loadingVentasBusquedaPagoModal = true;
+    this.ventaSeleccionadaPagoId = null;
+    const q = (this.ventaBusquedaPagoTexto || '').trim();
+    this.apiService
+      .getAll(`suscripciones/${suscripcion.id}/ventas-buscar`, {
+        buscar: q,
+      })
+      .subscribe({
+        next: (rows: VentaBusquedaSuscripcion[]) => {
+          this.ventasBusquedaPagoModal = Array.isArray(rows) ? rows : [];
+          this.loadingVentasBusquedaPagoModal = false;
+        },
+        error: () => {
+          this.ventasBusquedaPagoModal = [];
+          this.loadingVentasBusquedaPagoModal = false;
+          this.alertService.error(
+            'No se pudieron buscar ventas. Verifica que la empresa tenga cliente ERP vinculado.'
+          );
+        },
+      });
   }
 
   public ejecutarPagoRecibido(): void {
@@ -468,22 +601,72 @@ export class AdminSuscripcionesComponent implements OnInit {
       return;
     }
 
+    if (this.pagoModalDocumentoOrigen === 'orden') {
+      if (
+        this.ordenesPagoPendientesModal.length > 0 &&
+        this.ordenPagoSeleccionadoId == null
+      ) {
+        this.alertService.error(
+          'Selecciona la orden pendiente que quedó pagada con este abono.'
+        );
+        return;
+      }
+      if (this.ordenesPagoPendientesModal.length === 0) {
+        this.alertService.error(
+          'No hay órdenes pendientes; elige «Buscar venta» o «Solo suscripción».'
+        );
+        return;
+      }
+    }
+
     if (
-      this.ordenesPagoPendientesModal.length > 0 &&
-      this.ordenPagoSeleccionadoId == null
+      this.pagoModalDocumentoOrigen === 'venta' &&
+      this.ventaSeleccionadaPagoId == null
     ) {
       this.alertService.error(
-        'Selecciona la orden o factura pendiente que quedó pagada con este abono.'
+        'Busca y selecciona la venta del ERP que quedó pagada (p. ej. transferencia).'
+      );
+      return;
+    }
+
+    if (
+      this.crearVentaManualPago &&
+      this.pagoModalDocumentoOrigen === 'ninguno' &&
+      this.montoEstimadoCrearVentaModal() == null
+    ) {
+      this.alertService.error(
+        'No hay monto mensual/plan para generar la factura. Completa montos en la suscripción o desmarca «Generar factura».'
       );
       return;
     }
 
     this.accionPagoId = suscripcion.id;
-    const payload: { id: number; orden_pago_id?: number } = {
+    const payload: {
+      id: number;
+      meses_cobertura: number;
+      documento_origen: 'orden' | 'venta' | 'ninguno';
+      orden_pago_id?: number;
+      venta_id?: number;
+      crear_venta: boolean;
+    } = {
       id: suscripcion.id,
+      meses_cobertura: this.pagoModalMesesCobertura || 1,
+      documento_origen: this.pagoModalDocumentoOrigen,
+      crear_venta:
+        this.crearVentaManualPago &&
+        this.pagoModalDocumentoOrigen === 'ninguno',
     };
-    if (this.ordenPagoSeleccionadoId != null) {
+    if (
+      this.pagoModalDocumentoOrigen === 'orden' &&
+      this.ordenPagoSeleccionadoId != null
+    ) {
       payload.orden_pago_id = this.ordenPagoSeleccionadoId;
+    }
+    if (
+      this.pagoModalDocumentoOrigen === 'venta' &&
+      this.ventaSeleccionadaPagoId != null
+    ) {
+      payload.venta_id = this.ventaSeleccionadaPagoId;
     }
 
     this.apiService.store('suscripcion/pago-recibido', payload).subscribe({
