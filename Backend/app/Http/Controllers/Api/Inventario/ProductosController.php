@@ -866,6 +866,8 @@ class ProductosController extends Controller
             'id_bodega_origen' => $request->input('id_bodega_origen', $request->query('id_bodega_origen')),
             'id_bodega_destino' => $request->input('id_bodega_destino', $request->query('id_bodega_destino')),
             'productos_ids' => $productosIds,
+            // Plantilla sin filas de producto (solo encabezados / columnas). GET ?plantilla_vacia=1
+            'plantilla_vacia' => $request->boolean('plantilla_vacia'),
         ];
 
         return Excel::download(

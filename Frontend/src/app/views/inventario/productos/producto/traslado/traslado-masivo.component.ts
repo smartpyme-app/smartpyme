@@ -512,6 +512,7 @@ export class TrasladoMasivoComponent implements OnInit {
             id_bodega_origen: this.filtros.id_bodega_origen,
             id_bodega_destino: this.filtros.id_bodega_destino,
             formato: 'excel',
+            plantilla_vacia: 1,
         };
 
         this.apiService.export('productos/exportar-traslado', filtrosExport).subscribe(

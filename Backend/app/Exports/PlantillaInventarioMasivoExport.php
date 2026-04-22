@@ -33,15 +33,20 @@ class PlantillaInventarioMasivoExport extends DefaultValueBinder implements From
 
     public function query()
     {
-        $ids = $this->filtros['productos_ids'] ?? [];
-        $ids = is_array($ids) ? array_values(array_filter(array_map('intval', $ids))) : [];
-
         $query = Producto::query()
             ->with(['inventarios', 'categoria', 'composiciones'])
             ->orderBy('nombre', 'asc');
 
-        // Sin IDs: todos los productos de la empresa (scope en modelo), como la plantilla clásica.
-        // Con IDs: solo esos productos (p. ej. export desde el listado con productos_ids=1,2,3).
+        // Plantilla vacía: solo encabezados Excel, sin filas de productos.
+        if (!empty($this->filtros['plantilla_vacia'])) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        $ids = $this->filtros['productos_ids'] ?? [];
+        $ids = is_array($ids) ? array_values(array_filter(array_map('intval', $ids))) : [];
+
+        // Sin IDs: todos los productos de la empresa (p. ej. GET sin plantilla_vacia ni productos_ids).
+        // Con IDs: solo esos productos.
         if (!empty($ids)) {
             $query->whereIn('id', $ids);
         }
