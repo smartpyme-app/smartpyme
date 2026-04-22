@@ -1,5 +1,14 @@
 export const AppConstants = {
 
+    /** Días tras el vencimiento con acceso (1..N); suspensión desde |días| > N (coincidir con Backend config/constants.php). */
+    DIAS_PRORROGA_SUSCRIPCION: 3,
+
+    /** Coincidir con Backend config/constants.php — próximo cobro al registrar «Pago recibido». */
+    DIAS_PAGO_RECIBIDO_PROXIMO_CICLO: 30,
+
+    /** Días que suma «Conceder acceso temporal» (sin mover fecha de próximo pago). */
+    DIAS_ACCESO_TEMPORAL_ADMIN: 2,
+
     ESTADOS_SUSCRIPCION: {
         ACTIVO: 'activo',
         INACTIVO: 'inactivo',

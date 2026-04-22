@@ -19,14 +19,34 @@ interface Plan {
   monto: number;
 }
 
+interface OrdenPagoVentaResumen {
+  id: number;
+  correlativo: string;
+  fecha: string;
+  estado: string;
+  total: string | number;
+  forma_pago?: string;
+  condicion?: string;
+  num_cotizacion?: string | null;
+  documento_nombre?: string | null;
+}
+
 interface OrdenPago {
+  id?: number;
   id_orden: string;
+  id_venta?: number | null;
   fecha_transaccion: string;
   monto: string;
   metodo_pago?: string;
   estado: string;
   codigo_autorizacion?: string;
   comprobante_url?: string;
+  plan?: string;
+  tipo_pago?: string;
+  nombre_cliente?: string;
+  email_cliente?: string;
+  created_at?: string;
+  venta?: OrdenPagoVentaResumen | null;
 }
 
 @Component({
@@ -46,6 +66,11 @@ export class AdminSuscripcionesComponent implements OnInit {
   public tabActivo: 'n1co' | 'transferencia' = 'n1co';
   public editando: boolean = false;
   public downloading: boolean = false;
+
+  /** Evita doble clic en acciones rápidas desde la tabla o el modal */
+  public accionPagoId: number | null = null;
+  public accionAccesoId: number | null = null;
+  public accionCancelarAccesoId: number | null = null;
 
   public historialPagos: OrdenPago[] = [];
   public loadingHistorial: boolean = false;
@@ -83,6 +108,16 @@ export class AdminSuscripcionesComponent implements OnInit {
   ];
 
   modalRef!: BsModalRef;
+
+  /** Confirmación «Pago recibido» (modal propio, no SweetAlert). */
+  modalRefPagoRecibido?: BsModalRef;
+  suscripcionPagoPendiente: any = null;
+  empresaNombrePagoModal = '';
+  ordenesPagoPendientesModal: OrdenPago[] = [];
+  loadingOrdenesPendientesModal = false;
+  ordenPagoSeleccionadoId: number | null = null;
+
+  readonly diasPagoRecibidoUi = AppConstants.DIAS_PAGO_RECIBIDO_PROXIMO_CICLO;
 
   constructor(
     public apiService: ApiService,
@@ -338,16 +373,16 @@ export class AdminSuscripcionesComponent implements OnInit {
       this.suscripcion.frecuencia_pago = this.suscripcion.tipo_plan;
     }
 
-    const datosSuscripcion = {
+    const datosSuscripcion: any = {
       ...this.suscripcion,
       usuario_id: this.suscripcion.usuario_id,
-      fecha_proximo_pago: new Date(this.suscripcion.fecha_proximo_pago),
       fin_periodo_prueba: new Date(this.suscripcion.fin_periodo_prueba),
       frecuencia_pago: this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan,
       codigo_promocional: this.suscripcion.codigo_promocional || null,
       monto_mensual: this.suscripcion.monto_mensual || null,
       monto_anual: this.suscripcion.monto_anual || null,
     };
+    delete datosSuscripcion.fecha_proximo_pago;
 
     this.apiService.store('suscripcion/edit', datosSuscripcion).subscribe(
       (response) => {
@@ -366,6 +401,221 @@ export class AdminSuscripcionesComponent implements OnInit {
         );
       }
     );
+  }
+
+  public pagoRecibido(
+    template: TemplateRef<any>,
+    suscripcion: any,
+    nombreEmpresa?: string
+  ): void {
+    if (!suscripcion?.id) {
+      return;
+    }
+    this.suscripcionPagoPendiente = suscripcion;
+    this.empresaNombrePagoModal =
+      nombreEmpresa ||
+      suscripcion?.empresa?.nombre ||
+      '';
+    this.ordenesPagoPendientesModal = [];
+    this.ordenPagoSeleccionadoId = null;
+    this.cargarOrdenesPagoPendientesModal(suscripcion.id);
+
+    this.modalRefPagoRecibido = this.modalService.show(template, {
+      class: 'modal-dialog-centered',
+      ignoreBackdropClick: true,
+    });
+  }
+
+  private cargarOrdenesPagoPendientesModal(suscripcionId: number): void {
+    this.loadingOrdenesPendientesModal = true;
+    this.apiService
+      .getAll(`suscripciones/${suscripcionId}/ordenes-pago-pendientes`)
+      .subscribe({
+        next: (rows: OrdenPago[]) => {
+          this.ordenesPagoPendientesModal = Array.isArray(rows) ? rows : [];
+          if (this.ordenesPagoPendientesModal.length === 1) {
+            const only = this.ordenesPagoPendientesModal[0];
+            if (only?.id != null) {
+              this.ordenPagoSeleccionadoId = only.id;
+            }
+          }
+          this.loadingOrdenesPendientesModal = false;
+        },
+        error: () => {
+          this.ordenesPagoPendientesModal = [];
+          this.loadingOrdenesPendientesModal = false;
+          this.alertService.error(
+            'No se pudieron cargar las órdenes pendientes. Puedes registrar el pago igualmente si no aplica ninguna.'
+          );
+        },
+      });
+  }
+
+  public cerrarModalPagoRecibido(): void {
+    this.modalRefPagoRecibido?.hide();
+    this.modalRefPagoRecibido = undefined;
+    this.suscripcionPagoPendiente = null;
+    this.empresaNombrePagoModal = '';
+    this.ordenesPagoPendientesModal = [];
+    this.ordenPagoSeleccionadoId = null;
+    this.loadingOrdenesPendientesModal = false;
+  }
+
+  public ejecutarPagoRecibido(): void {
+    const suscripcion = this.suscripcionPagoPendiente;
+    if (!suscripcion?.id) {
+      this.cerrarModalPagoRecibido();
+      return;
+    }
+
+    if (
+      this.ordenesPagoPendientesModal.length > 0 &&
+      this.ordenPagoSeleccionadoId == null
+    ) {
+      this.alertService.error(
+        'Selecciona la orden o factura pendiente que quedó pagada con este abono.'
+      );
+      return;
+    }
+
+    this.accionPagoId = suscripcion.id;
+    const payload: { id: number; orden_pago_id?: number } = {
+      id: suscripcion.id,
+    };
+    if (this.ordenPagoSeleccionadoId != null) {
+      payload.orden_pago_id = this.ordenPagoSeleccionadoId;
+    }
+
+    this.apiService.store('suscripcion/pago-recibido', payload).subscribe({
+        next: () => {
+          this.accionPagoId = null;
+          this.cerrarModalPagoRecibido();
+          this.alertService.success(
+            'Listo',
+            'Pago registrado y próxima fecha de pago actualizada.'
+          );
+          this.filtrarSuscripciones();
+          if (this.modalRef && this.suscripcion?.id === suscripcion.id) {
+            this.apiService
+              .getAll(`suscripcion/${suscripcion.id}`)
+              .subscribe((s) => {
+                this.suscripcion = s;
+              });
+          }
+        },
+        error: (err) => {
+          this.accionPagoId = null;
+          this.alertService.error(err);
+        },
+      });
+  }
+
+  /** True si existe fecha de acceso temporal aún no vencida (para alertas al extender). */
+  public tieneAccesoTemporalVigente(suscripcion: any): boolean {
+    if (!suscripcion?.acceso_temporal_hasta) {
+      return false;
+    }
+    return new Date(suscripcion.acceso_temporal_hasta).getTime() > Date.now();
+  }
+
+  public concederAccesoTemporal(suscripcion: any): void {
+    if (!suscripcion?.id) {
+      return;
+    }
+    const dias = AppConstants.DIAS_ACCESO_TEMPORAL_ADMIN;
+    const yaVigente = this.tieneAccesoTemporalVigente(suscripcion);
+    const finActual = suscripcion.acceso_temporal_hasta
+      ? new Date(suscripcion.acceso_temporal_hasta).toLocaleString('es-SV', {
+          dateStyle: 'short',
+          timeStyle: 'short',
+        })
+      : '';
+
+    const htmlBase = yaVigente
+      ? `<p class="mb-2"><strong>Esta suscripción ya tiene acceso temporal vigente</strong> hasta el <strong>${finActual}</strong>.</p>
+         <p class="mb-0">Si continúas, se sumarán <strong>${dias} días adicionales</strong> a partir de esa fecha (no desde hoy), <strong>sin cambiar</strong> la fecha de próximo pago.</p>`
+      : `<p class="mb-0">Se amplía el acceso a la plataforma <strong>${dias} días</strong> (desde hoy o desde el fin del acceso temporal vigente) <strong>sin cambiar</strong> la fecha de próximo pago.</p>`;
+
+    Swal.fire({
+      title: yaVigente ? '¿Extender acceso temporal?' : '¿Conceder acceso temporal?',
+      html: htmlBase,
+      icon: yaVigente ? 'warning' : 'question',
+      showCancelButton: true,
+      confirmButtonText: yaVigente ? 'Sí, extender' : 'Sí, conceder',
+      cancelButtonText: 'Cancelar',
+    }).then((r) => {
+      if (!r.isConfirmed) {
+        return;
+      }
+      this.accionAccesoId = suscripcion.id;
+      this.apiService.store('suscripcion/acceso-temporal', { id: suscripcion.id }).subscribe({
+        next: () => {
+          this.accionAccesoId = null;
+          this.alertService.success(
+            'Listo',
+            yaVigente
+              ? 'Acceso temporal extendido.'
+              : 'Acceso temporal concedido.'
+          );
+          this.filtrarSuscripciones();
+          if (this.modalRef && this.suscripcion?.id === suscripcion.id) {
+            this.apiService
+              .getAll(`suscripcion/${suscripcion.id}`)
+              .subscribe((s) => {
+                this.suscripcion = s;
+              });
+          }
+        },
+        error: (err) => {
+          this.accionAccesoId = null;
+          this.alertService.error(err);
+        },
+      });
+    });
+  }
+
+  public cancelarAccesoTemporal(suscripcion: any): void {
+    if (!suscripcion?.id) {
+      return;
+    }
+    if (!suscripcion.acceso_temporal_hasta) {
+      this.alertService.error('No hay acceso temporal configurado para quitar.');
+      return;
+    }
+    Swal.fire({
+      title: '¿Cancelar acceso temporal?',
+      html: 'El cliente volverá a depender solo de la fecha de próximo pago y la mora habitual (puede aplicarse el paywall si corresponde).',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cancelar acceso temporal',
+      cancelButtonText: 'No',
+      confirmButtonColor: '#d33',
+    }).then((r) => {
+      if (!r.isConfirmed) {
+        return;
+      }
+      this.accionCancelarAccesoId = suscripcion.id;
+      this.apiService
+        .store('suscripcion/cancelar-acceso-temporal', { id: suscripcion.id })
+        .subscribe({
+          next: () => {
+            this.accionCancelarAccesoId = null;
+            this.alertService.success('Listo', 'Acceso temporal cancelado.');
+            this.filtrarSuscripciones();
+            if (this.modalRef && this.suscripcion?.id === suscripcion.id) {
+              this.apiService
+                .getAll(`suscripcion/${suscripcion.id}`)
+                .subscribe((s) => {
+                  this.suscripcion = s;
+                });
+            }
+          },
+          error: (err) => {
+            this.accionCancelarAccesoId = null;
+            this.alertService.error(err);
+          },
+        });
+    });
   }
 
   private getUsersForSelect(id_empresa: number) {

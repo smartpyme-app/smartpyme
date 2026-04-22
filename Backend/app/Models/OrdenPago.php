@@ -54,7 +54,7 @@ class OrdenPago extends Model
 
     public function venta()
     {
-        return $this->hasOne(Venta::class, 'id_venta');
+        return $this->belongsTo(Venta::class, 'id_venta');
     }
 
     public function updateStatusAuthentication3DS($authenticationId, $authenticationUrl, $status)

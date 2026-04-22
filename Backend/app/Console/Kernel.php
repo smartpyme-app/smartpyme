@@ -82,6 +82,26 @@ class Kernel extends ConsoleKernel
             ->at('01:00')
             ->appendOutputTo(storage_path('logs/verificar-suscripciones.log'));
 
+        $schedule->command('suscripciones:enviar-recordatorios-correo')
+            ->dailyAt('08:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/suscripciones-recordatorios-correo.log'));
+
+        $schedule->command('suscripciones:reportes-internos-equipo --solo=diario')
+            ->dailyAt('08:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/suscripciones-reportes-internos-equipo.log'));
+
+        $schedule->command('suscripciones:reportes-internos-equipo --solo=semanal')
+            ->weeklyOn(5, '08:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/suscripciones-reportes-internos-equipo.log'));
+
+        $schedule->command('suscripciones:reporte-flujo-caja-mensual')
+            ->monthlyOn(1, '08:15')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/suscripciones-reporte-flujo-caja-mensual.log'));
+
         // ============================================
         // ACTUALIZACIÓN DE AGREGADOS CLIENTE360
         // ============================================

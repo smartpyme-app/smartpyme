@@ -19,7 +19,14 @@ return [
     'TIPO_PAGO_AUTOMATICO' => 'Automatico',
     'TIPO_PAGO_MANUAL' => 'Manual',
 
-    'DIAS_PRORROGA_SUSCRIPCION' => 10,
+    // Días tras el vencimiento con acceso (1..N); suspensión desde el día N+1 si siguen saldos pendientes (p. ej. N=3).
+    'DIAS_PRORROGA_SUSCRIPCION' => 3,
+
+    /** Días que suma la acción admin «Conceder acceso temporal» (sin mover fecha_proximo_pago). */
+    'DIAS_ACCESO_TEMPORAL_ADMIN' => 2,
+
+    /** Días hasta la próxima fecha de pago al registrar «Pago recibido» (transferencia/efectivo). */
+    'DIAS_PAGO_RECIBIDO_PROXIMO_CICLO' => 30,
     
     'ESTADO_SUSCRIPCION_ACTIVO' => 'Activo',
     'ESTADO_SUSCRIPCION_INACTIVO' => 'Inactivo',
@@ -50,8 +57,18 @@ return [
     'TIPO_USUARIO_VENDEDOR' => 'Vendedor',
     'TIPO_USUARIO_ALMACEN' => 'Almacén',
 
-    'MAIL_CC_ADDRESS_1' => 'gabrielaq@smartpyme.sv',
+    'MAIL_CC_ADDRESS_1' => 'jennifer.d@smartpyme.sv',
     'MAIL_CC_ADDRESS_2' => 'contact@smartpyme.sv',
+
+    /** Destinatarios de reportes internos de suscripciones (equipo SmartPyme). */
+    'MAIL_EQUIPO_REPORTES_SUSCRIPCION' => [
+        'jennifer.d@smartpyme.sv',
+        'karla.b@smartpyme.sv',
+        'alejandro.a@smartpyme.sv',
+    ],
+
+    /** Reporte mensual de flujo de caja (Excel): entradas esperadas por quincena. */
+    'MAIL_REPORTE_FLUJO_CAJA_MENSUAL' => "alejandro.a@smartpyme.sv",
 
     'FRECUENCIA_PAGO_MENSUAL' => 'Mensual',
     'FRECUENCIA_PAGO_TRIMESTRAL' => 'Trimestral',

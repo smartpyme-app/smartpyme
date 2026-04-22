@@ -372,6 +372,36 @@
                     <i class="fa fa-fw fa-edit"></i>Editar suscripcion
                   </a>
                   <a
+                    *ngIf="empresa.suscripcion"
+                    (click)="
+                      pagoRecibido(mconfirmPagoRecibido, empresa.suscripcion, empresa.nombre);
+                      $event.preventDefault()
+                    "
+                    class="list-group-item list-group-item-action border-0 click text-success"
+                    href="#"
+                  >
+                    <i class="fa fa-fw fa-money-bill-wave text-success"></i>
+                    Pago recibido
+                  </a>
+                  <a
+                    *ngIf="empresa.suscripcion"
+                    (click)="concederAccesoTemporal(empresa.suscripcion); $event.preventDefault()"
+                    class="list-group-item list-group-item-action border-0 click text-primary"
+                    href="#"
+                  >
+                    <i class="fa fa-fw fa-clock text-primary"></i>
+                    Conceder acceso temporal
+                  </a>
+                  <a
+                    *ngIf="empresa.suscripcion?.acceso_temporal_hasta"
+                    (click)="cancelarAccesoTemporal(empresa.suscripcion); $event.preventDefault()"
+                    class="list-group-item list-group-item-action border-0 click text-danger"
+                    href="#"
+                  >
+                    <i class="fa fa-fw fa-times-circle text-danger"></i>
+                    Cancelar acceso temporal
+                  </a>
+                  <a
                     *ngIf="
                       empresa.suscripcion &&
                       empresa.suscripcion.estado.toLowerCase() != 'cancelado' &&
@@ -637,15 +667,92 @@
           </small>
         </div>
 
-        <div class="form-group col-md-6 mb-3">
-          <label class="form-label">Fecha Próximo Pago:</label>
-          <input
-            type="date"
-            class="form-control"
-            [(ngModel)]="suscripcion.fecha_proximo_pago"
-            name="fecha_proximo_pago"
-            required
-          />
+        <div class="col-12 mb-3">
+          <div class="row g-3 align-items-start">
+            <div class="col-md-6">
+              <label class="form-label">Fecha próximo pago</label>
+              <div class="form-control bg-light border">
+                <span *ngIf="suscripcion?.fecha_proximo_pago">{{
+                  suscripcion.fecha_proximo_pago | date : "dd/MM/yyyy"
+                }}</span>
+                <span *ngIf="!suscripcion?.fecha_proximo_pago" class="text-muted"
+                  >—</span
+                >
+                <span
+                  *ngIf="suscripcion?.acceso_temporal_hasta"
+                  class="d-block small text-muted mt-1"
+                >
+                  Acceso temporal hasta:
+                  {{
+                    suscripcion.acceso_temporal_hasta
+                      | date : "dd/MM/yyyy HH:mm"
+                  }}
+                </span>
+              </div>
+              <small class="text-muted d-block mt-1">
+                No editable manualmente. Use las acciones al lado o las
+                integraciones de pago.
+              </small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-2">Acciones de cobro y acceso</label>
+              <div
+                class="d-flex flex-row flex-wrap gap-2 align-items-center justify-content-start"
+              >
+                <button
+                  type="button"
+                  class="btn btn-success btn-sm"
+                  [disabled]="
+                    saving ||
+                    accionPagoId === suscripcion?.id ||
+                    accionCancelarAccesoId === suscripcion?.id
+                  "
+                  (click)="
+                    pagoRecibido(
+                      mconfirmPagoRecibido,
+                      suscripcion,
+                      suscripcion.empresa?.nombre
+                    )
+                  "
+                >
+                  <i class="fas fa-money-bill-wave me-1"></i>
+                  Pago recibido
+                </button>
+                <button
+                  type="button"
+                  tooltip="{{ tieneAccesoTemporalVigente(suscripcion) ? 'Renovara el acceso temporal por 2 días más' : 'Concedera acceso temporal por 2 días' }}"
+                  class="btn btn-outline-primary btn-sm"
+                  [disabled]="
+                    saving ||
+                    accionAccesoId === suscripcion?.id ||
+                    accionCancelarAccesoId === suscripcion?.id
+                  "
+                  (click)="concederAccesoTemporal(suscripcion)"
+                >
+                  <i class="fas fa-clock me-1"></i>
+                  {{
+                    tieneAccesoTemporalVigente(suscripcion)
+                      ? "Extender acceso"
+                      : "Conceder acceso"
+                  }}
+                </button>
+                <button
+                  *ngIf="suscripcion?.acceso_temporal_hasta"
+                  type="button"
+                  tooltip="Cancelar acceso temporal"
+                  class="btn btn-outline-danger btn-sm"
+                  [disabled]="
+                    saving ||
+                    accionCancelarAccesoId === suscripcion?.id ||
+                    accionAccesoId === suscripcion?.id
+                  "
+                  (click)="cancelarAccesoTemporal(suscripcion)"
+                >
+                  <i class="fas fa-times me-1"></i>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="form-group col-md-6 mb-3">
@@ -1028,6 +1135,136 @@
         </div>
       </div>
     </form>
+  </div>
+</ng-template>
+
+<ng-template #mconfirmPagoRecibido>
+  <div class="modal-header">
+    <h4 class="modal-title">Registrar pago recibido</h4>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="cerrarModalPagoRecibido()"
+      aria-label="Cerrar"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <p class="mb-2" *ngIf="empresaNombrePagoModal">
+      <strong>{{ empresaNombrePagoModal }}</strong>
+      <span class="text-muted"> — suscripción #{{ suscripcionPagoPendiente?.id }}</span>
+    </p>
+    <p class="mb-2" *ngIf="!empresaNombrePagoModal && suscripcionPagoPendiente?.id">
+      <span class="text-muted">Suscripción #{{ suscripcionPagoPendiente.id }}</span>
+    </p>
+    <p class="mb-3">
+      Se fijará la <strong>próxima fecha de pago</strong> a
+      <strong>{{ diasPagoRecibidoUi }} días</strong> a partir de hoy y se
+      actualizará la fecha del último pago. Si había
+      <strong>acceso temporal</strong> de excepción, se anulará.
+    </p>
+
+    <div *ngIf="loadingOrdenesPendientesModal" class="text-muted small mb-0">
+      <i class="fas fa-spinner fa-spin me-1"></i>
+      Cargando órdenes pendientes…
+    </div>
+
+    <div
+      *ngIf="!loadingOrdenesPendientesModal && ordenesPagoPendientesModal.length > 0"
+      class="border rounded p-3 bg-light"
+    >
+      <p class="mb-2 fw-semibold">
+        Órdenes / cargos pendientes (elige cuál quedó pagado con este abono):
+      </p>
+      <div
+        class="list-group list-group-flush overflow-y-auto pe-1"
+        style="max-height: calc(5 * 5.75rem)"
+      >
+        <label
+          *ngFor="let op of ordenesPagoPendientesModal"
+          class="list-group-item list-group-item-action d-flex align-items-start gap-2 py-2 px-2 mb-0 cursor-pointer"
+          [class.active]="ordenPagoSeleccionadoId === op.id"
+        >
+          <input
+            class="form-check-input mt-1 flex-shrink-0"
+            type="radio"
+            name="ordenPagoPendiente"
+            [value]="op.id"
+            [(ngModel)]="ordenPagoSeleccionadoId"
+            [ngModelOptions]="{ standalone: true }"
+          />
+          <span class="small">
+            <span class="d-block fw-medium">{{ op.id_orden }}</span>
+            <span class="d-block text-muted mt-1" *ngIf="op.venta as v">
+              <i class="fas fa-file-invoice me-1"></i>
+              <ng-container *ngIf="v.documento_nombre">{{ v.documento_nombre }}</ng-container>
+              <ng-container *ngIf="!v.documento_nombre">Factura</ng-container>
+              <ng-container *ngIf="v.correlativo != null && v.correlativo !== ''">
+                #{{ v.correlativo }}</ng-container
+              >
+              <span *ngIf="v.fecha"> · {{ v.fecha | date : 'mediumDate' }}</span>
+              <span *ngIf="v.estado"> · {{ v.estado }}</span>
+              <span *ngIf="v.total != null">
+                · Total ${{ v.total | number : '1.2-2' }}</span
+              >
+              <span *ngIf="v.forma_pago"> · {{ v.forma_pago }}</span>
+              <span *ngIf="v.condicion"> · {{ v.condicion }}</span>
+            </span>
+            <span class="d-block text-muted mt-1 fst-italic" *ngIf="!op.venta">
+              Sin venta / factura en ERP vinculada aún
+            </span>
+            <span class="d-block text-muted mt-1">
+              <ng-container *ngIf="op.plan">{{ op.plan }} · </ng-container>
+              ${{ op.monto | number : '1.2-2' }}
+              <ng-container *ngIf="op.tipo_pago"> · {{ op.tipo_pago }}</ng-container>
+              <ng-container *ngIf="op.nombre_cliente">
+                · {{ op.nombre_cliente }}</ng-container
+              >
+              <ng-container *ngIf="op.created_at">
+                · Orden creada {{ op.created_at | date : 'short' }}</ng-container
+              >
+            </span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <p
+      *ngIf="!loadingOrdenesPendientesModal && ordenesPagoPendientesModal.length === 0"
+      class="text-muted small mb-0"
+    >
+      No hay órdenes de pago pendientes vinculadas a este plan; solo se
+      actualizarán las fechas de la suscripción.
+    </p>
+  </div>
+  <div class="modal-footer d-flex gap-2 justify-content-end flex-wrap">
+    <button
+      type="button"
+      class="btn btn-secondary"
+      [disabled]="accionPagoId === suscripcionPagoPendiente?.id"
+      (click)="cerrarModalPagoRecibido()"
+    >
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="btn btn-success"
+      [disabled]="
+        accionPagoId === suscripcionPagoPendiente?.id ||
+        loadingOrdenesPendientesModal ||
+        (ordenesPagoPendientesModal.length > 0 &&
+          ordenPagoSeleccionadoId == null)
+      "
+      (click)="ejecutarPagoRecibido()"
+    >
+      <span *ngIf="accionPagoId !== suscripcionPagoPendiente?.id">
+        <i class="fas fa-check me-1"></i>
+        Sí, registrar pago
+      </span>
+      <span *ngIf="accionPagoId === suscripcionPagoPendiente?.id">
+        <i class="fas fa-spinner fa-spin me-1"></i>
+        Registrando…
+      </span>
+    </button>
   </div>
 </ng-template>
 
