@@ -29,6 +29,11 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => true,
+    /*
+     * Con JWT en localStorage (sin cookies de sesión cross-origin), debe ser false.
+     * true + allowed_origins * es inválido: el navegador no recibe Access-Control-Allow-Origin.
+     * Si necesitas cookies/Sanctum, pon origenes explícitos y supports_credentials true.
+     */
+    'supports_credentials' => false,
 
 ];
