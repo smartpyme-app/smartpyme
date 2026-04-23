@@ -404,7 +404,7 @@
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
               <label for="percepcion">Retención (1%)</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="compra.retencion">
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onRetencionIvaManualChange()" [(ngModel)]="venta.retencion" name="compra.retencion">
             </div>
         </div>
         <div class="form-group col-md-4 col-lg-3 without-label ">

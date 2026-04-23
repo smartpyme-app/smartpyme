@@ -49,10 +49,12 @@ class LibroSujetosExcluidosExport implements FromCollection, WithMapping, WithHe
             'NUMERO DE NIT, DUI, OTRO DOCUMENTO',
             'NOMBRE, RAZÓN SOCIAL O DENOMINACIÓN',
             'FECHA DE EMISIÓN DEL DOCUMENTO',
-            'NUMERO DE SERIE DEL DOCUMENTO',
-            'NUMERO DE DOCUMENTO',
+            'SELLO RECEPCIÓN MH (DTE)',
+            'CÓDIGO DE GENERACIÓN (DTE)',
+            'REFERENCIA / NÚM. CONTROL',
             'MONTO DE LA OPERACIÓN',
             'MONTO DE LA RETENCIÓN IVA 13%',
+            'RETENCIÓN RENTA (PAGO A CUENTA)',
             'TIPO DE OPERACIÓN',
             'CLASIFICACIÓN',
             'SECTOR',
@@ -91,9 +93,9 @@ class LibroSujetosExcluidosExport implements FromCollection, WithMapping, WithHe
             ->where('tipo_documento', 'Sujeto excluido')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
-            ->map(function ($compra) {
-                $compra->origen = 'compra';
-                return $compra;
+            ->map(function ($gasto) {
+                $gasto->origen = 'gasto';
+                return $gasto;
             });
 
         $libroCompras = $compras->merge($gastos)->sortBy('fecha');
@@ -105,20 +107,31 @@ class LibroSujetosExcluidosExport implements FromCollection, WithMapping, WithHe
     {
         $proveedor = optional($compra->proveedor()->first());
 
+        $sello = SujetosExcluidosDteHelper::selloRecepcion($compra);
+        $codGen = SujetosExcluidosDteHelper::codigoGeneracion($compra);
+        if ($sello === '' && $codGen === '' && $compra->num_serie) {
+            $sello = (string) $compra->num_serie;
+        }
+        if ($codGen === '' && $compra->codigo_generacion) {
+            $codGen = strtoupper((string) $compra->codigo_generacion);
+        }
+
         $data = [
-            'tipo_documento' => $proveedor->nit ? 'NIT' : 'DUI',  // A - TIPO DE DOCUMENTO
-            'num_documento' => $proveedor->nit ? $proveedor->nit : $proveedor->dui,  // B - NUMERO DE NIT, DI-II, IJ OTRO DOCUMENTO
-            'proveedor' => $compra->nombre_proveedor,  // C - NOMBRE, RAZ N SOCIAL O DENOMINACI N
-            'fecha' => $compra->fecha,  // D - FECHA DE EMISI N DEL DOCUMENTO
-            'serie' => $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
-            'referencia' => $compra->referencia,  // F - NUMERO DE DOCUMENTO
-            'total' => $compra->total,  // G - MONTO DE LA OPERACIÖN
-            'iva' => $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
-            'tipo_operacion' => $this->tipoOperacion($compra->tipo_operacion),  // I - TIPO DE OPERACIÖN
-            'clasificacion' =>  $this->tipoClasificacion($compra->tipo_clasificacion),  // J - CLASIFICACI Costo gasto
-            'sector' => $this->tipoSector($compra->tipo_sector),  // K - SECTOR
-            'tipo' =>   $this->tipoCostoGasto($compra->tipo_costo_gasto),  // L - TIPO DE COSTO / GASTO
-            'num_anexo' => 5,  // M - NUMERO DE ANEXO
+            'tipo_documento' => $proveedor->nit ? 'NIT' : 'DUI',
+            'num_documento' => $proveedor->nit ? $proveedor->nit : $proveedor->dui,
+            'proveedor' => $compra->nombre_proveedor,
+            'fecha' => $compra->fecha,
+            'sello' => $sello,
+            'cod_generacion' => $codGen,
+            'referencia' => $compra->referencia,
+            'total' => $compra->total,
+            'iva' => $compra->iva,
+            'renta_retenida' => (float) ($compra->renta_retenida ?? 0),
+            'tipo_operacion' => $this->tipoOperacion($compra->tipo_operacion),
+            'clasificacion' => $this->tipoClasificacion($compra->tipo_clasificacion),
+            'sector' => $this->tipoSector($compra->tipo_sector),
+            'tipo' => $this->tipoCostoGasto($compra->tipo_costo_gasto),
+            'num_anexo' => 5,
         ];
 
         return $data;

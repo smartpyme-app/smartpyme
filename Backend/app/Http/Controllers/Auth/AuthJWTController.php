@@ -114,6 +114,8 @@ class AuthJWTController extends Controller
         $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
         $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
 
+        $this->adjuntarAccesoTemporalUsuario($user, $suscripcion);
+
         return response()->json(['token' => $token, 'user' => $user], 200);
     }
 
@@ -481,6 +483,66 @@ class AuthJWTController extends Controller
         return $tieneCodigoPromocional
             ? now()
             : now()->addDays($plan->duracion_dias ?? 0);
+    }
+
+    public function me($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return Response()->json(['message' => 'Usuario no encontrado', 'code' => 404], 404);
+        }
+
+        $user->ultimo_login = Carbon::now();
+        $user->save();
+
+        $user->empresa = $user->empresa()->with('licencia')->first();
+
+        // Agregar información sobre el tipo de empresa (padre/hija)
+        if ($user->empresa) {
+            $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
+            $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+        }
+
+        $suscripcion = $user->empresa->suscripcion()
+            ->whereNotIn('estado', [
+                config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+                config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+            ])
+            ->latest()
+            ->first();
+
+        $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
+        $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
+        $user->tiene_suscripcion = !is_null($suscripcion);
+        $user->ordenes_pagos = $suscripcion && $suscripcion->ordenesPago()->exists() ? true : false;
+        $user->tiene_metodo_pago_activo = $user->metodoPago()->where('esta_activo', true)->exists();
+
+        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->nombre;
+        $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
+        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
+        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
+
+        $this->adjuntarAccesoTemporalUsuario($user, $suscripcion);
+
+        return response()->json(['user' => $user], 200);
+    }
+
+    /**
+     * Expone acceso temporal concedido por admin (sin cambiar fecha de pago) para el guard y la UI.
+     */
+    private function adjuntarAccesoTemporalUsuario($user, $suscripcion): void
+    {
+        $user->acceso_temporal_hasta = null;
+        $user->dias_restantes_acceso_temporal = null;
+        if (!$suscripcion || !$suscripcion->acceso_temporal_hasta) {
+            return;
+        }
+        $end = Carbon::parse($suscripcion->acceso_temporal_hasta);
+        $user->acceso_temporal_hasta = $end->toIso8601String();
+        if ($end->isFuture()) {
+            $user->dias_restantes_acceso_temporal = (int) max(0, now()->diffInDays($end, false));
+        }
     }
 
     private function createPlanillaConfiguration($empresa)

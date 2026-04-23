@@ -65,131 +65,127 @@
           </div>
       }
 
-      <!-- Otros estados de suscripción (solo se muestran si NO está en período de prueba) -->
-      @if (usuario.estado_suscripcion?.toLowerCase() !== 'en prueba' && visibleAlertMessage && usuario.dias_faltantes !== null && usuario.tiene_suscripcion) {
-          <!-- Suscripción por vencer (4-7 días) -->
-          @if (usuario.dias_faltantes <= 7 && usuario.dias_faltantes > 3 && visibleAlertMessage) {
-              <div class="alert alert-warning rounded-0 m-0 p-2 text-center d-flex justify-content-between align-items-center">
-                  <!-- Contenido para administradores -->
-                  @if (isAdmin()) {
-                      <div class="text-dark text-center w-100">
-                          Tu suscripción vencerá en {{ usuario.dias_faltantes }} días.
-                          <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark">Renueva ahora</a>
-                      </div>
-                  }
-                  <!-- Contenido para no administradores -->
-                  @if (!isAdmin()) {
-                      <span class="text-decoration-none text-dark d-block text-center">
-                          La suscripción de la empresa vencerá en
-                          {{ usuario.dias_faltantes }} días.
-                          <span class="fw-bold"
-                              >Contacta al administrador para la renovación</span
-                          >
-                      </span>
-                  }
-                  <span class="badge text-dark py-2 cursor-pointer badge-suscripcion position-absolute end-0 top-50 translate-middle-y me-2" (click)="dismissAlert()">Entendido</span>
-              </div>
-          }
+      <!-- Suscripción pagada: tabla día -3/-1/0/1/2/3 (ver documentación de notificaciones) -->
+      <ng-container
+        *ngIf="
+          usuario.estado_suscripcion?.toLowerCase() !== 'en prueba' &&
+          usuario.dias_faltantes !== null &&
+          usuario.tiene_suscripcion
+        "
+      >
+        <!-- Acceso temporal concedido por admin: ya aplicaría suspensión por mora, pero sigue vigente la excepción -->
+        <div
+          *ngIf="bannerAccesoTemporalActivo() && visibleAlertMessage"
+          class="alert alert-info text-dark rounded-0 m-0 p-2 text-center position-relative"
+        >
+          <ng-container *ngIf="isAdmin()">
+            <div class="text-dark text-center w-100">
+              <i class="fas fa-unlock-alt me-2"></i>
+              Acceso temporal activo hasta el
+              {{ usuario.acceso_temporal_hasta | date : "dd/MM/yyyy HH:mm" }}.
+              Regulariza tus saldos pendientes con el sistema antes de que expire.
+              <a href="/suscripcion" class="fw-bold text-decoration-none text-dark ms-1">Ver suscripción</a>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="!isAdmin()">
+            <span class="text-decoration-none text-dark d-block text-center">
+              <i class="fas fa-unlock-alt me-2"></i>
+              La empresa tiene acceso temporal hasta el
+              {{ usuario.acceso_temporal_hasta | date : "dd/MM/yyyy" }}.
+              <span class="fw-bold">Contacta al administrador para regularizar el pago.</span>
+            </span>
+          </ng-container>
+          <span class="badge text-dark py-2 cursor-pointer badge-suscripcion" (click)="dismissAlert()">Entendido</span>
+        </div>
 
-          <!-- Suscripción crítica (1-3 días) -->
-          @if (usuario.dias_faltantes <= 3 && usuario.dias_faltantes > 0 && visibleAlertMessage) {
-              <div class="alert alert-danger text-dark rounded-0 m-0 p-2 text-center position-relative">
-                  <!-- Contenido para administradores -->
-                  @if (isAdmin()) {
-                      <div class="text-dark text-center w-100">
-                          ¡Atención! Tu suscripción vencerá en
-                          {{ usuario.dias_faltantes }} días.
-                          <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark">Renueva inmediatamente</a>
-                      </div>
-                  }
-                  <!-- Contenido para no administradores -->
-                  @if (!isAdmin()) {
-                      <span class="text-decoration-none text-dark d-block text-center">
-                          ¡Atención! La suscripción de la empresa vencerá en
-                          {{ usuario.dias_faltantes }} días.
-                          <span class="fw-bold"
-                              >Contacta urgentemente al administrador</span
-                          >
-                      </span>
-                  }
-                  <span class="badge text-dark py-2 cursor-pointer badge-suscripcion" (click)="dismissAlert()">Entendido</span>
-              </div>
-          }
+        <!-- Acceso suspendido por saldos pendientes (día 4+): admin y usuarios -->
+        <div
+          *ngIf="bannerCuentaSuspendidaPorSaldosPendientes() && visibleAlertMessage"
+          class="alert bg-dark text-white rounded-0 m-0 p-2 text-center position-relative"
+        >
+          <ng-container *ngIf="isAdmin()">
+            <div class="text-white text-center w-100">
+              <i class="fas fa-lock me-2"></i>
+              Tu cuenta está suspendida por saldos pendientes con el sistema.
+              <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-white">Contacta a soporte para regularizar tu situación</a>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="!isAdmin()">
+            <span class="text-decoration-none text-white d-block text-center">
+              <i class="fas fa-lock me-2"></i>
+              La cuenta de la empresa está suspendida por saldos pendientes con el sistema.
+              <span class="fw-bold">Comunícate con el administrador</span>
+            </span>
+          </ng-container>
+          <span class="badge text-dark py-2 cursor-pointer badge-suscripcion" (click)="dismissAlert()">Entendido</span>
+        </div>
 
-          <!-- Suscripción vencida (0 días) -->
-          @if (usuario.dias_faltantes === 0 && visibleAlertMessage) {
-              <div class="alert alert-danger text-dark rounded-0 m-0 p-2 text-center d-flex justify-content-between align-items-center">
-                  <!-- Contenido para administradores -->
-                  @if (isAdmin()) {
-                      <div class="text-dark text-center w-100">
-                          Tu suscripción ha vencido.
-                          <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark">Renueva ahora para mantener acceso a todas las funciones</a>
-                      </div>
-                  }
-                  <!-- Contenido para no administradores -->
-                  @if (!isAdmin()) {
-                      <span class="text-decoration-none text-dark d-block text-center">
-                          La suscripción de la empresa ha vencido.
-                          <span class="fw-bold"
-                              >Contacta al administrador para reactivarla</span
-                          >
-                      </span>
-                  }
-                  <span class="badge text-dark py-2 cursor-pointer badge-suscripcion" (click)="dismissAlert()">Entendido</span>
-              </div>
-          }
+        <!-- Admin: recordatorios día -3 y -1 (dias_faltantes 3 y 1), banner naranja -->
+        <div
+          *ngIf="bannerAdminRecordatorioPrevio() && visibleAlertMessage"
+          class="alert alert-warning text-dark rounded-0 m-0 p-2 text-center d-flex justify-content-between align-items-center"
+        >
+          <div class="text-dark text-center w-100">
+            Recordatorio: se acerca la fecha de renovación. Mantén al día tus saldos con el sistema para evitar interrupciones en el servicio.
+            <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark ms-1">Ver suscripción</a>
+          </div>
+          <span class="badge text-dark py-2 cursor-pointer badge-suscripcion position-absolute end-0 top-50 translate-middle-y me-2" (click)="dismissAlert()">Entendido</span>
+        </div>
 
-          <!-- Suscripción en período de gracia (1-9 días después de vencer) -->
-          @if (usuario.dias_faltantes < 0 && usuario.dias_faltantes > -10 && visibleAlertMessage) {
-              <div class="alert alert-danger text-dark rounded-0 m-0 p-2 text-center d-flex justify-content-between align-items-center">
-                  <!-- Contenido para administradores -->
-                  @if (isAdmin()) {
-                      <div class="text-dark text-center w-100">
-                          <i class="fas fa-exclamation-triangle me-2"></i>
-                          Tu cuenta será desactivada en
-                          {{ 10 + usuario.dias_faltantes }} días si no renuevas tu
-                          suscripción.
-                          <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark">Renueva inmediatamente</a>
-                      </div>
-                  }
-                  <!-- Contenido para no administradores -->
-                  @if (!isAdmin()) {
-                      <span class="text-decoration-none text-dark d-block text-center">
-                          <i class="fas fa-exclamation-triangle me-2"></i>
-                          La cuenta de la empresa será desactivada en
-                          {{ 10 + usuario.dias_faltantes }} días.
-                          <span class="fw-bold"
-                              >Contacta al administrador con urgencia</span
-                          >
-                      </span>
-                  }
-                  <span class="badge text-dark py-2 cursor-pointer badge-suscripcion" (click)="dismissAlert()">Entendido</span>
-              </div>
-          }
+        <!-- Admin: desde vencimiento (0) hasta fin de gracia (-3), banner rojo -->
+        <div
+          *ngIf="bannerAdminVencimientoOGracia() && visibleAlertMessage"
+          class="alert alert-danger text-dark rounded-0 m-0 p-2 text-center position-relative"
+        >
+          <ng-container [ngSwitch]="usuario.dias_faltantes">
+            <div *ngSwitchCase="0" class="text-dark text-center w-100">
+              Importante: hoy vence el plazo programado. Regulariza tus saldos pendientes con el sistema para continuar sin interrupciones.
+              <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark">Regularizar en suscripción</a>
+            </div>
+            <div *ngSwitchCase="-1" class="text-dark text-center w-100">
+              Tu suscripción requiere atención: hay saldos pendientes con el sistema. Regulariza tu situación para mantener el acceso.
+              <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark">Ver opciones</a>
+            </div>
+            <div *ngSwitchCase="-2" class="text-dark text-center w-100">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              Importante: si persisten saldos pendientes con el sistema, mañana podría limitarse el acceso. Te invitamos a regularizar tu situación.
+              <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark">Regularizar en suscripción</a>
+            </div>
+            <div *ngSwitchCase="-3" class="text-dark text-center w-100">
+              Último día de gracia: regulariza hoy tus saldos pendientes con el sistema para mantener el acceso.
+              <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark">Regularizar ahora</a>
+            </div>
+          </ng-container>
+          <span class="badge text-dark py-2 cursor-pointer badge-suscripcion" (click)="dismissAlert()">Entendido</span>
+        </div>
 
-          <!-- Cuenta desactivada (10+ días sin pago) -->
-          @if (usuario.dias_faltantes <= -10 && visibleAlertMessage) {
-              <div class="alert bg-dark text-white rounded-0 m-0 p-2 text-center position-relative">
-                  <!-- Contenido para administradores -->
-                  @if (isAdmin()) {
-                      <div class="text-white text-center w-100">
-                          <i class="fas fa-lock me-2"></i>
-                          Tu cuenta ha sido desactivada por falta de pago.
-                          <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-white">Contacta a soporte para reactivarla</a>
-                      </div>
-                  }
-                  <!-- Contenido para no administradores -->
-                  @if (!isAdmin()) {
-                      <span class="text-decoration-none text-white d-block text-center">
-                          <i class="fas fa-lock me-2"></i>
-                          La cuenta de la empresa ha sido desactivada por falta de pago.
-                          <span class="fw-bold">Comunícate con el administrador</span>
-                      </span>
-                  }
-                  <span class="badge text-dark py-2 cursor-pointer badge-suscripcion" (click)="dismissAlert()">Entendido</span>
-              </div>
-          }
-      }
+        <!-- Usuario no admin: día 0 y período de gracia (días 1–3 tras vencimiento), banner naranja -->
+        <div
+          *ngIf="bannerUsuarioVencimientoOGracia() && visibleAlertMessage"
+          class="alert alert-warning text-dark rounded-0 m-0 p-2 text-center position-relative"
+        >
+          <ng-container [ngSwitch]="usuario.dias_faltantes">
+            <span *ngSwitchCase="0" class="text-decoration-none text-dark d-block text-center">
+              Importante: hoy vence el plazo de la suscripción. El administrador puede regularizar los saldos pendientes con el sistema para evitar interrupciones.
+              <span class="fw-bold">Contacta al administrador</span>
+            </span>
+            <span *ngSwitchCase="-1" class="text-decoration-none text-dark d-block text-center">
+              La suscripción de la empresa requiere atención por saldos pendientes con el sistema.
+              <span class="fw-bold">Contacta al administrador</span>
+            </span>
+            <span *ngSwitchCase="-2" class="text-decoration-none text-dark d-block text-center">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              Importante: si persisten saldos pendientes con el sistema, mañana podría limitarse el acceso.
+              <span class="fw-bold">Informa al administrador</span>
+            </span>
+            <span *ngSwitchCase="-3" class="text-decoration-none text-dark d-block text-center">
+              Último día de gracia antes de una posible suspensión del acceso. Los saldos pendientes con el sistema deben regularizarse.
+              <span class="fw-bold">Contacta al administrador</span>
+            </span>
+          </ng-container>
+          <span class="badge text-dark py-2 cursor-pointer badge-suscripcion" (click)="dismissAlert()">Entendido</span>
+        </div>
+      </ng-container>
 
       <!-- Sin suscripción y no en prueba -->
       @if (!usuario.tiene_suscripcion && usuario.estado_suscripcion?.toLowerCase() !== 'en prueba' && visibleAlertMessage && usuario.id_empresa != 2) {

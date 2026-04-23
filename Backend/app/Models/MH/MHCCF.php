@@ -181,6 +181,8 @@ class MHCCF extends Model
             $this->venta->exenta = $this->venta->sub_total;
         }
 
+        $pagoCond = $this->condicionOperacionYPagoPlazo();
+
         return 
             [
                 "identificacion" => $this->identificador(),
@@ -213,14 +215,14 @@ class MHCCF extends Model
                   "totalLetras" => $this->venta->total_en_letras,
                   // "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
                   "saldoFavor" => 0,
-                  "condicionOperacion" => $this->venta->cod_condicion,
+                  "condicionOperacion" => $pagoCond['condicionOperacion'],
                   "pagos" => [
                     [
                       "codigo" => $this->venta->cod_metodo_pago,
                       "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
                       "referencia" => NULL,
-                      "plazo" => $this->venta->cod_condicion == 2 ? $this->obtenerPlazo($this->venta->dias_credito) : NULL,
-                      "periodo" => $this->venta->cod_condicion == 2 ? Carbon::parse($this->venta->fecha)->diffInDays(Carbon::parse($this->venta->fecha_pago), false) : NULL
+                      "plazo" => $pagoCond['plazo'],
+                      "periodo" => $pagoCond['periodo']
                     ]
                   ],
                   "numPagoElectronico" => ""
@@ -387,6 +389,32 @@ class MHCCF extends Model
         }
 
         return $detalles;
+    }
+
+    /**
+     * El MH exige un periodo mayor que 0 en crédito; si emisión y vencimiento coinciden o faltan fechas, se envía como contado.
+     *
+     * @return array{condicionOperacion: int, plazo: string|null, periodo: int|null}
+     */
+    private function condicionOperacionYPagoPlazo(): array
+    {
+        $cod = (int) $this->venta->cod_condicion;
+        if ($cod !== 2) {
+            return ['condicionOperacion' => $cod, 'plazo' => null, 'periodo' => null];
+        }
+        if (empty($this->venta->fecha_pago) || empty($this->venta->fecha)) {
+            return ['condicionOperacion' => 1, 'plazo' => null, 'periodo' => null];
+        }
+        $periodo = Carbon::parse($this->venta->fecha)->diffInDays(Carbon::parse($this->venta->fecha_pago), false);
+        if ($periodo < 1) {
+            return ['condicionOperacion' => 1, 'plazo' => null, 'periodo' => null];
+        }
+
+        return [
+            'condicionOperacion' => 2,
+            'plazo' => $this->obtenerPlazo($this->venta->dias_credito),
+            'periodo' => $periodo,
+        ];
     }
 
     private function obtenerPlazo($dias_credito) {

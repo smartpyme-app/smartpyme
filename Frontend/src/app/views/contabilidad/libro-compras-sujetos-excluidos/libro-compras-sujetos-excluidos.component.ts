@@ -63,9 +63,10 @@ export class LibroComprasSujetosExcluidosComponent extends BaseModalComponent im
         this.loadAll();
     }
 
-    /** Solo para El Salvador: opciones de descarga ZIP y CSV (declaración MH) */
+    /** Solo para El Salvador: descarga CSV del anexo (clase AnexoSujetosExcluidosExport en backend). */
     get isElSalvador(): boolean {
-        return this.apiService.auth_user()?.empresa?.pais === 'El Salvador';
+        const p = (this.apiService.auth_user()?.empresa?.pais || '').toString().toLowerCase();
+        return p === 'el salvador' || p.includes('salvador');
     }
 
     public loadAll() {

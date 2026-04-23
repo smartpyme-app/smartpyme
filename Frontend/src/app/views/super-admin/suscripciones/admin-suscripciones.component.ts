@@ -25,14 +25,46 @@ interface Plan {
   monto: number;
 }
 
+interface OrdenPagoVentaResumen {
+  id: number;
+  correlativo: string;
+  fecha: string;
+  estado: string;
+  total: string | number;
+  forma_pago?: string;
+  condicion?: string;
+  num_cotizacion?: string | null;
+  documento_nombre?: string | null;
+}
+
 interface OrdenPago {
+  id?: number;
   id_orden: string;
+  id_venta?: number | null;
   fecha_transaccion: string;
   monto: string;
   metodo_pago?: string;
   estado: string;
   codigo_autorizacion?: string;
   comprobante_url?: string;
+  plan?: string;
+  tipo_pago?: string;
+  nombre_cliente?: string;
+  email_cliente?: string;
+  created_at?: string;
+  venta?: OrdenPagoVentaResumen | null;
+}
+
+interface VentaBusquedaSuscripcion {
+  id: number;
+  correlativo: string;
+  fecha: string;
+  estado: string;
+  total: string | number;
+  forma_pago?: string;
+  condicion?: string;
+  num_cotizacion?: string | null;
+  documento_nombre?: string | null;
 }
 
 @Component({
@@ -54,6 +86,11 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
   public tabActivo: 'n1co' | 'transferencia' = 'n1co';
   public editando: boolean = false;
   public downloading: boolean = false;
+
+  /** Evita doble clic en acciones rápidas desde la tabla o el modal */
+  public accionPagoId: number | null = null;
+  public accionAccesoId: number | null = null;
+  public accionCancelarAccesoId: number | null = null;
 
   public historialPagos: OrdenPago[] = [];
   public loadingHistorial: boolean = false;
@@ -91,6 +128,38 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
   ];
 
   modalRef!: BsModalRef;
+
+  /** Confirmación «Pago recibido» (modal propio, no SweetAlert). */
+  modalRefPagoRecibido?: BsModalRef;
+  suscripcionPagoPendiente: any = null;
+  empresaNombrePagoModal = '';
+  /** Fila empresa (listado) o empresa anidada en detalle — para `monto_mensual` al estimar factura. */
+  empresaMontosPagoModal: any = null;
+  ordenesPagoPendientesModal: OrdenPago[] = [];
+  loadingOrdenesPendientesModal = false;
+  ordenPagoSeleccionadoId: number | null = null;
+
+  /** Cobertura del pago (próximo cobro = hoy + N meses en servidor). */
+  pagoModalMesesCobertura = 1;
+  readonly mesesCoberturaOpcionesPago: { meses: number; etiqueta: string }[] = [
+    { meses: 1, etiqueta: '1 mes' },
+    { meses: 2, etiqueta: '2 meses' },
+    { meses: 3, etiqueta: '3 meses' },
+    { meses: 6, etiqueta: '6 meses' },
+    { meses: 12, etiqueta: '1 año' },
+    { meses: 24, etiqueta: '2 años' },
+  ];
+
+  /** Cómo se concilia el cobro con el ERP. */
+  pagoModalDocumentoOrigen: 'orden' | 'venta' | 'ninguno' = 'ninguno';
+
+  ventasBusquedaPagoModal: VentaBusquedaSuscripcion[] = [];
+  ventaBusquedaPagoTexto = '';
+  ventaSeleccionadaPagoId: number | null = null;
+  loadingVentasBusquedaPagoModal = false;
+
+  /** Solo con origen «ninguno»: genera factura en ERP por plan × meses. */
+  crearVentaManualPago = false;
 
   constructor(
     apiService: ApiService,
@@ -356,16 +425,16 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
       this.suscripcion.frecuencia_pago = this.suscripcion.tipo_plan;
     }
 
-    const datosSuscripcion = {
+    const datosSuscripcion: any = {
       ...this.suscripcion,
       usuario_id: this.suscripcion.usuario_id,
-      fecha_proximo_pago: new Date(this.suscripcion.fecha_proximo_pago),
       fin_periodo_prueba: new Date(this.suscripcion.fin_periodo_prueba),
       frecuencia_pago: this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan,
       codigo_promocional: this.suscripcion.codigo_promocional || null,
       monto_mensual: this.suscripcion.monto_mensual || null,
       monto_anual: this.suscripcion.monto_anual || null,
     };
+    delete datosSuscripcion.fecha_proximo_pago;
 
     this.apiService.store('suscripcion/edit', datosSuscripcion).subscribe(
       (response) => {
@@ -384,6 +453,370 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
         );
       }
     );
+  }
+
+  public pagoRecibido(
+    template: TemplateRef<any>,
+    suscripcion: any,
+    nombreEmpresa?: string,
+    empresaMontos?: any
+  ): void {
+    if (!suscripcion?.id) {
+      return;
+    }
+    this.suscripcionPagoPendiente = suscripcion;
+    this.empresaMontosPagoModal =
+      empresaMontos ?? suscripcion?.empresa ?? null;
+    this.empresaNombrePagoModal =
+      nombreEmpresa ||
+      suscripcion?.empresa?.nombre ||
+      empresaMontos?.nombre ||
+      '';
+    this.ordenesPagoPendientesModal = [];
+    this.ordenPagoSeleccionadoId = null;
+    this.pagoModalMesesCobertura = 1;
+    this.pagoModalDocumentoOrigen = 'ninguno';
+    this.ventasBusquedaPagoModal = [];
+    this.ventaBusquedaPagoTexto = '';
+    this.ventaSeleccionadaPagoId = null;
+    this.crearVentaManualPago = false;
+    this.cargarOrdenesPagoPendientesModal(suscripcion.id);
+
+    this.modalRefPagoRecibido = this.modalService.show(template, {
+      class: 'modal-dialog-centered modal-lg',
+      ignoreBackdropClick: true,
+    });
+  }
+
+  private cargarOrdenesPagoPendientesModal(suscripcionId: number): void {
+    this.loadingOrdenesPendientesModal = true;
+    this.apiService
+      .getAll(`suscripciones/${suscripcionId}/ordenes-pago-pendientes`)
+      .subscribe({
+        next: (rows: OrdenPago[]) => {
+          this.ordenesPagoPendientesModal = Array.isArray(rows) ? rows : [];
+          if (this.ordenesPagoPendientesModal.length > 0) {
+            this.pagoModalDocumentoOrigen = 'orden';
+            if (this.ordenesPagoPendientesModal.length === 1) {
+              const only = this.ordenesPagoPendientesModal[0];
+              if (only?.id != null) {
+                this.ordenPagoSeleccionadoId = only.id;
+              }
+            }
+          } else {
+            this.pagoModalDocumentoOrigen = 'ninguno';
+          }
+          this.loadingOrdenesPendientesModal = false;
+        },
+        error: () => {
+          this.ordenesPagoPendientesModal = [];
+          this.loadingOrdenesPendientesModal = false;
+          this.alertService.error(
+            'No se pudieron cargar las órdenes pendientes. Puedes registrar el pago igualmente si no aplica ninguna.'
+          );
+        },
+      });
+  }
+
+  public cerrarModalPagoRecibido(): void {
+    this.modalRefPagoRecibido?.hide();
+    this.modalRefPagoRecibido = undefined;
+    this.suscripcionPagoPendiente = null;
+    this.empresaNombrePagoModal = '';
+    this.empresaMontosPagoModal = null;
+    this.ordenesPagoPendientesModal = [];
+    this.ordenPagoSeleccionadoId = null;
+    this.loadingOrdenesPendientesModal = false;
+    this.pagoModalMesesCobertura = 1;
+    this.pagoModalDocumentoOrigen = 'ninguno';
+    this.ventasBusquedaPagoModal = [];
+    this.ventaBusquedaPagoTexto = '';
+    this.ventaSeleccionadaPagoId = null;
+    this.crearVentaManualPago = false;
+    this.loadingVentasBusquedaPagoModal = false;
+  }
+
+  public setDocumentoOrigenPago(
+    modo: 'orden' | 'venta' | 'ninguno'
+  ): void {
+    this.pagoModalDocumentoOrigen = modo;
+    if (modo !== 'orden') {
+      this.ordenPagoSeleccionadoId = null;
+    }
+    if (modo !== 'venta') {
+      this.ventaSeleccionadaPagoId = null;
+    }
+    if (modo !== 'ninguno') {
+      this.crearVentaManualPago = false;
+    }
+    if (modo === 'orden' && this.ordenesPagoPendientesModal.length === 1) {
+      const only = this.ordenesPagoPendientesModal[0];
+      if (only?.id != null) {
+        this.ordenPagoSeleccionadoId = only.id;
+      }
+    }
+    if (modo === 'venta') {
+      this.buscarVentasParaPagoModal();
+    }
+  }
+
+  public fechaProximoPagoPreview(): Date {
+    const d = new Date();
+    d.setMonth(d.getMonth() + (this.pagoModalMesesCobertura || 1));
+    return d;
+  }
+
+  public montoEstimadoCrearVentaModal(): number | null {
+    const s = this.suscripcionPagoPendiente;
+    if (!s) {
+      return null;
+    }
+    const emp = this.empresaMontosPagoModal;
+    const mensual = Number(
+      emp?.monto_mensual ??
+        s?.empresa?.monto_mensual ??
+        s?.plan?.precio ??
+        s?.monto ??
+        0
+    );
+    if (!mensual || mensual <= 0) {
+      return null;
+    }
+    return Math.round(mensual * (this.pagoModalMesesCobertura || 1) * 100) / 100;
+  }
+
+  public buscarVentasParaPagoModal(): void {
+    const suscripcion = this.suscripcionPagoPendiente;
+    if (!suscripcion?.id) {
+      return;
+    }
+    this.loadingVentasBusquedaPagoModal = true;
+    this.ventaSeleccionadaPagoId = null;
+    const q = (this.ventaBusquedaPagoTexto || '').trim();
+    this.apiService
+      .getAll(`suscripciones/${suscripcion.id}/ventas-buscar`, {
+        buscar: q,
+      })
+      .subscribe({
+        next: (rows: VentaBusquedaSuscripcion[]) => {
+          this.ventasBusquedaPagoModal = Array.isArray(rows) ? rows : [];
+          this.loadingVentasBusquedaPagoModal = false;
+        },
+        error: () => {
+          this.ventasBusquedaPagoModal = [];
+          this.loadingVentasBusquedaPagoModal = false;
+          this.alertService.error(
+            'No se pudieron buscar ventas. Verifica que la empresa tenga cliente ERP vinculado.'
+          );
+        },
+      });
+  }
+
+  public ejecutarPagoRecibido(): void {
+    const suscripcion = this.suscripcionPagoPendiente;
+    if (!suscripcion?.id) {
+      this.cerrarModalPagoRecibido();
+      return;
+    }
+
+    if (this.pagoModalDocumentoOrigen === 'orden') {
+      if (
+        this.ordenesPagoPendientesModal.length > 0 &&
+        this.ordenPagoSeleccionadoId == null
+      ) {
+        this.alertService.error(
+          'Selecciona la orden pendiente que quedó pagada con este abono.'
+        );
+        return;
+      }
+      if (this.ordenesPagoPendientesModal.length === 0) {
+        this.alertService.error(
+          'No hay órdenes pendientes; elige «Buscar venta» o «Solo suscripción».'
+        );
+        return;
+      }
+    }
+
+    if (
+      this.pagoModalDocumentoOrigen === 'venta' &&
+      this.ventaSeleccionadaPagoId == null
+    ) {
+      this.alertService.error(
+        'Busca y selecciona la venta del ERP que quedó pagada (p. ej. transferencia).'
+      );
+      return;
+    }
+
+    if (
+      this.crearVentaManualPago &&
+      this.pagoModalDocumentoOrigen === 'ninguno' &&
+      this.montoEstimadoCrearVentaModal() == null
+    ) {
+      this.alertService.error(
+        'No hay monto mensual/plan para generar la factura. Completa montos en la suscripción o desmarca «Generar factura».'
+      );
+      return;
+    }
+
+    this.accionPagoId = suscripcion.id;
+    const payload: {
+      id: number;
+      meses_cobertura: number;
+      documento_origen: 'orden' | 'venta' | 'ninguno';
+      orden_pago_id?: number;
+      venta_id?: number;
+      crear_venta: boolean;
+    } = {
+      id: suscripcion.id,
+      meses_cobertura: this.pagoModalMesesCobertura || 1,
+      documento_origen: this.pagoModalDocumentoOrigen,
+      crear_venta:
+        this.crearVentaManualPago &&
+        this.pagoModalDocumentoOrigen === 'ninguno',
+    };
+    if (
+      this.pagoModalDocumentoOrigen === 'orden' &&
+      this.ordenPagoSeleccionadoId != null
+    ) {
+      payload.orden_pago_id = this.ordenPagoSeleccionadoId;
+    }
+    if (
+      this.pagoModalDocumentoOrigen === 'venta' &&
+      this.ventaSeleccionadaPagoId != null
+    ) {
+      payload.venta_id = this.ventaSeleccionadaPagoId;
+    }
+
+    this.apiService.store('suscripcion/pago-recibido', payload).subscribe({
+        next: () => {
+          this.accionPagoId = null;
+          this.cerrarModalPagoRecibido();
+          this.alertService.success(
+            'Listo',
+            'Pago registrado y próxima fecha de pago actualizada.'
+          );
+          this.filtrarSuscripciones();
+          if (this.modalRef && this.suscripcion?.id === suscripcion.id) {
+            this.apiService
+              .getAll(`suscripcion/${suscripcion.id}`)
+              .subscribe((s) => {
+                this.suscripcion = s;
+              });
+          }
+        },
+        error: (err) => {
+          this.accionPagoId = null;
+          this.alertService.error(err);
+        },
+      });
+  }
+
+  /** True si existe fecha de acceso temporal aún no vencida (para alertas al extender). */
+  public tieneAccesoTemporalVigente(suscripcion: any): boolean {
+    if (!suscripcion?.acceso_temporal_hasta) {
+      return false;
+    }
+    return new Date(suscripcion.acceso_temporal_hasta).getTime() > Date.now();
+  }
+
+  public concederAccesoTemporal(suscripcion: any): void {
+    if (!suscripcion?.id) {
+      return;
+    }
+    const dias = AppConstants.DIAS_ACCESO_TEMPORAL_ADMIN;
+    const yaVigente = this.tieneAccesoTemporalVigente(suscripcion);
+    const finActual = suscripcion.acceso_temporal_hasta
+      ? new Date(suscripcion.acceso_temporal_hasta).toLocaleString('es-SV', {
+          dateStyle: 'short',
+          timeStyle: 'short',
+        })
+      : '';
+
+    const htmlBase = yaVigente
+      ? `<p class="mb-2"><strong>Esta suscripción ya tiene acceso temporal vigente</strong> hasta el <strong>${finActual}</strong>.</p>
+         <p class="mb-0">Si continúas, se sumarán <strong>${dias} días adicionales</strong> a partir de esa fecha (no desde hoy), <strong>sin cambiar</strong> la fecha de próximo pago.</p>`
+      : `<p class="mb-0">Se amplía el acceso a la plataforma <strong>${dias} días</strong> (desde hoy o desde el fin del acceso temporal vigente) <strong>sin cambiar</strong> la fecha de próximo pago.</p>`;
+
+    Swal.fire({
+      title: yaVigente ? '¿Extender acceso temporal?' : '¿Conceder acceso temporal?',
+      html: htmlBase,
+      icon: yaVigente ? 'warning' : 'question',
+      showCancelButton: true,
+      confirmButtonText: yaVigente ? 'Sí, extender' : 'Sí, conceder',
+      cancelButtonText: 'Cancelar',
+    }).then((r) => {
+      if (!r.isConfirmed) {
+        return;
+      }
+      this.accionAccesoId = suscripcion.id;
+      this.apiService.store('suscripcion/acceso-temporal', { id: suscripcion.id }).subscribe({
+        next: () => {
+          this.accionAccesoId = null;
+          this.alertService.success(
+            'Listo',
+            yaVigente
+              ? 'Acceso temporal extendido.'
+              : 'Acceso temporal concedido.'
+          );
+          this.filtrarSuscripciones();
+          if (this.modalRef && this.suscripcion?.id === suscripcion.id) {
+            this.apiService
+              .getAll(`suscripcion/${suscripcion.id}`)
+              .subscribe((s) => {
+                this.suscripcion = s;
+              });
+          }
+        },
+        error: (err) => {
+          this.accionAccesoId = null;
+          this.alertService.error(err);
+        },
+      });
+    });
+  }
+
+  public cancelarAccesoTemporal(suscripcion: any): void {
+    if (!suscripcion?.id) {
+      return;
+    }
+    if (!suscripcion.acceso_temporal_hasta) {
+      this.alertService.error('No hay acceso temporal configurado para quitar.');
+      return;
+    }
+    Swal.fire({
+      title: '¿Cancelar acceso temporal?',
+      html: 'El cliente volverá a depender solo de la fecha de próximo pago y la mora habitual (puede aplicarse el paywall si corresponde).',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cancelar acceso temporal',
+      cancelButtonText: 'No',
+      confirmButtonColor: '#d33',
+    }).then((r) => {
+      if (!r.isConfirmed) {
+        return;
+      }
+      this.accionCancelarAccesoId = suscripcion.id;
+      this.apiService
+        .store('suscripcion/cancelar-acceso-temporal', { id: suscripcion.id })
+        .subscribe({
+          next: () => {
+            this.accionCancelarAccesoId = null;
+            this.alertService.success('Listo', 'Acceso temporal cancelado.');
+            this.filtrarSuscripciones();
+            if (this.modalRef && this.suscripcion?.id === suscripcion.id) {
+              this.apiService
+                .getAll(`suscripcion/${suscripcion.id}`)
+                .subscribe((s) => {
+                  this.suscripcion = s;
+                });
+            }
+          },
+          error: (err) => {
+            this.accionCancelarAccesoId = null;
+            this.alertService.error(err);
+          },
+        });
+    });
   }
 
   private getUsersForSelect(id_empresa: number) {

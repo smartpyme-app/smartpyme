@@ -1013,22 +1013,15 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 x.nombre == this.compra.tipo_documento &&
                 x.id_sucursal == this.compra.id_sucursal
         );
-        if (
+        const codGen = jsonData.identificacion?.codigoGeneracion;
+        if (codGen) {
+            this.compra.referencia = codGen;
+        } else if (
             documentoRow &&
             documentoRow.correlativo != null &&
             String(documentoRow.correlativo).trim() !== ''
         ) {
             this.compra.referencia = documentoRow.correlativo;
-        } else if (jsonData.identificacion.codigoGeneracion) {
-            this.compra.referencia = jsonData.identificacion.codigoGeneracion;
-        }
-        const codGen = jsonData.identificacion.codigoGeneracion;
-        if (codGen && documentoRow) {
-            const tag = `Código generación MH: ${codGen}`;
-            const obs = String(this.compra.observaciones || '');
-            if (!obs.includes(codGen)) {
-                this.compra.observaciones = obs ? `${obs}\n${tag}` : tag;
-            }
         }
 
         const proveedor = await this.getProveedor(jsonData.emisor);

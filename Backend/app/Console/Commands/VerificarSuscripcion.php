@@ -7,7 +7,6 @@ use App\Models\Suscripcion;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use App\Notifications\SuscripcionNotification;
 
 class VerificarSuscripcion extends Command
 {
@@ -15,9 +14,6 @@ class VerificarSuscripcion extends Command
     protected $description = 'Verifica y actualiza el estado de las suscripciones, períodos de prueba y envía notificaciones';
 
     private const DIAS_PERIODO_PRUEBA = 3;
-    private const DIAS_PRIMERA_ALERTA = 3;
-    private const DIAS_ALERTA_CRITICA = 7;
-    private const DIAS_DESACTIVACION = 10;
 
     public function handle()
     {
@@ -135,27 +131,45 @@ class VerificarSuscripcion extends Command
 
     private function manejarSuscripcionVencida(Suscripcion $suscripcion, int $diasVencidos)
     {
-        // Primera alerta (3 días)
-        if ($diasVencidos >= self::DIAS_PRIMERA_ALERTA && $diasVencidos < self::DIAS_ALERTA_CRITICA) {
+        $diasProrroga = max(1, (int) config('constants.DIAS_PRORROGA_SUSCRIPCION'));
+        $inactivo = config('constants.ESTADO_SUSCRIPCION_INACTIVO');
+
+        if ($suscripcion->estado === $inactivo) {
+            return;
+        }
+
+        // Prórroga = N días con acceso; suspensión desde el día N+1 si siguen saldos pendientes con el sistema.
+        if ($diasVencidos > $diasProrroga) {
+            $this->desactivarCuenta($suscripcion);
+
+            return;
+        }
+
+        // Prórroga corta (≤3 días): alertas días 1..N; sin pasar a Cancelado a mitad de gracia.
+        if ($diasProrroga <= 3) {
+            if ($diasVencidos >= 1 && $diasVencidos < 2) {
+                $this->enviarNotificacionVencimiento($suscripcion, 'primera_alerta');
+            } elseif ($diasVencidos >= 2 && $diasVencidos < 3) {
+                $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
+            } elseif ($diasVencidos >= 3 && $diasVencidos <= $diasProrroga) {
+                $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
+            }
+
+            return;
+        }
+
+        $limitePrimera = max(1, (int) floor($diasProrroga / 3));
+
+        if ($diasVencidos >= 1 && $diasVencidos < $limitePrimera + 1) {
             $this->enviarNotificacionVencimiento($suscripcion, 'primera_alerta');
-            // $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')]);
-        }
-
-        // Alerta crítica (7 días)
-        elseif ($diasVencidos >= self::DIAS_ALERTA_CRITICA && $diasVencidos < self::DIAS_DESACTIVACION) {
+        } elseif ($diasVencidos >= $limitePrimera + 1 && $diasVencidos < $diasProrroga - 1) {
             $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
-            // $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')]);
-        }
-
-        // Cambio a PENDIENTE (9 días)
-        elseif ($diasVencidos >= 9 && $diasVencidos < self::DIAS_DESACTIVACION) {
+        } elseif ($diasVencidos >= $diasProrroga - 1 && $diasVencidos < $diasProrroga) {
             $this->enviarNotificacionVencimiento($suscripcion, 'cancelado');
             $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_CANCELADO')]);
-        }
-
-        // Desactivación (10 días)
-        elseif ($diasVencidos >= self::DIAS_DESACTIVACION) {
-            $this->desactivarCuenta($suscripcion);
+        } elseif ($diasVencidos === $diasProrroga) {
+            // Último día de prórroga antes del bloqueo (día N+1 desactiva; p. ej. N=10 → día 10 aún en gracia).
+            $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
         }
     }
 
@@ -211,10 +225,10 @@ class VerificarSuscripcion extends Command
         if (!$usuario) return;
 
         $mensajes = [
-            'primera_alerta' => 'Tu suscripción ha vencido. Por favor, realiza el pago para mantener el servicio activo.',
-            'alerta_critica' => '¡IMPORTANTE! Tu cuenta será desactivada pronto por falta de pago.',
-            'desactivacion' => 'Tu cuenta ha sido desactivada por falta de pago. Contacta con soporte para reactivarla.',
-            'cancelado' => 'Tu cuenta ha sido cancelada por falta de pago. Contacta con soporte para reactivarla.'
+            'primera_alerta' => 'Tu suscripción requiere atención: hay saldos pendientes con el sistema. Regulariza tu situación para mantener el servicio activo.',
+            'alerta_critica' => 'Importante: si persisten saldos pendientes con el sistema, tu acceso podría verse limitado pronto.',
+            'desactivacion' => 'Tu cuenta está suspendida por saldos pendientes con el sistema. Contacta a soporte para regularizar tu situación.',
+            'cancelado' => 'Tu suscripción fue cancelada por saldos pendientes con el sistema. Contacta a soporte para revisar opciones.'
         ];
 
         Log::channel('suscripciones')->info("Enviando notificación de vencimiento para suscripción {$suscripcion->id}: {$mensajes[$tipo]}");

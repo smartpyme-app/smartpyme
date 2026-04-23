@@ -9,7 +9,13 @@ use App\Models\OrdenPago;
 use App\Models\Plan;
 use App\Models\Suscripcion;
 use App\Models\User;
+use App\Models\Admin\Documento;
+use App\Models\Ventas\Detalle;
+use App\Models\Ventas\Impuesto;
+use App\Models\Ventas\Venta;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use JWTAuth;
@@ -289,8 +295,8 @@ class SuscripcionesController extends Controller
                 $empresa->save();
             }
 
+            // fecha_proximo_pago no se edita aquí: solo vía «Pago recibido» o integraciones.
             $datosActualizacion = [
-                'fecha_proximo_pago' => $validated['fecha_proximo_pago'],
                 'estado_ultimo_pago' => $request->input('estado_ultimo_pago'),
                 'estado' => $validated['estado'],
                 'usuario_id' => $validated['usuario_id'],
@@ -339,6 +345,510 @@ class SuscripcionesController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar la suscripción'
+            ], 500);
+        }
+    }
+
+    /**
+     * Registra pago manual (transferencia/efectivo): actualiza fechas de suscripción y opcionalmente orden, venta ERP o factura nueva.
+     */
+    public function registrarPagoRecibido(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'id' => 'required|exists:suscripciones,id',
+                'orden_pago_id' => 'nullable|exists:ordenes_pago,id',
+                'venta_id' => 'nullable|exists:ventas,id',
+                'documento_origen' => 'nullable|in:orden,venta,ninguno',
+                'meses_cobertura' => 'nullable|integer|min:1|max:36',
+                'crear_venta' => 'nullable|boolean',
+            ]);
+
+            if (!empty($validated['orden_pago_id']) && !empty($validated['venta_id'])) {
+                throw ValidationException::withMessages([
+                    'venta_id' => ['Indica solo una orden de pago o una venta, no ambas.'],
+                ]);
+            }
+
+            $documentoOrigen = $validated['documento_origen'] ?? null;
+            if ($documentoOrigen === null) {
+                if (!empty($validated['orden_pago_id'])) {
+                    $documentoOrigen = 'orden';
+                } elseif (!empty($validated['venta_id'])) {
+                    $documentoOrigen = 'venta';
+                } else {
+                    $documentoOrigen = 'ninguno';
+                }
+            }
+
+            if ($documentoOrigen === 'orden' && empty($validated['orden_pago_id'])) {
+                throw ValidationException::withMessages([
+                    'orden_pago_id' => ['Selecciona la orden pendiente que quedó pagada.'],
+                ]);
+            }
+            if ($documentoOrigen === 'venta' && empty($validated['venta_id'])) {
+                throw ValidationException::withMessages([
+                    'venta_id' => ['Selecciona la venta del ERP que quedó pagada.'],
+                ]);
+            }
+            if ($documentoOrigen === 'venta' && !empty($validated['orden_pago_id'])) {
+                throw ValidationException::withMessages([
+                    'orden_pago_id' => ['En modo «venta» no debe enviarse orden de pago.'],
+                ]);
+            }
+            if ($documentoOrigen === 'orden' && !empty($validated['venta_id'])) {
+                throw ValidationException::withMessages([
+                    'venta_id' => ['En modo «orden» no debe enviarse venta_id.'],
+                ]);
+            }
+
+            $suscripcion = Suscripcion::findOrFail($validated['id']);
+            $mesesCobertura = isset($validated['meses_cobertura']) ? (int) $validated['meses_cobertura'] : null;
+
+            if ($mesesCobertura !== null && $mesesCobertura >= 1) {
+                $fechaProximoPago = Carbon::now()->addMonths($mesesCobertura);
+            } else {
+                $dias = max(1, (int) config('constants.DIAS_PAGO_RECIBIDO_PROXIMO_CICLO', 30));
+                $fechaProximoPago = Carbon::now()->addDays($dias);
+            }
+
+            $crearVenta = $request->boolean('crear_venta');
+
+            DB::transaction(function () use ($suscripcion, $validated, $fechaProximoPago, $documentoOrigen, $crearVenta, $mesesCobertura) {
+                if ($documentoOrigen === 'orden' && !empty($validated['orden_pago_id'])) {
+                    $orden = $this->ordenPagoPendienteDeSuscripcion($suscripcion, (int) $validated['orden_pago_id']);
+                    if (!$orden) {
+                        throw ValidationException::withMessages([
+                            'orden_pago_id' => ['La orden no está pendiente o no corresponde a esta suscripción.'],
+                        ]);
+                    }
+
+                    $orden->estado = config('constants.ESTADO_ORDEN_PAGO_COMPLETADO');
+                    $orden->fecha_transaccion = Carbon::now();
+                    if (!$orden->codigo_autorizacion) {
+                        $orden->codigo_autorizacion = 'MANUAL-ADMIN';
+                    }
+                    if (!$orden->payment_id && $suscripcion->id_pago) {
+                        $orden->payment_id = $suscripcion->id_pago;
+                    }
+                    $orden->save();
+
+                    if ($orden->id_venta) {
+                        Venta::where('id', $orden->id_venta)->update([
+                            'estado' => 'Pagada',
+                            'fecha_pago' => Carbon::now()->format('Y-m-d'),
+                            'monto_pago' => $orden->monto,
+                        ]);
+                    } else {
+                        try {
+                            $orden->fresh()->generarVenta();
+                        } catch (\Throwable $e) {
+                            Log::warning('registrarPagoRecibido: no se generó venta ERP para la orden '.$orden->id.': '.$e->getMessage());
+                        }
+                    }
+                } elseif ($documentoOrigen === 'venta' && !empty($validated['venta_id'])) {
+                    $venta = Venta::query()->findOrFail((int) $validated['venta_id']);
+                    if (!$this->ventaPerteneceSuscripcion($suscripcion, $venta)) {
+                        throw ValidationException::withMessages([
+                            'venta_id' => ['La venta no pertenece al cliente ERP vinculado a esta empresa.'],
+                        ]);
+                    }
+                    $estadoV = is_string($venta->estado) ? trim($venta->estado) : '';
+                    if (strcasecmp($estadoV, 'Pagada') === 0) {
+                        throw ValidationException::withMessages([
+                            'venta_id' => ['La venta ya está marcada como pagada.'],
+                        ]);
+                    }
+                    $venta->estado = 'Pagada';
+                    $venta->fecha_pago = Carbon::now()->format('Y-m-d');
+                    $venta->monto_pago = $venta->total;
+                    $venta->save();
+                }
+
+                if ($crearVenta && $documentoOrigen === 'ninguno' && empty($validated['orden_pago_id']) && empty($validated['venta_id'])) {
+                    $mesesParaMonto = ($mesesCobertura !== null && $mesesCobertura >= 1) ? $mesesCobertura : 1;
+                    try {
+                        $this->crearVentaErpDesdeSuscripcion($suscripcion, $mesesParaMonto);
+                    } catch (\Throwable $e) {
+                        Log::warning('registrarPagoRecibido: crear_venta falló: '.$e->getMessage());
+                        throw ValidationException::withMessages([
+                            'crear_venta' => ['No se pudo generar la factura en ERP: '.$e->getMessage()],
+                        ]);
+                    }
+                }
+
+                $suscripcion->fecha_proximo_pago = $fechaProximoPago;
+                $suscripcion->fecha_ultimo_pago = Carbon::now();
+                $suscripcion->estado_ultimo_pago = config('constants.ESTADO_ORDEN_PAGO_COMPLETADO');
+                $suscripcion->acceso_temporal_hasta = null;
+                $suscripcion->save();
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pago registrado. Próxima fecha de cobro actualizada.',
+                'data' => $suscripcion->fresh()->load('plan', 'empresa'),
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en registrarPagoRecibido: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo registrar el pago',
+            ], 500);
+        }
+    }
+
+    /**
+     * Busca ventas del ERP (empresa SmartPyME) asociadas al cliente de la empresa suscrita (p. ej. transferencia sin orden N1CO).
+     */
+    public function buscarVentasSuscripcion(Request $request, int $id)
+    {
+        $suscripcion = Suscripcion::with('empresa')->findOrFail($id);
+        $idCliente = $suscripcion->empresa->id_cliente ?? null;
+        if (!$idCliente) {
+            return response()->json([], 200);
+        }
+
+        $buscar = trim((string) $request->query('buscar', ''));
+        $limite = min(40, max(5, (int) $request->query('limite', 25)));
+
+        $q = Venta::query()
+            ->where('id_empresa', 2)
+            ->where('id_cliente', $idCliente);
+
+        if ($buscar !== '') {
+            $q->where(function ($sub) use ($buscar) {
+                if (ctype_digit($buscar)) {
+                    $sub->where('id', (int) $buscar)
+                        ->orWhere('correlativo', 'like', '%'.$buscar.'%');
+                } else {
+                    $sub->where('correlativo', 'like', '%'.$buscar.'%')
+                        ->orWhere('num_cotizacion', 'like', '%'.$buscar.'%');
+                }
+            });
+        } else {
+            $q->where(function ($sub) {
+                $sub->where('estado', 'Pendiente')
+                    ->orWhere('estado', 'En Proceso')
+                    ->orWhereRaw('LOWER(TRIM(estado)) = ?', ['pendiente']);
+            });
+        }
+
+        $filas = $q->with(['documento:id,nombre'])
+            ->orderBy('fecha', 'desc')
+            ->orderBy('id', 'desc')
+            ->limit($limite)
+            ->get([
+                'id',
+                'correlativo',
+                'fecha',
+                'estado',
+                'total',
+                'forma_pago',
+                'condicion',
+                'id_documento',
+                'num_cotizacion',
+            ]);
+
+        $payload = $filas->map(function (Venta $v) {
+            $doc = $v->relationLoaded('documento') ? $v->documento : null;
+
+            return [
+                'id' => $v->id,
+                'correlativo' => $v->correlativo,
+                'fecha' => $v->fecha,
+                'estado' => $v->estado,
+                'total' => $v->total,
+                'forma_pago' => $v->forma_pago,
+                'condicion' => $v->condicion,
+                'num_cotizacion' => $v->num_cotizacion,
+                'documento_nombre' => $doc ? $doc->nombre : null,
+            ];
+        });
+
+        return response()->json($payload, 200);
+    }
+
+    /**
+     * Órdenes de pago (N1CO / recurrente) pendientes asociables a esta suscripción.
+     */
+    public function getOrdenesPagoPendientes($id)
+    {
+        $suscripcion = Suscripcion::findOrFail($id);
+
+        $ordenes = OrdenPago::query()
+            ->where('id_usuario', $suscripcion->usuario_id)
+            ->where(function ($q) use ($suscripcion) {
+                $q->where('id_plan', $suscripcion->plan_id);
+                if ($suscripcion->id_pago) {
+                    $q->orWhere('payment_id', $suscripcion->id_pago);
+                }
+            })
+            ->where(function ($q) {
+                $pendiente = config('constants.ESTADO_ORDEN_PAGO_PENDIENTE');
+                $q->where('estado', $pendiente)
+                    ->orWhereRaw('LOWER(TRIM(estado)) = ?', ['pendiente']);
+            })
+            ->with([
+                'venta' => function ($q) {
+                    $q->select(
+                        'id',
+                        'correlativo',
+                        'fecha',
+                        'estado',
+                        'total',
+                        'forma_pago',
+                        'condicion',
+                        'id_documento',
+                        'num_cotizacion'
+                    )->with(['documento:id,nombre']);
+                },
+            ])
+            ->orderBy('created_at', 'asc')
+            ->get([
+                'id',
+                'id_orden',
+                'id_venta',
+                'monto',
+                'estado',
+                'plan',
+                'tipo_pago',
+                'created_at',
+                'fecha_transaccion',
+                'nombre_cliente',
+                'email_cliente',
+            ]);
+
+        $payload = $ordenes->map(function (OrdenPago $orden) {
+            $v = $orden->venta;
+            $doc = $v && $v->relationLoaded('documento') ? $v->documento : null;
+
+            return [
+                'id' => $orden->id,
+                'id_orden' => $orden->id_orden,
+                'id_venta' => $orden->id_venta,
+                'monto' => $orden->monto,
+                'estado' => $orden->estado,
+                'plan' => $orden->plan,
+                'tipo_pago' => $orden->tipo_pago,
+                'created_at' => $orden->created_at,
+                'fecha_transaccion' => $orden->fecha_transaccion,
+                'nombre_cliente' => $orden->nombre_cliente,
+                'email_cliente' => $orden->email_cliente,
+                'venta' => $v ? [
+                    'id' => $v->id,
+                    'correlativo' => $v->correlativo,
+                    'fecha' => $v->fecha,
+                    'estado' => $v->estado,
+                    'total' => $v->total,
+                    'forma_pago' => $v->forma_pago,
+                    'condicion' => $v->condicion,
+                    'num_cotizacion' => $v->num_cotizacion,
+                    'documento_nombre' => $doc ? $doc->nombre : null,
+                ] : null,
+            ];
+        });
+
+        return response()->json($payload, 200);
+    }
+
+    private function ordenPagoPendienteDeSuscripcion(Suscripcion $suscripcion, int $ordenPagoId): ?OrdenPago
+    {
+        $orden = OrdenPago::query()
+            ->where('id', $ordenPagoId)
+            ->where('id_usuario', $suscripcion->usuario_id)
+            ->where(function ($q) use ($suscripcion) {
+                $q->where('id_plan', $suscripcion->plan_id);
+                if ($suscripcion->id_pago) {
+                    $q->orWhere('payment_id', $suscripcion->id_pago);
+                }
+            })
+            ->first();
+
+        if (!$orden) {
+            return null;
+        }
+
+        $pendienteCfg = config('constants.ESTADO_ORDEN_PAGO_PENDIENTE');
+        $estado = is_string($orden->estado) ? trim($orden->estado) : '';
+        $esPendiente = strcasecmp($estado, 'pendiente') === 0 || $estado === $pendienteCfg;
+
+        return $esPendiente ? $orden : null;
+    }
+
+    private function ventaPerteneceSuscripcion(Suscripcion $suscripcion, Venta $venta): bool
+    {
+        if ((int) $venta->id_empresa !== 2) {
+            return false;
+        }
+        $suscripcion->loadMissing('empresa');
+        $idCliente = $suscripcion->empresa->id_cliente ?? null;
+
+        return $idCliente && (int) $venta->id_cliente === (int) $idCliente;
+    }
+
+    /**
+     * Crea factura en ERP (misma lógica que OrdenPago::generarVenta) por cobro manual por meses de plan.
+     */
+    private function crearVentaErpDesdeSuscripcion(Suscripcion $suscripcion, int $meses): Venta
+    {
+        $suscripcion->loadMissing(['empresa', 'plan.producto']);
+        $documento = Documento::where('id_empresa', 2)->where('nombre', 'Factura')->first();
+        $idCliente = $suscripcion->empresa->id_cliente ?? null;
+        $producto = $suscripcion->plan ? $suscripcion->plan->producto : null;
+
+        if (!$documento) {
+            throw new \RuntimeException('No hay documento Factura configurado en ERP.');
+        }
+        if (!$idCliente) {
+            throw new \RuntimeException('La empresa no está vinculada a un cliente en ERP.');
+        }
+        if (!$producto) {
+            throw new \RuntimeException('El plan no está vinculado a un producto de facturación.');
+        }
+
+        $empresa = $suscripcion->empresa;
+        $plan = $suscripcion->plan;
+        $mensual = (float) ($empresa->monto_mensual ?? $plan->precio ?? $suscripcion->monto ?? 0);
+        if ($mensual <= 0) {
+            throw new \RuntimeException('No hay monto mensual definido para calcular la factura.');
+        }
+
+        $monto = round($mensual * max(1, $meses), 2);
+        $descripcion = $producto->nombre.' · Suscripción · '.$meses.' '.($meses === 1 ? 'mes' : 'meses');
+
+        $venta = Venta::create([
+            'fecha' => date('Y-m-d'),
+            'correlativo' => $documento->correlativo,
+            'estado' => 'Pagada',
+            'id_canal' => 185,
+            'id_documento' => $documento->id,
+            'forma_pago' => 'Transferencia',
+            'condicion' => 'Contado',
+            'fecha_pago' => date('Y-m-d'),
+            'fecha_expiracion' => date('Y-m-d'),
+            'monto_pago' => $monto,
+            'cambio' => 0,
+            'iva_percibido' => 0,
+            'iva_retenido' => 0,
+            'iva' => $monto - ($monto / 1.13),
+            'total_costo' => 0,
+            'descuento' => 0,
+            'sub_total' => $monto / 1.13,
+            'gravada' => $monto / 1.13,
+            'total' => $monto,
+            'id_bodega' => 76,
+            'id_cliente' => $idCliente,
+            'id_usuario' => 114,
+            'id_vendedor' => $suscripcion->usuario_id,
+            'id_empresa' => 2,
+            'id_sucursal' => 76,
+        ]);
+
+        Detalle::create([
+            'id_producto' => $producto->id,
+            'descripcion' => $descripcion,
+            'cantidad' => 1,
+            'precio' => $monto / 1.13,
+            'costo' => 0,
+            'descuento' => 0,
+            'gravada' => $monto / 1.13,
+            'total_costo' => 0,
+            'total' => $monto / 1.13,
+            'id_venta' => $venta->id,
+        ]);
+
+        Impuesto::create([
+            'id_impuesto' => 108,
+            'monto' => $venta->iva,
+            'id_venta' => $venta->id,
+        ]);
+
+        Documento::findOrFail($venta->id_documento)->increment('correlativo');
+
+        return $venta;
+    }
+
+    /**
+     * Extiende acceso a la plataforma sin mover fecha_proximo_pago (suma N días desde hoy o desde el fin del acceso temporal vigente).
+     */
+    public function concederAccesoTemporal(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'id' => 'required|exists:suscripciones,id',
+            ]);
+            $suscripcion = Suscripcion::findOrFail($validated['id']);
+            $dias = max(1, (int) config('constants.DIAS_ACCESO_TEMPORAL_ADMIN', 2));
+
+            $base = Carbon::now();
+            if ($suscripcion->acceso_temporal_hasta) {
+                $fin = Carbon::parse($suscripcion->acceso_temporal_hasta);
+                if ($fin->greaterThan($base)) {
+                    $base = $fin;
+                }
+            }
+            $suscripcion->acceso_temporal_hasta = $base->copy()->addDays($dias);
+            $suscripcion->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Acceso temporal concedido.',
+                'data' => $suscripcion->fresh()->load('plan', 'empresa'),
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en concederAccesoTemporal: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo conceder el acceso temporal',
+            ], 500);
+        }
+    }
+
+    /**
+     * Quita el acceso temporal de excepción (vuelve a aplicar solo la regla de mora / paywall).
+     */
+    public function cancelarAccesoTemporal(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'id' => 'required|exists:suscripciones,id',
+            ]);
+            $suscripcion = Suscripcion::findOrFail($validated['id']);
+            $suscripcion->acceso_temporal_hasta = null;
+            $suscripcion->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Acceso temporal cancelado.',
+                'data' => $suscripcion->fresh()->load('plan', 'empresa'),
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en cancelarAccesoTemporal: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo cancelar el acceso temporal',
             ], 500);
         }
     }

@@ -64,7 +64,9 @@ class MHDTEController extends Controller
     public function generarDTESujetoExcluidoGasto(GenerarDTESujetoExcluidoGastoRequest $request)
     {
         $gasto = Gasto::where('id', $request->id)->with('proveedor', 'empresa')->firstOrFail();
-
+        $this->aplicarMontosSujetoExcluidoDesdeRequest($gasto, $request, [
+            'renta_retenida', 'sub_total', 'iva', 'descuento', 'total', 'iva_percibido',
+        ]);
         if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($gasto->empresa)) {
             return $guard;
         }
@@ -75,12 +77,29 @@ class MHDTEController extends Controller
     public function generarDTESujetoExcluidoCompra(GenerarDTESujetoExcluidoCompraRequest $request)
     {
         $compra = Compra::where('id', $request->id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
-
+        $this->aplicarMontosSujetoExcluidoDesdeRequest($compra, $request, [
+            'renta_retenida', 'iva_retenido', 'sub_total', 'iva', 'descuento', 'total',
+        ]);
         if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($compra->empresa)) {
             return $guard;
         }
 
         return $this->elSalvadorDte->generarDTESujetoExcluidoCompra($compra);
+    }
+
+    //xLa emisión de sujeto excluido debe reflejar retención y totales del documento el cliente envía el registro completo en el POST, pero históricamente solo se usaba el id
+    private function aplicarMontosSujetoExcluidoDesdeRequest($registro, Request $request, array $campos): void
+    {
+        foreach ($campos as $campo) {
+            if (!$request->exists($campo)) {
+                continue;
+            }
+            $valor = $request->input($campo);
+            if ($valor === null || $valor === '') {
+                continue;
+            }
+            $registro->{$campo} = is_numeric($valor) ? $valor + 0 : $valor;
+        }
     }
 
     public function generarContingencia(GenerarContingenciaRequest $request)

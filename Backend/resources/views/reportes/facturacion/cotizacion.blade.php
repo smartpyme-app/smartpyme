@@ -170,9 +170,9 @@
                             @endif
                         </td>
                     @endforeach
-                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }} {{number_format($detalle->precio , 2) }}</td>
-                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">  @if ($detalle->descuento > 0) {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->descuento, 2) }} <small>({{ $porcentaje_descuento }}%)</small> @endif</td>
-                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{number_format($detalle->precio , 2) }}</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">  @if ($detalle->descuento > 0) {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->descuento, 2) }} <small style="font-size: 12px;">({{ $porcentaje_descuento }}%)</small> @endif</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->total, 2) }}</td>
                 </tr>
                 @if ($detalle->descuento > 0)
                     <tr>
