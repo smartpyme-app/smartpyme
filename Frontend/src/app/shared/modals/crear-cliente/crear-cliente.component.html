@@ -41,64 +41,13 @@
                         </small>
                     }
                 </div>
-                <div class="form-group col-12 col-md-6 col-lg-4">
-                    <label for="clasificacion" class="form-label">Clasificación</label>
-                    <select class="form-select" name="clasificacion" [(ngModel)]="cliente.clasificacion">
-                        <option [ngValue]="null">Seleccione una clasificación</option>
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                    </select>
-                </div>
-                <div class="form-group col-12 col-md-6 col-lg-4">
-                    <label for="tiempo_pago" class="form-label">Tiempo de Pago (días)</label>
-                    <select class="form-select" name="tiempo_pago" [(ngModel)]="cliente.tiempo_pago">
-                        <option [ngValue]="null">Seleccione aquí</option>
-                        <option [value]="8">8 días</option>
-                        <option [value]="15">15 días</option>
-                        <option [value]="30">30 días</option>
-                        <option [value]="60">60 días</option>
-                        <option [value]="90">90 días</option>
-                        <option [value]="180">180 días</option>
-                    </select>
-                </div>
-              <div class="form-group col-12 col-md-6 col-lg-4">
-                <label for="id_vendedor" class="form-label">Vendedor asignado</label>
-                <select class="form-select" name="id_vendedor" [(ngModel)]="cliente.id_vendedor">
-                  <option [ngValue]="null">Sin vendedor asignado</option>
-                  <option *ngFor="let vendedor of vendedores" [value]="vendedor.id">
-                    {{ vendedor.name }}
-                  </option>
-                </select>
-              </div>
             </div>
-          <div class="row mb-3 align-items-end" *ngIf="puedeEditarCreditoCliente()">
-            <div class="form-group col-12 col-md-4 col-lg-4 without-label">
-              <div class="form-switch border rounded">
-                <label class="form-check-label" for="habilita_credito">Cliente con opción de crédito</label>
-                <input class="form-check-input" type="checkbox" id="habilita_credito"
-                       [(ngModel)]="cliente.habilita_credito" class="form-check-input float-end ng-untouched ng-pristine ng-valid" role="switch" name="habilita_credito"
-                       (change)="onHabilitaCreditoChange()">
-              </div>
-            </div>
-            <div class="form-group col-12 col-md-4 col-lg-4" *ngIf="cliente.habilita_credito">
-              <label for="dias_credito" class="form-label">Días de crédito</label>
-              <select class="form-select" name="dias_credito" [(ngModel)]="cliente.dias_credito">
-                <option [ngValue]="null">Seleccione aquí</option>
-                <option *ngFor="let d of diasCreditoOpciones" [value]="d">{{ d }} días</option>
-              </select>
-            </div>
-            <div class="form-group col-12 col-md-4 col-lg-4" *ngIf="cliente.habilita_credito">
-              <label for="limite_credito" class="form-label">Monto límite (opcional)</label>
-              <input type="number" step="0.01" min="0" class="form-control" placeholder="Ej: 5000.00"
-                     name="limite_credito" [(ngModel)]="cliente.limite_credito">
-            </div>
-          </div>
             @if (cliente.tipo != 'Extranjero') {
                 <div class="row">
                 <div class="col-12" [ngClass]="{ 'order-1' :  cliente.tipo == 'Persona', 'order-2' :  cliente.tipo == 'Empresa' }">
                     <div class="row">
                         <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
+                        @if (cliente.tipo == 'Empresa') {
                         <div class="form-group col-6 col-lg-3">
                             <label for="codigo_cliente">Código Cliente</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
@@ -128,6 +77,68 @@
                             <label for="telefono">Teléfono:</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
                         </div>
+                        }
+                        @if (cliente.tipo == 'Persona' && esCostaRicaFe()) {
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="cliente_cr_ident_persona_modal">Identificación</label>
+                            <input type="text" class="form-control" id="cliente_cr_ident_persona_modal" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui"
+                              (ngModelChange)="onIdentificacionClienteCrDebounced()" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_dui}}>
+                            @if (contribuyenteCargandoCr) {
+                              <small class="text-muted">Consultando Hacienda…</small>
+                            }
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                          <label for="codigo_cliente_cr_p_modal">Código Cliente</label>
+                          <input type="text" class="form-control" id="codigo_cliente_cr_p_modal" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label for="nombre_cr_p_modal">Nombre</label>
+                            <input type="text" class="form-control" id="nombre_cr_p_modal" placeholder="Escribe aquí" name="nombre" [(ngModel)]="cliente.nombre">
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label for="apellido_cr_p_modal">Apellido</label>
+                            <input type="text" class="form-control" id="apellido_cr_p_modal" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="correo_cr_p_modal">Correo</label>
+                            <input type="email" class="form-control" id="correo_cr_p_modal" placeholder="Escribe aquí" name="correo" [(ngModel)]="cliente.correo">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="telefono_cr_p_modal">Teléfono:</label>
+                            <input type="text" class="form-control" id="telefono_cr_p_modal" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
+                        </div>
+                        }
+                        @if (cliente.tipo == 'Persona' && !esCostaRicaFe()) {
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="codigo_cliente">Código Cliente</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label for="nombre">Nombre</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="cliente.nombre">
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label for="apellido">Apellido</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            @if (apiService.auth_user().empresa.pais == 'El Salvador') {
+                                <label for="ncr">DUI</label>
+                            }
+                            @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                <label for="ncr">Número de Identificación</label>
+                            }
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false"  mask={{apiService.auth_user().empresa.validador_dui}}>
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="correo">Correo</label>
+                            <input type="email" class="form-control" placeholder="Escribe aquí" name="correo" [(ngModel)]="cliente.correo">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="telefono">Teléfono:</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
+                        </div>
+                        }
                         @if (cliente.tipo == 'Persona') {
                             <div class="form-group col-6 col-lg-3">
                                 <label for="pais">Pais:</label>
@@ -282,6 +293,64 @@
                     <div class="row">
                         <h6 class="col-12 pb-2 mb-2">Información de la empresa</h6>
 
+                        @if (esCostaRicaFe()) {
+                        <div class="form-group col-12 col-md-6 col-lg-4">
+                            <label for="nit_cr_empresa_modal">Identificación fiscal</label>
+                            <input type="text" class="form-control" id="nit_cr_empresa_modal" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit"
+                              (ngModelChange)="onIdentificacionClienteCrDebounced()" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
+                            @if (contribuyenteCargandoCr) {
+                              <small class="text-muted">Consultando Hacienda…</small>
+                            }
+                        </div>
+                        <div class="form-group col-12 col-md-6 col-lg-8">
+                            <label for="nombre_empresa_cr_modal">Nombre o razón social</label>
+                            <input type="text" class="form-control" id="nombre_empresa_cr_modal" placeholder="Se puede completar desde Hacienda" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
+                        </div>
+                        <div class="form-group col-12 col-lg-8">
+                            <label for="actividad_cr_cliente_modal">Actividad económica</label>
+                            <ng-select
+                              class="form-select p-0"
+                              id="actividad_cr_cliente_modal"
+                              name="actividad_cr_cliente_modal"
+                              [items]="actividadesContribuyenteCr"
+                              bindLabel="label"
+                              [loading]="contribuyenteCargandoCr"
+                              [compareWith]="compareActividadContribuyenteCr"
+                              [(ngModel)]="actividadContribuyenteSeleccionada"
+                              (change)="onActividadContribuyenteCrChange($event)"
+                              [clearable]="true"
+                              notFoundText="Sin resultados"
+                              placeholder="Seleccione actividad (según identificación fiscal)"
+                              appendTo="body">
+                              <ng-template ng-label-tmp let-item="item">
+                                <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item?.label">{{ item?.label }}</span>
+                              </ng-template>
+                              <ng-template ng-option-tmp let-item="item">
+                                <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item.label">{{ item.label }}</span>
+                              </ng-template>
+                            </ng-select>
+                        </div>
+                        <div class="form-group col-6 col-lg-2">
+                            <label for="ncr_cr_modal">Registro tributario</label>
+                            <input type="text" class="form-control" id="ncr_cr_modal" placeholder="Escribe aquí" name="ncr" [(ngModel)]="cliente.ncr">
+                        </div>
+                        <div class="form-group col-md-6 col-lg-3">
+                            <label for="tipo_contribuyente_cr_modal">Tipo de contribuyente:</label>
+                            <select class="form-select" id="tipo_contribuyente_cr_modal" [(ngModel)]="cliente.tipo_contribuyente" name="tipo_contribuyente">
+                                <option value="">Seleccione aquí</option>
+                                <option value="Pequeño">Pequeño</option>
+                                <option value="Mediano">Mediano</option>
+                                <option value="Grande">Grande</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="empresa_telefono_cr_modal">Teléfono:</label>
+                            <input type="text" class="form-control" id="empresa_telefono_cr_modal" placeholder="Escribe aquí" name="empresa_telefono" [(ngModel)]="cliente.empresa_telefono">
+                        </div>
+                        }
+
+                        @if (!esCostaRicaFe()) {
                         <div class="form-group col-6 col-lg-4">
                             <label for="nombre_empresa">Empresa:</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
@@ -336,6 +405,7 @@
                             <label for="telefono">Teléfono:</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_telefono" [(ngModel)]="cliente.empresa_telefono">
                         </div>
+                        }
                         @if (cliente.tipo == 'Empresa') {
                             <div class="form-group col-6 col-lg-3">
                                 <label for="pais">Pais:</label>
@@ -604,6 +674,62 @@
                 </div>
                 </div>
             }
+            <hr class="my-4">
+            <h6 class="col-12 mb-3 text-muted">Condiciones comerciales y clasificación</h6>
+            <div class="row mb-3">
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label for="clasificacion_modal_create" class="form-label">Clasificación</label>
+                    <select class="form-select" id="clasificacion_modal_create" name="clasificacion" [(ngModel)]="cliente.clasificacion">
+                        <option [ngValue]="null">Seleccione una clasificación</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                    </select>
+                </div>
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label for="tiempo_pago_modal_create" class="form-label">Tiempo de pago (días)</label>
+                    <select class="form-select" id="tiempo_pago_modal_create" name="tiempo_pago" [(ngModel)]="cliente.tiempo_pago">
+                        <option [ngValue]="null">Seleccione aquí</option>
+                        <option [value]="8">8 días</option>
+                        <option [value]="15">15 días</option>
+                        <option [value]="30">30 días</option>
+                        <option [value]="60">60 días</option>
+                        <option [value]="90">90 días</option>
+                        <option [value]="180">180 días</option>
+                    </select>
+                </div>
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label for="id_vendedor_modal_create" class="form-label">Vendedor asignado</label>
+                    <select class="form-select" id="id_vendedor_modal_create" name="id_vendedor" [(ngModel)]="cliente.id_vendedor">
+                        <option [ngValue]="null">Sin vendedor asignado</option>
+                        <option *ngFor="let vendedor of vendedores" [value]="vendedor.id">
+                            {{ vendedor.name }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mb-3 align-items-end" *ngIf="puedeEditarCreditoCliente()">
+                <div class="form-group col-12 col-md-4 col-lg-4 without-label">
+                    <div class="form-switch border rounded">
+                        <label class="form-check-label" for="habilita_credito_modal_create">Cliente con opción de crédito</label>
+                        <input class="form-check-input" type="checkbox" id="habilita_credito_modal_create"
+                               [(ngModel)]="cliente.habilita_credito" role="switch" class="form-check-input float-end" name="habilita_credito_modal_create"
+                               (change)="onHabilitaCreditoChange()">
+                    </div>
+                </div>
+                <div class="form-group col-12 col-md-4 col-lg-4" *ngIf="cliente.habilita_credito">
+                    <label for="dias_credito_modal_create" class="form-label">Días de crédito</label>
+                    <select class="form-select" id="dias_credito_modal_create" name="dias_credito" [(ngModel)]="cliente.dias_credito">
+                        <option [ngValue]="null">Seleccione aquí</option>
+                        <option *ngFor="let d of diasCreditoOpciones" [value]="d">{{ d }} días</option>
+                    </select>
+                </div>
+                <div class="form-group col-12 col-md-4 col-lg-4" *ngIf="cliente.habilita_credito">
+                    <label for="limite_credito_modal_create" class="form-label">Monto límite (opcional)</label>
+                    <input type="number" step="0.01" min="0" class="form-control" placeholder="Ej: 5000.00"
+                           id="limite_credito_modal_create" name="limite_credito" [(ngModel)]="cliente.limite_credito">
+                </div>
+            </div>
             <div class="row">
                 <div class="form-group col-md-12 mt-3">
                     <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">

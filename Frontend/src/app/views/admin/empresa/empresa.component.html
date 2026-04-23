@@ -220,9 +220,7 @@
                     }
 
                     @if (esCostaRicaFe()) {
-                    <div class="col-12">
-                        <div class="row g-3">
-                        <div class="form-group col-12 col-lg-6 mb-0">
+                    <div class="form-group col-12 col-lg-8">
                           <label for="actividad_contribuyente_cr">Actividad económica</label>
                           <ng-select
                             class="form-select p-0"
@@ -244,35 +242,6 @@
                               <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item.label">{{ item.label }}</span>
                             </ng-template>
                           </ng-select>
-                        </div>
-                        <div class="form-group col-12 col-lg-6 mb-0">
-                          <label for="cabys_default_cr_buscar">CABYS por defecto</label>
-                          <ng-select
-                            class="form-select p-0"
-                            id="cabys_default_cr_buscar"
-                            name="cabys_default_cr_buscar"
-                            appendTo="body"
-                            [items]="cabysDefaultItems"
-                            bindLabel="label"
-                            [loading]="cabysDefaultLoading"
-                            [typeahead]="cabysDefaultInput$"
-                            [minTermLength]="3"
-                            [searchFn]="cabysDefaultNgSelectSearchFn"
-                            [compareWith]="compareCabysDefault"
-                            [(ngModel)]="cabysDefaultSeleccionado"
-                            (change)="onCabysDefaultSelectChange($event)"
-                            [clearable]="true"
-                            notFoundText="Sin resultados"
-                            placeholder="Buscar por nombre o código (mín. 3 caracteres)">
-                            <ng-template ng-label-tmp let-item="item">
-                              <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item?.label">{{ item?.label }}</span>
-                            </ng-template>
-                            <ng-template ng-option-tmp let-item="item">
-                              <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item.label">{{ item.label }}</span>
-                            </ng-template>
-                          </ng-select>
-                        </div>
-                        </div>
                     </div>
                     }
 

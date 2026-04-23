@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
@@ -12,7 +13,7 @@ import { ApiService } from '../../../../services/api.service';
   selector: 'app-cuentas-pagar',
   templateUrl: './cuentas-pagar.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, ModalModule]
+  imports: [CommonModule, PipesModule, FormsModule, RouterModule, TooltipModule, ModalModule]
 })
 export class CuentasPagarComponent implements OnInit {
 

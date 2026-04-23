@@ -1,5 +1,6 @@
 import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
@@ -21,7 +22,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     templateUrl: './orden-compra-form.component.html',
     styleUrls: ['./orden-compra-form.component.css'],
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CompraDetallesComponent, LazyImageDirective],
+    imports: [CommonModule, PipesModule, ReactiveFormsModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CompraDetallesComponent, LazyImageDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class OrdenCompraFormComponent implements OnInit {

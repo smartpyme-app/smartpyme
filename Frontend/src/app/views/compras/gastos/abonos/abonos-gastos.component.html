@@ -72,7 +72,7 @@
                         <td>{{abono.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{abono.gasto?.nombre_proveedor }}</td>
                         <td>
-                            {{abono.gasto?.tipo_documento }} # {{abono.gasto?.referencia }}
+                            {{abono.gasto?.tipo_documento}} # {{abono.gasto?.referencia }}
                             <a class="float-end d-none"  tooltip="Ver información del gasto" routerLink="/gasto/detalles/{{abono.id_gasto}}"><i class="fa fa-magnifying-glass"></i></a>
                         </td>
                         <td>{{abono.forma_pago}}</td>

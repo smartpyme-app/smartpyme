@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -20,7 +21,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     selector: 'app-facturacion-compra-consigna',
     templateUrl: './facturacion-compra-consigna.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, LazyImageDirective],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })

@@ -16,6 +16,7 @@ import { Subject, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { PipesModule } from '@pipes/pipes.module';
 import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { CompraDetallesComponent } from './detalles/compra-detalles.component';
@@ -27,13 +28,17 @@ import * as moment from 'moment';
 import { DetalleComprasComponent } from '@views/reportes/compras/detalle/detalle-compras.component';
 import Swal from 'sweetalert2';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import {
+    esTipoFacturaElectronicaCompraCr,
+    NOMBRE_DOCUMENTO_CR,
+} from '@views/ventas/documentos/documento-nombre-options';
 import { BsModalRef } from 'ngx-bootstrap/modal';
 
 @Component({
     selector: 'app-facturacion-compra',
     templateUrl: './facturacion-compra.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CompraDetallesComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PipesModule, CrearProveedorComponent, CrearProyectoComponent, CompraDetallesComponent],
     providers: [SumPipe],
   styles: [`
     .ajuste-tabs-json {
@@ -270,7 +275,12 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         'Factura de exportación'
       ];
       if (resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR) {
-        documentosPermitidos.push('Compra electrónica');
+        documentosPermitidos.push(
+          NOMBRE_DOCUMENTO_CR.factura,
+          NOMBRE_DOCUMENTO_CR.tiquete,
+          NOMBRE_DOCUMENTO_CR.fecCompra,
+          'Compra electrónica',
+        );
       }
 
         this.sharedDataService.getDocumentos()
@@ -291,7 +301,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 this.documentos = this.documentos.filter((x:any) =>
                   documentosPermitidos.includes(x.nombre) &&
                   x.nombre != 'Nota de crédito' &&
-                  x.nombre != 'Nota de débito'
+                  x.nombre != 'Nota de débito' &&
+                  x.nombre != NOMBRE_DOCUMENTO_CR.notaCredito &&
+                  x.nombre != NOMBRE_DOCUMENTO_CR.notaDebito
                 );              }
               this.cdr.markForCheck();
             },
@@ -314,7 +326,10 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.compra.tipo_operacion = 'Gravada';
         this.compra.tipo_costo_gasto = 'Costo artículos producidos/comprados interno';
         this.compra.tipo_sector = this.apiService.auth_user().empresa.tipo_sector ?? null;
-        this.compra.tipo_documento = 'Factura';
+        this.compra.tipo_documento =
+            resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR
+                ? NOMBRE_DOCUMENTO_CR.factura
+                : 'Factura';
         this.compra.detalle_banco = '';
         this.compra.id_proveedor = '';
         this.compra.detalles = [];
@@ -618,7 +633,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
 
     public selectTipoDocumento(){
-        if(this.compra.tipo_documento == 'Sujeto excluido' || this.compra.tipo_documento == 'Compra electrónica'){
+        if(this.compra.tipo_documento == 'Sujeto excluido' || esTipoFacturaElectronicaCompraCr(this.compra.tipo_documento)){
             let documento = this.documentos.find((x:any) => x.nombre == this.compra.tipo_documento);
             if (documento) {
                 this.compra.referencia = documento.correlativo;
@@ -957,17 +972,18 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
 
   getTipoDocumento(tipoDte: string) {
-    const tiposDte = {
-      '01': 'Factura',
+    const cr = resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+    const tiposDte: Record<string, string> = {
+      '01': cr ? NOMBRE_DOCUMENTO_CR.factura : 'Factura',
       '03': 'Crédito fiscal',
-      '05': 'Nota de débito',
-      '06': 'Nota de crédito',
+      '05': cr ? NOMBRE_DOCUMENTO_CR.notaDebito : 'Nota de débito',
+      '06': cr ? NOMBRE_DOCUMENTO_CR.notaCredito : 'Nota de crédito',
       '07': 'Comprobante de retención',
       '11': 'Factura de exportación',
       '14': 'Sujeto excluido',
-      '08': 'Compra electrónica'
+      '08': cr ? NOMBRE_DOCUMENTO_CR.fecCompra : 'Compra electrónica',
     };
-    return tiposDte[tipoDte as keyof typeof tiposDte] || 'Factura';
+    return tiposDte[tipoDte] || (cr ? NOMBRE_DOCUMENTO_CR.factura : 'Factura');
   }
     /** Importa un único DTE (compras: un JSON por operación). */
     async importarUnDocumentoDte(data: any, etiqueta: string) {
@@ -1004,8 +1020,12 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.compra.id_bodega = this.apiService.auth_user().id_bodega;
 
         if (jsonData.identificacion.tipoDte) {
+            const defFact =
+                resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR
+                    ? NOMBRE_DOCUMENTO_CR.factura
+                    : 'Factura';
             this.compra.tipo_documento =
-                this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
+                this.getTipoDocumento(jsonData.identificacion.tipoDte) || defFact;
         }
 
         const documentoRow = (this.documentos || []).find(
@@ -1562,7 +1582,11 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.compra.id_bodega = this.apiService.auth_user().id_bodega;
 
         if (jsonData.identificacion.tipoDte) {
-            this.compra.tipo_documento = this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
+            const defFact =
+                resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR
+                    ? NOMBRE_DOCUMENTO_CR.factura
+                    : 'Factura';
+            this.compra.tipo_documento = this.getTipoDocumento(jsonData.identificacion.tipoDte) || defFact;
         }
 
         // Ahora se asigna el  código de generación como numero de referencia

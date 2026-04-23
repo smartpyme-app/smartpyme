@@ -20,10 +20,8 @@ import {
     ContribuyenteActividadOption,
     mapContribuyenteAeResponseToActividades,
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
-import { mapCabysApiResponseToOptions, CabysSelectOption } from '@services/facturacion-electronica/cabys-hacienda.mapper';
-import { HaciendaCabysClientService } from '@services/facturacion-electronica/hacienda-cabys-client.service';
-import { Subject, of, forkJoin } from 'rxjs';
-import { map, debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
+import { map, distinctUntilChanged, finalize } from 'rxjs/operators';
 
 @Component({
     selector: 'app-empresa',
@@ -104,22 +102,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         return this.normalizarCodigoActividadCr(a.codigo) === this.normalizarCodigoActividadCr(b.codigo);
     };
 
-    /** CABYS por defecto (custom_empresa.facturacion_fe.cabys_default), solo CR. */
-    cabysDefaultInput$ = new Subject<string>();
-    cabysDefaultItems: CabysSelectOption[] = [];
-    cabysDefaultLoading = false;
-    cabysDefaultSeleccionado: CabysSelectOption | null = null;
-
-    readonly compareCabysDefault = (a: CabysSelectOption, b: CabysSelectOption): boolean => {
-        if (!a || !b) {
-            return false;
-        }
-
-        return a.codigo === b.codigo;
-    };
-
-    readonly cabysDefaultNgSelectSearchFn = (_term: string, _item: CabysSelectOption): boolean => true;
-
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
@@ -128,38 +110,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
         private cdr: ChangeDetectorRef,
         private funcionalidadesService: FuncionalidadesService,
-        private haciendaCabys: HaciendaCabysClientService,
     ) { }
 
     ngOnInit() {
-
-        this.cabysDefaultInput$
-            .pipe(
-                debounceTime(400),
-                distinctUntilChanged(),
-                switchMap((term: string) => {
-                    const t = (term ?? '').trim();
-                    if (t.length < 3) {
-                        return of([]);
-                    }
-                    this.cabysDefaultLoading = true;
-                    this.cdr.markForCheck();
-
-                    return this.haciendaCabys.getCabysByQuery(t, 20).pipe(
-                        map((body) => mapCabysApiResponseToOptions(body)),
-                        catchError(() => of([])),
-                        finalize(() => {
-                            this.cabysDefaultLoading = false;
-                            this.cdr.markForCheck();
-                        }),
-                    );
-                }),
-                this.untilDestroyed(),
-            )
-            .subscribe((items) => {
-                this.cabysDefaultItems = items;
-                this.cdr.markForCheck();
-            });
 
         this.apiService.getAll('canales')
             .pipe(this.untilDestroyed())
@@ -213,7 +166,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             if (resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR) {
                 this.refreshEstadoCertificadoFeCr();
                 this.syncActividadContribuyenteCrDesdeEmpresa();
-                this.syncCabysDefaultDesdeConfig();
                 this.syncEmisorDistritoFeDesdeEmpresa();
                 const nitCr = String(this.empresa?.nit ?? '').replace(/\D/g, '');
                 if (nitCr.length >= 9 && nitCr.length <= 12) {
@@ -251,7 +203,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.initializeCustomConfig();
             if (resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR) {
                 this.syncActividadContribuyenteCrDesdeEmpresa();
-                this.syncCabysDefaultDesdeConfig();
             }
 
             let user: any = {};
@@ -653,19 +604,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.cdr.markForCheck();
     }
 
-    onCabysDefaultSelectChange(item: CabysSelectOption | null): void {
-        this.ensureFacturacionFeCr();
-        if (item) {
-            this.customConfig.facturacion_fe.cabys_default = item.codigo;
-            this.customConfig.facturacion_fe.cabys_default_descripcion = item.descripcion;
-        } else {
-            delete this.customConfig.facturacion_fe.cabys_default;
-            delete this.customConfig.facturacion_fe.cabys_default_descripcion;
-        }
-        this.empresa.custom_empresa = this.customConfig;
-        this.cdr.markForCheck();
-    }
-
     private ensureFacturacionFeCr(): void {
         if (
             !this.customConfig.facturacion_fe ||
@@ -674,26 +612,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         ) {
             this.customConfig.facturacion_fe = {};
         }
-    }
-
-    private syncCabysDefaultDesdeConfig(): void {
-        if (resolveCodigoPaisFe(this.empresa) !== FE_PAIS_CR) {
-            return;
-        }
-        this.ensureFacturacionFeCr();
-        const raw = this.customConfig.facturacion_fe.cabys_default;
-        const digits = raw != null && raw !== '' ? String(raw).replace(/\D/g, '') : '';
-        if (digits.length === 13) {
-            const desc = String(this.customConfig.facturacion_fe.cabys_default_descripcion ?? '').trim();
-            this.cabysDefaultSeleccionado = {
-                codigo: digits,
-                descripcion: desc,
-                label: desc !== '' ? `${digits} — ${desc}` : digits,
-            };
-        } else {
-            this.cabysDefaultSeleccionado = null;
-        }
-        this.cdr.markForCheck();
     }
 
     cargarActividadesContribuyenteDesdeHacienda(opciones?: { silenciosoSiNitInvalido?: boolean }): void {

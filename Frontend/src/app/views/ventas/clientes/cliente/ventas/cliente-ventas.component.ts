@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -14,7 +15,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
     selector: 'app-cliente-ventas',
     templateUrl: './cliente-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, PaginationComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClienteVentasComponent extends BaseCrudComponent<any> implements OnInit {

@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -17,7 +18,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     selector: 'app-abonos-ventas',
     templateUrl: './abonos-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })

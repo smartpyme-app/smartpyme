@@ -23,6 +23,11 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import * as moment from 'moment';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 import { forkJoin } from 'rxjs';
+import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import {
+  esTipoFacturaElectronicaCompraCr,
+  NOMBRE_DOCUMENTO_CR,
+} from '@views/ventas/documentos/documento-nombre-options';
 
 @Component({
     selector: 'app-gasto',
@@ -315,7 +320,10 @@ export class GastoComponent implements OnInit {
       this.gasto.forma_pago = 'Efectivo';
       this.gasto.estado = 'Confirmado';
       this.gasto.credito = false; // Por defecto no está pendiente
-      this.gasto.tipo_documento = 'Factura';
+      this.gasto.tipo_documento =
+        resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR
+          ? NOMBRE_DOCUMENTO_CR.factura
+          : 'Factura';
       this.gasto.detalle_banco = '';
       this.gasto.tipo = '';
       this.gasto.tipo_clasificacion = 'Gasto';
@@ -468,9 +476,17 @@ export class GastoComponent implements OnInit {
           (x: any) =>
             x.nombre != 'Cotización' &&
             x.nombre != 'Orden de compra' &&
-            x.nombre != 'Nota de crédito'
+            x.nombre != 'Nota de crédito' &&
+            x.nombre != NOMBRE_DOCUMENTO_CR.notaCredito &&
+            x.nombre != 'Nota de débito' &&
+            x.nombre != NOMBRE_DOCUMENTO_CR.notaDebito
         );
-        if (!this.gasto.tipo_documento) this.gasto.tipo_documento = 'Factura';
+        if (!this.gasto.tipo_documento) {
+          this.gasto.tipo_documento =
+            resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR
+              ? NOMBRE_DOCUMENTO_CR.factura
+              : 'Factura';
+        }
         this.cdr.markForCheck();
       },
       (error) => {
@@ -637,7 +653,7 @@ export class GastoComponent implements OnInit {
   }
 
   public selectTipoDocumento() {
-    if (this.gasto.tipo_documento == 'Sujeto excluido' || this.gasto.tipo_documento == 'Compra electrónica') {
+    if (this.gasto.tipo_documento == 'Sujeto excluido' || esTipoFacturaElectronicaCompraCr(this.gasto.tipo_documento)) {
       let documento = this.documentos.find(
         (x: any) => x.nombre == this.gasto.tipo_documento
       );
@@ -1018,7 +1034,10 @@ export class GastoComponent implements OnInit {
       if (!this.gasto.id) {
         this.gasto.forma_pago = 'Efectivo';
         this.gasto.estado = 'Confirmado';
-        this.gasto.tipo_documento = 'Factura';
+        this.gasto.tipo_documento =
+          resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR
+            ? NOMBRE_DOCUMENTO_CR.factura
+            : 'Factura';
         this.gasto.detalle_banco = '';
         this.gasto.tipo = 'Gastos varios'; // Categoría predeterminada
         this.gasto.id_categoria = null;
@@ -1043,19 +1062,19 @@ export class GastoComponent implements OnInit {
 
         // Tipo de documento
         if (jsonData.identificacion.tipoDte) {
+          const cr = resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
           const tiposDte: { [key: string]: string } = {
-            '01': 'Factura',
+            '01': cr ? NOMBRE_DOCUMENTO_CR.factura : 'Factura',
             '03': 'Crédito fiscal',
-            '05': 'Nota de débito',
-            '06': 'Nota de crédito',
+            '05': cr ? NOMBRE_DOCUMENTO_CR.notaDebito : 'Nota de débito',
+            '06': cr ? NOMBRE_DOCUMENTO_CR.notaCredito : 'Nota de crédito',
             '07': 'Comprobante de retención',
-            '08': 'Compra electrónica',
+            '08': cr ? NOMBRE_DOCUMENTO_CR.fecCompra : 'Compra electrónica',
             '11': 'Factura de exportación',
             '14': 'Sujeto excluido',
           };
-
-          this.gasto.tipo_documento =
-            tiposDte[jsonData.identificacion.tipoDte] || 'Factura';
+          const defFact = cr ? NOMBRE_DOCUMENTO_CR.factura : 'Factura';
+          this.gasto.tipo_documento = tiposDte[jsonData.identificacion.tipoDte] || defFact;
         }
 
         // Valores para DTE

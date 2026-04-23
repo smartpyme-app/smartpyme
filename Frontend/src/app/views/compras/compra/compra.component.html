@@ -1,7 +1,7 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading" (click)="loadAll()">
         @if (!loading && compra.estado != 'Pre-compra') {
-          <span>Compra</span>
+          <span>{{ compra.tipo_documento }}</span>
         }
         @if (!loading && compra.estado == 'Pre-compra') {
           <span>Orden de compra</span>

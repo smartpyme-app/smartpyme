@@ -24,6 +24,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { esTipoFacturaElectronicaCompraCr } from '@views/ventas/documentos/documento-nombre-options';
 
 @Component({
     selector: 'app-gastos',
@@ -348,7 +349,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
 
     puedeEmitirFeGasto(gasto: any): boolean {
         if (this.facturacionElectronica.isCostaRicaFe()) {
-            return gasto.tipo_documento === 'Compra electrónica';
+            return esTipoFacturaElectronicaCompraCr(gasto.tipo_documento);
         }
         return gasto.tipo_documento === 'Sujeto excluido';
     }

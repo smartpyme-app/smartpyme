@@ -28,7 +28,7 @@
                     <td>{{ devolucion.nombre_proveedor }}</td>
                     <td>{{ devolucion.nombre_sucursal }}</td>
                     <td>{{ devolucion.nombre_usuario }}</td>
-                    <td>{{ (devolucion.tipo_documento || 'Devolución') + (devolucion.referencia ? ' #' + devolucion.referencia : '') }}</td>
+                    <td>{{ (devolucion.tipo_documento ? (devolucion.tipo_documento) : 'Devolución') + (devolucion.referencia ? ' #' + devolucion.referencia : '') }}</td>
                     <td>{{ devolucion.observaciones }}</td>
                 </tr>
             </table>

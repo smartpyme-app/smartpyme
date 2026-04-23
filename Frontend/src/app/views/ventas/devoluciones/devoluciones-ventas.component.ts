@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -24,7 +25,7 @@ import Swal from 'sweetalert2';
     selector: 'app-devoluciones-ventas',
     templateUrl: './devoluciones-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, AlertsHaciendaComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, AlertsHaciendaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

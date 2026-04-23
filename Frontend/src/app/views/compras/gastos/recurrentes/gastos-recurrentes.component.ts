@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -15,7 +16,7 @@ declare var $:any;
     selector: 'app-gastos-recurrentes',
     templateUrl: './gastos-recurrentes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
