@@ -297,23 +297,6 @@ class AuthJWTController extends Controller
         return $this->n1coService->crearEnlacePago($data);
     }
 
-
-    public function me($id)
-    {
-        $user = User::find($id);
-
-        if (!$user) {
-            return response()->json(['message' => 'Usuario no encontrado', 'code' => 404], 404);
-        }
-
-        $user->ultimo_login = Carbon::now();
-        $user->save();
-
-        $user = $this->authService->cargarDatosUsuario($user);
-
-        return response()->json(['user' => $user], 200);
-    }
-
     private function getPlan($plan_id, $withName = false, $name = null)
     {
         $plan = null;
