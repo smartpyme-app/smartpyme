@@ -165,9 +165,15 @@
             $pref = trim((string) ($documento->prefijo ?? ''));
             $numFacturaDisplay = $pref !== '' ? $pref.$corr : $corr;
         }
-        $codCliente = $venta->id_cliente && $cliente && $cliente->codigo_cliente !== null && $cliente->codigo_cliente !== ''
-            ? $cliente->codigo_cliente
-            : '0';
+        $esClienteEmpresa = $venta->id_cliente && $cliente && $cliente->tipo === 'Empresa';
+        if ($esClienteEmpresa) {
+            $nitCli = trim((string) ($cliente->nit ?? ''));
+            $codCliente = $nitCli !== '' ? $nitCli : '0';
+        } else {
+            $codCliente = $venta->id_cliente && $cliente && $cliente->codigo_cliente !== null && $cliente->codigo_cliente !== ''
+                ? $cliente->codigo_cliente
+                : '0';
+        }
         $nombreClienteFactura = strtoupper($venta->nombre_cliente ?? 'CONSUMIDOR FINAL');
         $terminos = strtoupper(trim((string) ($venta->forma_pago ?: $venta->condicion ?: '')));
         $estadoFactura = strtoupper(trim((string) ($venta->estado ?? 'PAGADA')));
