@@ -60,9 +60,9 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => $allowedOrigins,
+    'allowed_origins' => ['*'],
 
-    'allowed_origins_patterns' => $allowedOriginsPatterns,
+    'allowed_origins_patterns' => ['*'],
 
     'allowed_headers' => ['*'],
 
