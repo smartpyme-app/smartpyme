@@ -165,15 +165,9 @@
             $pref = trim((string) ($documento->prefijo ?? ''));
             $numFacturaDisplay = $pref !== '' ? $pref.$corr : $corr;
         }
-        $esClienteEmpresa = $venta->id_cliente && $cliente && $cliente->tipo === 'Empresa';
-        if ($esClienteEmpresa) {
-            $nitCli = trim((string) ($cliente->nit ?? ''));
-            $codCliente = $nitCli !== '' ? $nitCli : '0';
-        } else {
-            $codCliente = $venta->id_cliente && $cliente && $cliente->codigo_cliente !== null && $cliente->codigo_cliente !== ''
-                ? $cliente->codigo_cliente
-                : '0';
-        }
+        $codCliente = $venta->id_cliente && $cliente && $cliente->codigo_cliente !== null && $cliente->codigo_cliente !== ''
+            ? $cliente->codigo_cliente
+            : '0';
         $nombreClienteFactura = strtoupper($venta->nombre_cliente ?? 'CONSUMIDOR FINAL');
         $terminos = strtoupper(trim((string) ($venta->forma_pago ?: $venta->condicion ?: '')));
         $estadoFactura = strtoupper(trim((string) ($venta->estado ?? 'PAGADA')));
@@ -184,6 +178,9 @@
         <tr>
             <td class="left" style="width:58%;">
                 <p><span class="b">{{ $etiquetaNumero }}:</span> {{ $numFacturaDisplay }}</p>
+                @if ($venta->id_cliente && $cliente && $cliente->tipo === 'Empresa')
+                    <p class="mt1"><span class="b">RTN:</span> {{ $cliente->nit ?? '' }}</p>
+                @endif
                 <p class="mt1"><span class="b">CLIENTE:</span> {{ $codCliente }} - {{ $nombreClienteFactura }}</p>
                 @if ($terminos !== '')
                     <p class="mt1"><span class="b">TERMINOS:</span> {{ $terminos }}</p>
