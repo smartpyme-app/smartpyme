@@ -32,6 +32,7 @@ import { Subject } from 'rxjs';
 const SLUG_IMPORTACION_MASIVA_COMPRAS_JSON = 'importacion-masiva-compras-json';
 import { debounceTime, distinctUntilChanged, switchMap, takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { esTipoFacturaElectronicaCompraCr } from '@views/ventas/documentos/documento-nombre-options';
 
 declare var $:any;
 
@@ -607,10 +608,10 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         }
     }
 
-    /** SV: Sujeto excluido; CR: Compra electrónica (FEC 08). */
+    /** SV: Sujeto excluido; CR: FEC 08 («Factura Electrónica de Compra» o nombre histórico). */
     puedeEmitirFeCompra(compra: any): boolean {
         if (this.facturacionElectronica.isCostaRicaFe()) {
-            return compra.tipo_documento === 'Compra electrónica';
+            return esTipoFacturaElectronicaCompraCr(compra.tipo_documento);
         }
         return compra.tipo_documento === 'Sujeto excluido';
     }

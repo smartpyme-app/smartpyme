@@ -41,30 +41,93 @@
                 <div class="col-12" [ngClass]="{ 'order-1' :  proveedor.tipo == 'Persona', 'order-2' :  proveedor.tipo == 'Empresa' }">
                     <div class="row">
                         <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
-                        <div class="form-group col-lg-4">
-                            <label for="nombre">Nombre</label>
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="proveedor.nombre">
-                        </div>
-                        <div class="form-group col-lg-4">
-                            <label for="apellido">Apellido</label>
-                            <input type="text" class="form-control" (change)="verificarSiExiste()" placeholder="Escribe aquí" name="apellido" [(ngModel)]="proveedor.apellido">
-                        </div>
-                        <div class="form-group col-6 col-lg-4">
-                            <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</label>
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="proveedor.dui" [dropSpecialCharacters]="false" mask='00000000-0'>
-                        </div>
-                        <div class="form-group col-6 col-lg-4">
+                        @if (proveedor.tipo == 'Empresa') {
+                          <div class="form-group col-6 col-lg-3">
+                            <label for="codigo_cliente_modal_pv_e">Código Cliente</label>
+                            <input type="text" class="form-control" id="codigo_cliente_modal_pv_e" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="proveedor.codigo_cliente">
+                          </div>
+                          <div class="form-group col-lg-3">
+                            <label for="nombre_modal_pv_e">Nombre</label>
+                            <input type="text" class="form-control" id="nombre_modal_pv_e" placeholder="Escribe aquí" name="nombre" [(ngModel)]="proveedor.nombre">
+                          </div>
+                          <div class="form-group col-lg-3">
+                            <label for="apellido_modal_pv_e">Apellido</label>
+                            <input type="text" class="form-control" id="apellido_modal_pv_e" placeholder="Escribe aquí" name="apellido" [(ngModel)]="proveedor.apellido">
+                          </div>
+                          <div class="form-group col-6 col-lg-3">
+                            @if (apiService.auth_user().empresa.pais == 'El Salvador') {
+                              <label for="dui_modal_pv_e">DUI</label>
+                            }
+                            @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                              <label for="dui_modal_pv_e">Número de Identificación</label>
+                            }
+                            <input type="text" class="form-control" id="dui_modal_pv_e" placeholder="Escribe aquí" name="dui" [(ngModel)]="proveedor.dui" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_dui}}>
+                          </div>
+                          <div class="form-group col-6 col-lg-3">
+                            <label for="correo_modal_pv_e">Correo</label>
+                            <input type="email" class="form-control" id="correo_modal_pv_e" placeholder="Escribe aquí" name="correo" [(ngModel)]="proveedor.correo">
+                          </div>
+                          <div class="form-group col-6 col-lg-3">
+                            <label for="telefono_modal_pv_e">Teléfono:</label>
+                            <input type="text" class="form-control" id="telefono_modal_pv_e" placeholder="Escribe aquí" name="telefono" [(ngModel)]="proveedor.telefono">
+                          </div>
+                        }
+                        @if (proveedor.tipo == 'Persona' && esCostaRicaFe()) {
+                          <div class="form-group col-6 col-lg-3">
+                            <label for="proveedor_modal_cr_ident_persona">Identificación</label>
+                            <input type="text" class="form-control" id="proveedor_modal_cr_ident_persona" placeholder="Escribe aquí" name="dui" [(ngModel)]="proveedor.dui"
+                              (ngModelChange)="onIdentificacionProveedorPersonaCrDebounced()" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_dui}}>
+                            @if (contribuyenteCargandoCr) {
+                              <small class="text-muted">Consultando Hacienda…</small>
+                            }
+                          </div>
+                          <div class="form-group col-6 col-lg-3">
+                            <label for="codigo_cliente_modal_cr_p">Código Cliente</label>
+                            <input type="text" class="form-control" id="codigo_cliente_modal_cr_p" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="proveedor.codigo_cliente">
+                          </div>
+                          <div class="form-group col-lg-3">
+                            <label for="nombre_modal_cr_p">Nombre</label>
+                            <input type="text" class="form-control" id="nombre_modal_cr_p" placeholder="Escribe aquí" name="nombre" [(ngModel)]="proveedor.nombre">
+                          </div>
+                          <div class="form-group col-lg-3">
+                            <label for="apellido_modal_cr_p">Apellido</label>
+                            <input type="text" class="form-control" id="apellido_modal_cr_p" (change)="verificarSiExiste()" placeholder="Escribe aquí" name="apellido" [(ngModel)]="proveedor.apellido">
+                          </div>
+                          <div class="form-group col-6 col-lg-3">
+                            <label for="correo_modal_cr_p">Correo</label>
+                            <input type="email" class="form-control" id="correo_modal_cr_p" placeholder="Escribe aquí" name="correo" [(ngModel)]="proveedor.correo">
+                          </div>
+                          <div class="form-group col-6 col-lg-3">
+                            <label for="telefono_modal_cr_p">Teléfono:</label>
+                            <input type="text" class="form-control" id="telefono_modal_cr_p" placeholder="Escribe aquí" name="telefono" [(ngModel)]="proveedor.telefono">
+                          </div>
+                        }
+                        @if (proveedor.tipo == 'Persona' && !esCostaRicaFe()) {
+                          <div class="form-group col-6 col-lg-3">
                             <label for="codigo_cliente">Código Cliente</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="proveedor.codigo_cliente">
-                        </div>
-                        <div class="form-group col-6 col-lg-4">
+                          </div>
+                          <div class="form-group col-lg-3">
+                            <label for="nombre">Nombre</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="proveedor.nombre">
+                          </div>
+                          <div class="form-group col-lg-3">
+                            <label for="apellido">Apellido</label>
+                            <input type="text" class="form-control" (change)="verificarSiExiste()" placeholder="Escribe aquí" name="apellido" [(ngModel)]="proveedor.apellido">
+                          </div>
+                          <div class="form-group col-6 col-lg-3">
+                            <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="proveedor.dui" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_dui}}>
+                          </div>
+                          <div class="form-group col-6 col-lg-3">
                             <label for="correo">Correo</label>
                             <input type="email" class="form-control" placeholder="Escribe aquí" name="correo" [(ngModel)]="proveedor.correo">
-                        </div>
-                        <div class="form-group col-6 col-lg-3">
+                          </div>
+                          <div class="form-group col-6 col-lg-3">
                             <label for="telefono">Teléfono:</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="proveedor.telefono">
-                        </div>
+                          </div>
+                        }
 
                         @if (proveedor.tipo == 'Persona') {
                           <div class="form-group col-6 col-lg-3">
@@ -188,14 +251,6 @@
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="proveedor.direccion">
                           </div>
                         }
-                        <div class="form-group col-lg-6">
-                            <label for="etiquetas">Etiquetas:</label>
-                            <tag-input theme='bootstrap' secondaryPlaceholder="Etiquetas" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="proveedor.etiquetas" name="etiquetas"></tag-input>
-                        </div>
-                        <div class="form-group col-lg-12">
-                            <label for="nota">Observaciones</label>
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nota" [(ngModel)]="proveedor.nota">
-                        </div>
                     </div>
                 </div>
                 @if (proveedor.tipo == 'Empresa') {
@@ -203,6 +258,73 @@
                     <div class="row">
                         <h6 class="col-12 pb-2 mb-2">Información de la empresa</h6>
 
+                        @if (esCostaRicaFe()) {
+                        <div class="form-group col-12 col-md-6 col-lg-4">
+                            <label for="nit_cr_modal_pv_e">Identificación fiscal</label>
+                            <input type="text" class="form-control" id="nit_cr_modal_pv_e" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit"
+                              (ngModelChange)="onNitProveedorChange()" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
+                            @if (contribuyenteCargandoCr) {
+                              <small class="text-muted">Consultando Hacienda…</small>
+                            }
+                        </div>
+                        <div class="form-group col-12 col-md-6 col-lg-8">
+                            <label for="nombre_empresa_cr_modal_pv_e">Nombre o razón social</label>
+                            <input type="text" class="form-control" id="nombre_empresa_cr_modal_pv_e" placeholder="Se puede completar desde Hacienda" name="nombre_empresa" [(ngModel)]="proveedor.nombre_empresa">
+                        </div>
+                        <div class="form-group col-12 col-lg-8">
+                            <label for="actividad_contribuyente_cr_modal_pv">Actividad económica</label>
+                            @if (apiService.auth_user().empresa.facturacion_electronica) {
+                              <ng-select
+                                class="form-select p-0"
+                                name="actividad_contribuyente_cr_modal_pv"
+                                id="actividad_contribuyente_cr_modal_pv"
+                                [items]="actividadesContribuyenteCr"
+                                bindLabel="label"
+                                [loading]="contribuyenteCargandoCr"
+                                [compareWith]="compareActividadContribuyenteCr"
+                                [searchFn]="actividadCrNgSelectSearchFn"
+                                [(ngModel)]="actividadContribuyenteSeleccionada"
+                                (change)="onActividadContribuyenteCrChange($event)"
+                                (open)="onActividadCrSelectOpen()"
+                                [clearable]="true"
+                                notFoundText="Sin resultados"
+                                placeholder="Seleccione actividad (según identificación fiscal)">
+                                <ng-template ng-label-tmp let-item="item">
+                                  <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item?.label">{{ item?.label }}</span>
+                                </ng-template>
+                                <ng-template ng-option-tmp let-item="item">
+                                  <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item.label">{{ item.label }}</span>
+                                </ng-template>
+                              </ng-select>
+                              <small class="form-text text-muted d-block mt-1">
+                                Las opciones salen de Hacienda según la identificación fiscal de arriba (9–12 dígitos). Si no aparece nada, verifique el número y abra de nuevo el listado o espere unos segundos.
+                              </small>
+                            }
+                            @if (!apiService.auth_user().empresa.facturacion_electronica) {
+                              <input type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="proveedor.giro">
+                            }
+                        </div>
+                        <div class="form-group col-6 col-lg-2">
+                            <label for="ncr_cr_modal_pv_e">Registro tributario</label>
+                            <input type="text" class="form-control" id="ncr_cr_modal_pv_e" placeholder="Escribe aquí" name="ncr" [(ngModel)]="proveedor.ncr">
+                        </div>
+                        <div class="form-group col-md-6 col-lg-3">
+                            <label for="tipo_contribuyente_cr_modal_pv_e">Tipo de contribuyente:</label>
+                            <select class="form-select" id="tipo_contribuyente_cr_modal_pv_e" [(ngModel)]="proveedor.tipo_contribuyente" name="tipo_contribuyente">
+                                <option value="">Seleccione aquí</option>
+                                <option value="Pequeño">Pequeño</option>
+                                <option value="Mediano">Mediano</option>
+                                <option value="Grande">Grande</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="empresa_telefono_cr_modal_pv_e">Teléfono:</label>
+                            <input type="text" class="form-control" id="empresa_telefono_cr_modal_pv_e" placeholder="Escribe aquí" name="empresa_telefono" [(ngModel)]="proveedor.empresa_telefono">
+                        </div>
+                        }
+
+                        @if (!esCostaRicaFe()) {
                         <div class="form-group col-6 col-lg-6">
                             <label for="nombre_empresa">Empresa:</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="proveedor.nombre_empresa">
@@ -210,7 +332,7 @@
                         <div class="form-group col-6 col-lg-3">
                             <label for="nit">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT:' : 'Identificación fiscal:' }}</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit"
-                                (ngModelChange)="onNitProveedorChange()">
+                                (ngModelChange)="onNitProveedorChange()" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
                         </div>
                         <div class="form-group col-6 col-lg-3">
                             <label for="ncr">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NCR:' : 'Registro tributario:' }}</label>
@@ -227,11 +349,11 @@
                             </select>
                         </div>
                         <div class="form-group col-6 col-lg-9">
-                            <label for="giro">{{ esCostaRicaFe() ? 'Actividad económica' : 'Giro' }}:</label>
+                            <label for="giro">Giro:</label>
                             @if (!apiService.auth_user().empresa.facturacion_electronica) {
                               <input type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="proveedor.giro">
                             }
-                            @if (apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
+                            @if (apiService.auth_user().empresa.facturacion_electronica) {
                               <ng-select [(ngModel)]="proveedor.cod_giro" (change)="setGiro()" placeholder="Escribe aquí" class="form-select p-0" name="proveedor.cod_giro">
                                 @for (actividad_economica of actividad_economicas; track actividad_economica.cod) {
                                   <ng-option [value]="actividad_economica.cod">
@@ -240,38 +362,12 @@
                                 }
                               </ng-select>
                             }
-                            @if (apiService.auth_user().empresa.facturacion_electronica && esCostaRicaFe()) {
-                              <ng-select
-                                class="form-select p-0"
-                                name="actividad_contribuyente_cr_modal_pv"
-                                id="actividad_contribuyente_cr_modal_pv"
-                                [items]="actividadesContribuyenteCr"
-                                bindLabel="label"
-                                [loading]="contribuyenteCargandoCr"
-                                [compareWith]="compareActividadContribuyenteCr"
-                                [searchFn]="actividadCrNgSelectSearchFn"
-                                [(ngModel)]="actividadContribuyenteSeleccionada"
-                                (change)="onActividadContribuyenteCrChange($event)"
-                                (open)="onActividadCrSelectOpen()"
-                                [clearable]="true"
-                                notFoundText="Sin resultados"
-                                placeholder="Seleccione actividad (según NIT en Hacienda)">
-                                <ng-template ng-label-tmp let-item="item">
-                                  <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item?.label">{{ item?.label }}</span>
-                                </ng-template>
-                                <ng-template ng-option-tmp let-item="item">
-                                  <span class="d-inline-block text-truncate w-100 align-middle" [attr.title]="item.label">{{ item.label }}</span>
-                                </ng-template>
-                              </ng-select>
-                              <small class="form-text text-muted d-block mt-1">
-                                Las opciones salen de Hacienda según el NIT de arriba (9–12 dígitos). Si no aparece nada, verifique el NIT y abra de nuevo el listado o espere unos segundos.
-                              </small>
-                            }
                         </div>
                         <div class="form-group col-6 col-lg-3">
                             <label for="telefono">Teléfono:</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_telefono" [(ngModel)]="proveedor.empresa_telefono">
                         </div>
+                        }
                         @if (proveedor.tipo == 'Empresa') {
                           <div class="form-group col-6 col-lg-3">
                             <label for="pais">Pais:</label>
@@ -465,6 +561,17 @@
                 </div>
               </div>
             }
+            <hr class="my-4">
+            <div class="row">
+                <div class="form-group col-lg-6">
+                    <label for="etiquetas_modal_pv">Etiquetas:</label>
+                    <tag-input theme='bootstrap' secondaryPlaceholder="Etiquetas" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="proveedor.etiquetas" name="etiquetas_modal_pv"></tag-input>
+                </div>
+                <div class="form-group col-lg-6">
+                    <label for="nota_modal_pv">Observaciones</label>
+                    <input type="text" class="form-control" id="nota_modal_pv" placeholder="Escribe aquí" name="nota" [(ngModel)]="proveedor.nota">
+                </div>
+            </div>
             <div class="row">
                 <div class="form-group col-md-12 mt-3">
                     <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">

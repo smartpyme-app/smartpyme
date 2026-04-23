@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -15,7 +16,7 @@ import { BaseComponent } from '@shared/base/base.component';
     selector: 'app-devolucion-compra',
     templateUrl: './devolucion-compra.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

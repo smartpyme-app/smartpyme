@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
@@ -15,7 +16,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
   selector: 'app-abonos-gastos',
   templateUrl: './abonos-gastos.component.html',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, PaginationComponent, LazyImageDirective],
+  imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, PaginationComponent, LazyImageDirective],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 

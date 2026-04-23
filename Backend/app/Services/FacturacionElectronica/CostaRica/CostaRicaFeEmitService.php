@@ -89,7 +89,7 @@ final class CostaRicaFeEmitService
         }
         $this->assertEmpresaCr($empresa);
         if (! $this->esDocumentoCompraElectronicaCr($compra->tipo_documento)) {
-            throw new RuntimeException('El tipo de documento debe ser «Compra electrónica» para emitir FEC (08).');
+            throw new RuntimeException('El tipo de documento debe ser «Factura Electrónica de Compra» (o el nombre histórico «Compra electrónica») para emitir FEC (08).');
         }
         if ($this->compraTieneClaveFeCr($compra)) {
             throw new RuntimeException('La compra ya tiene comprobante electrónico emitido (clave registrada).');
@@ -118,7 +118,7 @@ final class CostaRicaFeEmitService
         }
         $this->assertEmpresaCr($empresa);
         if (! $this->esDocumentoCompraElectronicaCr($gasto->tipo_documento)) {
-            throw new RuntimeException('El tipo de documento debe ser «Compra electrónica» para emitir FEC (08).');
+            throw new RuntimeException('El tipo de documento debe ser «Factura Electrónica de Compra» (o el nombre histórico «Compra electrónica») para emitir FEC (08).');
         }
         if ($this->gastoTieneClaveFeCr($gasto)) {
             throw new RuntimeException('El gasto ya tiene comprobante electrónico emitido (clave registrada).');
@@ -420,8 +420,19 @@ final class CostaRicaFeEmitService
     private function esDocumentoFacturaCr(?string $nombreDocumento): bool
     {
         $n = mb_strtolower(trim((string) $nombreDocumento), 'UTF-8');
+        // FEC 08 u otros documentos con «compra» no deben emitirse como factura de venta 01.
+        if (str_contains($n, 'factura electrónica de compra')
+            || str_contains($n, 'factura electronica de compra')
+            || str_contains($n, 'compra electrónica')
+            || str_contains($n, 'compra electronica')) {
+            return false;
+        }
+        if (str_contains($n, 'orden de compra')) {
+            return false;
+        }
 
         return $n === 'factura'
+            || str_contains($n, 'factura electrónica')
             || str_contains($n, 'credito fiscal')
             || str_contains($n, 'crédito fiscal')
             || str_contains($n, 'exportación')
@@ -439,7 +450,10 @@ final class CostaRicaFeEmitService
     {
         $n = mb_strtolower(trim((string) $nombreDocumento), 'UTF-8');
 
-        return str_contains($n, 'compra electrónica') || str_contains($n, 'compra electronica');
+        return str_contains($n, 'compra electrónica')
+            || str_contains($n, 'compra electronica')
+            || str_contains($n, 'factura electrónica de compra')
+            || str_contains($n, 'factura electronica de compra');
     }
 
     /**

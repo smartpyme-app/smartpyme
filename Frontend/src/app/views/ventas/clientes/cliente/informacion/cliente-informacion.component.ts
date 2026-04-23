@@ -17,6 +17,12 @@ import { DuplicateCheckService } from '@services/duplicate-check.service';
 import { FeCrUbicacionService } from '@services/fe-cr-ubicacion.service';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
+import {
+    ContribuyenteActividadOption,
+    extractNombreContribuyenteDesdeAe,
+    mapContribuyenteAeResponseToActividades,
+} from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
+import { finalize } from 'rxjs/operators';
 
 @Component({
     selector: 'app-cliente-informacion',
@@ -47,6 +53,23 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   public diasCreditoOpciones = [3, 8, 10, 15, 30, 45, 60];
 
   private cdr = inject(ChangeDetectorRef);
+
+  /** Actividades económicas CR (Hacienda /fe/ae), mismo patrón que Mi cuenta. */
+  actividadesContribuyenteCr: ContribuyenteActividadOption[] = [];
+  actividadContribuyenteSeleccionada: ContribuyenteActividadOption | null = null;
+  contribuyenteCargandoCr = false;
+  private identificacionCrTimer: ReturnType<typeof setTimeout> | null = null;
+
+  readonly compareActividadContribuyenteCr = (
+      a: ContribuyenteActividadOption,
+      b: ContribuyenteActividadOption,
+  ): boolean => {
+      if (!a || !b) {
+          return false;
+      }
+
+      return this.normalizarCodigoActividadCr(a.codigo) === this.normalizarCodigoActividadCr(b.codigo);
+  };
 
   puedeEditarCreditoCliente(): boolean {
     const tipo = this.apiService.auth_user()?.tipo || '';
@@ -87,6 +110,174 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
         return this.feCrUbic.esCostaRicaFe();
     }
 
+    /** Debounce: al completar NIT (empresa) o cédula (persona) consulta Hacienda. */
+    onIdentificacionClienteCrDebounced(): void {
+        if (!this.esCostaRicaFe()) {
+            return;
+        }
+        if (this.identificacionCrTimer !== null) {
+            clearTimeout(this.identificacionCrTimer);
+        }
+        this.identificacionCrTimer = setTimeout(() => {
+            this.identificacionCrTimer = null;
+            this.cargarContribuyenteDesdeHacienda({ silenciarAlertaSinActividades: true });
+        }, 600);
+    }
+
+    onActividadContribuyenteCrChange(item: ContribuyenteActividadOption | null): void {
+        if (item) {
+            this.cliente.cod_giro = item.codigo;
+            this.cliente.giro = item.descripcion;
+        } else {
+            this.cliente.cod_giro = null;
+            this.cliente.giro = '';
+        }
+        this.cdr.markForCheck();
+    }
+
+    private normalizarCodigoActividadCr(codigo: string): string {
+        return String(codigo ?? '').replace(/\D/g, '');
+    }
+
+    private aplicarPaisPorDefectoDesdeEmpresa(): void {
+        if (!this.esCostaRicaFe() || !this.esNuevo || !this.paises?.length) {
+            return;
+        }
+        const emp = this.apiService.auth_user()?.empresa;
+        if (!emp) {
+            return;
+        }
+        let hit: { cod: string | number; nombre: string } | undefined = undefined;
+        const codEmp = emp.cod_pais != null ? String(emp.cod_pais).trim() : '';
+        if (codEmp !== '') {
+            hit = this.paises.find((p: any) => String(p.cod) === codEmp);
+        }
+        if (!hit && emp.pais) {
+            hit = this.paises.find((p: any) => p.nombre === emp.pais);
+        }
+        if (hit) {
+            this.cliente.cod_pais = hit.cod;
+            this.cliente.pais = hit.nombre;
+            this.cdr.markForCheck();
+        }
+    }
+
+    private cargarContribuyenteDesdeHacienda(opciones?: {
+        silenciarAlertaSinActividades?: boolean;
+    }): void {
+        if (!this.esCostaRicaFe()) {
+            return;
+        }
+        let raw = '';
+        if (this.cliente.tipo === 'Empresa') {
+            raw = String(this.cliente?.nit ?? '');
+        } else if (this.cliente.tipo === 'Persona') {
+            raw = String(this.cliente?.dui ?? '');
+        } else {
+            return;
+        }
+        const id = raw.replace(/\D/g, '');
+        if (id.length < 9 || id.length > 12) {
+            return;
+        }
+
+        this.contribuyenteCargandoCr = true;
+        this.cdr.markForCheck();
+        this.apiService
+            .getAll('fe-cr/contribuyente', { identificacion: id })
+            .pipe(
+                this.untilDestroyed(),
+                finalize(() => {
+                    this.contribuyenteCargandoCr = false;
+                    this.cdr.markForCheck();
+                }),
+            )
+            .subscribe({
+                next: (body) => {
+                    const nombre = extractNombreContribuyenteDesdeAe(body);
+                    if (nombre) {
+                        if (this.cliente.tipo === 'Empresa' && !String(this.cliente.nombre_empresa ?? '').trim()) {
+                            this.cliente.nombre_empresa = nombre;
+                        } else if (this.cliente.tipo === 'Persona' && !String(this.cliente.nombre ?? '').trim()) {
+                            this.cliente.nombre = nombre;
+                        }
+                    }
+                    const list = mapContribuyenteAeResponseToActividades(body);
+                    const sel = this.actividadContribuyenteSeleccionada;
+                    let merged = list;
+                    if (sel?.codigo) {
+                        if (list.length > 0 && !list.some((a) => this.compareActividadContribuyenteCr(a, sel))) {
+                            merged = [sel, ...list];
+                        }
+                        if (list.length === 0) {
+                            merged = [sel];
+                        }
+                    }
+                    this.actividadesContribuyenteCr = merged;
+                    if (
+                        list.length === 0 &&
+                        !opciones?.silenciarAlertaSinActividades
+                    ) {
+                        this.alertService.warning(
+                            'Hacienda',
+                            'No se encontraron actividades económicas para esta identificación. Verifique el número o intente más tarde.',
+                        );
+                    }
+                    this.reconciliarSeleccionActividadContribuyenteCr();
+                    this.cdr.markForCheck();
+                },
+                error: (e) => this.alertService.error(e),
+            });
+    }
+
+    private reconciliarSeleccionActividadContribuyenteCr(): void {
+        const sel = this.actividadContribuyenteSeleccionada;
+        if (!sel?.codigo) {
+            return;
+        }
+        const hit = this.actividadesContribuyenteCr.find((a) =>
+            this.compareActividadContribuyenteCr(a, sel),
+        );
+        if (hit) {
+            this.actividadContribuyenteSeleccionada = hit;
+            this.onActividadContribuyenteCrChange(hit);
+        }
+        this.cdr.markForCheck();
+    }
+
+    private syncActividadContribuyenteCrDesdeCliente(): void {
+        if (!this.esCostaRicaFe()) {
+            return;
+        }
+        const rawCod = String(this.cliente?.cod_giro ?? '').trim();
+        const desc = String(this.cliente?.giro ?? '').trim();
+        const soloDigitos = rawCod.replace(/\D/g, '');
+        if (soloDigitos.length === 13) {
+            this.actividadContribuyenteSeleccionada = null;
+            this.actividadesContribuyenteCr = [];
+            this.cdr.markForCheck();
+
+            return;
+        }
+        if (rawCod === '' && desc === '') {
+            this.actividadContribuyenteSeleccionada = null;
+            this.cdr.markForCheck();
+
+            return;
+        }
+        const synthetic: ContribuyenteActividadOption = {
+            codigo: rawCod,
+            descripcion: desc,
+            label: desc !== '' ? `${rawCod} — ${desc}` : rawCod,
+        };
+        this.actividadContribuyenteSeleccionada = synthetic;
+        if (!this.actividadesContribuyenteCr.some((a) => this.compareActividadContribuyenteCr(a, synthetic))) {
+            this.actividadesContribuyenteCr = [synthetic, ...this.actividadesContribuyenteCr];
+        }
+        this.reconciliarSeleccionActividadContribuyenteCr();
+        this.cdr.markForCheck();
+    }
+
     municipiosFiltradosCr(): any[] {
         return this.feCrUbic.municipiosPorProvincia(this.municipios, this.cliente?.cod_departamento);
     }
@@ -113,6 +304,13 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
                 this.municipios = r.mun;
                 this.distritos = r.dis;
                 this.cdr.markForCheck();
+            }
+        });
+
+        this.destroyRef.onDestroy(() => {
+            if (this.identificacionCrTimer !== null) {
+                clearTimeout(this.identificacionCrTimer);
+                this.identificacionCrTimer = null;
             }
         });
 
@@ -168,6 +366,13 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
             if (!this.cliente.contactos) {
               this.cliente.contactos = [];
             }
+            if (this.esCostaRicaFe()) {
+              this.syncActividadContribuyenteCrDesdeCliente();
+              queueMicrotask(() =>
+                this.cargarContribuyenteDesdeHacienda({ silenciarAlertaSinActividades: true }),
+              );
+            }
+            this.asegurarEtiquetasClienteArray();
             this.cdr.markForCheck();
           },
           (error) => {
@@ -187,8 +392,32 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
         this.cliente.limite_credito = null;
         this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
         this.cliente.id_usuario = this.apiService.auth_user().id;
+        if (this.esCostaRicaFe()) {
+          this.aplicarPaisPorDefectoDesdeEmpresa();
+        }
+        this.cliente.etiquetas = [];
       }
     });
+  }
+
+  /** ngx-chips requiere un array; la API puede devolver null o JSON string. */
+  private asegurarEtiquetasClienteArray(): void {
+    const e = this.cliente?.etiquetas;
+    if (e == null || e === '') {
+      this.cliente.etiquetas = [];
+      return;
+    }
+    if (Array.isArray(e)) {
+      return;
+    }
+    if (typeof e === 'string') {
+      try {
+        const parsed = JSON.parse(e);
+        this.cliente.etiquetas = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        this.cliente.etiquetas = [];
+      }
+    }
   }
 
   public setTipo(tipo: any) {
@@ -570,6 +799,11 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     this.cliente.cod_municipio = '';
     this.cliente.cod_distrito = '';
     this.cliente.cod_giro = '';
+    this.actividadesContribuyenteCr = [];
+    this.actividadContribuyenteSeleccionada = null;
+    if (this.esNuevo && this.esCostaRicaFe()) {
+      this.aplicarPaisPorDefectoDesdeEmpresa();
+    }
   }
 
   mapearCamposEntreTipos(desde: string, hacia: string) {

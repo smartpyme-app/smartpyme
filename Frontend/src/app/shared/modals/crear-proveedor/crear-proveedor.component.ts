@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, inject  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,9 +10,11 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { TagInputModule } from 'ngx-chips';
 import { FilterPipe } from '@pipes/filter.pipe';
 import {
     ContribuyenteActividadOption,
+    extractNombreContribuyenteDesdeAe,
     mapContribuyenteAeResponseToActividades,
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
 import { finalize } from 'rxjs/operators';
@@ -21,7 +23,7 @@ import { finalize } from 'rxjs/operators';
     selector: 'app-crear-proveedor',
     templateUrl: './crear-proveedor.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe],
     
 })
 export class CrearProveedorComponent extends BaseModalComponent implements OnInit {
@@ -38,6 +40,7 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
     actividadContribuyenteSeleccionada: ContribuyenteActividadOption | null = null;
     contribuyenteCargandoCr = false;
     private nitCrActividadesTimer: ReturnType<typeof setTimeout> | null = null;
+    private identificacionPersonaCrTimer: ReturnType<typeof setTimeout> | null = null;
 
     readonly compareActividadContribuyenteCr = (a: ContribuyenteActividadOption, b: ContribuyenteActividadOption): boolean => {
         if (!a || !b) {
@@ -77,7 +80,10 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
             return;
         }
         if (this.actividadesContribuyenteCr.length === 0) {
-            this.cargarActividadesContribuyenteDesdeHacienda({ silenciosoSiNitInvalido: true });
+            this.cargarActividadesContribuyenteDesdeHacienda({
+                silenciosoSiNitInvalido: true,
+                silenciarAlertaSinActividades: true,
+            });
         }
     }
 
@@ -110,7 +116,16 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
     }
 
     ngOnInit() {
-        
+        this.destroyRef.onDestroy(() => {
+            if (this.nitCrActividadesTimer !== null) {
+                clearTimeout(this.nitCrActividadesTimer);
+                this.nitCrActividadesTimer = null;
+            }
+            if (this.identificacionPersonaCrTimer !== null) {
+                clearTimeout(this.identificacionPersonaCrTimer);
+                this.identificacionPersonaCrTimer = null;
+            }
+        });
     }
 
     override openModal(template: TemplateRef<any>) {
@@ -138,17 +153,34 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
                 this.syncActividadContribuyenteCrDesdeProveedor();
                 const nitCr = String(this.proveedor?.nit ?? '').replace(/\D/g, '');
                 if (nitCr.length >= 9 && nitCr.length <= 12) {
-                    this.cargarActividadesContribuyenteDesdeHacienda({ silenciosoSiNitInvalido: true });
+                    this.cargarActividadesContribuyenteDesdeHacienda({
+                        silenciosoSiNitInvalido: true,
+                        silenciarAlertaSinActividades: true,
+                    });
                 }
             }
+            if (this.esCostaRicaFe() && this.proveedor?.tipo === 'Persona') {
+                const idCr = String(this.proveedor?.dui ?? '').replace(/\D/g, '');
+                if (idCr.length >= 9 && idCr.length <= 12) {
+                    this.cargarActividadesContribuyenteDesdeHacienda({
+                        silenciosoSiNitInvalido: true,
+                        silenciarAlertaSinActividades: true,
+                    });
+                }
+            }
+            this.asegurarEtiquetasProveedorArray();
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{
             this.proveedor = {};
             this.proveedor.tipo = 'Persona';
             this.proveedor.id_usuario = this.apiService.auth_user().id;
             this.proveedor.id_empresa = this.apiService.auth_user().id_empresa;
+            this.proveedor.etiquetas = [];
             this.actividadesContribuyenteCr = [];
             this.actividadContribuyenteSeleccionada = null;
+            if (this.esCostaRicaFe()) {
+                this.aplicarPaisPorDefectoDesdeEmpresa();
+            }
         }
         super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
     }
@@ -172,7 +204,26 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
         }
         this.nitCrActividadesTimer = setTimeout(() => {
             this.nitCrActividadesTimer = null;
-            this.cargarActividadesContribuyenteDesdeHacienda({ silenciosoSiNitInvalido: true });
+            this.cargarActividadesContribuyenteDesdeHacienda({
+                silenciosoSiNitInvalido: true,
+                silenciarAlertaSinActividades: true,
+            });
+        }, 600);
+    }
+
+    onIdentificacionProveedorPersonaCrDebounced(): void {
+        if (!this.esCostaRicaFe() || this.proveedor?.tipo !== 'Persona') {
+            return;
+        }
+        if (this.identificacionPersonaCrTimer !== null) {
+            clearTimeout(this.identificacionPersonaCrTimer);
+        }
+        this.identificacionPersonaCrTimer = setTimeout(() => {
+            this.identificacionPersonaCrTimer = null;
+            this.cargarActividadesContribuyenteDesdeHacienda({
+                silenciosoSiNitInvalido: true,
+                silenciarAlertaSinActividades: true,
+            });
         }, 600);
     }
 
@@ -190,13 +241,24 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
         return String(codigo ?? '').replace(/\D/g, '');
     }
 
-    cargarActividadesContribuyenteDesdeHacienda(opciones?: { silenciosoSiNitInvalido?: boolean }): void {
-        const nit = String(this.proveedor?.nit ?? '').replace(/\D/g, '');
-        if (nit.length < 9 || nit.length > 12) {
+    cargarActividadesContribuyenteDesdeHacienda(opciones?: {
+        silenciosoSiNitInvalido?: boolean;
+        silenciarAlertaSinActividades?: boolean;
+    }): void {
+        let raw = '';
+        if (this.proveedor?.tipo === 'Empresa') {
+            raw = String(this.proveedor?.nit ?? '');
+        } else if (this.proveedor?.tipo === 'Persona') {
+            raw = String(this.proveedor?.dui ?? '');
+        } else {
+            return;
+        }
+        const id = raw.replace(/\D/g, '');
+        if (id.length < 9 || id.length > 12) {
             if (!opciones?.silenciosoSiNitInvalido) {
                 this.alertService.warning(
                     'Identificación',
-                    'Ingrese una identificación válida (9 a 12 dígitos) en el campo NIT del proveedor.',
+                    'Ingrese una identificación válida (9 a 12 dígitos).',
                 );
             }
             return;
@@ -204,7 +266,7 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
 
         this.contribuyenteCargandoCr = true;
         this.apiService
-            .getAll('fe-cr/contribuyente', { identificacion: nit })
+            .getAll('fe-cr/contribuyente', { identificacion: id })
             .pipe(
                 this.untilDestroyed(),
                 finalize(() => {
@@ -213,6 +275,20 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
             )
             .subscribe({
                 next: (body) => {
+                    const nombre = extractNombreContribuyenteDesdeAe(body);
+                    if (nombre) {
+                        if (
+                            this.proveedor.tipo === 'Empresa' &&
+                            !String(this.proveedor.nombre_empresa ?? '').trim()
+                        ) {
+                            this.proveedor.nombre_empresa = nombre;
+                        } else if (
+                            this.proveedor.tipo === 'Persona' &&
+                            !String(this.proveedor.nombre ?? '').trim()
+                        ) {
+                            this.proveedor.nombre = nombre;
+                        }
+                    }
                     const list = mapContribuyenteAeResponseToActividades(body);
                     const sel = this.actividadContribuyenteSeleccionada;
                     let merged = list;
@@ -225,10 +301,10 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
                         }
                     }
                     this.actividadesContribuyenteCr = merged;
-                    if (list.length === 0) {
+                    if (list.length === 0 && !opciones?.silenciarAlertaSinActividades) {
                         this.alertService.warning(
                             'Hacienda',
-                            'No se encontraron actividades económicas para esta identificación. Verifique el NIT o intente más tarde.',
+                            'No se encontraron actividades económicas para esta identificación. Verifique el número o intente más tarde.',
                         );
                     }
                     this.reconciliarSeleccionActividadContribuyenteCr();
@@ -332,6 +408,47 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
             this.saving = false;
             this.alertService.success('Proveedor creado', 'Tu proveedor fue añadido exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
+    }
+
+    private aplicarPaisPorDefectoDesdeEmpresa(): void {
+        if (!this.esCostaRicaFe() || !this.paises?.length) {
+            return;
+        }
+        const emp = this.apiService.auth_user()?.empresa;
+        if (!emp) {
+            return;
+        }
+        let hit: { cod: string | number; nombre: string } | undefined = undefined;
+        const codEmp = emp.cod_pais != null ? String(emp.cod_pais).trim() : '';
+        if (codEmp !== '') {
+            hit = this.paises.find((p: any) => String(p.cod) === codEmp);
+        }
+        if (!hit && emp.pais) {
+            hit = this.paises.find((p: any) => p.nombre === emp.pais);
+        }
+        if (hit) {
+            this.proveedor.cod_pais = hit.cod;
+            this.proveedor.pais = hit.nombre;
+        }
+    }
+
+    private asegurarEtiquetasProveedorArray(): void {
+        const e = this.proveedor?.etiquetas;
+        if (e == null || e === '') {
+            this.proveedor.etiquetas = [];
+            return;
+        }
+        if (Array.isArray(e)) {
+            return;
+        }
+        if (typeof e === 'string') {
+            try {
+                const parsed = JSON.parse(e);
+                this.proveedor.etiquetas = Array.isArray(parsed) ? parsed : [];
+            } catch {
+                this.proveedor.etiquetas = [];
+            }
+        }
     }
 
     public verificarSiExiste(){

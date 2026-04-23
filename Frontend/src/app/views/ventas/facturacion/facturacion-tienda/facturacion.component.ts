@@ -9,6 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { NOMBRE_DOCUMENTO_CR } from '@views/ventas/documentos/documento-nombre-options';
 import { xmlComprobanteDesdeRechazoFeCr } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
 import { FuncionalidadesService } from '@services/functionalities.service';
@@ -372,13 +373,16 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.alertService.error('Debe crear un documento de cotización');
           }
         } else {
+          const cr = resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
           list = list.filter(
             (doc: any) =>
               doc.nombre === 'Factura' ||
+              (cr && doc.nombre === NOMBRE_DOCUMENTO_CR.factura) ||
               doc.nombre === 'Crédito fiscal' ||
               doc.nombre === 'Factura de exportación' ||
               doc.nombre === 'Factura comercial' ||
               doc.nombre === 'Ticket' ||
+              (cr && doc.nombre === NOMBRE_DOCUMENTO_CR.tiquete) ||
               doc.nombre === 'Recibo' ||
               doc.nombre === 'Sujeto excluido'
           );

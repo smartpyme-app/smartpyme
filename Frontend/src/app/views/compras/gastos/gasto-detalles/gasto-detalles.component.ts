@@ -1,5 +1,6 @@
 import { Component, OnInit,TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -15,7 +16,7 @@ import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear
     selector: 'app-gasto-detalles',
     templateUrl: './gasto-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, CrearAbonoGastoComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, CrearAbonoGastoComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GastoDetallesComponent extends BaseComponent implements OnInit {

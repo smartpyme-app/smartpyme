@@ -14,7 +14,8 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
-import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { NOMBRE_DOCUMENTO_CR } from '@views/ventas/documentos/documento-nombre-options';
 import { SharedDataService } from '@services/shared-data.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -317,9 +318,17 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
               this.alertService.error('Debe crear un documento de cotización');
             }
           } else {
+            const cr = resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
             this.documentos = this.documentos.filter(
               (doc: any) =>
-                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Ticket' || doc.nombre === 'Recibo' || doc.nombre === 'Sujeto excluido'
+                doc.nombre === 'Factura' ||
+                (cr && doc.nombre === NOMBRE_DOCUMENTO_CR.factura) ||
+                doc.nombre === 'Crédito fiscal' ||
+                doc.nombre === 'Factura de exportación' ||
+                doc.nombre === 'Ticket' ||
+                (cr && doc.nombre === NOMBRE_DOCUMENTO_CR.tiquete) ||
+                doc.nombre === 'Recibo' ||
+                doc.nombre === 'Sujeto excluido'
             );
           }
         }

@@ -790,7 +790,7 @@
             </div>
             <div class="col-md-4">
               <label class="form-label small">Documento</label>
-              <input type="text" class="form-control form-control-sm" [(ngModel)]="item.compra.tipo_documento" [name]="'bf-' + item.uid + '-tdoc'" readonly>
+              <input type="text" class="form-control form-control-sm" [value]="item.compra.tipo_documento" [attr.name]="'bf-' + item.uid + '-tdoc'" readonly>
             </div>
             <div class="col-md-6">
               <label class="form-label small">Proveedor *</label>

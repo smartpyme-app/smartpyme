@@ -3,7 +3,7 @@
       <h3>Orden de compra</h3>
     }
     @if (compra.cotizacion == 0) {
-      <h3>Compra</h3>
+      <h3>{{ compra.tipo_documento ? (compra.tipo_documento) : 'Compra' }}</h3>
     }
 
     <div class="d-flex align-items-center float-end gap-3">
@@ -328,7 +328,7 @@
 <ng-template #mfacturar>
   <div class="modal-header">
     <div class="modal-title text-center w-100">
-        <p class="my-0">{{compra.tipo_documento}}</p>
+        <p class="my-0">{{ compra.tipo_documento }}</p>
         <h3>{{compra.correlativo}}</h3>
     </div>
     <button type="button" class="close float-end btn-option" aria-label="Close" (click)="modalRef.hide()">

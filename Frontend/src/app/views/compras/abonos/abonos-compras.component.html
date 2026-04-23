@@ -91,7 +91,7 @@
                         <td>{{abono.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{abono.compra?.nombre_proveedor }}</td>
                         <td>
-                            {{abono.compra?.tipo_documento }} # {{abono.compra?.referencia }}
+                            {{abono.compra?.tipo_documento}} # {{abono.compra?.referencia }}
                             <a class="float-end d-none"  tooltip="Ver información de la compra" routerLink="/compra/{{abono.id_compra}}"><i class="fa fa-magnifying-glass"></i></a>
                         </td>
                         <td>{{abono.forma_pago}}</td>

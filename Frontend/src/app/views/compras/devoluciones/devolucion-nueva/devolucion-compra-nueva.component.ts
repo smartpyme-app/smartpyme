@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +17,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     selector: 'app-devolucion-compra-nueva',
     templateUrl: './devolucion-compra-nueva.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, DevolucionCompraDetallesComponent, CurrencyPipe],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, DevolucionCompraDetallesComponent, CurrencyPipe],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })

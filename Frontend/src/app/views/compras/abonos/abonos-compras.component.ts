@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -14,7 +15,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     selector: 'app-abonos-compras',
     templateUrl: './abonos-compras.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
