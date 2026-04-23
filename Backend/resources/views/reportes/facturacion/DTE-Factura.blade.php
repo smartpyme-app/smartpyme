@@ -26,6 +26,17 @@
             border: 1px solid #aaa;
         }
 
+        table.table.bordered.dte-detalle {
+            table-layout: fixed;
+            width: 100%;
+        }
+        table.table.bordered.dte-detalle th,
+        table.table.bordered.dte-detalle td {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            vertical-align: top;
+        }
+
         /* Propiedades para permitir división de tabla entre páginas */
         .table.bordered {
             page-break-inside: auto;
@@ -183,7 +194,7 @@
             </tr>
         </tbody>
     </table> 
-    <table class="table bordered">
+    <table class="table bordered dte-detalle">
         @php
             $dteCuentaTerceros = floatval($DTE['resumen']['totalNoGravado'] ?? 0);
             $ventaCuentaTerceros = floatval($registro->cuenta_a_terceros ?? 0);
@@ -232,9 +243,9 @@
                 @if ($muestraColCuentaTerceros)
                     <td class="border-bottom text-right">${{ number_format((float) ($detalle['noGravado'] ?? 0), 2) }}</td>
                 @endif
-                <td class="border-bottom text-right">${{ number_format($detalle['ventaNoSuj'], 2) }}</td>
-                <td class="border-bottom text-right">${{ number_format($detalle['ventaExenta'], 2) }}</td>
-                <td class="border-bottom text-right">${{ number_format($detalle['ventaGravada'], 2) }}</td>
+                <td class="border-bottom text-right">${{ number_format((float) ($detalle['ventaNoSuj'] ?? 0), 2) }}</td>
+                <td class="border-bottom text-right">${{ number_format((float) ($detalle['ventaExenta'] ?? 0), 2) }}</td>
+                <td class="border-bottom text-right">${{ number_format((float) ($detalle['ventaGravada'] ?? 0), 2) }}</td>
             </tr>
             @endforeach
         </tbody>
