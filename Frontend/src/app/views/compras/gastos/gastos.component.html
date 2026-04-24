@@ -42,6 +42,7 @@
                 <option value="Cancelado">Cancelado</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="Confirmado">Confirmado</option>
+                <option value="Pagado">Pagado</option>
             </select>
             <ng-select name="id_proveedor" (change)="filtrarGastos()" [(ngModel)]="filtros.id_proveedor" class="form-select p-0 border-0 bg-default  w-auto">
                 <ng-option value="">Proveedor</ng-option>
@@ -87,7 +88,7 @@
                         <td>{{gasto.tipo_documento}} #{{gasto.referencia}}</td>
                         <td>{{gasto.forma_pago}}</td>
                         <td>
-                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado', 'bg-warning' : gasto.estado == 'Pendiente', 'bg-success' : gasto.estado == 'Confirmado'}">
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado', 'bg-warning' : gasto.estado == 'Pendiente', 'bg-success' : gasto.estado == 'Confirmado', 'bg-light-info text-info' : gasto.estado == 'Pagado'}">
                                 {{ gasto.estado }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && gasto.sello_mh">
                                     ✅                       
@@ -111,7 +112,7 @@
                                     <a routerLink="/gasto/detalles/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="gasto.estado == 'Pendiente' && apiService.canEditTest('gastos.editar')" (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="gasto.estado == 'Pendiente' && apiService.canEditTest('gastos.editar')" (click)="openAbono(mabono, gasto)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-credit-card"></i> Pagar
                                     </a>
                                     <a *ngIf="apiService.canEditTest('gastos.editar')" routerLink="/gasto/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
@@ -144,6 +145,16 @@
     </div>
 </section>
 
+
+<ng-template #mabono>
+    <div class="modal-header d-block text-center">
+        <h4 class="modal-title">Agregar abono</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-crear-abono-gasto [gasto]="gasto" (update)="filtrarGastos()"></app-crear-abono-gasto>
+    </div>
+</ng-template>
 
 <ng-template #mfilter>
   <div class="modal-header">
@@ -190,6 +201,7 @@
                     <option value="Cancelado">Cancelado</option>
                     <option value="Pendiente">Pendiente</option>
                     <option value="Confirmado">Confirmado</option>
+                    <option value="Pagado">Pagado</option>
                 </select>
             </div>
             <div class="form-group col-lg-6">

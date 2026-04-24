@@ -1,11 +1,13 @@
 <?php 
 
 use App\Http\Controllers\Api\Compras\Gastos\GastosController;
+use App\Http\Controllers\Api\Compras\Gastos\GastosAbonosController;
 use App\Http\Controllers\Api\Compras\Gastos\CategoriasController;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/gastos',             [GastosController::class, 'index']);
     Route::post('/gasto',             [GastosController::class, 'store']);
+    Route::post('/gasto/abono',       [GastosAbonosController::class, 'store']);
     Route::get('/gasto/{id}',         [GastosController::class, 'read']);
     Route::post('/gastos/filtrar',    [GastosController::class, 'filter']);
     Route::delete('/gasto/{id}',      [GastosController::class, 'delete']);

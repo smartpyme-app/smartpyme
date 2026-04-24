@@ -141,6 +141,11 @@ export class GastosComponent implements OnInit {
         this.gasto = gasto;
         this.onSubmit();
     }
+
+    public openAbono(template: TemplateRef<any>, gasto: any) {
+        this.gasto = gasto;
+        this.modalRef = this.modalService.show(template);
+    }
     
     public onSubmit(){
         this.apiService.store('gasto', this.gasto).subscribe(gasto => { 
