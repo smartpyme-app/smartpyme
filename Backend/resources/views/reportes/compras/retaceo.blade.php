@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Retaceo #{{ $retaceo->codigo }} - {{ $retaceo->compra->nombre_proveedor ?? 'N/A' }}</title>
+    <title>Retaceo #{{ $retaceo->codigo }} - {{ $retaceo->numero_duca ?? 'N/A' }}</title>
     <style>
         *{
             margin: 0cm;
@@ -88,15 +88,36 @@
     <table>
         <tbody>
             <tr>
-                <td><h4>Información de la Compra</h4></td>
+                <td><h4>Compras incluidas</h4></td>
             </tr>
             <tr>
                 <td>
-                    <p><strong>Proveedor:</strong> {{ $retaceo->compra->nombre_proveedor ?? 'N/A' }}</p>
-                    <p><strong>Referencia:</strong> {{ $retaceo->compra->referencia ?? 'N/A' }}</p>
                     <p><strong>Número DUCA:</strong> {{ $retaceo->numero_duca ?? 'N/A' }}</p>
-                    <p><strong>Número Factura:</strong> {{ $retaceo->numero_factura ?? 'N/A' }}</p>
+                    <p><strong>Referencias / facturas:</strong> {{ $retaceo->numero_factura ?? 'N/A' }}</p>
                     <p><strong>Incoterm:</strong> {{ $retaceo->incoterm ?? 'N/A' }}</p>
+                    @php
+                        $comprasPdf = $retaceo->relationLoaded('compras') && $retaceo->compras->isNotEmpty()
+                            ? $retaceo->compras
+                            : collect($retaceo->compra ? [$retaceo->compra] : []);
+                    @endphp
+                    @if($comprasPdf->isNotEmpty())
+                        <table class="table" style="margin-top: 10px;">
+                            <thead>
+                                <tr>
+                                    <th class="border-bottom">Referencia</th>
+                                    <th class="border-bottom">Proveedor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($comprasPdf as $c)
+                                <tr>
+                                    <td class="border-bottom">{{ $c->referencia ?? 'N/A' }}</td>
+                                    <td class="border-bottom">{{ $c->nombre_proveedor ?? 'N/A' }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
                 </td>
                 <td>
                     <p><strong>Sucursal:</strong> {{ $retaceo->sucursal->nombre ?? 'N/A' }}</p>

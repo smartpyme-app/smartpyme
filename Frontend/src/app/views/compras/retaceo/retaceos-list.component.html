@@ -58,9 +58,20 @@
             <tr *ngFor="let retaceo of retaceos?.data">
               <td>{{ retaceo.codigo }}</td>
               <td>
-                <strong>{{ retaceo.compra?.nombre_proveedor || 'N/A' }}</strong>
-                <br>
-                <small>Ref: {{ retaceo.compra?.referencia || 'N/A' }}</small>
+                <ng-container *ngIf="retaceo.compras?.length > 1; else unaCompra">
+                  <strong>{{ retaceo.compras.length }} compras</strong>
+                  <br>
+                  <small class="text-muted">
+                    <span *ngFor="let c of retaceo.compras; let last = last">
+                      {{ c.referencia || '—' }}<span *ngIf="!last">, </span>
+                    </span>
+                  </small>
+                </ng-container>
+                <ng-template #unaCompra>
+                  <strong>{{ retaceo.compra?.nombre_proveedor || 'N/A' }}</strong>
+                  <br>
+                  <small>Ref: {{ retaceo.compra?.referencia || 'N/A' }}</small>
+                </ng-template>
               </td>
               <td>{{ retaceo.fecha | date:'dd/MM/yyyy' }}</td>
               <td>{{ retaceo.total_retaceado | currency }}</td>
