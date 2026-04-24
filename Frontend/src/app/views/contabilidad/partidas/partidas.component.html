@@ -551,11 +551,26 @@
                   </select>
                 </div>
                 <div class="col-md-6">
+                  <div class="form-group without-label mb-0">
+                    <div class="form-switch bg-light-info rounded">
+                      <label for="estadoCompararAnterior">Comparar con período anterior</label>
+                      <input
+                        class="form-check-input float-end"
+                        type="checkbox"
+                        role="switch"
+                        name="estadoCompararAnterior"
+                        id="estadoCompararAnterior"
+                        [(ngModel)]="reporte.estadoCompararAnterior"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
                   <div class="d-flex align-items-end h-100">
                     <div class="alert alert-success mb-0 w-100">
                       <small>
                         <i class="fas fa-chart-line me-1"></i>
-                        Calcula automáticamente utilidad/pérdida
+                        Por defecto solo el período elegido; active el interruptor arriba para añadir comparativa.
                       </small>
                     </div>
                   </div>

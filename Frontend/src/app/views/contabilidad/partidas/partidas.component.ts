@@ -1,23 +1,30 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router, ActivatedRoute } from '@angular/router';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { HttpCacheService } from '@services/http-cache.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-partidas',
-  templateUrl: './partidas.component.html',
-  styleUrls: ['./partidas.component.scss']
+    selector: 'app-partidas',
+    templateUrl: './partidas.component.html',
+    styleUrls: ['./partidas.component.scss'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, NgSelectModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PartidasComponent implements OnInit {
-  public partidas: any = [];
+export class PartidasComponent extends BasePaginatedModalComponent implements OnInit {
+  public partidas: any = {}; // Usar any porque tiene propiedades adicionales (total_anuladas, total_pendientes, totales_generales)
   public partida: any = {};
-  public loading: boolean = false;
-  public saving: boolean = false;
-  public filtros: any = {};
   public reporte = {
     fecha_inicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     fecha_fin: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
@@ -25,6 +32,8 @@ export class PartidasComponent implements OnInit {
     cuenta: '',
     tipo_descarga: 'pdf',
     tipo_cuenta: 'all',
+    /** Incluir columna y período anterior inmediato (misma duración) en Estado de resultados. */
+    estadoCompararAnterior: false,
   };
   public catalogo: any = [];
   public months: Array<{ value: number; label: string }> = [];
@@ -39,18 +48,8 @@ export class PartidasComponent implements OnInit {
     tipo: 'Ingreso'
   };
 
-  // NUEVO: Para mostrar totales
-  public totalesGenerales: any = {
-    gran_total_debe: 0,
-    gran_total_haber: 0,
-    total_registros_filtrados: 0
-  };
-
-  modalRef!: BsModalRef;
-
   /**
    * Catálogo para reportes: "Todas" + cuentas con etiqueta "código — nombre".
-   * Se usa con ng-select (mismo patrón que partida-detalles) para búsqueda integrada.
    */
   get opcionesTipoCuentaReporte(): Array<{ value: string | number; label: string }> {
     const opciones: Array<{ value: string | number; label: string }> = [
@@ -70,21 +69,48 @@ export class PartidasComponent implements OnInit {
     return opciones;
   }
 
+  // NUEVO: Para mostrar totales
+  public totalesGenerales: any = {
+    gran_total_debe: 0,
+    gran_total_haber: 0,
+    total_registros_filtrados: 0
+  };
+
   // NUEVO: Clave para persistir filtros
   private readonly FILTROS_STORAGE_KEY = 'partidas_filtros_v1';
 
   constructor(
-    public apiService: ApiService,
-    private alertService: AlertService,
-    private modalService: BsModalService,
+    protected override apiService: ApiService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
+    private cacheService: HttpCacheService,
     private router: Router,
-    private route: ActivatedRoute
-  ) {}
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
+  ) {
+    super(apiService, alertService, modalManager);
+  }
+
+  protected getPaginatedData(): PaginatedResponse | null {
+    return this.partidas;
+  }
+
+  protected setPaginatedData(data: PaginatedResponse): void {
+    this.partidas = data as any; // Cast a any para mantener propiedades adicionales
+  }
+
+  protected override onPaginateSuccess(response: PaginatedResponse): void {
+    // Actualizar totales al paginar
+    this.totalesGenerales = (response as any).totales_generales || this.totalesGenerales;
+  }
 
   ngOnInit() {
-    this.apiService.getAll('catalogo/list').subscribe(
+    this.apiService.getAll('catalogo/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (catalogo) => {
         this.catalogo = catalogo;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -198,11 +224,12 @@ export class PartidasComponent implements OnInit {
   public filtrarPartidas() {
     this.loading = true;
 
-    console.log('Filtros enviados al backend:', this.filtros);
     this.guardarFiltros();
 
-    this.apiService.getAll('partidas', this.filtros).subscribe(
-      (response) => {
+    this.apiService.getAll('partidas', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+      (response: any) => {
         this.partidas = response;
 
         // NUEVO: Guardar totales generales
@@ -214,8 +241,9 @@ export class PartidasComponent implements OnInit {
 
         this.loading = false;
         if (this.modalRef) {
-          this.modalRef.hide();
+          this.closeModal();
         }
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -224,20 +252,19 @@ export class PartidasComponent implements OnInit {
     );
   }
 
-  public openModal(template: TemplateRef<any>, partida: any) {
+  public override openModal(template: TemplateRef<any>, partida: any) {
     this.partida = partida;
-    this.modalRef = this.modalService.show(template, {
+    super.openModal(template, {
       class: 'modal-lg',
       backdrop: 'static',
     });
   }
 
   public openFilter(template: TemplateRef<any>) {
-    // Configuración específica para el modal de reportes
-    this.modalRef = this.modalService.show(template, {
+    this.openModalConfig(template, {
       class: 'modal-xl',
-      backdrop: 'static' as 'static',
-      keyboard: false
+      backdrop: 'static',
+      keyboard: false,
     });
   }
 
@@ -245,16 +272,17 @@ export class PartidasComponent implements OnInit {
    * NUEVO: Modal para reordenar correlativos
    */
   public openReordenarModal(template: TemplateRef<any>) {
-    this.alertService.modal = true;
-    this.modalRef = this.modalService.show(template, {
+    this.openModalConfig(template, {
       class: 'modal-md',
       backdrop: 'static',
     });
   }
 
   public setEstado(partida: any, estado: any) {
-    this.apiService.read('partida/', partida.id).subscribe(
-      (partidaCompleta) => {
+    this.apiService.read('partida/', partida.id)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+      (partidaCompleta: any) => {
         partidaCompleta.estado = estado;
         this.onSubmit(partidaCompleta);
       },
@@ -264,94 +292,103 @@ export class PartidasComponent implements OnInit {
     );
   }
 
-  public setEstadoChange(partida: any) {
-    this.apiService.store('partida', partida).subscribe(
-      (producto) => {
-        this.alertService.success(
-          'Partida actualizada',
-          'El estado de la partida fue actualizado.'
-        );
-      },
-      (error) => {
-        this.alertService.error(error);
+  public async setEstadoChange(partida: any) {
+    try {
+      await this.apiService.store('partida', partida)
+        .pipe(this.untilDestroyed())
+        .toPromise();
+
+      // Invalidar cache del item específico y listas relacionadas
+      if (partida?.id) {
+        this.cacheService.delete(`/partida/${partida.id}`);
       }
-    );
-  }
+      this.cacheService.invalidatePattern('/partidas');
+      this.cacheService.invalidatePattern('/partida');
 
-  public setPagination(event: any): void {
-    this.loading = true;
-    this.apiService
-      .paginate(this.partidas.path + '?page=' + event.page, this.filtros)
-      .subscribe(
-        (partidas) => {
-          this.partidas = partidas;
-
-          // NUEVO: Actualizar totales al paginar
-          this.totalesGenerales = partidas.totales_generales || this.totalesGenerales;
-
-          this.loading = false;
-        },
-        (error) => {
-          this.alertService.error(error);
-          this.loading = false;
-        }
+      this.alertService.success(
+        'Partida actualizada',
+        'El estado de la partida fue actualizado.'
       );
+    } catch (error: any) {
+      this.alertService.error(error);
+    }
   }
 
-  public delete(partida: any) {
-    Swal.fire({
+  // setPagination() ahora se hereda de BasePaginatedComponent
+
+  public async delete(partida: any) {
+    const result = await Swal.fire({
       title: '¿Estás seguro?',
       text: '¡No podrás revertir esto!',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminarlo',
       cancelButtonText: 'Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.apiService.delete('partida/', partida.id).subscribe(
-          (data) => {
-            for (let i = 0; i < this.partidas.data.length; i++) {
-              if (this.partidas.data[i].id == data.id)
-                this.partidas.data.splice(i, 1);
-            }
-          },
-          (error) => {
-            this.alertService.error(error);
-          }
-        );
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
-      }
     });
+
+    if (result.isConfirmed) {
+      try {
+        const data: any = await this.apiService.delete('partida/', partida.id)
+          .pipe(this.untilDestroyed())
+          .toPromise();
+
+        // Invalidar cache del item eliminado y listas relacionadas
+        if (partida?.id) {
+          this.cacheService.delete(`/partida/${partida.id}`);
+        }
+        this.cacheService.invalidatePattern('/partidas');
+        this.cacheService.invalidatePattern('/partida');
+
+        for (let i = 0; i < this.partidas.data.length; i++) {
+          if (this.partidas.data[i].id == data?.id)
+            this.partidas.data.splice(i, 1);
+        }
+      } catch (error: any) {
+        this.alertService.error(error);
+      }
+    }
   }
 
-  public onSubmit(partidaData?: any) {
+  public async onSubmit(partidaData?: any) {
     this.saving = true;
-    this.apiService.store('partida', partidaData || this.partida).subscribe(
-      (partida) => {
-        if (!this.partida.id) {
-          this.loadAll();
-          this.alertService.success(
-            'Partida creada',
-            'El partida fue añadida exitosamente.'
-          );
-        } else {
-          this.alertService.success(
-            'Partida guardada',
-            'El partida fue guardada exitosamente.'
-          );
-        }
-        this.saving = false;
-        if (this.modalRef) {
-          this.modalRef.hide();
-        }
-        this.alertService.modal = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
+    try {
+      const partidaToSave = partidaData || this.partida;
+      const partidaGuardada: any = await this.apiService.store('partida', partidaToSave)
+        .pipe(this.untilDestroyed())
+        .toPromise();
+
+      // Invalidar cache del item específico si se está editando
+      const isNew = !partidaToSave.id;
+      if (!isNew && partidaGuardada?.id) {
+        this.cacheService.delete(`/partida/${partidaGuardada.id}`);
       }
-    );
+      // Invalidar cache de listas relacionadas
+      this.cacheService.invalidatePattern('/partidas');
+      this.cacheService.invalidatePattern('/partida');
+
+      if (isNew) {
+        this.loadAll();
+        this.alertService.success(
+          'Partida creada',
+          'El partida fue añadida exitosamente.'
+        );
+      } else {
+        this.alertService.success(
+          'Partida guardada',
+          'El partida fue guardada exitosamente.'
+        );
+      }
+
+      if (this.modalRef) {
+        this.closeModal();
+      }
+      this.cdr.markForCheck();
+    } catch (error: any) {
+      this.alertService.error(error);
+    } finally {
+      this.saving = false;
+      this.cdr.markForCheck();
+    }
   }
 
   /**
@@ -360,15 +397,20 @@ export class PartidasComponent implements OnInit {
   public reordenarCorrelativos() {
     this.saving = true;
 
-    this.apiService.store('partidas/reordenar-correlativos', this.reordenamiento).subscribe({
-      next: (response) => {
+    this.apiService.store('partidas/reordenar-correlativos', this.reordenamiento)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+      next: (response: any) => {
         this.saving = false;
         this.alertService.success(
           'Correlativos reordenados',
           `Se reordenaron ${response.partidas_reordenadas} partidas exitosamente`
         );
         this.filtrarPartidas(); // Refrescar listado
-        this.modalRef?.hide();
+        if (this.modalRef) {
+          this.closeModal();
+        }
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.saving = false;
@@ -394,9 +436,7 @@ export class PartidasComponent implements OnInit {
     this.filtrarPartidas();
   }
 
-  /**
-   * URL única por descarga para evitar caché HTTP (navegador/CDN) en reportes GET.
-   */
+  /** URL única por descarga para evitar caché HTTP (navegador/CDN) en reportes GET. */
   private buildReportDownloadUrl(relativePath: string): string {
     const token = this.apiService.auth_token();
     return `${this.apiService.baseUrl}${relativePath}?token=${token}&_ts=${Date.now()}`;
@@ -538,26 +578,32 @@ export class PartidasComponent implements OnInit {
       this.reporte.fecha_fin &&
       this.reporte.tipo_descarga
     ) {
-      window.open(
-        this.buildReportDownloadUrl(
-          '/api/reportes/estado/resultados/' +
-            this.reporte.fecha_inicio +
-            '/' +
-            this.reporte.fecha_fin +
-            '/' +
-            this.reporte.tipo_descarga
-        )
+      const base = this.buildReportDownloadUrl(
+        '/api/reportes/estado/resultados/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_descarga
       );
+      const url =
+        this.reporte.estadoCompararAnterior === true
+          ? `${base}&comparar=1`
+          : base;
+      window.open(url);
     } else {
       alert('Por favor, llenar los campos requeridos.');
     }
   }
 
   public abrirPartida(partida: any) {
-    this.apiService.store('partidas/abrir', { id: partida.id }).subscribe({
+    this.apiService.store('partidas/abrir', { id: partida.id })
+      .pipe(this.untilDestroyed())
+      .subscribe({
       next: (response) => {
         this.alertService.success('Partida abierta', 'La partida ha sido reabierta exitosamente.');
         this.filtrarPartidas();
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error(error.error.error || 'Error al abrir la partida');
@@ -601,15 +647,20 @@ export class PartidasComponent implements OnInit {
       if (result.isConfirmed) {
         this.saving = true;
 
-        this.apiService.store('partidas/reordenar-correlativos', { todos: true }).subscribe({
-          next: (response) => {
+        this.apiService.store('partidas/reordenar-correlativos', { todos: true })
+          .pipe(this.untilDestroyed())
+          .subscribe({
+          next: (response: any) => {
             this.saving = false;
             this.alertService.success(
               'Reordenamiento completo',
               `Se reordenaron ${response.partidas_reordenadas} partidas de toda la empresa`
             );
             this.filtrarPartidas();
-            this.modalRef?.hide();
+            if (this.modalRef) {
+              this.closeModal();
+            }
+            this.cdr.markForCheck();
           },
           error: (error) => {
             this.saving = false;
