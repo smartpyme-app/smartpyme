@@ -55,7 +55,7 @@ class CXCService
         try {
             $partida = Partida::create([
                 'fecha'         => $cxc->fecha,
-                'tipo'          => 'Egreso',
+                'tipo'          => 'CxC',
                 'concepto'      => 'Abono a cuenta por cobrar. ' . ($venta->nombre_documento ?? 'Documento') . ' #' . ($venta->correlativo ?? 'Sin correlativo'),
                 'estado'        => 'Pendiente',
                 'referencia'    => 'Abono de Venta',
