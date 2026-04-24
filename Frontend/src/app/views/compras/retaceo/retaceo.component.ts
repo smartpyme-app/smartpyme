@@ -149,10 +149,11 @@ export class RetaceoComponent implements OnInit {
       }
     );
 
-    // Cargar gastos filtrados por bodega
-    this.apiService.getAll('gastos', this.filtros).subscribe(
+    // Gastos para retaceo: el listado paginado por defecto (10) ocultaba opciones en ng-select.
+    const filtrosGastos = { ...this.filtros, page: 1, paginate: 10000 };
+    this.apiService.getAll('gastos', filtrosGastos).subscribe(
       (gastos) => {
-        this.gastos = gastos.data;
+        this.gastos = gastos.data ?? [];
         // this.gastos = gastos.data.filter(
         //   (c: any) => c.estado === 'Confirmado'
         // );

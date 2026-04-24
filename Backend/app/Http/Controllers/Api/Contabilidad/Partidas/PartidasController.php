@@ -1127,8 +1127,10 @@ class PartidasController extends Controller
         ]);
 
         $configuracion = Configuracion::first();
+        // Fecha del documento de venta (no la del abono). whereDate evita fallos si el campo es datetime.
         $ventas = Venta::where('estado', 'Pendiente')
-                        ->where('fecha', $request->fecha)->get();
+            ->whereDate('fecha', $request->fecha)
+            ->get();
 
         // Partida
             $partida = [
@@ -1147,8 +1149,9 @@ class PartidasController extends Controller
             }
             $cuenta_iva = Cuenta::where('id', $configuracion->id_cuenta_iva_ventas)->first();
             $cuenta_iva_retenido = Cuenta::where('id', $configuracion->id_cuenta_iva_retenido_ventas)->first();
-            $cuenta_costos = Cuenta::where('id', $configuracion->id_cuenta_costo_venta)->first();
-            $cuenta_inventarios = Cuenta::where('id', $configuracion->id_cuenta_inventario)->first();
+            $cuenta_ventas_general = $configuracion->id_cuenta_ventas
+                ? Cuenta::where('id', $configuracion->id_cuenta_ventas)->first()
+                : null;
 
             foreach ($ventas as $venta) {
 
@@ -1183,17 +1186,20 @@ class PartidasController extends Controller
                             'id_cuenta' => $cuenta->id,
                             'codigo' => $cuenta->codigo,
                             'nombre_cuenta' => $cuenta->nombre,
-                            'concepto' => 'Inventarios ' . $venta->nombre_documento . ' #' . $venta->correlativo,
+                            'concepto' => 'Ingresos por ventas ' . $venta->nombre_documento . ' #' . $venta->correlativo,
                             'debe' => NULL,
                             'haber' => $detalle->total,
                             'saldo' => 0,
                         ];
                     }else{
+                        if (!$cuenta_ventas_general) {
+                            return Response()->json(['titulo' => 'No hay cuenta contable.', 'error' => 'No está configurada la cuenta general de ventas (productos sin categoría).', 'code' => 400], 400);
+                        }
                         $detalles[] = [
-                            'id_cuenta' => $cuenta_cxc->id,
-                            'codigo' => $cuenta_cxc->codigo,
-                            'nombre_cuenta' => $cuenta_cxc->nombre,
-                            'concepto' => 'Inventarios ' . $venta->nombre_documento . ' #' . $venta->correlativo,
+                            'id_cuenta' => $cuenta_ventas_general->id,
+                            'codigo' => $cuenta_ventas_general->codigo,
+                            'nombre_cuenta' => $cuenta_ventas_general->nombre,
+                            'concepto' => 'Ingresos por ventas ' . $venta->nombre_documento . ' #' . $venta->correlativo,
                             'debe' => NULL,
                             'haber' => $venta->sub_total,
                             'saldo' => 0,
@@ -1227,70 +1233,62 @@ class PartidasController extends Controller
                     ];
                 }
 
-
-                // Costo de venta
-
-                    $productos_venta = DetalleVenta::with('producto')->where('id_venta', $venta->id)->get();
-
-                    foreach ($productos_venta as $detalle) {
-                        $id_categoria = isset($detalle->producto) ? $detalle->producto->id_categoria : null;
-                        if($id_categoria){
-                            $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $venta->id_sucursal)->first();
-
-                            if(!$cuenta_categoria_sucursal){
-                                return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria, 'code' => 400], 400);
-                            }
-
-                            $cuenta_costos = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_costo)->first();
-
-                            if(!$cuenta_costos){
-                                return  Response()->json(['titulo' => 'La categoria no tiene cuenta de costo contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria, 'code' => 400], 400);
-                            }
-
-                            $detalles[] = [
-                                'id_cuenta' => $cuenta_costos->id,
-                                'codigo' => $cuenta_costos->codigo,
-                                'nombre_cuenta' => $cuenta_costos->nombre,
-                                'concepto' => 'Ingreso por costo de ventas ' . $venta->nombre_documento . '#' . $venta->correlativo,
-                                'debe' => $this->normalizeDecimal($detalle->costo * $detalle->cantidad),
-                                'haber' => NULL,
-                                'saldo' => 0,
-                            ];
-
-                            $cuenta_inventarios = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_inventario)->first();
-                            $detalles[] = [
-                                'id_cuenta' => $cuenta_inventarios->id,
-                                'codigo' => $cuenta_inventarios->codigo,
-                                'nombre_cuenta' => $cuenta_inventarios->nombre,
-                                'concepto' => 'Inventarios  ' . $venta->nombre_documento . '#' . $venta->correlativo,
-                                'debe' => NULL,
-                                'haber' => $this->normalizeDecimal($detalle->costo * $detalle->cantidad),
-                                'saldo' => 0,
-                            ];
-                        }else{
-                            $detalles[] = [
-                                'id_cuenta' => $cuenta_costos->id,
-                                'codigo' => $cuenta_costos->codigo,
-                                'nombre_cuenta' => $cuenta_costos->nombre,
-                                'concepto' => 'Ingreso por costo de ventas ' . $venta->nombre_documento . '#' . $venta->correlativo,
-                                'debe' => $venta->total_costo,
-                                'haber' => NULL,
-                                'saldo' => 0,
-                            ];
-                            $detalles[] = [
-                                'id_cuenta' => $cuenta_inventarios->id,
-                                'codigo' => $cuenta_inventarios->codigo,
-                                'nombre_cuenta' => $cuenta_inventarios->nombre,
-                                'concepto' => 'Inventarios ' . $venta->nombre_documento . '#' . $venta->correlativo,
-                                'debe' => NULL,
-                                'haber' => $venta->total_costo,
-                                'saldo' => 0,
-                            ];
-                        }
-                    }
-
+                // Costo de ventas: en generación individual va en una partida aparte (VentasService, 2.ª partida).
+                // No mezclar aquí para igualar criterio y evitar duplicar líneas en un solo asiento CxC.
 
             }
+
+        // Cobros del día: abonos confirmados (fecha del abono), sin partida contable aún (misma lógica que CXCService).
+        $abonosVentasHoy = AbonoVenta::query()
+            ->whereDate('fecha', $request->fecha)
+            ->where('estado', 'Confirmado')
+            ->get();
+
+        foreach ($abonosVentasHoy as $abono) {
+            if (Partida::existeParaDocumentoOrigen('Abono de Venta', $abono->id)) {
+                continue;
+            }
+            $formapago = FormaDePago::with('banco')->where('nombre', $abono->forma_pago)->first();
+            if (! $formapago || ! $formapago->banco || ! $formapago->banco->id_cuenta_contable) {
+                return Response()->json([
+                    'titulo' => 'Forma de pago sin cuenta contable',
+                    'error' => 'Configure la cuenta del banco para: '.$abono->forma_pago.' (abono venta #'.$abono->id.')',
+                    'code' => 400,
+                ], 400);
+            }
+            $cuenta_forma_pago = Cuenta::find($formapago->banco->id_cuenta_contable);
+            if (! $cuenta_forma_pago) {
+                return Response()->json([
+                    'titulo' => 'Cuenta contable no encontrada',
+                    'error' => 'Forma de pago: '.$abono->forma_pago,
+                    'code' => 400,
+                ], 400);
+            }
+
+            $ventaRef = Venta::find($abono->id_venta);
+            $refTxt = $ventaRef
+                ? (($ventaRef->nombre_documento ?? 'Documento').' #'.($ventaRef->correlativo ?? ''))
+                : ('Venta #'.$abono->id_venta);
+
+            $detalles[] = [
+                'id_cuenta' => $cuenta_forma_pago->id,
+                'codigo' => $cuenta_forma_pago->codigo,
+                'nombre_cuenta' => $cuenta_forma_pago->nombre,
+                'concepto' => 'Abono a cuenta por cobrar '.$refTxt,
+                'debe' => $abono->total,
+                'haber' => null,
+                'saldo' => 0,
+            ];
+            $detalles[] = [
+                'id_cuenta' => $cuenta_cxc->id,
+                'codigo' => $cuenta_cxc->codigo,
+                'nombre_cuenta' => $cuenta_cxc->nombre,
+                'concepto' => 'Abono a cuenta por cobrar '.$refTxt,
+                'debe' => null,
+                'haber' => $abono->total,
+                'saldo' => 0,
+            ];
+        }
 
         $data = [
             'partida' => $partida,
@@ -1477,7 +1475,9 @@ class PartidasController extends Controller
         ]);
 
         $configuracion = Configuracion::first();
-        $compras = Compra::where('estado', 'Pendiente')->where('fecha', $request->fecha)->get();
+        $compras = Compra::where('estado', 'Pendiente')
+            ->whereDate('fecha', $request->fecha)
+            ->get();
 
         // Partida
             $partida = [
@@ -1492,9 +1492,11 @@ class PartidasController extends Controller
 
             $detalles = [];
             $cuenta_cxp = Cuenta::where('id', $configuracion->id_cuenta_cxp)->first();
+            if (! $cuenta_cxp) {
+                return Response()->json(['titulo' => 'No hay cuenta contable.', 'error' => 'No está configurada la cuenta de cuentas por pagar.', 'code' => 400], 400);
+            }
             $cuenta_iva = Cuenta::where('id', $configuracion->id_cuenta_iva_compras)->first();
             $cuenta_iva_retenido = Cuenta::where('id', $configuracion->id_cuenta_iva_retenido_compras)->first();
-            $cuenta_costos = Cuenta::where('id', $configuracion->id_cuenta_costo_compra)->first();
             $cuenta_inventarios = Cuenta::where('id', $configuracion->id_cuenta_inventario)->first();
             $cuenta_renta_retenida = Cuenta::where('id', $configuracion->id_cuenta_renta_retenida_compras)->firstOrFail();
 
@@ -1521,7 +1523,7 @@ class PartidasController extends Controller
                             return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $compra->correlativo, 'code' => 400], 400);
                         }
 
-                        $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_ingresos)->first();
+                        $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_inventario)->first();
 
                         if(!$cuenta){
                             return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $compra->correlativo, 'code' => 400], 400);
@@ -1538,9 +1540,9 @@ class PartidasController extends Controller
                         ];
                     }else{
                         $detalles[] = [
-                            'id_cuenta' => $cuenta_cxp->id,
-                            'codigo' => $cuenta_cxp->codigo,
-                            'nombre_cuenta' => $cuenta_cxp->nombre,
+                            'id_cuenta' => $cuenta_inventarios->id,
+                            'codigo' => $cuenta_inventarios->codigo,
+                            'nombre_cuenta' => $cuenta_inventarios->nombre,
                             'concepto' => 'Inventarios compra de mercancía ' . $compra->tipo_documento . ' #' . $compra->referencia,
                             'debe' => $compra->sub_total,
                             'haber' => NULL,
@@ -1589,6 +1591,58 @@ class PartidasController extends Controller
 
 
             }
+
+        // Pagos del día: abonos a compras confirmados (fecha del abono), sin partida contable aún (misma lógica que CXPService).
+        $abonosCompraHoy = AbonoCompra::query()
+            ->whereDate('fecha', $request->fecha)
+            ->where('estado', 'Confirmado')
+            ->get();
+
+        foreach ($abonosCompraHoy as $abono) {
+            if (Partida::existeParaDocumentoOrigen('Abono de Compra', $abono->id)) {
+                continue;
+            }
+            $formapago = FormaDePago::with('banco')->where('nombre', $abono->forma_pago)->first();
+            if (! $formapago || ! $formapago->banco || ! $formapago->banco->id_cuenta_contable) {
+                return Response()->json([
+                    'titulo' => 'Forma de pago sin cuenta contable',
+                    'error' => 'Configure la cuenta del banco para: '.$abono->forma_pago.' (abono compra #'.$abono->id.')',
+                    'code' => 400,
+                ], 400);
+            }
+            $cuenta_forma_pago = Cuenta::find($formapago->banco->id_cuenta_contable);
+            if (! $cuenta_forma_pago) {
+                return Response()->json([
+                    'titulo' => 'Cuenta contable no encontrada',
+                    'error' => 'Forma de pago: '.$abono->forma_pago,
+                    'code' => 400,
+                ], 400);
+            }
+
+            $compraRef = Compra::find($abono->id_compra);
+            $refTxt = $compraRef
+                ? (($compraRef->tipo_documento ?? 'Documento').' #'.($compraRef->referencia ?? ''))
+                : ('Compra #'.$abono->id_compra);
+
+            $detalles[] = [
+                'id_cuenta' => $cuenta_cxp->id,
+                'codigo' => $cuenta_cxp->codigo,
+                'nombre_cuenta' => $cuenta_cxp->nombre,
+                'concepto' => 'Abono a cuenta por pagar '.$refTxt,
+                'debe' => $abono->total,
+                'haber' => null,
+                'saldo' => 0,
+            ];
+            $detalles[] = [
+                'id_cuenta' => $cuenta_forma_pago->id,
+                'codigo' => $cuenta_forma_pago->codigo,
+                'nombre_cuenta' => $cuenta_forma_pago->nombre,
+                'concepto' => 'Abono a cuenta por pagar '.$refTxt,
+                'debe' => null,
+                'haber' => $abono->total,
+                'saldo' => 0,
+            ];
+        }
 
         $data = [
             'partida' => $partida,

@@ -55,7 +55,7 @@ class CXPService
         try {
             $partida = Partida::create([
                 'fecha'         => $cxp->fecha,
-                'tipo'          => 'Egreso',
+                'tipo'          => 'CxP',
                 'concepto'      => 'Abono a cuenta por pagar. ' . ($compra->tipo_documento ?? 'Documento') . ' #' . ($compra->referencia ?? 'Sin referencia'),
                 'estado'        => 'Pendiente',
                 'referencia'    => 'Abono de Compra',
