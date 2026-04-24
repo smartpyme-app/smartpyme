@@ -31,7 +31,6 @@ import { ConciliacionesComponent } from '@views/contabilidad/bancos/conciliacion
 import { ConciliacionComponent } from '@views/contabilidad/bancos/conciliaciones/conciliacion/conciliacion.component';
 import { CatalogoCuentasComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuentas.component';
 import { CatalogoCuentaComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuenta/catalogo-cuenta.component';
-import { PartidasComponent } from '@views/contabilidad/partidas/partidas.component';
 import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.component';
 import { PartidaDetallesComponent } from '@views/contabilidad/partidas/partida/detalles/partida-detalles.component';
 import { ParditasDatosComponent } from './partidas/datos-partidas/datos-partida.component';
@@ -73,7 +72,6 @@ import { ComprasModule } from '@views/compras/compras.module';
     TransaccionComponent,
     CatalogoCuentasComponent,
     CatalogoCuentaComponent,
-    PartidasComponent,
     PartidaComponent,
     PartidaDetallesComponent,
     ConciliacionesComponent,
@@ -100,7 +98,6 @@ import { ComprasModule } from '@views/compras/compras.module';
     TransaccionComponent,
     CatalogoCuentasComponent,
     CatalogoCuentaComponent,
-    PartidasComponent,
     PartidaComponent,
     PartidaDetallesComponent,
     ConciliacionesComponent,

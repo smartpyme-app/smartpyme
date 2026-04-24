@@ -4,176 +4,287 @@
     <title>Balance General</title>
     <style>
         * {
-            font-size: 11px;
+            font-size: 10px;
             margin: 0;
             padding: 0;
         }
 
         html, body {
-            width: 19.5cm;
-            height: 26cm;
-            font-family: Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
         }
 
         #balance {
-            margin: 1cm;
-            position: relative;
+            margin: 0.8cm;
         }
 
         .header {
             text-align: center;
-            font-weight: bold;
-            margin-bottom: 30px;
+            margin-bottom: 18px;
         }
 
-        .header h1 {
-            font-size: 16px;
+        .logo {
+            max-height: 64px;
+            max-width: 180px;
             margin-bottom: 8px;
         }
 
+        .header h1 {
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
         .header h2 {
-            font-size: 14px;
-            margin-bottom: 5px;
+            font-size: 13px;
+            margin-bottom: 4px;
+            font-weight: bold;
         }
 
-        .header h3 {
-            font-size: 12px;
-            margin-bottom: 3px;
+        .header .sub {
+            font-size: 10px;
+            margin-bottom: 2px;
         }
 
-        .balance-table {
+        .note {
+            font-size: 9px;
+            font-style: italic;
+            margin-top: 6px;
+            color: #333;
+        }
+
+        table.main {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 25px;
         }
 
-        .balance-table td {
-            vertical-align: top;
+        table.main > tbody > tr > td {
             width: 50%;
-            padding: 0 10px;
+            vertical-align: top;
+            padding: 0 8px;
         }
 
-        .section-title {
+        .section-major {
             font-weight: bold;
-            font-size: 13px;
-            margin-bottom: 10px;
-            text-decoration: underline;
+            font-size: 11px;
             text-align: center;
+            text-decoration: underline;
+            margin: 10px 0 6px 0;
         }
 
-        .account-line {
-            margin-bottom: 3px;
+        .section-minor {
+            font-weight: bold;
+            font-size: 10px;
+            margin: 8px 0 4px 0;
+        }
+
+        .row-line td {
             padding: 2px 0;
         }
 
-        .account-name {
-            display: inline-block;
-            width: 70%;
-            text-align: left;
+        .col-label {
+            width: 72%;
         }
 
-        .account-amount {
-            display: inline-block;
+        .col-amt {
             width: 28%;
             text-align: right;
         }
 
-        .total-line {
-            border-top: 2px solid black;
-            border-bottom: 2px solid black;
+        .subtotal td {
+            border-top: 1px solid #000;
             font-weight: bold;
-            margin-top: 10px;
+            padding-top: 4px;
+        }
+
+        .total-block td {
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+            font-weight: bold;
             padding: 5px 0;
         }
 
-        .subtotal-line {
-            border-top: 1px solid black;
+        .verify-ok {
+            margin-top: 14px;
+            padding: 6px;
+            text-align: center;
+            background: #d4edda;
             font-weight: bold;
-            margin-top: 8px;
-            padding: 3px 0;
         }
 
-        .section-break {
-            margin-bottom: 20px;
+        .verify-warn {
+            margin-top: 14px;
+            padding: 6px;
+            text-align: center;
+            background: #f8d7da;
+            font-weight: bold;
+        }
+
+        .period {
+            font-size: 9px;
+            color: #444;
+            margin-top: 4px;
         }
     </style>
 </head>
 <body>
+@php
+    $fmt = function ($n) {
+        $n = (float) $n;
+        if (abs($n) < 0.0005) {
+            return '—';
+        }
+        if ($n < 0) {
+            return '(' . number_format(abs($n), 2) . ')';
+        }
+        return number_format($n, 2);
+    };
+    $logoSrc = null;
+    if (!empty($empresa->logo)) {
+        $logoRel = ltrim(str_replace('\\', '/', (string) $empresa->logo), '/');
+        if ($logoRel !== '' && strpos($logoRel, '..') === false) {
+            $fullLogo = public_path('img' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $logoRel));
+            if (is_file($fullLogo)) {
+                $mime = null;
+                if (function_exists('finfo_open')) {
+                    $fi = finfo_open(FILEINFO_MIME_TYPE);
+                    if ($fi) {
+                        $mime = finfo_file($fi, $fullLogo) ?: null;
+                        finfo_close($fi);
+                    }
+                }
+                if (! $mime && function_exists('mime_content_type')) {
+                    $mime = @mime_content_type($fullLogo) ?: null;
+                }
+                if ($mime && strpos($mime, 'image/') === 0) {
+                    $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($fullLogo));
+                }
+            }
+        }
+    }
+@endphp
 
 <section id="balance">
     <div class="header">
+        @if($logoSrc)
+            <img class="logo" src="{{ $logoSrc }}" alt="">
+        @endif
         <h1>{{ $empresa->nombre }}</h1>
         <h2>BALANCE GENERAL</h2>
-        <h3>Al {{ $month_name }} de {{ $year }}</h3>
-        <h3>(Expresado en US Dólares)</h3>
+        <p class="sub">Estado de situación financiera</p>
+        <p class="sub">Al {{ $balance['fecha_corte_label'] ?? '' }}</p>
+        <p class="sub">(Expresado en dólares estadounidenses — USD)</p>
+        <p class="period">Periodo de movimientos considerado: {{ $fecha_inicio }} al {{ $fecha_fin }}</p>
     </div>
 
-    <table class="balance-table">
+    <table class="main">
         <tr>
-            <!-- COLUMNA IZQUIERDA: ACTIVOS -->
             <td>
-                <div class="section-title">ACTIVOS</div>
+                <div class="section-major">ACTIVOS</div>
 
-                @foreach($balance_general['activos'] as $activo)
-                    <div class="account-line">
-                        <span class="account-name">{{ $activo['nombre'] }}</span>
-                        <span class="account-amount">{{ number_format(abs($activo['saldo_final']), 2) }}</span>
-                    </div>
-                @endforeach
+                <div class="section-minor">{{ $balance['activo_corriente']['titulo'] ?? 'Activo corriente' }}</div>
+                <table style="width:100%; border-collapse:collapse;">
+                    @foreach(($balance['activo_corriente']['lineas'] ?? []) as $linea)
+                        <tr class="row-line">
+                            <td class="col-label">{{ $linea['etiqueta'] }}</td>
+                            <td class="col-amt">{{ $fmt($linea['monto'] ?? 0) }}</td>
+                        </tr>
+                    @endforeach
+                    <tr class="subtotal row-line">
+                        <td class="col-label">{{ $balance['activo_corriente']['total_etiqueta'] ?? '' }}</td>
+                        <td class="col-amt">{{ $fmt($balance['activo_corriente']['total'] ?? 0) }}</td>
+                    </tr>
+                </table>
 
-                <div class="total-line account-line">
-                    <span class="account-name">TOTAL ACTIVOS</span>
-                    <span class="account-amount">{{ number_format(abs($balance_general['totales']['activos']), 2) }}</span>
-                </div>
+                <div class="section-minor">{{ $balance['activo_no_corriente']['titulo'] ?? 'Activo no corriente' }}</div>
+                <table style="width:100%; border-collapse:collapse;">
+                    @foreach(($balance['activo_no_corriente']['lineas'] ?? []) as $linea)
+                        <tr class="row-line">
+                            <td class="col-label">{{ $linea['etiqueta'] }}</td>
+                            <td class="col-amt">{{ $fmt($linea['monto'] ?? 0) }}</td>
+                        </tr>
+                    @endforeach
+                    <tr class="subtotal row-line">
+                        <td class="col-label">{{ $balance['activo_no_corriente']['total_etiqueta'] ?? '' }}</td>
+                        <td class="col-amt">{{ $fmt($balance['activo_no_corriente']['total'] ?? 0) }}</td>
+                    </tr>
+                </table>
+
+                <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                    <tr class="total-block row-line">
+                        <td class="col-label">TOTAL ACTIVOS</td>
+                        <td class="col-amt">{{ $fmt($balance['totales']['activos'] ?? 0) }}</td>
+                    </tr>
+                </table>
             </td>
-
-            <!-- COLUMNA DERECHA: PASIVOS Y PATRIMONIO -->
             <td>
-                <!-- PASIVOS -->
-                <div class="section-title">PASIVOS</div>
+                <div class="section-major">PASIVOS Y PATRIMONIO</div>
 
-                @foreach($balance_general['pasivos'] as $pasivo)
-                    <div class="account-line">
-                        <span class="account-name">{{ $pasivo['nombre'] }}</span>
-                        <span class="account-amount">{{ number_format(abs($pasivo['saldo_final']), 2) }}</span>
-                    </div>
-                @endforeach
+                <div class="section-minor">{{ $balance['pasivo_corriente']['titulo'] ?? 'Pasivo corriente' }}</div>
+                <table style="width:100%; border-collapse:collapse;">
+                    @foreach(($balance['pasivo_corriente']['lineas'] ?? []) as $linea)
+                        <tr class="row-line">
+                            <td class="col-label">{{ $linea['etiqueta'] }}</td>
+                            <td class="col-amt">{{ $fmt($linea['monto'] ?? 0) }}</td>
+                        </tr>
+                    @endforeach
+                    <tr class="subtotal row-line">
+                        <td class="col-label">{{ $balance['pasivo_corriente']['total_etiqueta'] ?? '' }}</td>
+                        <td class="col-amt">{{ $fmt($balance['pasivo_corriente']['total'] ?? 0) }}</td>
+                    </tr>
+                </table>
 
-                @if(count($balance_general['pasivos']) > 0)
-                    <div class="subtotal-line account-line">
-                        <span class="account-name">TOTAL PASIVOS</span>
-                        <span class="account-amount">{{ number_format(abs($balance_general['totales']['pasivos']), 2) }}</span>
-                    </div>
-                @endif
+                <div class="section-minor">{{ $balance['pasivo_no_corriente']['titulo'] ?? 'Pasivo no corriente' }}</div>
+                <table style="width:100%; border-collapse:collapse;">
+                    @foreach(($balance['pasivo_no_corriente']['lineas'] ?? []) as $linea)
+                        <tr class="row-line">
+                            <td class="col-label">{{ $linea['etiqueta'] }}</td>
+                            <td class="col-amt">{{ $fmt($linea['monto'] ?? 0) }}</td>
+                        </tr>
+                    @endforeach
+                    <tr class="subtotal row-line">
+                        <td class="col-label">{{ $balance['pasivo_no_corriente']['total_etiqueta'] ?? '' }}</td>
+                        <td class="col-amt">{{ $fmt($balance['pasivo_no_corriente']['total'] ?? 0) }}</td>
+                    </tr>
+                </table>
 
-                <div class="section-break"></div>
+                <table style="width:100%; border-collapse:collapse; margin-top:6px;">
+                    <tr class="subtotal row-line">
+                        <td class="col-label">TOTAL PASIVOS</td>
+                        <td class="col-amt">{{ $fmt($balance['totales']['pasivos'] ?? 0) }}</td>
+                    </tr>
+                </table>
 
-                <!-- PATRIMONIO -->
-                <div class="section-title">PATRIMONIO</div>
+                <div class="section-minor">{{ $balance['patrimonio']['titulo'] ?? 'Patrimonio' }}</div>
+                <table style="width:100%; border-collapse:collapse;">
+                    @foreach(($balance['patrimonio']['lineas'] ?? []) as $linea)
+                        <tr class="row-line">
+                            <td class="col-label">{{ $linea['etiqueta'] }}</td>
+                            <td class="col-amt">{{ $fmt($linea['monto'] ?? 0) }}</td>
+                        </tr>
+                    @endforeach
+                    <tr class="subtotal row-line">
+                        <td class="col-label">{{ $balance['patrimonio']['total_etiqueta'] ?? '' }}</td>
+                        <td class="col-amt">{{ $fmt($balance['patrimonio']['total'] ?? 0) }}</td>
+                    </tr>
+                </table>
 
-                @foreach($balance_general['patrimonio'] as $patrimonio)
-                    <div class="account-line">
-                        <span class="account-name">{{ $patrimonio['nombre'] }}</span>
-                        <span class="account-amount">{{ number_format(abs($patrimonio['saldo_final']), 2) }}</span>
-                    </div>
-                @endforeach
-
-                @if(count($balance_general['patrimonio']) > 0)
-                    <div class="subtotal-line account-line">
-                        <span class="account-name">TOTAL PATRIMONIO</span>
-                        <span class="account-amount">{{ number_format(abs($balance_general['totales']['patrimonio']), 2) }}</span>
-                    </div>
-                @endif
-
-                <div class="total-line account-line">
-                    <span class="account-name">TOTAL PASIVOS + PATRIMONIO</span>
-                    <span class="account-amount">{{ number_format(abs($balance_general['totales']['pasivos'] + $balance_general['totales']['patrimonio']), 2) }}</span>
-                </div>
+                <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                    <tr class="total-block row-line">
+                        <td class="col-label">TOTAL PASIVOS + PATRIMONIO</td>
+                        <td class="col-amt">{{ $fmt($balance['totales']['pasivos_mas_patrimonio'] ?? 0) }}</td>
+                    </tr>
+                </table>
             </td>
         </tr>
     </table>
 
+    @if(!empty($balance['ecuacion_cuadra']) && $balance['ecuacion_cuadra'])
+        <div class="verify-ok">Ecuación contable verificada: Total activos = Total pasivos + Patrimonio.</div>
+    @else
+        <div class="verify-warn">
+            Diferencia en ecuación contable: {{ $fmt($balance['diferencia_ecuacion'] ?? 0) }}.
+            Revise clasificación de cuentas (rubros y nombres) y partidas del periodo.
+        </div>
+    @endif
 </section>
-
 </body>
 </html>
