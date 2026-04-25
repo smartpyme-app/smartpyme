@@ -272,8 +272,8 @@ getMensajeSuscripcion(): { mensaje: string; tipo: string } {
     };
   }
 
-  const diasVencidos = Math.abs(diasRestantes);
-  if (diasVencidos > this.DIAS_PRORROGA_SUSCRIPCION) {
+  // Solo mora (dias_faltantes < 0) fuera de gracia: coincide con SuscriptionGuard y bannerCuentaSuspendidaPorSaldosPendientes.
+  if (diasRestantes <= -this.DIAS_UMBRAL_SUSPENSION_ACCESO) {
     if (this.isAdmin()) {
       return {
         mensaje:
