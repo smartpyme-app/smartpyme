@@ -101,6 +101,7 @@ class EmpresasController extends Controller
         $request->validate([
             'nombre' => 'required|max:255',
             'iva' => 'required|numeric',
+            'woocommerce_sync_mode' => 'nullable|in:bidirectional,wc_to_sp,sp_to_wc',
         ]);
 
         if ($request->id) {

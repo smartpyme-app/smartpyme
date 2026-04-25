@@ -121,6 +121,7 @@ class Empresa extends Model
         'woocommerce_last_sync',
         'woocommerce_error',
         'woocommerce_canal_id',
+        'woocommerce_sync_mode',
 
         //Personalización
         'custom_empresa',
@@ -164,6 +165,7 @@ class Empresa extends Model
     protected $appends = [
         'estado_plan',
         'woocommerce_api_url',
+        'woocommerce_product_webhook_url',
         'status_conexion_woocommerce',
         'is_current_user_connected_to_woocommerce',
         'currency_symbol',
@@ -495,6 +497,36 @@ class Empresa extends Model
         return $user;
     }
 
+    public const WOOCOMMERCE_SYNC_BIDIRECTIONAL = 'bidirectional';
+    public const WOOCOMMERCE_SYNC_WC_TO_SP = 'wc_to_sp';
+    public const WOOCOMMERCE_SYNC_SP_TO_WC = 'sp_to_wc';
+
+    /**
+     * SmartPyme envía producto/stock a WooCommerce (observers, exportación masiva).
+     */
+    public function woocommerceSyncPushesToRemote(): bool
+    {
+        $mode = $this->woocommerce_sync_mode ?: self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
+        if (!in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_WC_TO_SP, self::WOOCOMMERCE_SYNC_SP_TO_WC], true)) {
+            $mode = self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
+        }
+
+        return in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_SP_TO_WC], true);
+    }
+
+    /**
+     * Se permite importar catálogo desde CSV de WooCommerce hacia SmartPyme.
+     */
+    public function woocommerceSyncAcceptsCatalogFromWoo(): bool
+    {
+        $mode = $this->woocommerce_sync_mode ?: self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
+        if (!in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_WC_TO_SP, self::WOOCOMMERCE_SYNC_SP_TO_WC], true)) {
+            $mode = self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
+        }
+
+        return in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_WC_TO_SP], true);
+    }
+
     public function getWooCommerceApiUrlAttribute()
     {
         if (empty($this->woocommerce_api_key)) {
@@ -502,6 +534,18 @@ class Empresa extends Model
         }
 
         return url('/api/webhook/woocommerce/' . $this->woocommerce_api_key);
+    }
+
+    /**
+     * URL para webhooks de producto (crear/actualizar en Woo) distinta de la de pedidos.
+     */
+    public function getWooCommerceProductWebhookUrlAttribute()
+    {
+        if (empty($this->woocommerce_api_key)) {
+            return null;
+        }
+
+        return url('/api/webhook/woocommerce/' . $this->woocommerce_api_key . '/producto');
     }
     public function getStatusConexionWoocommerceAttribute()
     {
