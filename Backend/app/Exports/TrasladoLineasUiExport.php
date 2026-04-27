@@ -6,16 +6,24 @@ use App\Models\Inventario\Producto;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
  * Excel de traslado a partir del listado en pantalla (stocks, bodegas y cantidades por fila).
  */
-class TrasladoLineasUiExport implements FromArray, WithHeadings, WithStyles, ShouldAutoSize, WithTitle, WithColumnFormatting
+class TrasladoLineasUiExport extends DefaultValueBinder implements FromArray, WithHeadings, WithStyles, ShouldAutoSize, WithTitle, WithColumnFormatting, WithCustomValueBinder, WithEvents
 {
     /** @var array<int, array<int, mixed>> */
     protected array $rows;
@@ -109,6 +117,7 @@ class TrasladoLineasUiExport implements FromArray, WithHeadings, WithStyles, Sho
 
         return [
             1 => ['font' => ['bold' => true, 'size' => 12], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E2EFDA']]],
+            'D' => ['numberFormat' => ['formatCode' => NumberFormat::FORMAT_TEXT]],
             'K' => ['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FCE4D6']]],
             'A1' => ['font' => ['color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFFFFF']]],
             'B1' => ['font' => ['color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFFFFF']]],
@@ -119,6 +128,7 @@ class TrasladoLineasUiExport implements FromArray, WithHeadings, WithStyles, Sho
     public function columnFormats(): array
     {
         return [
+            'D' => NumberFormat::FORMAT_TEXT,
             'I' => '#,##0.00',
             'J' => '#,##0.00',
             'K' => '#,##0.00',
@@ -128,5 +138,45 @@ class TrasladoLineasUiExport implements FromArray, WithHeadings, WithStyles, Sho
     public function title(): string
     {
         return 'Traslado de Inventario';
+    }
+
+    public function bindValue(Cell $cell, $value)
+    {
+        try {
+            [$col, $row] = Coordinate::coordinateFromString($cell->getCoordinate());
+        } catch (\Throwable $e) {
+            return parent::bindValue($cell, $value);
+        }
+
+        $row = (int) $row;
+        if ($col === 'D' && $row > 1) {
+            if ($value === null || $value === '') {
+                return parent::bindValue($cell, $value);
+            }
+            $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
+            $cell->getWorksheet()
+                ->getStyle($cell->getCoordinate())
+                ->getNumberFormat()
+                ->setFormatCode(NumberFormat::FORMAT_TEXT);
+
+            return true;
+        }
+
+        return parent::bindValue($cell, $value);
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                $lastRow = max(1, (int) $sheet->getHighestRow());
+                for ($r = 1; $r <= $lastRow; $r++) {
+                    $sheet->getStyle('D' . $r)
+                        ->getNumberFormat()
+                        ->setFormatCode(NumberFormat::FORMAT_TEXT);
+                }
+            },
+        ];
     }
 }

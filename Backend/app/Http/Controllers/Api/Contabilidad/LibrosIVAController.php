@@ -18,6 +18,7 @@ use App\Exports\Contabilidad\ElSalvador\LibroAnuladosExport;
 use App\Exports\Contabilidad\ElSalvador\AnexoAnuladosExport;
 use App\Exports\Contabilidad\ElSalvador\LibroSujetosExcluidosExport;
 use App\Exports\Contabilidad\ElSalvador\AnexoSujetosExcluidosExport;
+use App\Exports\Contabilidad\ElSalvador\SujetosExcluidosDteHelper;
 use App\Exports\Contabilidad\ElSalvador\LibroComprasExport;
 use App\Exports\Contabilidad\ElSalvador\AnexoComprasExport;
 use App\Exports\Contabilidad\ElSalvador\GlobalDttesExport;
@@ -110,19 +111,6 @@ class LibrosIVAController extends Controller
             return $venta->dte['sello'];
         }
         return $venta->sello_mh ?? '';
-    }
-
-    /**
-     * Total de operación propia: total del documento menos monto a cuenta de terceros.
-     * Evita doble conteo en exentas/gravadas frente a la columna «ventas a cuenta de terceros».
-     */
-    private function montoVentaPropioSinCuentaTerceros($venta): float
-    {
-        $total = (float) ($venta->total ?? 0);
-        $ct = (float) ($venta->cuenta_a_terceros ?? 0);
-        $neto = $total - $ct;
-
-        return $neto > 0 ? $neto : 0.0;
     }
 
     /**
@@ -258,7 +246,7 @@ class LibrosIVAController extends Controller
                 $exportaciones = $ventasDia->sum(function ($venta) {
                     $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
                     return strtolower($documentoNombre) === 'factura de exportación'
-                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
+                        ? (float) $venta->total
                         : 0;
                 });
 
@@ -269,9 +257,7 @@ class LibrosIVAController extends Controller
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva == 0
-                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
-                        : 0;
+                    return $venta->iva == 0 ? (float) $venta->total : 0;
                 });
 
                 $ventasGravadas = $ventasDia->sum(function ($venta) {
@@ -280,9 +266,7 @@ class LibrosIVAController extends Controller
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva > 0
-                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
-                        : 0;
+                    return $venta->iva > 0 ? (float) $venta->total : 0;
                 });
 
                 $ventasTerceros = $ventasDia->sum(function ($venta) {
@@ -290,7 +274,7 @@ class LibrosIVAController extends Controller
                 });
 
                 $totalDiario = $ventasDia->sum(function ($venta) {
-                    return $this->montoVentaPropioSinCuentaTerceros($venta);
+                    return (float) $venta->total;
                 });
 
                 $primeraVenta = $ventasOrdenadasPorCodigo->first();
@@ -830,16 +814,24 @@ class LibrosIVAController extends Controller
 
         $comprasData = $compras->map(function ($compra) {
             $proveedor = optional($compra->proveedor()->first());
+            $sello = SujetosExcluidosDteHelper::selloRecepcion($compra);
+            $codGen = SujetosExcluidosDteHelper::codigoGeneracion($compra);
+            if ($codGen === '' && $compra->codigo_generacion) {
+                $codGen = strtoupper((string) $compra->codigo_generacion);
+            }
 
             $data = [
                 'tipo_documento' => $proveedor->nit ? 'NIT' : 'DUI',  // A - TIPO DE DOCUMENTO
                 'num_documento' => $proveedor->nit ? $proveedor->nit : $proveedor->dui,  // B - NUMERO DE NIT, DI-II, IJ OTRO DOCUMENTO
                 'proveedor' => $compra->nombre_proveedor,  // C - NOMBRE, RAZ N SOCIAL O DENOMINACI N
                 'fecha' => $compra->fecha,  // D - FECHA DE EMISI N DEL DOCUMENTO
-                'serie' => $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
+                'sello_mh' => $sello,
+                'codigo_generacion' => $codGen,
+                'serie' => $compra->num_serie,  // serie física o auxiliar
                 'referencia' => $compra->referencia,  // F - NUMERO DE DOCUMENTO
                 'total' => $compra->total,  // G - MONTO DE LA OPERACIÖN
                 'iva' => $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
+                'renta_retenida' => (float) ($compra->renta_retenida ?? 0),
                 'tipo_operacion' => $compra->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
                 'clasificacion' =>  'Costo' ,  // J - CLASIFICACI Costo gasto
                 'sector' => $compra->sector,  // K - SECTOR
@@ -868,16 +860,24 @@ class LibrosIVAController extends Controller
         // Transformar gastos
         $gastosData = $gastos->map(function ($gasto) {
             $proveedor = optional($gasto->proveedor()->first());
+            $sello = SujetosExcluidosDteHelper::selloRecepcion($gasto);
+            $codGen = SujetosExcluidosDteHelper::codigoGeneracion($gasto);
+            if ($codGen === '' && $gasto->codigo_generacion) {
+                $codGen = strtoupper((string) $gasto->codigo_generacion);
+            }
 
             $data = [
                 'tipo_documento' => $proveedor->nit ? 'NIT' : 'DUI',
                 'num_documento' => $proveedor->nit ? $proveedor->nit : $proveedor->dui,
                 'proveedor' => $gasto->nombre_proveedor,
                 'fecha' => $gasto->fecha,
+                'sello_mh' => $sello,
+                'codigo_generacion' => $codGen,
                 'serie' => '',
                 'referencia' => $gasto->referencia,
                 'total' => $gasto->total,
                 'iva' => $gasto->iva,
+                'renta_retenida' => (float) ($gasto->renta_retenida ?? 0),
                 'tipo_operacion' => $gasto->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
                 'clasificacion' => 'Gasto' ,  // J - CLASIFICACI Costo gasto
                 'sector' => $gasto->sector,  // K - SECTOR

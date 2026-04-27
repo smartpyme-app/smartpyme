@@ -213,6 +213,9 @@
                         @if($empresa->telefono)<p style="margin: 0px;">Teléfono: {{ $empresa->telefono }}</p>@endif
                         @if($empresa->email)<p style="margin: 0px;">E-mail: {{ $empresa->email }}</p>@endif
                         @endif
+                        @if ($venta->id_cliente && $cliente && $cliente->tipo === 'Empresa')
+                            <p style="margin-top: 5px;"><b>RTN:</b> {{ $cliente->nit ?? '' }}</p>
+                        @endif
                         <p style="margin-top: 5px;"><b>Cliente: </b> {{ $venta->nombre_cliente }}</p>
                         <p><b>Dirección: </b> {{ $venta->id_cliente ? $cliente->direccion : '' }}</p>
                     </td>
@@ -222,7 +225,6 @@
                         <p><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
                         <p><b>ID Cliente:</b> {{ $venta->cliente ? $venta->cliente->codigo_cliente : '' }}</p>
                         <p><b>Cotización:</b> {{ $venta->num_cotizacion }}</p>
-                        <p><b>RTN:</b> {{ $venta->id_cliente ? $cliente->nit : '' }}</p>
                         <p><b>Teléfono:</b> {{ $venta->id_cliente ? $cliente->telefono : '' }}</p>
                     </td>
                 </tr>

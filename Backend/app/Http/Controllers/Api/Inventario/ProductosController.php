@@ -606,6 +606,14 @@ class ProductosController extends Controller
             'file.mimes' => 'El archivo debe ser CSV, TXT, XLSX o XLS.',
         ]);
 
+        $empresa = Empresa::find(Auth::user()->id_empresa);
+        if ($empresa && !$empresa->woocommerceSyncAcceptsCatalogFromWoo()) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'En el modo de sincronización actual (SmartPyme → WooCommerce) el catálogo se gestiona en SmartPyme. No se puede importar el CSV de WooCommerce. Cambie el modo en Mi cuenta, WooCommerce, si desea importar desde la tienda.',
+            ], 422);
+        }
+
         try {
             $import = new WooCommerceProductosImport();
             Excel::import($import, $request->file('file'));
@@ -793,6 +801,13 @@ class ProductosController extends Controller
         $user = Auth::user();
         $id_empresa = $user->id_empresa;
 
+        $empresa = Empresa::find($id_empresa);
+        if ($empresa && !$empresa->woocommerceSyncPushesToRemote()) {
+            return response()->json([
+                'error' => 'En el modo de sincronización actual (WooCommerce → SmartPyme) el catálogo se gestiona en la tienda. No se genera el CSV de exportación hacia WooCommerce. Cambie el modo en Mi cuenta, WooCommerce, si desea descargar productos para subirlos a la tienda.',
+            ], 422);
+        }
+
         $request->request->add(['id_empresa' => $id_empresa, 'user_id' => $user->id]);
 
         $productos = new WooCommerceExport();
@@ -832,6 +847,7 @@ class ProductosController extends Controller
 
     public function exportarPlantillaTraslado(Request $request)
     {
+        // Flujo nuevo: exportar líneas ya armadas en UI (POST JSON con «lineas»).
         if ($request->isMethod('post')) {
             $lineas = $request->input('lineas');
             if (!is_array($lineas)) {
@@ -850,7 +866,9 @@ class ProductosController extends Controller
             );
         }
 
-        $raw = $request->input('productos_ids');
+        // Flujo clásico (GET): plantilla según bodegas; productos_ids opcional (lista separada por comas o array).
+        // Compatibilidad con clientes que envían productos_ids como string "1,2,3" en query o body.
+        $raw = $request->input('productos_ids', $request->query('productos_ids'));
         if ($raw === null || $raw === '') {
             $productosIds = [];
         } elseif (is_array($raw)) {
@@ -860,9 +878,11 @@ class ProductosController extends Controller
         }
 
         $filtros = [
-            'id_bodega_origen' => $request->id_bodega_origen,
-            'id_bodega_destino' => $request->id_bodega_destino,
+            'id_bodega_origen' => $request->input('id_bodega_origen', $request->query('id_bodega_origen')),
+            'id_bodega_destino' => $request->input('id_bodega_destino', $request->query('id_bodega_destino')),
             'productos_ids' => $productosIds,
+            // Plantilla sin filas de producto (solo encabezados / columnas). GET ?plantilla_vacia=1
+            'plantilla_vacia' => $request->boolean('plantilla_vacia'),
         ];
 
         return Excel::download(

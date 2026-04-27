@@ -86,7 +86,10 @@ class MHDTEController extends Controller
     }
 
     public function generarDTESujetoExcluidoGasto(Request $request){
-        $gasto = Gasto::where('id', $request->id)->with('proveedor', 'empresa')->firstOrFail();
+        $gasto = Gasto::where('id', $request->id)->with('proveedor', 'empresa', 'detalles')->firstOrFail();
+        $this->aplicarMontosSujetoExcluidoDesdeRequest($gasto, $request, [
+            'renta_retenida', 'sub_total', 'iva', 'descuento', 'total', 'iva_percibido',
+        ]);
         $mh = new MHSujetoExcluidoGasto;
         $DTE = $mh->generarDTE($gasto);
 
@@ -95,10 +98,34 @@ class MHDTEController extends Controller
 
     public function generarDTESujetoExcluidoCompra(Request $request){
         $compra = Compra::where('id', $request->id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
+        $this->aplicarMontosSujetoExcluidoDesdeRequest($compra, $request, [
+            'renta_retenida', 'iva_retenido', 'sub_total', 'iva', 'descuento', 'total',
+        ]);
         $mh = new MHSujetoExcluidoCompra;
         $DTE = $mh->generarDTE($compra);
 
         return Response()->json($DTE, 200);
+    }
+
+    
+    private function aplicarMontosSujetoExcluidoDesdeRequest($registro, Request $request, array $campos): void
+    {
+        foreach ($campos as $campo) {
+            if (!$request->exists($campo)) {
+                continue;
+            }
+            $valor = $request->input($campo);
+            if ($valor === null || $valor === '') {
+                continue;
+            }
+            if ($campo === 'renta_retenida' && is_numeric($valor) && (float) $valor === 0.0) {
+                $yaPersistido = (float) ($registro->renta_retenida ?? 0);
+                if ($yaPersistido > 0) {
+                    continue;
+                }
+            }
+            $registro->{$campo} = is_numeric($valor) ? $valor + 0 : $valor;
+        }
     }
 
     public function generarContingencia(Request $request){

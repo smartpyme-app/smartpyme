@@ -58,10 +58,12 @@
                             <th>NUMERO DE NIT, DUI, OTRO DOCUMENTO</th>
                             <th>NOMBRE, RAZÓN SOCIAL O DENOMINACIÓN</th>
                             <th>FECHA DE EMISIÓN DEL DOCUMENTO</th>
-                            <th>NUMERO DE SERIE DEL DOCUMENTO</th>
-                            <th>NUMERO DE DOCUMENTO</th>
+                            <th>SELLO RECEPCIÓN MH</th>
+                            <th>CÓDIGO DE GENERACIÓN (DTE)</th>
+                            <th>REFERENCIA / CONTROL</th>
                             <th>MONTO DE LA OPERACIÓN</th>
                             <th>MONTO DE LA RETENCIÓN IVA 13%</th>
+                            <th>RETENCIÓN RENTA (PAGO A CUENTA)</th>
                             <th>TIPO DE OPERACIÓN</th>
                             <th>CLASIFICACIÓN</th>
                             <th>SECTOR</th>
@@ -71,10 +73,10 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="14" class="text-center" *ngIf="ivas?.length < 1 && !loading">
+                            <td colspan="15" class="text-center" *ngIf="ivas?.length < 1 && !loading">
                                 <span class="badge bg-primary">No tiene ivas registrados</span>
                             </td>
-                            <td colspan="14" class="text-center" *ngIf="loading">
+                            <td colspan="15" class="text-center" *ngIf="loading">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
@@ -83,10 +85,12 @@
                             <td>{{ iva.num_documento }}</td>
                             <td>{{ iva.proveedor }}</td>
                             <td>{{ iva.fecha }}</td>
-                            <td>{{ iva.serie }}</td>
+                            <td>{{ iva.sello_mh }}</td>
+                            <td>{{ iva.codigo_generacion }}</td>
                             <td>{{ iva.referencia }}</td>
                             <td>{{ iva.total }}</td>
                             <td>{{ iva.iva }}</td>
+                            <td>{{ iva.renta_retenida }}</td>
                             <td>{{ iva.tipo_operacion }}</td>
                             <td>{{ iva.clasificacion }}</td>
                             <td>{{ iva.sector }}</td>
@@ -153,7 +157,7 @@
         <select id="selTipoDescargaSujetosExcluidos" class="form-select" [(ngModel)]="tipoDescarga" name="tipoDescargaSujetosExcluidos">
             <option value="">Seleccione</option>
             <option value="libro_excel">Libro de sujetos excluidos (Excel)</option>
-            <option *ngIf="isElSalvador" value="anexo_csv">Anexo CSV</option>
+            <option *ngIf="isElSalvador" value="anexo_csv">Anexo CSV (F07 / AnexoSujetosExcluidos)</option>
         </select>
     </div>
     <div class="modal-footer border-0 pt-0">

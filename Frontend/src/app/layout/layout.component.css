@@ -8,6 +8,9 @@
 }
 
 .alert-warning {
+    background-color: #fff3cd !important;
+}
+.alert-warning-suscripcion {
     background-color: #fde69c !important;
 }
 

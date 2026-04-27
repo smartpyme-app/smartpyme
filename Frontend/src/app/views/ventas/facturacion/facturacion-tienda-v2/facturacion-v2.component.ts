@@ -422,7 +422,6 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
-            this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
@@ -448,7 +447,6 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
-            this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
@@ -496,7 +494,6 @@ export class FacturacionV2Component implements OnInit {
           .subscribe(
             (venta) => {
               this.venta = venta;
-              this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
               this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);
               if(!this.venta.cliente){
@@ -949,21 +946,21 @@ export class FacturacionV2Component implements OnInit {
     }
   }
 
-  /** Tras cargar una venta: mostrar el bloque de cuenta a terceros si hay monto en líneas o en cabecera. */
-  private aplicarEstadoCuentaTercerosDesdeVentaCargada(): void {
-    const cRaw = parseFloat(this.venta.cuenta_a_terceros) || 0;
-    const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
-    this.habilitarCuentaTerceros = sumDet > 0.0001 || cRaw > 0.0001;
-  }
+   /** Tras cargar una venta: mostrar el bloque de cuenta a terceros si hay monto en líneas o en cabecera. */
+    private aplicarEstadoCuentaTercerosDesdeVentaCargada(): void {
+      const cRaw = parseFloat(this.venta.cuenta_a_terceros) || 0;
+      const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
+      this.habilitarCuentaTerceros = sumDet > 0.0001 || cRaw > 0.0001;
+    }
 
-  onCuentaTercerosSwitchChange(): void {
-    this.sumTotal();
-  }
+    onCuentaTercerosSwitchChange(): void {
+      this.sumTotal();
+    }
 
-  onAlMenosUnPaqueteCuentaTerceros(): void {
-    this.habilitarCuentaTerceros = true;
-    this.sumTotal();
-  }
+    onAlMenosUnPaqueteCuentaTerceros(): void {
+      this.habilitarCuentaTerceros = true;
+      this.sumTotal();
+    }
 
     private montoMinimoRetencionIvaGc(): number {
         const v = this.apiService.auth_user()?.empresa?.monto_minimo_retencion_iva_gc;
@@ -1188,7 +1185,6 @@ export class FacturacionV2Component implements OnInit {
 
     public updateVenta(venta: any) {
         this.venta = venta;
-        this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
         this.sumTotal();
     }
 
@@ -1270,26 +1266,6 @@ export class FacturacionV2Component implements OnInit {
         });
     }
 
-  /**
-   * Cada línea de detalle debe tener cantidad numérica estrictamente mayor a cero.
-   */
-  private detallesTienenCantidadValida(): boolean {
-    const detalles = this.venta.detalles;
-    if (!detalles || !Array.isArray(detalles) || detalles.length === 0) {
-      this.alertService.error('Debe agregar al menos un producto al detalle.');
-      return false;
-    }
-    const hayInvalida = detalles.some((d: any) => {
-      const q = parseFloat(String(d.cantidad));
-      return isNaN(q) || q <= 0;
-    });
-    if (hayInvalida) {
-      this.alertService.error('Cada producto debe tener una cantidad mayor a cero.');
-      return false;
-    }
-    return true;
-  }
-
   public onFacturar() {
     // Validar que si el método de pago requiere banco, este esté seleccionado
     this.mensajeErrorBanco = '';
@@ -1297,10 +1273,6 @@ export class FacturacionV2Component implements OnInit {
     if (this.venta.cotizacion != 1 && this.requiereBanco() && !this.venta.detalle_banco) {
       this.mensajeErrorBanco = 'Debe seleccionar un banco para este método de pago.';
       this.alertService.error('Debe seleccionar un banco para este método de pago.');
-      return;
-    }
-
-    if (!this.detallesTienenCantidadValida()) {
       return;
     }
 
@@ -1438,10 +1410,6 @@ export class FacturacionV2Component implements OnInit {
 
   // Guardar venta
   public onSubmit() {
-    if (!this.detallesTienenCantidadValida()) {
-      return;
-    }
-
     this.saving = true;
 
     // Si se esta duplicando una venta, esta ya no se marca como recurrente para

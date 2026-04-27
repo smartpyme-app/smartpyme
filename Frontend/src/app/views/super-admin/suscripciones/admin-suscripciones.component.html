@@ -374,7 +374,12 @@
                   <a
                     *ngIf="empresa.suscripcion"
                     (click)="
-                      pagoRecibido(mconfirmPagoRecibido, empresa.suscripcion, empresa.nombre);
+                      pagoRecibido(
+                        mconfirmPagoRecibido,
+                        empresa.suscripcion,
+                        empresa.nombre,
+                        empresa
+                      );
                       $event.preventDefault()
                     "
                     class="list-group-item list-group-item-action border-0 click text-success"
@@ -711,7 +716,8 @@
                     pagoRecibido(
                       mconfirmPagoRecibido,
                       suscripcion,
-                      suscripcion.empresa?.nombre
+                      suscripcion.empresa?.nombre,
+                      suscripcion.empresa
                     )
                   "
                 >
@@ -1156,24 +1162,70 @@
     <p class="mb-2" *ngIf="!empresaNombrePagoModal && suscripcionPagoPendiente?.id">
       <span class="text-muted">Suscripción #{{ suscripcionPagoPendiente.id }}</span>
     </p>
-    <p class="mb-3">
-      Se fijará la <strong>próxima fecha de pago</strong> a
-      <strong>{{ diasPagoRecibidoUi }} días</strong> a partir de hoy y se
-      actualizará la fecha del último pago. Si había
-      <strong>acceso temporal</strong> de excepción, se anulará.
-    </p>
 
-    <div *ngIf="loadingOrdenesPendientesModal" class="text-muted small mb-0">
+    <div class="mb-3">
+      <label class="form-label fw-semibold mb-1">Cobertura / próximo cobro</label>
+      <select
+        class="form-select form-select-sm"
+        [(ngModel)]="pagoModalMesesCobertura"
+        [ngModelOptions]="{ standalone: true }"
+      >
+        <option *ngFor="let opt of mesesCoberturaOpcionesPago" [ngValue]="opt.meses">
+          {{ opt.etiqueta }}
+        </option>
+      </select>
+      <p class="text-muted small mb-0 mt-1">
+        La <strong>próxima fecha de pago</strong> se calculará sumando esos meses a hoy
+        (referencia: ~{{ fechaProximoPagoPreview() | date : 'mediumDate' }}). Se
+        actualizará la fecha del último pago. Si había <strong>acceso temporal</strong>,
+        se anulará.
+      </p>
+    </div>
+
+    <p class="fw-semibold mb-2">¿Cómo quedó registrado el cobro en el ERP?</p>
+    <div class="btn-group btn-group-sm mb-3 flex-wrap" role="group">
+      <button
+        type="button"
+        class="btn btn-outline-primary"
+        [class.active]="pagoModalDocumentoOrigen === 'orden'"
+        [disabled]="ordenesPagoPendientesModal.length === 0"
+        (click)="setDocumentoOrigenPago('orden')"
+      >
+        Orden N1CO / pendiente
+      </button>
+      <button
+        type="button"
+        class="btn btn-outline-primary"
+        [class.active]="pagoModalDocumentoOrigen === 'venta'"
+        (click)="setDocumentoOrigenPago('venta')"
+      >
+        Buscar venta (transferencia)
+      </button>
+      <button
+        type="button"
+        class="btn btn-outline-primary"
+        [class.active]="pagoModalDocumentoOrigen === 'ninguno'"
+        (click)="setDocumentoOrigenPago('ninguno')"
+      >
+        Solo suscripción
+      </button>
+    </div>
+
+    <div *ngIf="loadingOrdenesPendientesModal" class="text-muted small mb-2">
       <i class="fas fa-spinner fa-spin me-1"></i>
       Cargando órdenes pendientes…
     </div>
 
     <div
-      *ngIf="!loadingOrdenesPendientesModal && ordenesPagoPendientesModal.length > 0"
-      class="border rounded p-3 bg-light"
+      *ngIf="
+        pagoModalDocumentoOrigen === 'orden' &&
+        !loadingOrdenesPendientesModal &&
+        ordenesPagoPendientesModal.length > 0
+      "
+      class="border rounded p-3 bg-light mb-3"
     >
-      <p class="mb-2 fw-semibold">
-        Órdenes / cargos pendientes (elige cuál quedó pagado con este abono):
+      <p class="mb-2 fw-semibold small">
+        Elige la orden que quedó pagada con este abono:
       </p>
       <div
         class="list-group list-group-flush overflow-y-auto pe-1"
@@ -1228,13 +1280,102 @@
       </div>
     </div>
 
-    <p
-      *ngIf="!loadingOrdenesPendientesModal && ordenesPagoPendientesModal.length === 0"
-      class="text-muted small mb-0"
-    >
-      No hay órdenes de pago pendientes vinculadas a este plan; solo se
-      actualizarán las fechas de la suscripción.
-    </p>
+    <div *ngIf="pagoModalDocumentoOrigen === 'venta'" class="border rounded p-3 bg-light mb-3">
+      <p class="small mb-2">
+        Busca por correlativo, número de cotización o ID de venta. Útil cuando el cliente
+        pagó por transferencia y la factura ya existe en el ERP sin orden N1CO.
+      </p>
+      <div class="input-group input-group-sm mb-2">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Ej. correlativo, cotización o ID"
+          [(ngModel)]="ventaBusquedaPagoTexto"
+          [ngModelOptions]="{ standalone: true }"
+          (keyup.enter)="buscarVentasParaPagoModal()"
+        />
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="buscarVentasParaPagoModal()"
+          [disabled]="loadingVentasBusquedaPagoModal"
+        >
+          <span *ngIf="!loadingVentasBusquedaPagoModal">Buscar</span>
+          <span *ngIf="loadingVentasBusquedaPagoModal">
+            <i class="fas fa-spinner fa-spin"></i>
+          </span>
+        </button>
+      </div>
+      <p class="text-muted small mb-2" *ngIf="!loadingVentasBusquedaPagoModal">
+        Sin texto de búsqueda se listan ventas <strong>pendientes</strong> del cliente.
+      </p>
+      <div
+        *ngIf="!loadingVentasBusquedaPagoModal && ventasBusquedaPagoModal.length > 0"
+        class="list-group list-group-flush overflow-y-auto pe-1"
+        style="max-height: calc(5 * 4.5rem)"
+      >
+        <label
+          *ngFor="let vv of ventasBusquedaPagoModal"
+          class="list-group-item list-group-item-action d-flex align-items-start gap-2 py-2 px-2 mb-0 cursor-pointer small"
+          [class.active]="ventaSeleccionadaPagoId === vv.id"
+        >
+          <input
+            class="form-check-input mt-1 flex-shrink-0"
+            type="radio"
+            name="ventaPagoManual"
+            [value]="vv.id"
+            [(ngModel)]="ventaSeleccionadaPagoId"
+            [ngModelOptions]="{ standalone: true }"
+          />
+          <span>
+            <span class="d-block fw-medium">
+              <ng-container *ngIf="vv.documento_nombre">{{ vv.documento_nombre }}</ng-container>
+              <ng-container *ngIf="!vv.documento_nombre">Venta</ng-container>
+              <ng-container *ngIf="vv.correlativo != null && vv.correlativo !== ''">
+                #{{ vv.correlativo }}</ng-container
+              >
+              <span class="text-muted"> · id {{ vv.id }}</span>
+            </span>
+            <span class="d-block text-muted mt-1">
+              {{ vv.fecha | date : 'mediumDate' }} · {{ vv.estado }} · ${{
+                vv.total | number : '1.2-2'
+              }}
+              <span *ngIf="vv.forma_pago"> · {{ vv.forma_pago }}</span>
+            </span>
+          </span>
+        </label>
+      </div>
+      <p
+        *ngIf="!loadingVentasBusquedaPagoModal && ventasBusquedaPagoModal.length === 0"
+        class="text-muted small mb-0"
+      >
+        No hay resultados. Prueba otro término o verifica el cliente ERP de la empresa.
+      </p>
+    </div>
+
+    <div *ngIf="pagoModalDocumentoOrigen === 'ninguno'" class="mb-0">
+      <p class="text-muted small mb-2">
+        No se cerrará ninguna orden ni venta; solo se moverán las fechas de la suscripción.
+        Opcionalmente puedes generar una factura en el ERP por el monto del plan × meses de
+        cobertura (transferencia / cobro manual).
+      </p>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="chkCrearVentaPagoSuscripcion"
+          [(ngModel)]="crearVentaManualPago"
+          [ngModelOptions]="{ standalone: true }"
+        />
+        <label class="form-check-label small" for="chkCrearVentaPagoSuscripcion">
+          Generar factura en ERP (Pagada, forma de pago Transferencia)
+          <ng-container *ngIf="montoEstimadoCrearVentaModal() != null">
+            — monto estimado
+            <strong>${{ montoEstimadoCrearVentaModal() | number : '1.2-2' }}</strong></ng-container
+          >
+        </label>
+      </div>
+    </div>
   </div>
   <div class="modal-footer d-flex gap-2 justify-content-end flex-wrap">
     <button
@@ -1251,8 +1392,11 @@
       [disabled]="
         accionPagoId === suscripcionPagoPendiente?.id ||
         loadingOrdenesPendientesModal ||
-        (ordenesPagoPendientesModal.length > 0 &&
-          ordenPagoSeleccionadoId == null)
+        loadingVentasBusquedaPagoModal ||
+        (pagoModalDocumentoOrigen === 'orden' &&
+          (ordenesPagoPendientesModal.length === 0 ||
+            ordenPagoSeleccionadoId == null)) ||
+        (pagoModalDocumentoOrigen === 'venta' && ventaSeleccionadaPagoId == null)
       "
       (click)="ejecutarPagoRecibido()"
     >

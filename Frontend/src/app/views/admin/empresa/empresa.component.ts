@@ -100,6 +100,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.loading = true;
         this.apiService.read('empresa/', this.apiService.auth_user().id_empresa).subscribe(empresa => {
             this.empresa = empresa;
+            if (!this.empresa.woocommerce_sync_mode) {
+                this.empresa.woocommerce_sync_mode = 'bidirectional';
+            }
 
             this.initializeCustomConfig();
             this.loading = false;
@@ -120,6 +123,22 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 }, 600);
             }
         }, error => { this.alertService.error(error); this.loading = false; });
+    }
+
+    /** SmartPyme puede enviar/exportar catálogo a WooCommerce */
+    public woocommerceModoPuedeEnviarATienda(): boolean {
+        const m = this.empresa && this.empresa.woocommerce_sync_mode
+            ? this.empresa.woocommerce_sync_mode
+            : 'bidirectional';
+        return m === 'bidirectional' || m === 'sp_to_wc';
+    }
+
+    /** Se puede importar CSV exportado desde WooCommerce */
+    public woocommerceModoPuedeImportarDesdeWoo(): boolean {
+        const m = this.empresa && this.empresa.woocommerce_sync_mode
+            ? this.empresa.woocommerce_sync_mode
+            : 'bidirectional';
+        return m === 'bidirectional' || m === 'wc_to_sp';
     }
 
     public onSubmit(): Promise<any> {

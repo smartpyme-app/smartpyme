@@ -429,7 +429,6 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
-            this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
@@ -455,7 +454,6 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
-            this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
@@ -503,7 +501,6 @@ export class FacturacionComponent implements OnInit {
           .subscribe(
             (venta) => {
               this.venta = venta;
-              this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
               this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);
               if(!this.venta.cliente){
@@ -1107,7 +1104,6 @@ export class FacturacionComponent implements OnInit {
 
     public updateVenta(venta: any) {
         this.venta = venta;
-        this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
         this.sumTotal();
     }
 
@@ -1296,26 +1292,6 @@ export class FacturacionComponent implements OnInit {
     });
   }
 
-  /**
-   * Cada línea de detalle debe tener cantidad numérica estrictamente mayor a cero.
-   */
-  private detallesTienenCantidadValida(): boolean {
-    const detalles = this.venta.detalles;
-    if (!detalles || !Array.isArray(detalles) || detalles.length === 0) {
-      this.alertService.error('Debe agregar al menos un producto al detalle.');
-      return false;
-    }
-    const hayInvalida = detalles.some((d: any) => {
-      const q = parseFloat(String(d.cantidad));
-      return isNaN(q) || q <= 0;
-    });
-    if (hayInvalida) {
-      this.alertService.error('Cada producto debe tener una cantidad mayor a cero.');
-      return false;
-    }
-    return true;
-  }
-
   public onFacturar() {
     // Validar que si el método de pago requiere banco, este esté seleccionado
     this.mensajeErrorBanco = '';
@@ -1323,10 +1299,6 @@ export class FacturacionComponent implements OnInit {
     if (this.venta.cotizacion != 1 && this.requiereBanco() && !this.venta.detalle_banco) {
       this.mensajeErrorBanco = 'Debe seleccionar un banco para este método de pago.';
       this.alertService.error('Debe seleccionar un banco para este método de pago.');
-      return;
-    }
-
-    if (!this.detallesTienenCantidadValida()) {
       return;
     }
 
@@ -1357,10 +1329,6 @@ export class FacturacionComponent implements OnInit {
 
   // Guardar venta
   public onSubmit() {
-    if (!this.detallesTienenCantidadValida()) {
-      return;
-    }
-
     this.saving = true;
 
     // Si se esta duplicando una venta, esta ya no se marca como recurrente para

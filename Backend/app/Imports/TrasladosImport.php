@@ -76,6 +76,22 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
     }
 
     /**
+     * Añade claves slug sin «#» para compatibilidad con Excels antiguos y encabezados con #ID_*.
+     */
+    protected function normalizarClavesFila(array $row): array
+    {
+        $out = $row;
+        foreach ($row as $key => $value) {
+            $clean = Str::slug(str_replace(['#', '.'], '', (string) $key), '_');
+            if ($clean !== '' && !array_key_exists($clean, $out)) {
+                $out[$clean] = $value;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Resuelve id_bodega a partir del nombre mostrado en plantilla (p. ej. "Sucursal 2", "SUCURSAL 1").
      */
     protected function resolverIdBodegaPorNombre(?string $nombre): ?string
@@ -119,6 +135,8 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
      */
     protected function validarFilaTraslado(array $row): array
     {
+        $row = $this->normalizarClavesFila($row);
+
         $out = [
             'error' => null,
             'id_producto' => null,

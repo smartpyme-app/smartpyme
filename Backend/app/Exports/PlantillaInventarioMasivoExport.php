@@ -11,11 +11,18 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class PlantillaInventarioMasivoExport implements FromQuery, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithTitle, WithColumnFormatting
+class PlantillaInventarioMasivoExport extends DefaultValueBinder implements FromQuery, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithTitle, WithColumnFormatting, WithCustomValueBinder, WithEvents
 {
     protected $filtros;
 
@@ -26,19 +33,25 @@ class PlantillaInventarioMasivoExport implements FromQuery, WithHeadings, WithMa
 
     public function query()
     {
+        $query = Producto::query()
+            ->with(['inventarios', 'categoria', 'composiciones'])
+            ->orderBy('nombre', 'asc');
+
+        // Plantilla vacía: solo encabezados Excel, sin filas de productos.
+        if (!empty($this->filtros['plantilla_vacia'])) {
+            return $query->whereRaw('0 = 1');
+        }
+
         $ids = $this->filtros['productos_ids'] ?? [];
         $ids = is_array($ids) ? array_values(array_filter(array_map('intval', $ids))) : [];
 
-        $query = Producto::query()
-            ->with(['inventarios', 'categoria', 'composiciones']);
-
+        // Sin IDs: todos los productos de la empresa (p. ej. GET sin plantilla_vacia ni productos_ids).
+        // Con IDs: solo esos productos.
         if (!empty($ids)) {
             $query->whereIn('id', $ids);
-        } else {
-            $query->whereRaw('0 = 1');
         }
 
-        return $query->orderBy('nombre', 'asc');
+        return $query;
     }
 
     public function headings(): array
@@ -90,7 +103,7 @@ class PlantillaInventarioMasivoExport implements FromQuery, WithHeadings, WithMa
             $producto->id,
             $idBodegaOrigen,
             $idBodegaDestino,
-            $producto->codigo ?? 'N/A',
+            $producto->codigo !== null ? (string) $producto->codigo : 'N/A',
             $producto->nombre,
             $producto->categoria ? $producto->categoria->nombre : 'N/A',
             $nombreBodegaOrigen,
@@ -109,6 +122,7 @@ class PlantillaInventarioMasivoExport implements FromQuery, WithHeadings, WithMa
 
         return [
             1 => ['font' => ['bold' => true, 'size' => 12], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E2EFDA']]],
+            'D' => ['numberFormat' => ['formatCode' => NumberFormat::FORMAT_TEXT]],
             'K' => ['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FCE4D6']]],
             'A1' => ['font' => ['color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFFFFF']]],
             'B1' => ['font' => ['color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFFFFF']]],
@@ -119,6 +133,7 @@ class PlantillaInventarioMasivoExport implements FromQuery, WithHeadings, WithMa
     public function columnFormats(): array
     {
         return [
+            'D' => NumberFormat::FORMAT_TEXT,
             'I' => '#,##0.00',
             'J' => '#,##0.00',
             'K' => '#,##0.00',
@@ -128,5 +143,45 @@ class PlantillaInventarioMasivoExport implements FromQuery, WithHeadings, WithMa
     public function title(): string
     {
         return 'Traslado de Inventario';
+    }
+
+    public function bindValue(Cell $cell, $value)
+    {
+        try {
+            [$col, $row] = Coordinate::coordinateFromString($cell->getCoordinate());
+        } catch (\Throwable $e) {
+            return parent::bindValue($cell, $value);
+        }
+
+        $row = (int) $row;
+        if ($col === 'D' && $row > 1) {
+            if ($value === null || $value === '') {
+                return parent::bindValue($cell, $value);
+            }
+            $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
+            $cell->getWorksheet()
+                ->getStyle($cell->getCoordinate())
+                ->getNumberFormat()
+                ->setFormatCode(NumberFormat::FORMAT_TEXT);
+
+            return true;
+        }
+
+        return parent::bindValue($cell, $value);
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                $lastRow = max(1, (int) $sheet->getHighestRow());
+                for ($r = 1; $r <= $lastRow; $r++) {
+                    $sheet->getStyle('D' . $r)
+                        ->getNumberFormat()
+                        ->setFormatCode(NumberFormat::FORMAT_TEXT);
+                }
+            },
+        ];
     }
 }

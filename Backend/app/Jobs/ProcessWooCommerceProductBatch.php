@@ -53,6 +53,20 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
             return;
         }
 
+        if (!$empresa) {
+            Log::error("Empresa no encontrada", ['user_id' => $this->userId]);
+            return;
+        }
+
+        if (!$empresa->woocommerceSyncPushesToRemote()) {
+            Log::info("Lote WooCommerce omitido: modo de sincronización no permite enviar a la tienda", [
+                'batch' => $this->batchNumber,
+                'empresa_id' => $empresa->id,
+            ]);
+            $this->updateProgress($user, $empresa);
+            return;
+        }
+
         try {
             Log::info("Procesando lote {$this->batchNumber} de {$this->totalBatches}", [
                 'productos' => count($this->productIds)
