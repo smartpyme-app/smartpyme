@@ -606,6 +606,14 @@ class ProductosController extends Controller
             'file.mimes' => 'El archivo debe ser CSV, TXT, XLSX o XLS.',
         ]);
 
+        $empresa = Empresa::find(Auth::user()->id_empresa);
+        if ($empresa && !$empresa->woocommerceSyncAcceptsCatalogFromWoo()) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'En el modo de sincronización actual (SmartPyme → WooCommerce) el catálogo se gestiona en SmartPyme. No se puede importar el CSV de WooCommerce. Cambie el modo en Mi cuenta, WooCommerce, si desea importar desde la tienda.',
+            ], 422);
+        }
+
         try {
             $import = new WooCommerceProductosImport();
             Excel::import($import, $request->file('file'));
@@ -792,6 +800,13 @@ class ProductosController extends Controller
     {
         $user = Auth::user();
         $id_empresa = $user->id_empresa;
+
+        $empresa = Empresa::find($id_empresa);
+        if ($empresa && !$empresa->woocommerceSyncPushesToRemote()) {
+            return response()->json([
+                'error' => 'En el modo de sincronización actual (WooCommerce → SmartPyme) el catálogo se gestiona en la tienda. No se genera el CSV de exportación hacia WooCommerce. Cambie el modo en Mi cuenta, WooCommerce, si desea descargar productos para subirlos a la tienda.',
+            ], 422);
+        }
 
         $request->request->add(['id_empresa' => $id_empresa, 'user_id' => $user->id]);
 

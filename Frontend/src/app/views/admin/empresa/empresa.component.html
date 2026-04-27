@@ -1091,7 +1091,23 @@
                                 </button>
                             </div>
                             <small class="text-muted d-block mt-2">
-                                Configure esta URL en su tienda WooCommerce para sincronizar datos automáticamente
+                                Configure esta URL en WooCommerce (webhooks de <strong>pedido</strong>, p. ej. pedido creado) para registrar ventas en SmartPyme.
+                            </small>
+                        </div>
+
+                        <div class="col-12" *ngIf="empresa.woocommerce_product_webhook_url">
+                            <label class="form-label">URL Webhook de producto (Woo → SmartPyme):</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" [value]="empresa.woocommerce_product_webhook_url"
+                                    readonly>
+                                <button class="btn btn-secondary" type="button"
+                                    (click)="copyToClipboard(empresa.woocommerce_product_webhook_url)" tooltip="Copiar URL">
+                                    <i class="fa fa-copy"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                En WooCommerce → Ajustes → Avanzado → Webhooks, cree <strong>Producto creado</strong> y <strong>Producto actualizado</strong>
+                                con esta URL (y opcional <strong>Producto eliminado</strong>) para sincronizar catálogo a SmartPyme cuando el modo lo permita.
                             </small>
                         </div>
 
@@ -1129,10 +1145,23 @@
                                 <option *ngFor="let canal of canales" [value]="canal.id">{{canal.nombre}}</option>
                             </select>
                             <small class="text-muted">
-                                Este canal se asignará automáticamente a todas las ventas realizadas desde WooCommerce.
+                                Este canal se asignará automáticamente a todas las ventas realizadas desde WooCommerce
+                                (p. ej. sitio web / ventas en línea), con independencia del modo de sincronización.
                             </small>
                         </div>
 
+                        <div class="col-12" *ngIf="empresa.status_conexion_woocommerce === 'connected' || empresa.woocommerce_store_url">
+                            <label for="woocommerce_sync_mode" class="form-label">Sincronización de catálogo e inventario</label>
+                            <select class="form-select" id="woocommerce_sync_mode" name="woocommerce_sync_mode"
+                                [(ngModel)]="empresa.woocommerce_sync_mode" (change)="onSubmit()">
+                                <option value="bidirectional">Bidireccional (ambos lados se pueden actualizar)</option>
+                                <option value="wc_to_sp">Solo de WooCommerce hacia SmartPyme (la tienda manda; no se envía a WooCommerce)</option>
+                                <option value="sp_to_wc">Solo de SmartPyme hacia WooCommerce (SmartPyme manda; no se importa CSV de la tienda)</option>
+                            </select>
+                            <small class="text-muted d-block mt-1">
+                                Los pedidos de la tienda en línea siempre se reciben en SmartPyme con el canal de arriba; esta opción solo define catálogo e inventario.
+                            </small>
+                        </div>
 
                         <div class="col-12">
                             <div *ngIf="empresa.woocommerce_store_url && empresa.woocommerce_consumer_key && empresa.woocommerce_consumer_secret"
@@ -1148,23 +1177,23 @@
                             </div>
 
                             <div class="text-end mt-3">
-                                <button tooltip="importar productos a WooCommerce" (click)="exportarWooCommerce()"
+                                <button tooltip="Enviar los productos de SmartPyme a WooCommerce" (click)="exportarWooCommerce()"
                                     class="btn btn-light me-2"
-                                    *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                    *ngIf="empresa.status_conexion_woocommerce === 'connected' && woocommerceModoPuedeEnviarATienda()">
                                     <img src="/assets/icons/upload-cloud.png" class="icon me-2">
-                                    Importar productos
+                                    Exportar productos
                                 </button>
 
-                                <button tooltip="Descargar productos para importar en WooCommerce (F7)"
+                                <button tooltip="Descargar productos para importar en WooCommerce"
                                     (click)="descargarWooCommerce()" class="btn btn-light me-2"
-                                    *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                    *ngIf="empresa.status_conexion_woocommerce === 'connected' && woocommerceModoPuedeEnviarATienda()">
                                     <img src="/assets/icons/woocommerce.png" class="icon me-2">
                                     Descargar productos
                                 </button>
 
                                 <button tooltip="Importar productos desde CSV de WooCommerce"
                                     (click)="openImportarWooCommerceCsv(importarWooCommerceCsvModal)" class="btn btn-light me-2"
-                                    *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                    *ngIf="empresa.status_conexion_woocommerce === 'connected' && woocommerceModoPuedeImportarDesdeWoo()">
                                     <i class="fa fa-file-csv me-2"></i>
                                     Importar desde CSV
                                 </button>
