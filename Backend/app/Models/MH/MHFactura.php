@@ -77,14 +77,13 @@ class MHFactura extends Model
                     break;
             }
 
-        // Total en letras = monto a pagar (resumen totalPagar / total de la venta)
+        // Total en letras
+        $partes = explode('.', strval( number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2) ));
+
         $formatter = new NumeroALetras();
-        $totalPagar = (float) $this->venta->total;
-        $n = explode('.', number_format($totalPagar, 2, '.', ''));
-        if (count($n) < 2) {
-            $n[1] = '00';
-        }
-        $dolares = $formatter->toWords((float) str_replace(',', '', $n[0]));
+        $n = explode(".", number_format($venta->total,2));
+        
+        $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
         $centavos = $formatter->toWords($n[1]);
 
         $this->venta->total_en_letras = $dolares . ' DÓLARES CON ' . $centavos . ' CENTAVOS.';
@@ -205,14 +204,6 @@ class MHFactura extends Model
 
         $pagoCond = $this->condicionOperacionYPagoPlazo();
 
-        $cuerpoDocumento = $this->detalles();
-        $sumNoGravadoCuerpo = round(
-            (float) collect($cuerpoDocumento)->sum(function ($r) {
-                return (float) ($r['noGravado'] ?? 0);
-            }),
-            2
-        );
-
         return 
             [
                 "identificacion" => $this->identificador(),
@@ -221,7 +212,7 @@ class MHFactura extends Model
                 "receptor" => $this->receptor(),
                 "otrosDocumentos" => NULL,
                 "ventaTercero" => NULL,
-                "cuerpoDocumento" => $cuerpoDocumento,
+                "cuerpoDocumento" => $this->detalles(),
                 "resumen" => [
                   "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
                   "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
@@ -238,8 +229,8 @@ class MHFactura extends Model
                   "subTotal" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => floatval(number_format($this->venta->renta_retenida ?? 0, 2, '.', '')),
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total - $sumNoGravadoCuerpo + $this->venta->iva_retenido, 2, '.', '')),
-                  "totalNoGravado" => floatval(number_format($sumNoGravadoCuerpo, 2, '.', '')),
+                  "montoTotalOperacion" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros + $this->venta->iva_retenido, 2, '.', '')),
+                  "totalNoGravado" => floatval(number_format($this->venta->cuenta_a_terceros, 2, '.', '')),
                   "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
                   "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
@@ -299,11 +290,7 @@ class MHFactura extends Model
                 "ivaItem" => floatval(number_format($this->venta->iva, 4, '.', ''))
             ]);
 
-            if (floatval($this->venta->cuenta_a_terceros ?? 0) > 0) {
-                $detalles->push($this->lineaCuentaTercerosSintetica((float) $this->venta->cuenta_a_terceros));
-            }
-
-            return $this->aplicarAjusteCuentaTerceros($detalles);
+            return $detalles;
         }
 
         foreach ($this->venta->detalles as $index => $detalle) {
@@ -417,61 +404,7 @@ class MHFactura extends Model
             }
         }
 
-        return $this->aplicarAjusteCuentaTerceros($detalles);
-    }
-
-    /**
-     * Alinea la suma de noGravado en cuerpo con venta.cuenta_a_terceros (línea sintética si falta monto).
-     */
-    protected function aplicarAjusteCuentaTerceros($detalles)
-    {
-        $cuentaVenta = round((float) ($this->venta->cuenta_a_terceros ?? 0), 2);
-        if ($cuentaVenta <= 0.0001) {
-            return $this->renumerarItemsCuerpo($detalles);
-        }
-        $sumNo = round((float) $detalles->sum(function (array $r) {
-            return (float) ($r['noGravado'] ?? 0);
-        }), 2);
-        $diff = round($cuentaVenta - $sumNo, 2);
-        if ($diff > 0.0001) {
-            $detalles->push($this->lineaCuentaTercerosSintetica($diff));
-        }
-
-        return $this->renumerarItemsCuerpo($detalles);
-    }
-
-    protected function lineaCuentaTercerosSintetica(float $monto): array
-    {
-        return [
-            'numItem' => 0,
-            'tipoItem' => 2,
-            'numeroDocumento' => NULL,
-            'cantidad' => floatval(number_format(1, 2, '.', '')),
-            'codigo' => NULL,
-            'codTributo' => NULL,
-            'uniMedida' => 99,
-            'descripcion' => 'Cobro por cuenta a terceros',
-            'precioUni' => 0.0,
-            'montoDescu' => 0.0,
-            'ventaNoSuj' => 0.0,
-            'ventaExenta' => 0.0,
-            'ventaGravada' => 0.0,
-            'tributos' => NULL,
-            'psv' => 0,
-            'noGravado' => floatval(number_format($monto, 2, '.', '')),
-            'ivaItem' => 0.0,
-        ];
-    }
-
-    protected function renumerarItemsCuerpo($detalles)
-    {
-        $n = 1;
-
-        return $detalles->map(function (array $row) use (&$n) {
-            $row['numItem'] = $n++;
-
-            return $row;
-        })->values();
+        return $detalles;
     }
 
     /**

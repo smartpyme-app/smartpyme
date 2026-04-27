@@ -366,23 +366,6 @@
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.renta" name="renta">
             </div>
         </div>
-        <div class="form-group col-md-4 col-lg-3 without-label" *ngIf="venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
-            <div class="form-switch bg-light-info rounded">
-                <label for="habilitar_cuenta_terceros">Cuenta a terceros</label>
-                <input id="habilitar_cuenta_terceros" class="form-check-input float-end" type="checkbox" role="switch"
-                    [(ngModel)]="habilitarCuentaTerceros" name="habilitar_cuenta_terceros"
-                    (ngModelChange)="onCuentaTercerosSwitchChange()">
-            </div>
-        </div>
-        <div class="form-group col-md-4 col-lg-3" *ngIf="venta.cotizacion != 1 && habilitarCuentaTerceros && apiService.auth_user().tipo != 'Ventas Limitado'">
-            <label for="monto_cuenta_terceros">Monto cuenta a terceros</label>
-            <div class="input-group">
-                <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-                <input type="number" class="form-control" id="monto_cuenta_terceros" name="monto_cuenta_terceros"
-                    [(ngModel)]="montoCuentaTercerosManual" (ngModelChange)="onMontoCuentaTercerosChange()"
-                    min="0" step="0.01" placeholder="0.00">
-            </div>
-        </div>
         <div class="form-group col-md-4 col-lg-3 without-label" *ngIf="tieneAccesoPropina">
             <div class="form-switch bg-light-info rounded">
                 <label for="cobrar_propina">Propina ({{ apiService.auth_user().empresa.propina_porcentaje | number:'1.0-2' }}%)</label>

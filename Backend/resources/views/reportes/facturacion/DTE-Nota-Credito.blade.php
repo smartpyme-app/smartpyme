@@ -154,12 +154,6 @@
         <br>
 
         <table class="table bordered">
-            @php
-                $dteCuentaTerceros = floatval($DTE['resumen']['totalNoGravado'] ?? 0);
-                $devCuentaTerceros = floatval($registro->cuenta_a_terceros ?? 0);
-                $muestraColCuentaTerceros = $dteCuentaTerceros > 0.0001 || $devCuentaTerceros > 0.0001;
-                $montoCuentaTercerosResumen = $dteCuentaTerceros > 0.0001 ? $dteCuentaTerceros : $devCuentaTerceros;
-            @endphp
             <thead>
                 <tr class="bg-light">
                     <th width="3%" class="border-bottom">N°</th>
@@ -168,9 +162,6 @@
                     <th class="border-bottom">Descripción</th>
                     <th width="10%" class="border-bottom text-right">Precio Unitario</th>
                     <th width="10%" class="border-bottom text-right">Descuento por ítem</th>
-                    @if ($muestraColCuentaTerceros)
-                        <th width="10%" class="border-bottom text-right">Otros Montos no Afectos</th>
-                    @endif
                     <th width="10%" class="border-bottom text-right">Ventas No Sujetas</th>
                     <th width="10%" class="border-bottom text-right">Ventas Exentas</th>
                     <th width="10%" class="border-bottom text-right">Ventas Gravadas</th>
@@ -185,12 +176,9 @@
                     <td class="border-bottom">   {{ $detalle['descripcion']  }}</td>
                     <td class="border-bottom text-right">   ${{number_format($detalle['precioUni'] , 4) }}</td>
                     <td class="border-bottom text-right">   ${{number_format($detalle['montoDescu'] , 2) }}</td>
-                    @if ($muestraColCuentaTerceros)
-                        <td class="border-bottom text-right">${{ number_format((float) ($detalle['noGravado'] ?? 0), 2) }}</td>
-                    @endif
-                    <td class="border-bottom text-right">${{ number_format($detalle['ventaNoSuj'], 2) }}</td>
-                    <td class="border-bottom text-right">${{ number_format($detalle['ventaExenta'], 2) }}</td>
-                    <td class="border-bottom text-right">${{ number_format($detalle['ventaGravada'], 2) }}</td>
+                    <td class="border-bottom text-right">   ${{ number_format($detalle['ventaNoSuj'], 2) }}</th>
+                    <td class="border-bottom text-right">   ${{ number_format($detalle['ventaExenta'], 2) }}</th>
+                    <td class="border-bottom text-right">   ${{ number_format($detalle['ventaGravada'], 2) }}</th>
                 </tr>
                 @endforeach
             </tbody>
@@ -198,31 +186,28 @@
                 <tr>
                     <td colspan="4"></td>
                     <td class="bg-light" colspan="2"><b>Suma de ventas:</b> </td>
-                    @if ($muestraColCuentaTerceros)
-                        <td class="bg-light text-right">${{ number_format($montoCuentaTercerosResumen, 2) }}</td>
-                    @endif
                     <td class="bg-light text-right">${{ number_format($DTE['resumen']['totalNoSuj'], 2) }}</td>
                     <td class="bg-light text-right">${{ number_format($DTE['resumen']['totalExenta'], 2) }}</td>
                     <td class="bg-light text-right">${{ number_format($DTE['resumen']['totalGravada'], 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Suma total de operaciones: </td>
+                    <td colspan="4">Suma total de operaciones: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['subTotalVentas'], 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Monto global Desc., Rebajas y otros a ventas no sujetas: </td>
+                    <td colspan="4">Monto global Desc., Rebajas y otros a ventas no sujetas: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['descuNoSuj'], 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Monto global Desc., Rebajas y otros a ventas exentas: </td>
+                    <td colspan="4">Monto global Desc., Rebajas y otros a ventas exentas: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['descuExenta'], 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Monto global Desc., Rebajas y otros a ventas gravadas: </td>
+                    <td colspan="4">Monto global Desc., Rebajas y otros a ventas gravadas: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['descuGravada'], 2) }}</td>
                 </tr>
 
@@ -230,43 +215,36 @@
                     @foreach ($DTE['resumen']['tributos'] as $tributo)
                     <tr>
                         <td colspan="4"></td>
-                        <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">{{ $tributo['descripcion'] }}: </td>
+                        <td colspan="4">{{ $tributo['descripcion'] }}: </td>
                         <td class="text-right">${{ number_format($tributo['valor'], 2) }}</td>
                     </tr>
                     @endforeach
                 @endif
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Sub-Total: </td>
+                    <td colspan="4">Sub-Total: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['subTotal'], 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">IVA Percibido: (+) </td>
+                    <td colspan="4">IVA Percibido: (+) </td>
                     <td class="text-right">${{ number_format(0, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">IVA Retenido: (-) </td>
+                    <td colspan="4">IVA Retenido: (-) </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['ivaRete1'], 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Retención de Renta: </td>
+                    <td colspan="4">Retención de Renta: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'], 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td class="bg-light" colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}"><b>Monto Total de Operación:</b></td>
-                    <td class="bg-light text-right"><b>${{ number_format(floatval($DTE['resumen']['montoTotalOperacion'] ?? 0), 2) }}</b></td>
+                    <td class="bg-light" colspan="4"><b>Monto Total de Operación:</b></td>
+                    <td class="bg-light text-right"><b>${{ number_format($DTE['resumen']['montoTotalOperacion'], 2) }}</b></td>
                 </tr>
-                @if ($muestraColCuentaTerceros)
-                    <tr>
-                        <td colspan="4"></td>
-                        <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Total Otros montos no afectos: </td>
-                        <td class="text-right">${{ number_format($montoCuentaTercerosResumen, 2) }}</td>
-                    </tr>
-                @endif
             </tfoot>
         </table>
 
