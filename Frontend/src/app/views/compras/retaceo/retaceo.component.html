@@ -10,7 +10,7 @@
       <ol class="steps">
         <li class="step-item">
           <div class="step-circle active">1</div>
-          <div class="step-title active">Seleccionar compra</div>
+          <div class="step-title active">Seleccionar compras</div>
         </li>
         <li class="step-item">
           <div
@@ -94,44 +94,40 @@
 
   <div class="row">
     <div class="form-group col-md-12 col-lg-4">
-      <label for="id_compra">Compra</label>
+      <label for="id_compras">Compras</label>
       <div class="input-group flex-nowrap">
         <ng-select
-          name="id_compra"
-          placeholder="Seleccionar compra"
+          name="id_compras"
+          placeholder="Seleccionar una o más compras"
+          [multiple]="true"
+          [closeOnSelect]="false"
           [disabled]="retaceo.id || !retaceo.id_sucursal"
-          [(ngModel)]="retaceo.id_compra"
-          (change)="cargarDetallesCompra()"
+          [items]="compras"
+          bindLabel="labelRetaceo"
+          bindValue="id"
+          [(ngModel)]="retaceo.id_compras"
+          (change)="recargarDistribucionDesdeCompras()"
+          appendTo="body"
           class="form-select p-0"
         >
-          <ng-option value="" *ngIf="loading"> Cargando compras...</ng-option>
-          <ng-option
-            *ngFor="let compra of compras"
-            [value]="compra.id"
-            [disabled]="compra.retaceo && compra.retaceo.id !== retaceo.id"
-          >
-            <span
-              [ngClass]="{
-                'text-muted': compra.retaceo && compra.retaceo.id !== retaceo.id
-              }"
-            >
-              {{ compra?.referencia || "N/A" }} -
-              {{ compra?.nombre_proveedor || "N/A" }}
-              {{ compra?.fecha | date : "dd/MM/yyyy" }}
+          <ng-template ng-option-tmp let-item="item">
+            <div class="d-flex flex-column">
+              <span [class.text-muted]="item.disabled">{{ item.labelRetaceo }}</span>
               <small
-                *ngIf="compra.retaceo && compra.retaceo.id !== retaceo.id"
+                *ngIf="item.retaceo && item.retaceo.id !== retaceo.id"
                 class="text-danger"
                 >(Ya tiene retaceo)</small
               >
               <small
-                *ngIf="compra.retaceo && compra.retaceo.id === retaceo.id"
+                *ngIf="item.retaceo && item.retaceo.id === retaceo.id"
                 class="text-success"
                 >(Este retaceo)</small
               >
-            </span>
-          </ng-option>
+            </div>
+          </ng-template>
         </ng-select>
       </div>
+      <small class="text-muted">Misma bodega; pueden ser distintos proveedores.</small>
     </div>
     <div class="form-group col-md-12 col-lg-4">
       <label for="numero_duca">Número de DUCA</label>
@@ -430,6 +426,7 @@
         <!-- Reemplazar la columna de porcentaje de distribución en la tabla actual -->
         <thead>
           <tr>
+            <th>Compra</th>
             <th>Producto</th>
             <th class="text-center">Cantidad</th>
             <th class="text-end">Costo Antes</th>
@@ -450,15 +447,20 @@
         <tbody class="align-top">
           <!-- Si no hay productos -->
           <tr *ngIf="!distribucion || distribucion.length === 0">
-            <td colspan="11" class="text-center">
+            <td colspan="13" class="text-center">
               <p class="text-muted my-3">
-                Seleccione una compra para ver sus productos
+                Seleccione una o más compras para ver sus productos
               </p>
             </td>
           </tr>
 
           <!-- Lista de productos -->
           <tr *ngFor="let item of distribucion; let i = index">
+            <td>
+              <small class="text-muted">{{
+                item?.compra_referencia || "—"
+              }}</small>
+            </td>
             <td>{{ item?.producto?.nombre || "Producto sin nombre" }}</td>
             <td class="text-center">{{ item.cantidad }}</td>
             <td class="text-end">
@@ -478,7 +480,7 @@
                   min="0"
                   max="100"
                   step="0.01"
-                  [disabled]="!retaceo.id_compra || loading"
+                  [disabled]="!tieneComprasSeleccionadas() || loading"
                 />
                 <span class="input-group-text">%</span>
               </div>
@@ -494,7 +496,7 @@
                   min="0"
                   max="100"
                   step="0.01"
-                  [disabled]="!retaceo.id_compra || loading"
+                  [disabled]="!tieneComprasSeleccionadas() || loading"
                 />
                 <span class="input-group-text">%</span>
               </div>
@@ -526,6 +528,7 @@
             </td>
           </tr>
           <tr class="bg-light fw-bold border-top">
+            <td></td>
             <td>TOTALES</td>
             <td class="text-center">{{ calcularTotalCantidad() }}</td>
             <td class="text-end">
@@ -557,7 +560,7 @@
             </td>
             <td class="text-end">
               {{
-                calcularTotalRetaceado() | currency : "USD" : "symbol" : "1.2"
+                calcularTotalLanded() | currency : "USD" : "symbol" : "1.2"
               }}
             </td>
           </tr>
@@ -681,7 +684,7 @@
       <button
         (click)="calcularDistribucion()"
         *ngIf="!retaceo.id"
-        [disabled]="!retaceo.id_compra || loading"
+        [disabled]="!tieneComprasSeleccionadas() || loading"
         class="btn btn-warning float-start me-2"
       >
         <i class="fa fa-calculator"></i> Calcular

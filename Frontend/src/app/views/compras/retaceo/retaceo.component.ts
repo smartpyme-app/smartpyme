@@ -3,6 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
+import { forkJoin } from 'rxjs';
 
 
 interface Gasto {
@@ -15,6 +16,8 @@ interface Gasto {
 
 interface ItemDistribucion {
   id_retaceo?: number;
+  id_compra?: number;
+  compra_referencia?: string;
   id_producto: number;
   id_detalle_compra: number;
   producto?: any;
@@ -75,6 +78,9 @@ export class RetaceoComponent implements OnInit {
 
   public bodegas: any[] = [];
 
+  /** Compras ya vinculadas al retaceo (vista edición); se fusionan al listado del select para mostrar etiquetas. */
+  private comprasIncluidasRetaceoActual: any[] = [];
+
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
@@ -110,9 +116,11 @@ export class RetaceoComponent implements OnInit {
 
   onBodegaChange() {
     this.compras = [];
+    this.comprasIncluidasRetaceoActual = [];
     this.gastos = [];
     this.distribucion = [];
     this.retaceo.id_compra = null;
+    this.retaceo.id_compras = [];
 
 
     Object.keys(this.gastosMap).forEach(tipo => {
@@ -127,6 +135,33 @@ export class RetaceoComponent implements OnInit {
     this.cargarDatosPorBodega();
   }
 
+  private mapearCompraParaSelect(c: any): any {
+    const ref = c?.referencia || 'N/A';
+    const prov = c?.nombre_proveedor || 'N/A';
+    const fecha =
+      c?.fecha != null && c.fecha !== ''
+        ? ` · ${String(c.fecha).slice(0, 10)}`
+        : '';
+    return {
+      ...c,
+      labelRetaceo: `${ref} — ${prov}${fecha}`,
+      disabled: !!(c.retaceo && c.retaceo.id !== this.retaceo?.id),
+    };
+  }
+
+  private mezclarComprasDelRetaceoEnOpciones(): void {
+    if (!this.comprasIncluidasRetaceoActual?.length) {
+      return;
+    }
+    const porId = new Map<number, any>(this.compras.map((x: any) => [x.id, x]));
+    this.comprasIncluidasRetaceoActual.forEach((c: any) => {
+      if (!porId.has(c.id)) {
+        porId.set(c.id, this.mapearCompraParaSelect(c));
+      }
+    });
+    this.compras = Array.from(porId.values());
+  }
+
   cargarDatosPorBodega() {
     if (!this.retaceo.id_bodega) return;
 
@@ -138,9 +173,10 @@ export class RetaceoComponent implements OnInit {
     // Cargar compras filtradas por bodega
     this.apiService.getAll('compras', this.filtros).subscribe(
       (compras) => {
-        this.compras = compras.data.filter(
-          (c: any) => c.estado === 'Pagada' || c.estado === 'Pendiente'
-        );
+        this.compras = (compras.data || [])
+          .filter((c: any) => c.estado === 'Pagada' || c.estado === 'Pendiente')
+          .map((c: any) => this.mapearCompraParaSelect(c));
+        this.mezclarComprasDelRetaceoEnOpciones();
         this.loading = false;
       },
       (error) => {
@@ -208,6 +244,21 @@ export class RetaceoComponent implements OnInit {
       (retaceo) => {
         this.retaceo = retaceo;
 
+        this.comprasIncluidasRetaceoActual = retaceo.compras?.length
+          ? [...retaceo.compras]
+          : [];
+
+        if (retaceo.compras?.length) {
+          this.retaceo.id_compras = retaceo.compras.map((c: any) => c.id);
+        } else if (retaceo.id_compra) {
+          this.retaceo.id_compras = [retaceo.id_compra];
+        } else {
+          this.retaceo.id_compras = [];
+        }
+        this.retaceo.id_compra = this.retaceo.id_compras[0] ?? null;
+
+        this.mezclarComprasDelRetaceoEnOpciones();
+
         // Cargar gastos y distribución directamente del retaceo
         this.procesarGastosDelRetaceo(retaceo.gastos);
         this.procesarDistribucionDelRetaceo(retaceo.distribucion);
@@ -254,7 +305,10 @@ export class RetaceoComponent implements OnInit {
       incoterm: 'FOB',
       tasa_dai: 0,
       estado: 'Pendiente',
+      id_compras: [] as number[],
     };
+
+    this.comprasIncluidasRetaceoActual = [];
 
     // Limpiar todos los gastos
     Object.keys(this.gastosMap).forEach(tipo => {
@@ -265,43 +319,57 @@ export class RetaceoComponent implements OnInit {
     this.distribucion = [];
   }
 
-  cargarDetallesCompra() {
-    if (!this.retaceo.id_compra) return;
+  tieneComprasSeleccionadas(): boolean {
+    return Array.isArray(this.retaceo.id_compras) && this.retaceo.id_compras.length > 0;
+  }
 
+  recargarDistribucionDesdeCompras() {
+    if (!this.tieneComprasSeleccionadas()) {
+      this.distribucion = [];
+      this.retaceo.id_compra = null;
+      return;
+    }
+
+    this.retaceo.id_compra = this.retaceo.id_compras[0];
     this.loading = true;
-    this.apiService.read('compra/', this.retaceo.id_compra).subscribe(
-      (compra) => {
-        this.detallesCompra = compra.detalles;
+    const requests = this.retaceo.id_compras.map((id: number) =>
+      this.apiService.read('compra/', id)
+    );
 
-        // Inicializar la distribución
+    forkJoin(requests).subscribe({
+      next: (comprasDetalle: any) => {
         this.distribucion = [];
-        this.detallesCompra.forEach((detalle: any) => {
-          this.distribucion.push({
-            id_retaceo: 0,
-            id_producto: detalle.id_producto,
-            id_detalle_compra: detalle.id,
-            producto: detalle.producto || { nombre: detalle.descripcion },
-            cantidad: detalle.cantidad,
-            costo_original: detalle.costo || 0,
-            valor_fob: detalle.cantidad * (detalle.costo || 0),
-            porcentaje_distribucion: 0,
-            porcentaje_dai: 0, // Nuevo campo
-            monto_transporte: 0,
-            monto_seguro: 0,
-            monto_dai: 0,
-            monto_otros: 0,
-            costo_landed: 0,
-            costo_retaceado: detalle.costo || 0,
+        (comprasDetalle as any[]).forEach((compra) => {
+          const detalles = compra.detalles || [];
+          detalles.forEach((detalle: any) => {
+            this.distribucion.push({
+              id_retaceo: 0,
+              id_compra: compra.id,
+              compra_referencia: compra.referencia,
+              id_producto: detalle.id_producto,
+              id_detalle_compra: detalle.id,
+              producto: detalle.producto || { nombre: detalle.descripcion },
+              cantidad: detalle.cantidad,
+              costo_original: detalle.costo || 0,
+              valor_fob: detalle.cantidad * (detalle.costo || 0),
+              porcentaje_distribucion: 0,
+              porcentaje_dai: 0,
+              monto_transporte: 0,
+              monto_seguro: 0,
+              monto_dai: 0,
+              monto_otros: 0,
+              costo_landed: 0,
+              costo_retaceado: detalle.costo || 0,
+            });
           });
         });
-
         this.loading = false;
       },
-      (error) => {
+      error: (error) => {
         this.alertService.error(error);
         this.loading = false;
-      }
-    );
+      },
+    });
   }
 
   calcularTotalGastos() {
@@ -402,6 +470,7 @@ export class RetaceoComponent implements OnInit {
     // Preparar objeto para enviar al servidor
     const datosRetaceo = {
       ...this.retaceo,
+      id_compras: this.retaceo.id_compras,
       gastos: gastos,
       distribucion: this.distribucion,
     };
@@ -532,6 +601,11 @@ export class RetaceoComponent implements OnInit {
 
     if (!this.distribucion || this.distribucion.length === 0) {
       this.alertService.error('No hay productos para aplicar el retaceo');
+      return;
+    }
+
+    if (!this.tieneComprasSeleccionadas()) {
+      this.alertService.error('Debe seleccionar al menos una compra');
       return;
     }
 
@@ -824,6 +898,35 @@ export class RetaceoComponent implements OnInit {
       costo_landed: parseFloat(item.costo_landed || 0),
       costo_retaceado: parseFloat(item.costo_retaceado || 0),
     }));
+
+    const idsCompra =
+      Array.isArray(this.retaceo.id_compras) && this.retaceo.id_compras.length > 0
+        ? this.retaceo.id_compras
+        : this.retaceo.id_compra
+          ? [this.retaceo.id_compra]
+          : [];
+
+    if (idsCompra.length > 0) {
+      const reqs = idsCompra.map((id: number) => this.apiService.read('compra/', id));
+      forkJoin(reqs).subscribe({
+        next: (comps: any) => {
+          const detalleARef = new Map<number, string>();
+          (comps as any[]).forEach((compra: any) => {
+            const ref = compra.referencia || '—';
+            (compra.detalles || []).forEach((d: any) => {
+              detalleARef.set(Number(d.id), ref);
+            });
+          });
+          this.distribucion.forEach((row) => {
+            const ref = detalleARef.get(Number(row.id_detalle_compra));
+            if (ref) {
+              row.compra_referencia = ref;
+            }
+          });
+        },
+        error: () => {},
+      });
+    }
 
     // Cargar los productos para cada ítem de la distribución
     this.distribucion.forEach((item) => {

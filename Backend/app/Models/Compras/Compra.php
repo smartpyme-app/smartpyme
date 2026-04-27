@@ -2,6 +2,8 @@
 
 namespace App\Models\Compras;
 
+use App\Models\Compras\Retaceo\Retaceo;
+use App\Models\Compras\Retaceo\RetaceoCompra;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -132,8 +134,19 @@ class Compra extends Model {
         return $this->hasMany('App\Models\Compras\Devoluciones\Devolucion', 'id_compra');
     }
 
-    public function retaceo(){
-        return $this->hasOne('App\Models\Compras\Retaceo\Retaceo', 'id_compra');
+    /**
+     * Retaceo vinculado (una compra solo puede estar en un retaceo).
+     */
+    public function retaceo()
+    {
+        return $this->hasOneThrough(
+            Retaceo::class,
+            RetaceoCompra::class,
+            'id_compra',
+            'id',
+            'id',
+            'id_retaceo'
+        );
     }
 
 
