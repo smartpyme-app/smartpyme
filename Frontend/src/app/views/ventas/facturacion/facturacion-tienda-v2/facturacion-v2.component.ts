@@ -47,6 +47,10 @@ export class FacturacionV2Component implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  /** Con switch activo, el monto cuenta a terceros viene del input (no solo de la suma en detalles). */
+  public habilitarCuentaTerceros = false;
+  public montoCuentaTercerosManual = 0;
+
   /**
    * Si el usuario movió el switch de retención IVA 1%, no aplicar la regla automática (gran contribuyente + monto)
    * hasta cambiar de cliente o iniciar un documento nuevo desde carga inicial.
@@ -274,6 +278,8 @@ export class FacturacionV2Component implements OnInit {
 
   public cargarDatosIniciales() {
     this.venta = {};
+    this.habilitarCuentaTerceros = false;
+    this.montoCuentaTercerosManual = 0;
     this.retencionIvaGcUsuarioDecidio = false;
     this.venta.fecha = this.apiService.date();
     this.venta.fecha_pago = this.apiService.date();
@@ -418,6 +424,7 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
@@ -443,6 +450,7 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
@@ -490,6 +498,7 @@ export class FacturacionV2Component implements OnInit {
           .subscribe(
             (venta) => {
               this.venta = venta;
+              this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
               this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);
               if(!this.venta.cliente){
@@ -836,8 +845,13 @@ export class FacturacionV2Component implements OnInit {
     this.venta.no_sujeta = Number(rawNoSujeta).toFixed(4);
     const rawGravada = parseFloat(this.sumPipe.transform(this.venta.detalles, 'gravada'));
     this.venta.gravada = Number(rawGravada).toFixed(4);
-    const rawCuentaTerceros = parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'));
-    this.venta.cuenta_a_terceros = Number(rawCuentaTerceros).toFixed(4);
+    if (this.habilitarCuentaTerceros) {
+      const m = Math.max(0, parseFloat(String(this.montoCuentaTercerosManual ?? 0)) || 0);
+      this.venta.cuenta_a_terceros = Number(m).toFixed(4);
+    } else {
+      const rawCuentaTerceros = parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'));
+      this.venta.cuenta_a_terceros = Number(rawCuentaTerceros).toFixed(4);
+    }
 
     const subTotalNum = parseFloat(this.venta.sub_total);
     this.venta.iva_percibido = this.venta.percepcion
@@ -940,6 +954,32 @@ export class FacturacionV2Component implements OnInit {
             this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
         }
     }
+  }
+
+  /**
+   * Tras cargar una venta desde API: activa el modo manual solo si el total en cabecera
+   * no coincide con la suma de cuenta a terceros en detalles.
+   */
+  private aplicarEstadoCuentaTercerosDesdeVentaCargada(): void {
+    const cRaw = parseFloat(this.venta.cuenta_a_terceros) || 0;
+    const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
+    this.habilitarCuentaTerceros = cRaw > 0.0001 && Math.abs(cRaw - sumDet) > 0.0001;
+    this.montoCuentaTercerosManual = this.habilitarCuentaTerceros ? cRaw : 0;
+  }
+
+  onCuentaTercerosSwitchChange(): void {
+    if (this.habilitarCuentaTerceros) {
+      const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
+      const actual = parseFloat(this.venta.cuenta_a_terceros) || 0;
+      this.montoCuentaTercerosManual = sumDet > 0.0001 ? sumDet : (actual > 0 ? actual : 0);
+    } else {
+      this.montoCuentaTercerosManual = 0;
+    }
+    this.sumTotal();
+  }
+
+  onMontoCuentaTercerosChange(): void {
+    this.sumTotal();
   }
 
     private montoMinimoRetencionIvaGc(): number {
@@ -1165,6 +1205,7 @@ export class FacturacionV2Component implements OnInit {
 
     public updateVenta(venta: any) {
         this.venta = venta;
+        this.aplicarEstadoCuentaTercerosDesdeVentaCargada();
         this.sumTotal();
     }
 
@@ -1246,6 +1287,26 @@ export class FacturacionV2Component implements OnInit {
         });
     }
 
+  /**
+   * Cada línea de detalle debe tener cantidad numérica estrictamente mayor a cero.
+   */
+  private detallesTienenCantidadValida(): boolean {
+    const detalles = this.venta.detalles;
+    if (!detalles || !Array.isArray(detalles) || detalles.length === 0) {
+      this.alertService.error('Debe agregar al menos un producto al detalle.');
+      return false;
+    }
+    const hayInvalida = detalles.some((d: any) => {
+      const q = parseFloat(String(d.cantidad));
+      return isNaN(q) || q <= 0;
+    });
+    if (hayInvalida) {
+      this.alertService.error('Cada producto debe tener una cantidad mayor a cero.');
+      return false;
+    }
+    return true;
+  }
+
   public onFacturar() {
     // Validar que si el método de pago requiere banco, este esté seleccionado
     this.mensajeErrorBanco = '';
@@ -1253,6 +1314,10 @@ export class FacturacionV2Component implements OnInit {
     if (this.venta.cotizacion != 1 && this.requiereBanco() && !this.venta.detalle_banco) {
       this.mensajeErrorBanco = 'Debe seleccionar un banco para este método de pago.';
       this.alertService.error('Debe seleccionar un banco para este método de pago.');
+      return;
+    }
+
+    if (!this.detallesTienenCantidadValida()) {
       return;
     }
 
@@ -1390,6 +1455,10 @@ export class FacturacionV2Component implements OnInit {
 
   // Guardar venta
   public onSubmit() {
+    if (!this.detallesTienenCantidadValida()) {
+      return;
+    }
+
     this.saving = true;
 
     // Si se esta duplicando una venta, esta ya no se marca como recurrente para

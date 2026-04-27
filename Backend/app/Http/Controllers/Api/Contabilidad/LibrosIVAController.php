@@ -114,6 +114,19 @@ class LibrosIVAController extends Controller
     }
 
     /**
+     * Total de operación propia: total del documento menos monto a cuenta de terceros.
+     * Evita doble conteo en exentas/gravadas frente a la columna «ventas a cuenta de terceros».
+     */
+    private function montoVentaPropioSinCuentaTerceros($venta): float
+    {
+        $total = (float) ($venta->total ?? 0);
+        $ct = (float) ($venta->cuenta_a_terceros ?? 0);
+        $neto = $total - $ct;
+
+        return $neto > 0 ? $neto : 0.0;
+    }
+
+    /**
      * Obtiene la clase de documento (DTE o Impreso)
      */
     private function obtenerClaseDocumento($venta): string
@@ -246,7 +259,7 @@ class LibrosIVAController extends Controller
                 $exportaciones = $ventasDia->sum(function ($venta) {
                     $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
                     return strtolower($documentoNombre) === 'factura de exportación'
-                        ? (float) $venta->total
+                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
                         : 0;
                 });
 
@@ -257,7 +270,9 @@ class LibrosIVAController extends Controller
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva == 0 ? (float) $venta->total : 0;
+                    return $venta->iva == 0
+                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
+                        : 0;
                 });
 
                 $ventasGravadas = $ventasDia->sum(function ($venta) {
@@ -266,7 +281,9 @@ class LibrosIVAController extends Controller
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva > 0 ? (float) $venta->total : 0;
+                    return $venta->iva > 0
+                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
+                        : 0;
                 });
 
                 $ventasTerceros = $ventasDia->sum(function ($venta) {
@@ -274,7 +291,7 @@ class LibrosIVAController extends Controller
                 });
 
                 $totalDiario = $ventasDia->sum(function ($venta) {
-                    return (float) $venta->total;
+                    return $this->montoVentaPropioSinCuentaTerceros($venta);
                 });
 
                 $primeraVenta = $ventasOrdenadasPorCodigo->first();
