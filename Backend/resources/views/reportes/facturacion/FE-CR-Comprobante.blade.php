@@ -27,6 +27,10 @@
         .legal { font-size: 7.5px; color: #444; line-height: 1.35; margin-top: 14px; padding-top: 10px; border-top: 1px solid #bbb; }
         p { margin: 2px 0; }
         .mb-2 { margin-bottom: 6px; }
+        .row-subtotal td { font-weight: 700; background-color: #f0f0f0; }
+        .clave-bloque { font-size: 8px; letter-spacing: 0.3px; line-height: 1.35; word-break: break-all; }
+        .totales-ext td { padding: 3px 6px; }
+        .monto-letras { font-size: 8px; margin-top: 8px; font-style: italic; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -48,8 +52,23 @@
     $seq = (string) ($documento['sequential'] ?? '');
     $consecutivoParts = array_filter([$est, $punto, $seq], static fn ($x) => $x !== '' && $x !== null);
     $consecutivo = implode('-', $consecutivoParts);
-    $saleCond = (string) ($documento['sale_condition'] ?? '01');
-    $condicionTxt = $saleCond === '02' ? 'Crédito' : 'Contado';
+    $saleCond = str_pad((string) ($documento['sale_condition'] ?? '01'), 2, '0', STR_PAD_LEFT);
+    $saleCondOtro = trim((string) ($documento['sale_condition_other'] ?? $documento['other_sale_condition'] ?? ''));
+    $condicionMap = [
+        '01' => 'Contado', '02' => 'Crédito', '03' => 'Consignación', '04' => 'Apartado',
+        '05' => 'Arrendamiento con opción de compra', '06' => 'Arrendamiento en función financiera',
+        '07' => 'Cobro a favor de un tercero', '08' => 'Servicios prestados al Estado',
+        '09' => 'Pago de servicios prestado al Estado', '10' => 'Venta a crédito en IVA hasta 90 días',
+        '11' => 'Pago de venta a crédito en IVA hasta 90 días', '12' => 'Venta mercancía no nacionalizada',
+        '13' => 'Venta bienes usados no contribuyente', '14' => 'Arrendamiento operativo', '15' => 'Arrendamiento financiero',
+    ];
+    if ($saleCond === '99' && $saleCondOtro !== '') {
+        $condicionTxt = $saleCondOtro;
+    } elseif (isset($condicionMap[$saleCond])) {
+        $condicionTxt = $condicionMap[$saleCond];
+    } else {
+        $condicionTxt = $saleCond !== '' ? ('Código '.$saleCond.($saleCondOtro !== '' ? ' · '.$saleCondOtro : '')) : '—';
+    }
     $tipoDocCodigo = $tipoDteCodigo ?? '01';
     $tiposNombre = [
         '01' => 'Factura electrónica',
@@ -84,17 +103,21 @@
         return $m[$c] ?? ('Tipo '.$c);
     };
 
-    $medioPago = static function (?string $c): string {
+    $medioPago = static function (?string $c, ?string $otro = null): string {
         $c = str_pad((string) $c, 2, '0', STR_PAD_LEFT);
         $m = [
             '01' => 'Efectivo',
             '02' => 'Tarjeta',
             '03' => 'Cheque',
-            '04' => 'Transferencia',
+            '04' => 'Transferencia o depósito bancario',
             '05' => 'Recaudado por terceros',
-            '06' => 'SINPE',
-            '07' => 'Otros',
+            '06' => 'SINPE Móvil',
+            '07' => 'Plataforma digital',
+            '99' => 'Otros',
         ];
+        if ($c === '99' && $otro !== null && trim($otro) !== '') {
+            return 'Otros: '.$otro;
+        }
 
         return $m[$c] ?? ('Código '.$c);
     };
@@ -132,6 +155,10 @@
         if ($dis !== null && $dis !== '') {
             $parts[] = 'Distrito '.$dis;
         }
+        $bar = $loc['neighborhood'] ?? null;
+        if ($bar !== null && $bar !== '') {
+            $parts[] = 'Barrio '.$bar;
+        }
 
         return implode(', ', array_filter($parts));
     };
@@ -153,6 +180,36 @@
             $fechaFmt = $fecha;
         }
     }
+    $feCrPdf = $feCrPdf ?? \App\Support\FacturacionElectronica\CostaRicaFeComprobantePdfAggregates::fromDocument(
+        is_array($documento) ? $documento : [],
+        (string) ($clave ?? ''),
+        $monedaCod
+    );
+    $claveFmt = $feCrPdf['clave_formateada'] ?? (string) $clave;
+    $fmtUm = static function ($u): string {
+        if (is_array($u)) {
+            return (string) ($u['code'] ?? $u['name'] ?? '');
+        }
+
+        return (string) $u;
+    };
+    $pctImpLinea = static function (array $line): string {
+        $taxes = $line['taxes'] ?? [];
+        if (! is_array($taxes) || ! isset($taxes[0]) || ! is_array($taxes[0])) {
+            return '—';
+        }
+        $r = (float) ($taxes[0]['rate'] ?? 0);
+        $tax = (float) ($line['total_tax'] ?? 0);
+        $sub = (float) ($line['sub_total'] ?? 0);
+        if ($tax > 1e-5 && $sub > 1e-5 && $r < 1e-5) {
+            $r = round(100.0 * $tax / $sub, 2);
+        }
+        if ($tax < 1e-5) {
+            return '0';
+        }
+
+        return number_format($r, 2, '.', '');
+    };
 @endphp
 
     <div class="dte-header mb-2">
@@ -183,17 +240,27 @@
         <table class="table bordered" style="margin-top:8px;">
             <tbody>
                 <tr>
-                    <td style="width: 50%;">
-                        <p><b>Clave numérica (50 dígitos):</b><br/>{{ $clave }}</p>
-                        <p><b>Consecutivo:</b> {{ $consecutivo !== '' ? $consecutivo : '—' }}</p>
+                    <td colspan="2" class="bg-light" style="padding:8px;">
+                        <p style="margin:0 0 4px;"><b>Tipo de comprobante:</b> {{ $nombreTipoNormativo }} <span class="muted">(código {{ $tipoDocCodigo }})</span></p>
+                        <p style="margin:0 0 4px;"><b>Clave numérica:</b></p>
+                        <p class="clave-bloque" style="margin:0 0 6px;">{{ $claveFmt }}</p>
+                        <p style="margin:0;"><b>Consecutivo:</b> {{ $consecutivo !== '' ? $consecutivo : '—' }}</p>
                     </td>
-                    <td style="width: 50%;">
+                </tr>
+                <tr>
+                    <td style="width: 50%; vertical-align: top;">
                         <p><b>Fecha y hora de emisión:</b> {{ $fechaFmt }}</p>
                         <p><b>Condición de venta:</b> {{ $condicionTxt }}</p>
+                    </td>
+                    <td style="width: 50%; vertical-align: top;">
                         <p><b>Moneda / tipo de cambio:</b>
                             {{ $monedaCod }}
-                            @if (isset($currency['exchange_rate']) && (float) $currency['exchange_rate'] > 0 && $monedaCod === 'USD')
-                                · TC {{ number_format((float) $currency['exchange_rate'], 5, '.', '') }} CRC/USD
+                            @if (isset($currency['exchange_rate']) && (float) $currency['exchange_rate'] > 0)
+                                @if($monedaCod === 'USD')
+                                    · TC {{ number_format((float) $currency['exchange_rate'], 5, '.', '') }} CRC/USD
+                                @else
+                                    · TC {{ number_format((float) $currency['exchange_rate'], 5, '.', '') }}
+                                @endif
                             @endif
                         </p>
                         @if ($leyendaAmbiente !== '')
@@ -294,63 +361,104 @@
     <table class="table bordered">
         <thead>
             <tr class="bg-light">
-                <th style="width:4%;">N°</th>
-                <th style="width:6%;" class="text-right">Cant.</th>
-                <th style="width:12%;">CABYS</th>
-                <th>Descripción</th>
-                <th style="width:10%;" class="text-right">P. unit.</th>
-                <th style="width:10%;" class="text-right">Subtotal</th>
-                <th style="width:8%;" class="text-right">IVA</th>
-                <th style="width:10%;" class="text-right">Total línea</th>
+                <th style="width:3%;">N°</th>
+                <th style="width:10%;">Código CABYS</th>
+                <th>Detalle</th>
+                <th style="width:5%;" class="text-right">Cant.</th>
+                <th style="width:5%;">Unid.</th>
+                <th style="width:8%;" class="text-right">P. unit.</th>
+                <th style="width:5%;" class="text-right">% Desc.</th>
+                <th style="width:7%;" class="text-right">Desc.</th>
+                <th style="width:8%;" class="text-right">Total neto</th>
+                <th style="width:5%;" class="text-right">% Imp.</th>
+                <th style="width:7%;" class="text-right">Impuesto</th>
+                <th style="width:8%;" class="text-right">Total</th>
             </tr>
         </thead>
         <tbody>
-        @foreach($lines as $i => $line)
-            @if(is_array($line))
-            @php
-                $ivaLinea = isset($line['total_tax']) ? (float) $line['total_tax'] : 0.0;
-            @endphp
-            <tr>
-                <td>{{ $i + 1 }}</td>
-                <td class="text-right">{{ number_format((float) ($line['quantity'] ?? 0), 2, '.', '') }}</td>
-                <td style="font-size:8px;">{{ $line['cabys_code'] ?? '' }}</td>
-                <td>{{ $line['description'] ?? '' }}</td>
-                <td class="text-right">{{ number_format((float) ($line['unit_price'] ?? 0), 2, '.', '') }}</td>
-                <td class="text-right">{{ number_format((float) ($line['sub_total'] ?? 0), 2, '.', '') }}</td>
-                <td class="text-right">{{ number_format($ivaLinea, 2, '.', '') }}</td>
-                <td class="text-right">{{ number_format((float) ($line['total'] ?? 0), 2, '.', '') }}</td>
+        @foreach($feCrPdf['line_groups'] ?? [] as $grupo)
+            @foreach($grupo['lines'] ?? [] as $entry)
+                @if(is_array($entry['line'] ?? null))
+                @php $line = $entry['line']; $ivaLinea = isset($line['total_tax']) ? (float) $line['total_tax'] : 0.0; @endphp
+                <tr>
+                    <td>{{ $entry['idx'] ?? '' }}</td>
+                    <td style="font-size:7px;">{{ $line['cabys_code'] ?? '' }}</td>
+                    <td>{{ $line['description'] ?? '' }}</td>
+                    <td class="text-right">{{ number_format((float) ($line['quantity'] ?? 0), 2, '.', '') }}</td>
+                    <td style="font-size:7px;">{{ $fmtUm($line['unit_measure'] ?? '') }}</td>
+                    <td class="text-right">{{ number_format((float) ($line['unit_price'] ?? 0), 2, '.', '') }}</td>
+                    <td class="text-right">{{ isset($line['discount_rate']) ? number_format((float) $line['discount_rate'], 2, '.', '') : '—' }}</td>
+                    <td class="text-right">{{ isset($line['discount_amount']) ? number_format((float) $line['discount_amount'], 2, '.', '') : '—' }}</td>
+                    <td class="text-right">{{ number_format((float) ($line['sub_total'] ?? 0), 2, '.', '') }}</td>
+                    <td class="text-right">{{ $pctImpLinea($line) }}</td>
+                    <td class="text-right">{{ number_format($ivaLinea, 2, '.', '') }}</td>
+                    <td class="text-right">{{ number_format((float) ($line['total'] ?? 0), 2, '.', '') }}</td>
+                </tr>
+                @endif
+            @endforeach
+            <tr class="row-subtotal">
+                <td colspan="8" class="text-right">{{ $grupo['subtotal_row_label'] ?? '' }}</td>
+                <td class="text-right">{{ number_format((float) ($grupo['sub_net'] ?? 0), 2, '.', '') }}</td>
+                <td></td>
+                <td class="text-right">{{ number_format((float) ($grupo['sub_tax'] ?? 0), 2, '.', '') }}</td>
+                <td class="text-right">{{ number_format((float) ($grupo['sub_total'] ?? 0), 2, '.', '') }}</td>
             </tr>
-            @endif
         @endforeach
         </tbody>
     </table>
 
     <br/>
 
-    <table class="table bordered">
+    <table class="table" style="width:100%;">
         <tbody>
             <tr>
-                <td class="bg-light" style="width: 70%;"><b>Resumen de montos</b></td>
-                <td class="bg-light text-right" style="width: 30%;"><b>{{ $simbolo }}</b></td>
-            </tr>
-            <tr>
-                <td>Total venta neta</td>
-                <td class="text-right">{{ isset($sum['total_net_sale']) ? number_format((float) $sum['total_net_sale'], 2, '.', '') : '—' }}</td>
-            </tr>
-            <tr>
-                <td>Total descuentos</td>
-                <td class="text-right">{{ isset($sum['total_discounts']) ? number_format((float) $sum['total_discounts'], 2, '.', '') : '—' }}</td>
-            </tr>
-            <tr>
-                <td>Impuesto (IVA u otros según líneas)</td>
-                <td class="text-right">{{ isset($sum['total_tax']) ? number_format((float) $sum['total_tax'], 2, '.', '') : '—' }}</td>
-            </tr>
-            <tr class="bg-light">
-                <td><b>Total comprobante</b></td>
-                <td class="text-right"><b>{{ isset($sum['total']) ? number_format((float) $sum['total'], 2, '.', '') : '—' }}</b></td>
+                <td style="width:48%; vertical-align: top; padding-right:8px;">
+                    <table class="table bordered">
+                        <thead>
+                            <tr class="bg-light">
+                                <th>Tarifa / concepto</th>
+                                <th class="text-right">Base imponible</th>
+                                <th class="text-right">Impuesto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach($feCrPdf['tax_table_rows'] ?? [] as $fila)
+                            <tr>
+                                <td>{{ $fila['label'] ?? '' }}</td>
+                                <td class="text-right">{{ number_format((float) ($fila['base'] ?? 0), 2, '.', '') }}</td>
+                                <td class="text-right">{{ number_format((float) ($fila['tax'] ?? 0), 2, '.', '') }}</td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </td>
+                <td style="width:52%; vertical-align: top; padding-left:8px;">
+                    <table class="table bordered totales-ext">
+                        <tbody>
+                            @if(isset($sum['total_exonerated']) && (float) $sum['total_exonerated'] > 0)
+                            <tr><td>Total exonerado</td><td class="text-right">{{ number_format((float) $sum['total_exonerated'], 2, '.', '') }}</td></tr>
+                            @endif
+                            <tr><td>Total gravado</td><td class="text-right">{{ number_format((float) ($sum['total_taxed'] ?? 0), 2, '.', '') }}</td></tr>
+                            <tr><td>Total exento</td><td class="text-right">{{ number_format((float) ($sum['total_exempt'] ?? 0), 2, '.', '') }}</td></tr>
+                            <tr><td>Total no sujeto / no facturado</td><td class="text-right">{{ number_format((float) ($sum['total_non_taxable'] ?? 0), 2, '.', '') }}</td></tr>
+                            <tr><td>Total venta</td><td class="text-right">{{ number_format((float) ($sum['total_sale'] ?? 0), 2, '.', '') }}</td></tr>
+                            <tr><td>Total descuentos</td><td class="text-right">{{ number_format((float) ($sum['total_discounts'] ?? 0), 2, '.', '') }}</td></tr>
+                            <tr><td>Total venta neta</td><td class="text-right">{{ number_format((float) ($sum['total_net_sale'] ?? 0), 2, '.', '') }}</td></tr>
+                            <tr><td>Total impuesto (IVA)</td><td class="text-right">{{ number_format((float) ($sum['total_tax'] ?? 0), 2, '.', '') }}</td></tr>
+                            @if(isset($sum['total_iva_devuelto']) && abs((float) $sum['total_iva_devuelto']) > 1e-5)
+                            <tr><td>Total IVA devuelto</td><td class="text-right">{{ number_format((float) $sum['total_iva_devuelto'], 2, '.', '') }}</td></tr>
+                            @endif
+                            <tr class="bg-light"><td><b>Total comprobante</b></td><td class="text-right"><b>{{ number_format((float) ($sum['total'] ?? 0), 2, '.', '') }}</b></td></tr>
+                        </tbody>
+                    </table>
+                </td>
             </tr>
         </tbody>
     </table>
+
+    @if(!empty($feCrPdf['total_en_letras'] ?? ''))
+        <p class="monto-letras"><b>Son:</b> {{ $feCrPdf['total_en_letras'] }}</p>
+    @endif
 
     @if(count($payments) > 0)
         <br/>
@@ -363,7 +471,7 @@
             @foreach($payments as $p)
                 @if(is_array($p))
                 <tr>
-                    <td>{{ $medioPago($p['payment_method'] ?? '') }}</td>
+                    <td>{{ $medioPago($p['payment_method'] ?? '', $p['other_text'] ?? $p['payment_other'] ?? null) }}</td>
                     <td class="text-right">{{ isset($p['amount']) ? number_format((float) $p['amount'], 2, '.', '') : '' }}</td>
                 </tr>
                 @endif

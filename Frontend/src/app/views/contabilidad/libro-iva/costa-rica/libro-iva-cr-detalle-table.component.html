@@ -1,0 +1,115 @@
+<div class="table-responsive bg-white">
+  <table class="table table-bordered table-hover mr-top">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>NombreEmisor</th>
+        <th>RFC_Emisor</th>
+        <th>Fecha</th>
+        <th>NombreReceptor</th>
+        <th>RFC_Receptor</th>
+        <th>TipoDoc</th>
+        <th>CantLineas</th>
+        <th>Exoneracion</th>
+        @if (esVentas()) {
+          <th>ExoPorc</th>
+        }
+        <th class="text-end">Retenciones</th>
+        <th>Folio</th>
+        <th>Clave</th>
+        <th>MedioPago</th>
+        <th>CodMoneda</th>
+        <th class="text-end">TipoCambio</th>
+        <th class="text-end">Subtotal13</th>
+        <th class="text-end">Subtotal8</th>
+        <th class="text-end">Subtotal4</th>
+        <th class="text-end">Subtotal2</th>
+        <th class="text-end">Subtotal1</th>
+        <th class="text-end">SubtotalExonerado</th>
+        <th class="text-end">SubtotalExento</th>
+        <th class="text-end">SubtotalGravado</th>
+        <th class="text-end">IVA13</th>
+        <th class="text-end">IVA8</th>
+        <th class="text-end">IVA4</th>
+        <th class="text-end">IVA2</th>
+        <th class="text-end">IVA1</th>
+        <th class="text-end">IVADevuelto</th>
+      </tr>
+    </thead>
+    <tbody>
+      @if (loading) {
+        <tr>
+          <td [attr.colspan]="colCount()" class="text-center">
+            <span class="badge bg-primary">Cargando...</span>
+          </td>
+        </tr>
+      } @else if ((filas?.length ?? 0) === 0) {
+        <tr>
+          <td [attr.colspan]="colCount()" class="text-center">
+            <span class="badge bg-primary">No tiene registros</span>
+          </td>
+        </tr>
+      } @else {
+        @for (row of filas; track $index) {
+          <tr class="animated fadeIn">
+            <td>{{ $index + 1 }}</td>
+            <td>{{ row['nombre_emisor'] }}</td>
+            <td>{{ row['rfc_emisor'] }}</td>
+            <td>{{ row['fecha'] }}</td>
+            <td>{{ row['nombre_receptor'] }}</td>
+            <td>{{ row['rfc_receptor'] }}</td>
+            <td>{{ row['tipo_doc'] }}</td>
+            <td>{{ row['cant_lineas'] }}</td>
+            <td>{{ row['exoneracion'] }}</td>
+            @if (esVentas()) {
+              <td>{{ row['exo_porc'] }}</td>
+            }
+            <td class="text-end">{{ row['retenciones'] | number:'1.2-5' }}</td>
+            <td>{{ row['folio'] }}</td>
+            <td>{{ row['clave'] }}</td>
+            <td>{{ row['medio_pago'] }}</td>
+            <td>{{ row['cod_moneda'] }}</td>
+            <td class="text-end">{{ row['tipo_cambio'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['subtotal_13'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['subtotal_8'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['subtotal_4'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['subtotal_2'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['subtotal_1'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['subtotal_exonerado'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['subtotal_exento'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['subtotal_gravado'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['iva_13'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['iva_8'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['iva_4'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['iva_2'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['iva_1'] | number:'1.2-5' }}</td>
+            <td class="text-end">{{ row['iva_devuelto'] | number:'1.2-5' }}</td>
+          </tr>
+        }
+      }
+    </tbody>
+    @if (totales) {
+      <tfoot>
+        <tr class="table-light fw-bold">
+          <td [attr.colspan]="colspanLabelTotales()">TOTALES</td>
+          <td class="text-end">{{ total('retenciones') | number:'1.2-5' }}</td>
+          <td colspan="5" class="text-muted">—</td>
+          <td class="text-end">{{ total('subtotal_13') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('subtotal_8') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('subtotal_4') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('subtotal_2') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('subtotal_1') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('subtotal_exonerado') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('subtotal_exento') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('subtotal_gravado') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('iva_13') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('iva_8') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('iva_4') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('iva_2') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('iva_1') | number:'1.2-5' }}</td>
+          <td class="text-end">{{ total('iva_devuelto') | number:'1.2-5' }}</td>
+        </tr>
+      </tfoot>
+    }
+  </table>
+</div>

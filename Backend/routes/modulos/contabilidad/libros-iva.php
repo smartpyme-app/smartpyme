@@ -35,6 +35,13 @@ use Illuminate\Support\Facades\Route;
     Route::get('/libro-iva/percepcion1/descargar-libro',         [LibrosIVAController::class, 'libroPercepcion1Export']);
     Route::get('/libro-iva/percepcion1/descargar-anexo',         [LibrosIVAController::class, 'anexoPercepcion1Export']);
 
+    Route::get('/libro-iva/cr/reporte-detalle-iva-ventas', [LibrosIVAController::class, 'reporteDetalleIvaVentasCr']);
+    Route::get('/libro-iva/cr/reporte-detalle-iva-compras', [LibrosIVAController::class, 'reporteDetalleIvaComprasCr']);
+    Route::get('/libro-iva/cr/reporte-detalle-iva-ventas/descargar-excel', [LibrosIVAController::class, 'reporteDetalleIvaVentasCrExcel']);
+    Route::get('/libro-iva/cr/reporte-detalle-iva-ventas/descargar-csv', [LibrosIVAController::class, 'reporteDetalleIvaVentasCrCsv']);
+    Route::get('/libro-iva/cr/reporte-detalle-iva-compras/descargar-excel', [LibrosIVAController::class, 'reporteDetalleIvaComprasCrExcel']);
+    Route::get('/libro-iva/cr/reporte-detalle-iva-compras/descargar-csv', [LibrosIVAController::class, 'reporteDetalleIvaComprasCrCsv']);
+
 
 ?>
 

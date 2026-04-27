@@ -37,18 +37,102 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Admin\Empresa;
 use App\Services\Contabilidad\FacturacionElectronicaHelperService;
 use App\Services\Contabilidad\LibroIVAService;
+use App\Services\Contabilidad\CostaRica\ReporteDetalleIvaCrService;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Exports\Contabilidad\CostaRica\ReporteDetalleIvaVentasExport;
+use App\Exports\Contabilidad\CostaRica\ReporteDetalleIvaComprasExport;
 
 class LibrosIVAController extends Controller
 {
     protected $facturacionElectronicaHelper;
     protected $libroIVAService;
+    protected $reporteDetalleIvaCrService;
 
     public function __construct(
         FacturacionElectronicaHelperService $facturacionElectronicaHelper,
-        LibroIVAService $libroIVAService
+        LibroIVAService $libroIVAService,
+        ReporteDetalleIvaCrService $reporteDetalleIvaCrService
     ) {
         $this->facturacionElectronicaHelper = $facturacionElectronicaHelper;
         $this->libroIVAService = $libroIVAService;
+        $this->reporteDetalleIvaCrService = $reporteDetalleIvaCrService;
+    }
+
+    /** Libro detalle IVA Costa Rica (JSON): solo empresas cod_pais CR. */
+    public function reporteDetalleIvaVentasCr(BaseLibroIVARequest $request): JsonResponse
+    {
+        $this->assertEmpresaCostaRica();
+
+        $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
+        $filas = $this->reporteDetalleIvaCrService->filasVentas($request->inicio, $request->fin, $idSucursal);
+        $totales = $this->reporteDetalleIvaCrService->totales($filas);
+
+        return response()->json([
+            'filas' => $filas,
+            'totales' => $totales,
+        ], 200);
+    }
+
+    public function reporteDetalleIvaComprasCr(BaseLibroIVARequest $request): JsonResponse
+    {
+        $this->assertEmpresaCostaRica();
+
+        $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
+        $filas = $this->reporteDetalleIvaCrService->filasCompras($request->inicio, $request->fin, $idSucursal);
+        $totales = $this->reporteDetalleIvaCrService->totales($filas);
+
+        return response()->json([
+            'filas' => $filas,
+            'totales' => $totales,
+        ], 200);
+    }
+
+    public function reporteDetalleIvaVentasCrExcel(BaseLibroIVARequest $request)
+    {
+        $this->assertEmpresaCostaRica();
+
+        $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
+        $filas = $this->reporteDetalleIvaCrService->filasVentas($request->inicio, $request->fin, $idSucursal);
+
+        return Excel::download(new ReporteDetalleIvaVentasExport($filas), 'Reporte_Detalle_IVA.xlsx');
+    }
+
+    public function reporteDetalleIvaVentasCrCsv(BaseLibroIVARequest $request)
+    {
+        $this->assertEmpresaCostaRica();
+
+        $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
+        $filas = $this->reporteDetalleIvaCrService->filasVentas($request->inicio, $request->fin, $idSucursal);
+
+        return Excel::download(new ReporteDetalleIvaVentasExport($filas), 'Reporte_Detalle_IVA.csv', \Maatwebsite\Excel\Excel::CSV);
+    }
+
+    public function reporteDetalleIvaComprasCrExcel(BaseLibroIVARequest $request)
+    {
+        $this->assertEmpresaCostaRica();
+
+        $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
+        $filas = $this->reporteDetalleIvaCrService->filasCompras($request->inicio, $request->fin, $idSucursal);
+
+        return Excel::download(new ReporteDetalleIvaComprasExport($filas), 'Reporte_Detalle_IVA_Compras.xlsx');
+    }
+
+    public function reporteDetalleIvaComprasCrCsv(BaseLibroIVARequest $request)
+    {
+        $this->assertEmpresaCostaRica();
+
+        $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
+        $filas = $this->reporteDetalleIvaCrService->filasCompras($request->inicio, $request->fin, $idSucursal);
+
+        return Excel::download(new ReporteDetalleIvaComprasExport($filas), 'Reporte_Detalle_IVA_Compras.csv', \Maatwebsite\Excel\Excel::CSV);
+    }
+
+    private function assertEmpresaCostaRica(): void
+    {
+        $empresa = Empresa::query()->find(Auth::user()->id_empresa);
+        if (FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            abort(403, 'Esta operación solo está disponible para empresas con país Costa Rica.');
+        }
     }
 
     public function consumidores(BaseLibroIVARequest $request)

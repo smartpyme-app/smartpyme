@@ -11,9 +11,11 @@
       <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'compras'}" (click)="activoSeccion = 'compras'; loadAll()">
         Compras
       </button>
-      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'retenciones'}" (click)="activoSeccion = 'retenciones'; loadAll()">
-        Retenciones
-      </button>
+      @if (!esCostaRicaFe()) {
+        <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'retenciones'}" (click)="activoSeccion = 'retenciones'; loadAll()">
+          Retenciones
+        </button>
+      }
     </div>
     <div class="ms-auto d-flex gap-2 align-items-center">
       <ng-container>
@@ -45,12 +47,22 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           <li *ngIf="activoSeccion === 'ventas'">
-            <button class="dropdown-item" (click)="descargarVentasExcel()">Libro fiscal - Ventas (Excel)</button>
-            <button class="dropdown-item" (click)="descargarVentasPDF()">Libro fiscal - Ventas (PDF)</button>
+            <button class="dropdown-item" (click)="descargarVentasExcel()">{{ esCostaRicaFe() ? 'Reporte detalle IVA (Excel)' : 'Libro fiscal - Ventas (Excel)' }}</button>
+            @if (esCostaRicaFe()) {
+              <button class="dropdown-item" (click)="descargarVentasCsv()">Reporte detalle IVA (CSV)</button>
+            }
+            @if (!esCostaRicaFe()) {
+              <button class="dropdown-item" (click)="descargarVentasPDF()">Libro fiscal - Ventas (PDF)</button>
+            }
           </li>
           <li *ngIf="activoSeccion === 'compras'">
-            <button class="dropdown-item" (click)="descargarComprasExcel()">Libro fiscal - Compras (Excel)</button>
-            <button class="dropdown-item" (click)="descargarComprasPDF()">Libro fiscal - Compras (PDF)</button>
+            <button class="dropdown-item" (click)="descargarComprasExcel()">{{ esCostaRicaFe() ? 'Reporte detalle IVA compras (Excel)' : 'Libro fiscal - Compras (Excel)' }}</button>
+            @if (esCostaRicaFe()) {
+              <button class="dropdown-item" (click)="descargarComprasCsv()">Reporte detalle IVA compras (CSV)</button>
+            }
+            @if (!esCostaRicaFe()) {
+              <button class="dropdown-item" (click)="descargarComprasPDF()">Libro fiscal - Compras (PDF)</button>
+            }
           </li>
           <li *ngIf="activoSeccion === 'retenciones'">
             <button class="dropdown-item" (click)="descargarRetencionesExcel()">Libro fiscal - Retenciones (Excel)</button>
@@ -60,8 +72,22 @@
     </div>
   </div>
 
-  <!-- Sección Ventas -->
-  <div *ngIf="activoSeccion === 'ventas'">
+  <!-- Ventas CR: detalle IVA (componente dedicado) -->
+  @if (activoSeccion === 'ventas' && esCostaRicaFe()) {
+    <div class="row">
+      <div class="col-12">
+        <app-libro-iva-cr-detalle-table
+          libroTipo="ventas"
+          [filas]="ventas"
+          [totales]="totalesVentasCr"
+          [loading]="loading"
+        />
+      </div>
+    </div>
+  }
+
+  <!-- Ventas otros países -->
+  @if (activoSeccion === 'ventas' && !esCostaRicaFe()) {
     <div class="row">
       <div class="col-12">
         <div class="table-responsive bg-white">
@@ -104,10 +130,24 @@
         </div>
       </div>
     </div>
-  </div>
+  }
 
-  <!-- Sección Compras -->
-  <div *ngIf="activoSeccion === 'compras'">
+  <!-- Compras CR: detalle IVA (componente dedicado) -->
+  @if (activoSeccion === 'compras' && esCostaRicaFe()) {
+    <div class="row">
+      <div class="col-12">
+        <app-libro-iva-cr-detalle-table
+          libroTipo="compras"
+          [filas]="compras"
+          [totales]="totalesComprasCr"
+          [loading]="loading"
+        />
+      </div>
+    </div>
+  }
+
+  <!-- Compras otros países -->
+  @if (activoSeccion === 'compras' && !esCostaRicaFe()) {
     <div class="row">
       <div class="col-12">
         <div class="table-responsive bg-white">
@@ -156,10 +196,10 @@
         </div>
       </div>
     </div>
-  </div>
+  }
 
-  <!-- Sección Retenciones -->
-  <div *ngIf="activoSeccion === 'retenciones'">
+  <!-- Retenciones (no CR) -->
+  @if (activoSeccion === 'retenciones' && !esCostaRicaFe()) {
     <div class="row">
       <div class="col-12">
         <div class="table-responsive bg-white">
@@ -200,7 +240,7 @@
         </div>
       </div>
     </div>
-  </div>
+  }
 </div>
 
 <ng-template #mfilter>

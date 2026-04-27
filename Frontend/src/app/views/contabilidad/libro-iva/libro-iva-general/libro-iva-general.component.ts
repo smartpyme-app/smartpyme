@@ -1,22 +1,32 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FeCrUbicacionService } from '@services/fe-cr-ubicacion.service';
+import { LibroIvaCrDetalleTableComponent } from '@views/contabilidad/libro-iva/costa-rica/libro-iva-cr-detalle-table.component';
 import * as moment from 'moment';
 
 /**
- * Libros de IVA - Vista general para países distintos de El Salvador.
- * Muestra solo: Ventas, Compras y Retenciones.
+ * Libros de IVA — países distintos de El Salvador.
+ * Costa Rica: detalle IVA según plantillas Reporte_Detalle_IVA / Reporte_Detalle_IVA_Compras.
+ * Otros: resumen tipo Honduras (consumidores / compras) y retenciones SV si aplica.
  */
 @Component({
   selector: 'app-libro-iva-general',
   templateUrl: './libro-iva-general.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, LibroIvaCrDetalleTableComponent],
 })
 export class LibroIvaGeneralComponent implements OnInit {
   activoSeccion: 'ventas' | 'compras' | 'retenciones' = 'ventas';
   ventas: any[] = [];
   compras: any[] = [];
   retenciones: any[] = [];
+  /** Totales numéricos del backend (solo CR). */
+  totalesVentasCr: Record<string, number> | null = null;
+  totalesComprasCr: Record<string, number> | null = null;
   years: number[] = [];
   sucursales: any[] = [];
   loading = false;
@@ -27,8 +37,13 @@ export class LibroIvaGeneralComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private feCrUbic: FeCrUbicacionService
   ) {}
+
+  esCostaRicaFe(): boolean {
+    return this.feCrUbic.esCostaRicaFe();
+  }
 
   ngOnInit() {
     const currentYear = new Date().getFullYear();
@@ -42,14 +57,13 @@ export class LibroIvaGeneralComponent implements OnInit {
     this.setTime();
 
     this.apiService.getAll('sucursales/list').subscribe(
-      (sucursales) => { this.sucursales = sucursales; },
-      (error) => { this.alertService.error(error); }
+      (sucursales) => {
+        this.sucursales = sucursales;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
     );
-    this.loadAll();
-  }
-
-  set activarSeccion(seccion: 'ventas' | 'compras' | 'retenciones') {
-    this.activoSeccion = seccion;
     this.loadAll();
   }
 
@@ -60,24 +74,81 @@ export class LibroIvaGeneralComponent implements OnInit {
 
   loadAll() {
     this.loading = true;
+    const cr = this.esCostaRicaFe();
+
     if (this.activoSeccion === 'ventas') {
-      this.apiService.getAll('libro-iva/consumidores', this.filtros).subscribe(
-        (data) => { this.ventas = data || []; this.loading = false; },
-        (error) => { this.alertService.error(error); this.loading = false; }
-      );
-    } else if (this.activoSeccion === 'compras') {
-      this.apiService.getAll('libro-iva/compras', this.filtros).subscribe(
-        (data) => { this.compras = data || []; this.loading = false; },
-        (error) => { this.alertService.error(error); this.loading = false; }
-      );
-    } else if (this.activoSeccion === 'retenciones') {
-      this.apiService.getAll('libro-iva/retenciones', this.filtros).subscribe(
-        (data) => { this.retenciones = data || []; this.loading = false; },
-        (error) => { this.alertService.error(error); this.loading = false; }
-      );
-    } else {
-      this.loading = false;
+      if (cr) {
+        this.apiService.getAll('libro-iva/cr/reporte-detalle-iva-ventas', this.filtros).subscribe(
+          (data: any) => {
+            this.ventas = data?.filas ?? [];
+            this.totalesVentasCr = data?.totales ?? null;
+            this.loading = false;
+          },
+          (error) => {
+            this.alertService.error(error);
+            this.loading = false;
+          }
+        );
+      } else {
+        this.totalesVentasCr = null;
+        this.apiService.getAll('libro-iva/consumidores', this.filtros).subscribe(
+          (data) => {
+            this.ventas = data || [];
+            this.loading = false;
+          },
+          (error) => {
+            this.alertService.error(error);
+            this.loading = false;
+          }
+        );
+      }
+      return;
     }
+
+    if (this.activoSeccion === 'compras') {
+      if (cr) {
+        this.apiService.getAll('libro-iva/cr/reporte-detalle-iva-compras', this.filtros).subscribe(
+          (data: any) => {
+            this.compras = data?.filas ?? [];
+            this.totalesComprasCr = data?.totales ?? null;
+            this.loading = false;
+          },
+          (error) => {
+            this.alertService.error(error);
+            this.loading = false;
+          }
+        );
+      } else {
+        this.totalesComprasCr = null;
+        this.apiService.getAll('libro-iva/compras', this.filtros).subscribe(
+          (data) => {
+            this.compras = data || [];
+            this.loading = false;
+          },
+          (error) => {
+            this.alertService.error(error);
+            this.loading = false;
+          }
+        );
+      }
+      return;
+    }
+
+    if (this.activoSeccion === 'retenciones') {
+      this.apiService.getAll('libro-iva/retenciones', this.filtros).subscribe(
+        (data) => {
+          this.retenciones = data || [];
+          this.loading = false;
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
+      return;
+    }
+
+    this.loading = false;
   }
 
   onFiltroChange() {
@@ -105,26 +176,46 @@ export class LibroIvaGeneralComponent implements OnInit {
     this.downloading = false;
   }
 
+  private descargarBlob(data: Blob, mime: string, filename: string) {
+    const blob = new Blob([data], { type: mime });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    this.downloading = false;
+  }
+
   descargarVentasExcel() {
     this.downloading = true;
-    this.apiService.export('libro-iva/consumidores/descargar-libro', this.filtros).subscribe(
-      (data: Blob) => {
-        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'Libro-ventas.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        this.downloading = false;
-      },
+    const path = this.esCostaRicaFe()
+      ? 'libro-iva/cr/reporte-detalle-iva-ventas/descargar-excel'
+      : 'libro-iva/consumidores/descargar-libro';
+    const name = this.esCostaRicaFe() ? 'Reporte_Detalle_IVA.xlsx' : 'Libro-ventas.xlsx';
+    this.apiService.export(path, this.filtros).subscribe(
+      (data: Blob) => this.descargarBlob(data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', name),
+      (error) => this.manejarErrorDescarga(error)
+    );
+  }
+
+  descargarVentasCsv() {
+    if (!this.esCostaRicaFe()) {
+      return;
+    }
+    this.downloading = true;
+    this.apiService.export('libro-iva/cr/reporte-detalle-iva-ventas/descargar-csv', this.filtros).subscribe(
+      (data: Blob) => this.descargarBlob(data, 'text/csv;charset=utf-8', 'Reporte_Detalle_IVA.csv'),
       (error) => this.manejarErrorDescarga(error)
     );
   }
 
   descargarVentasPDF() {
+    if (this.esCostaRicaFe()) {
+      return;
+    }
     this.downloading = true;
     const token = this.apiService.auth_token();
     const params = new URLSearchParams(this.filtros as any).toString();
@@ -135,24 +226,31 @@ export class LibroIvaGeneralComponent implements OnInit {
 
   descargarComprasExcel() {
     this.downloading = true;
-    this.apiService.export('libro-iva/compras/descargar-libro', this.filtros).subscribe(
-      (data: Blob) => {
-        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'Libro-compras.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        this.downloading = false;
-      },
+    const path = this.esCostaRicaFe()
+      ? 'libro-iva/cr/reporte-detalle-iva-compras/descargar-excel'
+      : 'libro-iva/compras/descargar-libro';
+    const name = this.esCostaRicaFe() ? 'Reporte_Detalle_IVA_Compras.xlsx' : 'Libro-compras.xlsx';
+    this.apiService.export(path, this.filtros).subscribe(
+      (data: Blob) => this.descargarBlob(data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', name),
+      (error) => this.manejarErrorDescarga(error)
+    );
+  }
+
+  descargarComprasCsv() {
+    if (!this.esCostaRicaFe()) {
+      return;
+    }
+    this.downloading = true;
+    this.apiService.export('libro-iva/cr/reporte-detalle-iva-compras/descargar-csv', this.filtros).subscribe(
+      (data: Blob) => this.descargarBlob(data, 'text/csv;charset=utf-8', 'Reporte_Detalle_IVA_Compras.csv'),
       (error) => this.manejarErrorDescarga(error)
     );
   }
 
   descargarComprasPDF() {
+    if (this.esCostaRicaFe()) {
+      return;
+    }
     this.downloading = true;
     const token = this.apiService.auth_token();
     const params = new URLSearchParams(this.filtros as any).toString();
@@ -164,23 +262,8 @@ export class LibroIvaGeneralComponent implements OnInit {
   descargarRetencionesExcel() {
     this.downloading = true;
     this.apiService.export('libro-iva/retencion1/descargar-libro', this.filtros).subscribe(
-      (data: Blob) => {
-        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'Libro-retenciones.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        this.downloading = false;
-      },
+      (data: Blob) => this.descargarBlob(data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Libro-retenciones.xlsx'),
       (error) => this.manejarErrorDescarga(error)
     );
-  }
-
-  get simboloMoneda(): string {
-    return this.apiService.auth_user()?.empresa?.currency?.currency_symbol || '$';
   }
 }

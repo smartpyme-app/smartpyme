@@ -6,6 +6,7 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\CostaRicaFeComprobantePdfAggregates;
 use Illuminate\Http\Response;
 use RuntimeException;
 
@@ -122,12 +123,19 @@ final class CostaRicaFeComprobantePdfService
      */
     public function pdfStreamResponse(array $datos): Response
     {
+        $moneda = strtoupper((string) (($datos['documento']['currency']['currency_code'] ?? 'CRC')));
+        $feCrPdf = CostaRicaFeComprobantePdfAggregates::fromDocument(
+            $datos['documento'],
+            (string) ($datos['clave'] ?? ''),
+            $moneda
+        );
         $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.FE-CR-Comprobante', [
             'registro' => $datos['registro'],
             'documento' => $datos['documento'],
             'clave' => $datos['clave'],
             'titulo' => $datos['titulo'],
             'tipoDteCodigo' => $datos['tipoDteCodigo'],
+            'feCrPdf' => $feCrPdf,
         ]);
         $pdf->setPaper('US Letter', 'portrait');
         $nombre = $datos['clave'] !== '' ? $datos['clave'] : 'comprobante-cr';
@@ -140,12 +148,19 @@ final class CostaRicaFeComprobantePdfService
      */
     public function pdfBinary(array $datos): string
     {
+        $moneda = strtoupper((string) (($datos['documento']['currency']['currency_code'] ?? 'CRC')));
+        $feCrPdf = CostaRicaFeComprobantePdfAggregates::fromDocument(
+            $datos['documento'],
+            (string) ($datos['clave'] ?? ''),
+            $moneda
+        );
         $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.FE-CR-Comprobante', [
             'registro' => $datos['registro'],
             'documento' => $datos['documento'],
             'clave' => $datos['clave'],
             'titulo' => $datos['titulo'],
             'tipoDteCodigo' => $datos['tipoDteCodigo'],
+            'feCrPdf' => $feCrPdf,
         ]);
         $pdf->setPaper('US Letter', 'portrait');
 

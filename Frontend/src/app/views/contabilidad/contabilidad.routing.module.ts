@@ -36,6 +36,11 @@ const routes: Routes = [
           loadComponent: () => import('@views/contabilidad/libro-iva/consumidor-final/consumidor-final.component').then(m => m.ConsumidorFinalComponent)
         },
         {
+          path: 'libro-iva/general',
+          loadComponent: () => import('@views/contabilidad/libro-iva/libro-iva-general/libro-iva-general.component').then(m => m.LibroIvaGeneralComponent),
+          title: 'Libros fiscales'
+        },
+        {
           path: 'libro-compras',
           loadComponent: () => import('@views/contabilidad/libro-compras/libro-compras.component').then(m => m.LibroComprasComponent)
         },
