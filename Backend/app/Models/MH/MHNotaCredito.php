@@ -76,14 +76,13 @@ class MHNotaCredito extends Model
                     break;
             }
 
-        // Total en letras = monto total del documento
+        // Total en letras
+        $partes = explode('.', strval( number_format($this->devolucion->total - $this->devolucion->cuenta_a_terceros, 2) ));
+
         $formatter = new NumeroALetras();
-        $totalPagar = (float) $this->devolucion->total;
-        $n = explode('.', number_format($totalPagar, 2, '.', ''));
-        if (count($n) < 2) {
-            $n[1] = '00';
-        }
-        $dolares = $formatter->toWords((float) str_replace(',', '', $n[0]));
+        $n = explode(".", number_format($devolucion->total,2));
+        
+        $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
         $centavos = $formatter->toWords($n[1]);
 
         $this->devolucion->total_en_letras = $dolares . ' DÓLARES CON ' . $centavos . ' CENTAVOS.';
@@ -185,14 +184,6 @@ class MHNotaCredito extends Model
             $this->devolucion->exenta = $this->devolucion->sub_total;
         }
 
-        $cuerpoDocumento = $this->detalles();
-        $sumNoGravadoCuerpo = round(
-            (float) collect($cuerpoDocumento)->sum(function ($r) {
-                return (float) ($r['noGravado'] ?? 0);
-            }),
-            2
-        );
-
         return 
             [
                 "identificacion" => $this->identificador(),
@@ -200,7 +191,7 @@ class MHNotaCredito extends Model
                 "emisor" => $this->emisor(),
                 "receptor" => $this->receptor(),
                 "ventaTercero" => NULL,
-                "cuerpoDocumento" => $cuerpoDocumento,
+                "cuerpoDocumento" => $this->detalles(),
                 "resumen" => [
                   "totalNoSuj" => floatval(number_format($this->devolucion->no_sujeta, 2, '.', '')),
                   "totalExenta" => floatval(number_format($this->devolucion->exenta, 2, '.', '')),
@@ -215,9 +206,7 @@ class MHNotaCredito extends Model
                   "ivaPerci1" => floatval(number_format($this->devolucion->iva_percibido, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->devolucion->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->devolucion->total - $sumNoGravadoCuerpo, 2, '.', '')),
-                  "totalNoGravado" => floatval(number_format($sumNoGravadoCuerpo, 2, '.', '')),
-                  "totalPagar" => floatval(number_format($this->devolucion->total, 2, '.', '')),
+                  "montoTotalOperacion" => floatval(number_format($this->devolucion->total - $this->devolucion->cuenta_a_terceros, 2, '.', '')),
                   "totalLetras" => $this->devolucion->total_en_letras,
                   // "totalIva" => floatval(number_format($this->devolucion->iva, 2, '.', '')),
                   "condicionOperacion" => $this->devolucion->cod_condicion,
@@ -268,121 +257,26 @@ class MHNotaCredito extends Model
             $cantidad = round(floatval($detalle->cantidad), 2);
             $montoDescu = round(floatval($detalle->descuento), 2);
             $ventaItem = round($precioUni * $cantidad - $montoDescu, 2);
-            $numDoc = $this->devolucion->venta->sello_mh ? $this->devolucion->venta->dte['identificacion']['codigoGeneracion'] : "" . $this->devolucion->venta->correlativo . "";
-            if (floatval($detalle->cuenta_a_terceros ?? 0) > 0) {
-                $detalles->push([
-                    "numItem" => count($detalles) + 1,
-                    "tipoItem" => $detalle->tipo_item,
-                    "numeroDocumento" => $numDoc,
-                    "cantidad" => floatval(number_format($cantidad, 2, '.', '')),
-                    "codigo" => (isset($detalle->codigo) && trim((string) $detalle->codigo) !== '') ? $detalle->codigo : null,
-                    "codTributo" => $detalle->codTributo,
-                    "uniMedida" => $detalle->cod_medida,
-                    "descripcion" => $detalle->nombre_producto,
-                    "precioUni" => floatval(number_format($precioUni, 4, '.', '')),
-                    "montoDescu" => floatval(number_format($montoDescu, 2, '.', '')),
-                    "ventaNoSuj" => floatval(number_format($detalle->no_sujeta > 0 ? $ventaItem : 0, 2, '.', '')),
-                    "ventaExenta" => floatval(number_format($detalle->exenta > 0 ? $ventaItem : 0, 2, '.', '')),
-                    "ventaGravada" => floatval(number_format($detalle->gravada > 0 ? $ventaItem : 0, 2, '.', '')),
-                    "tributos" => $tributos,
-                    "psv" => 0,
-                    "noGravado" => 0,
-                ]);
-                $detalles->push([
-                    "numItem" => count($detalles) + 1,
-                    "tipoItem" => 2,
-                    "numeroDocumento" => $numDoc,
-                    "cantidad" => floatval(number_format($cantidad, 2, '.', '')),
-                    "codigo" => null,
-                    "codTributo" => null,
-                    "uniMedida" => 99,
-                    "descripcion" => 'Cobro por cuenta a terceros',
-                    "precioUni" => 0,
-                    "montoDescu" => 0,
-                    "ventaNoSuj" => 0,
-                    "ventaExenta" => 0,
-                    "ventaGravada" => 0,
-                    "tributos" => null,
-                    "psv" => 0,
-                    "noGravado" => floatval(number_format($detalle->cuenta_a_terceros, 2, '.', '')),
-                ]);
-            } else {
-                $detalles->push([
-                    "numItem" => count($detalles) + 1,
-                    "tipoItem" => $detalle->tipo_item,
-                    "numeroDocumento" => $numDoc,
-                    "cantidad" => floatval(number_format($cantidad, 2, '.', '')),
-                    "codigo" => (isset($detalle->codigo) && trim((string) $detalle->codigo) !== '') ? $detalle->codigo : null,
-                    "codTributo" => $detalle->codTributo,
-                    "uniMedida" => $detalle->cod_medida,
-                    "descripcion" => $detalle->nombre_producto,
-                    "precioUni" => floatval(number_format($precioUni, 4, '.', '')),
-                    "montoDescu" => floatval(number_format($montoDescu, 2, '.', '')),
-                    "ventaNoSuj" => floatval(number_format($detalle->no_sujeta > 0 ? $ventaItem : 0, 2, '.', '')),
-                    "ventaExenta" => floatval(number_format($detalle->exenta > 0 ? $ventaItem : 0, 2, '.', '')),
-                    "ventaGravada" => floatval(number_format($detalle->gravada > 0 ? $ventaItem : 0, 2, '.', '')),
-                    "tributos" => $tributos,
-                    "psv" => 0,
-                    "noGravado" => 0,
-                ]);
-            }
+            $detalles->push([
+                "numItem" => $index + 1,
+                "tipoItem" => $detalle->tipo_item,
+                "numeroDocumento" => $this->devolucion->venta->sello_mh ? $this->devolucion->venta->dte['identificacion']['codigoGeneracion'] : "" . $this->devolucion->venta->correlativo . "",
+                "cantidad" => floatval(number_format($cantidad, 2, '.', '')),
+                "codigo" => $detalle->codigo,
+                "codTributo" => $detalle->codTributo,
+                "uniMedida" => $detalle->cod_medida,
+                "descripcion" => $detalle->nombre_producto,
+                "precioUni" => floatval(number_format($precioUni, 4, '.', '')),
+                "montoDescu" => floatval(number_format($montoDescu, 2, '.', '')),
+                "ventaNoSuj" => floatval(number_format($detalle->no_sujeta > 0 ? $ventaItem : 0, 2, '.', '')),
+                "ventaExenta" => floatval(number_format($detalle->exenta > 0 ? $ventaItem : 0, 2, '.', '')),
+                "ventaGravada" => floatval(number_format($detalle->gravada > 0 ? $ventaItem : 0, 2, '.', '')),
+                "tributos" => $tributos,
+                // "ivaItem" => floatval($detalle->iva)
+              ]);
         }
 
-        return $this->aplicarAjusteCuentaTerceros($detalles);
-    }
-
-    protected function aplicarAjusteCuentaTerceros($detalles)
-    {
-        $cuentaDoc = round((float) ($this->devolucion->cuenta_a_terceros ?? 0), 2);
-        if ($cuentaDoc <= 0.0001) {
-            return $this->renumerarItemsCuerpo($detalles);
-        }
-        $sumNo = round((float) $detalles->sum(function (array $r) {
-            return (float) ($r['noGravado'] ?? 0);
-        }), 2);
-        $diff = round($cuentaDoc - $sumNo, 2);
-        if ($diff > 0.0001) {
-            $detalles->push($this->lineaCuentaTercerosSintetica($diff));
-        }
-
-        return $this->renumerarItemsCuerpo($detalles);
-    }
-
-    protected function lineaCuentaTercerosSintetica(float $monto): array
-    {
-        $numDoc = $this->devolucion->venta->sello_mh
-            ? $this->devolucion->venta->dte['identificacion']['codigoGeneracion']
-            : "" . $this->devolucion->venta->correlativo . "";
-
-        return [
-            'numItem' => 0,
-            'tipoItem' => 2,
-            'numeroDocumento' => $numDoc,
-            'cantidad' => floatval(number_format(1, 2, '.', '')),
-            'codigo' => null,
-            'codTributo' => null,
-            'uniMedida' => 99,
-            'descripcion' => 'Cobro por cuenta a terceros',
-            'precioUni' => 0.0,
-            'montoDescu' => 0.0,
-            'ventaNoSuj' => 0.0,
-            'ventaExenta' => 0.0,
-            'ventaGravada' => 0.0,
-            'tributos' => null,
-            'psv' => 0,
-            'noGravado' => floatval(number_format($monto, 2, '.', '')),
-        ];
-    }
-
-    protected function renumerarItemsCuerpo($detalles)
-    {
-        $n = 1;
-
-        return $detalles->map(function (array $row) use (&$n) {
-            $row['numItem'] = $n++;
-
-            return $row;
-        })->values();
+        return $detalles;
     }
 
 
