@@ -154,10 +154,14 @@ export class CrearProductoComponent implements OnInit {
     }
 
     public barcode() {
-        var ventana = window.open(
-            this.apiService.baseUrl + "/api/barcode/" + this.producto.codigo + "?token=" + this.apiService.auth_token(),
-            "_new",
-            "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900"
+        const raw = String(this.producto.barcode || this.producto.codigo || '').trim();
+        if (!raw) {
+            return;
+        }
+        window.open(
+            this.apiService.baseUrl + '/api/barcode/' + encodeURIComponent(raw) + '?token=' + this.apiService.auth_token(),
+            '_new',
+            'toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900'
         );
     }
 

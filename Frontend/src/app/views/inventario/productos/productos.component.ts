@@ -19,6 +19,8 @@ export class ProductosComponent implements OnInit {
     public categorias: any = [];
     public proveedores: any = [];
     public marcas: any = [];
+    /** Suma de stock de todos los productos del resultado filtrado (si está habilitado en Mi cuenta). */
+    public stockTotalFiltrado: number | null = null;
     public ajuste: any = {};
     public inventario: any = {};
     public filtrosKardex: any = {
@@ -70,6 +72,10 @@ export class ProductosComponent implements OnInit {
 
         this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
+        }, error => { this.alertService.error(error); });
+
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+            this.proveedores = proveedores;
         }, error => { this.alertService.error(error); });
 
         this.apiService.getAll('productos/marca-productos').subscribe(marcas => {
@@ -131,6 +137,10 @@ export class ProductosComponent implements OnInit {
 
         this.apiService.getAll('productos', this.filtros).subscribe(productos => {
             this.productos = productos;
+            this.stockTotalFiltrado = this.apiService.isInventarioSumarStockBusquedas()
+                && productos?.stock_total_filtrado !== undefined && productos?.stock_total_filtrado !== null
+                ? Number(productos.stock_total_filtrado)
+                : null;
             this.loading = false;
             if (this.modalRef) {
                 this.modalRef.hide();
@@ -450,6 +460,10 @@ export class ProductosComponent implements OnInit {
 
     public isLotesActivo(): boolean {
         return this.apiService.isLotesActivo();
+    }
+
+    public isInventarioSumarStockBusquedas(): boolean {
+        return this.apiService.isInventarioSumarStockBusquedas();
     }
 
 }

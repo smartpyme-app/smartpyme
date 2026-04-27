@@ -746,6 +746,24 @@ class Empresa extends Model
     }
 
     /**
+     * Código de barras correlativo automático al crear productos (clave nueva: barcode_correlativo_automatico).
+     * Compatibilidad: si aún existe sku_correlativo_automatico de versiones anteriores, se considera activo.
+     */
+    public function isBarcodeCorrelativoAutomaticoHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'barcode_correlativo_automatico', false)
+            || (bool) $this->getCustomConfigValue('configuraciones', 'sku_correlativo_automatico', false);
+    }
+
+    /**
+     * Mostrar en el listado de inventario la suma de stock de todos los productos que coinciden con los filtros actuales.
+     */
+    public function isInventarioSumarStockBusquedasHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_sumar_stock_busquedas', false);
+    }
+
+    /**
      * Verificar si el módulo de bancos está activo para la empresa
      */
     public function isModuloBancos(): bool

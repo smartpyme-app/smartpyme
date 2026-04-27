@@ -139,13 +139,16 @@ export class FacturacionV2Component implements OnInit {
     this.apiService.getAll('usuarios/list').subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
-        if (
-          this.apiService.auth_user().tipo != 'Administrador' &&
-          this.apiService.auth_user().tipo != 'Supervisor' &&
-          this.apiService.auth_user().tipo != 'Supervisor Limitado'
-        ) {
+        const auth = this.apiService.auth_user();
+        const listaCompletaVendedores =
+          auth.tipo === 'Administrador' ||
+          auth.tipo === 'Supervisor' ||
+          auth.tipo === 'Supervisor Limitado' ||
+          ((auth.tipo === 'Ventas' || auth.tipo === 'Ventas Limitado') &&
+            this.apiService.isVentasPuedeCambiarVendedorFacturacion());
+        if (!listaCompletaVendedores) {
           this.usuarios = this.usuarios.filter(
-            (item: any) => item.id == this.apiService.auth_user().id
+            (item: any) => item.id == auth.id
           );
         }
       },

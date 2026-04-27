@@ -13,8 +13,8 @@ import { ApiService } from '@services/api.service';
 export class ProductoInformacionComponent implements OnInit, OnChanges {
 
     @Input() producto: any = {};
-    /** Evita múltiples llamadas al pedir SKU sugerido */
-    private skuCorrelativoPendiente = true;
+    /** Evita múltiples llamadas al pedir código de barras sugerido */
+    private barcodeCorrelativoPendiente = true;
     public categorias:any = [];
     public usuario:any = {};
     public categoria:any = {};
@@ -44,41 +44,42 @@ export class ProductoInformacionComponent implements OnInit, OnChanges {
 
         this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
 
-        this.intentarCargarSkuSugerido();
+        this.intentarCargarBarcodeSugerido();
     }
 
     ngOnChanges(changes: SimpleChanges) {
         if (changes['producto']) {
-            this.intentarCargarSkuSugerido();
+            this.intentarCargarBarcodeSugerido();
         }
     }
 
-    /** Precarga el código correlativo desde la API cuando aplica (producto nuevo + opción de empresa). */
-    private intentarCargarSkuSugerido() {
+    /** Precarga el código de barras correlativo desde la API cuando aplica (producto nuevo + opción de empresa). */
+    private intentarCargarBarcodeSugerido() {
         const p = this.producto;
-        if (!p || p.id || !this.apiService.isSkuCorrelativoAutomatico()) {
+        if (!p || p.id || !this.apiService.isBarcodeCorrelativoAutomatico()) {
             return;
         }
-        if (p.codigo) {
-            this.skuCorrelativoPendiente = false;
+        if (p.barcode) {
+            this.barcodeCorrelativoPendiente = false;
             return;
         }
         if (!p.id_empresa) {
             return;
         }
-        if (!this.skuCorrelativoPendiente) {
+        if (!this.barcodeCorrelativoPendiente) {
             return;
         }
 
-        this.skuCorrelativoPendiente = false;
-        this.apiService.getAll('productos/siguiente-sku-correlativo').subscribe(
+        this.barcodeCorrelativoPendiente = false;
+        this.apiService.getAll('productos/siguiente-barcode-correlativo').subscribe(
             (res: any) => {
-                if (res?.habilitado && res?.codigo != null && p === this.producto && !this.producto.codigo) {
-                    this.producto.codigo = res.codigo;
+                const valor = res?.barcode ?? res?.codigo;
+                if (res?.habilitado && valor != null && p === this.producto && !this.producto.barcode) {
+                    this.producto.barcode = String(valor);
                 }
             },
             () => {
-                this.skuCorrelativoPendiente = true;
+                this.barcodeCorrelativoPendiente = true;
             }
         );
     }
@@ -161,8 +162,16 @@ export class ProductoInformacionComponent implements OnInit, OnChanges {
         },error => {this.alertService.error(error); this.guardar = false; });
     }
 
-    public barcode(){
-        var ventana = window.open(this.apiService.baseUrl + "/api/barcode/" + this.producto.codigo + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
+    public barcode() {
+        const raw = String(this.producto.barcode || this.producto.codigo || '').trim();
+        if (!raw) {
+            return;
+        }
+        window.open(
+            this.apiService.baseUrl + '/api/barcode/' + encodeURIComponent(raw) + '?token=' + this.apiService.auth_token(),
+            '_new',
+            'toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900'
+        );
     }
 
     public verificarSiExiste(){
