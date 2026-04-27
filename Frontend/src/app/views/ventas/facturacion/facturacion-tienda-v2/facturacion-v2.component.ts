@@ -47,9 +47,8 @@ export class FacturacionV2Component implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
-  /** Con switch activo, el monto cuenta a terceros viene del input (no solo de la suma en detalles). */
+  /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
   public habilitarCuentaTerceros = false;
-  public montoCuentaTercerosManual = 0;
 
   /**
    * Si el usuario movió el switch de retención IVA 1%, no aplicar la regla automática (gran contribuyente + monto)
@@ -279,7 +278,6 @@ export class FacturacionV2Component implements OnInit {
   public cargarDatosIniciales() {
     this.venta = {};
     this.habilitarCuentaTerceros = false;
-    this.montoCuentaTercerosManual = 0;
     this.retencionIvaGcUsuarioDecidio = false;
     this.venta.fecha = this.apiService.date();
     this.venta.fecha_pago = this.apiService.date();
@@ -845,13 +843,8 @@ export class FacturacionV2Component implements OnInit {
     this.venta.no_sujeta = Number(rawNoSujeta).toFixed(4);
     const rawGravada = parseFloat(this.sumPipe.transform(this.venta.detalles, 'gravada'));
     this.venta.gravada = Number(rawGravada).toFixed(4);
-    if (this.habilitarCuentaTerceros) {
-      const m = Math.max(0, parseFloat(String(this.montoCuentaTercerosManual ?? 0)) || 0);
-      this.venta.cuenta_a_terceros = Number(m).toFixed(4);
-    } else {
-      const rawCuentaTerceros = parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'));
-      this.venta.cuenta_a_terceros = Number(rawCuentaTerceros).toFixed(4);
-    }
+    const rawCuentaTerceros = parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'));
+    this.venta.cuenta_a_terceros = Number(rawCuentaTerceros).toFixed(4);
 
     const subTotalNum = parseFloat(this.venta.sub_total);
     this.venta.iva_percibido = this.venta.percepcion
@@ -956,29 +949,19 @@ export class FacturacionV2Component implements OnInit {
     }
   }
 
-  /**
-   * Tras cargar una venta desde API: activa el modo manual solo si el total en cabecera
-   * no coincide con la suma de cuenta a terceros en detalles.
-   */
+  /** Tras cargar una venta: mostrar el bloque de cuenta a terceros si hay monto en líneas o en cabecera. */
   private aplicarEstadoCuentaTercerosDesdeVentaCargada(): void {
     const cRaw = parseFloat(this.venta.cuenta_a_terceros) || 0;
     const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
-    this.habilitarCuentaTerceros = cRaw > 0.0001 && Math.abs(cRaw - sumDet) > 0.0001;
-    this.montoCuentaTercerosManual = this.habilitarCuentaTerceros ? cRaw : 0;
+    this.habilitarCuentaTerceros = sumDet > 0.0001 || cRaw > 0.0001;
   }
 
   onCuentaTercerosSwitchChange(): void {
-    if (this.habilitarCuentaTerceros) {
-      const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
-      const actual = parseFloat(this.venta.cuenta_a_terceros) || 0;
-      this.montoCuentaTercerosManual = sumDet > 0.0001 ? sumDet : (actual > 0 ? actual : 0);
-    } else {
-      this.montoCuentaTercerosManual = 0;
-    }
     this.sumTotal();
   }
 
-  onMontoCuentaTercerosChange(): void {
+  onAlMenosUnPaqueteCuentaTerceros(): void {
+    this.habilitarCuentaTerceros = true;
     this.sumTotal();
   }
 

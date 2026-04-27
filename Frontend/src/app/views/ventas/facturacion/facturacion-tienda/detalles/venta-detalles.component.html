@@ -2,7 +2,7 @@
     <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
         <app-tienda-venta-buscador class="w-100" [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-buscador>
         <app-tienda-venta-producto [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-producto>
-        <app-tienda-venta-paquetes *ngIf="usuario.empresa.modulo_paquetes && venta.cotizacion != 1" [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-paquetes>
+        <app-tienda-venta-paquetes *ngIf="usuario.empresa.modulo_paquetes && venta.cotizacion != 1" [venta]="venta" (productoSelect)="productoSelect($event)" (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTercerosEnListado()"></app-tienda-venta-paquetes>
         <app-tienda-venta-citas *ngIf="usuario.empresa.modulo_citas && venta.cotizacion != 1" [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-citas>
     </div>
 </div>
@@ -15,6 +15,7 @@
                     <th>Producto</th>
                     <th style="width: 150px;">Cantidad</th>
                     <th style="width: 150px;">Precio</th>
+                    <th style="width: 150px;" *ngIf="mostrarCuentaTercerosEnLinea" [attr.title]="cuentaTercerosLineaSoloLectura ? 'Definido por paquetería; solo lectura' : 'Cuenta a terceros (por línea)'">Cta. terceros</th>
                     <th style="width: 150px;">Descuento</th>
                     <th style="width: 120px;" *ngIf="usuario.empresa.cambiar_tipo_impuesto_venta">Tipo</th>
                     <th style="width: 100px;" class="text-right">Total</th>
@@ -24,7 +25,7 @@
             <tbody class="align-top">
                 <!-- if no h ay ningun producto -->
                 <tr *ngIf="venta?.detalles?.length < 1">
-                    <td [attr.colspan]="6 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0) + (usuario.empresa.cambiar_tipo_impuesto_venta ? 1 : 0)" class="text-center">
+                    <td [attr.colspan]="colspanFilaVaciaDetalles" class="text-center">
                         <p class="text-muted my-3">
                             Agregue productos y servicios
                         </p>
@@ -98,6 +99,12 @@
                                 {{ precio.precio | currency:'USD':'symbol':'1.0-6'}}
                             </option>
                         </select>
+                    </td>
+                    <td style="width: 100px;" *ngIf="mostrarCuentaTercerosEnLinea">
+                        <div class="input-group">
+                            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                            <input type="number" class="form-control" [(ngModel)]="detalle.cuenta_a_terceros" (ngModelChange)="onCuentaTercerosLineaChange(detalle)" min="0" step="0.0001" [name]="'cuenta_terc_' + i" [readOnly]="cuentaTercerosLineaSoloLectura" [tabindex]="cuentaTercerosLineaSoloLectura ? -1 : 0">
+                        </div>
                     </td>
                     <td style="width: 150px;">
                         <div *ngIf="detalle.descuento_is_monto">

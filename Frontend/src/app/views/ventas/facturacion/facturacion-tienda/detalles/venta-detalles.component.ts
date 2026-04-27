@@ -14,6 +14,8 @@ export class VentaDetallesComponent implements OnInit {
 
     @Input() venta: any = {};
     @Input() usuarios: any = {};
+    /** Desde facturación: al activar, muestra en cada línea el input Cta. terceros junto a Precio. */
+    @Input() habilitarCuentaTerceros = false;
     public usuario:any = {};
     public detalle:any = {};
     public composicion:any = {};
@@ -21,6 +23,7 @@ export class VentaDetallesComponent implements OnInit {
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
+    @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
     modalRef!: BsModalRef;
 
     @ViewChild('msupervisor')
@@ -39,6 +42,45 @@ export class VentaDetallesComponent implements OnInit {
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
+    }
+
+    get mostrarCuentaTercerosEnLinea(): boolean {
+        return this.habilitarCuentaTerceros
+            && this.venta?.cotizacion != 1
+            && this.usuario?.tipo !== 'Ventas Limitado';
+    }
+
+    /** Mientras el módulo de paquetes esté activo, el monto en línea no se edita en el front (viene del paquete / API). */
+    get cuentaTercerosLineaSoloLectura(): boolean {
+        return !!this.usuario?.empresa?.modulo_paquetes;
+    }
+
+    /** Número de columnas al no hay detalles (incl. columna Cta. terceros si aplica). */
+    get colspanFilaVaciaDetalles(): number {
+        let n = 6;
+        if (this.usuario?.empresa?.vendedor_detalle_venta) { n += 1; }
+        if (this.usuario?.empresa?.cambiar_tipo_impuesto_venta) { n += 1; }
+        if (this.mostrarCuentaTercerosEnLinea) { n += 1; }
+        return n;
+    }
+
+    onAlMenosUnPaqueteCuentaTercerosEnListado(): void {
+        this.alMenosUnPaqueteConCuentaTerceros.emit();
+    }
+
+    onCuentaTercerosLineaChange(detalle: any): void {
+        if (this.cuentaTercerosLineaSoloLectura) {
+            return;
+        }
+        const v = detalle.cuenta_a_terceros;
+        if (v === '' || v == null) {
+            detalle.cuenta_a_terceros = 0;
+        } else {
+            const n = parseFloat(String(v));
+            detalle.cuenta_a_terceros = isNaN(n) ? 0 : Math.max(0, n);
+        }
+        this.update.emit(this.venta);
+        this.sumTotal.emit();
     }
 
     openModalEdit(template: TemplateRef<any>, detalle:any) {

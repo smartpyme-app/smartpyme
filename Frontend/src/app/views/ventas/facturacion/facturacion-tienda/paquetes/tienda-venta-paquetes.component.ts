@@ -16,6 +16,8 @@ export class TiendaVentaPaquetesComponent implements OnInit {
 
     @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
+    /** Si en la grilla (pág. actual) hay al menos un paquete con cuenta a terceros &gt; 0. */
+    @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
     modalRef!: BsModalRef;
 
     public paquetes:any = [];
@@ -82,8 +84,20 @@ export class TiendaVentaPaquetesComponent implements OnInit {
             radio.checked = false;
 
             this.loading = false;
+            this.notificarCuentaTercerosEnListadoPaquetes();
         }, error => {this.alertService.error(error); this.loading = false;});
 
+    }
+
+    private notificarCuentaTercerosEnListadoPaquetes(): void {
+        const data = this.paquetes?.data;
+        if (!data?.length) { return; }
+        const hay = data.some(
+            (p: any) => (parseFloat(String(p.cuenta_a_terceros ?? 0)) || 0) > 0.0001
+        );
+        if (hay) {
+            this.alMenosUnPaqueteConCuentaTerceros.emit();
+        }
     }
 
     public setOrden(columna: string) {
@@ -102,6 +116,7 @@ export class TiendaVentaPaquetesComponent implements OnInit {
         this.apiService.paginate(this.paquetes.path + '?page='+ event.page, this.filtros).subscribe(paquetes => { 
             this.paquetes = paquetes;
             this.loading = false;
+            this.notificarCuentaTercerosEnListadoPaquetes();
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
@@ -127,6 +142,10 @@ export class TiendaVentaPaquetesComponent implements OnInit {
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
         this.detalle.descuento_porcentaje      = 0;
+        this.detalle.cuenta_a_terceros = parseFloat(String(paquete.cuenta_a_terceros ?? 0)) || 0;
+        if (this.detalle.cuenta_a_terceros > 0.0001) {
+            this.alMenosUnPaqueteConCuentaTerceros.emit();
+        }
         console.log(this.detalle);
         this.onSubmit();
     }
@@ -135,6 +154,9 @@ export class TiendaVentaPaquetesComponent implements OnInit {
         console.log(paquete);
         let radio = document.getElementById('paquete' + paquete.id) as HTMLInputElement;
         if(radio.checked){
+            if ((parseFloat(String(paquete.cuenta_a_terceros ?? 0)) || 0) > 0.0001) {
+                this.alMenosUnPaqueteConCuentaTerceros.emit();
+            }
             if(!this.venta.id_cliente && paquete.id_cliente){
                 this.venta.id_cliente = paquete.id_cliente;
             }
