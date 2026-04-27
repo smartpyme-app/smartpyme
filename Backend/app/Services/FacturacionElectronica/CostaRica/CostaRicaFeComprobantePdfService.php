@@ -139,16 +139,8 @@ final class CostaRicaFeComprobantePdfService
         ]);
         $pdf->setPaper('US Letter', 'portrait');
         $nombre = $datos['clave'] !== '' ? $datos['clave'] : 'comprobante-cr';
-        $nombreArchivo = preg_replace('/[^\dA-Za-z._-]/', '', (string) $nombre);
-        if ($nombreArchivo === '') {
-            $nombreArchivo = 'comprobante-cr';
-        }
 
-        return response($pdf->output(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.$nombreArchivo.'.pdf"',
-            'Cache-Control' => 'private, must-revalidate',
-        ]);
+        return $pdf->stream($nombre.'.pdf');
     }
 
     /**
