@@ -1287,6 +1287,10 @@ export class FacturacionV2Component implements OnInit {
       return;
     }
 
+    if (this.tieneCantidadesMenoresAUno()) {
+      return;
+    }
+
     if (
       confirm(
         '¿Confirma procesar la ' +
@@ -1300,6 +1304,23 @@ export class FacturacionV2Component implements OnInit {
       }
       this.onSubmit();
     }
+  }
+
+  private tieneCantidadesMenoresAUno(): boolean {
+    const detalleInvalido = (this.venta.detalles || []).find(
+      (detalle: any) => Number(detalle?.cantidad) < 1
+    );
+
+    if (!detalleInvalido) {
+      return false;
+    }
+
+    const nombreProducto =
+      detalleInvalido.descripcion || detalleInvalido.nombre || 'el producto';
+    this.alertService.error(
+      `La cantidad de "${nombreProducto}" debe ser mayor o igual a 1 para procesar la venta.`
+    );
+    return true;
   }
 
   private navegarPostFacturaPreCuenta(ventaId: number) {
