@@ -39,6 +39,17 @@
     <strong>Cliente:</strong>
     {{ $pedido->cliente->nombre_empresa ?: $pedido->cliente->nombre_completo }}
   </p>
+  @php
+    $c = $pedido->cliente;
+    $dirPedido = trim((string) ($c->direccion ?: $c->empresa_direccion ?: ''));
+    $telPedido = trim((string) ($c->telefono ?: $c->empresa_telefono ?: ''));
+  @endphp
+  @if($dirPedido !== '')
+  <p><strong>Dirección:</strong> {{ $dirPedido }}</p>
+  @endif
+  @if($telPedido !== '')
+  <p><strong>Tel.:</strong> {{ $telPedido }}</p>
+  @endif
   @endif
   @if($pedido->usuario)
   <p>Usuario: {{ $pedido->usuario->name ?? $pedido->usuario->email }}</p>

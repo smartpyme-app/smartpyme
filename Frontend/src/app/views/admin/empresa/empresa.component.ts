@@ -10,7 +10,8 @@ import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-empresa',
-    templateUrl: './empresa.component.html'
+    templateUrl: './empresa.component.html',
+    styleUrls: ['./empresa.component.css']
 })
 export class EmpresaComponent implements OnInit, AfterViewInit {
 
@@ -1168,10 +1169,13 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 gastos_categorias_personalizadas: false, // Categorías de gasto BD, departamentos y áreas en gastos
                 estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
                 vista_modulo_restaurante_pedidos: 'ambos' as 'restaurante' | 'pedidos' | 'ambos', // Menú lateral: restaurante, pedidos o ambos
-                sku_correlativo_automatico: false, // SKU correlativo automático al crear productos
+                sku_correlativo_automatico: false, // obsoleto: migrar a barcode_correlativo_automatico; se lee por compatibilidad
+                barcode_correlativo_automatico: false, // Código de barras correlativo automático al crear productos
+                inventario_sumar_stock_busquedas: false, // Total de stock en listado de inventario según filtros
                 cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
                 cotizacion_mostrar_imagenes_productos: false, // Mostrar imágenes de productos en cotizaciones
                 bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
+                ventas_puede_cambiar_vendedor_facturacion: false, // Ventas/Limitado pueden elegir vendedor al facturar
                 dte_mostrar_descripcion_producto: true, // Descripción extendida del catálogo en PDF de factura y CCF (DTE)
             },
             campos_personalizados: {}
@@ -1535,21 +1539,71 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         });
     }
 
-    public isSkuCorrelativoAutomatico(): boolean {
-        return this.getCustomConfig('configuraciones', 'sku_correlativo_automatico', false);
+    public isVentasPuedeCambiarVendedorFacturacion(): boolean {
+        return this.getCustomConfig('configuraciones', 'ventas_puede_cambiar_vendedor_facturacion', false);
     }
 
-    public toggleSkuCorrelativoAutomatico() {
-        this.updateSkuCorrelativoAutomatico(!this.isSkuCorrelativoAutomatico());
+    public toggleVentasPuedeCambiarVendedorFacturacion() {
+        this.updateVentasPuedeCambiarVendedorFacturacion(!this.isVentasPuedeCambiarVendedorFacturacion());
     }
 
-    public updateSkuCorrelativoAutomatico(activo: boolean) {
-        this.addCustomConfig('configuraciones', 'sku_correlativo_automatico', activo);
+    public updateVentasPuedeCambiarVendedorFacturacion(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'ventas_puede_cambiar_vendedor_facturacion', activo);
 
         this.onSubmit().then(() => {
             this.alertService.success(
                 'Configuración actualizada',
-                `SKU correlativo automático ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+                `Permiso para que Ventas cambien vendedor ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    public isBarcodeCorrelativoAutomatico(): boolean {
+        return this.getCustomConfig('configuraciones', 'barcode_correlativo_automatico', false)
+            || this.getCustomConfig('configuraciones', 'sku_correlativo_automatico', false);
+    }
+
+    public toggleBarcodeCorrelativoAutomatico() {
+        this.updateBarcodeCorrelativoAutomatico(!this.isBarcodeCorrelativoAutomatico());
+    }
+
+    public updateBarcodeCorrelativoAutomatico(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'barcode_correlativo_automatico', activo);
+        this.addCustomConfig('configuraciones', 'sku_correlativo_automatico', false);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Código de barras correlativo automático ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    public isInventarioSumarStockBusquedas(): boolean {
+        return this.getCustomConfig('configuraciones', 'inventario_sumar_stock_busquedas', false);
+    }
+
+    public toggleInventarioSumarStockBusquedas() {
+        this.updateInventarioSumarStockBusquedas(!this.isInventarioSumarStockBusquedas());
+    }
+
+    public updateInventarioSumarStockBusquedas(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'inventario_sumar_stock_busquedas', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Total de stock en listado de inventario ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
             );
             const authUser = this.apiService.auth_user();
             if (authUser?.empresa?.id === this.empresa?.id) {

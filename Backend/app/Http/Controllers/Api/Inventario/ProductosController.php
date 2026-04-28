@@ -56,73 +56,136 @@ class ProductosController extends Controller
 
     public function index(Request $request)
     {
-        // Obtener la empresa del usuario autenticado
         $user = Auth::user();
         $empresa = Empresa::find($user->id_empresa);
 
-        $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->with(['inventarios' => function ($q) use ($request) {
-            if ($request->id_bodega) {
-                $q->where('id_bodega', $request->id_bodega);
-            }
-        }, 'precios', 'lotes' => function ($q) use ($request) {
-            if ($request->id_bodega) {
-                $q->where('id_bodega', $request->id_bodega);
-            }
-        }])
-            ->when($request->id_categoria, function ($query) use ($request) {
-                return $query->where('id_categoria', $request->id_categoria);
-            })
-            ->when($request->buscador, function ($query) use ($request, $empresa) {
+        $query = $this->buildProductosListadoQuery($request, $empresa, true);
+
+        $stockTotalFiltrado = null;
+        if ($empresa && $empresa->isInventarioSumarStockBusquedasHabilitado()) {
+            $stockTotalFiltrado = $this->calcularStockTotalFiltradoProductos(
+                $this->buildProductosListadoQuery($request, $empresa, false),
+                $request
+            );
+        }
+
+        $productos = $query
+            ->orderBy('enable', 'desc')
+            ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
+            ->paginate($request->paginate);
+
+        $payload = $productos->toArray();
+        if ($stockTotalFiltrado !== null) {
+            $payload['stock_total_filtrado'] = round((float) $stockTotalFiltrado, 2);
+        }
+
+        return Response()->json($payload, 200);
+    }
+
+    /**
+     * Query base del listado de productos (inventario) con los mismos filtros que el index.
+     */
+    protected function buildProductosListadoQuery(Request $request, ?Empresa $empresa, bool $withRelations): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Producto::query()->whereIn('tipo', ['Producto', 'Compuesto']);
+
+        if ($withRelations) {
+            $query->with(['inventarios' => function ($q) use ($request) {
+                if ($request->id_bodega) {
+                    $q->where('id_bodega', $request->id_bodega);
+                }
+            }, 'precios', 'lotes' => function ($q) use ($request) {
+                if ($request->id_bodega) {
+                    $q->where('id_bodega', $request->id_bodega);
+                }
+            }]);
+        }
+
+        $query->when($request->id_categoria, function ($q) use ($request) {
+            return $q->where('id_categoria', $request->id_categoria);
+        })
+            ->when($request->buscador, function ($q) use ($request, $empresa) {
                 $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-                return $query->where(function ($q) use ($request, $incluirComponenteQuimico) {
-                    $q->where('nombre', 'like', '%' . $request->buscador . '%')
-                        ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
-                        ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
-                        ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
-                        ->orWhere('marca', 'like', "%" . $request->buscador . "%")
-                        ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
+                return $q->where(function ($sub) use ($request, $incluirComponenteQuimico) {
+                    $sub->where('nombre', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('codigo', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('barcode', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('etiquetas', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('marca', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('descripcion', 'like', '%' . $request->buscador . '%');
                     if ($incluirComponenteQuimico) {
-                        $q->orWhere('componente_quimico', 'like', '%' . $request->buscador . '%');
+                        $sub->orWhere('componente_quimico', 'like', '%' . $request->buscador . '%');
                     }
                 });
             })
-            ->when($request->sin_stock, function ($query) use ($request) {
-                return $query->whereHas('inventarios', function ($q) {
-                    $q->whereRaw('COALESCE(stock, 0) < COALESCE(stock_minimo, 0)');
+            ->when($request->sin_stock, function ($q) {
+                return $q->whereHas('inventarios', function ($sub) {
+                    $sub->whereRaw('COALESCE(stock, 0) < COALESCE(stock_minimo, 0)');
                 });
             })
             ->when($request->nombre, function ($q) use ($request) {
                 $q->where('nombre', $request->nombre);
             })
-            ->when($request->compuestos !== null, function ($q) use ($request) {
+            ->when($request->compuestos !== null, function ($q) {
                 $q->whereHas('composiciones');
             })
             ->when($request->id_proveedor, function ($q) use ($request) {
-                $q->whereHas('proveedores', function ($q) use ($request) {
-                    return $q->where("id_proveedor", $request->id_proveedor);
+                $q->whereHas('proveedores', function ($sub) use ($request) {
+                    return $sub->where('id_proveedor', $request->id_proveedor);
                 });
             })
             ->when($request->estado !== null, function ($q) use ($request) {
                 $q->where('enable', !!$request->estado);
             })
-
-            ->when($request->marca, function ($query) use ($request) {
-                return $query->where('marca', 'like', '%' . $request->marca . '%');
+            ->when($request->marca, function ($q) use ($request) {
+                return $q->where('marca', 'like', '%' . $request->marca . '%');
             })
-            // Si la empresa tiene Shopify configurado y se ha seleccionado una bodega/sucursal,
-            // filtrar solo productos que tengan inventario en esa bodega
-            ->when($empresa && $empresa->shopify_store_url && $request->id_bodega, function ($query) use ($request) {
-                return $query->whereHas('inventarios', function ($q) use ($request) {
-                    $q->where('id_bodega', $request->id_bodega);
+            ->when($empresa && $empresa->shopify_store_url && $request->id_bodega, function ($q) use ($request) {
+                return $q->whereHas('inventarios', function ($sub) use ($request) {
+                    $sub->where('id_bodega', $request->id_bodega);
                 });
-            })
-            ->whereIn('tipo', ['Producto', 'Compuesto'])
-            // ->whereNotIn('id_categoria', [1,2])
-            ->orderBy('enable', 'desc')
-            ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
-            ->paginate($request->paginate);
+            });
 
-        return Response()->json($productos, 200);
+        return $query;
+    }
+
+    /**
+     * Suma el stock visible en listado para el conjunto filtrado (inventario tradicional o lotes), respetando bodega.
+     */
+    protected function calcularStockTotalFiltradoProductos(\Illuminate\Database\Eloquent\Builder $productoQuery, Request $request): float
+    {
+        $nonLoteIds = (clone $productoQuery)
+            ->select('productos.id')
+            ->where(function ($q) {
+                $q->where('productos.inventario_por_lotes', false)
+                    ->orWhereNull('productos.inventario_por_lotes');
+            });
+
+        $sumInventario = (float) (DB::query()
+            ->fromSub($nonLoteIds, 'filtered_p')
+            ->join('inventario as inv', 'inv.id_producto', '=', 'filtered_p.id')
+            ->join('sucursal_bodegas as b', 'b.id', '=', 'inv.id_bodega')
+            ->where('b.activo', 1)
+            ->whereNull('inv.deleted_at')
+            ->when($request->id_bodega, function ($q) use ($request) {
+                $q->where('inv.id_bodega', $request->id_bodega);
+            })
+            ->sum('inv.stock') ?? 0);
+
+        $loteIds = (clone $productoQuery)
+            ->select('productos.id')
+            ->where('productos.inventario_por_lotes', true);
+
+        $sumLotes = (float) (DB::query()
+            ->fromSub($loteIds, 'filtered_p')
+            ->join('lotes as l', 'l.id_producto', '=', 'filtered_p.id')
+            ->whereNull('l.deleted_at')
+            ->when($request->id_bodega, function ($q) use ($request) {
+                $q->where('l.id_bodega', $request->id_bodega);
+            })
+            ->sum('l.stock') ?? 0);
+
+        return $sumInventario + $sumLotes;
     }
 
     public function list()
@@ -2492,25 +2555,28 @@ class ProductosController extends Controller
     }
 
     /**
-     * Siguiente SKU correlativo sugerido: máximo código solo numérico en la empresa + 1 (si la opción está activa).
+     * Siguiente código de barras correlativo sugerido: máximo barcode solo numérico en la empresa + 1 (si la opción está activa).
+     * Ruta histórica siguiente-sku-correlativo delega aquí por compatibilidad.
      */
-    public function siguienteSkuCorrelativo()
+    public function siguienteBarcodeCorrelativo()
     {
         $user = Auth::user();
         $empresa = $user->empresa;
-        if (!$empresa || !$empresa->getCustomConfigValue('configuraciones', 'sku_correlativo_automatico', false)) {
-            return response()->json(['habilitado' => false, 'codigo' => null]);
+        if (!$empresa || !$empresa->isBarcodeCorrelativoAutomaticoHabilitado()) {
+            return response()->json(['habilitado' => false, 'barcode' => null, 'codigo' => null]);
         }
 
         $idEmpresa = (int) $user->id_empresa;
         $max = DB::table('productos')
             ->where('id_empresa', $idEmpresa)
             ->whereNull('deleted_at')
-            ->whereRaw('codigo REGEXP "^[0-9]+$"')
-            ->max(DB::raw('CAST(codigo AS UNSIGNED)'));
+            ->whereNotNull('barcode')
+            ->where('barcode', '!=', '')
+            ->whereRaw('barcode REGEXP "^[0-9]+$"')
+            ->max(DB::raw('CAST(barcode AS UNSIGNED)'));
 
-        $codigo = (string) ((int) ($max ?? 0) + 1);
+        $barcode = (string) ((int) ($max ?? 0) + 1);
 
-        return response()->json(['habilitado' => true, 'codigo' => $codigo]);
+        return response()->json(['habilitado' => true, 'barcode' => $barcode, 'codigo' => $barcode]);
     }
 }
