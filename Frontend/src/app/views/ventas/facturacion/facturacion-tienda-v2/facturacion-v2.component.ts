@@ -48,6 +48,9 @@ export class FacturacionV2Component implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
+  public habilitarCuentaTerceros = false;
+
   /**
    * Si el usuario movió el switch de retención IVA 1%, no aplicar la regla automática (gran contribuyente + monto)
    * hasta cambiar de cliente o iniciar un documento nuevo desde carga inicial.
@@ -281,6 +284,7 @@ export class FacturacionV2Component implements OnInit {
 
   public cargarDatosIniciales() {
     this.venta = {};
+    this.habilitarCuentaTerceros = false;
     this.retencionIvaGcUsuarioDecidio = false;
     this.venta.fecha = this.apiService.date();
     this.venta.fecha_pago = this.apiService.date();
@@ -966,6 +970,22 @@ export class FacturacionV2Component implements OnInit {
     const aCobrarEfectivo = enMultiple && parteEfectivo > 0 ? parteEfectivo : totalVenta;
     this.venta.cambio = (recibido - aCobrarEfectivo).toFixed(2);
   }
+
+   /** Tras cargar una venta: mostrar el bloque de cuenta a terceros si hay monto en líneas o en cabecera. */
+    private aplicarEstadoCuentaTercerosDesdeVentaCargada(): void {
+      const cRaw = parseFloat(this.venta.cuenta_a_terceros) || 0;
+      const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
+      this.habilitarCuentaTerceros = sumDet > 0.0001 || cRaw > 0.0001;
+    }
+
+    onCuentaTercerosSwitchChange(): void {
+      this.sumTotal();
+    }
+
+    onAlMenosUnPaqueteCuentaTerceros(): void {
+      this.habilitarCuentaTerceros = true;
+      this.sumTotal();
+    }
 
     private montoMinimoRetencionIvaGc(): number {
         const v = this.apiService.auth_user()?.empresa?.monto_minimo_retencion_iva_gc;
