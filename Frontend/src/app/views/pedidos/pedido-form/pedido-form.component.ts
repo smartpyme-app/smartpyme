@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 import { ApiService } from '@services/api.service';
 import {
@@ -100,6 +102,22 @@ export class PedidoFormComponent implements OnInit {
       }
     });
   }
+
+  /** Búsqueda remota de clientes (igual que en citas/eventos). */
+  searchClientes = (term: string): Observable<any[]> => {
+    if (!term || term.length < 2) {
+      return of([]);
+    }
+    return this.apiService.getAll(`clientes/search?q=${encodeURIComponent(term)}`).pipe(
+      map((response: any) =>
+        Array.isArray(response) ? response : response?.data ?? []
+      ),
+      catchError(() => of([]))
+    );
+  };
+
+  getClienteDisplay = (cliente: any): string =>
+    cliente?.tipo === 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
 
   onProductoSelect(producto: any): void {
     const precio = parseFloat(

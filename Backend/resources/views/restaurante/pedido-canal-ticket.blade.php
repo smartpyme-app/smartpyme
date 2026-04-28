@@ -35,21 +35,23 @@
   <p><strong>Ref. externa:</strong> {{ $pedido->referencia_externa }}</p>
   @endif
   @if($pedido->cliente)
+  @php
+    $c = $pedido->cliente;
+    $dirPedido = trim((string) ($c->getDireccionEfectiva() ?? ''));
+    $telPedido = trim((string) ($c->getTelefonoEfectivo() ?? ''));
+    if ($dirPedido === '') {
+      $dirPedido = trim((string) (($c->direccion ?: '') ?: ($c->empresa_direccion ?: '')));
+    }
+    if ($telPedido === '') {
+      $telPedido = trim((string) (($c->telefono ?: '') ?: ($c->empresa_telefono ?: '')));
+    }
+  @endphp
   <p>
     <strong>Cliente:</strong>
     {{ $pedido->cliente->nombre_empresa ?: $pedido->cliente->nombre_completo }}
   </p>
-  @php
-    $c = $pedido->cliente;
-    $dirPedido = trim((string) ($c->direccion ?: $c->empresa_direccion ?: ''));
-    $telPedido = trim((string) ($c->telefono ?: $c->empresa_telefono ?: ''));
-  @endphp
-  @if($dirPedido !== '')
-  <p><strong>Dirección:</strong> {{ $dirPedido }}</p>
-  @endif
-  @if($telPedido !== '')
-  <p><strong>Tel.:</strong> {{ $telPedido }}</p>
-  @endif
+  <p><strong>Dirección:</strong> {{ $dirPedido !== '' ? $dirPedido : '—' }}</p>
+  <p><strong>Tel.:</strong> {{ $telPedido !== '' ? $telPedido : '—' }}</p>
   @endif
   @if($pedido->usuario)
   <p>Usuario: {{ $pedido->usuario->name ?? $pedido->usuario->email }}</p>
