@@ -11,6 +11,7 @@ import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
+import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
 
 @Component({
   selector: 'app-facturacion-v2',
@@ -81,6 +82,9 @@ export class FacturacionV2Component implements OnInit {
 
   @ViewChild('mcredito')
   public creditoTemplate!: TemplateRef<any>;
+
+  @ViewChild(VentaDetallesV2Component)
+  private ventaDetallesV2?: VentaDetallesV2Component;
 
   constructor(
     public apiService: ApiService,
@@ -786,7 +790,8 @@ export class FacturacionV2Component implements OnInit {
     this.venta.forma_pago = 'Multiple';
     this.venta.efectivo = this.formaPagos.find(
       (item: any) => item.nombre == 'Efectivo'
-    ).total;
+    )?.total;
+    this.actualizarCambioEfectivo();
     console.log(this.venta);
   }
 
@@ -874,7 +879,7 @@ export class FacturacionV2Component implements OnInit {
           })
           .reduce((sum: number, d: any) => {
             const gravada = parseFloat(d.gravada || 0);
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
               ? parseFloat(d.iva) : gravada * (pctImp / 100);
             return sum + ivaLinea;
           }, 0);
@@ -892,7 +897,7 @@ export class FacturacionV2Component implements OnInit {
             const gravada = parseFloat(d.gravada || 0);
             const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
               ? Number(d.porcentaje_impuesto) : empresaIva;
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
               ? parseFloat(d.iva) : gravada * (pct / 100);
             return sum + ivaLinea;
           }, 0);
@@ -943,6 +948,23 @@ export class FacturacionV2Component implements OnInit {
             this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
         }
     }
+
+    this.actualizarCambioEfectivo();
+  }
+
+  /** Vuelto: efectivo recibido (monto_pago) menos lo debido en efectivo (total, o parte en pago mixto). */
+  public actualizarCambioEfectivo(): void {
+    const raw = this.venta.monto_pago;
+    if (raw === null || raw === undefined || raw === '') {
+      this.venta.cambio = '';
+      return;
+    }
+    const recibido = parseFloat(String(raw)) || 0;
+    const totalVenta = parseFloat(String(this.venta.total ?? 0)) || 0;
+    const enMultiple = this.venta.forma_pago === 'Multiple';
+    const parteEfectivo = parseFloat(String(this.venta.efectivo ?? 0)) || 0;
+    const aCobrarEfectivo = enMultiple && parteEfectivo > 0 ? parteEfectivo : totalVenta;
+    this.venta.cambio = (recibido - aCobrarEfectivo).toFixed(2);
   }
 
     private montoMinimoRetencionIvaGc(): number {
@@ -966,6 +988,11 @@ export class FacturacionV2Component implements OnInit {
 
     public onRetencionIvaManualChange(): void {
         this.retencionIvaGcUsuarioDecidio = true;
+        this.sumTotal();
+    }
+
+    public onCobrarImpuestosChange(): void {
+        this.ventaDetallesV2?.sincronizarIvasDetalles();
         this.sumTotal();
     }
 
@@ -1192,6 +1219,7 @@ export class FacturacionV2Component implements OnInit {
             this.venta.detalle_banco = '';
             this.mensajeErrorBanco = '';
         }
+        this.actualizarCambioEfectivo();
     }
 
     public setDocumento(id_documento: any) {
