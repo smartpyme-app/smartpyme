@@ -331,7 +331,7 @@
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
               <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onCobrarImpuestosChange()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
@@ -402,7 +402,7 @@
             <div class="input-group">
                 <!-- <div class="input-group-text">$</div> -->
                 <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-                <input type="number" class="form-control" (keyup)="venta.cambio = venta.monto_pago ? (venta.monto_pago - (venta.efectivo ? venta.efectivo : venta.total)).toFixed(2) : ''" [(ngModel)]="venta.monto_pago" name="monto_pago" id="monto_pago">
+                <input type="number" class="form-control" (keyup)="actualizarCambioEfectivo()" (ngModelChange)="actualizarCambioEfectivo()" [(ngModel)]="venta.monto_pago" name="monto_pago" id="monto_pago">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">

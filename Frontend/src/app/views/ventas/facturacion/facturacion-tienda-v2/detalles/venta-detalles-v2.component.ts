@@ -122,6 +122,16 @@ export class VentaDetallesV2Component implements OnInit {
         this.sumTotal.emit();
     }
 
+    /** Tras activar o desactivar "Con IVA" en la cabecera, recalcula IVA y total_iva por línea. */
+    public sincronizarIvasDetalles(): void {
+        if (!this.venta?.detalles?.length) {
+            return;
+        }
+        for (const detalle of this.venta.detalles) {
+            this.aplicarTipoGravado(detalle);
+        }
+    }
+
     /**
      * Maneja el cambio de precio desde el selector dropdown
      */

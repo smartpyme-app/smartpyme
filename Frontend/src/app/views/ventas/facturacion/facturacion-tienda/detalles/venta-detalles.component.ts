@@ -46,7 +46,17 @@ export class VentaDetallesComponent implements OnInit {
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
-    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle. IVA por línea = diferencia que hace cuadrar (2 decimales). Respeta cobrar_impuestos. */
+    private obtenerPorcentajeIvaDetalle(detalle: any): number {
+        if (!this.venta.cobrar_impuestos) {
+            return 0;
+        }
+        const pct = (detalle?.porcentaje_impuesto != null && detalle?.porcentaje_impuesto !== '')
+            ? Number(detalle.porcentaje_impuesto)
+            : (this.apiService.auth_user().empresa?.iva ?? 0);
+        return Number(pct) || 0;
+    }
+
+    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle. IVA por línea según %; respeta cobrar_impuestos. */
     private aplicarTipoGravado(detalle: any) {
         const total = parseFloat(detalle.total) || 0;
         detalle.gravada = 0;
@@ -55,10 +65,8 @@ export class VentaDetallesComponent implements OnInit {
         const tipo = (detalle.tipo_gravado || 'gravada').toLowerCase();
         if (tipo === 'gravada') {
             detalle.gravada = total;
-            const pct = (detalle.porcentaje_impuesto != null && detalle.porcentaje_impuesto !== '')
-                ? Number(detalle.porcentaje_impuesto)
-                : (this.apiService.auth_user().empresa?.iva ?? 0);
-            detalle.iva = parseFloat((total * (pct / 100)).toFixed(4));
+            const pct = this.obtenerPorcentajeIvaDetalle(detalle);
+            detalle.iva = pct > 0 ? parseFloat((total * (pct / 100)).toFixed(4)) : 0;
         } else if (tipo === 'exenta') {
             detalle.exenta = total;
             detalle.iva = 0;
@@ -354,6 +362,16 @@ export class VentaDetallesComponent implements OnInit {
 
     public sumTotalEmit(){
         this.sumTotal.emit();
+    }
+
+    /** Tras activar o desactivar "Con IVA" en la cabecera, recalcula IVA por línea. */
+    public sincronizarIvasDetalles(): void {
+        if (!this.venta?.detalles?.length) {
+            return;
+        }
+        for (const detalle of this.venta.detalles) {
+            this.aplicarTipoGravado(detalle);
+        }
     }
 
     cambiarOpcion(composicion:any, opcion:any){
