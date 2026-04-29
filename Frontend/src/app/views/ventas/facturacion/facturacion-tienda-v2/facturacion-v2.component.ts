@@ -407,6 +407,7 @@ export class FacturacionV2Component implements OnInit {
             pedido_id: pedidoCanalIdVal,
             cliente_id: pdata.cliente_id,
             id_sucursal: pdata.id_sucursal,
+            id_bodega: pdata.id_bodega,
             fecha: pdata.fecha,
             canal: pdata.canal,
             referencia_externa: pdata.referencia_externa,
@@ -1367,6 +1368,7 @@ export class FacturacionV2Component implements OnInit {
     pedido_id: number;
     cliente_id?: number | null;
     id_sucursal?: number | null;
+    id_bodega?: number | null;
     fecha?: string | null;
     canal?: string | null;
     referencia_externa?: string | null;
@@ -1376,6 +1378,9 @@ export class FacturacionV2Component implements OnInit {
     this.pedidoCanalId = data.pedido_id;
     if (data.id_sucursal) {
       this.venta.id_sucursal = data.id_sucursal;
+    }
+    if (data.id_bodega) {
+      this.venta.id_bodega = data.id_bodega;
     }
     if (data.fecha) {
       this.venta.fecha = data.fecha;
@@ -1429,6 +1434,18 @@ export class FacturacionV2Component implements OnInit {
         error: () => {},
       });
     }
+
+    const syncBodegaPedido = (attempt = 0) => {
+      if (data.id_bodega) {
+        this.venta.id_bodega = data.id_bodega;
+      }
+      if (this.bodegas?.length && this.venta.id_bodega) {
+        this.setBodega();
+      } else if (attempt < 40) {
+        setTimeout(() => syncBodegaPedido(attempt + 1), 100);
+      }
+    };
+    syncBodegaPedido();
   }
 
   private navegarPostFacturaPedidoCanal(ventaId: number) {
@@ -1475,6 +1492,10 @@ export class FacturacionV2Component implements OnInit {
         ? this.venta.efectivo
         : this.venta.total;
       this.venta.cambio = 0;
+    }
+
+    if (this.pedidoCanalId) {
+      (this.venta as any).id_pedido_canal = this.pedidoCanalId;
     }
 
     // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
