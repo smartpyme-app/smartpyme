@@ -139,7 +139,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
                 page: +params['page'] || 1,
             };
 
-            this.filtrarCompras();
+            this.filtrarCompras(false);
         });
 
         this.getNumsIds();
@@ -174,7 +174,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
         this.filtros.page = 1;
         this.filtros.num_identificacion = '';
 
-        this.filtrarCompras();
+        this.filtrarCompras(false);
     }
 
     public onBuscadorInput() {
@@ -188,7 +188,15 @@ export class ComprasComponent implements OnInit, OnDestroy {
         return Math.round((total - abonos - devoluciones) * 100) / 100;
     }
 
-    public filtrarCompras(){
+    /**
+     * @param resetPage Si es true (por defecto), vuelve a la página 1 (búsqueda, filtros, orden, paginate).
+     *                  false al paginar, sincronizar URL o refrescar tras guardar sin cambiar de página.
+     */
+    public filtrarCompras(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
+
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: this.filtros,
@@ -305,7 +313,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
             this.alertService.success('Venta guardado', 'La compra fue guardada exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
 
-        this.filtrarCompras();
+        this.filtrarCompras(false);
 
     }
 
@@ -323,7 +331,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
     public setPagination(event:any):void{
         this.loading = true;
         this.filtros.page = event.page;
-        this.filtrarCompras();
+        this.filtrarCompras(false);
     }
 
     public openDescargar(template: TemplateRef<any>) {
@@ -897,7 +905,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
         const suc = item.compra.id_sucursal;
         this.refrescarCorrelativosBulkTrasGuardar(() => {
           this.alertService.success('Compra registrada', item.fileName);
-          this.filtrarCompras();
+          this.filtrarCompras(false);
         }, { referenciaGuardada: ref, tipo_documento: td, id_sucursal: suc });
       },
       (err) => {
@@ -930,7 +938,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
         'Importación',
         `Se registraron ${items.length} compra(s).`
       );
-      this.filtrarCompras();
+      this.filtrarCompras(false);
       this.cerrarImportacionBulk();
       return;
     }

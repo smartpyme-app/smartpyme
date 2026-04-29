@@ -48,10 +48,15 @@ export class DevolucionesComprasComponent implements OnInit {
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        this.filtrarCompras();
+        this.filtros.page = 1;
+        this.filtrarCompras(false);
     }
 
-    public filtrarCompras(){
+    /** @param resetPage true al filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll. */
+    public filtrarCompras(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
         this.apiService.getAll('devoluciones/compras', this.filtros).subscribe(compras => { 
             this.compras = compras;
@@ -114,11 +119,8 @@ export class DevolucionesComprasComponent implements OnInit {
     }
 
     public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.compras.path + '?page='+ event.page, this.filtros).subscribe(compras => { 
-            this.compras = compras;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.filtros.page = event.page;
+        this.filtrarCompras(false);
     }
 
     // Filtros

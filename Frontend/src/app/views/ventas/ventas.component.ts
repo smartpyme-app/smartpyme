@@ -192,7 +192,7 @@ export class VentasComponent implements OnInit, OnDestroy {
         this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
       }
 
-      this.filtrarVentas();
+      this.filtrarVentas(false);
     });
 
     this.getNumsIds();
@@ -346,7 +346,7 @@ export class VentasComponent implements OnInit, OnDestroy {
         this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
       }
 
-      this.filtrarVentas();
+      this.filtrarVentas(false);
       
     }
 
@@ -355,9 +355,12 @@ export class VentasComponent implements OnInit, OnDestroy {
     this.searchSubject$.next();
   }
 
-  public filtrarVentas() {
-    // Al buscar por texto, volver siempre a la primera página
-    if (this.filtros.buscador?.toString().trim()) {
+  /**
+   * @param resetPage Si es true (por defecto), vuelve a la página 1 (búsqueda, filtros, orden, paginate).
+   *                  false al paginar o al sincronizar desde la URL.
+   */
+  public filtrarVentas(resetPage = true): void {
+    if (resetPage) {
       this.filtros.page = 1;
     }
 
@@ -439,7 +442,7 @@ export class VentasComponent implements OnInit, OnDestroy {
   // setPagination() ahora se hereda de BasePaginatedComponent
   public setPagination(event: any): void {
     this.filtros.page = event.page;
-    this.filtrarVentas();
+    this.filtrarVentas(false);
   }
 
   public reemprimir(venta: any) {
@@ -985,7 +988,7 @@ export class VentasComponent implements OnInit, OnDestroy {
       }
       this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
       // Actualizar el listado después de guardar
-      this.filtrarVentas();
+      this.filtrarVentas(false);
     } catch (error: any) {
       this.alertService.error(error);
       this.saving = false;
