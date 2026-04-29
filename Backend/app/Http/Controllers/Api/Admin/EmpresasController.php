@@ -140,6 +140,11 @@ class EmpresasController extends Controller
 
     public function store(StoreEmpresaRequest $request)
     {
+        $request->validate([
+            'nombre' => 'required|max:255',
+            'iva' => 'required|numeric',
+            'woocommerce_sync_mode' => 'nullable|in:bidirectional,wc_to_sp,sp_to_wc',
+        ]);
 
         if ($request->id) {
             $empresa = $this->updateEmpresa($request);
@@ -828,7 +833,7 @@ class EmpresasController extends Controller
     {
         $empresa = Auth::user()->empresa;
 
-        if ($request->input('section') === 'configuraciones' && in_array($request->input('key'), ['ticket_en_pdf', 'componente_quimico_activo', 'sku_correlativo_automatico', 'dte_mostrar_descripcion_producto'])) {
+        if ($request->input('section') === 'configuraciones' && in_array($request->input('key'), ['ticket_en_pdf', 'componente_quimico_activo', 'sku_correlativo_automatico', 'barcode_correlativo_automatico', 'ventas_puede_cambiar_vendedor_facturacion', 'dte_mostrar_descripcion_producto'])) {
             $request->validate([
                 'value' => 'boolean'
             ]);

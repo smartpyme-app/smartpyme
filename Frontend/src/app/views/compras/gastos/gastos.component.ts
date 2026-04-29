@@ -107,7 +107,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public override setPagination(event: any): void {
         this.filtros.page = event.page;
-        this.filtrarGastos();
+        this.filtrarGastos(false);
     }
 
     ngOnInit() {
@@ -136,7 +136,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
                 page: +params['page'] || 1,
             };
 
-            this.filtrarGastos();
+            this.filtrarGastos(false);
             this.cdr.markForCheck();
         });
 
@@ -175,23 +175,22 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
         this.filtros.num_identificacion = '';
 
         this.loading = true;
-        this.filtrarGastos();
+        this.filtrarGastos(false);
         this.getNumsIds();
     }
 
-    public filtrarGastos(){
-        // Limpiar valores vacíos antes de navegar
-        const queryParams: any = {};
-        Object.keys(this.filtros).forEach(key => {
-            const value = this.filtros[key];
-            if (value !== '' && value !== null && value !== undefined) {
-                queryParams[key] = value;
-            }
-        });
+    /**
+     * @param resetPage Si es true (por defecto), vuelve a la página 1 (búsqueda, filtros, orden, paginate).
+     *                  false al paginar o al sincronizar desde la URL.
+     */
+    public filtrarGastos(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
 
         this.router.navigate([], {
             relativeTo: this.route,
-            queryParams: queryParams,
+            queryParams: this.filtrosParaApi(),
         });
 
         this.loading = true;
@@ -234,7 +233,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
             await this.apiService.store('gasto', this.gasto)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             this.gasto = {};
             this.alertService.success('Gasto guardado', 'El gasto se marco como recurrente exitosamente.');
         } catch (error: any) {
@@ -245,7 +244,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public override async delete(item: any | number): Promise<void> {
         const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
+
         if (!confirm('¿Desea eliminar el Registro?')) {
             return;
         }
@@ -255,7 +254,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
             const deletedItem = await this.apiService.delete('gasto/', itemToDelete)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             const index = this.gastos.data?.findIndex((g: any) => g.id === deletedItem.id);
             if (index !== -1 && index >= 0) {
                 this.gastos.data.splice(index, 1);

@@ -25,6 +25,8 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
 
     @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
+    /** Si en la grilla (pág. actual) hay al menos un paquete con cuenta a terceros &gt; 0. */
+    @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
 
     public paquetes: PaginatedResponse<any> = {} as PaginatedResponse;
     public clientes:any = [];
@@ -34,8 +36,8 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
     public override filtros:any = {};
     public buscador:any = '';
 
-    constructor( 
-        apiService: ApiService, 
+    constructor(
+        apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private sumPipe:SumPipe,
@@ -56,19 +58,19 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
 
     }
 
-    override openModal(template: TemplateRef<any>) {
+    public override openModal(template: TemplateRef<any>): void {
         this.apiService.getAll('paquetes/pendientes/clientes')
             .pipe(this.untilDestroyed())
-            .subscribe(clientes => { 
+            .subscribe(clientes => {
             this.clientes = clientes;
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         this.loadAll();
         super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
-        
+
         this.apiService.getAll('servicios', {buscador: 'Servicio de importación de paquetería'})
             .pipe(this.untilDestroyed())
-            .subscribe(productos => { 
+            .subscribe(productos => {
             if(productos.data[0]){
                 this.servicio = productos.data[0];
             }else{
@@ -96,24 +98,35 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
         if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) {
             this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
         }
-        
+
         this.filtrarPaquetes();
     }
 
     public filtrarPaquetes(){
         this.loading = true;
         this.venta.id_cliente = this.filtros.id_cliente;
-        this.apiService.getAll('paquetes', this.filtros).pipe(this.untilDestroyed()).subscribe(paquetes => { 
+        this.apiService.getAll('paquetes', this.filtros).pipe(this.untilDestroyed()).subscribe(paquetes => {
             this.paquetes = paquetes;
-            
+
             this.detalles = [];
             let radio = document.getElementById('marcarPaquetes') as HTMLInputElement;
             radio.checked = false;
 
             this.loading = false;
-            this.cdr.markForCheck();
-        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
+            this.notificarCuentaTercerosEnListadoPaquetes();
+        }, error => {this.alertService.error(error); this.loading = false;});
 
+    }
+
+    private notificarCuentaTercerosEnListadoPaquetes(): void {
+        const data = this.paquetes?.data;
+        if (!data?.length) { return; }
+        const hay = data.some(
+            (p: any) => (parseFloat(String(p.cuenta_a_terceros ?? 0)) || 0) > 0.0001
+        );
+        if (hay) {
+            this.alMenosUnPaqueteConCuentaTerceros.emit();
+        }
     }
 
     public setOrden(columna: string) {
@@ -127,7 +140,14 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
         this.filtrarPaquetes();
     }
 
-    // setPagination() ahora se hereda de BasePaginatedComponent
+    public override setPagination(event:any):void{
+        this.loading = true;
+        this.apiService.paginate(this.paquetes.path + '?page='+ event.page, this.filtros).subscribe(paquetes => {
+            this.paquetes = paquetes;
+            this.loading = false;
+            this.notificarCuentaTercerosEnListadoPaquetes();
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
 
 
     selectProducto(paquete:any){
@@ -151,6 +171,10 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
         this.detalle.descuento_porcentaje      = 0;
+        this.detalle.cuenta_a_terceros = parseFloat(String(paquete.cuenta_a_terceros ?? 0)) || 0;
+        if (this.detalle.cuenta_a_terceros > 0.0001) {
+            this.alMenosUnPaqueteConCuentaTerceros.emit();
+        }
         console.log(this.detalle);
         this.onSubmit();
     }
@@ -159,6 +183,9 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
         console.log(paquete);
         let radio = document.getElementById('paquete' + paquete.id) as HTMLInputElement;
         if(radio.checked){
+            if ((parseFloat(String(paquete.cuenta_a_terceros ?? 0)) || 0) > 0.0001) {
+                this.alMenosUnPaqueteConCuentaTerceros.emit();
+            }
             if(!this.venta.id_cliente && paquete.id_cliente){
                 this.venta.id_cliente = paquete.id_cliente;
             }
@@ -223,7 +250,7 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
     }
 
     agregarDetalles(){
-        for (let i = 0; i < this.detalles.length; i++) { 
+        for (let i = 0; i < this.detalles.length; i++) {
             this.productoSelect.emit(this.detalles[i]);
         }
 

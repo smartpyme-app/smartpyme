@@ -28,7 +28,7 @@ export class ProveedoresComponent extends BaseCrudComponent<any> implements OnIn
     public categorias:any = [];
 
     constructor(
-        apiService:ApiService, 
+        apiService:ApiService,
         alertService:AlertService,
         modalManager: ModalManagerService,
         private cdr: ChangeDetectorRef
@@ -67,12 +67,21 @@ export class ProveedoresComponent extends BaseCrudComponent<any> implements OnIn
         this.filtros.orden = 'nombre';
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
-        this.filtrarProveedores();
+        this.filtros.page = 1;
+        this.filtrarProveedores(false);
         this.closeModal();
+
+        // Ocultar modal de importación
+        if(this.modalRef){
+            this.modalRef.hide();
+        }
     }
 
-    public async filtrarProveedores(): Promise<void> {
-        this.loading = true;
+    public async filtrarProveedores(resetPage = true): Promise<void> {
+      if (resetPage) {
+        this.filtros.page = 1;
+      }
+      this.loading = true;
         try {
             this.proveedores = await this.apiService.getAll('proveedores', this.filtros)
                 .pipe(this.untilDestroyed())
@@ -110,7 +119,7 @@ export class ProveedoresComponent extends BaseCrudComponent<any> implements OnIn
 
     public override async delete(item: any | number): Promise<void> {
         const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
+
         if (!confirm('¿Desea eliminar el Registro?')) {
             return;
         }
@@ -121,7 +130,7 @@ export class ProveedoresComponent extends BaseCrudComponent<any> implements OnIn
             const deletedItem = await this.apiService.delete('proveedor/', itemToDelete)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             if (this.proveedores.data) {
                 const index = this.proveedores.data.findIndex((p: any) => p.id === deletedItem.id);
                 if (index !== -1) {
@@ -137,6 +146,11 @@ export class ProveedoresComponent extends BaseCrudComponent<any> implements OnIn
             this.cdr.markForCheck();
         }
     }
+
+  public override setPagination(event:any):void{
+    this.filtros.page = event.page;
+    this.filtrarProveedores(false);
+  }
 
     override openModal(template: TemplateRef<any>) {
         super.openModal(template);

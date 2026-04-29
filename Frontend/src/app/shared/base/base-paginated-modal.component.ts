@@ -1,4 +1,4 @@
-import { TemplateRef } from '@angular/core';
+import { Directive, TemplateRef } from '@angular/core';
 import { BasePaginatedComponent, PaginatedResponse } from './base-paginated.component';
 import { ModalManagerService } from '../../services/modal-manager.service';
 import { AlertService } from '../../services/alert.service';
@@ -26,6 +26,7 @@ export type { PaginatedResponse };
  * }
  * ```
  */
+@Directive()
 export abstract class BasePaginatedModalComponent extends BasePaginatedComponent {
   public modalRef?: any; // BsModalRef
   public saving: boolean = false;

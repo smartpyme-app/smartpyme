@@ -4,14 +4,17 @@ namespace App\Http\Controllers\Api\Restaurante;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
+use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Producto;
 use App\Models\Restaurante\PedidoRestaurante;
 use App\Models\Restaurante\PedidoRestauranteDetalle;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta as VentaModel;
+use App\Services\Restaurante\PedidoCanalInventarioService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 class PedidoRestauranteController extends Controller
@@ -94,12 +97,16 @@ class PedidoRestauranteController extends Controller
             ->header('Content-Type', 'text/html; charset=utf-8');
     }
 
-    public function confirmar(int $id): JsonResponse
+    public function confirmar(Request $request, int $id): JsonResponse
     {
         $user = auth()->user();
         if (!$user || !$user->id_empresa) {
             return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
         }
+
+        $request->validate([
+            'id_bodega' => 'nullable|integer',
+        ]);
 
         $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)->findOrFail($id);
 
@@ -107,7 +114,47 @@ class PedidoRestauranteController extends Controller
             return response()->json(['error' => 'Solo se pueden confirmar pedidos en borrador'], 422);
         }
 
-        $pedido->update(['estado' => 'pendiente_facturar']);
+        if ($pedido->detalles()->count() === 0) {
+            return response()->json(['error' => 'El pedido no tiene líneas para confirmar'], 422);
+        }
+
+        if ($request->filled('id_bodega')) {
+            $err = $this->validarBodegaEmpresa((int) $request->id_bodega, (int) $user->id_empresa);
+            if ($err) {
+                return $err;
+            }
+        }
+
+        if ($pedido->id_bodega) {
+            $err = $this->validarBodegaEmpresa((int) $pedido->id_bodega, (int) $user->id_empresa);
+            if ($err) {
+                return $err;
+            }
+        }
+
+        try {
+            DB::transaction(function () use ($request, $pedido, $user) {
+                $idBodega = (int) ($request->input('id_bodega') ?: $pedido->id_bodega ?: $user->id_bodega);
+                if ($idBodega <= 0) {
+                    throw new RuntimeException('Indique una bodega en el pedido o al confirmar para descontar inventario.');
+                }
+                $errBodega = $this->validarBodegaEmpresa($idBodega, (int) $user->id_empresa);
+                if ($errBodega) {
+                    throw new RuntimeException('Bodega no válida para la empresa.');
+                }
+
+                $pedido->id_bodega = $idBodega;
+                $pedido->save();
+
+                $svc = new PedidoCanalInventarioService();
+                $svc->aplicarSalidasAlConfirmar($pedido->fresh(['detalles']), $idBodega);
+
+                $pedido->update(['estado' => 'pendiente_facturar']);
+            });
+        } catch (RuntimeException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
         $pedido->load(['cliente', 'usuario']);
 
         return response()->json($pedido->fresh(['detalles.producto', 'cliente', 'usuario']));
@@ -126,7 +173,18 @@ class PedidoRestauranteController extends Controller
             return response()->json(['error' => 'Solo se pueden anular pedidos en borrador o pendiente de facturar'], 422);
         }
 
-        $pedido->update(['estado' => 'anulado']);
+        try {
+            DB::transaction(function () use ($pedido) {
+                if ($pedido->estado === 'pendiente_facturar' && $pedido->id_bodega) {
+                    $svc = new PedidoCanalInventarioService();
+                    $svc->revertirSalidasPedido($pedido->fresh(['detalles']), (int) $pedido->id_bodega);
+                }
+                $pedido->update(['estado' => 'anulado']);
+            });
+        } catch (RuntimeException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
         $pedido->load(['cliente', 'usuario']);
 
         return response()->json($pedido->fresh(['detalles.producto', 'cliente', 'usuario']));
@@ -170,6 +228,7 @@ class PedidoRestauranteController extends Controller
             'pedido_id' => $pedido->id,
             'cliente_id' => $pedido->cliente_id,
             'id_sucursal' => $pedido->id_sucursal,
+            'id_bodega' => $pedido->id_bodega,
             'fecha' => $pedido->fecha?->format('Y-m-d'),
             'subtotal' => (float) $pedido->subtotal,
             'total' => (float) $pedido->total,
@@ -245,6 +304,7 @@ class PedidoRestauranteController extends Controller
             'cliente_id' => 'nullable|exists:clientes,id',
             'observaciones' => 'nullable|string|max:5000',
             'id_sucursal' => 'nullable|integer',
+            'id_bodega' => 'nullable|integer',
             'detalles' => 'required|array|min:1',
             'detalles.*.producto_id' => 'required|integer',
             'detalles.*.cantidad' => 'required|numeric|min:0.0001',
@@ -266,10 +326,18 @@ class PedidoRestauranteController extends Controller
             }
         }
 
+        if (!empty($validated['id_bodega'])) {
+            $err = $this->validarBodegaEmpresa((int) $validated['id_bodega'], (int) $user->id_empresa);
+            if ($err) {
+                return $err;
+            }
+        }
+
         $pedido = DB::transaction(function () use ($validated, $user) {
             $pedido = PedidoRestaurante::create([
                 'id_empresa' => $user->id_empresa,
                 'id_sucursal' => $validated['id_sucursal'] ?? $user->id_sucursal,
+                'id_bodega' => $validated['id_bodega'] ?? $user->id_bodega,
                 'usuario_id' => $user->id,
                 'fecha' => $validated['fecha'],
                 'canal' => $validated['canal'] ?? null,
@@ -314,6 +382,7 @@ class PedidoRestauranteController extends Controller
             'cliente_id' => 'nullable|exists:clientes,id',
             'observaciones' => 'nullable|string|max:5000',
             'id_sucursal' => 'nullable|integer',
+            'id_bodega' => 'nullable|integer',
             'detalles' => 'sometimes|array|min:1',
             'detalles.*.producto_id' => 'required_with:detalles|integer',
             'detalles.*.cantidad' => 'required_with:detalles|numeric|min:0.0001',
@@ -337,6 +406,13 @@ class PedidoRestauranteController extends Controller
             }
         }
 
+        if (!empty($validated['id_bodega'])) {
+            $err = $this->validarBodegaEmpresa((int) $validated['id_bodega'], (int) $user->id_empresa);
+            if ($err) {
+                return $err;
+            }
+        }
+
         DB::transaction(function () use ($validated, $pedido) {
             if (isset($validated['fecha'])) {
                 $pedido->fecha = $validated['fecha'];
@@ -355,6 +431,9 @@ class PedidoRestauranteController extends Controller
             }
             if (array_key_exists('id_sucursal', $validated)) {
                 $pedido->id_sucursal = $validated['id_sucursal'];
+            }
+            if (array_key_exists('id_bodega', $validated)) {
+                $pedido->id_bodega = $validated['id_bodega'];
             }
 
             if (isset($validated['detalles'])) {
@@ -438,6 +517,16 @@ class PedidoRestauranteController extends Controller
         $ok = Cliente::where('id', $clienteId)->where('id_empresa', $idEmpresa)->exists();
         if (!$ok) {
             return response()->json(['error' => 'Cliente no válido para la empresa'], 422);
+        }
+
+        return null;
+    }
+
+    private function validarBodegaEmpresa(int $bodegaId, int $idEmpresa): ?JsonResponse
+    {
+        $ok = Bodega::withoutGlobalScopes()->where('id', $bodegaId)->where('id_empresa', $idEmpresa)->exists();
+        if (!$ok) {
+            return response()->json(['error' => 'Bodega no válida para la empresa'], 422);
         }
 
         return null;

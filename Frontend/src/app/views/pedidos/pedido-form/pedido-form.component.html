@@ -30,14 +30,27 @@
               <label class="form-label" for="pf_ref">Referencia externa</label>
               <input id="pf_ref" type="text" class="form-control" [(ngModel)]="referenciaExterna" name="ref" placeholder="ID en plataforma">
             </div>
+            <div class="col-md-4">
+              <label class="form-label" for="pf_bodega">Bodega (inventario)</label>
+              <select id="pf_bodega" class="form-select" [(ngModel)]="idBodega" name="idBodega">
+                <option [ngValue]="null">— Usar bodega del usuario al confirmar —</option>
+                <option *ngFor="let b of bodegas" [ngValue]="b.id">{{ b.nombre }}</option>
+              </select>
+            </div>
             <div class="col-md-6">
               <label class="form-label" for="pf_cli">Cliente (opcional)</label>
-              <select id="pf_cli" class="form-select" [(ngModel)]="clienteId" name="clienteId">
-                <option [ngValue]="null">— Sin cliente —</option>
-                <option *ngFor="let c of clientes" [ngValue]="c.id">
-                  {{ c.tipo == 'Empresa' ? c.nombre_empresa : c.nombre_completo }}
-                </option>
-              </select>
+              <app-select-search
+                id="pf_cli"
+                name="clienteId"
+                [(ngModel)]="clienteId"
+                [items]="clientes"
+                displayProperty="nombre_completo"
+                valueProperty="id"
+                [customDisplayFunction]="getClienteDisplay"
+                [searchFunction]="searchClientes"
+                placeholder="Buscar por nombre, empresa o teléfono..."
+                cssClass="form-select p-0">
+              </app-select-search>
             </div>
             <div class="col-12">
               <label class="form-label" for="pf_obs">Observaciones</label>

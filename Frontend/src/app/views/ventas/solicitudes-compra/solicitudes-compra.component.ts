@@ -61,7 +61,7 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
 
         this.apiService.getAll('proveedores/list')
             .pipe(this.untilDestroyed())
-            .subscribe(proveedores => { 
+            .subscribe(proveedores => {
                 this.proveedores = proveedores;
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
@@ -87,10 +87,16 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        this.filtrarCompras();
+        this.filtros.page = 1;
+
+        this.filtrarCompras(false);
     }
 
-    public async filtrarCompras(): Promise<void> {
+    /** @param resetPage true al buscar/filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll. */
+    public async filtrarCompras(resetPage = true): Promise<void> {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
         if(!this.filtros.id_proveedor){
             this.filtros.id_proveedor = '';
@@ -104,6 +110,7 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
             if(this.modalRef){
                 this.closeModal();
             }
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
         } finally {
@@ -116,7 +123,7 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
             await this.apiService.store('orden-de-compra', cotizacion)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             this.alertService.success('Solicitud de compra actualizada', 'La solicitud de compra fue actualizada exitosamente.');
         } catch (error: any) {
             this.alertService.error(error);
@@ -126,7 +133,7 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
 
     public override async delete(item: any | number): Promise<void> {
         const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
+
         if (!confirm('¿Desea eliminar el Registro?')) {
             return;
         }
@@ -136,7 +143,7 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
             const deletedItem = await this.apiService.delete('orden-de-compra/', itemToDelete)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             const index = this.compras.data?.findIndex((c: any) => c.id === deletedItem.id);
             if (index !== -1 && index >= 0) {
                 this.compras.data.splice(index, 1);
@@ -150,6 +157,11 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
             this.cdr.markForCheck();
         }
     }
+
+  public override setPagination(event:any):void{
+    this.filtros.page = event.page;
+    this.filtrarCompras(false);
+  }
 
     public reemprimir(compra:any){
         window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + compra.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');

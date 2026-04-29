@@ -47,6 +47,13 @@ class WooCommerceStockService
                 return false;
             }
 
+            if (!$empresa->woocommerceSyncPushesToRemote()) {
+                Log::debug('Sincronización SP → WooCommerce desactivada para este modo', [
+                    'empresa_id' => $empresa->id,
+                    'woocommerce_sync_mode' => $empresa->woocommerce_sync_mode,
+                ]);
+                return false;
+            }
 
             $producto = Producto::with(['imagenes', 'empresa'])->find($productoId);
 

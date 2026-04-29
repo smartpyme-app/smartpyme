@@ -36,6 +36,10 @@ class WooCommerceExportService
             empty($empresa->woocommerce_consumer_secret)) {
             throw new \Exception("La configuración de WooCommerce no está completa en la empresa");
         }
+
+        if (!$empresa->woocommerceSyncPushesToRemote()) {
+            throw new \Exception('El modo de sincronización actual no permite enviar productos a WooCommerce.');
+        }
         
         $client = new WooCommerceApiClient(
             $empresa->woocommerce_store_url,

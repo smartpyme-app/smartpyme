@@ -20,7 +20,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     standalone: true,
     imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    
+
 })
 
 export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -87,15 +87,21 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        this.filtrarAbonos();
+        this.filtros.page = 1;
+
+        this.filtrarAbonos(false);
     }
 
-    public filtrarAbonos(){
+    /** @param resetPage true al buscar/filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll. */
+    public filtrarAbonos(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
         this.cdr.markForCheck();
         this.apiService.getAll('ventas/abonos', this.filtros)
             .pipe(this.untilDestroyed())
-            .subscribe(abonos => { 
+            .subscribe(abonos => {
                 this.abonos = abonos;
                 this.loading = false;
                 if(this.modalRef){
@@ -110,7 +116,7 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
             await this.apiService.store('venta/abono/update', abono)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             this.alertService.success('Abono actualizado', 'El abono fue actualizado exitosamente.');
         } catch (error: any) {
             this.alertService.error(error);
@@ -119,7 +125,7 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
 
     public override async delete(item: any | number): Promise<void> {
         const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
+
         if (!confirm('¿Desea eliminar el Registro?')) {
             return;
         }
@@ -130,7 +136,7 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
             const deletedItem = await this.apiService.delete('venta/abono/', itemToDelete)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             const index = this.abonos.data?.findIndex((a: any) => a.id === deletedItem.id);
             if (index !== -1 && index >= 0) {
                 this.abonos.data.splice(index, 1);
@@ -143,13 +149,18 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
         }
     }
 
+  public override setPagination(event:any):void{
+    this.filtros.page = event.page;
+    this.filtrarAbonos(false);
+  }
+
     public imprimir(abono:any){
         window.open(this.apiService.baseUrl + '/api/venta/abono/imprimir/' + abono.id + '?token=' + this.apiService.auth_token());
     }
 
     openModalEdit(template: TemplateRef<any>, abono:any) {
         this.abono = abono;
-        
+
         this.apiService.getAll('documentos')
             .pipe(this.untilDestroyed())
             .subscribe(documentos => {

@@ -37,6 +37,8 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
 
   @Input() venta: any = {};
   @Input() usuarios: any = {};
+  /** Desde facturación: al activar, muestra en cada línea el input Cta. terceros junto a Precio. */
+  @Input() habilitarCuentaTerceros = false;
   @Input() customFields: any = {};  // Agregar input
   @Input() selectedCustomFields: number[] = [];
   @Input() cotizacion: number = 0;
@@ -48,6 +50,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
 
   @Output() update = new EventEmitter();
   @Output() sumTotal = new EventEmitter();
+  @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
 
     @ViewChild('msupervisor')
     public supervisorTemplate!: TemplateRef<any>;
@@ -72,12 +75,61 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     this.usuario = this.apiService.auth_user();
   }
 
+    get mostrarCuentaTercerosEnLinea(): boolean {
+        return this.habilitarCuentaTerceros
+            && this.venta?.cotizacion != 1
+            && this.usuario?.tipo !== 'Ventas Limitado';
+    }
+
+    /** Mientras el módulo de paquetes esté activo, el monto en línea no se edita en el front (viene del paquete / API). */
+    get cuentaTercerosLineaSoloLectura(): boolean {
+        return !!this.usuario?.empresa?.modulo_paquetes;
+    }
+
+    /** Número de columnas al no hay detalles (incl. columna Cta. terceros si aplica). */
+    get colspanFilaVaciaDetalles(): number {
+        let n = 6;
+        if (this.usuario?.empresa?.vendedor_detalle_venta) { n += 1; }
+        if (this.usuario?.empresa?.cambiar_tipo_impuesto_venta) { n += 1; }
+        if (this.mostrarCuentaTercerosEnLinea) { n += 1; }
+        return n;
+    }
+
+    onAlMenosUnPaqueteCuentaTercerosEnListado(): void {
+        this.alMenosUnPaqueteConCuentaTerceros.emit();
+    }
+
+    onCuentaTercerosLineaChange(detalle: any): void {
+        if (this.cuentaTercerosLineaSoloLectura) {
+            return;
+        }
+        const v = detalle.cuenta_a_terceros;
+        if (v === '' || v == null) {
+            detalle.cuenta_a_terceros = 0;
+        } else {
+            const n = parseFloat(String(v));
+            detalle.cuenta_a_terceros = isNaN(n) ? 0 : Math.max(0, n);
+        }
+        this.update.emit(this.venta);
+        this.sumTotal.emit();
+    }
+
   openModalEdit(template: TemplateRef<any>, detalle: any) {
     this.detalle = detalle;
     this.openModal(template, { class: 'modal-md', backdrop: 'static' });
   }
 
-    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle. IVA por línea = diferencia que hace cuadrar (2 decimales). Respeta cobrar_impuestos. */
+    private obtenerPorcentajeIvaDetalle(detalle: any): number {
+        if (!this.venta.cobrar_impuestos) {
+            return 0;
+        }
+        const pct = (detalle?.porcentaje_impuesto != null && detalle?.porcentaje_impuesto !== '')
+            ? Number(detalle.porcentaje_impuesto)
+            : (this.apiService.auth_user().empresa?.iva ?? 0);
+        return Number(pct) || 0;
+    }
+
+    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle. IVA por línea según %; respeta cobrar_impuestos. */
     private aplicarTipoGravado(detalle: any) {
         const total = parseFloat(detalle.total) || 0;
         detalle.gravada = 0;
@@ -86,10 +138,8 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
         const tipo = (detalle.tipo_gravado || 'gravada').toLowerCase();
         if (tipo === 'gravada') {
             detalle.gravada = total;
-            const pct = (detalle.porcentaje_impuesto != null && detalle.porcentaje_impuesto !== '')
-                ? Number(detalle.porcentaje_impuesto)
-                : (this.apiService.auth_user().empresa?.iva ?? 0);
-            detalle.iva = parseFloat((total * (pct / 100)).toFixed(4));
+            const pct = this.obtenerPorcentajeIvaDetalle(detalle);
+            detalle.iva = pct > 0 ? parseFloat((total * (pct / 100)).toFixed(4)) : 0;
         } else if (tipo === 'exenta') {
             detalle.exenta = total;
             detalle.iva = 0;
@@ -403,8 +453,18 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     this.sumTotal.emit();
   }
 
-  cambiarOpcion(composicion: any, opcion: any) {
-    let aux = Object.assign({}, composicion);
+    /** Tras activar o desactivar "Con IVA" en la cabecera, recalcula IVA por línea. */
+    public sincronizarIvasDetalles(): void {
+        if (!this.venta?.detalles?.length) {
+            return;
+        }
+        for (const detalle of this.venta.detalles) {
+            this.aplicarTipoGravado(detalle);
+        }
+    }
+
+    cambiarOpcion(composicion:any, opcion:any){
+        let aux = Object.assign({}, composicion);
 
     console.log(composicion);
     console.log(opcion);

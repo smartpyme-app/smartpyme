@@ -34,7 +34,7 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
     public sucursales:any = [];
 
     constructor(
-        apiService: ApiService, 
+        apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private cdr: ChangeDetectorRef
@@ -62,7 +62,7 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
         this.loadAll();
         this.apiService.getAll('proveedores/list')
             .pipe(this.untilDestroyed())
-            .subscribe(proveedores => { 
+            .subscribe(proveedores => {
                 this.proveedores = proveedores;
             }, error => {this.alertService.error(error); });
     }
@@ -76,14 +76,19 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        this.filtrarCompras();
+        this.filtros.page = 1;
+        this.filtrarCompras(false);
     }
 
-    public filtrarCompras(){
+    /** @param resetPage true al filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll. */
+    public filtrarCompras(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
         this.apiService.getAll('devoluciones/compras', this.filtros)
             .pipe(this.untilDestroyed())
-            .subscribe(compras => { 
+            .subscribe(compras => {
                 this.compras = compras;
                 this.loading = false;
                 this.closeModal();
@@ -110,7 +115,7 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
 
     public override delete(item: any | number): void {
         const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
+
         if (!confirm('¿Desea eliminar el Registro?')) {
             return;
         }
@@ -147,24 +152,31 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
         this.filtrarCompras();
     }
 
-    openFilter(template: TemplateRef<any>) {     
+    public override setPagination(event:any):void{
+        this.filtros.page = event.page;
+        this.filtrarCompras(false);
+    }
+
+    // Filtros
+
+    openFilter(template: TemplateRef<any>) {
         this.apiService.getAll('proveedores/list')
             .pipe(this.untilDestroyed())
-            .subscribe(proveedores => { 
+            .subscribe(proveedores => {
                 this.proveedores = proveedores;
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('usuarios/list')
             .pipe(this.untilDestroyed())
-            .subscribe(usuarios => { 
+            .subscribe(usuarios => {
                 this.usuarios = usuarios;
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('sucursales/list')
             .pipe(this.untilDestroyed())
-            .subscribe(sucursales => { 
+            .subscribe(sucursales => {
                 this.sucursales = sucursales;
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.cdr.markForCheck(); });

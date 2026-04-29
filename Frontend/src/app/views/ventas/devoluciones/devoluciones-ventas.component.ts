@@ -48,7 +48,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
     public consulting: boolean = false;
 
     constructor(
-        apiService: ApiService, 
+        apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private facturacionElectronica: FacturacionElectronicaService,
@@ -94,10 +94,15 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        this.filtrarVentas();
+        this.filtros.page = 1;
+        this.filtrarVentas(false);
     }
 
-    public filtrarVentas() {
+    /** @param resetPage true al filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll. */
+    public filtrarVentas(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
         this.cdr.markForCheck();
         if (this.filtros.id_cliente == null) {
@@ -134,7 +139,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
 
     public override delete(item: any | number): void {
         const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
+
         if (!confirm('¿Desea eliminar el Registro?')) {
             return;
         }
@@ -168,6 +173,13 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         this.cdr.markForCheck();
         this.filtrarVentas();
     }
+
+    public override setPagination(event: any): void {
+        this.filtros.page = event.page;
+        this.filtrarVentas(false);
+    }
+
+    // Filtros
 
     openFilter(template: TemplateRef<any>) {
         this.apiService.getAll('clientes/list')
@@ -513,12 +525,12 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
 
     editarDevolucion(template: TemplateRef<any>, venta: any) {
         const ventaActualizada = this.ventas.data?.find((v: any) => v.id === venta.id);
-        
+
         if (!ventaActualizada) {
             console.error('No se encontró la venta actualizada');
             return;
         }
-        
+
         this.devolucionEditar = {
             id: ventaActualizada.id,
             fecha: ventaActualizada.fecha,
@@ -527,7 +539,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
             id_usuario: ventaActualizada.id_usuario,
             observaciones: ventaActualizada.observaciones
         };
-    
+
         if (this.documentos.length === 0) {
             this.apiService.getAll('documentos/list-nombre')
                 .pipe(this.untilDestroyed())
@@ -538,11 +550,11 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         if (this.usuarios.length === 0) {
             this.apiService.getAll('usuarios/list-edit-devolucion')
                 .pipe(this.untilDestroyed())
-                .subscribe(usuarios => { 
-                    this.usuarios = usuarios; 
+                .subscribe(usuarios => {
+                    this.usuarios = usuarios;
                 }, error => {this.alertService.error(error); });
         }
-    
+
         super.openModal(template);
     }
 
@@ -550,25 +562,22 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         this.saving = true;
         this.cdr.markForCheck();
 
-        this.apiService.store('devolucion/venta/actualizar', this.devolucionEditar)
-            .pipe(this.untilDestroyed())
-            .subscribe({
-                next: () => {
-                    this.closeModal();
-                    this.saving = false;
-                    this.filtrarVentas();
-                    setTimeout(() => {
-                        this.devolucionEditar = {};
-                        this.alertService.success('Devolución actualizada', 'La devolución fue actualizada exitosamente.');
-                        this.cdr.markForCheck();
-                    }, 200);
-                },
-                error: (error) => {
-                    this.alertService.error(error);
-                    this.saving = false;
-                    this.cdr.markForCheck();
-                }
-            });
+        this.apiService.store('devolucion/venta/actualizar', this.devolucionEditar).subscribe(devolucion => {
+
+            this.modalRef?.hide()
+            this.saving = false;
+
+            this.filtrarVentas(false);
+
+            setTimeout(() => {
+                this.devolucionEditar = {};
+                this.alertService.success('Devolución actualizada', 'La devolución fue actualizada exitosamente.');
+            }, 200);
+
+        }, error => {
+            this.alertService.error(error);
+            this.saving = false;
+        });
     }
 
 }

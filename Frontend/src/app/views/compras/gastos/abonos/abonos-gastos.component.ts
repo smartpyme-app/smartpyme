@@ -95,36 +95,50 @@ export class AbonosGastosComponent extends BaseCrudComponent<any> implements OnI
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        
-        this.loading = true;
-        this.filtrarAbonos();
+        this.filtros.page = 1;
+
+        this.filtrarAbonos(false);
     }
 
-    public filtrarAbonos(){
+    /** @param resetPage true al buscar/filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll. */
+    public filtrarAbonos(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
-        this.apiService.getAll('gastos/abonos', this.filtros)
-            .pipe(this.untilDestroyed())
-            .subscribe({
-                next: (abonos) => {
-                    this.abonos = abonos;
-                    this.loading = false;
-                    if(this.modalRef){
-                        this.closeModal();
-                    }
-                },
-                error: (error) => {
-                    this.alertService.error(error);
-                    this.loading = false;
+        this.apiService.getAll('gastos/abonos', this.filtros).subscribe(abonos => {
+            this.abonos = abonos;
+            this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+        }, error => {this.alertService.error(error); });
+    }
+
+    public setEstado(abono:any){
+        this.apiService.store('gasto/abono', abono).subscribe(abonoActualizado => {
+            this.filtrarAbonos(false);
+        }, error => {this.alertService.error(error); });
+    }
+
+
+    public override delete(id:number) {
+        if (confirm('¿Desea eliminar el Registro?')) {
+            this.apiService.delete('gasto/abono/', id) .subscribe(data => {
+                for (let i = 0; i < this.abonos['data'].length; i++) {
+                    if (this.abonos['data'][i].id == data.id )
+                        this.abonos['data'].splice(i, 1);
                 }
-            });
+                this.alertService.success('Abono eliminado', 'El abono fue eliminado exitosamente.');
+            }, error => {this.alertService.error(error); });
+
+        }
+
     }
 
-    public setEstado(abono: any){
-        this.onSubmit(abono, true);
-    }
-
-    public override delete(id: number) {
-        super.delete(id);
+    public override setPagination(event:any):void{
+        this.filtros.page = event.page;
+        this.filtrarAbonos(false);
     }
 
     public openFilter(template: TemplateRef<any>) {

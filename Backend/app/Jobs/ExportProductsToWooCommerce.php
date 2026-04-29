@@ -38,9 +38,21 @@ class ExportProductsToWooCommerce implements ShouldQueue
     {
         set_time_limit(3600);
         try {
-            // Actualizar estado del usuario
             $user = User::findOrFail($this->userId);
             $empresa = Empresa::find($user->id_empresa);
+
+            if ($empresa && !$empresa->woocommerceSyncPushesToRemote()) {
+                Log::info('Exportación a WooCommerce omitida: modo actual no envía datos a WooCommerce', [
+                    'empresa_id' => $empresa->id,
+                    'woocommerce_sync_mode' => $empresa->woocommerce_sync_mode,
+                ]);
+                return;
+            }
+
+            if (!$empresa) {
+                throw new \Exception('Empresa no encontrada');
+            }
+
             $empresa->woocommerce_sync_status = 'syncing';
             $empresa->woocommerce_error = null;
             $empresa->save();

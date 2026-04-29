@@ -263,7 +263,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
       }
 
-      this.filtrarVentas();
+      this.filtrarVentas(false);
     });
 
     this.getNumsIds();
@@ -422,7 +422,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
       }
 
-      this.filtrarVentas();
+      this.filtrarVentas(false);
 
     }
 
@@ -431,9 +431,12 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.searchSubject$.next();
   }
 
-  public filtrarVentas() {
-    // Al buscar por texto, volver siempre a la primera página
-    if (this.filtros.buscador?.toString().trim()) {
+  /**
+   * @param resetPage Si es true (por defecto), vuelve a la página 1 (búsqueda, filtros, orden, paginate).
+   *                  false al paginar o al sincronizar desde la URL.
+   */
+  public filtrarVentas(resetPage = true): void {
+    if (resetPage) {
       this.filtros.page = 1;
     }
 
@@ -505,7 +508,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   // setPagination() ahora se hereda de BasePaginatedComponent
   public override setPagination(event: any): void {
     this.filtros.page = event.page;
-    this.filtrarVentas();
+    this.filtrarVentas(false);
   }
 
   public reemprimir(venta: any) {
@@ -1098,6 +1101,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         this.closeModal();
       }
       this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
+      // Actualizar el listado después de guardar
+      this.filtrarVentas(false);
       this.cdr.markForCheck();
     } catch (error: any) {
       this.alertService.error(error);

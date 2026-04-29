@@ -78,7 +78,8 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
         this.filtros.orden = 'nombre';
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
-        this.filtrarClientes();
+        this.filtros.page = 1;
+        this.filtrarClientes(false);
 
         // Ocultar modal de importación
         if(this.modalRef){
@@ -86,7 +87,13 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
         }
     }
 
-    public async filtrarClientes(): Promise<void> {
+    /**
+     * @param resetPage true al buscar/filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll.
+     */
+    public async filtrarClientes(resetPage = true): Promise<void> {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
         this.cdr.markForCheck();
         try {
@@ -155,13 +162,10 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
         }
     }
 
-  public override setPagination(event:any):void{
-    this.loading = true;
-    this.apiService.paginate(this.clientes.path + '?page='+ event.page).subscribe(clientes => {
-      this.clientes = clientes;
-      this.loading = false;
-    }, error => {this.alertService.error(error); this.loading = false;});
-  }
+    public override setPagination(event:any):void{
+        this.filtros.page = event.page;
+        this.filtrarClientes(false);
+    }
 
   override openModal(template: TemplateRef<any>) {
     this.alertService.modal = true;

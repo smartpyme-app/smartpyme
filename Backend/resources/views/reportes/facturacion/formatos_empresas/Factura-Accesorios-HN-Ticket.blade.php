@@ -178,6 +178,9 @@
         <tr>
             <td class="left" style="width:58%;">
                 <p><span class="b">{{ $etiquetaNumero }}:</span> {{ $numFacturaDisplay }}</p>
+                @if ($venta->id_cliente && $cliente && $cliente->tipo === 'Empresa')
+                    <p class="mt1"><span class="b">RTN:</span> {{ $cliente->nit ?? '' }}</p>
+                @endif
                 <p class="mt1"><span class="b">CLIENTE:</span> {{ $codCliente }} - {{ $nombreClienteFactura }}</p>
                 @if ($terminos !== '')
                     <p class="mt1"><span class="b">TERMINOS:</span> {{ $terminos }}</p>

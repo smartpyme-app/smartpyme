@@ -12,7 +12,6 @@ import {
 } from '@angular/core';
 
 import { Router, ActivatedRoute } from '@angular/router';
-import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -35,7 +34,7 @@ import { HaciendaCabysClientService } from '@services/facturacion-electronica/ha
     selector: 'app-producto-informacion',
     templateUrl: './producto-informacion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TagInputModule, NgSelectModule, CrearCategoriaComponent],
+    imports: [CommonModule, RouterModule, FormsModule, TagInputModule, NgSelectModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
@@ -44,8 +43,8 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   @Input() producto: any = {};
   /** Notifica al padre (p. ej. OnPush) cuando cambia tipo compuesto u otros datos mutados en el mismo objeto. */
   @Output() productoActualizado = new EventEmitter<void>();
-  /** Evita múltiples llamadas al pedir SKU sugerido */
-  private skuCorrelativoPendiente = true;
+  /** Evita múltiples llamadas al pedir código de barras sugerido */
+  private barcodeCorrelativoPendiente = true;
   public categorias: any = [];
   public subcategorias: any = [];
   public subcategRes: any = [];
@@ -156,7 +155,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
         this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
 
-    this.intentarCargarSkuSugerido();
+    this.intentarCargarBarcodeSugerido();
 
     this.apiService.getAll('proveedores/list')
       .pipe(this.untilDestroyed())
@@ -187,40 +186,41 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['producto']) {
-      this.intentarCargarSkuSugerido();
+      this.intentarCargarBarcodeSugerido();
       this.syncCabysSeleccionFromProducto();
     }
   }
 
-  /** Precarga el código correlativo desde la API cuando aplica (producto nuevo + opción de empresa). */
-  private intentarCargarSkuSugerido() {
-    const p = this.producto;
-    if (!p || p.id || !this.apiService.isSkuCorrelativoAutomatico()) {
-      return;
-    }
-    if (p.codigo) {
-      this.skuCorrelativoPendiente = false;
-      return;
-    }
-    if (!p.id_empresa) {
-      return;
-    }
-    if (!this.skuCorrelativoPendiente) {
-      return;
-    }
-
-    this.skuCorrelativoPendiente = false;
-    this.apiService.getAll('productos/siguiente-sku-correlativo').subscribe(
-      (res: any) => {
-        if (res?.habilitado && res?.codigo != null && p === this.producto && !this.producto.codigo) {
-          this.producto.codigo = res.codigo;
+    /** Precarga el código de barras correlativo desde la API cuando aplica (producto nuevo + opción de empresa). */
+    private intentarCargarBarcodeSugerido() {
+        const p = this.producto;
+        if (!p || p.id || !this.apiService.isBarcodeCorrelativoAutomatico()) {
+            return;
         }
-      },
-      () => {
-        this.skuCorrelativoPendiente = true;
-      }
-    );
-  }
+        if (p.barcode) {
+            this.barcodeCorrelativoPendiente = false;
+            return;
+        }
+        if (!p.id_empresa) {
+            return;
+        }
+        if (!this.barcodeCorrelativoPendiente) {
+            return;
+        }
+
+        this.barcodeCorrelativoPendiente = false;
+        this.apiService.getAll('productos/siguiente-barcode-correlativo').subscribe(
+            (res: any) => {
+                const valor = res?.barcode ?? res?.codigo;
+                if (res?.habilitado && valor != null && p === this.producto && !this.producto.barcode) {
+                    this.producto.barcode = String(valor);
+                }
+            },
+            () => {
+                this.barcodeCorrelativoPendiente = true;
+            }
+        );
+    }
 
   esEmpresaCostaRica(): boolean {
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
@@ -399,17 +399,17 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       });
   }
 
-  public barcode() {
-    var ventana = window.open(
-      this.apiService.baseUrl +
-        '/api/barcode/' +
-        this.producto.barcode +
-        '?token=' +
-        this.apiService.auth_token(),
-      '_new',
-      'toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900'
-    );
-  }
+    public barcode() {
+        const raw = String(this.producto.barcode || this.producto.codigo || '').trim();
+        if (!raw) {
+            return;
+        }
+        window.open(
+            this.apiService.baseUrl + '/api/barcode/' + encodeURIComponent(raw) + '?token=' + this.apiService.auth_token(),
+            '_new',
+            'toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900'
+        );
+    }
 
   public verificarSiExiste() {
     if (this.producto.nombre) {

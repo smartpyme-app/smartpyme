@@ -53,6 +53,8 @@ use App\Models\Inventario\Paquete;
 use App\Services\Webhooks\WebhookPaqueteVentaDispatcher;
 use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
+use App\Models\Restaurante\PedidoRestaurante;
+use App\Services\Restaurante\PedidoCanalInventarioService;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\Schema;
 use App\Exports\VentasExport;
@@ -615,6 +617,33 @@ class VentasController extends Controller
             $puedeVenderSinStock = $empresa->vender_sin_stock == 1;
             $lotesActivo = $empresa->isLotesActivo();
 
+            $saltarActualizarInventario = false;
+            if (!$request->id && $request->filled('id_pedido_canal')) {
+                $pedidoCanalFactura = PedidoRestaurante::where('id', $request->id_pedido_canal)
+                    ->where('id_empresa', Auth::user()->id_empresa)
+                    ->where('estado', 'pendiente_facturar')
+                    ->whereNull('id_venta')
+                    ->with('detalles')
+                    ->first();
+                if (!$pedidoCanalFactura) {
+                    DB::rollBack();
+                    return response()->json(['error' => 'Pedido de canal no válido para facturar o ya fue vinculado.'], 422);
+                }
+                if (!$pedidoCanalFactura->id_bodega) {
+                    DB::rollBack();
+                    return response()->json(['error' => 'El pedido no tiene bodega de inventario. Confirme el pedido con una bodega o anule y vuelva a crear.'], 422);
+                }
+                if ((int) $request->id_bodega !== (int) $pedidoCanalFactura->id_bodega) {
+                    DB::rollBack();
+                    return response()->json(['error' => 'La bodega de la factura debe coincidir con la bodega del pedido (el inventario ya se descontó al confirmar).'], 422);
+                }
+                if (!PedidoCanalInventarioService::ventaCoincideConPedido($pedidoCanalFactura, $request->detalles ?? [])) {
+                    DB::rollBack();
+                    return response()->json(['error' => 'Las cantidades por producto deben coincidir con el pedido de canal; el stock ya se comprometió al confirmar.'], 422);
+                }
+                $saltarActualizarInventario = true;
+            }
+
             if ($request->id)
                 $venta = Venta::findOrFail($request->id);
             else
@@ -686,7 +715,7 @@ class VentasController extends Controller
 
 
                 // Actualizar inventario
-                if ($request->cotizacion == 0) {
+                if ($request->cotizacion == 0 && !$saltarActualizarInventario) {
 
                     // Obtener el producto para verificar si es servicio
                     $producto = Producto::where('id', $det['id_producto'])->first();

@@ -20,6 +20,8 @@ use App\Http\Controllers\Api\Webhook\WooCommerceController;
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
     Route::get('/producto/buscar-by-code/{codigo}', [ProductosController::class, 'searchByCode']);
     Route::get('/productos/list',               [ProductosController::class, 'list']);
+    Route::get('/productos/siguiente-barcode-correlativo', [ProductosController::class, 'siguienteBarcodeCorrelativo']);
+    Route::get('/productos/siguiente-sku-correlativo', [ProductosController::class, 'siguienteBarcodeCorrelativo']);
     Route::get('/productos/list/search',        [ProductosController::class, 'searchForList']);
     Route::get('/productos/{id}/inventarios', [ProductosController::class, 'inventarios']);
     Route::get('/productos/siguiente-sku-correlativo', [ProductosController::class, 'siguienteSkuCorrelativo']);

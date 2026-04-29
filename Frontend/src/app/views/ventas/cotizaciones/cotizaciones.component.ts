@@ -98,28 +98,33 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
     this.filtros.orden = 'fecha';
     this.filtros.direccion = 'desc';
     this.filtros.paginate = 10;
-    this.filtrarVentas();
+    this.filtros.page = 1;
+
+    this.filtrarVentas(false);
   }
 
-  public filtrarVentas() {
-    if (this.apiService.isVentas()) {
-      this.filtros.id_usuario = this.apiService.auth_user().id;
-    }
-    this.loading = true;
-    this.cdr.markForCheck();
-    if (!this.filtros.id_cliente) this.filtros.id_cliente = '';
-
-    this.apiService.getAll('cotizaciones', this.filtros)
-      .pipe(this.untilDestroyed())
-      .subscribe(ventas => {
-        this.ventas = this.normalizeVentas(ventas);
-        this.loading = false;
-        if (this.modalRef) {
-          this.closeModal();
+    /**
+     * @param resetPage true al buscar/filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll.
+     */
+    public filtrarVentas(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
         }
-        this.cdr.markForCheck();
-      }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
-  }
+        if (this.apiService.isVentas()) {
+            this.filtros.id_usuario = this.apiService.auth_user().id;
+        }
+        this.loading = true;
+        if(!this.filtros.id_cliente){
+            this.filtros.id_cliente = '';
+        }
+        this.apiService.getAll('cotizaciones', this.filtros).subscribe(ventas => {
+            this.ventas = ventas;
+            this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+        }, error => {this.alertService.error(error); });
+    }
 
   private normalizeVentas(ventas: any) {
     if (ventas && Array.isArray(ventas.data)) {
@@ -175,6 +180,11 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
           this.cdr.markForCheck();
         }
       });
+  }
+
+  public override setPagination(event:any):void{
+    this.filtros.page = event.page;
+    this.filtrarVentas(false);
   }
 
   public reemprimir(venta: any) {

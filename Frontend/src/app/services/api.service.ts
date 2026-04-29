@@ -394,8 +394,8 @@ export class ApiService {
         return 'ambos';
     }
 
-    /** SKU correlativo automático al crear productos (configuración de empresa) */
-    isSkuCorrelativoAutomatico(): boolean {
+    /** Código de barras correlativo automático (también si persiste sku_correlativo_automatico en datos antiguos). */
+    isBarcodeCorrelativoAutomatico(): boolean {
         const empresa = this.auth_user()?.empresa;
         if (!empresa || !empresa.custom_empresa) {
             return false;
@@ -403,7 +403,32 @@ export class ApiService {
         const customConfig = typeof empresa.custom_empresa === 'string'
             ? JSON.parse(empresa.custom_empresa)
             : empresa.custom_empresa;
-        return customConfig?.configuraciones?.sku_correlativo_automatico === true;
+        const c = customConfig?.configuraciones;
+        return c?.barcode_correlativo_automatico === true || c?.sku_correlativo_automatico === true;
+    }
+
+    /** Total de stock en listado de inventario según filtros (Mi cuenta → Inventario) */
+    isInventarioSumarStockBusquedas(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.inventario_sumar_stock_busquedas === true;
+    }
+
+    /** Ventas / Ventas limitado pueden elegir vendedor en facturación (Mi cuenta → Facturación). */
+    isVentasPuedeCambiarVendedorFacturacion(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.ventas_puede_cambiar_vendedor_facturacion === true;
     }
 
   esEmpresaInventarioOperacionesSoloAdministrador(): boolean {

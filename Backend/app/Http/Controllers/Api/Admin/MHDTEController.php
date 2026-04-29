@@ -87,7 +87,7 @@ class MHDTEController extends Controller
         return $this->elSalvadorDte->generarDTESujetoExcluidoCompra($compra);
     }
 
-    //xLa emisión de sujeto excluido debe reflejar retención y totales del documento el cliente envía el registro completo en el POST, pero históricamente solo se usaba el id
+    
     private function aplicarMontosSujetoExcluidoDesdeRequest($registro, Request $request, array $campos): void
     {
         foreach ($campos as $campo) {
@@ -97,6 +97,12 @@ class MHDTEController extends Controller
             $valor = $request->input($campo);
             if ($valor === null || $valor === '') {
                 continue;
+            }
+            if ($campo === 'renta_retenida' && is_numeric($valor) && (float) $valor === 0.0) {
+                $yaPersistido = (float) ($registro->renta_retenida ?? 0);
+                if ($yaPersistido > 0) {
+                    continue;
+                }
             }
             $registro->{$campo} = is_numeric($valor) ? $valor + 0 : $valor;
         }

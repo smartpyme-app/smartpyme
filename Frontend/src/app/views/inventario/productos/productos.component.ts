@@ -36,6 +36,8 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
     public categorias: any = [];
     public proveedores: any = [];
     public marcas: any = [];
+    /** Suma de stock de todos los productos del resultado filtrado (si está habilitado en Mi cuenta). */
+    public stockTotalFiltrado: number | null = null;
     public ajuste: any = {};
     public inventario: any = {};
     public filtrosKardex: any = {
@@ -107,7 +109,7 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
                 this.filtros.id_bodega = usuario.id_bodega;
             }
 
-            this.filtrarProductos();
+            this.filtrarProductos(false);
         });
 
         if(this.route.snapshot.routeConfig?.path == 'producto-combos') this.verCombos();
@@ -119,12 +121,13 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
                 this.cdr.markForCheck();
             }, error => { this.alertService.error(error); });
 
-        this.apiService.getAll('bodegas/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(bodegas => {
-                this.bodegas = bodegas;
-                this.cdr.markForCheck();
-            }, error => { this.alertService.error(error); });
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+            this.bodegas = bodegas;
+        }, error => { this.alertService.error(error); });
+
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+            this.proveedores = proveedores;
+        }, error => { this.alertService.error(error); });
 
         this.apiService.getAll('productos/marca-productos')
             .pipe(this.untilDestroyed())
@@ -168,10 +171,18 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             this.filtros.id_bodega = bodegaActual || usuario?.id_bodega || '';
         }
 
-        this.filtrarProductos();
+        this.filtrarProductos(false);
     }
 
-    public filtrarProductos() {
+    /**
+     * @param resetPage Si es true (por defecto), vuelve a la página 1: búsqueda, filtros, orden, tamaño de página.
+     *                  Usar false al cambiar solo la página desde el paginador o al aplicar parámetros desde la URL.
+     */
+    public filtrarProductos(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
+
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: this.filtros,
@@ -192,14 +203,17 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             this.filtros.marca = '';
         }
 
-        this.apiService.getAll('productos', this.filtros)
-            .pipe(this.untilDestroyed())
-            .subscribe(productos => {
-                this.productos = productos;
-                this.loading = false;
-                this.closeModal();
-                this.cdr.markForCheck();
-            }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
+            this.productos = productos;
+            this.stockTotalFiltrado = this.apiService.isInventarioSumarStockBusquedas()
+                && productos?.stock_total_filtrado !== undefined && productos?.stock_total_filtrado !== null
+                ? Number(productos.stock_total_filtrado)
+                : null;
+            this.loading = false;
+            if (this.modalRef) {
+                this.modalRef.hide();
+            }
+        }, error => { this.alertService.error(error); this.loading = false; });
     }
 
     public getPorcentajeProducto(producto: any): number {
@@ -233,7 +247,7 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             this.filtros.direccion = 'asc';
         }
 
-        this.filtrarProductos();
+        this.filtrarProductos(true);
     }
 
     public override async onSubmit(item?: any, isStatusChange: boolean = false) {
@@ -244,7 +258,7 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
   public override setPagination(event: any): void {
     this.loading = true;
     this.filtros.page = event.page;
-    this.filtrarProductos();
+    this.filtrarProductos(false);
   }
 
     public openDescargar(template: TemplateRef<any>) {
@@ -303,11 +317,10 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
         this.ajuste.id_empresa = this.apiService.auth_user().id_empresa;
         this.ajuste.id_usuario = this.apiService.auth_user().id;
 
-        this.apiService.store('ajuste', this.ajuste)
-            .pipe(this.untilDestroyed())
-            .subscribe(ajuste => {
-            this.filtrarProductos();
-            this.closeModal();
+        this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
+            // this.producto.inventarios[this.producto.inventarios.findIndex((item:any) => item.id_bodega == this.filtros.id_bodega)].stock = ajuste.stock_real;
+            this.filtrarProductos(false);
+            this.modalRef.hide();
             this.alertService.modal = false;
             this.loading = false;
             this.cdr.markForCheck();
@@ -506,6 +519,10 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
 
     public isLotesActivo(): boolean {
         return this.apiService.isLotesActivo();
+    }
+
+    public isInventarioSumarStockBusquedas(): boolean {
+        return this.apiService.isInventarioSumarStockBusquedas();
     }
 
 }

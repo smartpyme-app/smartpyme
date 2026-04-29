@@ -1098,13 +1098,31 @@ export class GastoComponent implements OnInit {
           this.varios_items = true;
           const items = jsonData.cuerpoDocumento;
           const ivaRate = (this.apiService.auth_user()?.empresa?.iva || 13) / 100;
+
+          // Identificar el tipo de documento (03 = Crédito fiscal, 01 = Factura)
+          const tipoDte = jsonData.identificacion?.tipoDte || '01';
+
           this.detalles = items.map((item: any) => {
             const cant = parseFloat(item.cantidad) || 1;
             const precio = parseFloat(item.precioUni) || 0;
-            const compra = parseFloat(item.compra) || cant * precio;
-            const sub = ivaRate > 0 ? compra / (1 + ivaRate) : compra;
-            const iva = compra - sub;
+            const montoItem = parseFloat(item.ventaGravada) || parseFloat(item.compra) || (cant * precio);
+
+            let sub = 0;
+            let iva = 0;
+            let total = 0;
+
+            if (tipoDte === '03') {
+              sub = montoItem;
+              iva = sub * ivaRate;
+              total = sub + iva;
+            } else {
+              total = montoItem;
+              sub = ivaRate > 0 ? total / (1 + ivaRate) : total;
+              iva = total - sub;
+            }
+
             const esGravada = iva > 0;
+
             return {
               concepto: item.descripcion || '',
               tipo: 'Gastos varios',
@@ -1115,7 +1133,7 @@ export class GastoComponent implements OnInit {
               iva: parseFloat(iva.toFixed(2)),
               renta_retenida: 0,
               iva_percibido: 0,
-              total: parseFloat(compra.toFixed(2)),
+              total: parseFloat(total.toFixed(2)),
               aplica_iva: esGravada,
               aplica_renta: false,
               aplica_percepcion: false,
@@ -1123,6 +1141,7 @@ export class GastoComponent implements OnInit {
               id_proyecto: this.gasto.id_proyecto || null,
             };
           });
+
           this.recalcularTotalesDetalles();
           this.gasto.concepto = items[0].descripcion;
           this.gasto.tipo = this.determinarCategoria(items);
@@ -1225,6 +1244,24 @@ export class GastoComponent implements OnInit {
 
       // Actualizar los cálculos para asegurar consistencia
       this.setTotal();
+      if (jsonData.resumen) {
+        if (jsonData.resumen.subTotal) {
+          this.gasto.sub_total = parseFloat(jsonData.resumen.subTotal);
+        } else if (jsonData.resumen.totalGravada) {
+          this.gasto.sub_total = parseFloat(jsonData.resumen.totalGravada);
+        }
+
+        if (jsonData.resumen.tributos && jsonData.resumen.tributos.length > 0) {
+          const ivaTrib = jsonData.resumen.tributos.find((t: any) => t.codigo === '20');
+          if (ivaTrib) this.gasto.iva = parseFloat(ivaTrib.valor);
+        }
+
+        if (jsonData.resumen.totalPagar) {
+          this.gasto.total = parseFloat(jsonData.resumen.totalPagar);
+        } else if (jsonData.resumen.montoTotalOperacion) {
+          this.gasto.total = parseFloat(jsonData.resumen.montoTotalOperacion);
+        }
+      }
     } catch (error) {
       console.error('Error al mapear JSON a gasto:', error);
       this.alertService.error('Error al procesar algunos campos del JSON');

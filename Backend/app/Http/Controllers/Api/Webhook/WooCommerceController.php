@@ -14,6 +14,7 @@ use App\Models\Ventas\Venta;
 use App\Services\WooCommerceApiClient;
 use Illuminate\Http\Request;
 use App\Services\WooCommerceTransformer;
+use App\Services\WooCommerceInboundProductService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -231,6 +232,13 @@ class WooCommerceController extends Controller
             ], 400);
         }
 
+        if (!$empresa->woocommerceSyncPushesToRemote()) {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'En el modo de sincronización actual (WooCommerce → SmartPyme) no se envía catálogo a la tienda. Cámbielo en Mi cuenta, pestaña WooCommerce, si desea exportar a WooCommerce.',
+            ], 400);
+        }
+
         // Obtener la sucursal actual del usuario
         $sucursalId = $user->id_bodega;
 
@@ -241,6 +249,64 @@ class WooCommerceController extends Controller
             'status' => 'success',
             'mensaje' => 'Exportación de productos iniciada. Este proceso puede tomar varios minutos.'
         ]);
+    }
+
+    /**
+     * Webhook de producto WooCommerce (tema "Product" → creado / actualizado / eliminado).
+     * Configurar en WooCommerce la URL: …/api/webhook/woocommerce/{API_KEY}/producto
+     */
+    public function procesarProductoWooCommerce($tokenEmpresa, Request $request, WooCommerceInboundProductService $inbound)
+    {
+        if ($request->webhook_id != null) {
+            return response()->json(['message' => 'Webhook válido'], 200);
+        }
+
+        $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)->where('woocommerce_status', 'connected')->first();
+        if (!$empresa) {
+            Log::error("Woo product webhook: token inválido: {$tokenEmpresa}");
+            return response()->json(['status' => 'error', 'mensaje' => 'Token no válido'], 401);
+        }
+
+        $usuario = User::where('id_empresa', $empresa->id)->where('woocommerce_status', 'connected')->first();
+        if (!$usuario) {
+            return response()->json(['status' => 'error', 'mensaje' => 'Usuario no encontrado'], 401);
+        }
+
+        if (!$empresa->woocommerceSyncAcceptsCatalogFromWoo()) {
+            return response()->json([
+                'status' => 'skipped',
+                'mensaje' => 'Modo de sincronización: no se aceptan productos desde WooCommerce hacia SmartPyme.',
+            ], 200);
+        }
+
+        $payload = $request->all();
+        if (empty($payload) || (empty($payload['id']) && empty($payload['ID']))) {
+            return response()->json(['status' => 'skipped', 'mensaje' => 'Payload vacío o sin id'], 200);
+        }
+        if (isset($payload['ID']) && !isset($payload['id'])) {
+            $payload['id'] = $payload['ID'];
+        }
+
+        try {
+            $result = $inbound->applyPayload($empresa, $usuario, $payload);
+            Log::info('WooCommerce producto webhook', [
+                'empresa_id' => $empresa->id,
+                'result' => $result,
+                'woo_id' => $payload['id'] ?? null,
+            ]);
+            if ($result['action'] === 'error') {
+                return response()->json(['status' => 'error', 'detalle' => $result['detail']], 422);
+            }
+            return response()->json([
+                'status' => 'success',
+                'action' => $result['action'],
+                'producto_id' => $result['producto_id'],
+                'detail' => $result['detail'],
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Woo product webhook: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json(['status' => 'error', 'mensaje' => $e->getMessage()], 500);
+        }
     }
 
 }

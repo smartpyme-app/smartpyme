@@ -130,7 +130,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             },
             afterSave: () => {
                 this.compra = {};
-                this.filtrarCompras();
+                this.filtrarCompras(false);
             }
         });
         this.bulkSearchProductos$
@@ -161,7 +161,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
   public override setPagination(event: any): void {
     this.filtros.page = event.page;
-    this.filtrarCompras();
+    this.filtrarCompras(false);
   }
 
     ngOnDestroy() {
@@ -219,7 +219,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                 page: +params['page'] || 1,
             };
 
-            this.filtrarCompras();
+            this.filtrarCompras(false);
             this.cdr.markForCheck();
         });
 
@@ -255,7 +255,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         this.filtros.page = 1;
         this.filtros.num_identificacion = '';
 
-        this.filtrarCompras();
+        this.filtrarCompras(false);
     }
 
     public onBuscadorInput() {
@@ -269,19 +269,18 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         return Math.round((total - abonos - devoluciones) * 100) / 100;
     }
 
-    public filtrarCompras(){
-        // Limpiar valores vacíos antes de navegar
-        const queryParams: any = {};
-        Object.keys(this.filtros).forEach(key => {
-            const value = this.filtros[key];
-            if (value !== '' && value !== null && value !== undefined) {
-                queryParams[key] = value;
-            }
-        });
+    /**
+     * @param resetPage Si es true (por defecto), vuelve a la página 1 (búsqueda, filtros, orden, paginate).
+     *                  false al paginar, sincronizar URL o refrescar tras guardar sin cambiar de página.
+     */
+    public filtrarCompras(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
 
         this.router.navigate([], {
             relativeTo: this.route,
-            queryParams: queryParams,
+            queryParams: this.filtrosParaApi(),
         });
 
         this.loading = true;
@@ -457,10 +456,6 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
     }
 
-    public override async onSubmit(item?: any, isStatusChange: boolean = false) {
-        await super.onSubmit(item, isStatusChange);
-    }
-
     public setRecurrencia(compra:any){
         this.compra = compra;
         this.compra.recurrente = true;
@@ -474,8 +469,6 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             },error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
 
     }
-
-    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     public openDescargar(template: TemplateRef<any>) {
         this.openModal(template);
@@ -1291,7 +1284,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         const suc = item.compra.id_sucursal;
         this.refrescarCorrelativosBulkTrasGuardar(() => {
           this.alertService.success('Compra registrada', item.fileName);
-          this.filtrarCompras();
+          this.filtrarCompras(false);
         }, { referenciaGuardada: ref, tipo_documento: td, id_sucursal: suc });
       },
       (err) => {
@@ -1324,7 +1317,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         'Importación',
         `Se registraron ${items.length} compra(s).`
       );
-      this.filtrarCompras();
+      this.filtrarCompras(false);
       this.cerrarImportacionBulk();
       return;
     }
@@ -1368,4 +1361,3 @@ export interface BulkCompraItem {
   error?: string;
   estado: 'error' | 'pendiente_productos' | 'lista' | 'guardando' | 'guardada';
 }
-

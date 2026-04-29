@@ -24,7 +24,6 @@ import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from
 import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
-
 import * as moment from 'moment';
 
 @Component({
@@ -78,6 +77,9 @@ export class FacturacionV2Component implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
+  public habilitarCuentaTerceros = false;
+
   /**
    * Si el usuario movió el switch de retención IVA 1%, no aplicar la regla automática (gran contribuyente + monto)
    * hasta cambiar de cliente o iniciar un documento nuevo desde carga inicial.
@@ -123,6 +125,9 @@ export class FacturacionV2Component implements OnInit {
 
   @ViewChild('mcredito')
   public creditoTemplate!: TemplateRef<any>;
+
+  @ViewChild(VentaDetallesV2Component)
+  private ventaDetallesV2?: VentaDetallesV2Component;
 
   constructor(
     public apiService: ApiService,
@@ -181,13 +186,16 @@ export class FacturacionV2Component implements OnInit {
     this.apiService.getAll('usuarios/list').subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
-        if (
-          this.apiService.auth_user().tipo != 'Administrador' &&
-          this.apiService.auth_user().tipo != 'Supervisor' &&
-          this.apiService.auth_user().tipo != 'Supervisor Limitado'
-        ) {
+        const auth = this.apiService.auth_user();
+        const listaCompletaVendedores =
+          auth.tipo === 'Administrador' ||
+          auth.tipo === 'Supervisor' ||
+          auth.tipo === 'Supervisor Limitado' ||
+          ((auth.tipo === 'Ventas' || auth.tipo === 'Ventas Limitado') &&
+            this.apiService.isVentasPuedeCambiarVendedorFacturacion());
+        if (!listaCompletaVendedores) {
           this.usuarios = this.usuarios.filter(
-            (item: any) => item.id == this.apiService.auth_user().id
+            (item: any) => item.id == auth.id
           );
         }
       },
@@ -339,6 +347,7 @@ export class FacturacionV2Component implements OnInit {
 
   public cargarDatosIniciales() {
     this.venta = {};
+    this.habilitarCuentaTerceros = false;
     this.retencionIvaGcUsuarioDecidio = false;
     this.venta.fecha = this.apiService.date();
     this.venta.fecha_pago = this.apiService.date();
@@ -463,6 +472,7 @@ export class FacturacionV2Component implements OnInit {
             pedido_id: pedidoCanalIdVal,
             cliente_id: pdata.cliente_id,
             id_sucursal: pdata.id_sucursal,
+            id_bodega: pdata.id_bodega,
             fecha: pdata.fecha,
             canal: pdata.canal,
             referencia_externa: pdata.referencia_externa,
@@ -860,7 +870,8 @@ export class FacturacionV2Component implements OnInit {
     this.venta.forma_pago = 'Multiple';
     this.venta.efectivo = this.formaPagos.find(
       (item: any) => item.nombre == 'Efectivo'
-    ).total;
+    )?.total;
+    this.actualizarCambioEfectivo();
     console.log(this.venta);
   }
 
@@ -923,6 +934,7 @@ export class FacturacionV2Component implements OnInit {
     if (!this.venta.cobrar_impuestos) {
       this.initFeCrExoneracionVenta();
     }
+    this.ventaDetallesV2?.sincronizarIvasDetalles();
     this.sumTotal();
   }
 
@@ -998,7 +1010,7 @@ export class FacturacionV2Component implements OnInit {
           })
           .reduce((sum: number, d: any) => {
             const gravada = parseFloat(d.gravada || 0);
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
               ? parseFloat(d.iva) : gravada * (pctImp / 100);
             return sum + ivaLinea;
           }, 0);
@@ -1016,7 +1028,7 @@ export class FacturacionV2Component implements OnInit {
             const gravada = parseFloat(d.gravada || 0);
             const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
               ? Number(d.porcentaje_impuesto) : empresaIva;
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
               ? parseFloat(d.iva) : gravada * (pct / 100);
             return sum + ivaLinea;
           }, 0);
@@ -1067,7 +1079,40 @@ export class FacturacionV2Component implements OnInit {
             this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
         }
     }
+
+    this.actualizarCambioEfectivo();
   }
+
+  /** Vuelto: efectivo recibido (monto_pago) menos lo debido en efectivo (total, o parte en pago mixto). */
+  public actualizarCambioEfectivo(): void {
+    const raw = this.venta.monto_pago;
+    if (raw === null || raw === undefined || raw === '') {
+      this.venta.cambio = '';
+      return;
+    }
+    const recibido = parseFloat(String(raw)) || 0;
+    const totalVenta = parseFloat(String(this.venta.total ?? 0)) || 0;
+    const enMultiple = this.venta.forma_pago === 'Multiple';
+    const parteEfectivo = parseFloat(String(this.venta.efectivo ?? 0)) || 0;
+    const aCobrarEfectivo = enMultiple && parteEfectivo > 0 ? parteEfectivo : totalVenta;
+    this.venta.cambio = (recibido - aCobrarEfectivo).toFixed(2);
+  }
+
+   /** Tras cargar una venta: mostrar el bloque de cuenta a terceros si hay monto en líneas o en cabecera. */
+    private aplicarEstadoCuentaTercerosDesdeVentaCargada(): void {
+      const cRaw = parseFloat(this.venta.cuenta_a_terceros) || 0;
+      const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
+      this.habilitarCuentaTerceros = sumDet > 0.0001 || cRaw > 0.0001;
+    }
+
+    onCuentaTercerosSwitchChange(): void {
+      this.sumTotal();
+    }
+
+    onAlMenosUnPaqueteCuentaTerceros(): void {
+      this.habilitarCuentaTerceros = true;
+      this.sumTotal();
+    }
 
     private montoMinimoRetencionIvaGc(): number {
         const v = this.apiService.auth_user()?.empresa?.monto_minimo_retencion_iva_gc;
@@ -1325,6 +1370,7 @@ export class FacturacionV2Component implements OnInit {
             this.venta.detalle_banco = '';
             this.mensajeErrorBanco = '';
         }
+        this.actualizarCambioEfectivo();
     }
 
     public setDocumento(id_documento: any) {
@@ -1404,6 +1450,10 @@ export class FacturacionV2Component implements OnInit {
       return;
     }
 
+    if (this.tieneCantidadesMenoresAUno()) {
+      return;
+    }
+
     if (this.venta.cobrar_impuestos) {
       const vacios =
         !this.venta.impuestos ||
@@ -1449,6 +1499,23 @@ export class FacturacionV2Component implements OnInit {
     }
   }
 
+  private tieneCantidadesMenoresAUno(): boolean {
+    const detalleInvalido = (this.venta.detalles || []).find(
+      (detalle: any) => Number(detalle?.cantidad) < 1
+    );
+
+    if (!detalleInvalido) {
+      return false;
+    }
+
+    const nombreProducto =
+      detalleInvalido.descripcion || detalleInvalido.nombre || 'el producto';
+    this.alertService.error(
+      `La cantidad de "${nombreProducto}" debe ser mayor o igual a 1 para procesar la venta.`
+    );
+    return true;
+  }
+
   private navegarPostFacturaPreCuenta(ventaId: number) {
     if (!this.preCuentaId) {
       this.alertService.warning('No se pudo vincular la pre-cuenta', 'ID de pre-cuenta no disponible.');
@@ -1473,6 +1540,7 @@ export class FacturacionV2Component implements OnInit {
     pedido_id: number;
     cliente_id?: number | null;
     id_sucursal?: number | null;
+    id_bodega?: number | null;
     fecha?: string | null;
     canal?: string | null;
     referencia_externa?: string | null;
@@ -1482,6 +1550,9 @@ export class FacturacionV2Component implements OnInit {
     this.pedidoCanalId = data.pedido_id;
     if (data.id_sucursal) {
       this.venta.id_sucursal = data.id_sucursal;
+    }
+    if (data.id_bodega) {
+      this.venta.id_bodega = data.id_bodega;
     }
     if (data.fecha) {
       this.venta.fecha = data.fecha;
@@ -1535,6 +1606,18 @@ export class FacturacionV2Component implements OnInit {
         error: () => {},
       });
     }
+
+    const syncBodegaPedido = (attempt = 0) => {
+      if (data.id_bodega) {
+        this.venta.id_bodega = data.id_bodega;
+      }
+      if (this.bodegas?.length && this.venta.id_bodega) {
+        this.setBodega();
+      } else if (attempt < 40) {
+        setTimeout(() => syncBodegaPedido(attempt + 1), 100);
+      }
+    };
+    syncBodegaPedido();
   }
 
   private navegarPostFacturaPedidoCanal(ventaId: number) {
@@ -1581,6 +1664,10 @@ export class FacturacionV2Component implements OnInit {
         ? this.venta.efectivo
         : this.venta.total;
       this.venta.cambio = 0;
+    }
+
+    if (this.pedidoCanalId) {
+      (this.venta as any).id_pedido_canal = this.pedidoCanalId;
     }
 
     // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
