@@ -1622,7 +1622,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       return;
     }
 
-    if (this.tieneCantidadesMenoresAUno()) {
+    if (this.tieneDetallesInvalidosParaFacturar()) {
       return;
     }
 
@@ -1678,21 +1678,23 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     });
   }
 
-  private tieneCantidadesMenoresAUno(): boolean {
-    const detalleInvalido = (this.venta.detalles || []).find(
-      (detalle: any) => Number(detalle?.cantidad) < 1
-    );
+  private tieneDetallesInvalidosParaFacturar(): boolean {
+    const detalles = this.venta.detalles || [];
 
-    if (!detalleInvalido) {
-      return false;
+    const sinCantidad = detalles.find((detalle: any) => {
+      const c = Number(detalle?.cantidad);
+      return !Number.isFinite(c) || c <= 0;
+    });
+    if (sinCantidad) {
+      const nombre =
+        sinCantidad.descripcion || sinCantidad.nombre || 'el producto';
+      this.alertService.error(
+        `La cantidad de "${nombre}" debe ser mayor que 0 para procesar la venta.`
+      );
+      return true;
     }
 
-    const nombreProducto =
-      detalleInvalido.descripcion || detalleInvalido.nombre || 'el producto';
-    this.alertService.error(
-      `La cantidad de "${nombreProducto}" debe ser mayor o igual a 1 para procesar la venta.`
-    );
-    return true;
+    return false;
   }
 
   /**
