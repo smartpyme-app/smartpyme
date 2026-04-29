@@ -1385,19 +1385,6 @@ export class FacturacionComponent implements OnInit {
       return true;
     }
 
-    const sinTotal = detalles.find((detalle: any) => {
-      const t = Number(detalle?.total);
-      return !Number.isFinite(t) || t <= 0;
-    });
-    if (sinTotal) {
-      const nombre =
-        sinTotal.descripcion || sinTotal.nombre || 'el producto';
-      this.alertService.error(
-        `El total de "${nombre}" debe ser mayor que 0 para procesar la venta.`
-      );
-      return true;
-    }
-
     return false;
   }
 
