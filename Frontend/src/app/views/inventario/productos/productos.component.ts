@@ -63,7 +63,7 @@ export class ProductosComponent implements OnInit {
                 this.filtros.id_bodega = usuario.id_bodega;
             }
 
-            this.filtrarProductos();
+            this.filtrarProductos(false);
         });
 
         this.apiService.getAll('categorias/list').subscribe(categorias => {
@@ -111,10 +111,18 @@ export class ProductosComponent implements OnInit {
             this.filtros.id_bodega = bodegaActual || usuario?.id_bodega || '';
         }
 
-        this.filtrarProductos();
+        this.filtrarProductos(false);
     }
 
-    public filtrarProductos() {
+    /**
+     * @param resetPage Si es true (por defecto), vuelve a la página 1: búsqueda, filtros, orden, tamaño de página.
+     *                  Usar false al cambiar solo la página desde el paginador o al aplicar parámetros desde la URL.
+     */
+    public filtrarProductos(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
+
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: this.filtros,
@@ -181,13 +189,13 @@ export class ProductosComponent implements OnInit {
             this.filtros.direccion = 'asc';
         }
 
-        this.filtrarProductos();
+        this.filtrarProductos(true);
     }
 
     public setPagination(event: any): void {
         this.loading = true;
         this.filtros.page = event.page;
-        this.filtrarProductos();
+        this.filtrarProductos(false);
     }
 
     public onSubmit() {
@@ -253,7 +261,7 @@ export class ProductosComponent implements OnInit {
 
         this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
             // this.producto.inventarios[this.producto.inventarios.findIndex((item:any) => item.id_bodega == this.filtros.id_bodega)].stock = ajuste.stock_real;
-            this.filtrarProductos();
+            this.filtrarProductos(false);
             this.modalRef.hide();
             this.alertService.modal = false;
             this.loading = false;
