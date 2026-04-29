@@ -320,6 +320,7 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
           pedidoCanalData: {
             cliente_id: data.cliente_id,
             id_sucursal: data.id_sucursal,
+            id_bodega: data.id_bodega,
             fecha: data.fecha,
             canal: data.canal,
             referencia_externa: data.referencia_externa,

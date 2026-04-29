@@ -39,6 +39,8 @@ export class PedidoFormComponent implements OnInit {
   clientes: any[] = [];
 
   lineas: LineaLocal[] = [];
+  bodegas: any[] = [];
+  idBodega: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -64,10 +66,25 @@ export class PedidoFormComponent implements OnInit {
       }
     });
 
+    this.apiService.getAll('bodegas/list').subscribe({
+      next: (b: any) => {
+        this.bodegas = Array.isArray(b) ? b : [];
+        if (this.apiService.auth_user().tipo != 'Administrador') {
+          this.bodegas = this.bodegas.filter(
+            (item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal
+          );
+        }
+      },
+      error: () => {
+        this.bodegas = [];
+      }
+    });
+
     if (this.modoEdicion && this.pedidoId) {
       this.cargarPedido(this.pedidoId);
     } else {
       this.fecha = new Date().toISOString().slice(0, 10);
+      this.idBodega = this.apiService.auth_user().id_bodega ?? null;
     }
   }
 
@@ -85,6 +102,7 @@ export class PedidoFormComponent implements OnInit {
         this.referenciaExterna = p.referencia_externa || '';
         this.clienteId = p.cliente_id ?? null;
         this.observaciones = p.observaciones || '';
+        this.idBodega = p.id_bodega ?? this.apiService.auth_user().id_bodega ?? null;
         this.lineas = (p.detalles || []).map((d) => ({
           producto_id: d.producto_id,
           nombre: d.producto?.nombre || 'Producto #' + d.producto_id,
@@ -177,6 +195,7 @@ export class PedidoFormComponent implements OnInit {
       referencia_externa: this.referenciaExterna.trim() || undefined,
       cliente_id: this.clienteId || undefined,
       observaciones: this.observaciones.trim() || undefined,
+      id_bodega: this.idBodega ?? undefined,
       detalles
     };
 
