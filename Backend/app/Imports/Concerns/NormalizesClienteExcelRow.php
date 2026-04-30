@@ -76,15 +76,32 @@ trait NormalizesClienteExcelRow
                 $part = trim($part);
                 if ($part !== '' && strpos($part, '@') !== false) {
                     $clean = $this->trimCorreoImportLeadingTrailingDashes($part);
+                    $ok = $this->correoAceptableParaImport($clean);
 
-                    return $clean === '' ? null : $clean;
+                    return $ok;
                 }
             }
         }
 
         $clean = $this->trimCorreoImportLeadingTrailingDashes($v);
 
-        return $clean === '' ? null : $clean;
+        return $this->correoAceptableParaImport($clean);
+    }
+
+    /**
+     * Corrige celdas con texto que no es un correo válido: se ignora (null) para no frenar la importación.
+     */
+    private function correoAceptableParaImport(string $correo): ?string
+    {
+        if ($correo === '') {
+            return null;
+        }
+
+        if (filter_var($correo, FILTER_VALIDATE_EMAIL) === false) {
+            return null;
+        }
+
+        return $correo;
     }
 
     private function trimCorreoImportLeadingTrailingDashes(string $email): string

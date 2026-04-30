@@ -76,26 +76,13 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
 
         $row = $this->applyExcelRowNormalization($row, $stringKeys, $this->esElSalvador);
 
-        $nombreTrim = isset($row['nombre']) ? trim((string) $row['nombre']) : '';
-        $apellidoTrim = isset($row['apellido']) ? trim((string) $row['apellido']) : '';
-        if ($nombreTrim !== '' && $apellidoTrim === '') {
-            $parts = preg_split('/\s+/u', $nombreTrim, -1, PREG_SPLIT_NO_EMPTY);
-            if (count($parts) >= 2) {
-                $row['apellido'] = array_pop($parts);
-                $row['nombre'] = implode(' ', $parts);
-            }
-        }
-
         if ($this->esElSalvador) {
             $duiNorm = $this->normalizarDui($row['dui'] ?? '');
-            if ($duiNorm !== '' && $this->esDuiValido($duiNorm)) {
+            if ($duiNorm === '') {
+                $row['dui'] = null;
+            } elseif ($this->esDuiValido($duiNorm)) {
                 $row['dui'] = $this->canonicalizarDui($duiNorm);
             } else {
-                if ($duiNorm !== '') {
-                    Log::info('Import clientes persona: se omite DUI por formato incompleto o no válido', [
-                        'valor_original' => $row['dui'] ?? null,
-                    ]);
-                }
                 $row['dui'] = null;
             }
         }
@@ -105,7 +92,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
 
     public function model(array $row)
     {
-        if (empty($row['nombre']) || empty($row['apellido'])) {
+        if (empty($row['nombre'])) {
             return null;
         }
 
@@ -139,7 +126,8 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
 
         $cliente = new Cliente();
         $cliente->nombre = $row['nombre'];
-        $cliente->apellido = $row['apellido'];
+        $apellidoRaw = $row['apellido'] ?? '';
+        $cliente->apellido = is_string($apellidoRaw) ? trim($apellidoRaw) : '';
         $codigoCliente = $row['codigo_de_cliente'] ?? $row['codigo_cliente'] ?? null;
         $cliente->codigo_cliente = ($codigoCliente !== null && $codigoCliente !== '') ? (string) $codigoCliente : null;
 
@@ -193,16 +181,16 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
         if ($this->esElSalvador) {
             return [
                 'nombre' => 'required|string|max:255',
-                'apellido' => 'required|string|max:255',
+                'apellido' => 'nullable|string|max:255',
                 'dui' => 'nullable|string|max:20',
                 'nit' => 'nullable|string|max:20',
                 'direccion' => 'nullable|string|max:500',
-                'departamento' => 'required|string',
-                'cod_departamento' => ['required', Rule::exists('departamentos', 'cod')],
-                'municipio' => 'required|string',
-                'cod_municipio' => ['required', Rule::exists('municipios', 'cod')],
-                'distrito' => 'required|string',
-                'cod_distrito' => ['required', Rule::exists('distritos', 'cod')],
+                'departamento' => 'nullable|string|max:255',
+                'cod_departamento' => ['nullable', 'string', 'max:50', Rule::exists('departamentos', 'cod')],
+                'municipio' => 'nullable|string|max:255',
+                'cod_municipio' => ['nullable', 'string', 'max:50', Rule::exists('municipios', 'cod')],
+                'distrito' => 'nullable|string|max:255',
+                'cod_distrito' => ['nullable', 'string', 'max:50', Rule::exists('distritos', 'cod')],
                 'telefono' => 'nullable|string|max:20',
                 'correo' => 'nullable|email:filter|max:255',
                 'tipo_contribuyente' => 'nullable|string|max:100',
@@ -212,7 +200,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
 
         return [
             'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
+            'apellido' => 'nullable|string|max:255',
             'dui' => 'nullable|string|max:50',
             'documento_identidad' => 'nullable|string|max:50',
             'n. de documento' => 'nullable|string|max:50',
