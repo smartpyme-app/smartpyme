@@ -108,7 +108,7 @@
                   </ul>
                 </div>
             </li>
-            <li class="mb-1">
+            <li class="mb-1" *ngIf="usuario?.tipo !== 'Supervisor Limitado'">
                 <button (click)="togglePlanilla()" tooltip="Planilla" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!planillaIsCollapsed" aria-controls="collapsePlanilla">
                     <img src="/assets/icons/clipboard.png" class="icon me-2">Planilla
                 </button>

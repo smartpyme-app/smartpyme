@@ -62,6 +62,7 @@ const routes: Routes = [
         // Planilla
         {
           path: '',
+          canActivate: [SupervisorLimitadoGuard],
           loadChildren: () => import('./views/planillas/planillas.module').then(m => m.PlanillasModule),
         },
         // Proyectos
