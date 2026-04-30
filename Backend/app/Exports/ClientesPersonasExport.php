@@ -24,6 +24,7 @@ class ClientesPersonasExport implements FromCollection, WithHeadings, WithMappin
         return[
             'Nombre',
             'Apellido',
+            'Codigo de cliente',
             'DUI',
             'NIT',
             'Direccion',
@@ -64,6 +65,7 @@ class ClientesPersonasExport implements FromCollection, WithHeadings, WithMappin
            $fields = [
                 $row->nombre,
                 $row->apellido,
+                $row->codigo_cliente,
                 $row->dui,
                 $row->nit,
                 $row->direccion,

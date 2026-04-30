@@ -65,17 +65,40 @@ export class AlertService {
             this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.statusText || 'Lo sentimos', 'mensaje' : mensaje});
         }
         else if(message.status == 422) {
-            // Verificar si el error es un array o una cadena
-            if(message.error && message.error.error) {
-                if(Array.isArray(message.error.error)) {
+            const errBody = message.error;
+            if (errBody && Array.isArray(errBody.failures) && errBody.failures.length > 0) {
+                const byRow: { [row: number]: string[] } = {};
+                for (const f of errBody.failures) {
+                    const r = Number(f.row);
+                    if (!byRow[r]) {
+                        byRow[r] = [];
+                    }
+                    const errs = Array.isArray(f.errors) ? f.errors : [];
+                    for (const e of errs) {
+                        if (e) {
+                            byRow[r].push(String(e));
+                        }
+                    }
+                }
+                const rows = Object.keys(byRow).map((k) => Number(k)).sort((a, b) => a - b);
+                let alerts = '';
+                for (const r of rows) {
+                    alerts += `<strong>Fila ${r}</strong> del Excel:<br>`;
+                    for (const line of byRow[r]) {
+                        alerts += '&nbsp;&nbsp;• ' + line + '<br>';
+                    }
+                }
+                this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Corrige los siguientes errores', 'mensaje' : alerts});
+            } else if(errBody && errBody.error) {
+                if(Array.isArray(errBody.error)) {
                     let alerts='';
-                    for (var i = 0; i < message.error.error.length; ++i) {
-                        alerts += '- ' + message.error.error[i] + '<br>';
+                    for (var i = 0; i < errBody.error.length; ++i) {
+                        alerts += '- ' + errBody.error[i] + '<br>';
                     }
                     this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Corrige los siguientes errores', 'mensaje' : alerts});
                 } else {
                     // Si es una cadena, mostrarla directamente
-                    this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Error de validación', 'mensaje' : message.error.error});
+                    this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Error de validación', 'mensaje' : errBody.error});
                 }
             } else {
                 // Fallback por si la estructura es diferente

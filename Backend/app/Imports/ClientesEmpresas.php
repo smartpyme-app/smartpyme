@@ -11,14 +11,25 @@ use App\Models\MH\Municipio;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\Importable;
+use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\Auth as FacadesAuth;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
+use App\Imports\Concerns\NormalizesClienteExcelRow;
 
-class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows
+/**
+ * Importación solo de la primera hoja del libro (índice 0).
+ * Sin WithMultipleSheets, Maatwebsite procesa todas las pestañas con la misma clase;
+ * en libros con catálogos (Departamentos, Actividades, etc.) las demás hojas fallan
+ * la validación aunque la hoja de clientes esté bien.
+ */
+class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithCalculatedFormulas, SkipsEmptyRows, WithMultipleSheets
 {
+    use NormalizesClienteExcelRow;
+
     private $numRows = 0;
     private $esElSalvador = false;
 
@@ -70,6 +81,34 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
             // Por defecto, asumir que es El Salvador para mantener compatibilidad
             $this->esElSalvador = true;
         }
+    }
+
+    /**
+     * Solo la primera pestaña del Excel (la de datos). Las demás quedan en el libro para que las fórmulas sigan resolviendo.
+     *
+     * @return array<int, self>
+     */
+    public function sheets(): array
+    {
+        return [0 => $this];
+    }
+
+    /**
+     * Normaliza filas del Excel: convierte códigos y documentos leídos como número a string
+     * (la validación Laravel usa reglas "string") y recorta texto.
+     * Con WithCalculatedFormulas, las celdas con fórmulas (p. ej. cod_giro) llegan ya resueltas.
+     */
+    public function prepareForValidation(array $row, $index): array
+    {
+        $stringKeys = [
+            'nombre_empresa', 'ncr', 'giro', 'cod_giro', 'tipo_contribuyente', 'dui', 'nit',
+            'direccion', 'departamento', 'cod_departamento', 'municipio', 'cod_municipio',
+            'distrito', 'cod_distrito', 'telefono', 'correo', 'pais',
+            'numero_registro', 'identificacion_fiscal', 'n. de registro', 'n_de_registro',
+            'giro o rubro', 'rubro', 'actividad_economica', 'provincia', 'estado', 'ciudad',
+        ];
+
+        return $this->applyExcelRowNormalization($row, $stringKeys, $this->esElSalvador);
     }
 
     public function model(array $row)
@@ -236,7 +275,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
                 'nit' => 'nullable|string|max:20',
                 'direccion' => 'nullable|string|max:500',
                 'telefono' => 'nullable|string|max:20',
-                'correo' => 'nullable|email|max:255',
+                'correo' => 'nullable|email:filter|max:255',
             ];
         }
         
@@ -250,7 +289,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
             'giro' => 'nullable|string|max:255',
             
             // Campos opcionales
-            'correo' => 'nullable|email|max:255',
+            'correo' => 'nullable|email:filter|max:255',
             'telefono' => 'nullable|max:20',
             'direccion' => 'nullable|string|max:500',
         ];
