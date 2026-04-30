@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Imports\Concerns\NormalizesClienteExcelRow;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Categorias\Categoria;
 use Maatwebsite\Excel\Concerns\ToModel;
@@ -12,8 +13,15 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use JWTAuth;
 
+/**
+ * Importación solo de la primera hoja del libro (índice 0).
+ * Sin WithMultipleSheets, Maatwebsite procesa todas las pestañas con la misma clase;
+ * las hojas de ayuda o catálogos fallan la validación y el error suele mostrarse como «fila 2».
+ */
 class Servicios implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows, WithCalculatedFormulas, WithMultipleSheets
 {
+    use NormalizesClienteExcelRow;
+
     private $numRows = 0;
 
     public function sheets(): array
@@ -23,14 +31,14 @@ class Servicios implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
 
     public function prepareForValidation(array $row, $index): array
     {
-        foreach (['nombre', 'categoria', 'codigo', 'descripcion'] as $key) {
-            if (isset($row[$key]) && is_string($row[$key])) {
-                $row[$key] = trim($row[$key]);
-            }
-        }
+        $stringKeys = ['nombre', 'categoria', 'codigo', 'descripcion'];
+        $row = $this->applyExcelRowNormalization($row, $stringKeys, false);
 
         if (empty($row['precio'] ?? null) && isset($row['precio_sin_iva']) && $row['precio_sin_iva'] !== '') {
             $row['precio'] = $row['precio_sin_iva'];
+            if (is_numeric($row['precio']) && !is_string($row['precio'])) {
+                $row['precio'] = $this->excelNumberToStringCell($row['precio']);
+            }
         }
 
         foreach (['precio', 'costo'] as $key) {
