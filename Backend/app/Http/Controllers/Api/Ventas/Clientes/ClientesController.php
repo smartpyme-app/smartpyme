@@ -22,6 +22,7 @@ use App\Services\FidelizacionCliente\LicenciaFidelizacionService;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use PgSql\Lob;
 
 class ClientesController extends Controller
@@ -539,6 +540,11 @@ class ClientesController extends Controller
                     'error' => 'No se pudo procesar ningún cliente. ' . implode("\n", $errores)
                 ], 400);
             }
+        } catch (ValidationException $e) {
+            return response()->json([
+                'error' => 'Los datos del archivo no son válidos.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error("Error en importación de clientes personas: " . $e->getMessage());
             return response()->json([
