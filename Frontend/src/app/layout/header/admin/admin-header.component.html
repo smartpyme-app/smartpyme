@@ -80,7 +80,7 @@
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/libro-compras">Libro de Compras</a></li>
         </ul>
     </li>
-    <li class="nav-item dropdown me-3">
+    <li class="nav-item dropdown me-3" *ngIf="usuario?.tipo !== 'Supervisor Limitado'">
         <a class="nav-link dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           Planilla
         </a>
