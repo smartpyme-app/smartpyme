@@ -51,22 +51,24 @@
                         <th>Estado</th>
                         <th>Tipo de pago</th>
                         <th class="text-end">Total</th>
-                        <th width="100px" class="text-center"><i class="fa fa-cog"></i></th>
+                        <th class="text-end align-middle text-nowrap" style="width: 1%"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        @if (pagos?.total < 1 && !loading) {
-                            <td colspan="8" class="text-center">
-                                <span class="badge bg-primary">No tiene pagos registradas</span>
-                            </td>
-                        }
-                        @if (loading) {
-                            <td colspan="8" class="text-center">
+                    @if (loading) {
+                        <tr>
+                            <td colspan="7" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
-                        }
-                    </tr>
+                        </tr>
+                    }
+                    @if (pagos?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <span class="badge bg-primary">No tiene pagos registradas</span>
+                            </td>
+                        </tr>
+                    }
                     @for (pago of pagos.data; track pago.id || $index) {
                         <tr>
                             <td>{{ pago.fecha_transaccion | date:'dd/MM/yyyy'}}</td>
@@ -75,10 +77,19 @@
                             <td>{{ pago.estado }}</td>
                             <td>{{ pago.tipo_pago ?? 'N/A' }}</td>
                             <td class="text-end">{{ pago.monto | currency }}</td>
-                            <td class="text-center">
-                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                            <td class="text-end align-middle" style="width: 1%; white-space: nowrap">
+                                <button
+                                    type="button"
+                                    class="btn btn-link text-secondary text-decoration-none p-0 lh-1"
+                                    [popover]="accionesTemplate"
+                                    container="body"
+                                    placement="left"
+                                    triggers="click"
+                                    [outsideClick]="true"
+                                    tooltip="Acciones"
+                                >
                                     <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                                </span>
+                                </button>
                                 <ng-template #accionesTemplate>
                                     <div class="list-group border-0">
                                         <a (click)="openModalEdit(mpagos, pago)" class="list-group-item list-group-item-action border-0 click">

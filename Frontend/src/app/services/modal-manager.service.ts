@@ -34,6 +34,13 @@ export class ModalManagerService {
   ) {}
 
   /**
+   * Abre contenido/modal mediante ngx-bootstrap (p. ej. listados que extienden `BasePaginatedModalComponent`).
+   */
+  show(content: any, config?: any): BsModalRef {
+    return this.modalService.show(content, config);
+  }
+
+  /**
    * Abre un modal con la configuración especificada
    * @param template - TemplateRef del modal a abrir
    * @param config - Configuración opcional del modal

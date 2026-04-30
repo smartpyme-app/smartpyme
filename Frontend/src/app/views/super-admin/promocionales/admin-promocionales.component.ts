@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { EncryptService } from '@services/encryption/encrypt.service';
@@ -12,7 +14,7 @@ import Swal from 'sweetalert2';
   selector: 'app-admin-promocionales',
   templateUrl: './admin-promocionales.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule]
+  imports: [CommonModule, FormsModule, RouterModule, PopoverModule, TooltipModule]
 })
 export class AdminPromocionalesComponent implements OnInit {
   public promocionales: any = [];

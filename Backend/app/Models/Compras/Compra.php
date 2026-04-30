@@ -2,6 +2,8 @@
 
 namespace App\Models\Compras;
 
+use App\Models\Compras\Retaceo\Retaceo;
+use App\Models\Compras\Retaceo\RetaceoCompra;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -15,9 +17,9 @@ class Compra extends Model {
         'sello_mh',
         'fecha',
         'estado',
+        // 'tipo',
         'forma_pago',
         'tipo_documento',
-        'num_identificacion',
         // 'condicion',
         'fecha_pago',
         'referencia',
@@ -56,7 +58,7 @@ class Compra extends Model {
 
     );
 
-    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal', 'nombre_proyecto', 'empresa_nombre'];
+    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];
 
     protected static function boot()
     {
@@ -69,39 +71,26 @@ class Compra extends Model {
         }
     }
 
-    public function getDteAttribute($value)
-    {
-        return is_string($value) ? json_decode($value,true) : $value;
-    }
-
-    public function getDteInvalidacionAttribute($value)
+    public function getDteAttribute($value) 
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }
 
     public function getSaldoAttribute(){
-        $abonos = $this->abonos()->where('estado', 'Confirmado')->sum('total');
-        $devoluciones = $this->devoluciones()->where('enable', 1)->sum('total');
-        return round($this->total - $abonos - $devoluciones,2);
+        return round($this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total'),2);
     }
 
 
     public function getNombreSucursalAttribute()
     {
-        if (!$this->relationLoaded('sucursal')) {
-            return $this->sucursal()->pluck('nombre')->first() ?? '';
+        if ($this->sucursal()->first()) {
+            return $this->sucursal()->pluck('nombre')->first();
         }
-        return $this->sucursal ? $this->sucursal->nombre : '';
+        return '';
     }
 
     public function getNombreProveedorAttribute()
-    {
-        if (!$this->relationLoaded('proveedor')) {
-            $proveedor = $this->proveedor()->first();
-        } else {
-            $proveedor = $this->proveedor;
-        }
-        
+    {   $proveedor = $this->proveedor()->first();
         if ($proveedor) {
             return $proveedor->tipo == 'Empresa' ? $proveedor->nombre_empresa : $proveedor->nombre . ' ' . $proveedor->apellido;
         }
@@ -110,26 +99,7 @@ class Compra extends Model {
 
     public function getNombreUsuarioAttribute()
     {
-        if (!$this->relationLoaded('usuario')) {
-            return $this->usuario()->pluck('name')->first();
-        }
-        return $this->usuario ? $this->usuario->name : null;
-    }
-
-    public function getNombreProyectoAttribute()
-    {
-        if (!$this->relationLoaded('proyecto')) {
-            return $this->proyecto()->pluck('nombre')->first();
-        }
-        return $this->proyecto ? $this->proyecto->nombre : null;
-    }
-
-    public function getEmpresaNombreAttribute()
-    {
-        if (!$this->relationLoaded('empresa')) {
-            return $this->empresa()->pluck('nombre')->first() ?? '';
-        }
-        return $this->empresa ? $this->empresa->nombre : '';
+        return $this->usuario()->pluck('name')->first();
     }
 
     public function bodega(){
@@ -156,6 +126,11 @@ class Compra extends Model {
         return $this->belongsTo('App\Models\Admin\Empresa','id_empresa');
     }
 
+    public function proyecto()
+    {
+        return $this->belongsTo('App\Models\Contabilidad\Proyecto', 'id_proyecto');
+    }
+
     public function detalles(){
         return $this->hasMany('App\Models\Compras\Detalle','id_compra');
     }
@@ -164,28 +139,20 @@ class Compra extends Model {
         return $this->hasMany('App\Models\Compras\Devoluciones\Devolucion', 'id_compra');
     }
 
-    public function proyecto()
-    {
-        return $this->belongsTo('App\Models\Contabilidad\Proyecto', 'id_proyecto');
-    }
-
-    public function retaceo(){
-        return $this->hasOne('App\Models\Compras\Retaceo\Retaceo', 'id_compra');
-    }
-
     /**
-     * Scope para cargar todas las relaciones necesarias para los accessors
-     * Evita N+1 queries cuando se listan múltiples compras
+     * Retaceo vinculado (una compra solo puede estar en un retaceo).
      */
-    public function scopeWithAccessorRelations($query)
+    public function retaceo()
     {
-        return $query->with([
-            'proveedor',
-            'usuario',
-            'sucursal',
-            'proyecto',
-            'empresa'
-        ]);
+        return $this->hasOneThrough(
+            Retaceo::class,
+            RetaceoCompra::class,
+            'id_compra',
+            'id',
+            'id',
+            'id_retaceo'
+        );
     }
+
 
 }

@@ -8,12 +8,14 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { CommonModule } from '@angular/common';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 @Component({
     selector: 'app-admin-pagos',
     templateUrl: './admin-pagos.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, PaginationComponent],
+    imports: [CommonModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule],
     
 })
 export class AdminPagosComponent extends BaseCrudComponent<any> implements OnInit {

@@ -63,22 +63,24 @@
                     <th>Empresa</th>
                     <th>Activo</th>
                     <th>Último inicio de sesión</th>
-                    <th class="text-center"><i class="fa fa-cog"></i></th>
+                    <th class="text-end text-nowrap" style="width: 4.5rem"><i class="fa fa-cog"></i></th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    @if (usuarios?.total < 1 && !loading) {
-                        <td colspan="9" class="text-center">
-                            <span class="badge bg-primary">No tiene usuarios registrados</span>
-                        </td>
-                    }
-                    @if (loading) {
-                        <td colspan="9" class="text-center">
+                @if (loading) {
+                    <tr>
+                        <td colspan="6" class="text-center">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
-                    }
-                </tr>
+                    </tr>
+                }
+                @if (usuarios?.total < 1 && !loading) {
+                    <tr>
+                        <td colspan="6" class="text-center">
+                            <span class="badge bg-primary">No tiene usuarios registrados</span>
+                        </td>
+                    </tr>
+                }
 
                 @for (usuario of usuarios.data; track usuario.id) {
                     <tr>
@@ -92,7 +94,7 @@
                             </select>
                         </td>
                         <td>{{ usuario.ultimo_login | date:'dd/MM/yyy hh:mm a' }}</td>
-                        <td class="text-center">
+                        <td class="text-end">
                             <div class="btn-group" role="group">
 <!--                             @if (usuario.id != 1) {
                                 <a class="btn btn-default" (click)="delete(usuario.id)" data-toggle="tooltip" title="Eliminar">

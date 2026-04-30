@@ -3,17 +3,19 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 
 @Component({
     selector: 'app-dashboards',
     templateUrl: './dashboards.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, PaginationComponent],
     
 })
 

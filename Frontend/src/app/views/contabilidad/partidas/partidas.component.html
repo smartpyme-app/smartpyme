@@ -7,13 +7,11 @@
     </button>
     <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img
         src="/assets/icons/download.png" style="height: 16px; width: 16px;"></button>
-    @if (apiService.canCreateTest('contabilidad.partidas.crear')) {
-      <button routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
+    <button *ngIf="apiService.canCreateTest('contabilidad.partidas.crear')" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
             class="btn btn-default bn_mrgn"><i class="fa fa-plus"></i> Añadir partida
       <!-- <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
               class="btn btn-default"><i class="fa fa-plus"></i> Crear partida -->
-      </button>
-    }
+    </button>
     <button (click)="openReordenarModal(mreordenar)" tooltip="Reordenar correlativos" class="btn btn-default">
       <i class="fa fa-sort-numeric-up"></i> Reordenar
     </button>
@@ -31,11 +29,9 @@
 <section class="bg-white p-4 rounded mb-3">
   <div class="row">
     <div class="col-md-6 mb-3">
-      @if (partidas?.total) {
-        <span class="text-muted">
-          Mostrando {{ partidas?.to }} de {{ partidas?.total + ' registros' }}
-        </span>
-      }
+      <span class="text-muted" *ngIf="partidas?.total">
+        Mostrando {{ partidas?.to }} de {{ partidas?.total + ' registros' }}
+      </span>
     </div>
 
     <div class="col-md-6 mb-3">
@@ -64,9 +60,7 @@
             [class]="filtros.incluir_anuladas ? 'btn btn-primary' : 'btn bg-default'"
             (click)="toggleAnuladas()">
       Anuladas
-      @if (partidas.total_anuladas) {
-        <span class="badge bg-danger text-white">{{ partidas.total_anuladas }}</span>
-      }
+      <span class="badge bg-danger text-white" *ngIf="partidas.total_anuladas">{{ partidas.total_anuladas }}</span>
       </button>
 
       <button class="btn bg-default" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
@@ -116,23 +110,16 @@
           </tr>
         </thead>
         <tbody>
-          @if (partidas?.total < 1 && !loading) {
-            <tr>
-              <td colspan="6" class="text-center">
-                <span class="badge bg-primary">No tiene un catálogo de partidas registrado</span>
-              </td>
-            </tr>
-          }
-          @if (loading) {
-            <tr>
-              <td colspan="6" class="text-center">
-                <span class="badge bg-primary">Cargando...</span>
-              </td>
-            </tr>
-          }
+          <tr>
+            <td colspan="6" class="text-center" *ngIf="partidas?.total < 1 && !loading">
+              <span class="badge bg-primary">No tiene un catálogo de partidas registrado</span>
+            </td>
+            <td colspan="6" class="text-center" *ngIf="loading">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
 
-          @for (partida of partidas?.data; track partida.id || $index) {
-            <tr>
+          <tr *ngFor=" let partida of partidas?.data">
             <td>{{ partida.id }}</td>
             <!-- Fecha -->
             <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
@@ -174,13 +161,12 @@
                     <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                   </a>
                   <!-- <a *ngIf="partida.estado == 'Pendiente' && apiService.canEdit()" -->
-                  @if (partida.estado == 'Pendiente' && apiService.canEditTest('contabilidad.partidas.editar')) {
-                    <a
-                       (click)="setEstado(partida, 'Aplicada')"
-                       class="list-group-item list-group-item-action border-0 click">
-                      <i class="fa fa-fw fa-check"></i> Aplicar
-                    </a>
-                  }
+                  <a *ngIf="partida.estado == 'Pendiente' && apiService.canEditTest('contabilidad.partidas.editar')"
+
+                     (click)="setEstado(partida, 'Aplicada')"
+                     class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa fa-fw fa-check"></i> Aplicar
+                  </a>
                   <a (click)="imprimirPartida(partida)"
                      class="list-group-item list-group-item-action border-0 click">
                     <i class="fa fa-fw fa-print"></i>Imprimir
@@ -190,39 +176,30 @@
                     <i class="fa fa-fw fa-file-excel"></i>Descargar
                   </a>
                   <!-- <a *ngIf="partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEdit()" (click)="setEstado(partida, 'Anulada')" -->
-                  @if (partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEditTest('contabilidad.partidas.editar')) {
-                    <a (click)="setEstado(partida, 'Anulada')"
-                       class="list-group-item list-group-item-action border-0 click">
-                      <i class="fa fa-fw fa-ban"></i> Anular
-                    </a>
-                  }
-                  @if (partida.estado == 'Anulada' && apiService.canEditTest('contabilidad.partidas.editar')) {
-                    <a (click)="setEstado(partida, 'Aplicada')"
-                       class="list-group-item list-group-item-action border-0 click">
-                      <i class="fa fa-fw fa-check"></i> Revertir anulación
-                    </a>
-                  }
-                  @if (partida.estado == 'Cerrada' && apiService.auth_user().tipo == 'Administrador') {
-                    <a
-                       (click)="abrirPartida(partida)"
-                       class="list-group-item list-group-item-action border-0 click">
-                      <i class="fa fa-fw fa-unlock"></i> Abrir partida
-                    </a>
-                  }
+                  <a *ngIf="partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEditTest('contabilidad.partidas.editar')" (click)="setEstado(partida, 'Anulada')"
+                     class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa fa-fw fa-ban"></i> Anular
+                  </a>
+                  <a *ngIf="partida.estado == 'Anulada' && apiService.canEditTest('contabilidad.partidas.editar')" (click)="setEstado(partida, 'Aplicada')"
+                     class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa fa-fw fa-check"></i> Revertir anulación
+                  </a>
+                  <a *ngIf="partida.estado == 'Cerrada' && apiService.auth_user().tipo == 'Administrador'"
+                     (click)="abrirPartida(partida)"
+                     class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa fa-fw fa-unlock"></i> Abrir partida
+                  </a>
                 </div>
               </ng-template>
             </td>
           </tr>
-          }
         </tbody>
       </table>
     </div>
 
-    @if (partidas?.last_page > 1) {
-      <div class="col-12">
-        <app-pagination [items]="partidas" (setPagination)="setPagination($event)"></app-pagination>
-      </div>
-    }
+    <div class="col-12" *ngIf="partidas?.last_page > 1">
+      <app-pagination [items]="partidas" (setPagination)="setPagination($event)"></app-pagination>
+    </div>
   </div>
 </section>
 
@@ -273,12 +250,8 @@
 
       <div class="d-grid mt-3">
         <button type="submit" [disabled]="loading" class="btn btn-primary">
-          @if (!loading) {
-            <span>Filtrar</span>
-          }
-          @if (loading) {
-            <span>Filtrando...</span>
-          }
+          <span *ngIf="!loading">Filtrar</span>
+          <span *ngIf="loading">Filtrando...</span>
         </button>
       </div>
     </form>
@@ -381,12 +354,8 @@
                     </small>
                     <button type="submit" [disabled]="!auxForm.form.valid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
-                      @if (!saving) {
-                        <span>Generar Documento</span>
-                      }
-                      @if (saving) {
-                        <span>Generando...</span>
-                      }
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
                     </button>
                   </div>
                 </div>
@@ -442,12 +411,8 @@
                     </small>
                     <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
-                      @if (!saving) {
-                        <span>Generar Documento</span>
-                      }
-                      @if (saving) {
-                        <span>Generando...</span>
-                      }
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
                     </button>
                   </div>
                 </div>
@@ -503,12 +468,8 @@
                     </small>
                     <button type="submit" [disabled]="!balanceForm.form.valid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
-                      @if (!saving) {
-                        <span>Generar Documento</span>
-                      }
-                      @if (saving) {
-                        <span>Generando...</span>
-                      }
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
                     </button>
                   </div>
                 </div>
@@ -558,12 +519,8 @@
                     </small>
                     <button type="submit" [disabled]="!balanceGeneralForm.form.valid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
-                      @if (!saving) {
-                        <span>Generar Documento</span>
-                      }
-                      @if (saving) {
-                        <span>Generando...</span>
-                      }
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
                     </button>
                   </div>
                 </div>
@@ -594,11 +551,26 @@
                   </select>
                 </div>
                 <div class="col-md-6">
+                  <div class="form-group without-label mb-0">
+                    <div class="form-switch bg-light-info rounded">
+                      <label for="estadoCompararAnterior">Comparar con período anterior</label>
+                      <input
+                        class="form-check-input float-end"
+                        type="checkbox"
+                        role="switch"
+                        name="estadoCompararAnterior"
+                        id="estadoCompararAnterior"
+                        [(ngModel)]="reporte.estadoCompararAnterior"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
                   <div class="d-flex align-items-end h-100">
                     <div class="alert alert-success mb-0 w-100">
                       <small>
                         <i class="fas fa-chart-line me-1"></i>
-                        Calcula automáticamente utilidad/pérdida
+                        Por defecto solo el período elegido; active el interruptor arriba para añadir comparativa.
                       </small>
                     </div>
                   </div>
@@ -613,12 +585,8 @@
                     </small>
                     <button type="submit" [disabled]="!estadoResultadosForm.form.valid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
-                      @if (!saving) {
-                        <span>Generar Documento</span>
-                      }
-                      @if (saving) {
-                        <span>Generando...</span>
-                      }
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
                     </button>
                   </div>
                 </div>
@@ -650,17 +618,13 @@
         <div class="form-group col-sm-6">
           <label for="anio">Año:</label>
           <select class="form-select" name="anio" [(ngModel)]="reordenamiento.anio" [disabled]="saving">
-            @for (year of years; track year || $index) {
-              <option [value]="year">{{year}}</option>
-            }
+            <option *ngFor="let year of years" [value]="year">{{year}}</option>
           </select>
         </div>
         <div class="form-group col-sm-6">
           <label for="mes">Mes:</label>
           <select class="form-select" name="mes" [(ngModel)]="reordenamiento.mes" [disabled]="saving">
-            @for (month of months; track month.value || $index) {
-              <option [value]="month.value">{{month.label}}</option>
-            }
+            <option *ngFor="let month of months" [value]="month.value">{{month.label}}</option>
           </select>
         </div>
         <div class="form-group col-sm-12">
@@ -680,33 +644,25 @@
           Cancelar
         </button>
         <button type="submit" [disabled]="saving" class="btn btn-sm btn-default px-2 py-1">
-          @if (!saving) {
-            <span>
-              <i class="fa fa-sort-numeric-up me-1"></i>
-              Reordenar Correlativos
-            </span>
-          }
-          @if (saving) {
-            <span>
-              <i class="fa fa-spinner fa-spin me-1"></i>
-              Reordenando...
-            </span>
-          }
+          <span *ngIf="!saving">
+            <i class="fa fa-sort-numeric-up me-1"></i>
+            Reordenar Correlativos
+          </span>
+          <span *ngIf="saving">
+            <i class="fa fa-spinner fa-spin me-1"></i>
+            Reordenando...
+          </span>
         </button>
         <button type="button" (click)="reordenarTodosLosCorrelativos()" [disabled]="saving"
           class="btn btn-sm btn-default px-2 py-1">
-          @if (!saving) {
-            <span>
-              <i class="fa fa-database me-1"></i>
-              Reordenar todos
-            </span>
-          }
-          @if (saving) {
-            <span>
-              <i class="fa fa-spinner fa-spin me-1"></i>
-              Procesando...
-            </span>
-          }
+          <span *ngIf="!saving">
+            <i class="fa fa-database me-1"></i>
+            Reordenar todos
+          </span>
+          <span *ngIf="saving">
+            <i class="fa fa-spinner fa-spin me-1"></i>
+            Procesando...
+          </span>
         </button>
       </div>
     </form>

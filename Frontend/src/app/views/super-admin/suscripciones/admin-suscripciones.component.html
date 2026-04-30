@@ -216,14 +216,14 @@
             >
               Próximo pago
             </th>
-            <th class="text-center">Acciones</th>
+            <th class="text-end align-middle text-nowrap" style="width: 1%">Acciones</th>
           </tr>
         </thead>
         <tbody>
           @if (suscripciones?.total < 1 && !loading) {
             <tr>
               <td
-                colspan="8"
+                colspan="11"
                 class="text-center"
               >
                 <span class="badge bg-primary"
@@ -234,7 +234,7 @@
           }
           @if (loading) {
             <tr>
-              <td colspan="8" class="text-center">
+              <td colspan="11" class="text-center">
                 <span class="badge bg-primary">Cargando...</span>
               </td>
             </tr>
@@ -354,15 +354,19 @@
                 <span class="text-muted">-</span>
               }
             </td>
-            <td class="text-center">
-              <span
-                class="btn"
+            <td class="text-end align-middle" style="width: 1%; white-space: nowrap">
+              <button
+                type="button"
+                class="btn btn-link text-secondary text-decoration-none p-0 lh-1"
                 [popover]="accionesTemplate"
+                container="body"
+                placement="left"
+                triggers="click"
                 [outsideClick]="true"
                 tooltip="Acciones"
               >
                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
-              </span>
+              </button>
               <ng-template #accionesTemplate>
                 <div class="list-group border-0">
                   <a
@@ -1823,7 +1827,7 @@
                     <th>Monto</th>
                     <th>Comprobante</th>
                     <th>Estado</th>
-                    <th>Acciones</th>
+                    <th class="text-end">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1884,7 +1888,7 @@
                         {{ pago.estado }}
                       </span>
                     </td>
-                    <td>
+                    <td class="text-end">
                       @if (pago.estado.toLowerCase() === 'pendiente') {
                         <button
                           class="btn btn-sm btn-success me-1"

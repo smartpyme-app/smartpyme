@@ -55,6 +55,15 @@ class Retaceo extends Model
     }
 
     /**
+     * Compras incluidas en el retaceo (cabecera + pivote).
+     */
+    public function compras()
+    {
+        return $this->belongsToMany(Compra::class, 'retaceo_compras', 'id_retaceo', 'id_compra')
+            ->withTimestamps();
+    }
+
+    /**
      * Relación con los gastos
      */
     public function gastos()

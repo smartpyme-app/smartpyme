@@ -142,7 +142,6 @@ class ComprasController extends Controller
             ->withSum(['devoluciones' => function ($query) {
                 $query->where('enable', 1);
             }], 'total')
-            ->withAccessorRelations()
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
             ->paginate($request->paginate);

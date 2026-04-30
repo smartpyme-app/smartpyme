@@ -1,12 +1,13 @@
-<?php
+<?php 
 
 use App\Http\Controllers\Api\Compras\Gastos\GastosController;
+use App\Http\Controllers\Api\Compras\Gastos\GastosAbonosController;
 use App\Http\Controllers\Api\Compras\Gastos\CategoriasController;
-use App\Http\Controllers\Api\Inventario\ProveedorController;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/gastos',             [GastosController::class, 'index']);
     Route::post('/gasto',             [GastosController::class, 'store']);
+    Route::post('/gasto/abono',       [GastosAbonosController::class, 'store']);
     Route::get('/gasto/{id}',         [GastosController::class, 'read']);
     Route::post('/gastos/filtrar',    [GastosController::class, 'filter']);
     Route::delete('/gasto/{id}',      [GastosController::class, 'delete']);
@@ -15,13 +16,13 @@ use Illuminate\Support\Facades\Route;
 
     Route::post('/gastos/dash',         [GastosController::class, 'dash']);
 
+    Route::post('/gastos/importar-json', [GastosController::class, 'importarJson']);
+    Route::get('/gastos/nums-ids', [GastosController::class, 'getNumerosIdentificacion']);
+
     Route::get('/gastos/categorias',    [CategoriasController::class, 'index']);
     Route::get('/gastos/categorias/list',    [CategoriasController::class, 'list']);
     Route::post('/gastos/categoria',    [CategoriasController::class, 'store']);
     Route::delete('/gastos/categoria/{id}', [CategoriasController::class, 'delete']);
 
-    Route::post('/gastos/importar-json', [GastosController::class, 'importarJson']);
-    Route::post('/proveedores/buscar-nit', [ProveedorController::class, 'buscarPorNit']);
-    Route::get('/gastos/nums-ids', [GastosController::class, 'getNumerosIdentificacion']);
 
 ?>

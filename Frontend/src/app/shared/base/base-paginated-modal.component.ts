@@ -1,88 +1,138 @@
-import { Directive, TemplateRef } from '@angular/core';
-import { BasePaginatedComponent, PaginatedResponse } from './base-paginated.component';
-import { ModalManagerService } from '../../services/modal-manager.service';
-import { AlertService } from '../../services/alert.service';
-import { ApiService } from '../../services/api.service';
+import { Directive, OnDestroy, TemplateRef } from '@angular/core';
+import { MonoTypeOperatorFunction, Observable, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { BsModalRef } from 'ngx-bootstrap/modal';
+import { ApiService } from '@services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ModalManagerService, ModalConfig } from '@services/modal-manager.service';
+import type { PaginatedResponse } from '../../models/shared/Pagination.interface';
 
-// Re-exportar PaginatedResponse para conveniencia
 export type { PaginatedResponse };
 
 /**
- * Clase base que combina funcionalidad de paginación y modales.
- * Para componentes que necesitan ambas funcionalidades.
- * 
- * Uso:
- * ```typescript
- * export class MiComponente extends BasePaginatedModalComponent {
- *   public datos: PaginatedResponse = {} as PaginatedResponse;
- *   
- *   protected getPaginatedData(): PaginatedResponse {
- *     return this.datos;
- *   }
- *   
- *   protected setPaginatedData(data: PaginatedResponse): void {
- *     this.datos = data;
- *   }
- * }
- * ```
+ * Clase base para listados con modal: filtros, carga, cierre y `takeUntil` al destruir.
  */
 @Directive()
-export abstract class BasePaginatedModalComponent extends BasePaginatedComponent {
-  public modalRef?: any; // BsModalRef
-  public saving: boolean = false;
+export abstract class BasePaginatedModalComponent implements OnDestroy {
+  /** Filtros usados con `getAll` / listados. Las subclases completan estructura. */
+  public filtros: any = {
+    buscador: '',
+    paginate: 10,
+  };
+
+  public loading = false;
+  public saving = false;
+  public modalRef?: BsModalRef;
+
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
-    protected override apiService: ApiService,
-    protected override alertService: AlertService,
+    protected apiService: ApiService,
+    protected alertService: AlertService,
     protected modalManager: ModalManagerService
-  ) {
-    super(apiService, alertService);
+  ) {}
+
+  public ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   /**
-   * Abre un modal con configuración por defecto
+   * Operador reutilizable en pipes RxJS: cancela al destruir el componente.
    */
-  openModal(template: TemplateRef<any>, config?: any): void {
-    this.modalRef = this.modalManager.openModal(template, config);
+  public untilDestroyed<T>(): MonoTypeOperatorFunction<T> {
+    return (source: Observable<T>) => source.pipe(takeUntil(this.destroy$));
   }
 
-  /**
-   * Cierra el modal actual
-   */
-  closeModal(): void {
-    this.modalManager.closeModal(this.modalRef);
+  public closeModal(): void {
+    this.modalRef?.hide();
     this.modalRef = undefined;
   }
 
   /**
-   * Método helper para abrir modal de edición/creación
+   * Abre un modal (plantilla) con opciones estándar de ngx-bootstrap.
    */
-  openEditModal<T>(template: TemplateRef<any>, item?: T, targetProperty: string = 'item'): void {
-    if (item) {
-      (this as any)[targetProperty] = { ...item };
-    } else {
-      (this as any)[targetProperty] = {};
-    }
-    this.openModal(template);
+  public openModal(
+    template: TemplateRef<any>,
+    options?: { class?: string; backdrop?: boolean | 'static'; keyboard?: boolean }
+  ): void {
+    this.modalRef = this.modalManager.show(template, {
+      class: 'modal-lg',
+      backdrop: true,
+      ...options,
+    });
   }
 
   /**
-   * Método helper para modales de confirmación
+   * Modal grande con `ngx-bootstrap`, alineado con `BaseModalComponent` / `BaseFilteredPaginatedModalComponent`.
    */
-  openConfirmModal(template: TemplateRef<any>): void {
-    this.modalRef = this.modalManager.openModal(template, { size: 'sm', setAlertModal: false });
-  }
-
-  /**
-   * Método helper para modales grandes
-   * No delegar en this.openModal(): las subclases que lo sobrescriben causarían recursión.
-   */
-  openLargeModal(template: TemplateRef<any>, config?: any): void {
+  public openLargeModal(template: TemplateRef<any>, config?: ModalConfig): void {
     this.modalRef = this.modalManager.openModal(template, {
       size: 'lg',
       backdrop: 'static',
-      ...config
+      ...config,
     });
   }
-}
 
+  /**
+   * Modal solo por configuración (p. ej. reportes) sin tocar un “registro” asociado.
+   */
+  protected openModalConfig(template: TemplateRef<any>, config?: any): void {
+    this.modalRef = this.modalManager.show(template, config);
+  }
+
+  /**
+   * Igual que `BasePaginatedComponent.setPagination`: paginar vía URL en `path` de Laravel.
+   */
+  public setPagination(event: any): void {
+    if (!event || typeof event.page === 'undefined') {
+      console.error('Evento de paginación inválido:', event);
+      return;
+    }
+
+    this.loading = true;
+
+    const paginatedData = this.getPaginatedData();
+
+    if (!paginatedData) {
+      console.error(`${this.constructor.name}: getPaginatedData() retornó null/undefined`);
+      this.loading = false;
+      return;
+    }
+
+    if (!paginatedData.path) {
+      console.error(
+        `${this.constructor.name}: El objeto de datos paginados no tiene 'path'.`,
+        'Estructura:',
+        paginatedData
+      );
+      this.loading = false;
+      return;
+    }
+
+    const paginationUrl = `${paginatedData.path}?page=${event.page}`;
+
+    this.apiService
+      .paginate(paginationUrl, this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response) => {
+          this.setPaginatedData(response);
+          this.onPaginateSuccess(response);
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error(`${this.constructor.name}: Error en paginación`, error);
+          this.alertService.error(error);
+          this.loading = false;
+        },
+      });
+  }
+
+  protected abstract getPaginatedData(): PaginatedResponse | null;
+  protected abstract setPaginatedData(data: PaginatedResponse): void;
+
+  protected onPaginateSuccess(_response: PaginatedResponse): void {
+    // opcional
+  }
+}

@@ -25,7 +25,6 @@ import Swal from 'sweetalert2';
 export class PartidasComponent extends BasePaginatedModalComponent implements OnInit {
   public partidas: any = {}; // Usar any porque tiene propiedades adicionales (total_anuladas, total_pendientes, totales_generales)
   public partida: any = {};
-  public override saving: boolean = false;
   public reporte = {
     fecha_inicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     fecha_fin: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
@@ -33,6 +32,8 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     cuenta: '',
     tipo_descarga: 'pdf',
     tipo_cuenta: 'all',
+    /** Incluir columna y período anterior inmediato (misma duración) en Estado de resultados. */
+    estadoCompararAnterior: false,
   };
   public catalogo: any = [];
   public months: Array<{ value: number; label: string }> = [];
@@ -228,7 +229,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     this.apiService.getAll('partidas', this.filtros)
       .pipe(this.untilDestroyed())
       .subscribe(
-      (response) => {
+      (response: any) => {
         this.partidas = response;
 
         // NUEVO: Guardar totales generales
@@ -260,11 +261,10 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   }
 
   public openFilter(template: TemplateRef<any>) {
-    // Configuración específica para el modal de reportes
-    this.openModal(template, {
+    this.openModalConfig(template, {
       class: 'modal-xl',
-      backdrop: 'static' as 'static',
-      keyboard: false
+      backdrop: 'static',
+      keyboard: false,
     });
   }
 
@@ -272,7 +272,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
    * NUEVO: Modal para reordenar correlativos
    */
   public openReordenarModal(template: TemplateRef<any>) {
-    this.openModal(template, {
+    this.openModalConfig(template, {
       class: 'modal-md',
       backdrop: 'static',
     });
@@ -282,7 +282,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     this.apiService.read('partida/', partida.id)
       .pipe(this.untilDestroyed())
       .subscribe(
-      (partidaCompleta) => {
+      (partidaCompleta: any) => {
         partidaCompleta.estado = estado;
         this.onSubmit(partidaCompleta);
       },
@@ -328,7 +328,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
 
     if (result.isConfirmed) {
       try {
-        const data = await this.apiService.delete('partida/', partida.id)
+        const data: any = await this.apiService.delete('partida/', partida.id)
           .pipe(this.untilDestroyed())
           .toPromise();
 
@@ -340,7 +340,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
         this.cacheService.invalidatePattern('/partida');
 
         for (let i = 0; i < this.partidas.data.length; i++) {
-          if (this.partidas.data[i].id == data.id)
+          if (this.partidas.data[i].id == data?.id)
             this.partidas.data.splice(i, 1);
         }
       } catch (error: any) {
@@ -353,7 +353,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     this.saving = true;
     try {
       const partidaToSave = partidaData || this.partida;
-      const partidaGuardada = await this.apiService.store('partida', partidaToSave)
+      const partidaGuardada: any = await this.apiService.store('partida', partidaToSave)
         .pipe(this.untilDestroyed())
         .toPromise();
 
@@ -400,7 +400,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     this.apiService.store('partidas/reordenar-correlativos', this.reordenamiento)
       .pipe(this.untilDestroyed())
       .subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.saving = false;
         this.alertService.success(
           'Correlativos reordenados',
@@ -578,16 +578,19 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       this.reporte.fecha_fin &&
       this.reporte.tipo_descarga
     ) {
-      window.open(
-        this.buildReportDownloadUrl(
-          '/api/reportes/estado/resultados/' +
-            this.reporte.fecha_inicio +
-            '/' +
-            this.reporte.fecha_fin +
-            '/' +
-            this.reporte.tipo_descarga
-        )
+      const base = this.buildReportDownloadUrl(
+        '/api/reportes/estado/resultados/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_descarga
       );
+      const url =
+        this.reporte.estadoCompararAnterior === true
+          ? `${base}&comparar=1`
+          : base;
+      window.open(url);
     } else {
       alert('Por favor, llenar los campos requeridos.');
     }
@@ -647,7 +650,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
         this.apiService.store('partidas/reordenar-correlativos', { todos: true })
           .pipe(this.untilDestroyed())
           .subscribe({
-          next: (response) => {
+          next: (response: any) => {
             this.saving = false;
             this.alertService.success(
               'Reordenamiento completo',

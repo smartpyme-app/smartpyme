@@ -47,22 +47,24 @@
                         <th (click)="setOrden('created_at')" [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" class="click">Fecha Suscripción</th>
                         <th (click)="setOrden('fecha_cancelacion')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_cancelacion' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_cancelacion' && filtros.direccion == 'desc'}" class="click">Fecha Cancelación</th>
                         <th>Estado</th>
-                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                        <th class="text-end align-middle text-nowrap" style="width: 1%"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        @if (empresas?.total < 1 && !loading) {
-                            <td colspan="10" class="text-center">
-                                <span class="badge bg-primary">No tiene empresas registradas</span>
-                            </td>
-                        }
-                        @if (loading) {
-                            <td colspan="10" class="text-center">
+                    @if (loading) {
+                        <tr>
+                            <td colspan="7" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
-                        }
-                    </tr>
+                        </tr>
+                    }
+                    @if (empresas?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <span class="badge bg-primary">No tiene empresas registradas</span>
+                            </td>
+                        </tr>
+                    }
 
                     @for (empresa of empresas?.data; track empresa.id) {
                         <tr class="animated fadeIn">
@@ -77,10 +79,19 @@
                                     <option value="0">Inactivo</option>
                                 </select>
                             </td>
-                            <td class="text-center">
-                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                            <td class="text-end align-middle" style="width: 1%; white-space: nowrap">
+                                <button
+                                    type="button"
+                                    class="btn btn-link text-secondary text-decoration-none p-0 lh-1"
+                                    [popover]="accionesTemplate"
+                                    container="body"
+                                    placement="left"
+                                    triggers="click"
+                                    [outsideClick]="true"
+                                    tooltip="Acciones"
+                                >
                                     <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                                </span>
+                                </button>
                                 <ng-template #accionesTemplate>
                                     <div class="list-group border-0">
                                         <a routerLink="/admin/empresa/{{empresa.id}}" class="list-group-item list-group-item-action border-0 click">

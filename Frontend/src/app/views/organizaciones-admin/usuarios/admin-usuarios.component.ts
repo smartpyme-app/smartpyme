@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 import { AlertService } from '@services/alert.service';
@@ -13,7 +14,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
     selector: 'app-admin-usuarios',
     templateUrl: './admin-usuarios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TooltipModule],
     
 })
 

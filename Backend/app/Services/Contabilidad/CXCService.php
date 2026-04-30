@@ -55,7 +55,7 @@ class CXCService
         try {
             $partida = Partida::create([
                 'fecha'         => $cxc->fecha,
-                'tipo'          => 'Egreso',
+                'tipo'          => 'CxC',
                 'concepto'      => 'Abono a cuenta por cobrar. ' . ($venta->nombre_documento ?? 'Documento') . ' #' . ($venta->correlativo ?? 'Sin correlativo'),
                 'estado'        => 'Pendiente',
                 'referencia'    => 'Abono de Venta',
@@ -71,12 +71,12 @@ class CXCService
             }
 
             if (!$formapago->banco || !$formapago->banco->id_cuenta_contable) {
-                throw new Exception('La forma de pago no tiene un banco o cuenta contable configurada, para configurarla puede ir al menú de la aplicación, en Finanzas > Métodos de pago', 400);
+                throw new Exception('La forma de pago no tiene un banco o cuenta contable configurada', 400);
             }
 
             $cuenta_forma_pago = Cuenta::find($formapago->banco->id_cuenta_contable);
             if (!$cuenta_forma_pago) {
-                throw new Exception('No se encontró la cuenta contable del banco asociado a la forma de pago, para configurarla puede ir al menú de la aplicación, en Finanzas > Bancos, seleccionar el tab de Cuentas y agregar la cuenta contable al banco.', 400);
+                throw new Exception('No se encontró la cuenta contable del banco asociado a la forma de pago', 400);
             }
 
             Detalle::create([

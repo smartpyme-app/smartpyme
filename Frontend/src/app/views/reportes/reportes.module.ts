@@ -7,7 +7,6 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
-import { FocusModule } from 'angular2-focus';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -43,7 +42,6 @@ import { DashboardModule } from '@views/dashboard/dashboard.module';
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
     ModalModule.forRoot(),
-    FocusModule.forRoot(),
     DashboardModule,
     // Componentes standalone
     EmpleadosVentasComponent,

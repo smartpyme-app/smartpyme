@@ -158,22 +158,20 @@
             >
               Estado
             </th>
-            <th class="text-center">Acciones</th>
+            <th class="text-end align-middle text-nowrap" style="width: 1%">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td
-              colspan="8"
-              class="text-center"
-              *ngIf="promocionales?.total < 1 && !loading"
-            >
+          <tr *ngIf="loading">
+            <td colspan="8" class="text-center">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+          <tr *ngIf="!loading && promocionales?.total < 1">
+            <td colspan="8" class="text-center">
               <span class="badge bg-primary"
                 >No hay códigos promocionales registrados</span
               >
-            </td>
-            <td colspan="8" class="text-center" *ngIf="loading">
-              <span class="badge bg-primary">Cargando...</span>
             </td>
           </tr>
 
@@ -225,15 +223,19 @@
                 {{ promocional.activo ? 'Activo' : 'Inactivo' }}
               </span>
             </td>
-            <td class="text-center">
-              <span
-                class="btn"
+            <td class="text-end align-middle" style="width: 1%; white-space: nowrap">
+              <button
+                type="button"
+                class="btn btn-link text-secondary text-decoration-none p-0 lh-1"
                 [popover]="accionesTemplate"
+                container="body"
+                placement="left"
+                triggers="click"
                 [outsideClick]="true"
                 tooltip="Acciones"
               >
                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
-              </span>
+              </button>
               <ng-template #accionesTemplate>
                 <div class="list-group border-0">
                   <a

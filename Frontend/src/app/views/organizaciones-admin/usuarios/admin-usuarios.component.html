@@ -58,20 +58,20 @@
                     <th>Empresa</th>
                     <th>Activo</th>
                     <th>Último inicio de sesión</th>
-                    <th class="text-center"><i class="fa fa-cog"></i></th>
+                    <th class="text-end text-nowrap" style="width: 4.5rem"><i class="fa fa-cog"></i></th>
                 </tr>
             </thead>
             <tbody>
                 @if (usuarios?.total < 1 && !loading) {
                     <tr>
-                        <td colspan="9" class="text-center">
+                        <td colspan="6" class="text-center">
                             <span class="badge bg-primary">No tiene usuarios registrados</span>
                         </td>
                     </tr>
                 }
                 @if (loading) {
                     <tr>
-                        <td colspan="9" class="text-center">
+                        <td colspan="6" class="text-center">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -89,7 +89,7 @@
                             </select>
                         </td>
                         <td>{{ usuario.ultimo_login | date:'dd/MM/yyy hh:mm a' }}</td>
-                        <td class="text-center">
+                        <td class="text-end">
                             <div class="btn-group" role="group">
     <!--                             <a *ngIf="usuario.id != 1" class="btn btn-default" (click)="delete(usuario.id)" data-toggle="tooltip" title="Eliminar">
                                     <i class="fa fa-trash"></i>

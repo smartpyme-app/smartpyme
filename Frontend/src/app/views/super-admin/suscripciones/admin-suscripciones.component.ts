@@ -11,6 +11,8 @@ import { RouterModule } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { Subject, Observable, of } from 'rxjs';
 import {
   debounceTime,
@@ -71,7 +73,7 @@ interface VentaBusquedaSuscripcion {
     selector: 'app-admin-suscripciones',
     templateUrl: './admin-suscripciones.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, LazyImageDirective, PopoverModule, TooltipModule],
 
 })
 export class AdminSuscripcionesComponent extends BasePaginatedComponent implements OnInit {

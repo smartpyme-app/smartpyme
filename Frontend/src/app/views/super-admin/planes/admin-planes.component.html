@@ -49,30 +49,32 @@
                         <th>Descripción</th>
                         <th class="text-end">Precio</th>
                         @if (apiService.canEdit()) {
-                            <th width="100px" class="text-center"><i class="fa fa-cog"></i></th>
+                            <th width="100px" class="text-end text-nowrap"><i class="fa fa-cog"></i></th>
                         }
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        @if (planes?.total < 1 && !loading) {
-                            <td colspan="8" class="text-center">
-                                <span class="badge bg-primary">No tiene planes registradas</span>
-                            </td>
-                        }
-                        @if (loading) {
-                            <td colspan="8" class="text-center">
+                    @if (loading) {
+                        <tr>
+                            <td class="text-center" [attr.colspan]="apiService.canEdit() ? 4 : 3">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
-                        }
-                    </tr>
+                        </tr>
+                    }
+                    @if (planes?.total < 1 && !loading) {
+                        <tr>
+                            <td class="text-center" [attr.colspan]="apiService.canEdit() ? 4 : 3">
+                                <span class="badge bg-primary">No tiene planes registradas</span>
+                            </td>
+                        </tr>
+                    }
                     @for (plan of planes.data; track plan.id) {
                         <tr>
                             <td>{{ plan.nombre }}</td>
                             <td>{{ plan.descripcion }}</td>
                             <td class="text-end">{{ plan.precio | currency }}</td>
                             @if (apiService.canEdit()) {
-                                <td class="text-center">
+                                <td class="text-end">
                                     <div class="btn-group" role="group">
         <!--                             @if (plan.id != 1) {
                                         <a class="btn btn-default" (click)="delete(plan.id)" data-toggle="tooltip" title="Eliminar">

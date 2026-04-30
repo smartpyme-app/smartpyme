@@ -65,23 +65,25 @@
                         <!-- <th>Municipio</th> -->
                         <th>Estado</th>
                         @if (apiService.canEditTest('administracion.sucursales.editar')) {
-                            <th width="100px" class="text-center"><i class="fa fa-cog"></i></th>
+                            <th width="100px" class="text-end text-nowrap"><i class="fa fa-cog"></i></th>
                         }
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        @if (sucursales?.total < 1 && !loading) {
-                            <td colspan="8" class="text-center">
-                                <span class="badge bg-primary">No tiene sucursales registradas</span>
-                            </td>
-                        }
-                        @if (loading) {
-                            <td colspan="8" class="text-center">
+                    @if (loading) {
+                        <tr>
+                            <td class="text-center" [attr.colspan]="apiService.canEditTest('administracion.sucursales.editar') ? 4 : 3">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
-                        }
-                    </tr>
+                        </tr>
+                    }
+                    @if (sucursales?.total < 1 && !loading) {
+                        <tr>
+                            <td class="text-center" [attr.colspan]="apiService.canEditTest('administracion.sucursales.editar') ? 4 : 3">
+                                <span class="badge bg-primary">No tiene sucursales registradas</span>
+                            </td>
+                        </tr>
+                    }
                     @for (sucursal of sucursales.data; track sucursal.id) {
                         <tr>
                             <!-- <td>{{ sucursal.id }}</td> -->
@@ -95,7 +97,7 @@
                                 </select>
                             </td>
                             @if (apiService.canEditTest('administracion.sucursales.editar')) {
-                                <td class="text-center">
+                                <td class="text-end">
                                     <div class="btn-group" role="group">
         <!--                             @if (sucursal.id != 1) {
                                         <a class="btn btn-default" (click)="delete(sucursal.id)" data-toggle="tooltip" title="Eliminar">

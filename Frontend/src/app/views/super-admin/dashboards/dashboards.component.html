@@ -58,22 +58,24 @@
                         <th>Titulo</th>
                         <th>Tipo</th>
                         <th>Empresa</th>
-                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                        <th class="text-end text-nowrap" style="width: 4.5rem"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        @if (dashboards?.total < 1 && !loading) {
-                            <td colspan="10" class="text-center">
-                                <span class="badge bg-primary">No tiene dashboards registradas</span>
-                            </td>
-                        }
-                        @if (loading) {
-                            <td colspan="10" class="text-center">
+                    @if (loading) {
+                        <tr>
+                            <td colspan="5" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
-                        }
-                    </tr>
+                        </tr>
+                    }
+                    @if (dashboards?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="5" class="text-center">
+                                <span class="badge bg-primary">No tiene dashboards registradas</span>
+                            </td>
+                        </tr>
+                    }
 
                     @for (dashboard of dashboards?.data; track dashboard.id) {
                         <tr class="animated fadeIn">
@@ -81,7 +83,8 @@
                             <td>{{dashboard.titulo }}</td>
                             <td>{{dashboard.tipo }}</td>
                             <td>{{dashboard.nombre_empresa }}</td>
-                            <td class="d-flex gap-2 justify-content-center">
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-2 justify-content-end">
                                 <a class="btn btn-default" (click)="delete(dashboard.id)" data-toggle="tooltip" title="Eliminar">
                                     <i class="fa fa-trash"></i>
                                 </a>
@@ -91,6 +94,7 @@
                                 <a class="btn btn-default" routerLink="/admin/dashboard/{{dashboard.id}}" data-toggle="tooltip" title="Ver datos">
                                     <i class="fa fa-chart-pie"></i>
                                 </a>
+                                </div>
                             </td>
                         </tr>
                     }

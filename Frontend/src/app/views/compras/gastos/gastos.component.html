@@ -1,36 +1,32 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Gastos</h2>
-    @if (apiService.canEditTest('gastos.crear')) {
-        <button routerLink="/gasto/crear" tooltip="Crear gasto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir gasto</button>
-    }
+    <button *ngIf="apiService.canEditTest('gastos.crear')" routerLink="/gasto/crear" tooltip="Crear gasto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir gasto</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            @if (gastos?.total) {
-                <span class="text-muted d-flex align-items-center gap-2">
-                    Mostrando
-                    <select name="paginate" class="form-select w-auto" (change)="filtrarGastos()" [(ngModel)]="filtros.paginate">
-                        <option value="10">10</option>
-                        <option value="25">25</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                    </select>
-                     de {{ gastos?.total + ' registros' }}
-                </span>
-            }
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="gastos?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarGastos()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ gastos?.total + ' registros' }}
+            </span>
         </div>
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
                 <button [disabled]="downloading" tooltip="Descargar gastos" (click)="descargar()" class="btn btn-default tcla-F6">
-                    <img appLazyImage="/assets/icons/download.png" class="icon">
+                    <img src="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarGastos()" autocomplete="off">
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
-                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img appLazyImage="/assets/icons/filter.png" class="icon"> </button>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
             </div>
         </div>
     </div>
@@ -38,7 +34,6 @@
     <div class="d-flex mb-3">
         <div class="col d-flex gap-2">
             <button class="btn btn-primary tcla-F5" tooltip="Filtrar (F5)"  (click)="loadAll()">Todos</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/gastos/abonos">Abonos</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/gastos/recurrentes">Recurrentes</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
@@ -47,16 +42,14 @@
                 <option value="Cancelado">Cancelado</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="Confirmado">Confirmado</option>
-                <option value="Anulada">Anulada</option>
                 <option value="Pagado">Pagado</option>
+                <option value="Anulada">Anulada</option>
             </select>
-            <ng-select name="id_proveedor" (change)="filtrarGastos()" [(ngModel)]="filtros.id_proveedor"
-                class="form-select p-0 border-0 bg-default  w-auto" [clearable]="true" placeholder="Proveedor">
-                @for (proveedor of proveedores; track proveedor.id) {
-                    <ng-option [value]="proveedor.id">
-                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}
-                    </ng-option>
-                }
+            <ng-select name="id_proveedor" (change)="filtrarGastos()" [(ngModel)]="filtros.id_proveedor" class="form-select p-0 border-0 bg-default  w-auto">
+                <ng-option value="">Proveedor</ng-option>
+                <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                    {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}
+                </ng-option>
             </ng-select>
         </div>
     </div>
@@ -66,9 +59,6 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
-                        @if (isColumnEnabled('columna_proyecto')) {
-                            <th (click)="setOrden('id_proyecto')" [ngClass]="{'sorted-asc': filtros.orden == 'id_proyecto' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id_proyecto' && filtros.direccion == 'desc'}" class="click">Proyecto</th>
-                        }
                         <!-- <th>Usuario</th> -->
                         <th>Proveedor</th>
                         <th>Concepto</th>
@@ -81,58 +71,29 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (gastos?.total < 1 && !loading) {
-                        <tr>
-                            <td colspan="10" class="text-center">
-                                <span class="badge bg-primary">No tiene gastos registradas</span>
-                            </td>
-                        </tr>
-                    }
-                    @if (loading) {
-                        <tr>
-                            <td colspan="10" class="text-center">
-                                <span class="badge bg-primary">Cargando...</span>
-                            </td>
-                        </tr>
-                    }
-
-                    @for (gasto of gastos?.data; track gasto.id) {
-                        <tr class="animated fadeIn">
-                        <td>{{gasto.fecha | date:'dd/MM/yyyy'}}</td>
-                        @if (isColumnEnabled('columna_proyecto')) {
-                            <td>
-                                <div class="d-flex flex-column align-items-center">
-                                    @if (gasto.nombre_proyecto) {
-                                        <span class="badge bg-info">{{ gasto.nombre_proyecto | truncate:20 }}</span>
-                                    }
-                                    <small class="text-muted d-block">{{gasto.num_identificacion ?? ''}}</small>
-                                </div>
-                                @if (!gasto.nombre_proyecto) {
-                                    <span class="text-muted">-</span>
-                                }
-                            </td>
-                        }
-                        <!-- <td>{{gasto.nombre_usuario }}</td> -->
-                        <td>
-                            {{gasto.nombre_proveedor | truncate:30 }}
-                            @if (gasto.id_proveedor) {
-                                <a class="float-end d-none" tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{gasto.id_proveedor}}">
-                                    <i class="fa fa-edit"></i>
-                                </a>
-                            }
+                    <tr>
+                        <td colspan="10" class="text-center" *ngIf="gastos?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene gastos registradas</span>
                         </td>
+                        <td colspan="10" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr class="animated fadeIn" *ngFor=" let gasto of gastos?.data">
+                        
+                        <td>{{gasto.fecha | date:'dd/MM/yyyy'}}</td>
+                        <!-- <td>{{gasto.nombre_usuario }}</td> -->
+                        <td>{{gasto.nombre_proveedor | truncate:30 }}<a *ngIf="gasto.id_proveedor" class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{gasto.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{gasto.concepto}}</td>
                         <td>{{gasto.tipo_documento}} #{{gasto.referencia}}</td>
                         <td>{{gasto.forma_pago}}</td>
                         <td>
-                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado', 'bg-warning' : gasto.estado == 'Pendiente', 'bg-danger' : gasto.estado == 'Anulada',
-                            'bg-success' : gasto.estado == 'Confirmado', 'bg-info' : gasto.estado == 'Pagado'}">
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger text-white' : gasto.estado == 'Cancelado', 'bg-warning text-dark' : gasto.estado == 'Pendiente', 'bg-success text-white' : gasto.estado == 'Confirmado', 'bg-info text-white' : gasto.estado == 'Pagado' || gasto.estado == 'Anulada'}">
                                 {{ gasto.estado }}
-                                @if (apiService.auth_user().empresa.facturacion_electronica && gasto.sello_mh) {
-                                    <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;">
-                                        ✅
-                                    </span>
-                                }
+                                <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && gasto.sello_mh">
+                                    ✅                       
+                                </span>
                             </span>
                         </td>
                         <td class="text-end">{{gasto.total | currency}}</td>
@@ -142,68 +103,59 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && puedeEmitirFeGasto(gasto) && gasto.estado != 'Anulada' && !gasto.sello_mh) {
-                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, gasto)" tooltip="Emitir DTE">
-                                            <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
-                                        </a>
-                                    }
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && puedeEmitirFeGasto(gasto) && gasto.sello_mh) {
-                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, gasto)" tooltip="Ver DTE">
-                                            <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
-                                        </a>
-                                    }
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && gasto.tipo_documento == 'Sujeto excluido' && gasto.estado != 'Anulada' && !gasto.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, gasto)" tooltip="Emitir DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
+                                    </a>
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && gasto.tipo_documento == 'Sujeto excluido' && gasto.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, gasto)" tooltip="Ver DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
+                                    </a>
 
                                     <a routerLink="/gasto/detalles/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    @if (gasto.estado == 'Pendiente' && apiService.canEdit()) {
-                                        <a (click)="openAbono(mabono, gasto)" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar gasto
-                                        </a>
-                                    }
-                                    @if (apiService.canEditTest('gastos.editar')) {
-                                        <a routerLink="/gasto/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-edit"></i> Editar
-                                        </a>
-                                    }
-                                    @if (gasto.recurrente == 0 && apiService.canEditTest('gastos.editar')) {
-                                        <a (click)="setRecurrencia(gasto)" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
-                                        </a>
-                                    }
-                                    @if (gasto.estado != 'Cancelado' && apiService.canEditTest('gastos.editar')) {
-                                        <a (click)="gasto.estado = 'Cancelado'; anularDTE(gasto);" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-ban"></i> Cancelar
-                                        </a>
-                                    }
-                                    @if (gasto.estado == 'Cancelado' && apiService.canEditTest('gastos.editar')) {
-                                        <a (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-check"></i> Revertir anulación
-                                        </a>
-                                    }
-                                    @if (contabilidadHabilitada) {
-                                        <a (click)="generarPartidaContable(gasto)" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-edit"></i> Generar partida contable
-                                        </a>
-                                    }
+                                    <a *ngIf="gasto.estado == 'Pendiente' && apiService.canEditTest('gastos.editar')" (click)="openAbono(mabono, gasto)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fas fa-fw fa-credit-card"></i> Pagar
+                                    </a>
+                                    <a *ngIf="apiService.canEditTest('gastos.editar')" routerLink="/gasto/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a *ngIf="gasto.recurrente == 0 && apiService.canEditTest('gastos.editar')" (click)="setRecurrencia(gasto)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
+                                    </a>
+                                    <a *ngIf="gasto.estado != 'Cancelado' && apiService.canEditTest('gastos.editar')" (click)="gasto.estado = 'Cancelado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i> Cancelar
+                                    </a>
+                                    <a *ngIf="gasto.estado == 'Cancelado' && apiService.canEditTest('gastos.editar')" (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                    </a>
+                                    <a (click)="generarPartidaContable(gasto)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-edit"></i> Generar partida contable
+                                    </a>
                                 </div>
                             </ng-template>
                         </td>
 
                     </tr>
-                    }
                 </tbody>
             </table>
         </div>
 
-        @if (gastos && gastos.last_page && gastos.last_page > 1) {
-            <div class="col-12">
-                <app-pagination [items]="gastos" (setPagination)="setPagination($event)"></app-pagination>
-            </div>
-        }
+        <div class="col-12" *ngIf="gastos?.last_page > 1">
+            <app-pagination [items]="gastos" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
     </div>
 </section>
 
+
+<ng-template #mabono>
+    <div class="modal-header d-block text-center">
+        <h4 class="modal-title">Agregar abono</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-crear-abono-gasto [gasto]="gasto" (update)="filtrarGastos()"></app-crear-abono-gasto>
+    </div>
+</ng-template>
 
 <ng-template #mfilter>
   <div class="modal-header">
@@ -227,24 +179,20 @@
 
             <div class="form-group col-lg-6">
                 <label for="filtros.proveedor">Proveedor:</label>
-                <ng-select [(ngModel)]="filtros.id_proveedor" class="form-select p-0" name="filtros.id_proveedor"
-                    [clearable]="true" placeholder="Todos los proveedores">
-                    @for (proveedor of proveedores; track proveedor.id) {
-                        <ng-option [value]="proveedor.id">
-                            {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}
-                        </ng-option>
-                    }
+                <ng-select [(ngModel)]="filtros.id_proveedor" class="form-select p-0" name="filtros.id_proveedor">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}
+                    </ng-option>
                 </ng-select>
             </div>
             <div class="form-group col-lg-6">
                 <label for="filtros.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
-                    @for (sucursal of sucursales; track sucursal.id) {
-                        <option [value]="sucursal.id">
-                            {{ sucursal.nombre }}
-                        </option>
-                    }
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
                 </select>
             </div>
             <div class="form-group col-lg-6">
@@ -254,6 +202,7 @@
                     <option value="Cancelado">Cancelado</option>
                     <option value="Pendiente">Pendiente</option>
                     <option value="Confirmado">Confirmado</option>
+                    <option value="Pagado">Pagado</option>
                 </select>
             </div>
             <div class="form-group col-lg-6">
@@ -281,69 +230,42 @@
                 <label for="filtros.id_usuario">Empleado:</label>
                 <select [(ngModel)]="filtros.id_usuario" class="form-select" name="filtros.id_usuario">
                     <option value="">Todos</option>
-                    @for (usuario of usuarios; track usuario.id) {
-                        <option [value]="usuario.id">
-                            {{ usuario.name }}
-                        </option>
-                    }
+                    <option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.name }}
+                    </option>
                 </select>
             </div>
-            @if (apiService.auth_user().empresa.modulo_proyectos) {
-                <div class="form-group col-md-6">
-                    <label for="id_proyecto">Proyecto:</label>
-                    <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
-                        <ng-option value="">Todos</ng-option>
-                        @for (proyecto of proyectos; track proyecto.id) {
-                            <ng-option [value]="proyecto.id">
-                                {{ proyecto.nombre }}
-                            </ng-option>
-                        }
-                    </ng-select>
-                </div>
-            }
-            @if (apiService.auth_user().empresa.facturacion_electronica) {
-                <div class="form-group col-sm-6">
-                    <label for="filtro.dte">Facturación electrónica (DTE):</label>
-                    <select name="dts" class="form-select" [(ngModel)]="filtros.dte">
-                        <option value="">Todos</option>
-                        <option value="0">Sin emitir</option>
-                        <option value="1">Emitidos</option>
-                    </select>
-                </div>
-            }
-            @if (isColumnEnabled('columna_proyecto')) {
-                <div class="form-group col-sm-6">
-                    <label for="filtro.num_identificacion">Num. Identificación:</label>
-                    <ng-select [(ngModel)]="filtros.num_identificacion" class="form-select p-0" name="num_identificacion">
-                        <ng-option value="">Todos</ng-option>
-                        @for (numIds of numeros_ids; track numIds.num_identificacion) {
-                            <ng-option [value]="numIds.num_identificacion">
-                                {{ numIds.num_identificacion }}
-                            </ng-option>
-                        }
-                    </ng-select>
-                </div>
-            }
-          <div class="form-group col-sm-6">
-            <label for="filtro.id_area_empresa">Area:</label>
-            <ng-select [(ngModel)]="filtros.id_area_empresa" class="form-select p-0" name="id_area_empresa">
-              <ng-option value="">Todos</ng-option>
-              @for (area of areas; track area.id) {
-                <ng-option [value]="area.id">
-                  {{ area.nombre }}
-                </ng-option>
-              }
-            </ng-select>
-          </div>
+            <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
+                <label for="id_proyecto">Proyecto:</label>
+                <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                        {{ proyecto.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-sm-6" *ngIf="apiService.auth_user().empresa.facturacion_electronica">
+                <label for="filtro.dte">Facturación electrónica (DTE):</label>
+                <select name="dts" class="form-select" [(ngModel)]="filtros.dte">
+                    <option value="">Todos</option>
+                    <option value="0">Sin emitir</option>
+                    <option value="1">Emitidos</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.id_area_empresa">Area:</label>
+                <ng-select [(ngModel)]="filtros.id_area_empresa" class="form-select p-0" name="id_area_empresa">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let area of areas" [value]="area.id">
+                        {{ area.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
         </div>
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                @if (!loading) {
-                    <span>Filtrar</span>
-                }
-                @if (loading) {
-                    <span>Filtrando...</span>
-                }
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
             </button>
         </div>
     </form>
@@ -353,78 +275,31 @@
 
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">
-        <h5 class="modal-title mb-0">{{ esFeCostaRica() ? 'Comprobante electrónico (Costa Rica)' : 'DTE' }}</h5>
-        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false; gasto.errores = null;" aria-label="Close"></button>
+        <h5 class="modal-title mb-0">DTE </h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
     </div>
   <div class="modal-body">
-        <app-alerts-hacienda [errores]="gasto.errores"></app-alerts-hacienda>
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 
-            @if (esFeCostaRica() && gasto.codigo_generacion) {
-                <button type="button" (click)="imprimirDTEPDF(gasto)" class="mb-2 btn btn-primary btn-block">
-                    Ver PDF
-                </button>
-                <button type="button" (click)="imprimirDTEXML(gasto)" class="mb-3 btn btn-outline-secondary btn-block" title="XML de respuesta de Hacienda si ya consultó el estado">
-                    Ver XML
-                </button>
-            }
+            <button *ngIf="gasto.sello_mh" (click)="imprimirDTEJSON(gasto)" class="mb-3 btn btn-primary btn-block">
+                Ver JSON
+            </button>
 
-            @if (gasto.sello_mh && !esFeCostaRica()) {
-                <button (click)="imprimirDTEJSON(gasto)" class="mb-3 btn btn-primary btn-block">
-                    Ver JSON
-                </button>
-            }
+            <button *ngIf="gasto.sello_mh" (click)="imprimirDTEPDF(gasto)" class="mb-3 btn btn-primary btn-block">
+                Ver PDF
+            </button>
 
-            @if (gasto.sello_mh && !esFeCostaRica()) {
-                <button (click)="imprimirDTEPDF(gasto)" class="mb-3 btn btn-primary btn-block">
-                    Ver PDF
-                </button>
-            }
+            <button *ngIf="gasto.sello_mh" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!sending">Enviar por correo</span>
+                <span *ngIf="sending">Enviando...</span>
+            </button>
 
-            @if (gasto.sello_mh && !esFeCostaRica()) {
-                <button [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
-                    @if (!sending) {
-                        <span>Enviar por correo</span>
-                    }
-                    @if (sending) {
-                        <span>Enviando...</span>
-                    }
-                </button>
-            }
-
-            @if (esFeCostaRica() && gasto.codigo_generacion) {
-                <button [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
-                    @if (!sending) {
-                        <span>Enviar por correo</span>
-                    }
-                    @if (sending) {
-                        <span>Enviando...</span>
-                    }
-                </button>
-            }
-
-            @if (!gasto.sello_mh && !(esFeCostaRica() && gasto.codigo_generacion)) {
-                <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
-                    @if (!saving) {
-                        <span>{{ esFeCostaRica() ? 'Emitir comprobante' : 'Emitir' }}</span>
-                    }
-                    @if (saving) {
-                        <span>Emitiendo...</span>
-                    }
-                </button>
-            }
+            <button *ngIf="!gasto.sello_mh" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!saving">Emitir</span>
+                <span *ngIf="saving">Emitiendo...</span>
+            </button>
 
         </div>
   </div>
-</ng-template>
-
-<ng-template #mabono>
-    <div class="modal-header d-block text-center">
-        <h5 class="modal-title mb-0">Recibo de pago </h5>
-        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
-    </div>
-    <div class="modal-body">
-        <app-crear-abono-gasto [gasto]="gasto" (update)="filtrarGastos()"></app-crear-abono-gasto>
-    </div>
 </ng-template>

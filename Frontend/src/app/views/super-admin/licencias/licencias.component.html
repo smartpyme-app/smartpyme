@@ -45,22 +45,24 @@
                         <th>Empresa</th>
                         <th>Num Licencias</th>
                         <th>Empresas</th>
-                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                        <th class="text-end align-middle text-nowrap" style="width: 1%"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        @if (licencias?.total < 1 && !loading) {
-                            <td colspan="5" class="text-center">
-                                <span class="badge bg-primary">No tiene licencias registradas</span>
-                            </td>
-                        }
-                        @if (loading) {
+                    @if (loading) {
+                        <tr>
                             <td colspan="5" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
-                        }
-                    </tr>
+                        </tr>
+                    }
+                    @if (licencias?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="5" class="text-center">
+                                <span class="badge bg-primary">No tiene licencias registradas</span>
+                            </td>
+                        </tr>
+                    }
 
                     @for (licencia of licencias?.data; track licencia.id) {
                         <tr class="animated fadeIn">
@@ -68,10 +70,19 @@
                             <td>{{licencia.nombre_empresa }}</td>
                             <td>{{licencia.num_licencias }}</td>
                             <td>{{licencia.num_empresas }}</td>
-                            <td class="text-center">
-                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                            <td class="text-end align-middle" style="width: 1%; white-space: nowrap">
+                                <button
+                                    type="button"
+                                    class="btn btn-link text-secondary text-decoration-none p-0 lh-1"
+                                    [popover]="accionesTemplate"
+                                    container="body"
+                                    placement="left"
+                                    triggers="click"
+                                    [outsideClick]="true"
+                                    tooltip="Acciones"
+                                >
                                     <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                                </span>
+                                </button>
                                 <ng-template #accionesTemplate>
                                     <div class="list-group border-0">
                                         <a routerLink="/admin/licencia/{{licencia.id}}" class="list-group-item list-group-item-action border-0 click">

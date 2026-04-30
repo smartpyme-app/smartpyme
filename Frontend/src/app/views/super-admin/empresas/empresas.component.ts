@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -12,7 +14,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     selector: 'app-empresas',
     templateUrl: './empresas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule],
     
 })
 

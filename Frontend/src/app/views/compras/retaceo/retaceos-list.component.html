@@ -1,28 +1,24 @@
 
 <div class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Retaceos</h2>
-    @if (apiService.canCreate()) {
-        <button routerLink="/retaceo/crear" tooltip="Crear retaceo (F4)" class="btn btn-default tcla-F4">
-          <i class="fa fa-plus"></i> Añadir retaceo
-        </button>
-    }
+    <button *ngIf="apiService.canCreate()" routerLink="/retaceo/crear" tooltip="Crear retaceo (F4)" class="btn btn-default tcla-F4">
+      <i class="fa fa-plus"></i> Añadir retaceo
+    </button>
   </div>
 
   <section class="bg-white p-4 rounded mb-3">
     <div class="row">
       <div class="col-md-6 mb-3">
-          @if (retaceos?.total) {
-              <span class="text-muted d-flex align-items-center gap-2">
-                  Mostrando
-                  <select name="paginate" class="form-select w-auto" (change)="filtrarRetaceos()" [(ngModel)]="filtros.paginate">
-                      <option value="10">10</option>
-                      <option value="25">25</option>
-                      <option value="50">50</option>
-                      <option value="100">100</option>
-                  </select>
-                   de {{ retaceos?.total + ' registros' }}
-              </span>
-          }
+          <span class="text-muted d-flex align-items-center gap-2" *ngIf="retaceos?.total">
+              Mostrando
+              <select name="paginate" class="form-select w-auto" (change)="filtrarRetaceos()" [(ngModel)]="filtros.paginate">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+              </select>
+               de {{ retaceos?.total + ' registros' }}
+          </span>
       </div>
 
       <div class="col-md-6 mb-3">
@@ -51,27 +47,31 @@
             </tr>
           </thead>
           <tbody>
-            @if (retaceos?.total < 1 && !loading) {
-                <tr>
-                  <td colspan="10" class="text-center">
-                    <span class="badge bg-primary">No tiene retaceos registrados</span>
-                  </td>
-                </tr>
-            }
-            @if (loading) {
-                <tr>
-                  <td colspan="10" class="text-center">
-                    <span class="badge bg-primary">Cargando...</span>
-                  </td>
-                </tr>
-            }
-            @for (retaceo of retaceos?.data; track retaceo.id) {
-                <tr>
+            <tr>
+              <td colspan="10" class="text-center" *ngIf="retaceos?.total < 1 && !loading">
+                <span class="badge bg-primary">No tiene retaceos registrados</span>
+              </td>
+              <td colspan="10" class="text-center" *ngIf="loading">
+                <span class="badge bg-primary">Cargando...</span>
+              </td>
+            </tr>
+            <tr *ngFor="let retaceo of retaceos?.data">
               <td>{{ retaceo.codigo }}</td>
               <td>
-                <strong>{{ retaceo.compra?.nombre_proveedor || 'N/A' }}</strong>
-                <br>
-                <small>Ref: {{ retaceo.compra?.referencia || 'N/A' }}</small>
+                <ng-container *ngIf="retaceo.compras?.length > 1; else unaCompra">
+                  <strong>{{ retaceo.compras.length }} compras</strong>
+                  <br>
+                  <small class="text-muted">
+                    <span *ngFor="let c of retaceo.compras; let last = last">
+                      {{ c.referencia || '—' }}<span *ngIf="!last">, </span>
+                    </span>
+                  </small>
+                </ng-container>
+                <ng-template #unaCompra>
+                  <strong>{{ retaceo.compra?.nombre_proveedor || 'N/A' }}</strong>
+                  <br>
+                  <small>Ref: {{ retaceo.compra?.referencia || 'N/A' }}</small>
+                </ng-template>
               </td>
               <td>{{ retaceo.fecha | date:'dd/MM/yyyy' }}</td>
               <td>{{ retaceo.total_retaceado | currency }}</td>
@@ -94,60 +94,50 @@
                 </span>
                 <ng-template #accionesTemplate>
                   <div class="list-group border-0">
-                    @if (apiService.canEdit() && retaceo.estado === 'Pendiente') {
-                      <a
-                        (click)="solicitarCambioEstado(retaceo, 'Aplicado')"
-                        class="list-group-item list-group-item-action border-0 click"
-                      >
-                        <i class="fa fa-fw fa-check"></i>Marcar como aplicado
-                      </a>
-                    }
-                    @if (apiService.canEdit() && retaceo.estado === 'Pendiente') {
-                      <a
-                        (click)="solicitarCambioEstado(retaceo, 'Anulado')"
-                        class="list-group-item list-group-item-action border-0 click"
-                      >
-                        <i class="fa fa-fw fa-ban"></i>Marcar como anulado
-                      </a>
-                    }
-                    @if (apiService.canEdit() && retaceo.estado === 'Aplicado') {
-                      <a
-                        (click)="solicitarCambioEstado(retaceo, 'Anulado')"
-                        class="list-group-item list-group-item-action border-0 click"
-                      >
-                        <i class="fa fa-fw fa-ban"></i>Anular retaceo
-                      </a>
-                    }
+                    <a
+                      *ngIf="apiService.canEdit() && retaceo.estado === 'Pendiente'"
+                      (click)="solicitarCambioEstado(retaceo, 'Aplicado')"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-check"></i>Marcar como aplicado
+                    </a>
+                    <a
+                      *ngIf="apiService.canEdit() && retaceo.estado === 'Pendiente'"
+                      (click)="solicitarCambioEstado(retaceo, 'Anulado')"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-ban"></i>Marcar como anulado
+                    </a>
+                    <a
+                      *ngIf="apiService.canEdit() && retaceo.estado === 'Aplicado'"
+                      (click)="solicitarCambioEstado(retaceo, 'Anulado')"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-ban"></i>Anular retaceo
+                    </a>
                     <a routerLink="/retaceo/{{retaceo.id}}" class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                     </a>
                     <a (click)="imprimir(retaceo)" class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-print"></i>Imprimir
                     </a>
-                    @if (apiService.canEdit()) {
-                        <a (click)="eliminarRetaceo(retaceo.id)" class="list-group-item list-group-item-action border-0 click">
-                          <i class="fa fa-fw fa-trash"></i>Eliminar
-                        </a>
-                    }
-                    @if (apiService.canEdit()) {
-                        <a (click)="generarPartidaContable(retaceo)" class="list-group-item list-group-item-action border-0 click">
-                          <i class="fa fa-fw fa-file"></i>Generar partida contable
-                        </a>
-                    }
+                    <a *ngIf="apiService.canEdit()" (click)="eliminarRetaceo(retaceo.id)" class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-trash"></i>Eliminar
+                    </a>
+                    <a *ngIf="apiService.canEdit()" (click)="generarPartidaContable(retaceo)" class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-file"></i>Generar partida contable
+                    </a>
                   </div>
                 </ng-template>
               </td>
             </tr>
-            }
           </tbody>
         </table>
       </div>
 
-      @if (retaceos && retaceos.last_page && retaceos.last_page > 1) {
-          <div class="col-12">
-            <app-pagination [items]="retaceos" (setPagination)="setPagination($event)"></app-pagination>
-          </div>
-      }
+      <div class="col-12" *ngIf="retaceos?.last_page > 1">
+        <app-pagination [items]="retaceos" (setPagination)="setPagination($event)"></app-pagination>
+      </div>
     </div>
   </section>
 
@@ -188,34 +178,26 @@
                   <label for="filtros.sucursal">Sucursal:</label>
                   <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
                       <option value="">Todos</option>
-                      @for (sucursal of sucursales; track sucursal.id) {
-                          <option [value]="sucursal.id">
-                              {{ sucursal.nombre }}
-                          </option>
-                      }
+                      <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                          {{ sucursal.nombre }}
+                      </option>
                   </select>
               </div>
               <div class="form-group col-md-6">
                   <label for="filtros.id_usuario">Usuario:</label>
                   <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
                       <ng-option value="">Todos</ng-option>
-                      @for (usuario of usuarios; track usuario.id) {
-                          <ng-option [value]="usuario.id">
-                              {{ usuario.name }}
-                          </ng-option>
-                      }
+                      <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                          {{ usuario.name }}
+                      </ng-option>
                   </ng-select>
               </div>
           </div>
 
           <div class="d-grid mt-3">
               <button type="submit" [disabled]="loading" class="btn btn-primary">
-                  @if (!loading) {
-                      <span>Filtrar</span>
-                  }
-                  @if (loading) {
-                      <span>Filtrando...</span>
-                  }
+                  <span *ngIf="!loading">Filtrar</span>
+                  <span *ngIf="loading">Filtrando...</span>
               </button>
           </div>
       </form>

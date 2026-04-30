@@ -16,20 +16,10 @@ use App\Models\Compras\Retaceo\RetaceoGasto;
 use App\Models\Inventario\Inventario;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use App\Http\Requests\Compras\Retaceo\StoreRetaceoRequest;
-use App\Http\Requests\Compras\Retaceo\ActualizarEstadoRetaceoRequest;
-use App\Http\Requests\Compras\Retaceo\CalcularDistribucionRetaceoRequest;
-use App\Services\Compras\RetaceoService;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class RetaceoController extends Controller
 {
-    protected $retaceoService;
-
-    public function __construct(RetaceoService $retaceoService)
-    {
-        $this->retaceoService = $retaceoService;
-    }
     /**
      * Display a listing of the resource.
      *
@@ -60,12 +50,17 @@ class RetaceoController extends Controller
             return $query->where(function ($q) use ($busqueda) {
                 $q->where('numero_duca', 'like', '%' . $busqueda . '%')
                   ->orWhere('numero_factura', 'like', '%' . $busqueda . '%')
-                  ->orWhereHas('compra', function($subq) use ($busqueda) {
-                      $subq->where('codigo', 'like', '%' . $busqueda . '%');
+                  ->orWhereHas('compra', function ($subq) use ($busqueda) {
+                      $subq->where('codigo', 'like', '%' . $busqueda . '%')
+                          ->orWhere('referencia', 'like', '%' . $busqueda . '%');
+                  })
+                  ->orWhereHas('compras', function ($subq) use ($busqueda) {
+                      $subq->where('codigo', 'like', '%' . $busqueda . '%')
+                          ->orWhere('referencia', 'like', '%' . $busqueda . '%');
                   });
             });
         })
-        ->with(['compra', 'gastos', 'distribucion'])  // Eliminé la carga de 'cliente'
+        ->with(['compra.proveedor', 'compras.proveedor', 'gastos', 'distribucion'])
         ->orderBy($request->orden, $request->direccion)
         ->orderBy('id', 'desc')
         ->paginate($request->paginate);
@@ -79,23 +74,75 @@ class RetaceoController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreRetaceoRequest $request)
+    public function store(Request $request)
     {
-      //  dd($request->all());
-      Log::info($request->id_usuario);
+        $validator = Validator::make($request->all(), [
+            'fecha' => 'required|date',
+            'total_gastos' => 'required|numeric|min:0',
+            'gastos' => 'required|array|min:1',
+            'distribucion' => 'required|array|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $idCompras = $request->input('id_compras');
+        if (!is_array($idCompras) || count($idCompras) < 1) {
+            if ($request->filled('id_compra')) {
+                $idCompras = [(int) $request->id_compra];
+            } else {
+                return response()->json(['errors' => ['id_compras' => ['Debe seleccionar al menos una compra.']]], 422);
+            }
+        }
+        $idCompras = array_values(array_unique(array_map('intval', $idCompras)));
+
+        $compras = Compra::with('detalles')->whereIn('id', $idCompras)->get();
+        if ($compras->count() !== count($idCompras)) {
+            return response()->json(['error' => 'Una o más compras no existen'], 422);
+        }
+
+        $bodegas = $compras->pluck('id_bodega')->unique();
+        if ($bodegas->count() !== 1) {
+            return response()->json(['error' => 'Todas las compras deben ser de la misma bodega'], 422);
+        }
+        $idBodega = (int) $bodegas->first();
+        if ($request->filled('id_bodega') && (int) $request->id_bodega !== $idBodega) {
+            return response()->json(['error' => 'La bodega del retaceo debe coincidir con la de las compras seleccionadas'], 422);
+        }
+
+        $ocupadas = DB::table('retaceo_compras')->whereIn('id_compra', $idCompras)->pluck('id_compra');
+        if ($ocupadas->isNotEmpty()) {
+            return response()->json(['error' => 'Una o más compras seleccionadas ya están incluidas en otro retaceo'], 422);
+        }
+
+        $detallePermitidos = [];
+        foreach ($compras as $c) {
+            foreach ($c->detalles as $det) {
+                $detallePermitidos[(int) $det->id] = true;
+            }
+        }
+        foreach ($request->distribucion as $item) {
+            $idDet = (int) ($item['id_detalle_compra'] ?? 0);
+            if ($idDet < 1 || empty($detallePermitidos[$idDet])) {
+                return response()->json(['error' => 'La distribución contiene líneas que no pertenecen a las compras seleccionadas'], 422);
+            }
+        }
+
+        Log::info($request->id_usuario);
 
         try {
             DB::beginTransaction();
 
+            $referencias = $compras->pluck('referencia')->filter()->values()->all();
+            $numeroFactura = count($referencias) > 0 ? implode(', ', $referencias) : '';
 
-            // Crear el retaceo
-            $compra = Compra::findOrFail($request->id_compra);
             $retaceo = new Retaceo();
             $retaceo->codigo = 'RET-' . date('Ymd') . '-' . rand(1000, 9999);
-            $retaceo->id_compra = $request->id_compra;
+            $retaceo->id_compra = $idCompras[0];
             $retaceo->numero_duca = $request->numero_duca;
             $retaceo->tasa_dai = $request->tasa_dai;
-            $retaceo->numero_factura = $compra->referencia;
+            $retaceo->numero_factura = $numeroFactura;
             $retaceo->incoterm = $request->incoterm;
             $retaceo->fecha = $request->fecha;
             $retaceo->observaciones = $request->observaciones;
@@ -103,10 +150,12 @@ class RetaceoController extends Controller
             $retaceo->total_retaceado = $request->total_retaceado;
             $retaceo->id_empresa = $request->id_empresa;
             $retaceo->id_sucursal = $request->id_sucursal;
-            $retaceo->id_bodega = $compra->id_bodega;
+            $retaceo->id_bodega = $idBodega;
             $retaceo->id_usuario = $request->id_usuario;
             $retaceo->estado = $request->estado ?? 'Pendiente';
             $retaceo->save();
+
+            $retaceo->compras()->sync($idCompras);
 
             // Guardar los gastos
             foreach ($request->gastos as $gasto) {
@@ -144,7 +193,7 @@ class RetaceoController extends Controller
                 if ($producto) {
                     $producto->costo = $item['costo_retaceado'];
                     $producto->save();
-                    $inventario = Inventario::where('id_producto', $item['id_producto'])->where('id_bodega', $compra->id_bodega)->first();
+                    $inventario = Inventario::where('id_producto', $item['id_producto'])->where('id_bodega', $idBodega)->first();
                     if ($inventario) {
                         $producto->id_usuario = Auth::id();
                         $inventario->kardex($producto, 0, $producto->precio, $producto->costo);
@@ -181,8 +230,7 @@ class RetaceoController extends Controller
     {
         $retaceo = Retaceo::findOrFail($id);
 
-        // Cargar relaciones
-        $retaceo->load('gastos', 'distribucion');
+        $retaceo->load('gastos', 'distribucion', 'compra.proveedor', 'compras.proveedor');
 
         return $retaceo;
     }
@@ -253,8 +301,16 @@ class RetaceoController extends Controller
     /**
      * Actualizar el estado del retaceo
      */
-    public function actualizarEstado(ActualizarEstadoRetaceoRequest $request)
+    public function actualizarEstado(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:retaceos,id',
+            'estado' => 'required|in:Pendiente,Aplicado,Anulado',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
         try {
             DB::beginTransaction();
@@ -330,23 +386,74 @@ class RetaceoController extends Controller
         return $retaceoDistribucion;
     }
 
-    public function calcularDistribucion(CalcularDistribucionRetaceoRequest $request)
+    public function calcularDistribucion(Request $request)
     {
-        try {
-            $resultado = $this->retaceoService->calcularDistribucion(
-                $request->gastos,
-                $request->detalles
-            );
+        // Validar datos
+        $validator = Validator::make($request->all(), [
+            'gastos' => 'required|array',
+            'detalles' => 'required|array|min:1',
+        ]);
 
-            return response()->json($resultado);
-        } catch (\Exception $e) {
-            Log::error('Error en calcularDistribucion (RetaceoController): ' . $e->getMessage(), [
-                'request' => $request->all(),
-                'error_trace' => $e->getTraceAsString()
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            // Obtener los gastos
+            $gastoTransporte = $request->gastos['transporte'] ?? 0;
+            $gastoSeguro = $request->gastos['seguro'] ?? 0;
+            $gastoDAI = $request->gastos['dai'] ?? 0;
+            $gastoOtros = $request->gastos['otros'] ?? 0;
+
+            $totalGastos = $gastoTransporte + $gastoSeguro + $gastoDAI + $gastoOtros;
+
+            // Calcular el valor FOB total
+            $valorFobTotal = 0;
+            foreach ($request->detalles as $detalle) {
+                $valorFobTotal += ($detalle['costo_original'] * $detalle['cantidad']);
+            }
+
+            if ($valorFobTotal <= 0) {
+                return response()->json(['error' => 'El valor FOB total debe ser mayor que cero'], 422);
+            }
+
+            // Calcular la distribución
+            $distribucion = [];
+            foreach ($request->detalles as $detalle) {
+                $valorFob = $detalle['costo_original'] * $detalle['cantidad'];
+                $porcentajeDistribucion = ($valorFob / $valorFobTotal) * 100;
+
+                $montoTransporte = ($porcentajeDistribucion / 100) * $gastoTransporte;
+                $montoSeguro = ($porcentajeDistribucion / 100) * $gastoSeguro;
+                $montoDAI = ($porcentajeDistribucion / 100) * $gastoDAI;
+                $montoOtros = ($porcentajeDistribucion / 100) * $gastoOtros;
+
+                $costoLanded = $valorFob + $montoTransporte + $montoSeguro + $montoDAI + $montoOtros;
+                $costoRetaceado = $detalle['cantidad'] > 0 ? $costoLanded / $detalle['cantidad'] : 0;
+
+                $distribucion[] = [
+                    'id_producto' => $detalle['id_producto'],
+                    'id_detalle_compra' => $detalle['id'],
+                    'cantidad' => $detalle['cantidad'],
+                    'costo_original' => $detalle['costo_original'],
+                    'valor_fob' => $valorFob,
+                    'porcentaje_distribucion' => $porcentajeDistribucion,
+                    'monto_transporte' => $montoTransporte,
+                    'monto_seguro' => $montoSeguro,
+                    'monto_dai' => $montoDAI,
+                    'monto_otros' => $montoOtros,
+                    'costo_landed' => $costoLanded,
+                    'costo_retaceado' => $costoRetaceado,
+                ];
+            }
+
+            return response()->json([
+                'distribucion' => $distribucion,
+                'total_gastos' => $totalGastos,
+                'total_retaceado' => array_sum(array_column($distribucion, 'costo_landed'))
             ]);
-            
-            $statusCode = $e->getMessage() === 'El valor FOB total debe ser mayor que cero' ? 422 : 500;
-            return response()->json(['error' => $e->getMessage()], $statusCode);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -358,6 +465,7 @@ class RetaceoController extends Controller
         $retaceo = Retaceo::with([
             'compra.proveedor',
             'compra.empresa',
+            'compras.proveedor',
             'gastos.gasto',
             'distribucion.producto',
             'empresa',
