@@ -88,13 +88,14 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
             $duiNormalizado = $this->normalizarDui($row['dui'] ?? '');
 
             if (!empty($duiNormalizado) && !$this->esDuiValido($duiNormalizado)) {
-                $this->errores[] = "DUI con formato inválido: '{$row['dui']}' (Fila: " . ($this->numRows + 1) . ") - Formato esperado: 12345678-9";
+                $this->errores[] = "DUI con formato inválido: '{$row['dui']}' (Fila: " . ($this->numRows + 1) . ") - Use 9 dígitos (123456789) o 12345678-9.";
                 Log::warning("DUI con formato inválido: {$row['dui']}");
 
                 return null;
             }
 
             if (!empty($duiNormalizado)) {
+                $duiNormalizado = $this->canonicalizarDui($duiNormalizado);
                 $duiSinGuion = str_replace('-', '', $duiNormalizado);
                 $existeDui = Cliente::where('id_empresa', Auth::user()->id_empresa)
                     ->where(function ($query) use ($duiNormalizado, $duiSinGuion) {
@@ -109,7 +110,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
                     return null;
                 }
             }
-            $documentoIdentidad = $duiNormalizado;
+            $documentoIdentidad = $duiNormalizado !== '' ? $duiNormalizado : null;
         } else {
             $documentoIdentidad = $row['dui'] ?? $row['documento_identidad'] ?? $row['n. de documento'] ?? $row['n_de_documento'] ?? null;
         }
@@ -175,7 +176,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
             return [
                 'nombre' => 'required|string|max:255',
                 'apellido' => 'required|string|max:255',
-                'dui' => 'required|string|max:20',
+                'dui' => 'nullable|string|max:20',
                 'nit' => 'nullable|string|max:20',
                 'direccion' => 'nullable|string|max:500',
                 'departamento' => 'required|string',
@@ -215,7 +216,6 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
             'departamento.required' => 'Debe indicar el departamento.',
             'municipio.required' => 'Debe indicar el municipio.',
             'distrito.required' => 'Debe indicar el distrito.',
-            'dui.required' => 'El DUI es obligatorio.',
             'correo.email' => 'El correo debe tener un formato válido.',
         ];
     }
@@ -237,18 +237,42 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
 
     private function normalizarDui($dui)
     {
-        if (empty($dui) || $dui === null) {
+        if ($dui === null || $dui === '') {
             return '';
         }
 
-        $dui = str_replace([' ', '-'], '', $dui);
-
-        if (!is_numeric($dui)) {
-            return $dui;
+        $s = trim((string) $dui);
+        if ($s === '') {
+            return '';
         }
 
-        if (strlen($dui) == 9 && is_numeric($dui)) {
-            return substr($dui, 0, 8) . '-' . substr($dui, 8, 1);
+        // Quitar espacios, NBSP, guión normal y tipográficos (— –), guión bajo
+        $s = str_replace("\xc2\xa0", '', $s);
+        $s = preg_replace('/[\s\-\x{2013}\x{2014}_]+/u', '', $s);
+
+        if ($s === '') {
+            return '';
+        }
+
+        // Solo dígitos (celdas numéricas de Excel ya vienen sin guión)
+        $digits = preg_replace('/\D/', '', $s);
+        if (strlen($digits) === 9 && ctype_digit($digits)) {
+            return substr($digits, 0, 8) . '-' . substr($digits, 8, 1);
+        }
+
+        return $s;
+    }
+
+    /**
+     * Acepta 12345678-9 o 123456789 (9 dígitos). Devuelve siempre XXXXXXXX-Y si es válido.
+     */
+    private function canonicalizarDui(string $dui): string
+    {
+        if (preg_match('/^(\d{8})-(\d{1})$/', $dui, $m)) {
+            return $m[1] . '-' . $m[2];
+        }
+        if (preg_match('/^(\d{9})$/', $dui, $m)) {
+            return substr($m[1], 0, 8) . '-' . substr($m[1], 8, 1);
         }
 
         return $dui;
@@ -256,6 +280,14 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
 
     private function esDuiValido($dui)
     {
-        return preg_match('/^\d{8}-\d{1}$/', $dui);
+        if ($dui === '' || $dui === null) {
+            return false;
+        }
+
+        if (preg_match('/^\d{8}-\d{1}$/', $dui)) {
+            return true;
+        }
+
+        return preg_match('/^\d{9}$/', $dui) && ctype_digit($dui);
     }
 }
