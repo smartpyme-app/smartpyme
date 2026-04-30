@@ -74,7 +74,33 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
             'provincia', 'estado', 'ciudad', 'n_de_documento',
         ];
 
-        return $this->applyExcelRowNormalization($row, $stringKeys, $this->esElSalvador);
+        $row = $this->applyExcelRowNormalization($row, $stringKeys, $this->esElSalvador);
+
+        $nombreTrim = isset($row['nombre']) ? trim((string) $row['nombre']) : '';
+        $apellidoTrim = isset($row['apellido']) ? trim((string) $row['apellido']) : '';
+        if ($nombreTrim !== '' && $apellidoTrim === '') {
+            $parts = preg_split('/\s+/u', $nombreTrim, -1, PREG_SPLIT_NO_EMPTY);
+            if (count($parts) >= 2) {
+                $row['apellido'] = array_pop($parts);
+                $row['nombre'] = implode(' ', $parts);
+            }
+        }
+
+        if ($this->esElSalvador) {
+            $duiNorm = $this->normalizarDui($row['dui'] ?? '');
+            if ($duiNorm !== '' && $this->esDuiValido($duiNorm)) {
+                $row['dui'] = $this->canonicalizarDui($duiNorm);
+            } else {
+                if ($duiNorm !== '') {
+                    Log::info('Import clientes persona: se omite DUI por formato incompleto o no válido', [
+                        'valor_original' => $row['dui'] ?? null,
+                    ]);
+                }
+                $row['dui'] = null;
+            }
+        }
+
+        return $row;
     }
 
     public function model(array $row)
@@ -85,17 +111,9 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
 
         $documentoIdentidad = null;
         if ($this->esElSalvador) {
-            $duiNormalizado = $this->normalizarDui($row['dui'] ?? '');
-
-            if (!empty($duiNormalizado) && !$this->esDuiValido($duiNormalizado)) {
-                $this->errores[] = "DUI con formato inválido: '{$row['dui']}' (Fila: " . ($this->numRows + 1) . ") - Use 9 dígitos (123456789) o 12345678-9.";
-                Log::warning("DUI con formato inválido: {$row['dui']}");
-
-                return null;
-            }
-
-            if (!empty($duiNormalizado)) {
-                $duiNormalizado = $this->canonicalizarDui($duiNormalizado);
+            $duiValor = $row['dui'] ?? null;
+            if ($duiValor !== null && $duiValor !== '') {
+                $duiNormalizado = (string) $duiValor;
                 $duiSinGuion = str_replace('-', '', $duiNormalizado);
                 $existeDui = Cliente::where('id_empresa', Auth::user()->id_empresa)
                     ->where(function ($query) use ($duiNormalizado, $duiSinGuion) {
@@ -110,7 +128,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
                     return null;
                 }
             }
-            $documentoIdentidad = $duiNormalizado !== '' ? $duiNormalizado : null;
+            $documentoIdentidad = ($duiValor !== null && $duiValor !== '') ? (string) $duiValor : null;
         } else {
             $documentoIdentidad = $row['dui'] ?? $row['documento_identidad'] ?? $row['n. de documento'] ?? $row['n_de_documento'] ?? null;
         }

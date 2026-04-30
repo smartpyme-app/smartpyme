@@ -496,12 +496,12 @@ class ClientesController extends Controller
     public function importPersonas(Request $request)
     {
         $request->validate([
-            'file' => 'required',
+            'file' => 'required|file',
         ]);
 
         try {
             $import = new ClientesPersonas();
-            Excel::import($import, $request->file);
+            Excel::import($import, $request->file('file'));
 
             $errores = $import->getErrores();
             $clientesProcesados = $import->getClientesProcesados();
