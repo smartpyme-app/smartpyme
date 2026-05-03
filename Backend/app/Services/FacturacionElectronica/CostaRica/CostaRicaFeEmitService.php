@@ -226,8 +226,9 @@ final class CostaRicaFeEmitService
 
     /**
      * Nota de débito (02) que referencia una factura 01 aceptada (ajuste de montos).
+     * El consecutivo es el {@link Devolucion::correlativo} de la devolución tipo nota de débito ligada a la venta.
      *
-     * @return array{clave: string, aceptada: bool, detalle_estado: array, venta: Venta}
+     * @return array{clave: string, aceptada: bool, detalle_estado: array, venta: Venta, devolucion?: Devolucion}
      */
     public function emitirNotaDebitoDesdeVenta(int $ventaFacturaId, string $motivo, float $montoLinea): array
     {
@@ -238,6 +239,12 @@ final class CostaRicaFeEmitService
         if (! $this->ventaFeCrAceptada($venta)) {
             throw new RuntimeException('La venta debe tener factura electrónica aceptada para emitir nota de débito.');
         }
+
+        $devolucionNd = $this->devolucionNotaDebitoParaVenta($venta);
+        if ($this->devolucionTieneClaveFeCr($devolucionNd)) {
+            throw new RuntimeException('La devolución (nota de débito) ya tiene comprobante electrónico emitido (clave registrada).');
+        }
+
         $dtePrev = is_array($venta->dte) ? $venta->dte : [];
         if (! empty(trim((string) (($dtePrev['cr']['nota_debito']['clave'] ?? ''))))) {
             throw new RuntimeException('Esta venta ya tiene una nota de débito electrónica registrada.');
@@ -246,7 +253,7 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('El monto de la línea debe ser mayor a cero.');
         }
 
-        $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
+        $sec = $this->secuencialDesdeCorrelativo($devolucionNd->correlativo);
         $saleCond = '01';
         $venta->loadMissing('sucursal');
         $header = $this->mapper->encabezadoDocumento($empresa, (string) $venta->fecha, $sec, $saleCond, $venta->sucursal);
@@ -373,12 +380,64 @@ final class CostaRicaFeEmitService
         $venta->dte = $dte;
         $venta->save();
 
+        $devolucionNd->codigo_generacion = $clave;
+        $devolucionNd->tipo_dte = '02';
+        $devolucionNd->sello_mh = $clave;
+        $devolucionNd->dte = [
+            'pais' => 'CR',
+            'tipo' => 'NotaDebitoElectronica',
+            'clave' => $clave,
+            'documento' => $data,
+            'identificacion' => [
+                'codigoGeneracion' => $clave,
+                'tipoDte' => '02',
+            ],
+            'cr' => array_merge([
+                'aceptada' => true,
+                'envio' => $envio,
+                'estado_consulta' => $estado,
+            ], $this->metadataXmlCr($client)),
+        ];
+        $devolucionNd->save();
+
         return [
             'clave' => $clave,
             'aceptada' => true,
             'detalle_estado' => $estado,
             'venta' => $venta->fresh(),
+            'devolucion' => $devolucionNd->fresh(),
         ];
+    }
+
+    /**
+     * Devolución de venta cuyo documento es nota de débito (SV «Nota de débito», CR «Nota de Débito Electrónica», etc.).
+     */
+    private function queryDevolucionNotaDebitoPorVenta(Venta $venta): ?Devolucion
+    {
+        return Devolucion::query()
+            ->where('id_venta', $venta->id)
+            ->where('enable', true)
+            ->whereHas('documento', function ($q): void {
+                $q->whereRaw('LOWER(nombre) LIKE ?', ['%nota%'])
+                    ->where(function ($q2): void {
+                        $q2->whereRaw('LOWER(nombre) LIKE ?', ['%débito%'])
+                            ->orWhereRaw('LOWER(nombre) LIKE ?', ['%debito%']);
+                    });
+            })
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    private function devolucionNotaDebitoParaVenta(Venta $venta): Devolucion
+    {
+        $d = $this->queryDevolucionNotaDebitoPorVenta($venta);
+        if ($d === null) {
+            throw new RuntimeException(
+                'No hay una devolución de tipo nota de débito registrada para esta venta. Cree la devolución antes de emitir el comprobante electrónico.'
+            );
+        }
+
+        return $d;
     }
 
     private function cargarVenta(int $ventaId): Venta
@@ -389,7 +448,7 @@ final class CostaRicaFeEmitService
     }
 
     /**
-     * Consecutivo DGT: entero del número llevado en el registro (venta/devolución: correlativo; compra y gasto: referencia).
+     * Consecutivo DGT: correlativo en venta/devolución (NC y ND desde devolución); referencia en compra/gasto.
      */
     private function secuencialDesdeCorrelativo(mixed $correlativo): int
     {
@@ -1120,6 +1179,15 @@ final class CostaRicaFeEmitService
             $venta->dte = $dte;
             $venta->save();
 
+            $devNd = $this->queryDevolucionNotaDebitoPorVenta($venta);
+            if ($devNd instanceof Devolucion && trim((string) ($devNd->codigo_generacion ?? '')) !== '') {
+                $devNd->codigo_generacion = null;
+                $devNd->tipo_dte = null;
+                $devNd->sello_mh = null;
+                $devNd->dte = null;
+                $devNd->save();
+            }
+
             return [
                 'venta' => $venta->fresh(),
                 'detalle_estado' => $estado,
@@ -1132,6 +1200,18 @@ final class CostaRicaFeEmitService
         $dte['cr']['nota_debito'] = $nd;
         $venta->dte = $dte;
         $venta->save();
+
+        $devNd = $this->queryDevolucionNotaDebitoPorVenta($venta);
+        if ($devNd instanceof Devolucion && trim((string) ($devNd->codigo_generacion ?? '')) === $clave) {
+            $dteDev = is_array($devNd->dte) ? $devNd->dte : [];
+            if (! isset($dteDev['cr']) || ! is_array($dteDev['cr'])) {
+                $dteDev['cr'] = [];
+            }
+            $dteDev['cr']['aceptada'] = $aceptada;
+            $dteDev['cr']['estado_consulta'] = $estado;
+            $devNd->dte = $dteDev;
+            $devNd->save();
+        }
 
         return [
             'venta' => $venta->fresh(),
