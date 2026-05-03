@@ -97,9 +97,6 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public override filtros: any = {};
   public filtrado: boolean = false;
   public consulting: boolean = false;
-  /** Nota de débito CR (02) — modal DTE */
-  public ndMotivo = '';
-  public ndMontoLinea: number | null = null;
   public consultingNd = false;
   public categorias: any[] = [];
   public marcas: any[] = [];
@@ -1132,8 +1129,6 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
     openDTE(template: TemplateRef<any>, venta:any){
         this.venta = venta;
-        this.ndMotivo = '';
-        this.ndMontoLinea = null;
         this.alertService.modal = true;
         this.openModal(template);
         if(!this.venta.dte){
@@ -1557,20 +1552,6 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return !n.includes('ticket') && !n.includes('tiquete');
   }
 
-  puedeEmitirNotaDebitoCr(venta: any): boolean {
-    if (!this.esFeCostaRica() || !venta?.codigo_generacion) {
-      return false;
-    }
-    if (!this.esVentaFacturaParaNotasCr(venta)) {
-      return false;
-    }
-    const dte = venta.dte;
-    if (!dte?.cr?.aceptada) {
-      return false;
-    }
-    return !venta?.dte?.cr?.nota_debito?.clave;
-  }
-
   tieneNotaDebitoCr(venta: any): boolean {
     if (!this.esFeCostaRica()) {
       return !!venta?.dte?.cr?.nota_debito?.clave;
@@ -1578,68 +1559,6 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return (
       this.esVentaFacturaParaNotasCr(venta) && !!venta?.dte?.cr?.nota_debito?.clave
     );
-  }
-
-  emitirNotaDebitoFeCr(): void {
-    const m = Number(this.ndMontoLinea);
-    if (!m || m <= 0) {
-      this.alertService.error('Indique un monto mayor a cero para la línea de nota de débito.');
-      return;
-    }
-    this.saving = true;
-    this.cdr.markForCheck();
-    this.facturacionElectronica
-      .emitirNotaDebitoVenta(this.venta, this.ndMotivo ?? '', m)
-      .then((v) => {
-        this.venta = { ...v };
-        const index = this.ventas.data.findIndex((x: any) => x.id === v.id);
-        if (index !== -1) {
-          this.ventas.data[index] = { ...v };
-        }
-        this.ndMotivo = '';
-        this.ndMontoLinea = null;
-        this.alertService.success('Nota de débito', 'Comprobante enviado a Hacienda.');
-        this.saving = false;
-        this.cdr.markForCheck();
-      })
-      .catch((error: any) => {
-        this.saving = false;
-        let msg: string;
-        let feCrIntento: FeCrErrorEmisionPayload | undefined;
-        if (this.esPayloadErrorEmisionFeCr(error)) {
-          msg = error.message;
-          feCrIntento = error;
-        } else if (typeof error === 'string') {
-          msg = error;
-        } else {
-          msg = this.esFeCostaRica()
-            ? mensajeErrorHttpFeCr(error)
-            : String(error?.message ?? error);
-        }
-        if (error?.venta) {
-          this.venta = { ...error.venta };
-          const idx = this.ventas.data.findIndex((x: any) => x.id === error.venta.id);
-          if (idx !== -1) {
-            this.ventas.data[idx] = { ...error.venta };
-          }
-        }
-        this.venta = {
-          ...this.venta,
-          errores: msg,
-          ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
-        };
-        const idx = this.ventas.data.findIndex((x: any) => x.id === this.venta.id);
-        if (idx !== -1) {
-          this.ventas.data[idx] = { ...this.venta };
-        }
-        this.alertService.info(
-          'Nota de débito no emitida',
-          feCrIntento
-            ? 'Revise el mensaje abajo. Abra «XML del comprobante» o «JSON interno» si necesita depurar.'
-            : 'Revise el mensaje en el recuadro de esta ventana.'
-        );
-        this.cdr.markForCheck();
-      });
   }
 
   consultarNotaDebitoFeCr(): void {

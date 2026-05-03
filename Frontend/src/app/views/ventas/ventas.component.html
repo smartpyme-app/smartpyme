@@ -799,28 +799,6 @@
                 </button>
             }
 
-            @if (esFeCostaRica() && puedeEmitirNotaDebitoCr(venta)) {
-                <div class="border rounded p-3 mb-3 text-start">
-                    <p class="small fw-semibold mb-2">Nota de débito (ajuste de montos)</p>
-                    <div class="mb-2">
-                        <label class="form-label small" for="ndMotivoVenta">Motivo (opcional)</label>
-                        <input id="ndMotivoVenta" type="text" class="form-control form-control-sm" [(ngModel)]="ndMotivo" name="ndMotivo" maxlength="500" />
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small" for="ndMontoVenta">Monto línea (IVA incl.)</label>
-                        <input id="ndMontoVenta" type="number" class="form-control form-control-sm" [(ngModel)]="ndMontoLinea" name="ndMontoLinea" min="0.01" step="0.01" />
-                    </div>
-                    <button type="button" [disabled]="saving" (click)="emitirNotaDebitoFeCr()" class="btn btn-primary btn-sm w-100">
-                        @if (!saving) {
-                            <span>Emitir nota de débito</span>
-                        }
-                        @if (saving) {
-                            <span>Emitiendo...</span>
-                        }
-                    </button>
-                </div>
-            }
-
             @if (esFeCostaRica() && tieneNotaDebitoCr(venta)) {
                 <p class="small fw-semibold mb-2 text-start">Nota de débito</p>
                 <button type="button" (click)="imprimirDTEPDF(venta, '02')" class="mb-2 btn btn-primary btn-block">
