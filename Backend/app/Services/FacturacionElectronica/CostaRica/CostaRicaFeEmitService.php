@@ -25,7 +25,6 @@ final class CostaRicaFeEmitService
 {
     public function __construct(
         private readonly CostaRicaDgtClientFactory $factory,
-        private readonly CostaRicaSecuencialService $secuencial,
         private readonly CostaRicaInvoiceFromVentaMapper $mapper,
         private readonly CostaRicaCreditNoteFromDevolucionMapper $creditNoteMapper,
     ) {}
@@ -45,7 +44,7 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('La venta ya tiene comprobante electrónico emitido (clave registrada).');
         }
 
-        $sec = $this->secuencial->siguienteFactura($venta->empresa);
+        $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildDocumentData($venta, $venta->empresa, $sec);
 
         return $this->enviarYPersistirVenta($venta, 'invoice', '01', 'FacturaElectronica', $data);
@@ -66,7 +65,7 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('La venta ya tiene comprobante electrónico emitido (clave registrada).');
         }
 
-        $sec = $this->secuencial->siguienteTiquete($venta->empresa);
+        $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildTicketDocumentData($venta, $venta->empresa, $sec);
 
         return $this->enviarYPersistirVenta($venta, 'ticket', '04', 'TiqueteElectronico', $data);
@@ -95,7 +94,7 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('La compra ya tiene comprobante electrónico emitido (clave registrada).');
         }
 
-        $sec = $this->secuencial->siguienteFacturaElectronicaCompra($empresa);
+        $sec = $this->secuencialDesdeCorrelativo($compra->referencia);
         $data = $this->mapper->buildFacturaElectronicaCompraDesdeCompra($compra, $empresa, $sec);
 
         return $this->enviarYPersistirCompra($compra, 'fec', '08', 'FacturaElectronicaCompra', $data);
@@ -124,7 +123,7 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('El gasto ya tiene comprobante electrónico emitido (clave registrada).');
         }
 
-        $sec = $this->secuencial->siguienteFacturaElectronicaCompra($empresa);
+        $sec = $this->secuencialDesdeCorrelativo($gasto->referencia);
         $data = $this->mapper->buildFacturaElectronicaCompraDesdeGasto($gasto, $empresa, $sec);
 
         return $this->enviarYPersistirGasto($gasto, 'fec', '08', 'FacturaElectronicaCompra', $data);
@@ -154,7 +153,7 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('La factura original debe tener comprobante electrónico aceptado en Costa Rica.');
         }
 
-        $sec = $this->secuencial->siguienteNotaCredito($empresa);
+        $sec = $this->secuencialDesdeCorrelativo($devolucion->correlativo);
         $data = $this->creditNoteMapper->buildDocumentData($devolucion, $empresa, $ventaOrigen, $sec);
 
         $client = $this->factory->make($empresa);
@@ -247,7 +246,7 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('El monto de la línea debe ser mayor a cero.');
         }
 
-        $sec = $this->secuencial->siguienteNotaDebito($empresa);
+        $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $saleCond = '01';
         $venta->loadMissing('sucursal');
         $header = $this->mapper->encabezadoDocumento($empresa, (string) $venta->fecha, $sec, $saleCond, $venta->sucursal);
@@ -387,6 +386,14 @@ final class CostaRicaFeEmitService
         return Venta::query()
             ->with(['detalles.producto', 'cliente', 'empresa', 'sucursal', 'documento'])
             ->findOrFail($ventaId);
+    }
+
+    /**
+     * Consecutivo DGT: entero del número llevado en el registro (venta/devolución: correlativo; compra y gasto: referencia).
+     */
+    private function secuencialDesdeCorrelativo(mixed $correlativo): int
+    {
+        return (int) $correlativo;
     }
 
     private function assertEmpresaCr($empresa): void
@@ -747,7 +754,7 @@ final class CostaRicaFeEmitService
     {
         $hints = [];
         if ($this->estadoContieneCodigoHacienda($estado, -99)) {
-            $hints[] = 'Sugerencia (código -99): el consecutivo del XML ya existe en Hacienda. Sincronice el secuencial en la empresa (custom_empresa.facturacion_fe): para tiquete electrónico use cr_secuencial_tiquete; para factura cr_secuencial_factura; y el campo correspondiente a cada tipo de comprobante. El valor debe ser mayor o igual al último consecutivo ya aceptado en el Ministerio para ese tipo.';
+            $hints[] = 'Sugerencia (código -99): el consecutivo enviado ya existe en Hacienda para ese establecimiento / punto de venta / tipo de comprobante. El sistema usa correlativo (venta, devolución) o referencia (compra, gasto): revise que no duplique un comprobante ya aceptado.';
         }
         if ($this->estadoContieneCodigoHacienda($estado, -37)) {
             $hints[] = 'Sugerencia (código -37): provincia, cantón y distrito del emisor deben coincidir con el domicilio fiscal registrado en la DGT. Revise facturacion_fe.emisor_distrito (código INEC de 5 dígitos) o emisor_provincia_manual, emisor_canton_manual y emisor_distrito_manual.';
