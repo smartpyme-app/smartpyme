@@ -489,6 +489,25 @@
                         </div>
                     </div>
 
+                    <div class="row" *ngIf="apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Super Admin'">
+                        <h4 class="mb-0 fw-bold">Supervisor limitado</h4>
+                        <div class="form-group col-md-12 col-xl-8 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="restringir_gastos_supervisor_limitado" class="form-label">
+                                    <strong>Supervisor limitado no puede generar gastos</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="restringir_gastos_supervisor_limitado"
+                                    [(ngModel)]="empresa.restringir_gastos_supervisor_limitado"
+                                    (change)="onSubmit()"
+                                    name="restringir_gastos_supervisor_limitado">
+                            </div>
+                            <small class="text-muted d-block">
+                                Si está activa, ese rol no verá el menú de gastos y no podrá crear, editar ni eliminar gastos; el resto del módulo de compras no se oculta. Desactivada por defecto. Tras cambiar esta opción, los supervisores limitados pueden pulsar Gastos una vez para actualizar el menú, o cerrar sesión y volver a entrar.
+                            </small>
+                        </div>
+                    </div>
+
                     <div class="row" *ngIf="empresa.mostrar_sello_firma || empresa.mostrar_sello_firma_cotizacion">
                         <div class="col-md-6 mb-4">
                             <h6 class="mb-3">Subir sello</h6>
