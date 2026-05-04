@@ -29,8 +29,15 @@
 <section class="bg-white p-4 rounded mb-3">
   <div class="row">
     <div class="col-md-6 mb-3">
-      <span class="text-muted" *ngIf="partidas?.total">
-        Mostrando {{ partidas?.to }} de {{ partidas?.total + ' registros' }}
+      <span class="text-muted d-flex align-items-center flex-wrap gap-2" *ngIf="partidas?.total">
+        Mostrar
+        <select name="paginate" class="form-select w-auto" (change)="filtrarPartidas()" [(ngModel)]="filtros.paginate">
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+        por página · {{ partidas?.from }}–{{ partidas?.to }} de {{ partidas?.total }} registros
       </span>
     </div>
 
@@ -197,7 +204,7 @@
       </table>
     </div>
 
-    <div class="col-12" *ngIf="partidas?.last_page > 1">
+    <div class="col-12" *ngIf="partidas?.total > 0">
       <app-pagination [items]="partidas" (setPagination)="setPagination($event)"></app-pagination>
     </div>
   </div>
