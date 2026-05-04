@@ -33,6 +33,9 @@ import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias
 import { AbonosGastosComponent } from './gastos/abonos/abonos-gastos.component';
 import { DepartamentoEmpresaComponent } from './gastos/departamento-empresa/departamento-empresa.component';
 import { AreaEmpresaComponent } from './gastos/area-empresa/area-empresa.component';
+import { GastosSupervisorRestriccionGuard } from '@guards/gastos-supervisor-restriccion.guard';
+
+const gastosSupervisorRestriccion = [GastosSupervisorRestriccionGuard];
 
 const routes: Routes = [
   {
@@ -69,15 +72,15 @@ const routes: Routes = [
         { path: 'reporte/compras/detalle', component: DetalleComprasComponent },
         { path: 'reporte/compras/categorias', component: CategoriasComprasComponent },
 
-        { path: 'gastos', component: GastosComponent, title:'Gastos' },
-        { path: 'gastos/abonos', component: AbonosGastosComponent, title:'Abonos de gastos' },
-        { path: 'gastos/recurrentes', component: GastosRecurrentesComponent, title:'Gastos recurrentes' },
-        { path: 'gasto/detalles/:id', component: GastoDetallesComponent, title:'Gasto' },
-        { path: 'gasto/:id', component: GastoComponent, title:'Gasto' },
-        { path: 'gastos/dash', component: GastosDashComponent },
-        { path: 'gastos/categorias', component: GastosCategoriasComponent },
-        { path: 'gastos/departamentos-empresa', component: DepartamentoEmpresaComponent, title: 'Departamentos de empresa' },
-        { path: 'gastos/areas-empresa', component: AreaEmpresaComponent, title: 'Áreas de empresa' },
+        { path: 'gastos', component: GastosComponent, title:'Gastos', canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/abonos', component: AbonosGastosComponent, title:'Abonos de gastos', canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/recurrentes', component: GastosRecurrentesComponent, title:'Gastos recurrentes', canActivate: gastosSupervisorRestriccion },
+        { path: 'gasto/detalles/:id', component: GastoDetallesComponent, title:'Gasto', canActivate: gastosSupervisorRestriccion },
+        { path: 'gasto/:id', component: GastoComponent, title:'Gasto', canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/dash', component: GastosDashComponent, canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/categorias', component: GastosCategoriasComponent, canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/departamentos-empresa', component: DepartamentoEmpresaComponent, title: 'Departamentos de empresa', canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/areas-empresa', component: AreaEmpresaComponent, title: 'Áreas de empresa', canActivate: gastosSupervisorRestriccion },
 
     ]
   }

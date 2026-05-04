@@ -58,8 +58,8 @@
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/compras">Compras</a></li>
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/devoluciones/compras">Devoluciones</a></li>
             <li><hr class="dropdown-divider"> </li>
-            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/gastos">Gastos</a></li>
-            <li><hr class="dropdown-divider"> </li>
+            <li *ngIf="apiService.mostrarMenuModuloGastos()"><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/gastos">Gastos</a></li>
+            <li *ngIf="apiService.mostrarMenuModuloGastos()"><hr class="dropdown-divider"> </li>
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/proveedores">Proveedores</a></li>
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/proveedores/cuentas-pagar">Cuentas por pagar</a></li>
             <li><hr class="dropdown-divider"> </li>

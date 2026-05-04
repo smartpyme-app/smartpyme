@@ -84,6 +84,7 @@ class Empresa extends Model
         'webhook_paquete_venta_bearer_token',
         'modulo_citas',
         'modulo_proyectos',
+        'restringir_gastos_supervisor_limitado',
         'activo',
         'alerta_suscripcion',
         'cotizacion_compras_terminos',
@@ -160,6 +161,7 @@ class Empresa extends Model
         'importacion_productos_shopify' => 'boolean',
         'shopify_sync_bidirectional' => 'boolean',
         'webhook_paquete_venta_enabled' => 'boolean',
+        'restringir_gastos_supervisor_limitado' => 'boolean',
     ];
 
     protected $appends = [

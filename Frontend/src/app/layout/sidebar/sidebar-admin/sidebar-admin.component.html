@@ -79,7 +79,7 @@
                   </ul>
                 </div>
             </li>
-            <li class="mb-1">
+            <li class="mb-1" *ngIf="apiService.mostrarMenuModuloGastos()">
                 <button (click)="toggleGastos()" tooltip="Gastos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!gastosIsCollapsed" aria-controls="collapseGastosAdmin">
                     <img src="/assets/icons/log-out.png" class="icon me-2">Gastos
                 </button>
