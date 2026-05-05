@@ -947,13 +947,14 @@ export class ConfiguracionClienteComponent implements OnInit {
       return isNaN(n) ? null : n;
     };
 
-    const fromRoot = tryParse(tipo?.valor_punto);
-    if (fromRoot !== null) {
-      return this.formatValorPuntoDecimal(fromRoot);
-    }
+    // Preferir JSON: es lo que edita el formulario; la columna podía quedar desactualizada en versiones anteriores.
     const fromAdv = tryParse(tipo?.configuracion_avanzada?.valor_punto);
     if (fromAdv !== null) {
       return this.formatValorPuntoDecimal(fromAdv);
+    }
+    const fromRoot = tryParse(tipo?.valor_punto);
+    if (fromRoot !== null) {
+      return this.formatValorPuntoDecimal(fromRoot);
     }
     return 0.01;
   }

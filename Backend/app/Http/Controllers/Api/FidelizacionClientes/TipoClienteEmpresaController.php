@@ -228,6 +228,11 @@ class TipoClienteEmpresaController extends Controller
 
             DB::beginTransaction();
 
+            $configAvanzada = $request->configuracion_avanzada ?? [];
+            $valorPunto = isset($configAvanzada['valor_punto'])
+                ? (float) $configAvanzada['valor_punto']
+                : 0.01;
+
             $tipoCliente = TipoClienteEmpresa::create([
                 'id_empresa' => $empresaEfectivaId,
                 'id_tipo_base' => $request->id_tipo_base,
@@ -235,11 +240,12 @@ class TipoClienteEmpresaController extends Controller
                 'nombre_personalizado' => $request->nombre_personalizado,
                 'activo' => true,
                 'puntos_por_dolar' => $request->puntos_por_dolar,
+                'valor_punto' => $valorPunto,
                 'minimo_canje' => $request->minimo_canje,
                 'maximo_canje' => $request->maximo_canje,
                 'expiracion_meses' => $request->expiracion_meses,
                 'is_default' => $request->is_default ?? false,
-                'configuracion_avanzada' => $request->configuracion_avanzada ?? [],
+                'configuracion_avanzada' => $configAvanzada,
             ]);
 
             if ($request->is_default) {
@@ -332,7 +338,9 @@ class TipoClienteEmpresaController extends Controller
 
             $idTipoBase = $request->filled('id_tipo_base') ? $request->id_tipo_base : $tipoCliente->id_tipo_base;
 
-            $tipoCliente->update([
+            $configAvanzada = $request->configuracion_avanzada ?? $tipoCliente->configuracion_avanzada ?? [];
+
+            $payload = [
                 'id_tipo_base' => $idTipoBase,
                 'nivel' => $request->nivel,
                 'nombre_personalizado' => $request->nombre_personalizado,
@@ -342,8 +350,15 @@ class TipoClienteEmpresaController extends Controller
                 'maximo_canje' => $request->maximo_canje,
                 'expiracion_meses' => $request->expiracion_meses,
                 'is_default' => $request->is_default ?? $tipoCliente->is_default,
-                'configuracion_avanzada' => $request->configuracion_avanzada ?? $tipoCliente->configuracion_avanzada,
-            ]);
+                'configuracion_avanzada' => $configAvanzada,
+            ];
+
+            // Mantener columna `valor_punto` alineada con la UI y con ConsumoPuntosService
+            if (array_key_exists('valor_punto', $configAvanzada)) {
+                $payload['valor_punto'] = (float) $configAvanzada['valor_punto'];
+            }
+
+            $tipoCliente->update($payload);
 
             if (($request->is_default ?? $tipoCliente->is_default)) {
                 $empresa = $request->user()->empresa;
