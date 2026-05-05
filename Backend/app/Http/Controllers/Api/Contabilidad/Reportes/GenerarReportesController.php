@@ -7,10 +7,12 @@ use App\Exports\Contabilidad\DiarioAuxiliarExport;
 use App\Exports\Contabilidad\DiarioMayorExport;
 use App\Exports\Contabilidad\BalanceGeneralExport;
 use App\Exports\Contabilidad\EstadoResultadosExport;
+use App\Exports\Contabilidad\FlujoEfectivoExport;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Services\Contabilidad\BalanceGeneralNiifSvPresenter;
 use App\Services\Contabilidad\EstadoResultadosNiifSvPresenter;
+use App\Services\Contabilidad\FlujoEfectivoHibridoNiifSvPresenter;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Partidas\Partida;
@@ -866,6 +868,56 @@ class GenerarReportesController extends Controller
 
         return Excel::download(
             new EstadoResultadosExport($estado, (string) $empresa->nombre, $comparar),
+            $fname
+        );
+    }
+
+    public function generarFlujoEfectivo(Request $request, $fecha_inicio, $fecha_fin, $type)
+    {
+        if ($type === 'pdf') {
+            return $this->generarFlujoEfectivoPDF($request, $fecha_inicio, $fecha_fin);
+        }
+
+        return $this->generarFlujoEfectivoExcel($request, $fecha_inicio, $fecha_fin);
+    }
+
+    public function generarFlujoEfectivoPDF(Request $request, $fecha_inicio, $fecha_fin)
+    {
+        $empresa_id = auth()->user()->id_empresa;
+        $empresa = Empresa::findOrFail($empresa_id);
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        $comparar = $request->boolean('comparar');
+        $presenter = app(FlujoEfectivoHibridoNiifSvPresenter::class);
+        $flujo = $presenter->build($empresa_id, $startDate, $endDate, $comparar);
+
+        $pdf = PDF::loadView('reportes.contabilidad.flujo_efectivo', [
+            'flujo' => $flujo,
+            'empresa' => $empresa,
+            'fecha_inicio' => $fecha_inicio,
+            'fecha_fin' => $fecha_fin,
+        ]);
+        $pdf->setPaper('US Letter', 'portrait');
+
+        return $pdf->stream();
+    }
+
+    public function generarFlujoEfectivoExcel(Request $request, $fecha_inicio, $fecha_fin)
+    {
+        $empresa_id = auth()->user()->id_empresa;
+        $empresa = Empresa::findOrFail($empresa_id);
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        $comparar = $request->boolean('comparar');
+        $presenter = app(FlujoEfectivoHibridoNiifSvPresenter::class);
+        $flujo = $presenter->build($empresa_id, $startDate, $endDate, $comparar);
+
+        $fname = 'flujo_efectivo_' . $fecha_inicio . '_' . $fecha_fin . '.xlsx';
+
+        return Excel::download(
+            new FlujoEfectivoExport($flujo, (string) $empresa->nombre, $comparar),
             $fname
         );
     }
