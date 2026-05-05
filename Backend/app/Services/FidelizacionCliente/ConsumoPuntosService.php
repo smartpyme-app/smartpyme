@@ -30,6 +30,14 @@ class ConsumoPuntosService
     }
 
     /**
+     * Expuesto para otros servicios (p. ej. devoluciones) que deben usar la misma regla que las ventas.
+     */
+    public function obtenerTipoClienteEfectivo(\App\Models\Ventas\Clientes\Cliente $cliente): ?TipoClienteEmpresa
+    {
+        return $this->resolveTipoClienteParaCliente($cliente);
+    }
+
+    /**
      * Procesar la acumulación de puntos para una venta
      *
      * @param Venta $venta

@@ -25,10 +25,14 @@ use Carbon\Carbon;
 use JWTAuth;
 use Auth;
 use Illuminate\Support\Str;
+use App\Services\FidelizacionCliente\DevolucionPuntosService;
 
 class DevolucionVentasController extends Controller
 {
-    
+    public function __construct(
+        private DevolucionPuntosService $devolucionPuntosService
+    ) {
+    }
 
     public function index(Request $request) {
        
@@ -228,7 +232,10 @@ class DevolucionVentasController extends Controller
         }
         
         $venta->fill($request->all());
-        $venta->save();        
+        $venta->save();
+
+        $venta->refresh();
+        $this->devolucionPuntosService->syncPuntosParaDevolucion($venta);
 
         return Response()->json($venta, 200);
 
@@ -488,7 +495,10 @@ class DevolucionVentasController extends Controller
         if ($devolucion->id_documento) {
             Documento::where('id', $devolucion->id_documento)->increment('correlativo');
         }
-        
+
+        $devolucion->refresh();
+        $this->devolucionPuntosService->syncPuntosParaDevolucion($devolucion);
+
         DB::commit();
         return Response()->json($devolucion, 200);
 
