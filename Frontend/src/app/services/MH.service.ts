@@ -224,7 +224,7 @@ export class MHService {
                             },error => {this.alertService.error(error);});
                         }
                     },error => {
-                        if(error.error && error.error.observaciones.length > 0){
+                        if(error.error && error.error.observaciones && error.error.observaciones.length > 0){
                             reject(error.error.observaciones);
                         }
                         else if(error.error && error.error.descripcionMsg){
@@ -268,7 +268,7 @@ export class MHService {
                             },error => {this.alertService.error(error);});
                         }
                     },error => {
-                        if(error.error && error.error.observaciones.length > 0){
+                        if(error.error && error.error.observaciones && error.error.observaciones.length > 0){
                             reject(error.error.observaciones);
                         }
                         else if(error.error && error.error.descripcionMsg){
@@ -312,7 +312,7 @@ export class MHService {
                             },error => {this.alertService.error(error);});
                         }
                     },error => {
-                        if(error.error && error.error.observaciones.length > 0){
+                        if(error.error && error.error.observaciones && error.error.observaciones.length > 0){
                             reject(error.error.observaciones);
                         }
                         else if(error.error && error.error.descripcionMsg){
@@ -358,7 +358,7 @@ export class MHService {
                         }
 
                     },error => {
-                        if(error.error && error.error.observaciones.length > 0){
+                        if(error.error && error.error.observaciones && error.error.observaciones.length > 0){
                             reject(error.error.observaciones);
                         }
                         else if(error.error && error.error.descripcionMsg){

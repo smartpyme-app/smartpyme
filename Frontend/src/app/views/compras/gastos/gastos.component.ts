@@ -242,15 +242,40 @@ export class GastosComponent implements OnInit {
 
     emitirDTE(){
         this.saving = true;
+        this.gasto.errores = null;
         this.mhService.emitirDTESujetoExcluidoGasto(this.gasto).then((gasto) => {
             this.gasto = gasto;
+            this.gasto.errores = null;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
             this.enviarDTE();
         }).catch((error) => {
             this.saving = false;
-            this.alertService.warning('Hubo un problema', error);
+            if (!this.asignarErroresMH(this.gasto, error)) {
+                this.alertService.warning('Hubo un problema', error);
+            }
         });
+    }
+
+    /** Devuelve true si el error se muestra en app-alerts-hacienda (modal). */
+    private asignarErroresMH(entidad: any, error: any): boolean {
+        if (Array.isArray(error)) {
+            entidad.errores = error;
+            return true;
+        }
+        if (typeof error === 'string') {
+            entidad.errores = { descripcionMsg: error };
+            return true;
+        }
+        if (error?.error?.descripcionMsg) {
+            entidad.errores = { descripcionMsg: error.error.descripcionMsg };
+            return true;
+        }
+        if (error?.error?.observaciones?.length) {
+            entidad.errores = { observaciones: error.error.observaciones };
+            return true;
+        }
+        return false;
     }
 
 

@@ -459,10 +459,11 @@
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">
         <h5 class="modal-title mb-0">DTE </h5>
-        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false; compra.errores = null" aria-label="Close"></button>
     </div>
   <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
+        <app-alerts-hacienda [errores]="compra.errores" contexto="compra"></app-alerts-hacienda>
         <div class="d-grid">
 
             <button *ngIf="compra.sello_mh" (click)="imprimirDTEJSON(compra)" class="mb-3 btn btn-primary btn-block">

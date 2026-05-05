@@ -2,11 +2,14 @@
   <strong class="d-block mb-2">No se pudo emitir el DTE debido a los siguientes errores:</strong>
   <ul class="mt-2 mb-0 ps-3">
     <li *ngFor="let error of erroresList" class="mb-1">
-      <ng-container *ngIf="error.includes('Campo #/')">
-        <span class="fw-bold text-danger">{{ parseError(error).campo }}:</span>
-        <span class="text-dark"> {{ parseError(error).mensaje }}</span>
+      <ng-container *ngIf="esErrorFormateable(error)">
+        <span *ngIf="parseError(error).compacto; else mhErrorDetallado" class="text-dark">{{ parseError(error).mensaje }}</span>
+        <ng-template #mhErrorDetallado>
+          <span class="fw-bold text-danger">{{ parseError(error).campo }}:</span>
+          <span class="text-dark"> {{ parseError(error).mensaje }}</span>
+        </ng-template>
       </ng-container>
-      <ng-container *ngIf="!error.includes('Campo #/')">
+      <ng-container *ngIf="!esErrorFormateable(error)">
         <span class="text-dark">{{ error }}</span>
       </ng-container>
     </li>
