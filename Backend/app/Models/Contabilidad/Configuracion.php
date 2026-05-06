@@ -34,9 +34,14 @@ class Configuracion extends Model
         'id_cuenta_ganancia_ajuste',
 
         'generar_partidas', // Manual, Auto
+        'estado_resultados_prefijos', // JSON opcional: cogs / gasto_venta / gasto_admin
         'id_cuenta_pedidos_transito',
         'id_cuenta_inventario_transitorio',
         'id_empresa',
+    ];
+
+    protected $casts = [
+        'estado_resultados_prefijos' => 'array',
     ];
 
     protected static function boot()
