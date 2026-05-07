@@ -80,7 +80,7 @@
                             {{ detalle.nombre_producto }}
                         </td>
                         <td style="width: 150px;">
-                            <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="cantidad">
+                            <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" (wheel)="$event.preventDefault()" class="form-control" name="cantidad">
                         </td>
                         <td style="width: 150px;"> {{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.precio | number:'1.0-6':'en-US'}} </td>
                         <td style="width: 150px;"> {{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.descuento | number:'1.0-6':'en-US'}} </td>
