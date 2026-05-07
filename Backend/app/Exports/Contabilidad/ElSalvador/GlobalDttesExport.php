@@ -45,7 +45,7 @@ class GlobalDttesExport
         }
 
         $ventas = Venta::with(['cliente', 'documento'])
-            ->whereRaw("dte IS NOT NULL")
+            ->whereHasDtePayload()
             ->whereNotNull('sello_mh')
             ->when($estadoJson === 'anulados', function ($query) {
                 return $query->where('estado', 'Anulada');

@@ -47,7 +47,9 @@ Route::get('/inventariostock', function(){
 
 Route::get('/ventassintipodte', function () {
     $ventas = App\Models\Ventas\Venta::whereNull('tipo_dte')
-        ->whereNotNull('dte')
+        ->where(function ($q) {
+            $q->whereNotNull('dte')->orWhereNotNull('dte_s3_key');
+        })
         ->whereYear('fecha', 2026)
         ->get();
 
