@@ -35,7 +35,11 @@ class ComprasController extends Controller
 
     public function index(Request $request) {
         $excludeFromList = ['dte_invalidacion'];
-        $columns = array_diff(Schema::getColumnListing('compras'), $excludeFromList);
+        $columns = array_values(array_diff(Schema::getColumnListing('compras'), $excludeFromList));
+        $dteIndex = array_search('dte', $columns, true);
+        if ($dteIndex !== false) {
+            $columns[$dteIndex] = DB::raw("IF(COALESCE(compras.dte_s3_key,'') <> '', NULL, compras.dte) as dte");
+        }
 
         $compras = Compra::select($columns)
             ->when($request->inicio, function($query) use ($request){
