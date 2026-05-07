@@ -156,12 +156,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 user.empresa = empresa;
                 localStorage.setItem('SP_auth_user', JSON.stringify(user));
 
-                if (this.empresa.fe_ambiente == '01') {
-                    localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
-                } else {
-                    localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
-                }
-
                 this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
                 this.saving = false;
                 resolve(null);

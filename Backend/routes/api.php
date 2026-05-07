@@ -125,6 +125,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/admin/licencias.php');
 	require base_path('routes/modulos/admin/suscripciones.php');
 	require base_path('routes/modulos/admin/MH.php');
+	require base_path('routes/modulos/admin/dte-mh-proxy.php');
     require base_path('routes/modulos/admin/reportes-automaticos.php');
 
 
