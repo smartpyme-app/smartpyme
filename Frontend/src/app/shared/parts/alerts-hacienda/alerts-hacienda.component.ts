@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { normalizarErroresHacienda } from '../../utils/mh-recepcion-errores';
 
 @Component({
   selector: 'app-alerts-hacienda',
@@ -20,17 +21,12 @@ export class AlertsHaciendaComponent {
     departamento: 'Departamento',
   };
 
-  // Normaliza los errores
+  /**
+   * Todo el mapeo de errores MH (recepción, firma, anulación, HttpClient) vive en normalizarErroresHacienda.
+   * Aquí solo se pasa el valor crudo que guardó el flujo (error completo).
+   */
   get erroresList(): string[] {
-    if (!this.errores) return [];
-
-    if (typeof this.errores === 'string') return [this.errores];
-
-    if (Array.isArray(this.errores)) return this.errores;
-
-    if (this.errores.descripcionMsg) return [this.errores.descripcionMsg];
-
-    return [];
+    return normalizarErroresHacienda(this.errores);
   }
 
   // Parsea el error para obtener el campo y el mensaje

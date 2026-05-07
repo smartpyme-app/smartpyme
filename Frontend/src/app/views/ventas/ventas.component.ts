@@ -1047,9 +1047,6 @@ export class VentasComponent implements OnInit, OnDestroy {
       console.log(error);
       if (error == '[identificacion.codigoGeneracion] YA EXISTE UN REGISTRO CON ESE VALOR') {
         this.consultarDTE();
-      }
-      else if (error.status) {
-        this.alertService.warning('Hubo un problema', error);
       } else {
         this.venta.errores = error;
       }
@@ -1207,35 +1204,17 @@ export class VentasComponent implements OnInit, OnDestroy {
           }
         }, error => {
           this.saving = false;
-          if (error.error) {
-            if (error.error.descripcionMsg) {
-              this.venta.errores = { descripcionMsg: error.error.descripcionMsg };
-            } else if (error.error.observaciones && error.error.observaciones.length > 0) {
-              this.venta.errores = { observaciones: error.error.observaciones };
-            } else {
-              this.venta.errores = error.error;
-            }
-          } else {
-            this.venta.errores = error;
-          }
+          this.venta.errores = error;
         });
 
       }, error => { 
         this.saving = false;
-        if (error.error) {
-          this.venta.errores = error.error;
-        } else {
-          this.venta.errores = error;
-        }
+        this.venta.errores = error;
       });
 
     }, error => { 
       this.saving = false;
-      if (error.error) {
-        this.venta.errores = error.error;
-      } else {
-        this.venta.errores = error;
-      }
+      this.venta.errores = error;
     });
   }
 

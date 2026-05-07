@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
+import { normalizarErroresHacienda } from '../shared/utils/mh-recepcion-errores';
 
 @Injectable({
   providedIn: 'root',
@@ -25,17 +26,37 @@ export class AlertService {
     warning(titulo: any = null, message: any) {
         console.log(message);
 
-        if (message?.error?.error) {
-            message = message.error.error;
-        } else if (message?.error) {
-            message = message.error;
-        } else if (message?.message) {
-            message = message.message;
-        } else {
-            message = message;
+        /** Evita duplicar el toast cuando MHService ya mostró «Debe volver a iniciar sesión». */
+        if (
+            message != null &&
+            typeof message === 'object' &&
+            (message as any).mhAlertaSesionMostrada === true
+        ) {
+            return;
         }
 
-        this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': titulo, 'mensaje' : message});
+        let msg = message;
+
+        if (Array.isArray(msg)) {
+            msg = msg
+                .map((m) => (m != null ? String(m) : ''))
+                .map((s) => s.trim())
+                .filter((s) => s !== '')
+                .join('<br>');
+        } else if (msg && typeof msg === 'object') {
+            const mhLines = normalizarErroresHacienda(msg);
+            if (mhLines.length > 0) {
+                msg = mhLines.join('<br>');
+            } else if (msg.error?.error) {
+                msg = msg.error.error;
+            } else if (msg.error) {
+                msg = msg.error;
+            } else if (msg.message) {
+                msg = msg.message;
+            }
+        }
+
+        this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': titulo, 'mensaje' : msg});
     }
 
     info(titulo: any = null, message: any) {

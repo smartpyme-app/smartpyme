@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { map, catchError, retry } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { normalizarErroresHacienda } from '../shared/utils/mh-recepcion-errores';
 
 @Injectable()
 
@@ -20,8 +21,111 @@ export class MHService {
     public url_pruebas_ejecutar: string = 'mh/pruebas-masivas/ejecutar';
     public url_pruebas_limpiar: string = 'mh/pruebas-masivas/limpiar';
 
+    /**
+     * Mensaje cuando falta o expiró el token de la API de MH (mostrar en UI / alerts-hacienda).
+     */
+    static readonly MSG_SESION_MH_REQUERIDA =
+        'Su sesión con Ministerio de Hacienda no está activa o expiró. ' +
+        'Cierre sesión en SmartPyme, vuelva a iniciar sesión y después autentíquese de nuevo con la API de MH (facturación electrónica). ' +
+        'Si el problema continúa, revise usuario y contraseña de MH en los datos de la empresa.';
+
+    /** Para mostrar aviso adicional (toast) cuando falle la emisión por token MH. */
+    static esErrorSesionMhPerdida(error: unknown): boolean {
+        const lines = normalizarErroresHacienda(error);
+        const joined = lines.join(' ');
+        if (
+            joined.includes('Sesión con Ministerio de Hacienda') &&
+            joined.includes('SmartPyme')
+        ) {
+            return true;
+        }
+        const msg =
+            error instanceof Error
+                ? error.message
+                : typeof error === 'string'
+                  ? error
+                  : String(error ?? '');
+        return (
+            msg.includes('Sesión con Ministerio de Hacienda') &&
+            msg.includes('SmartPyme')
+        );
+    }
+
+    /**
+     * Marca el rechazo de una promesa de emisión cuando ya se mostró el toast de sesión MH
+     * (para que `AlertService.warning` no duplique el mensaje en los `.catch` de los componentes).
+     */
+    static readonly MH_ALERTA_SESION_YA_MOSTRADA = 'mhAlertaSesionMostrada';
 
     constructor(private http: HttpClient, private alertService: AlertService, private apiService: ApiService) { }
+
+    /** Centraliza aviso de sesión MH y marca el error para no duplicar alertas en la vista. */
+    private rechazarEmision(reject: (reason?: any) => void, error: unknown): void {
+        if (MHService.esErrorSesionMhPerdida(error)) {
+            const lines = normalizarErroresHacienda(error);
+            const cuerpo =
+                lines.length > 0
+                    ? lines.join('<br>')
+                    : error instanceof Error
+                      ? error.message
+                      : typeof error === 'string'
+                        ? error
+                        : MHService.MSG_SESION_MH_REQUERIDA;
+            this.alertService.warning('Debe volver a iniciar sesión', cuerpo);
+
+            if (error !== null && typeof error === 'object') {
+                try {
+                    Object.defineProperty(error as object, MHService.MH_ALERTA_SESION_YA_MOSTRADA, {
+                        value: true,
+                        enumerable: false,
+                        configurable: true,
+                    });
+                } catch {
+                    (error as any)[MHService.MH_ALERTA_SESION_YA_MOSTRADA] = true;
+                }
+                reject(error);
+            } else {
+                const wrapped = new Error(
+                    typeof error === 'string' ? error : MHService.MSG_SESION_MH_REQUERIDA
+                );
+                (wrapped as any)[MHService.MH_ALERTA_SESION_YA_MOSTRADA] = true;
+                reject(wrapped);
+            }
+            return;
+        }
+        reject(error);
+    }
+
+    /**
+     * Token Bearer de la API de MH. El login a veces guarda el cuerpo en distintas formas.
+     */
+    private obtenerBearerMinisterioHacienda(): string | null {
+        try {
+            const raw = localStorage.getItem('SP_token_mh');
+            if (raw == null || raw === '' || raw === 'undefined') {
+                return null;
+            }
+            const parsed = JSON.parse(raw);
+            const bearer =
+                (typeof parsed?.token === 'string' && parsed.token.trim() !== '' ? parsed.token : null) ??
+                (typeof parsed?.body?.token === 'string' && parsed.body.token.trim() !== '' ? parsed.body.token : null);
+            return bearer;
+        } catch {
+            return null;
+        }
+    }
+
+    private headersConTokenMh(): HttpHeaders {
+        const bearer = this.obtenerBearerMinisterioHacienda();
+        if (!bearer) {
+            throw new Error(MHService.MSG_SESION_MH_REQUERIDA);
+        }
+        return new HttpHeaders({
+            'Content-Type': 'application/json',
+            'User-Agent': 'Angular',
+            'Authorization': bearer,
+        });
+    }
     
     auth(): Observable<any> {
         let user = JSON.parse(localStorage.getItem('SP_auth_user')!);
@@ -38,8 +142,12 @@ export class MHService {
     }
 
     login(){
-        this.auth().subscribe( data => {            
-            localStorage.setItem('SP_token_mh', JSON.stringify(data.body))
+        this.auth().subscribe( data => {
+            // HttpClient devuelve ya el JSON del cuerpo; algunas respuestas traen token en raíz o en .body
+            const payload = data?.body ?? data;
+            if (payload != null) {
+                localStorage.setItem('SP_token_mh', JSON.stringify(payload));
+            }
         }, error =>{
             this.alertService.error(error);
         });
@@ -70,16 +178,12 @@ export class MHService {
     }
 
     enviarDTE(venta: any, dteFirmado: any): Observable<any> {
-        let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
-        if (!token) {
-            return throwError(() => new Error('Token de MH no creado'));
+        let headers: HttpHeaders;
+        try {
+            headers = this.headersConTokenMh();
+        } catch (e: any) {
+            return throwError(() => (e instanceof Error ? e : new Error(String(e))));
         }
-
-        const headers = new HttpHeaders({
-          'Content-Type': 'application/json',
-          'User-Agent': 'Angular',
-          'Authorization': token.token,
-        });
 
         let formData:any = {};
         formData.ambiente = venta.dte.identificacion.ambiente;
@@ -94,14 +198,12 @@ export class MHService {
 
     consultarDTE(venta: any): Observable<any> {
         let user = JSON.parse(localStorage.getItem('SP_auth_user')!);
-        let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
-
-        const headers = new HttpHeaders({
-          'Content-Type': 'application/json',
-          'User-Agent': 'Angular',
-          'Authorization': token.token,
-        });
-
+        let headers: HttpHeaders;
+        try {
+            headers = this.headersConTokenMh();
+        } catch (e: any) {
+            return throwError(() => (e instanceof Error ? e : new Error(String(e))));
+        }
 
         let formData:any = {};
         formData.nitEmisor = user.empresa.nit.replace(/-/g, '');
@@ -112,13 +214,12 @@ export class MHService {
     }
 
     enviarContingenciaDTEs(venta: any, dteFirmado: any): Observable<any> {
-        let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
-
-        const headers = new HttpHeaders({
-          'Content-Type': 'application/json',
-          // 'User-Agent': 'SCRivera',
-          'Authorization': token.token,
-        });
+        let headers: HttpHeaders;
+        try {
+            headers = this.headersConTokenMh();
+        } catch (e: any) {
+            return throwError(() => (e instanceof Error ? e : new Error(String(e))));
+        }
 
         let formData:any = {};
         formData.nit = venta.dte.emisor.nit;
@@ -129,13 +230,12 @@ export class MHService {
     }
 
     anularDTE(venta: any, dteFirmado: any): Observable<any> {
-        let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
-
-        const headers = new HttpHeaders({
-          'Content-Type': 'application/json',
-          'User-Agent': 'Angular',
-          'Authorization': token.token,
-        });
+        let headers: HttpHeaders;
+        try {
+            headers = this.headersConTokenMh();
+        } catch (e: any) {
+            return throwError(() => (e instanceof Error ? e : new Error(String(e))));
+        }
 
         let formData:any = {};
         formData.ambiente = venta.dte_invalidacion.identificacion.ambiente;
@@ -160,7 +260,7 @@ export class MHService {
                 this.firmarDTE(dte).subscribe(dteFirmado => {
 
                     if(dteFirmado.status == 'ERROR'){
-                        reject(dteFirmado.body.mensaje);
+                        this.rechazarEmision(reject, dteFirmado.body.mensaje);
                         // reject('No se pudo firmar el DTE, no se encontró el certificado.');
                     }
 
@@ -180,19 +280,12 @@ export class MHService {
                             },error => {this.alertService.error(error);});
                         }
                     },error => {
-                        if(error.error && error.error.observaciones && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
+                        this.rechazarEmision(reject, error);
                     });
 
-                },error => {reject(error);});
+                },error => {this.rechazarEmision(reject, error);});
 
-            },error => {reject(error);});
+            },error => {this.rechazarEmision(reject, error);});
         });
     }
 
@@ -205,7 +298,7 @@ export class MHService {
                 this.firmarDTE(dte).subscribe(dteFirmado => {
 
                     if(dteFirmado.status == 'ERROR'){
-                        reject(dteFirmado.body.mensaje);
+                        this.rechazarEmision(reject, dteFirmado.body.mensaje);
                         // reject('No se pudo firmar el DTE, no se encontró el certificado.');
                     }
 
@@ -224,19 +317,12 @@ export class MHService {
                             },error => {this.alertService.error(error);});
                         }
                     },error => {
-                        if(error.error && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
+                        this.rechazarEmision(reject, error);
                     });
 
-                },error => {reject(error);});
+                },error => {this.rechazarEmision(reject, error);});
 
-            },error => {reject(error);});
+            },error => {this.rechazarEmision(reject, error);});
         });
     }
 
@@ -249,7 +335,7 @@ export class MHService {
                 this.firmarDTE(dte).subscribe(dteFirmado => {
 
                     if(dteFirmado.status == 'ERROR'){
-                        reject(dteFirmado.body.mensaje);
+                        this.rechazarEmision(reject, dteFirmado.body.mensaje);
                         // reject('No se pudo firmar el DTE, no se encontró el certificado.');
                     }
 
@@ -268,19 +354,12 @@ export class MHService {
                             },error => {this.alertService.error(error);});
                         }
                     },error => {
-                        if(error.error && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
+                        this.rechazarEmision(reject, error);
                     });
 
-                },error => {reject(error);});
+                },error => {this.rechazarEmision(reject, error);});
 
-            },error => {reject(error);});
+            },error => {this.rechazarEmision(reject, error);});
         });
     }
 
@@ -293,7 +372,7 @@ export class MHService {
                 this.firmarDTE(dte).subscribe(dteFirmado => {
 
                     if(dteFirmado.status == 'ERROR'){
-                        reject(dteFirmado.body.mensaje);
+                        this.rechazarEmision(reject, dteFirmado.body.mensaje);
                         // reject('No se pudo firmar el DTE, no se encontró el certificado.');
                     }
 
@@ -312,19 +391,12 @@ export class MHService {
                             },error => {this.alertService.error(error);});
                         }
                     },error => {
-                        if(error.error && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
+                        this.rechazarEmision(reject, error);
                     });
 
-                },error => {reject(error);});
+                },error => {this.rechazarEmision(reject, error);});
 
-            },error => {reject(error);});
+            },error => {this.rechazarEmision(reject, error);});
         });
     }
 
@@ -337,7 +409,7 @@ export class MHService {
                 this.firmarDTE(dte).subscribe(dteFirmado => {
 
                     if(dteFirmado.status == 'ERROR'){
-                        reject(dteFirmado.body.mensaje);
+                        this.rechazarEmision(reject, dteFirmado.body.mensaje);
                         // reject('No se pudo firmar el DTE, no se encontró el certificado.');
                     }
 
@@ -354,23 +426,16 @@ export class MHService {
                             },error => {this.alertService.error(error); });
                         }
                         if ((dte.estado == 'RECHAZADO')) {
-                            reject(dte.observaciones);
+                            this.rechazarEmision(reject, dte);
                         }
 
                     },error => {
-                        if(error.error && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
+                        this.rechazarEmision(reject, error);
                     });
 
-                },error => {reject(error);});
+                },error => {this.rechazarEmision(reject, error);});
 
-            },error => {reject(error);});
+            },error => {this.rechazarEmision(reject, error);});
         });
     }
 

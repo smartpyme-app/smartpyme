@@ -26,6 +26,8 @@ export class DevolucionesVentasComponent implements OnInit {
     public ventasList: any = [];
     public sucursales: any = [];
     public venta: any = {};
+    /** Error crudo de MH (misma convención que venta.errores + app-alerts-hacienda) */
+    public erroresHacienda: any = null;
     public filtros: any = {};
     public devolucionEditar: any = {};
     public documentos: any = [];
@@ -197,6 +199,7 @@ export class DevolucionesVentasComponent implements OnInit {
 
     openDTE(template: TemplateRef<any>, venta: any) {
         this.venta = venta;
+        this.erroresHacienda = null;
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template);
         if (!this.venta.dte) {
@@ -214,6 +217,7 @@ export class DevolucionesVentasComponent implements OnInit {
 
     emitirDTE() {
         this.saving = true;
+        this.erroresHacienda = null;
         this.mhService.emitirDTENotaCredito(this.venta).then((venta) => {
             this.venta = venta;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
@@ -221,7 +225,7 @@ export class DevolucionesVentasComponent implements OnInit {
             this.enviarDTE(this.venta);
         }).catch((error) => {
             this.saving = false;
-            this.alertService.warning('Hubo un problema', error);
+            this.erroresHacienda = error;
         });
     }
 
@@ -241,6 +245,7 @@ export class DevolucionesVentasComponent implements OnInit {
         if (venta.dte) {
             if (confirm('¿Confirma anular la devolución y el DTE?')) {
                 this.venta = venta;
+                this.erroresHacienda = null;
                 this.saving = true;
                 this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
                     // this.alertService.success('DTE generado.');
@@ -249,7 +254,9 @@ export class DevolucionesVentasComponent implements OnInit {
                         this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
 
                         if (dteFirmado.status == 'ERROR') {
-                            this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
+                            this.erroresHacienda = dteFirmado.body;
+                            this.saving = false;
+                            return;
                         }
 
                         this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
@@ -260,16 +267,17 @@ export class DevolucionesVentasComponent implements OnInit {
                                 this.apiService.store('devolucion/venta', this.venta).subscribe(data => {
                                     // this.alertService.success('Venta guardada.');
                                 }, error => { this.alertService.error(error); this.saving = false; });
+                                this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                                this.erroresHacienda = null;
+                                this.saving = false;
+                            } else {
+                                this.erroresHacienda = dte;
+                                this.alertService.warning('DTE no anulado en Hacienda', dte);
+                                this.saving = false;
                             }
-
-                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
                         }, error => {
-                            if (error.error.descripcionMsg) {
-                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
-                            }
-                            if (error.error.observaciones.length > 0) {
-                                this.alertService.warning('Hubo un problema', error.error.observaciones);
-                            }
+                            this.erroresHacienda = error;
+                            this.alertService.warning('No se pudo anular el DTE en Hacienda', error);
                             this.saving = false;
                         });
 
