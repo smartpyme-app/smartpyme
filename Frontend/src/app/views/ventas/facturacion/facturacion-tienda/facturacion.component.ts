@@ -1385,6 +1385,19 @@ export class FacturacionComponent implements OnInit {
       return true;
     }
 
+    const totalInvalido = detalles.find((detalle: any) => {
+      const t = Number(detalle?.total);
+      return !Number.isFinite(t) || t < 0;
+    });
+    if (totalInvalido) {
+      const nombre =
+        totalInvalido.descripcion || totalInvalido.nombre || 'el producto';
+      this.alertService.error(
+        `El total de la línea "${nombre}" debe ser mayor o igual a 0.`
+      );
+      return true;
+    }
+
     return false;
   }
 
