@@ -19,6 +19,7 @@ export class MHService {
     public url_pruebas_documentos: string = 'mh/pruebas-masivas/documentos-base';
     public url_pruebas_ejecutar: string = 'mh/pruebas-masivas/ejecutar';
     public url_pruebas_limpiar: string = 'mh/pruebas-masivas/limpiar';
+    private readonly mensajeSinConexionHacienda: string = 'Por el momento no se puede establecer conexión con el Ministerio de Hacienda por problemas con sus servidores. Hemos reportado el error y el equipo de Hacienda ya está trabajando en solventarlo.';
 
 
     constructor(private http: HttpClient, private alertService: AlertService, private apiService: ApiService) { }
@@ -151,6 +152,52 @@ export class MHService {
         return this.http.get<any>(`${this.url_firmado}status`, { observe: 'response' });
     }
 
+    private obtenerMensajeErrorEmision(error: any): any {
+        if (this.esErrorConexionHacienda(error)) {
+            return this.mensajeSinConexionHacienda;
+        }
+
+        const descripcionMsg = error?.error?.descripcionMsg;
+        const observaciones = error?.error?.observaciones;
+        const observacionesTexto = Array.isArray(observaciones)
+            ? observaciones
+                .map((obs: any) => {
+                    if (typeof obs === 'string') {
+                        return obs;
+                    }
+                    return obs?.descripcionMsg ?? JSON.stringify(obs);
+                })
+                .filter((obs: string) => !!obs)
+                .join('\n')
+            : '';
+
+        if (descripcionMsg || observacionesTexto) {
+            return [descripcionMsg, observacionesTexto].filter(Boolean).join('\n');
+        }
+
+        if (error?.message) {
+            return error.message;
+        }
+
+        return error;
+    }
+
+    private esErrorConexionHacienda(error: any): boolean {
+        const status = error?.status;
+        const statusText = (error?.statusText ?? '').toString().toLowerCase();
+        const mensajeError = (error?.message ?? '').toString().toLowerCase();
+        const detalleBackend = (error?.error?.message ?? '').toString().toLowerCase();
+        const url = (error?.url ?? '').toString().toLowerCase();
+        const apuntaAHacienda = url.includes('/fesv/') || url.includes('/seguridad/auth');
+        const contieneTimeout = statusText.includes('timeout')
+            || mensajeError.includes('gateway timeout')
+            || mensajeError.includes('timeout')
+            || detalleBackend.includes('gateway timeout')
+            || detalleBackend.includes('timeout');
+
+        return apuntaAHacienda && (status === 504 || status === 0 || contieneTimeout);
+    }
+
     emitirDTE(venta:any): Promise<any> {
 
         return new Promise((resolve, reject) => {
@@ -179,16 +226,7 @@ export class MHService {
                                 resolve(data);
                             },error => {this.alertService.error(error);});
                         }
-                    },error => {
-                        if(error.error && error.error.observaciones && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
-                    });
+                    },error => { reject(this.obtenerMensajeErrorEmision(error)); });
 
                 },error => {reject(error);});
 
@@ -223,16 +261,7 @@ export class MHService {
                                 resolve(data);
                             },error => {this.alertService.error(error);});
                         }
-                    },error => {
-                        if(error.error && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
-                    });
+                    },error => { reject(this.obtenerMensajeErrorEmision(error)); });
 
                 },error => {reject(error);});
 
@@ -267,16 +296,7 @@ export class MHService {
                                 resolve(data);
                             },error => {this.alertService.error(error);});
                         }
-                    },error => {
-                        if(error.error && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
-                    });
+                    },error => { reject(this.obtenerMensajeErrorEmision(error)); });
 
                 },error => {reject(error);});
 
@@ -311,16 +331,7 @@ export class MHService {
                                 resolve(data);
                             },error => {this.alertService.error(error);});
                         }
-                    },error => {
-                        if(error.error && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
-                    });
+                    },error => { reject(this.obtenerMensajeErrorEmision(error)); });
 
                 },error => {reject(error);});
 
@@ -357,16 +368,7 @@ export class MHService {
                             reject(dte.observaciones);
                         }
 
-                    },error => {
-                        if(error.error && error.error.observaciones.length > 0){
-                            reject(error.error.observaciones);
-                        }
-                        else if(error.error && error.error.descripcionMsg){
-                            reject(error.error.descripcionMsg);
-                        }else{
-                            reject(error);
-                        }
-                    });
+                    },error => { reject(this.obtenerMensajeErrorEmision(error)); });
 
                 },error => {reject(error);});
 
