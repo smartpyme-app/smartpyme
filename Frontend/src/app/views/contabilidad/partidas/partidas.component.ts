@@ -35,6 +35,8 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     tipo_cuenta: 'all',
     /** Incluir columna y período anterior inmediato (misma duración) en Estado de resultados. */
     estadoCompararAnterior: false,
+    /** Comparativa en Flujo de efectivo (misma regla que estado de resultados). */
+    flujoCompararAnterior: false,
   };
   public catalogo: any = [];
   public months: Array<{ value: number; label: string }> = [];
@@ -599,6 +601,24 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
         this.reporte.estadoCompararAnterior === true
           ? `${base}&comparar=1`
           : base;
+      window.open(url);
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirFlujoEfectivo() {
+    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.tipo_descarga) {
+      const base = this.buildReportDownloadUrl(
+        '/api/reportes/flujo/efectivo/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_descarga
+      );
+      const url =
+        this.reporte.flujoCompararAnterior === true ? `${base}&comparar=1` : base;
       window.open(url);
     } else {
       alert('Por favor, llenar los campos requeridos.');

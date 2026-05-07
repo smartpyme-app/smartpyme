@@ -307,6 +307,11 @@
                   aria-controls="v-pills-estado-resultados" aria-selected="false">
             <i class="fas fa-chart-line me-2"></i>Estado de resultados
           </button>
+          <button class="nav-link text-start text-dark mb-2" id="v-pills-flujo-efectivo-tab"
+                  data-bs-toggle="pill" data-bs-target="#v-pills-flujo-efectivo" type="button" role="tab"
+                  aria-controls="v-pills-flujo-efectivo" aria-selected="false">
+            <i class="fas fa-water me-2"></i>Flujo de efectivo
+          </button>
         </div>
       </div>
 
@@ -591,6 +596,72 @@
                       Muestra ingresos, costos y gastos para determinar la rentabilidad
                     </small>
                     <button type="submit" [disabled]="!estadoResultadosForm.form.valid || saving" class="btn btn-primary">
+                      <i class="fas fa-download me-2"></i>
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- tab 6 Flujo de efectivo -->
+          <div class="tab-pane fade" id="v-pills-flujo-efectivo" role="tabpanel"
+               aria-labelledby="v-pills-flujo-efectivo-tab">
+            <h5 class="mb-3 text-primary"><i class="fas fa-water me-2"></i>Flujo de efectivo</h5>
+            <form (ngSubmit)="imprimirFlujoEfectivo()" #flujoEfectivoForm="ngForm">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Del:</label>
+                  <input type="date" class="form-control" name="fe_flujo_ini" required [(ngModel)]="reporte.fecha_inicio">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Al:</label>
+                  <input type="date" class="form-control" name="fe_flujo_fin" required [(ngModel)]="reporte.fecha_fin">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de reporte:</label>
+                  <select name="tipo_descarga_flujo" class="form-select" required [(ngModel)]="reporte.tipo_descarga">
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group without-label mb-0">
+                    <div class="form-switch bg-light-info rounded">
+                      <label for="flujoCompararAnterior">Comparar con período anterior</label>
+                      <input
+                        class="form-check-input float-end"
+                        type="checkbox"
+                        role="switch"
+                        name="flujoCompararAnterior"
+                        id="flujoCompararAnterior"
+                        [(ngModel)]="reporte.flujoCompararAnterior"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="d-flex align-items-end h-100">
+                    <div class="alert alert-secondary mb-0 w-100">
+                      <small>
+                        <i class="fas fa-info-circle me-1"></i>
+                        Método indirecto alineado al balance NIIF y utilidad neta del estado de resultados del mismo rango.
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      Incluye conciliación con la variación de la línea de efectivo y equivalentes
+                    </small>
+                    <button type="submit" [disabled]="!flujoEfectivoForm.form.valid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
                       <span *ngIf="!saving">Generar Documento</span>
                       <span *ngIf="saving">Generando...</span>
