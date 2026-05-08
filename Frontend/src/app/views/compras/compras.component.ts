@@ -474,7 +474,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
     anularDTE(compra:any){
         const conDte = (c: any) => {
             this.compra = c;
-            if(c.dte || c.dte_en_s3){
+            if(c.sello_mh){
                 if (confirm('¿Confirma anular la compra y el DTE?')) {
                     this.compra = c;
                     this.saving = true;
