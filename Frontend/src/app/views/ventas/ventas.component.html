@@ -145,53 +145,89 @@
                             </span>
                         </td>
                         <td class="text-end">
-                            <span *ngIf="venta.estado != 'Pendiente' && !venta.abonos_sum_total">
-                                <span *ngIf="venta.propina > 0">
-                                    {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
+                            <ng-container *ngIf="totalTienePopover(venta); else ventaTotalSinPopover">
+                                <span class="click position-relative d-inline-block text-end"
+                                    placement="left"
+                                    container="body"
+                                    [popover]="popTemplateTotal"
+                                    triggers="mouseenter:mouseleave">
+                                    <span *ngIf="venta.propina > 0">
+                                        {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
+                                    </span>
+                                    <span *ngIf="!(venta.propina > 0)">
+                                        {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                    </span>
+                                    <span *ngIf="tieneDevolucionesNcNd(venta)"
+                                        class="position-absolute fw-bold text-danger"
+                                        style="top: -3px; right: -10px; font-size: 0.65rem; line-height: 1;"
+                                        tooltip="Notas de crédito o débito asociadas">D</span>
                                 </span>
-                                <span *ngIf="!(venta.propina > 0)">
-                                    {{venta.total | currency:'USD':'symbol':'1.2'}}
+                            </ng-container>
+                            <ng-template #ventaTotalSinPopover>
+                                <span class="position-relative d-inline-block text-end">
+                                    <span *ngIf="venta.propina > 0">
+                                        {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
+                                    </span>
+                                    <span *ngIf="!(venta.propina > 0)">
+                                        {{venta.total | currency:'USD':'symbol':'1.2'}}
+                                    </span>
                                 </span>
-                            </span>
-                            <span *ngIf="venta.estado == 'Pendiente' || venta.abonos_sum_total > 0" class="click"
-                                placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                                <span *ngIf="venta.propina > 0">
-                                    {{getTotalConPropina(venta) | currency:'USD':'symbol':'1.2'}}
-                                </span>
-                                <span *ngIf="!(venta.propina > 0)">
-                                    {{venta.total | currency:'USD':'symbol':'1.2'}}
-                                </span>
-                            </span>
-                            <ng-template #popTemplate>
-                                <table class="w-100">
-                                    <tbody>
-                                        <tr>
-                                            <td>Total</td>
-                                            <td class="text-end">{{ venta.total | currency}}</td>
-                                        </tr>
-                                        <tr *ngIf="venta.propina > 0">
-                                            <td>Propina</td>
-                                            <td class="text-end">{{ venta.propina | currency}}</td>
-                                        </tr>
-                                        <tr *ngIf="venta.propina > 0">
-                                            <td><strong>Total + Propina</strong></td>
-                                            <td class="text-end"><strong>{{ getTotalConPropina(venta) | currency}}</strong></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Abonos</td>
-                                            <td class="text-end">{{ venta.abonos_sum_total | currency}}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Devoluciones</td>
-                                            <td class="text-end">{{ venta.devoluciones_sum_total | currency}}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Saldo</td>
-                                            <td class="text-end">{{ getSaldo(venta) | currency}}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            </ng-template>
+                            <ng-template #popTemplateTotal>
+                                <div class="small p-1" style="max-width: 320px;">
+                                    <div *ngIf="venta.estado == 'Pendiente' || venta.abonos_sum_total > 0">
+                                        <table class="w-100 mb-0">
+                                            <tbody>
+                                                <tr>
+                                                    <td>Total</td>
+                                                    <td class="text-end">{{ venta.total | currency}}</td>
+                                                </tr>
+                                                <tr *ngIf="venta.propina > 0">
+                                                    <td>Propina</td>
+                                                    <td class="text-end">{{ venta.propina | currency}}</td>
+                                                </tr>
+                                                <tr *ngIf="venta.propina > 0">
+                                                    <td><strong>Total + Propina</strong></td>
+                                                    <td class="text-end"><strong>{{ getTotalConPropina(venta) | currency}}</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Abonos</td>
+                                                    <td class="text-end">{{ venta.abonos_sum_total | currency}}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Devoluciones</td>
+                                                    <td class="text-end">{{ venta.devoluciones_sum_total | currency}}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Saldo</td>
+                                                    <td class="text-end">{{ getSaldo(venta) | currency}}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div *ngIf="tieneDevolucionesNcNd(venta)"
+                                        [class.border-top]="venta.estado == 'Pendiente' || venta.abonos_sum_total > 0"
+                                        [class.mt-2]="venta.estado == 'Pendiente' || venta.abonos_sum_total > 0"
+                                        [class.pt-2]="venta.estado == 'Pendiente' || venta.abonos_sum_total > 0">
+                                        <div class="fw-semibold mb-1">Notas crédito / débito</div>
+                                        <table class="table table-sm table-borderless mb-0 w-100">
+                                            <thead>
+                                                <tr class="text-muted border-bottom">
+                                                    <th class="ps-0 py-1 small">Fecha</th>
+                                                    <th class="py-1 small">Documento</th>
+                                                    <th class="text-end pe-0 py-1 small">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let d of venta.devoluciones_nc_nd">
+                                                    <td class="ps-0 py-1">{{ d.fecha | date:'dd/MM/yyyy' }}</td>
+                                                    <td class="py-1">{{ d.nombre_documento }}</td>
+                                                    <td class="text-end pe-0 py-1">{{ d.total | currency:'USD':'symbol':'1.2' }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </ng-template>
 
                         </td>

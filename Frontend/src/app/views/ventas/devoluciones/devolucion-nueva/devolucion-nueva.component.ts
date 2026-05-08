@@ -4,6 +4,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { MHService } from '@services/MH.service';
 
 @Component({
   selector: 'app-devolucion-nueva',
@@ -20,6 +21,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
     public supervisor:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+    public emiting:boolean = false;
     public imprimir:boolean = true;
     
     modalRef!: BsModalRef;
@@ -28,6 +30,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
 	    public apiService: ApiService, private alertService: AlertService,
 	    private modalService: BsModalService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router,
+        private mhService: MHService,
 	) {
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
@@ -184,14 +187,94 @@ export class DevolucionVentaNuevaComponent implements OnInit {
 
             this.saving = true;
             this.apiService.store('devolucion/venta/facturacion', this.devolucion).subscribe(devolucion => {
-                this.saving = false;
-                if(devolucion.tipo_documento == 'Factura' || devolucion.tipo_documento == 'Credito Fiscal' || devolucion.tipo_documento == 'Ticket'){
-                    this.imprimirDocDevolucion(devolucion);
+                const empresa = this.apiService.auth_user()?.empresa;
+                const esNotaCreditoODebito =
+                    devolucion.nombre_documento === 'Nota de crédito' ||
+                    devolucion.nombre_documento === 'Nota de débito';
+
+                if (
+                    empresa?.impresion_en_facturacion &&
+                    empresa?.facturacion_electronica &&
+                    esNotaCreditoODebito
+                ) {
+                    this.emitirDteNotaTrasProcesar(devolucion);
+                    return;
                 }
-                this.router.navigate(['/devoluciones/ventas']);
-                this.alertService.success('Devolucion de venta creada', 'La devolución de venta fue guardado exitosamente.');
+
+                this.finalizarTrasGuardarDevolucion(devolucion);
             },error => {this.alertService.error(error); this.saving = false; });
         }
+
+    /**
+     * Misma idea que facturación con "imprimir directamente": si hay FE, al procesar la nota se firma y envía el DTE.
+     */
+    private emitirDteNotaTrasProcesar(devolucion: any): void {
+        this.emiting = true;
+        this.mhService.emitirDTENotaCredito(devolucion).then((d) => {
+            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            if (d.id_cliente) {
+                this.enviarDteCorreo(d);
+            }
+            const tipoDte =
+                d.tipo_dte ||
+                d.dte?.identificacion?.tipoDte ||
+                (d.nombre_documento === 'Nota de débito' ? '06' : '05');
+            window.open(
+                this.apiService.baseUrl +
+                    '/api/reporte/dte/' +
+                    d.id +
+                    '/' +
+                    tipoDte +
+                    '/?token=' +
+                    this.apiService.auth_token(),
+                'Impresión',
+                'width=400'
+            );
+            this.emiting = false;
+            this.saving = false;
+            this.router.navigate(['/devoluciones/ventas']);
+            this.alertService.success(
+                'Devolución de venta creada',
+                'La devolución de venta fue guardada exitosamente.'
+            );
+        }).catch((error) => {
+            this.emiting = false;
+            this.saving = false;
+            this.alertService.warning('El documento no fue emitido.', error);
+            this.router.navigate(['/devoluciones/ventas']);
+            this.alertService.success(
+                'Devolución de venta creada',
+                'La devolución de venta fue guardada exitosamente.'
+            );
+        });
+    }
+
+    private enviarDteCorreo(devolucion: any): void {
+        this.apiService.store('enviarDTE', devolucion).subscribe({
+            next: () => {
+                this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+            },
+            error: () => {
+                this.alertService.error('DTE no pudo ser enviado por correo.');
+            }
+        });
+    }
+
+    private finalizarTrasGuardarDevolucion(devolucion: any): void {
+        this.saving = false;
+        if (
+            devolucion.tipo_documento == 'Factura' ||
+            devolucion.tipo_documento == 'Credito Fiscal' ||
+            devolucion.tipo_documento == 'Ticket'
+        ) {
+            this.imprimirDocDevolucion(devolucion);
+        }
+        this.router.navigate(['/devoluciones/ventas']);
+        this.alertService.success(
+            'Devolucion de venta creada',
+            'La devolución de venta fue guardado exitosamente.'
+        );
+    }
 
 
     public imprimirDocDevolucion(devolucion:any){
