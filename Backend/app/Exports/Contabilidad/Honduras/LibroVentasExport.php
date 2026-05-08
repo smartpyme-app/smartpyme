@@ -9,9 +9,11 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\BeforeSheet;
+use Maatwebsite\Excel\Events\AfterSheet;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Collection;
 
 /**
  * Libro de ventas - Formato Honduras (SAR).
@@ -36,20 +38,22 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
                 $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
                 $event->sheet->setCellValue('A4', 'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F')) . ' - Año: ' . Carbon::parse($this->request->inicio)->format('Y'));
             },
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                $last = $sheet->getHighestDataRow();
+                if ($last >= 1) {
+                    $sheet->getStyle('A' . $last . ':H' . $last)->getFont()->setBold(true);
+                }
+            },
         ];
     }
 
+    /**
+     * Mismas columnas que reportes.contabilidad.honduras.libro-ventas (PDF pantalla libro-iva/general).
+     */
     public function headings(): array
     {
         return [
-            'Fecha',
-            'No. de Orden de Compra Exenta',
-            'Documento / DUA Exportación',
-            'Documento de transferencias de bienes FYDUCA',
-            'Notas de Crédito emitidas en el periodo',
-            'Fecha de emisión de Factura a la que se aplica la nota de credito',
-            'Número de Factura relacionada con la Nota de Crédito',
-            'Cliente',
             'RTN del Cliente',
             'Descripción',
             'No. de Factura que respalda la venta',
@@ -61,7 +65,10 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
         ];
     }
 
-    public function collection()
+    /**
+     * Filas detalle; separado para reutilizar en collection() y rowsForApi().
+     */
+    protected function buildDetailRows(): Collection
     {
         $request = $this->request;
 
@@ -131,24 +138,40 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
     }
 
     /**
+     * Fila resumen para Excel / mismo criterio que PDF.
+     */
+    public static function filaTotales(Collection $detalle): array
+    {
+        return [
+            'rtn' => '',
+            'descripcion' => 'TOTALES',
+            'no_factura' => '',
+            'importe_exenta' => round((float) $detalle->sum(fn ($r) => $r['importe_exenta']), 2),
+            'importe_gravada' => round((float) $detalle->sum(fn ($r) => $r['importe_gravada']), 2),
+            'importe_exonerada' => round((float) $detalle->sum(fn ($r) => $r['importe_exonerada']), 2),
+            'impuesto_ventas' => round((float) $detalle->sum(fn ($r) => $r['impuesto_ventas']), 2),
+            'importe_exportacion' => round((float) $detalle->sum(fn ($r) => $r['importe_exportacion']), 2),
+        ];
+    }
+
+    public function collection()
+    {
+        $detalle = $this->buildDetailRows();
+
+        return $detalle->push(self::filaTotales($detalle));
+    }
+
+    /**
      * Filas para API / PDF libro-iva/general (mismas claves que espera el frontend).
      */
     public function rowsForApi(): array
     {
-        return $this->collection()->values()->all();
+        return $this->buildDetailRows()->values()->all();
     }
 
     public function map($row): array
     {
         return [
-            Carbon::parse($row['fecha'])->format('d/m/Y'),
-            $row['num_orden_exenta'],
-            $row['documento_dua_exportacion'],
-            $row['documento_fyduca'],
-            $row['nota_credito_numero'],
-            $row['fecha_factura_relacionada'] ? Carbon::parse($row['fecha_factura_relacionada'])->format('d/m/Y') : '',
-            $row['numero_factura_relacionada'],
-            $row['cliente'],
             $row['rtn'],
             $row['descripcion'],
             $row['no_factura'],
