@@ -86,7 +86,7 @@ class MHPruebasMasivasService
                 'emitidas' => Venta::where('tipo_dte', FEConstants::TIPO_DTE_FACTURA_CONSUMIDOR_FINAL)
                     // ->where('prueba_masiva', true)
                     ->where('sello_mh', '!=', null)
-                    ->where('dte', '!=', null)
+                    ->whereHasDtePayload()
                     ->where('id_empresa', $this->empresa->id)
                     ->count(),
                 'requeridas' => 90
@@ -95,7 +95,7 @@ class MHPruebasMasivasService
                 'emitidas' => Venta::where('tipo_dte', FEConstants::TIPO_DTE_COMPROBANTE_DE_CREDITO_FISCAL)
                     // ->where('prueba_masiva', true)
                     ->where('sello_mh', '!=', null)
-                    ->where('dte', '!=', null)
+                    ->whereHasDtePayload()
                     ->where('id_empresa', $this->empresa->id)
                     ->count(),
                 'requeridas' => 75
@@ -122,7 +122,7 @@ class MHPruebasMasivasService
                 'emitidas' => Venta::where('tipo_dte', FEConstants::TIPO_DTE_FACTURAS_DE_EXPORTACION)
                     // ->where('prueba_masiva', true)
                     ->where('sello_mh', '!=', null)
-                    ->where('dte', '!=', null)
+                    ->whereHasDtePayload()
                     ->where('id_empresa', $this->empresa->id)
                     ->count(),
                 'requeridas' => 90

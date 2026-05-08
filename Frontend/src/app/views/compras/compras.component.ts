@@ -113,6 +113,10 @@ export class ComprasComponent implements OnInit, OnDestroy {
         this.destroy$.complete();
     }
 
+    protected untilDestroyed() {
+        return takeUntil(this.destroy$);
+    }
+
     ngOnInit() {
         this.searchSubject$.pipe(
             debounceTime(400),
@@ -411,12 +415,26 @@ export class ComprasComponent implements OnInit, OnDestroy {
     }
 
     openDTE(template: TemplateRef<any>, compra:any){
-        this.compra = compra;
-        this.modalRef = this.modalService.show(template);
-        this.alertService.modal = true;
-        if(!this.compra.dte){
-            this.emitirDTE();
+        const abrir = (c: any) => {
+            this.compra = c;
+            this.modalRef = this.modalService.show(template);
+            this.alertService.modal = true;
+            if (!this.compra.dte && !this.compra.dte_en_s3) {
+                this.emitirDTE();
+            }
+        };
+
+        if (compra.dte_en_s3 && !compra.dte) {
+            this.apiService.read('compra/', compra.id)
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: (c: any) => abrir(c),
+                    error: (e) => this.alertService.error(e),
+                });
+            return;
         }
+
+        abrir(compra);
     }
 
     imprimirDTEPDF(compra:any){
@@ -454,49 +472,61 @@ export class ComprasComponent implements OnInit, OnDestroy {
     }
 
     anularDTE(compra:any){
-        this.compra = compra;
-        if(compra.dte){
-            if (confirm('¿Confirma anular la compra y el DTE?')) {
-                this.compra = compra;
-                this.saving = true;
-                this.apiService.store('generarDTEAnuladoSujetoExcluidoCompra', this.compra).subscribe(dte => {
-                    // this.alertService.success('DTE generado.');
-                    this.compra.dte_invalidacion = dte;
-                    this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
-                        this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
-                        // this.alertService.success('DTE firmado.');
-                        
-                        this.mhService.anularDTE(this.compra, dteFirmado.body).subscribe(dte => {
-                            if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                                this.compra.dte_invalidacion.sello = dte.selloRecibido;
-                                this.compra.estado = 'Anulada';
-                                this.apiService.store('compra', this.compra).subscribe(data => {
-                                    // this.alertService.success('Compra guardada.');
-                                },error => {this.alertService.error(error); this.saving = false; });
-                            }
+        const conDte = (c: any) => {
+            this.compra = c;
+            if(c.dte || c.dte_en_s3){
+                if (confirm('¿Confirma anular la compra y el DTE?')) {
+                    this.compra = c;
+                    this.saving = true;
+                    this.apiService.store('generarDTEAnuladoSujetoExcluidoCompra', this.compra).subscribe(dte => {
+                        this.compra.dte_invalidacion = dte;
+                        this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+                            this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
 
-                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
-                        },error => {
-                            if(error.error.descripcionMsg){
-                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
-                            }
-                            if(error.error.observaciones.length > 0){
-                                this.alertService.warning('Hubo un problema', error.error.observaciones);
-                            }
-                            this.saving = false;
-                        });
+                            this.mhService.anularDTE(this.compra, dteFirmado.body).subscribe(dte => {
+                                if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                                    this.compra.dte_invalidacion.sello = dte.selloRecibido;
+                                    this.compra.estado = 'Anulada';
+                                    this.apiService.store('compra', this.compra).subscribe(data => {
+                                    },error => {this.alertService.error(error); this.saving = false; });
+                                }
+
+                                this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                            },error => {
+                                if(error.error.descripcionMsg){
+                                    this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                                }
+                                if(error.error.observaciones.length > 0){
+                                    this.alertService.warning('Hubo un problema', error.error.observaciones);
+                                }
+                                this.saving = false;
+                            });
+
+                        },error => {this.alertService.error(error);this.saving = false; });
 
                     },error => {this.alertService.error(error);this.saving = false; });
+                }
+            }
+            else{
+                if (confirm('¿Confirma anular la compra?')){
+                    c.estado = 'Anulada';
+                    this.compra = c;
+                    this.onSubmit();
+                }
+            }
+        };
 
-                },error => {this.alertService.error(error);this.saving = false; });
-            }
+        if (compra.dte_en_s3 && !compra.dte) {
+            this.apiService.read('compra/', compra.id)
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: (c: any) => conDte(c),
+                    error: (e) => this.alertService.error(e),
+                });
+            return;
         }
-        else{
-            if (confirm('¿Confirma anular la compra?')){
-                compra.estado = 'Anulada';
-                this.onSubmit();
-            }
-        }
+
+        conDte(compra);
     }
 
    

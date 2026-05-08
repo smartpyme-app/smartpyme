@@ -1014,13 +1014,27 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   // DTE
 
-    openDTE(template: TemplateRef<any>, venta:any){
-        this.venta = venta;
-        this.openModal(template);
-        if(!this.venta.dte){
-            this.emitirDTE();
-        }
+  openDTE(template: TemplateRef<any>, venta: any) {
+    const abrir = (v: any) => {
+      this.venta = v;
+      this.openModal(template);
+      if (!this.venta.dte && !this.venta.dte_en_s3) {
+        this.emitirDTE();
+      }
+    };
+
+    if (venta.dte_en_s3 && !venta.dte) {
+      this.apiService.read('venta/', venta.id)
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (v: any) => abrir(v),
+          error: (e) => this.alertService.error(e),
+        });
+      return;
     }
+
+    abrir(venta);
+  }
 
   imprimirDTEPDF(venta: any) {
     window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
@@ -1081,18 +1095,31 @@ export class VentasComponent implements OnInit, OnDestroy {
   }
 
   openModalAnulacion(template: TemplateRef<any>, venta: any) {
-    this.venta = { ...venta }; // Crear copia para no modificar el original
-    // Inicializar valores por defecto
-    this.fechaAnulacion = this.apiService.date();
-    this.tipoAnulacion = 2;
-    this.motivoAnulacion = '';
-    this.codigoGeneracionRemplazo = '';
-    this.venta.errores = null; // Limpiar errores previos
-    this.saving = false; // Asegurar que saving esté en false
-    this.modalRef = this.modalService.show(template, {
-      class: 'modal-md',
-      backdrop: 'static'
-    });
+    const configurarYAbrir = (v: any) => {
+      this.venta = { ...v };
+      this.fechaAnulacion = this.apiService.date();
+      this.tipoAnulacion = 2;
+      this.motivoAnulacion = '';
+      this.codigoGeneracionRemplazo = '';
+      this.venta.errores = null;
+      this.saving = false;
+      this.modalRef = this.modalService.show(template, {
+        class: 'modal-md',
+        backdrop: 'static',
+      });
+    };
+
+    if (venta.dte_en_s3 && !venta.dte) {
+      this.apiService.read('venta/', venta.id)
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (v: any) => configurarYAbrir(v),
+          error: (e) => this.alertService.error(e),
+        });
+      return;
+    }
+
+    configurarYAbrir(venta);
   }
 
   onTipoAnulacionChange() {
@@ -1108,7 +1135,7 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   anularDTE(venta: any) {
     this.venta = venta;
-    if (venta.sello_mh && !venta.dte_invalidacion) {
+    if (venta.sello_mh && !(venta.dte_invalidacion || venta.dte_invalidacion_en_s3)) {
       // Abrir modal para ingresar fecha y motivo
       this.openModalAnulacion(this.modalAnulacionTemplate, venta);
     }
