@@ -130,6 +130,14 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
         return $filasVentas->merge($filasDevoluciones)->sortBy('fecha')->values();
     }
 
+    /**
+     * Filas para API / PDF libro-iva/general (mismas claves que espera el frontend).
+     */
+    public function rowsForApi(): array
+    {
+        return $this->collection()->values()->all();
+    }
+
     public function map($row): array
     {
         return [
