@@ -135,6 +135,9 @@ class VentasController extends Controller
             ->where('cotizacion', 0)
             ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscador($query, (string) $request->buscador))
             ->with(['cliente', 'usuario', 'vendedor', 'sucursal', 'canal', 'documento', 'proyecto'])
+            ->with(['devolucionesNcNd' => function ($query) {
+                $query->with('documento:id,nombre');
+            }])
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')

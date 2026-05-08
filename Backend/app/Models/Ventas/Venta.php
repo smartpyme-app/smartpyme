@@ -253,6 +253,21 @@ class Venta extends Model {
         return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'id_venta');
     }
 
+    /**
+     * Devoluciones con documento Nota de crédito o Nota de débito (activas).
+     * Usado en listados para indicador y detalle sin cargar todas las devoluciones.
+     */
+    public function devolucionesNcNd()
+    {
+        return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'id_venta')
+            ->where('enable', 1)
+            ->whereHas('documento', function ($q) {
+                $q->whereIn('nombre', ['Nota de crédito', 'Nota de débito']);
+            })
+            ->orderBy('fecha')
+            ->orderBy('id');
+    }
+
     public function proyecto()
     {
         return $this->belongsTo('App\Models\Contabilidad\Proyecto', 'id_proyecto');
