@@ -228,7 +228,11 @@ class MHDTEController extends Controller
 
     public function anularDTE(Request $request){
         $venta = Venta::where('id', $request->id)->firstOrFail();
-        $DTE = json_decode($venta->dte, true);
+
+        $DTE = $venta->dte;
+        if (!is_array($DTE)) {
+            return response()->json(['error' => ['El DTE no está disponible o no se pudo cargar desde almacenamiento.']], 422);
+        }
 
         $mh = new MH;
 

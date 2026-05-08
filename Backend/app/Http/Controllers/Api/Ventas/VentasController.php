@@ -57,7 +57,11 @@ class VentasController extends Controller
     public function index(Request $request)
     {
         $excludeFromList = ['dte_invalidacion'];
-        $columns = array_diff(Schema::getColumnListing('ventas'), $excludeFromList);
+        $columns = array_values(array_diff(Schema::getColumnListing('ventas'), $excludeFromList));
+        $dteIndex = array_search('dte', $columns, true);
+        if ($dteIndex !== false) {
+            $columns[$dteIndex] = DB::raw("IF(COALESCE(ventas.dte_s3_key,'') <> '', NULL, ventas.dte) as dte");
+        }
 
         $ventas = Venta::select($columns)
             ->when($request->inicio, function ($query) use ($request) {
