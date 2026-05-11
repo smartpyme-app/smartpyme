@@ -160,22 +160,3 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
         ];
     }
 }
-
-
-"tributos": [
-      {
-        "codigo": "20",
-        "descripcion": "Impuesto al Valor Agregado 13%",
-        "valor": 39.58
-      }
-    ],
-    "subTotal": 304.46,
-    "ivaPerci1": 3.05,
-    "ivaRete1": 0,
-    "reteRenta": 0,
-    "montoTotalOperacion": 344.04,
-    "totalNoGravado": 0,
-    "saldoFavor": 0,
-    "numPagoElectronico": null,
-    "totalDescu": 0,
-    "totalPagar": 347.09,
