@@ -3,12 +3,12 @@
 namespace App\Exports;
 
 use App\Models\Ventas\Venta;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMapping
 {
@@ -42,35 +42,73 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
         ];
     }
 
+    /**
+     * Un solo valor escalar (evita arrays duplicados en query string GET).
+     *
+     * @param  mixed  $value
+     * @return mixed|null
+     */
+    private function primerEscalar($value)
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (is_array($value)) {
+            return count($value) ? reset($value) : null;
+        }
+
+        return $value;
+    }
+
     public function collection()
     {
         $request = $this->request;
-        $fechaActual = Carbon::now();
 
-        $ventas = Venta::with(['vendedor', 'cliente', 'abonos' => function($query) {
-                $query->where('estado', 'Confirmado')->orderBy('fecha', 'desc');
-            }, 'documento', 'sucursal', 'devoluciones' => function($query) {
-                $query->where('enable', 1);
-            }])
-            ->when($request->inicio, function ($query) use ($request) {
-                return $query->where('fecha', '>=', $request->inicio);
-            })
-            ->when($request->fin, function ($query) use ($request) {
-                return $query->where('fecha', '<=', $request->fin);
-            })
-            ->when($request->id_sucursal && $request->id_sucursal !== '', function ($query) use ($request) {
-                return $query->where('id_sucursal', $request->id_sucursal);
-            })
-            ->when($request->id_vendedor && $request->id_vendedor !== '', function ($query) use ($request) {
-                return $query->where('id_vendedor', $request->id_vendedor);
-            })
+        $query = Venta::with(['vendedor', 'cliente', 'abonos' => function ($q) {
+            $q->where('estado', 'Confirmado')->orderBy('fecha', 'desc');
+        }, 'documento', 'sucursal', 'devoluciones' => function ($q) {
+            $q->where('enable', 1);
+        }]);
+
+        // Con usuario logueado, Venta ya limita por id_empresa (scope global).
+        // Aplicar id_empresa del request solo sin sesión (p. ej. reportes programados), y solo si es válido.
+        if (! Auth::check() && $request->filled('id_empresa') && (int) $request->id_empresa > 0) {
+            $query->where('ventas.id_empresa', (int) $request->id_empresa);
+        }
+
+        if ($request->filled('inicio')) {
+            $query->where('fecha', '>=', $request->inicio);
+        }
+        if ($request->filled('fin')) {
+            $query->where('fecha', '<=', $request->fin);
+        }
+
+        $idSucursal = $this->primerEscalar($request->input('id_sucursal'));
+        if ($idSucursal !== null && $idSucursal !== '' && (int) $idSucursal > 0) {
+            $query->where('id_sucursal', (int) $idSucursal);
+        }
+
+        $sucursales = $request->input('sucursales');
+        if (! empty($sucursales) && is_array($sucursales)) {
+            $query->whereIn('ventas.id_sucursal', array_map('intval', $sucursales));
+        }
+
+        $idVendedor = $this->primerEscalar($request->input('id_vendedor'));
+        if ($idVendedor !== null && $idVendedor !== '' && (int) $idVendedor > 0) {
+            $idV = (int) $idVendedor;
+            $query->where(function ($q) use ($idV) {
+                $q->where('id_vendedor', $idV)
+                    ->orWhereHas('detalles', function ($sub) use ($idV) {
+                        $sub->where('id_vendedor', $idV);
+                    });
+            });
+        }
+
+        return $query
             ->where('cotizacion', 0)
-            ->whereNotNull('id_vendedor')
             ->orderBy('id_vendedor')
             ->orderBy('fecha', 'desc')
             ->get();
-
-        return $ventas;
     }
 
     public function map($venta): array

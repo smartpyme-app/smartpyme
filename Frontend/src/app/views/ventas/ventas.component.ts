@@ -1803,6 +1803,21 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     });
   }
 
+  /** Devoluciones tipo nota de crédito / débito (viene del API en el listado). */
+  public tieneDevolucionesNcNd(venta: any): boolean {
+    const items = venta?.devoluciones_nc_nd;
+    return Array.isArray(items) && items.length > 0;
+  }
+
+  /** Mostrar popover en el total: saldo desglosado y/o detalle de NC/ND. */
+  public totalTienePopover(venta: any): boolean {
+    return (
+      this.tieneDevolucionesNcNd(venta) ||
+      venta?.estado === 'Pendiente' ||
+      Number(venta?.abonos_sum_total || 0) > 0
+    );
+  }
+
   public getTotalConPropina(venta: any): number {
     const total = parseFloat(venta?.total || 0);
     const propina = parseFloat(venta?.propina || 0);

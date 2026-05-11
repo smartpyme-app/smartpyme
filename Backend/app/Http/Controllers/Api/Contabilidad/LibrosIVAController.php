@@ -29,6 +29,8 @@ use App\Exports\Contabilidad\ElSalvador\LibroRetencion1Export;
 use App\Exports\Contabilidad\ElSalvador\AnexoRetencion1Export;
 use App\Exports\Contabilidad\ElSalvador\LibroPercepcion1Export;
 use App\Exports\Contabilidad\ElSalvador\AnexoPercepcion1Export;
+use App\Exports\Contabilidad\Honduras\LibroVentasExport as LibroVentasHondurasExport;
+use App\Exports\Contabilidad\Honduras\LibroComprasExport as LibroComprasHondurasExport;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
@@ -137,6 +139,31 @@ class LibrosIVAController extends Controller
 
     public function consumidores(BaseLibroIVARequest $request)
     {
+        $pais = optional($this->obtenerEmpresa())->pais ?? '';
+
+        // Países distintos de ES: filas detalle SAR (mismo formato que libro-iva/general y Excel Honduras).
+        if ($pais !== 'El Salvador') {
+            $export = new LibroVentasHondurasExport();
+            $export->filter($request);
+            $libroventas = $export->rowsForApi();
+
+            $formato = $request->query('formato') ?? 'json';
+
+            if ($formato === 'pdf') {
+                $pdf = app('dompdf.wrapper')->loadView(
+                    'reportes.contabilidad.honduras.libro-ventas',
+                    [
+                        'libroventas' => $libroventas,
+                        'request' => $request,
+                    ]
+                );
+                $pdf->setPaper('Legal', 'landscape');
+
+                return $pdf->stream('libro-ventas.pdf');
+            }
+
+            return response()->json($libroventas, 200);
+        }
 
         $ventas = Venta::with(['cliente', 'documento'])
             ->where('estado', '!=', 'Anulada')
@@ -265,6 +292,15 @@ class LibrosIVAController extends Controller
 
     public function consumidoresLibroExport(BaseLibroIVARequest $request)
     {
+        $pais = optional($this->obtenerEmpresa())->pais ?? '';
+
+        if ($pais !== 'El Salvador') {
+            $consumidores = new LibroVentasHondurasExport();
+            $consumidores->filter($request);
+
+            return Excel::download($consumidores, 'Libro-ventas.xlsx');
+        }
+
         if ($alerta = $this->libroIVAService->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
             return $alerta;
         }
@@ -516,6 +552,30 @@ class LibrosIVAController extends Controller
 
     public function compras(BaseLibroIVARequest $request)
     {
+        $pais = optional($this->obtenerEmpresa())->pais ?? '';
+
+        if ($pais !== 'El Salvador') {
+            $exportComprasHn = new LibroComprasHondurasExport();
+            $exportComprasHn->filter($request);
+            $librocompras = $exportComprasHn->rowsForApi();
+
+            $formato = $request->query('formato') ?? 'json';
+
+            if ($formato === 'pdf') {
+                $pdf = app('dompdf.wrapper')->loadView(
+                    'reportes.contabilidad.honduras.libro-compras',
+                    [
+                        'librocompras' => $librocompras,
+                        'request' => $request,
+                    ]
+                );
+                $pdf->setPaper('US Letter', 'landscape');
+
+                return $pdf->stream('libro-compras.pdf');
+            }
+
+            return response()->json($librocompras, 200);
+        }
 
         // Obtener las compras
         $compras = Compra::with(['proveedor'])
@@ -705,6 +765,15 @@ class LibrosIVAController extends Controller
 
     public function comprasLibroExport(BaseLibroIVARequest $request)
     {
+        $pais = optional($this->obtenerEmpresa())->pais ?? '';
+
+        if ($pais !== 'El Salvador') {
+            $compras = new LibroComprasHondurasExport();
+            $compras->filter($request);
+
+            return Excel::download($compras, 'Libro-compras.xlsx');
+        }
+
         $compras = new LibroComprasExport();
         $compras->filter($request);
 
