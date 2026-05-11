@@ -31,6 +31,7 @@ use App\Http\Requests\Ventas\Devoluciones\UpdateDevolucionRequest;
 use App\Http\Requests\Ventas\Devoluciones\FacturacionDevolucionRequest;
 use App\Services\Ventas\DevolucionVentaService;
 use Illuminate\Support\Facades\Log;
+use App\Services\FidelizacionCliente\DevolucionPuntosService;
 
 class DevolucionVentasController extends Controller
 {
@@ -232,6 +233,9 @@ class DevolucionVentasController extends Controller
         $venta->fill($request->all());
         $venta->save();
 
+        $venta->refresh();
+        $this->devolucionPuntosService->syncPuntosParaDevolucion($venta);
+
         return Response()->json($venta, 200);
 
     }
@@ -422,6 +426,9 @@ class DevolucionVentasController extends Controller
         if ($devolucion->id_documento) {
             Documento::where('id', $devolucion->id_documento)->increment('correlativo');
         }
+
+        $devolucion->refresh();
+        $this->devolucionPuntosService->syncPuntosParaDevolucion($devolucion);
 
         DB::commit();
         return Response()->json($devolucion, 200);

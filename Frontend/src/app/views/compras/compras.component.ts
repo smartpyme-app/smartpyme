@@ -169,6 +169,10 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         this.destroy$.complete();
     }
 
+    protected untilDestroyed() {
+        return takeUntil(this.destroy$);
+    }
+
     private parseOptionalIdParam(params: Record<string, string | undefined>, key: string): number | null {
         const raw = params[key];
         if (raw === undefined || raw === null || raw === '') {
@@ -592,13 +596,27 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         this.openModal(template);
     }
 
-    openDTE(template: TemplateRef<any>, compra: any) {
-        /** Pasar `compra` a openModal: si solo se llama openModal(template), BaseCrudComponent pisa `this.compra` con un ítem nuevo sin `id`. */
-        this.openModal(template, compra);
-        this.alertService.modal = true;
-        if (!this.compra.dte) {
-            this.emitirDTE();
+    openDTE(template: TemplateRef<any>, compra:any){
+        const abrir = (c: any) => {
+            this.compra = c;
+            this.modalRef = this.modalService.show(template);
+            this.alertService.modal = true;
+            if (!this.compra.dte && !this.compra.dte_en_s3) {
+                this.emitirDTE();
+            }
+        };
+
+        if (compra.dte_en_s3 && !compra.dte) {
+            this.apiService.read('compra/', compra.id)
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: (c: any) => abrir(c),
+                    error: (e) => this.alertService.error(e),
+                });
+            return;
         }
+
+        abrir(compra);
     }
 
     /** SV: Sujeto excluido; CR: FEC 08 («Factura Electrónica de Compra» o nombre histórico). */
@@ -784,64 +802,68 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     }
 
     anularDTE(compra:any){
-        this.compra = compra;
-        if (this.esFeCostaRica()) {
+        const conDte = (c: any) => {
+            this.compra = c;
+          if (this.esFeCostaRica()) {
             if (confirm('¿Confirma anular la compra?')) {
-                compra.estado = 'Anulada';
-                this.onSubmit();
+              compra.estado = 'Anulada';
+              this.onSubmit();
             }
             return;
-        }
-        if(compra.dte){
-            if (confirm('¿Confirma anular la compra y el DTE?')) {
-                this.compra = compra;
-                this.saving = true;
-                this.apiService.store('generarDTEAnuladoSujetoExcluidoCompra', this.compra)
-                    .pipe(this.untilDestroyed())
-                    .subscribe(dte => {
-                        // this.alertService.success('DTE generado.');
+          }
+            if(c.sello_mh){
+                if (confirm('¿Confirma anular la compra y el DTE?')) {
+                    this.compra = c;
+                    this.saving = true;
+                    this.apiService.store('generarDTEAnuladoSujetoExcluidoCompra', this.compra).subscribe(dte => {
                         this.compra.dte_invalidacion = dte;
-                        this.facturacionElectronica.firmarDTE(dte)
-                            .pipe(this.untilDestroyed())
-                            .subscribe(dteFirmado => {
-                                this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
-                                // this.alertService.success('DTE firmado.');
+                        this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+                            this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
 
-                                this.facturacionElectronica.anularDTE(this.compra, dteFirmado.body)
-                                    .pipe(this.untilDestroyed())
-                                    .subscribe(dte => {
-                                        if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                                            this.compra.dte_invalidacion.sello = dte.selloRecibido;
-                                            this.compra.estado = 'Anulada';
-                                            this.apiService.store('compra', this.compra)
-                                                .pipe(this.untilDestroyed())
-                                                .subscribe(data => {
-                                    // this.alertService.success('Compra guardada.');
-                                },error => {this.alertService.error(error); this.saving = false; });
-                            }
+                            this.mhService.anularDTE(this.compra, dteFirmado.body).subscribe(dte => {
+                                if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                                    this.compra.dte_invalidacion.sello = dte.selloRecibido;
+                                    this.compra.estado = 'Anulada';
+                                    this.apiService.store('compra', this.compra).subscribe(data => {
+                                    },error => {this.alertService.error(error); this.saving = false; });
+                                }
 
-                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
-                        },error => {
-                            if(error.error.descripcionMsg){
-                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
-                            }
-                            if(error.error.observaciones.length > 0){
-                                this.alertService.warning('Hubo un problema', error.error.observaciones);
-                            }
-                            this.saving = false;
-                        });
+                                this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                            },error => {
+                                if(error.error.descripcionMsg){
+                                    this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                                }
+                                if(error.error.observaciones.length > 0){
+                                    this.alertService.warning('Hubo un problema', error.error.observaciones);
+                                }
+                                this.saving = false;
+                            });
+
+                        },error => {this.alertService.error(error);this.saving = false; });
 
                     },error => {this.alertService.error(error);this.saving = false; });
+                }
+            }
+            else{
+                if (confirm('¿Confirma anular la compra?')){
+                    c.estado = 'Anulada';
+                    this.compra = c;
+                    this.onSubmit();
+                }
+            }
+        };
 
-                },error => {this.alertService.error(error);this.saving = false; });
-            }
+        if (compra.dte_en_s3 && !compra.dte) {
+            this.apiService.read('compra/', compra.id)
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: (c: any) => conDte(c),
+                    error: (e) => this.alertService.error(e),
+                });
+            return;
         }
-        else{
-            if (confirm('¿Confirma anular la compra?')){
-                compra.estado = 'Anulada';
-                this.onSubmit();
-            }
-        }
+
+        conDte(compra);
     }
 
 

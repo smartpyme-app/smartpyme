@@ -1,6 +1,41 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
+
+import { ComprasComponent } from '../compras/compras.component';
+import { FacturacionCompraComponent } from '../compras/facturacion/facturacion-compra.component';
+import { FacturacionCompraConsignaComponent } from '../compras/facturacion/facturacion-consigna/facturacion-compra-consigna.component';
+import { CompraComponent } from '../compras/compra/compra.component';
+import { DevolucionesComprasComponent } from '../compras/devoluciones/devoluciones-compras.component';
+import { DevolucionCompraComponent } from '../compras/devoluciones/devolucion/devolucion-compra.component';
+import { DevolucionCompraNuevaComponent } from '../compras/devoluciones/devolucion-nueva/devolucion-compra-nueva.component';
+
+import { ComprasRecurrentesComponent } from './recurrentes/compras-recurrentes.component';
+import { AbonosComprasComponent } from './abonos/abonos-compras.component';
+
+import { CotizacionesComprasComponent } from './cotizaciones/cotizaciones-compras.component';
+
+import { ProveedoresComponent } from '../compras/proveedores/proveedores.component';
+import { ProveedorComponent } from '../compras/proveedores/proveedor/proveedor.component';
+import { ProveedorDetallesComponent } from '../compras/proveedores/proveedor-detalles/proveedor-detalles.component';
+import { CuentasPagarComponent } from '../compras/proveedores/cuentas-pagar/cuentas-pagar.component';
+
+import { HistorialComprasComponent } from '../reportes/compras/historial/historial-compras.component';
+import { DetalleComprasComponent } from '../reportes/compras/detalle/detalle-compras.component';
+import { CategoriasComprasComponent } from '../reportes/compras/categorias/categorias-compras.component';
+
+import { GastosComponent } from './gastos/gastos.component';
+import { GastosRecurrentesComponent } from './gastos/recurrentes/gastos-recurrentes.component';
+import { GastoComponent } from './gastos/gasto/gasto.component';
+import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.component';
+import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
+import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
+import { AbonosGastosComponent } from './gastos/abonos/abonos-gastos.component';
+import { DepartamentoEmpresaComponent } from './gastos/departamento-empresa/departamento-empresa.component';
+import { AreaEmpresaComponent } from './gastos/area-empresa/area-empresa.component';
+import { GastosSupervisorRestriccionGuard } from '@guards/gastos-supervisor-restriccion.guard';
+
+const gastosSupervisorRestriccion = [GastosSupervisorRestriccionGuard];
 import { RoleGuard } from '../../guards/role.guard';
 import { PermissionGuard } from '../../guards/permission.guard';
 
@@ -231,6 +266,15 @@ const routes: Routes = [
         loadComponent: () => import('./gastos/area-empresa/area-empresa.component').then(m => m.AreaEmpresaComponent),
         title:'Áreas de empresa'
       },
+        { path: 'gastos', component: GastosComponent, title:'Gastos', canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/abonos', component: AbonosGastosComponent, title:'Abonos de gastos', canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/recurrentes', component: GastosRecurrentesComponent, title:'Gastos recurrentes', canActivate: gastosSupervisorRestriccion },
+        { path: 'gasto/detalles/:id', component: GastoDetallesComponent, title:'Gasto', canActivate: gastosSupervisorRestriccion },
+        { path: 'gasto/:id', component: GastoComponent, title:'Gasto', canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/dash', component: GastosDashComponent, canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/categorias', component: GastosCategoriasComponent, canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/departamentos-empresa', component: DepartamentoEmpresaComponent, title: 'Departamentos de empresa', canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/areas-empresa', component: AreaEmpresaComponent, title: 'Áreas de empresa', canActivate: gastosSupervisorRestriccion },
 
     ]
   }

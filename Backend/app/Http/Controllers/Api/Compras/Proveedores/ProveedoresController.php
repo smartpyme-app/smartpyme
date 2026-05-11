@@ -19,10 +19,10 @@ use App\Http\Requests\Compras\Proveedores\ImportProveedoresRequest;
 
 class ProveedoresController extends Controller
 {
-    
+
 
     public function index(Request $request) {
-       
+
         $proveedores = Proveedor::withSum('compras', 'total')
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
@@ -54,7 +54,7 @@ class ProveedoresController extends Controller
         $proveedores = Proveedor::orderBy('nombre','asc')
                                 ->where('enable', true)
                                 ->get();
-        
+
         return Response()->json($proveedores, 200);
 
     }
@@ -77,7 +77,7 @@ class ProveedoresController extends Controller
             $proveedor = Proveedor::findOrFail($request->id);
         else
             $proveedor = new Proveedor;
-        
+
         $proveedor->fill($request->all());
         $proveedor->save();
 
@@ -119,7 +119,7 @@ class ProveedoresController extends Controller
 
 
     public function cxp() {
-       
+
         $proveedores = Proveedor::where('id','!=', 1)
                         ->whereRaw('proveedores.id in (select proveedor_id from compras where estado = ?)', ['Pendiente'])
                         ->paginate(10);
@@ -134,7 +134,7 @@ class ProveedoresController extends Controller
     }
 
     public function cxpBuscar($txt) {
-       
+
         $proveedores = Proveedor::where('nombre', 'like' ,'%' . $txt . '%')
                         ->orWhere('registro', 'like' , $txt . '%')
                         ->orWhereRaw('REPLACE(registro, "-", "") like "'.$txt.'"')
@@ -147,20 +147,34 @@ class ProveedoresController extends Controller
 
     }
 
-    public function importPersonas(ImportProveedoresRequest $request){
+    public function importPersonas(Request $request){
+
+        $request->validate([
+            'file' => 'required|file',
+        ], [
+            'file.required' => 'El documento es obligatorio.',
+            'file.file' => 'Debe enviar un archivo válido.',
+        ]);
 
         $import = new ProveedoresPersonas();
-        Excel::import($import, $request->file);
-        
+        Excel::import($import, $request->file('file'));
+
         return Response()->json($import->getRowCount(), 200);
 
     }
 
-    public function importEmpresas(ImportProveedoresRequest $request){
+    public function importEmpresas(Request $request){
+
+        $request->validate([
+            'file' => 'required|file',
+        ], [
+            'file.required' => 'El documento es obligatorio.',
+            'file.file' => 'Debe enviar un archivo válido.',
+        ]);
 
         $import = new ProveedoresEmpresas();
-        Excel::import($import, $request->file);
-        
+        Excel::import($import, $request->file('file'));
+
         return Response()->json($import->getRowCount(), 200);
 
     }

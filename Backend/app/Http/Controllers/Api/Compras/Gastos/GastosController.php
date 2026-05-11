@@ -18,11 +18,30 @@ use App\Exports\GastosExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Compras\Proveedores\Proveedor as ProveedorToGasto;
 use Illuminate\Support\Facades\Log;
+use App\Models\User;
 use App\Http\Requests\Compras\Gastos\StoreGastoRequest;
 use App\Http\Requests\Compras\Gastos\ImportarJsonGastoRequest;
 
 class GastosController extends Controller
 {
+    /**
+     * Empresa configurada para impedir que Supervisor limitado registre o altere gastos.
+     */
+    private function respuestaGastosRestringidosSupervisorLimitado(?User $user): ?\Illuminate\Http\JsonResponse
+    {
+        if (!$user || ($user->tipo ?? null) !== 'Supervisor Limitado') {
+            return null;
+        }
+
+        $empresa = $user->empresa ?? null;
+        if (!$empresa || !($empresa->restringir_gastos_supervisor_limitado ?? false)) {
+            return null;
+        }
+
+        return Response()->json([
+            'error' => 'La empresa tiene activa la opción de restringir gastos para usuarios Supervisor limitado.',
+        ], 403);
+    }
 
     protected $gastoService;
     protected $gastoImportService;
@@ -153,6 +172,10 @@ class GastosController extends Controller
 
     public function store(StoreGastoRequest $request)
     {
+        if ($bloqueado = $this->respuestaGastosRestringidosSupervisorLimitado(auth()->user())) {
+            return $bloqueado;
+        }
+
         if ($request->input('id_categoria') === '' || $request->input('id_categoria') === null) {
             $request->merge(['id_categoria' => null]);
         } else {
@@ -366,6 +389,9 @@ class GastosController extends Controller
 
     public function delete($id)
     {
+        if ($bloqueado = $this->respuestaGastosRestringidosSupervisorLimitado(auth()->user())) {
+            return $bloqueado;
+        }
 
         $gasto = Gasto::findOrFail($id);
         $gasto->delete();
@@ -422,6 +448,14 @@ class GastosController extends Controller
      */
     public function importarJson(ImportarJsonGastoRequest $request)
     {
+        if ($bloqueado = $this->respuestaGastosRestringidosSupervisorLimitado(auth()->user())) {
+            return $bloqueado;
+        }
+
+        $request->validate([
+            'json_data' => 'required|json',
+        ]);
+
         try {
             $jsonData = json_decode($request->json_data, true);
 

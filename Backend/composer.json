@@ -17,7 +17,7 @@
         "php": "^8.2|^8.3|^8.4",
         "aws/aws-sdk-php": "^3.337",
         "barryvdh/laravel-dompdf": "^3.0",
-
+        "cweagans/composer-patches": "^2.0",
         "dazza-dev/dgt-cr": "^1.0",
         "dazza-dev/laravel-dgt-cr": "1.0",
         "dazza-dev/dgt-xml-generator": "dev-main as 1.0.1",
@@ -28,6 +28,8 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.0",
         "league/flysystem-sftp-v3": "^3.0",
+        "laravel/ui": "^3.1",
+        "league/flysystem-aws-s3-v3": "^1.0",
         "luecano/numero-a-letras": "^2.0",
         "maatwebsite/excel": "^3.1",
         "mpdf/mpdf": "^8.2",
@@ -48,6 +50,9 @@
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,
+        "allow-plugins": {
+            "cweagans/composer-patches": true
+        },
         "audit": {
             "block-insecure": false
         }

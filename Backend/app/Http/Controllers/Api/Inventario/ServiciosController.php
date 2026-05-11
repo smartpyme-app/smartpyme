@@ -20,7 +20,7 @@ use App\Http\Requests\Inventario\ImportServiciosRequest;
 
 class ServiciosController extends Controller
 {
-    
+
 
     public function index(Request $request) {
 
@@ -29,8 +29,18 @@ class ServiciosController extends Controller
                                     return $query->where('id_categoria', $request->id_categoria);
                                 })
                                 ->when($request->id_sucursal, function($q) use ($request){
-                                    $q->whereHas('inventarios', function($q) use ($request){
-                                        return $q->where('id_sucursal', $request->id_sucursal);
+                                    // Los servicios no crean filas en inventario (store de producto los omite).
+                                    // Sin esto, el filtro por sucursal excluye todos los servicios importados/creados.
+                                    $q->where(function ($outer) use ($request) {
+                                        $outer->whereDoesntHave('inventarios')
+                                            ->orWhereHas('inventarios', function ($invQ) use ($request) {
+                                                $invQ->where(function ($sub) use ($request) {
+                                                    $sub->where('id_sucursal', $request->id_sucursal)
+                                                        ->orWhereHas('bodega', function ($b) use ($request) {
+                                                            $b->where('id_sucursal', $request->id_sucursal);
+                                                        });
+                                                });
+                                            });
                                     });
                                 })
                                 ->when($request->id_proveedor, function($q) use ($request){
@@ -55,7 +65,7 @@ class ServiciosController extends Controller
     }
 
     public function list() {
-       
+
         $servicios = Servicio::where('tipo', 'Servicio')
                                 ->orderby('nombre')
                                 ->where('enable', true)
@@ -82,7 +92,7 @@ class ServiciosController extends Controller
             $producto = Servicio::where('tipo', 'Servicio')->findOrFail($request->id);
         else
             $producto = new Servicio;
-        
+
         $producto->fill($request->all());
         $producto->save();
 
@@ -106,8 +116,8 @@ class ServiciosController extends Controller
     public function precios($id)
     {
         $producto = Servicio::where('tipo', 'Servicio')->findOrFail($id);
-        
-        
+
+
         $ventas = DetalleVenta::where('producto_id', $producto->id)->get();
 
         $ventas_precios =  collect();
@@ -169,7 +179,7 @@ class ServiciosController extends Controller
                                     $q->where('producto_id', $id);
                                 })
                                 ->orderBy('id','desc')->paginate(5);
-        
+
 
         return Response()->json($compras, 200);
 
@@ -178,7 +188,7 @@ class ServiciosController extends Controller
     public function ajustes(Request $request, $id) {
 
         $ajustes = Ajuste::where('producto_id', $id)->orderBy('id','desc')->paginate(5);
-        
+
         return Response()->json($ajustes, 200);
 
     }
@@ -189,16 +199,23 @@ class ServiciosController extends Controller
                                     $q->where('producto_id', $id);
                                 })
                                 ->orderBy('id','desc')->paginate(5);
-        
+
         return Response()->json($ventas, 200);
 
     }
 
-    public function import(ImportServiciosRequest $request){
+    public function import(Request $request){
+
+        $request->validate([
+            'file' => 'required|file',
+        ], [
+            'file.required' => 'El documento es obligatorio.',
+            'file.file'     => 'Debe enviar un archivo válido.',
+        ]);
 
         $import = new Servicios();
-        Excel::import($import, $request->file);
-        
+        Excel::import($import, $request->file('file'));
+
         return Response()->json($import->getRowCount(), 200);
 
     }

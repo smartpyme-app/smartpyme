@@ -1,26 +1,31 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
 import { ApiService } from '@services/api.service';
-import { Location } from '@angular/common';
 
 @Injectable({
   providedIn: 'root'
 })
-export class SupervisorLimitadoGuard  {
-  
+export class SupervisorLimitadoGuard implements CanActivate {
+
   constructor(
-    private apiService: ApiService, 
-    private location: Location
+    private apiService: ApiService,
+    private router: Router
   ) {}
-  
+
   canActivate(
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): boolean {
-    
-    // if (this.apiService.isSupervisorLimitado()) {
-    //   this.location.back();
-    //   return false;
-    // }
+
+    if (!this.apiService.isSupervisorLimitado()) {
+      return true;
+    }
+
+    const bloqueoModuloCompleto = route.data['bloquearSupervisorLimitadoModuloCompleto'] === true;
+
+    if (bloqueoModuloCompleto) {
+      this.router.navigate(['/']);
+      return false;
+    }
 
     return true;
   }

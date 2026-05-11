@@ -105,31 +105,26 @@
                         }
                     </td>
                     <td style="width: 150px;">
-                        <input type="number" tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }" name="cantidad">
+                        <input type="number" tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" (wheel)="$event.preventDefault()" class="form-control" [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }" name="cantidad">
                     </td>
                     <td style="width: 150px;">
                         @if (detalle?.precios?.length < 2) {
                           <div class="input-group">
                             <!-- <span class="input-group-text">$</span> -->
                             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-                            <input type="number" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio">
-                          </div>
-                        }
-                        @if (detalle?.precios?.length > 1) {
-                          <select [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-select" name="precio">
-                            @for (precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null; track precio.precio || precio.id || $index) {
-                              <option [value]="precio.precio">
-                                {{ precio.precio | currency}}
-                              </option>
-                            }
-                          </select>
-                        }
+                            <input type="number" step="0.000001" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" (wheel)="$event.preventDefault()" class="form-control" name="precio">
+                        </div>
+                        <select [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-select" name="precio" *ngIf="detalle?.precios?.length > 1">
+                            <option [value]="precio.precio" *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
+                                {{ precio.precio | currency:'USD':'symbol':'1.0-6'}}
+                            </option>
+                        </select>
                     </td>
                     <td style="width: 100px;" *ngIf="mostrarCuentaTercerosEnLinea">
-                      <div class="input-group">
-                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-                        <input type="number" class="form-control" [(ngModel)]="detalle.cuenta_a_terceros" (ngModelChange)="onCuentaTercerosLineaChange(detalle)" min="0" step="0.0001" [name]="'cuenta_terc_' + i" [readOnly]="cuentaTercerosLineaSoloLectura" [tabindex]="cuentaTercerosLineaSoloLectura ? -1 : 0">
-                      </div>
+                        <div class="input-group">
+                            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                            <input type="number" class="form-control" [(ngModel)]="detalle.cuenta_a_terceros" (ngModelChange)="onCuentaTercerosLineaChange(detalle)" (wheel)="$event.preventDefault()" min="0" step="0.0001" [name]="'cuenta_terc_' + i" [readOnly]="cuentaTercerosLineaSoloLectura" [tabindex]="cuentaTercerosLineaSoloLectura ? -1 : 0">
+                        </div>
                     </td>
                     <td style="width: 150px;">
                         <div *ngIf="detalle.descuento_is_monto">
@@ -139,6 +134,7 @@
                                     type="number"
                                     [(ngModel)]="detalle.descuento_monto"
                                     (change)="updateTotal(detalle)"
+                                    (wheel)="$event.preventDefault()"
                                     class="form-control"
                                     name="descuento_monto">
                             </div>
@@ -150,6 +146,7 @@
                                     type="number"
                                     [(ngModel)]="detalle.descuento_porcentaje"
                                     (change)="updateTotal(detalle)"
+                                    (wheel)="$event.preventDefault()"
                                     class="form-control"
                                     name="descuento_porcentaje">
                             </div>

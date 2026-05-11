@@ -14,8 +14,12 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Maatwebsite\Excel\Validators\ValidationException as MaatwebsiteExcelValidationException;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class Handler extends ExceptionHandler
@@ -50,11 +54,11 @@ class Handler extends ExceptionHandler
     public function report(Throwable $exception)
     {
         // Filtrar warnings de deprecación de PHP 8.1+ con Laravel 8.0
-        if ($exception instanceof \ErrorException && 
+        if ($exception instanceof \ErrorException &&
             strpos($exception->getMessage(), 'Implicitly marking parameter') !== false) {
             return;
         }
-        
+
         parent::report($exception);
     }
 
@@ -70,6 +74,29 @@ class Handler extends ExceptionHandler
     public function render($request, Throwable $exception)
     {
         if ($request->wantsJson()) {
+
+            // Importación Excel (Maatwebsite): debe ir antes que ValidationException genérica (la extiende).
+            if ($exception instanceof MaatwebsiteExcelValidationException) {
+                $messages = [];
+                $failuresPayload = [];
+                foreach ($exception->failures() as $failure) {
+                    $failuresPayload[] = [
+                        'row' => $failure->row(),
+                        'attribute' => $failure->attribute(),
+                        'errors' => $failure->errors(),
+                    ];
+                    foreach ($failure->errors() as $msg) {
+                        $messages[] = sprintf('Fila %d (Excel): %s', $failure->row(), $msg);
+                    }
+                }
+
+                return response()->json([
+                    'error' => array_values(array_unique($messages)),
+                    'failures' => $failuresPayload,
+                    'code' => 422,
+                ], 422);
+            }
+
             if ($exception instanceof ValidationException) {
                 $errors = $exception->validator->messages()->all();
 

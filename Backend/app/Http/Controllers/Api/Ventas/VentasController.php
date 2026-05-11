@@ -122,7 +122,11 @@ class VentasController extends Controller
         }
 
         $excludeFromList = ['dte_invalidacion'];
-        $columns = array_diff(Schema::getColumnListing('ventas'), $excludeFromList);
+        $columns = array_values(array_diff(Schema::getColumnListing('ventas'), $excludeFromList));
+        $dteIndex = array_search('dte', $columns, true);
+        if ($dteIndex !== false) {
+            $columns[$dteIndex] = DB::raw("IF(COALESCE(ventas.dte_s3_key,'') <> '', NULL, ventas.dte) as dte");
+        }
 
         $ventas = Venta::select($columns)
             ->where('ventas.id_empresa', $user->id_empresa)
@@ -197,6 +201,9 @@ class VentasController extends Controller
             ->where('cotizacion', 0)
             ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscador($query, (string) $request->buscador))
             ->with(['cliente', 'usuario', 'vendedor', 'sucursal', 'canal', 'documento', 'proyecto'])
+            ->with(['devolucionesNcNd' => function ($query) {
+                $query->with('documento:id,nombre');
+            }])
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')
@@ -227,13 +234,31 @@ class VentasController extends Controller
         $matchClientes = count($palabras) > 1
             ? implode(' ', array_map(fn ($p) => '+' . preg_replace('/[+\-<>()~*"]/', '', $p), $palabras))
             : $termino;
+        $modoClientes = count($palabras) > 1 ? 'BOOLEAN' : 'NATURAL LANGUAGE';
+
         $clienteIds = Cliente::query()
             ->whereRaw(
-                'MATCH(clientes.nombre, clientes.apellido, clientes.nombre_empresa, clientes.nit, clientes.ncr) AGAINST(? IN ' . (count($palabras) > 1 ? 'BOOLEAN' : 'NATURAL LANGUAGE') . ' MODE)',
+                'MATCH(clientes.nombre, clientes.apellido, clientes.nombre_empresa, clientes.nit, clientes.ncr) AGAINST(? IN ' . $modoClientes . ' MODE)',
                 [$matchClientes]
             )
             ->limit(5000)
             ->pluck('id');
+
+        // FULLTEXT en BOOLEAN exige tokens que no coinciden con razones sociales (S.A, C.V, stopwords como DE).
+        if (count($palabras) > 1) {
+            $idsLike = Cliente::query()
+                ->where(function ($q) use ($buscador) {
+                    $q->where('nombre_empresa', 'like', $buscador)
+                        ->orWhere('nombre', 'like', $buscador)
+                        ->orWhere('apellido', 'like', $buscador)
+                        ->orWhere('nit', 'like', $buscador)
+                        ->orWhere('ncr', 'like', $buscador)
+                        ->orWhereRaw("CONCAT(TRIM(nombre), ' ', TRIM(apellido)) LIKE ?", [$buscador]);
+                })
+                ->limit(5000)
+                ->pluck('id');
+            $clienteIds = $clienteIds->merge($idsLike)->unique()->values()->take(5000);
+        }
 
         return $query->where(function ($q) use ($buscador, $clienteIds, $termino) {
             if ($clienteIds->isNotEmpty()) {

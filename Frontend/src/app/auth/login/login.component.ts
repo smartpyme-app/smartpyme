@@ -31,8 +31,12 @@ export class LoginComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor( private apiService: ApiService, private mhService: MHService,
-        private router: Router, private alertService: AlertService) { }
+    constructor(
+      private apiService: ApiService,
+      private mhService: MHService,
+      private router: Router,
+      private alertService: AlertService
+    ) { }
 
     ngOnInit() {
         const returnUrl = localStorage.getItem('returnUrl');
@@ -40,21 +44,21 @@ export class LoginComponent implements OnInit {
 
         if (returnUrl) {
             localStorage.setItem('returnUrl', returnUrl);
-        }  
+        }
 
         this.user = { email: '', password: '' };
     }
 
     submit() {
         this.loading = true;
-    
+
         this.apiService.login(this.user)
             .pipe(this.untilDestroyed())
             .subscribe({
                 next: (data) => {
                     const returnUrl = localStorage.getItem('returnUrl') || '/';
                     localStorage.removeItem('returnUrl');
-        
+
                     this.user = this.apiService.auth_user();
 
                     const paisFe = resolveCodigoPaisFe(this.user.empresa);
@@ -71,12 +75,12 @@ export class LoginComponent implements OnInit {
                         localStorage.removeItem('SP_mh_url_base');
                         localStorage.removeItem('SP_token_mh');
                     }
-        
+
                     this.apiService.loadData();
                     setTimeout(() => {
                         this.router.navigate([returnUrl]);
                     }, 100);
-                    
+
                     this.loading = false;
                 },
                 error: (error) => {
@@ -89,6 +93,6 @@ export class LoginComponent implements OnInit {
 
     public mostrarPassword(){
         this.showpassword = !this.showpassword;
-    }  
+    }
 
 }

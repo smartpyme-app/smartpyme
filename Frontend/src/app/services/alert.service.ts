@@ -69,24 +69,39 @@ export class AlertService {
             });
         }
         else if(message.status == 422) {
-            // Manejar diferentes formatos de errores de validación
-            let errorMessage = '';
-            let errorTitle = 'Error de validación';
+            const errBody = message.error;
+          // Manejar diferentes formatos de errores de validación
+          let errorMessage = '';
+          let errorTitle = 'Error de validación';
 
-            // Formato 1: message.error.error (array o string)
-            if(message.error && message.error.error) {
-                if(Array.isArray(message.error.error)) {
-                    errorMessage = message.error.error.map((err: string) => `- ${err}`).join('<br>');
-                    errorTitle = 'Corrige los siguientes errores';
-                } else {
-                    errorMessage = message.error.error;
-                    if (typeof errorMessage === 'string' && pareceErrorHaciendaCr(errorMessage)) {
-                        const primera =
-                            errorMessage.split(/\n/).find((l) => l.trim().length > 0)?.trim() ?? errorMessage;
-                        errorMessage =
-                            (primera.length > 220 ? `${primera.slice(0, 220)}…` : primera) +
-                            ' — En Ventas, abra el comprobante para ver el error explicado en detalle.';
-                        errorTitle = 'Hacienda rechazó el comprobante';
+          if (errBody && Array.isArray(errBody.failures) && errBody.failures.length > 0) {
+                const byRow: { [row: number]: string[] } = {};
+                for (const f of errBody.failures) {
+                    const r = Number(f.row);
+                    if (!byRow[r]) {
+                        byRow[r] = [];
+                    }
+                    const errs = Array.isArray(f.errors) ? f.errors : [];
+                    for (const e of errs) {
+                        if (e) {
+                            byRow[r].push(String(e));
+                        }
+                    }
+                }
+                const rows = Object.keys(byRow).map((k) => Number(k)).sort((a, b) => a - b);
+                let alerts = '';
+                for (const r of rows) {
+                    alerts += `<strong>Fila ${r}</strong> del Excel:<br>`;
+                    for (const line of byRow[r]) {
+                        alerts += '&nbsp;&nbsp;• ' + line + '<br>';
+                    }
+                }
+                this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Corrige los siguientes errores', 'mensaje' : alerts});
+            } else if(errBody && errBody.error) {
+                if(Array.isArray(errBody.error)) {
+                    let alerts='';
+                    for (var i = 0; i < errBody.error.length; ++i) {
+                        alerts += '- ' + errBody.error[i] + '<br>';
                     }
                 }
             }
@@ -96,7 +111,8 @@ export class AlertService {
                     errorMessage = message.error.message.map((err: string) => `- ${err}`).join('<br>');
                     errorTitle = 'Corrige los siguientes errores';
                 } else {
-                    errorMessage = message.error.message;
+                    // Si es una cadena, mostrarla directamente
+                    this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Error de validación', 'mensaje' : errBody.error});
                 }
             }
             // Formato 3: message.error.errors (objeto con campos) - MÁS COMÚN EN LARAVEL

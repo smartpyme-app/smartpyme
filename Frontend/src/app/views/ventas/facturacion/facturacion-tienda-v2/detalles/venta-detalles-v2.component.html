@@ -86,13 +86,13 @@
                         </div>
                     </td>
                     <td style="width: 150px;">
-                        <input type="number" tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }" name="cantidad">
+                        <input type="number" tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" (wheel)="$event.preventDefault()" class="form-control" [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }" name="cantidad">
                     </td>
                     <td style="width: 150px;">
                         <div class="input-group" *ngIf="detalle?.precios?.length < 2">
                             <!-- <span class="input-group-text">$</span> -->
                             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-                            <input type="number" step="0.000001" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio_iva" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio_iva">
+                            <input type="number" step="0.000001" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio_iva" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" (wheel)="$event.preventDefault()" class="form-control" name="precio_iva">
                         </div>
                         <select [(ngModel)]="detalle.precio_iva" (change)="onPrecioSelectChange(detalle)" class="form-select" name="precio_iva" *ngIf="detalle?.precios?.length > 1">
                             <option [value]="precio.precio" *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
@@ -103,7 +103,7 @@
                     <td style="width: 100px;" *ngIf="mostrarCuentaTercerosEnLinea">
                         <div class="input-group">
                             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-                            <input type="number" class="form-control" [(ngModel)]="detalle.cuenta_a_terceros" (ngModelChange)="onCuentaTercerosLineaChange(detalle)" min="0" step="0.0001" [name]="'cuenta_terc_' + i" [readOnly]="cuentaTercerosLineaSoloLectura" [tabindex]="cuentaTercerosLineaSoloLectura ? -1 : 0">
+                            <input type="number" class="form-control" [(ngModel)]="detalle.cuenta_a_terceros" (ngModelChange)="onCuentaTercerosLineaChange(detalle)" (wheel)="$event.preventDefault()" min="0" step="0.0001" [name]="'cuenta_terc_' + i" [readOnly]="cuentaTercerosLineaSoloLectura" [tabindex]="cuentaTercerosLineaSoloLectura ? -1 : 0">
                         </div>
                     </td>
                     <td style="width: 150px;">
@@ -114,6 +114,7 @@
                                     type="number" 
                                     [(ngModel)]="detalle.descuento_monto" 
                                     (change)="updateTotal(detalle)"
+                                    (wheel)="$event.preventDefault()"
                                     class="form-control" 
                                     name="descuento_monto">
                             </div>
@@ -125,6 +126,7 @@
                                     type="number" 
                                     [(ngModel)]="detalle.descuento_porcentaje" 
                                     (change)="updateTotal(detalle)"
+                                    (wheel)="$event.preventDefault()"
                                     class="form-control" 
                                     name="descuento_porcentaje">
                             </div>

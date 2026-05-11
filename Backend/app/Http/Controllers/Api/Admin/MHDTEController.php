@@ -87,7 +87,7 @@ class MHDTEController extends Controller
         return $this->elSalvadorDte->generarDTESujetoExcluidoCompra($compra);
     }
 
-    
+
     private function aplicarMontosSujetoExcluidoDesdeRequest($registro, Request $request, array $campos): void
     {
         foreach ($campos as $campo) {

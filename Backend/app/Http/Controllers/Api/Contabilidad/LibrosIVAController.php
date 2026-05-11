@@ -523,7 +523,6 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
             ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
@@ -581,7 +580,6 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
             ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
@@ -634,7 +632,6 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
             ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
@@ -989,6 +986,110 @@ class LibrosIVAController extends Controller
             return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
                 ->header('Content-Type', 'text/plain');
         }
+    }
+
+    /**
+     * Listado JSON para pantalla Libros fiscales → Retenciones (libro-iva/general).
+     */
+    public function retencionesList(Request $request): JsonResponse
+    {
+        $empresa = $this->obtenerEmpresa();
+        $pais = optional($empresa)->pais ?? '';
+
+        if ($pais === 'Honduras') {
+            return response()->json($this->retencionesJsonHonduras($request));
+        }
+
+        return response()->json($this->retencionesJsonVentasIvaRetenido($request));
+    }
+
+    /**
+     * Honduras: ventas con IVA retenido + compras con percepción (misma base que LibroRetencionesExport).
+     */
+    private function retencionesJsonHonduras(Request $request): array
+    {
+        $ventas = Venta::with(['cliente'])
+            ->where('estado', '!=', 'Anulada')
+            ->where('iva_retenido', '>', 0)
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->orderBy('fecha')
+            ->orderBy('correlativo')
+            ->get()
+            ->map(fn ($v) => ['registro' => $v, 'origen' => 'venta']);
+
+        $compras = Compra::with(['proveedor'])
+            ->where('estado', '!=', 'Anulada')
+            ->where('percepcion', '>', 0)
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->orderBy('fecha')
+            ->get()
+            ->map(fn ($c) => ['registro' => $c, 'origen' => 'compra']);
+
+        $merged = $ventas->merge($compras)->sortBy(fn ($x) => $x['registro']->fecha)->values();
+
+        return $merged->map(function (array $item) {
+            $r = $item['registro'];
+            $esVenta = $item['origen'] === 'venta';
+
+            if ($esVenta) {
+                return [
+                    'fecha_comprobante' => $r->fecha,
+                    'numero_comprobante' => trim((string) ($r->numero_control ?? $r->correlativo ?? '')),
+                    'fecha_factura' => $r->fecha,
+                    'factura_relacionada' => trim((string) $r->correlativo),
+                    'nombre_agente_retenedor' => $r->nombre_cliente ?? '',
+                    'registro_tributario_nacional' => optional($r->cliente)->nit ?? optional($r->cliente)->ncr ?? '',
+                    'importe_base_retencion' => (float) $r->sub_total,
+                    'impuesto_retenido' => (float) $r->iva_retenido,
+                ];
+            }
+
+            return [
+                'fecha_comprobante' => $r->fecha,
+                'numero_comprobante' => $r->referencia ?? '',
+                'fecha_factura' => $r->fecha,
+                'factura_relacionada' => $r->referencia ?? '',
+                'nombre_agente_retenedor' => $r->nombre_proveedor ?? '',
+                'registro_tributario_nacional' => optional($r->proveedor)->nit ?? optional($r->proveedor)->ncr ?? '',
+                'importe_base_retencion' => (float) $r->sub_total,
+                'impuesto_retenido' => (float) $r->percepcion,
+            ];
+        })->all();
+    }
+
+    /**
+     * Resto de países: mismo criterio que LibroRetencion1Export (solo ventas con iva_retenido).
+     */
+    private function retencionesJsonVentasIvaRetenido(Request $request): array
+    {
+        $ventas = Venta::with(['cliente', 'documento'])
+            ->where('estado', '!=', 'Anulada')
+            ->where('iva_retenido', '>', 0)
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->where('cotizacion', 0)
+            ->orderByDesc('fecha')
+            ->orderByDesc('correlativo')
+            ->get();
+
+        return $ventas->map(function ($r) {
+            return [
+                'fecha_comprobante' => $r->fecha,
+                'numero_comprobante' => trim((string) ($r->numero_control ?? $r->correlativo ?? '')),
+                'fecha_factura' => $r->fecha,
+                'factura_relacionada' => trim((string) $r->correlativo),
+                'nombre_agente_retenedor' => $r->nombre_cliente ?? '',
+                'registro_tributario_nacional' => optional($r->cliente)->nit ?? optional($r->cliente)->ncr ?? '',
+                'importe_base_retencion' => (float) $r->sub_total,
+                'impuesto_retenido' => (float) $r->iva_retenido,
+            ];
+        })->values()->all();
     }
 
     public function libroRetencion1Export(BaseLibroIVARequest $request)

@@ -9,13 +9,16 @@
  * Este servicio se mantiene por compatibilidad hacia atrás y delega a los servicios específicos.
  */
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
 import { HttpService } from '@services/http.service';
 import { AuthService } from '@services/auth.service';
 import { PermissionService } from '@services/permission.service';
 import { UtilityService } from '@services/utility.service';
+import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
+import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
+import { Observable, throwError, from, of } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
+import { ChatService } from '@services/chat/chat.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 
 export const GUARD_TYPES = {
@@ -466,6 +469,53 @@ export class ApiService {
       | undefined;
     return cfg?.bloquear_cotizaciones_vendedores === true;
   }
+
+    /**
+     * Preferencia en empresa (Preferencias del sistema): impide gastos para Supervisor limitado.
+     * Por defecto en BD es false para no cambiar comportamiento tras la migración.
+     */
+    empresaRestringeGastosSupervisorLimitado(): boolean {
+        const e = this.auth_user()?.empresa;
+        if (!e) {
+            return false;
+        }
+        const v = (e as { restringir_gastos_supervisor_limitado?: boolean | number }).restringir_gastos_supervisor_limitado;
+        return v === true || v === 1;
+    }
+
+    /** Ocultar sección Gastos del menú cuando aplica restricción. */
+    mostrarMenuModuloGastos(): boolean {
+        if (!this.isSupervisorLimitado()) {
+            return true;
+        }
+        return !this.empresaRestringeGastosSupervisorLimitado();
+    }
+
+    /**
+     * Actualiza `empresa` en `SP_auth_user` desde el API (p. ej. preferencia recién guardada).
+     * Evita usar `me/` que modifica ultimo_login en cada llamada.
+     */
+    refreshEmpresaEnSesion(): Observable<void> {
+        let u: any;
+        try {
+            u = this.auth_user();
+        } catch {
+            return of(undefined);
+        }
+        const idEmpresa = u?.id_empresa;
+        if (!idEmpresa) {
+            return of(undefined);
+        }
+        return this.read('empresa/', idEmpresa).pipe(
+            map((empresa: any) => {
+                u.empresa = empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(u));
+                return undefined;
+            }),
+            catchError(() => of(undefined))
+        );
+    }
+
 
   /**
    * Bloqueos de UI/API extra (facturar cotización desde menú, editar, detalles, cambiar estado): rol Ventas + opción empresa.

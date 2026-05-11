@@ -2,12 +2,15 @@
 
 namespace App\Models\Compras;
 
+use App\Models\Concerns\HasOffloadedDte;
 use App\Models\Compras\Retaceo\Retaceo;
 use App\Models\Compras\Retaceo\RetaceoCompra;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 class Compra extends Model {
+
+    use HasOffloadedDte;
 
     protected $table = 'compras';
     protected $fillable = array(
@@ -55,10 +58,26 @@ class Compra extends Model {
         'tipo_clasificacion',
         'tipo_sector',
         'tipo_costo_gasto',
-
+        'dte_s3_key',
+        'dte_migrated_at',
+        'dte_invalidacion_s3_key',
+        'dte_invalidacion_migrated_at',
     );
 
-    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];
+    protected $hidden = [
+        'dte_s3_key',
+        'dte_invalidacion_s3_key',
+    ];
+
+    protected $appends = [
+        'nombre_proveedor',
+        'nombre_usuario',
+        'nombre_sucursal',
+        'nombre_proyecto',
+        'empresa_nombre',
+        'dte_en_s3',
+        'dte_invalidacion_en_s3',
+    ];
 
     protected static function boot()
     {
@@ -71,13 +90,20 @@ class Compra extends Model {
         }
     }
 
-    public function getDteAttribute($value) 
+    protected $casts = [
+        'dte_migrated_at' => 'datetime',
+        'dte_invalidacion_migrated_at' => 'datetime',
+    ];
+
+    public function getDteAttribute($value)
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }
 
     public function getSaldoAttribute(){
-        return round($this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total'),2);
+        $abonos = $this->abonos()->where('estado', 'Confirmado')->sum('total');
+        $devoluciones = $this->devoluciones()->where('enable', 1)->sum('total');
+        return round($this->total - $abonos - $devoluciones,2);
     }
 
 
@@ -100,6 +126,16 @@ class Compra extends Model {
     public function getNombreUsuarioAttribute()
     {
         return $this->usuario()->pluck('name')->first();
+    }
+
+    public function getNombreProyectoAttribute()
+    {
+        return $this->proyecto ? $this->proyecto->nombre : null;
+    }
+
+    public function getEmpresaNombreAttribute()
+    {
+        return $this->empresa->nombre ?? '';
     }
 
     public function bodega(){
