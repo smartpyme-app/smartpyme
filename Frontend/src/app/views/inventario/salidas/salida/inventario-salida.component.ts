@@ -69,8 +69,10 @@ export class InventarioSalidaComponent implements OnInit {
 
 	productoSelect(producto:any){
         this.producto = producto;
-        this.detalle.id_producto = this.producto.id;
-        this.detalle.nombre_producto = this.producto.nombre;
+        this.detalle.id_producto = this.producto.id_producto || this.producto.id;
+        this.detalle.id_presentacion = this.producto.id_presentacion || null;
+        this.detalle.factor_conversion = this.producto.factor_conversion || 1;
+        this.detalle.nombre_producto = this.producto.nombre_mostrar || this.producto.nombre;
         this.detalle.medida = this.producto.medida;
         this.detalle.costo = this.producto.costo;
         this.detalle.categoria_nombre = this.producto.categoria_nombre;

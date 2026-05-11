@@ -67,6 +67,7 @@ import { InventarioSalidaComponent } from './salidas/salida/inventario-salida.co
 import { EntradaDetalleComponent } from './entradas/entrada-detalle/entrada-detalle.component';
 import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.component';
 import { LotesComponent } from './lotes/lotes.component';
+import { ProductoPresentacionesComponent } from './productos/producto/presentaciones/producto-presentaciones.component';
 
 @NgModule({
   imports: [
@@ -129,7 +130,8 @@ import { LotesComponent } from './lotes/lotes.component';
     InventarioSalidaComponent,
     EntradaDetalleComponent,
     SalidaDetalleComponent,
-    LotesComponent
+    LotesComponent,
+    ProductoPresentacionesComponent
   ],
   exports: [
   	ProductosComponent,
@@ -172,7 +174,8 @@ import { LotesComponent } from './lotes/lotes.component';
     InventarioSalidaComponent,
     EntradaDetalleComponent,
     SalidaDetalleComponent,
-    LotesComponent
+    LotesComponent,
+    ProductoPresentacionesComponent
   ]
 })
 export class InventarioModule { }

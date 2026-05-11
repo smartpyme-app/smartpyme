@@ -143,7 +143,9 @@ export class TrasladosComponent implements OnInit {
 
     public productoSelect(producto: any) {
         this.producto = producto;
-        this.traslado.id_producto = producto.id;
+        this.traslado.id_producto = producto.id_producto || producto.id;
+        this.traslado.id_presentacion = producto.id_presentacion || null;
+        this.traslado.factor_conversion = producto.factor_conversion || 1;
         this.traslado.costo = producto.costo;
         this.traslado.lote_id = null;
         this.traslado.lote_id_destino = null;
@@ -164,6 +166,8 @@ export class TrasladosComponent implements OnInit {
     public limpiarProducto() {
         this.producto = {};
         this.traslado.id_producto = null;
+        this.traslado.id_presentacion = null;
+        this.traslado.factor_conversion = null;
         this.traslado.id_bodega_de = null;
         this.traslado.id_bodega = null;
         this.traslado.lote_id = null;
@@ -177,7 +181,7 @@ export class TrasladosComponent implements OnInit {
 
     public productoFiltroSelect(producto: any) {
         this.productoFiltro = producto;
-        this.filtros.id_producto = producto.id;
+        this.filtros.id_producto = producto.id_producto || producto.id;
     }
 
     public limpiarProductoFiltro() {
@@ -242,7 +246,8 @@ export class TrasladosComponent implements OnInit {
         }
         
         const stockDisponible = parseFloat(loteSeleccionado.stock) || 0;
-        const cantidadRequerida = parseFloat(this.traslado.cantidad) || 0;
+        const factor = Number(this.traslado.factor_conversion) || 1;
+        const cantidadRequerida = (parseFloat(this.traslado.cantidad) || 0) * factor;
         
         return stockDisponible >= cantidadRequerida;
     }
@@ -275,7 +280,8 @@ export class TrasladosComponent implements OnInit {
         if (!this.traslado.cantidad) {
             return this.getStockOrigen();
         }
-        const cantidad = Number(this.traslado.cantidad) || 0;
+        const factor = Number(this.traslado.factor_conversion) || 1;
+        const cantidad = (Number(this.traslado.cantidad) || 0) * factor;
         const stockOrigen = this.getStockOrigen();
         return Math.max(0, stockOrigen - cantidad);
     }
@@ -284,7 +290,8 @@ export class TrasladosComponent implements OnInit {
         if (!this.traslado.cantidad) {
             return this.getStockDestino();
         }
-        const cantidad = Number(this.traslado.cantidad) || 0;
+        const factor = Number(this.traslado.factor_conversion) || 1;
+        const cantidad = (Number(this.traslado.cantidad) || 0) * factor;
         const stockDestino = this.getStockDestino();
         return stockDestino + cantidad;
     }
@@ -323,6 +330,7 @@ export class TrasladosComponent implements OnInit {
         this.lotes = [];
         this.lotesDestino = [];
         this.traslado.id_producto = null;
+        this.traslado.id_presentacion = null;
         this.traslado.id_bodega = null;
         this.traslado.id_bodega_de = null;
         this.traslado.lote_id = null;
@@ -358,7 +366,8 @@ export class TrasladosComponent implements OnInit {
             const loteSeleccionado = this.lotes.find((l: any) => l.id == this.traslado.lote_id);
             if (loteSeleccionado) {
                 const stockDisponible = parseFloat(loteSeleccionado.stock) || 0;
-                const cantidadRequerida = parseFloat(this.traslado.cantidad) || 0;
+                const factor = Number(this.traslado.factor_conversion) || 1;
+                const cantidadRequerida = (parseFloat(this.traslado.cantidad) || 0) * factor;
                 if (stockDisponible < cantidadRequerida) {
                     this.alertService.error(`El lote no tiene stock suficiente. Stock disponible: ${stockDisponible.toFixed(2)}, Cantidad requerida: ${cantidadRequerida.toFixed(2)}`);
                     // Recargar lotes para obtener stock actualizado
@@ -468,10 +477,11 @@ export class TrasladosComponent implements OnInit {
      * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
      */
     getNombreCompleto(producto: any): string {
+        const nombre = producto.nombre_mostrar || producto.nombre;
         if (this.tieneShopify && producto.nombre_variante) {
-            return `${producto.nombre} ${producto.nombre_variante}`;
+            return `${nombre} (${producto.nombre_variante})`;
         }
-        return producto.nombre;
+        return nombre;
     }
 
     public imprimir(traslado:any){
