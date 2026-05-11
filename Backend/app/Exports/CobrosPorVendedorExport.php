@@ -3,7 +3,6 @@
 namespace App\Exports;
 
 use App\Models\Ventas\Venta;
-use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -52,6 +51,9 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             }, 'documento', 'sucursal', 'devoluciones' => function($query) {
                 $query->where('enable', 1);
             }])
+            ->when($request->id_empresa, function ($query) use ($request) {
+                return $query->where('ventas.id_empresa', (int) $request->id_empresa);
+            })
             ->when($request->inicio, function ($query) use ($request) {
                 return $query->where('fecha', '>=', $request->inicio);
             })
@@ -61,11 +63,19 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             ->when($request->id_sucursal && $request->id_sucursal !== '', function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
+            ->when(!empty($request->sucursales) && is_array($request->sucursales), function ($query) use ($request) {
+                return $query->whereIn('ventas.id_sucursal', $request->sucursales);
+            })
             ->when($request->id_vendedor && $request->id_vendedor !== '', function ($query) use ($request) {
-                return $query->where('id_vendedor', $request->id_vendedor);
+                // Mismo criterio que el listado de ventas y VentasExport: cabecera o línea de detalle
+                return $query->where(function ($q) use ($request) {
+                    $q->where('id_vendedor', $request->id_vendedor)
+                        ->orWhereHas('detalles', function ($sub) use ($request) {
+                            $sub->where('id_vendedor', $request->id_vendedor);
+                        });
+                });
             })
             ->where('cotizacion', 0)
-            ->whereNotNull('id_vendedor')
             ->orderBy('id_vendedor')
             ->orderBy('fecha', 'desc')
             ->get();
@@ -150,3 +160,22 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
         ];
     }
 }
+
+
+"tributos": [
+      {
+        "codigo": "20",
+        "descripcion": "Impuesto al Valor Agregado 13%",
+        "valor": 39.58
+      }
+    ],
+    "subTotal": 304.46,
+    "ivaPerci1": 3.05,
+    "ivaRete1": 0,
+    "reteRenta": 0,
+    "montoTotalOperacion": 344.04,
+    "totalNoGravado": 0,
+    "saldoFavor": 0,
+    "numPagoElectronico": null,
+    "totalDescu": 0,
+    "totalPagar": 347.09,
