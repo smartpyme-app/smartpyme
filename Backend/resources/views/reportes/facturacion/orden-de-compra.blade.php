@@ -163,7 +163,7 @@
                 <td colspan="4" class="text-right">Subtotal</td>
                 <td class="text-right">{{ $simboloMonedaEmpresa }} {{ number_format($compra->sub_total + $compra->iva, 2) }}</td>
             </tr>
-            @if ($compra->percepcion)
+            @if (floatval($compra->percepcion) > 0)
             <tr>
                 <td colspan="4" class="text-right">Percepción (1%)</td>
                 <td class="text-right">{{ $simboloMonedaEmpresa }} {{ number_format($compra->percepcion, 2) }}</td>
