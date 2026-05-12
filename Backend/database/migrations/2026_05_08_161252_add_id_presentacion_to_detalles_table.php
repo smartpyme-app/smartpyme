@@ -48,6 +48,12 @@ class AddIdPresentacionToDetallesTable extends Migration
             $table->unsignedBigInteger('id_presentacion')->nullable()->after('id_producto');
             $table->foreign('id_presentacion')->references('id')->on('producto_presentaciones')->onDelete('set null');
         });
+
+        // 7. tabla de PRODUCTO COMPOSICIONES
+        Schema::table('producto_composiciones', function (Blueprint $table) {
+            $table->unsignedBigInteger('id_presentacion')->nullable()->after('cantidad');
+            $table->foreign('id_presentacion')->references('id')->on('producto_presentaciones')->onDelete('set null');
+        });
     }
 
     /**
@@ -89,6 +95,12 @@ class AddIdPresentacionToDetallesTable extends Migration
 
         // Revertimos SALIDAS DETALLES
         Schema::table('inventario_salida_detalles', function (Blueprint $table) {
+            $table->dropForeign(['id_presentacion']);
+            $table->dropColumn('id_presentacion');
+        });
+
+        // Revertimos PRODUCTO COMPOSICIONES
+        Schema::table('producto_composiciones', function (Blueprint $table) {
             $table->dropForeign(['id_presentacion']);
             $table->dropColumn('id_presentacion');
         });
