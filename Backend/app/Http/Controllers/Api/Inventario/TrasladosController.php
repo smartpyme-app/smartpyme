@@ -611,7 +611,7 @@ class TrasladosController extends Controller
             ->with(['producto', 'origen', 'destino', 'empresa', 'usuario'])
             ->firstOrFail();
         
-        $empresa = Empresa::findOrFail($traslado->id_empresa);
+        $empresa = Empresa::with('currency')->findOrFail($traslado->id_empresa);
 
         $pdf = app('dompdf.wrapper')->loadView('reportes.inventario.traslado-pdf', compact('traslado', 'empresa'));
         $pdf->setPaper('US Letter', 'portrait');
@@ -655,7 +655,7 @@ class TrasladosController extends Controller
             return response()->json(['error' => 'No hay traslados para exportar'], 404);
         }
 
-        $empresa = Empresa::findOrFail(Auth::user()->id_empresa);
+        $empresa = Empresa::with('currency')->findOrFail(Auth::user()->id_empresa);
 
         // Agrupar traslados por concepto
         $trasladosAgrupados = $traslados->groupBy(function($traslado) {

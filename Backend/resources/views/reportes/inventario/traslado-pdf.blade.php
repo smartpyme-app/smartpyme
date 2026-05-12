@@ -100,14 +100,14 @@
                 <tr>
                     <td class="border-bottom">{{ $traslado->nombre_producto }}</td>
                     <td class="border-bottom text-right">{{ number_format($traslado->cantidad, 0) }}</td>
-                    <td class="border-bottom text-right">{{ $empresa->currency->currency_symbol ?? '$' }}{{ number_format($traslado->costo ?? 0, 2) }}</td>
-                    <td class="border-bottom text-right">{{ $empresa->currency->currency_symbol ?? '$' }}{{ number_format(($traslado->costo ?? 0) * $traslado->cantidad, 2) }}</td>
+                    <td class="border-bottom text-right">{{ optional($empresa->currency)->currency_symbol ?? '$' }}{{ number_format($traslado->costo ?? 0, 2) }}</td>
+                    <td class="border-bottom text-right">{{ optional($empresa->currency)->currency_symbol ?? '$' }}{{ number_format(($traslado->costo ?? 0) * $traslado->cantidad, 2) }}</td>
                 </tr>
             </tbody>
             <tfoot>
                 <tr>
                     <td colspan="3" class="text-right"><b>Total</b></td>
-                    <td class="text-right"><b>{{ $empresa->currency->currency_symbol ?? '$' }}{{ number_format(($traslado->costo ?? 0) * $traslado->cantidad, 2) }}</b></td>
+                    <td class="text-right"><b>{{ optional($empresa->currency)->currency_symbol ?? '$' }}{{ number_format(($traslado->costo ?? 0) * $traslado->cantidad, 2) }}</b></td>
                 </tr>
             </tfoot>
         </table>
