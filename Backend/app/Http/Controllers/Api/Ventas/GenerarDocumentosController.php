@@ -336,7 +336,7 @@ class GenerarDocumentosController extends Controller
                 $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 700 ){ //700 Lilian Ohle
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Lilian-Ohle', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Lilian-Ohle', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 315 ){ //315

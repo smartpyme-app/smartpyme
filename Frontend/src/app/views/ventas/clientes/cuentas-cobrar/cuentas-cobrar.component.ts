@@ -51,6 +51,7 @@ export class CuentasCobrarComponent implements OnInit {
             paginate: this.filtros?.paginate || 10,
             orden: this.filtros?.orden || 'fecha',
             direccion: this.filtros?.direccion || 'desc',
+            page: 1,
             inicio: '',
             fin: '',
             id_cliente: '',
@@ -58,15 +59,23 @@ export class CuentasCobrarComponent implements OnInit {
             id_sucursal: '',
             buscador: ''
         };
-        this.filtrarCobros();
+        this.filtrarCobros(false);
     }
 
-    filtrarCobros() {
+    /**
+     * @param resetPage true al buscar/filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll.
+     */
+    filtrarCobros(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
+        const page = this.filtros.page != null && this.filtros.page !== '' ? this.filtros.page : 1;
         const params: any = {
             paginate: this.filtros.paginate,
             orden: this.filtros.orden,
-            direccion: this.filtros.direccion
+            direccion: this.filtros.direccion,
+            page
         };
         if (this.filtros.inicio) params.inicio = this.filtros.inicio;
         if (this.filtros.fin) params.fin = this.filtros.fin;
@@ -102,37 +111,15 @@ export class CuentasCobrarComponent implements OnInit {
         this.apiService.store('venta', venta).subscribe(
             () => {
                 this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
-                this.filtrarCobros();
+                this.filtrarCobros(false);
             },
             (error) => { this.alertService.error(error); }
         );
     }
 
     setPagination(event: any) {
-        this.loading = true;
-        const url = this.cobros.path + '?page=' + event.page;
-        const params: any = {
-            paginate: this.filtros.paginate,
-            orden: this.filtros.orden,
-            direccion: this.filtros.direccion
-        };
-        if (this.filtros.inicio) params.inicio = this.filtros.inicio;
-        if (this.filtros.fin) params.fin = this.filtros.fin;
-        if (this.filtros.id_cliente) params.id_cliente = this.filtros.id_cliente;
-        if (this.filtros.id_vendedor) params.id_vendedor = this.filtros.id_vendedor;
-        if (this.filtros.id_sucursal) params.id_sucursal = this.filtros.id_sucursal;
-        if (this.filtros.buscador) params.buscador = this.filtros.buscador;
-
-        this.apiService.paginate(url, params).subscribe(
-            (cobros) => {
-                this.cobros = cobros;
-                this.loading = false;
-            },
-            (error) => {
-                this.alertService.error(error);
-                this.loading = false;
-            }
-        );
+        this.filtros.page = event.page;
+        this.filtrarCobros(false);
     }
 
     openModal(template: TemplateRef<any>) {

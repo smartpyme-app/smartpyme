@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Inventario\ProveedorController;
 
 
     Route::get('/gastos/categorias',    [CategoriasController::class, 'index']);
+    Route::get('/gastos/categorias/list', [CategoriasController::class, 'list']);
     Route::post('/gastos/categoria',    [CategoriasController::class, 'store']);
     Route::delete('/gastos/categoria/{id}', [CategoriasController::class, 'delete']);
 

@@ -1,10 +1,10 @@
 <button type="button" class="btn btn-default tcla-F1" (click)="openModal(mproducto)">
-    <i tooltip="Crear nuevo producto (F1)" class="fa fa-plus"></i>
+    <i [tooltip]="permitirElegirTipo ? 'Crear producto o servicio (F1)' : 'Crear nuevo producto (F1)'" class="fa fa-plus"></i>
 </button>
 
 <ng-template #mproducto>
     <div class="modal-header justify-content-between">
-        <h3 class="modal-title">Nuevo producto</h3>
+        <h3 class="modal-title">{{ permitirElegirTipo ? 'Nuevo producto o servicio' : 'Nuevo producto' }}</h3>
         <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
     </div>
     <div class="modal-body p-3">
@@ -12,22 +12,34 @@
         <form (ngSubmit)="onSubmit()">
             <div class="row">
                 <h6 class="mb-3 font-weight-bold">Detalles</h6>
+                <div class="form-group col-md-6 col-lg-4" *ngIf="permitirElegirTipo">
+                    <label for="tipo_item">Tipo</label>
+                    <select
+                        id="tipo_item"
+                        class="form-select"
+                        [(ngModel)]="producto.tipo"
+                        name="tipo_item">
+                        <option value="Producto">Producto</option>
+                        <option value="Servicio">Servicio</option>
+                        <option value="Compuesto">Compuesto</option>
+                    </select>
+                </div>
                 <div class="form-group col-md-12 col-lg-4">
                     <label for="nombre">Nombre</label>
                     <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre" placeholder="Escribe aquí" required>
                 </div>
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="codigo">Código</label>
-                    <div class="input-group">
-                        <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Escribe aquí">
-                        <span class="input-group-text" *ngIf="producto.codigo">
-                            <a class="click" tooltip="Generar código de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
-                        </span>
-                    </div>
+                    <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Escribe aquí">
                 </div>
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="barcode">Código de barras</label>
-                    <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
+                    <div class="input-group">
+                        <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
+                        <span class="input-group-text" *ngIf="producto.barcode || producto.codigo">
+                            <a class="click" tooltip="Generar código de barras" (click)="barcode()"><i class="fa fa-barcode"></i></a>
+                        </span>
+                    </div>
                 </div>
                 <div class="form-group col-md-6 col-lg-2" *ngIf="producto.tipo != 'Servicio'">
                     <label for="medida">U. de Medida</label>
@@ -71,28 +83,28 @@
                         <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
                     </div>
                 </div>
-                <div *ngIf="apiService.auth_user().empresa.valor_inventario != 'promedio'" class="form-group col-md-4 col-lg-3">
+                <div *ngIf="!apiService.isSupervisorLimitado() && apiService.auth_user().empresa.valor_inventario != 'promedio'" class="form-group col-md-4 col-lg-3">
                     <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Última compra)</small></label>
                     <div class="input-group">
                         <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" (change)="actualizarCostoPromedio()" [(ngModel)]="producto.costo" name="costo" placeholder="$0.00" required>
                     </div>
                 </div>
-                <div *ngIf="apiService.auth_user().empresa.valor_inventario == 'promedio'" class="form-group col-md-4 col-lg-3">
+                <div *ngIf="!apiService.isSupervisorLimitado() && apiService.auth_user().empresa.valor_inventario == 'promedio'" class="form-group col-md-4 col-lg-3">
                     <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Promedio)</small></label>
                     <div class="input-group">
                         <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" (change)="actualizarCosto()" [(ngModel)]="producto.costo_promedio" name="costo_promedio" placeholder="$0.00" required>
                     </div>
                 </div>
-                <div class="form-group col-md-4 col-lg-3" *ngIf="!loading && producto.tipo != 'Materia prima'">
+                <div class="form-group col-md-4 col-lg-3" *ngIf="!apiService.isSupervisorLimitado() && !loading && producto.tipo != 'Materia prima'">
                     <label for="tipo_impuesto">Ganancia</label>
                     <div class="input-group">
                         <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" disabled value="{{ (producto.precio - (apiService.auth_user().empresa.valor_inventario == 'promedio' ? producto.costo_promedio : producto.costo)).toFixed(2)}}">
                     </div>
                 </div>
-                <div class="form-group col-md-4 col-lg-3" *ngIf="!loading && producto.tipo != 'Materia prima'">
+                <div class="form-group col-md-4 col-lg-3" *ngIf="!apiService.isSupervisorLimitado() && !loading && producto.tipo != 'Materia prima'">
                     <label for="impuesto">Margen</label>
                     <div class="input-group">
                         <input type="number" class="form-control" disabled value="{{ ((producto.precio - (apiService.auth_user().empresa.valor_inventario == 'promedio' ? producto.costo_promedio : producto.costo)) / producto.precio * 100).toFixed(2) }}">

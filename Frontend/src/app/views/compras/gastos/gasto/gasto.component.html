@@ -46,7 +46,7 @@
         <div class="row">
             <div class="form-group col-md-4 col-lg-3">
                 <label for="id_sucursal">Sucursal:</label>
-                <select name="id_sucursal" [(ngModel)]="gasto.id_sucursal" class="form-select">
+                <select name="id_sucursal" [(ngModel)]="gasto.id_sucursal" (change)="onSucursalGastoChange()" class="form-select">
                     <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
                         {{ sucursal.nombre }}
                     </option>
@@ -65,15 +65,9 @@
                 </div>
             </div>
             <div class="form-group col-md-4 col-lg-3">
-                <label for="id_categoria" class="w-100">Categoria:</label>
+                <label for="tipo_gasto" class="w-100">Tipo de gasto</label>
                 <div class="input-group flex-nowrap">
-                    <!-- <ng-select name="id_categoria" [(ngModel)]="gasto.id_categoria" class="form-select p-0">
-                        <ng-option value="">Seleccione aquí</ng-option>
-                        <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
-                            {{categoria.nombre}}
-                        </ng-option>
-                    </ng-select> -->
-                    <select name="tipo" [(ngModel)]="gasto.tipo" class="form-select">
+                    <select id="tipo_gasto" name="tipo" [(ngModel)]="gasto.tipo" class="form-select">
                         <option value="">Seleccione aquí</option>
                         <option value="Alquiler">Alquiler</option>
                         <option value="Combustible">Combustible</option>
@@ -91,17 +85,63 @@
                         <option value="Préstamos">Préstamos</option>
                         <option value="Publicidad">Publicidad</option>
                     </select>
-                    <!-- <app-crear-categoria-gasto (update)="setCategoria($event)"></app-crear-categoria-gasto> -->
                 </div>
             </div>
-            <div class="form-group col-md-4 col-lg-3">
-                <label for="area_empresa">Area empresa:</label>
-                <input 
-                type="text" 
-                [(ngModel)]="gasto.area_empresa" 
-                name="area_empresa" 
-                class="form-control" 
-                id="area_empresa" 
+            <div class="form-group col-md-4 col-lg-3" *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+                <label for="id_categoria" class="w-100">Categoría</label>
+                <ng-select
+                    name="id_categoria"
+                    [items]="categorias"
+                    bindLabel="nombre"
+                    bindValue="id"
+                    placeholder="Seleccione aquí"
+                    [(ngModel)]="gasto.id_categoria"
+                    [clearable]="true"
+                    class="form-select p-0">
+                </ng-select>
+            </div>
+            <div class="form-group col-md-4 col-lg-3" *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+                <label for="id_departamento_gasto">Departamento</label>
+                <div class="input-group flex-nowrap">
+                    <select
+                        class="form-select flex-grow-1"
+                        name="id_departamento_gasto"
+                        [(ngModel)]="idDepartamentoSeleccionado"
+                        (ngModelChange)="onDepartamentoGastoChange()">
+                        <option [ngValue]="null">Seleccione aquí</option>
+                        <option *ngFor="let d of departamentosEmpresa" [ngValue]="d.id">{{ d.nombre }}</option>
+                    </select>
+                    <app-crear-departamento (update)="setDepartamentoCreado($event)"></app-crear-departamento>
+                </div>
+            </div>
+            <div class="form-group col-md-4 col-lg-3" *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+                <label for="id_area_empresa">Área empresa</label>
+                <div class="input-group flex-nowrap">
+                    <ng-select
+                        name="id_area_empresa"
+                        [(ngModel)]="gasto.id_area_empresa"
+                        class="form-select p-0 flex-grow-1"
+                        placeholder="Primero elija departamento"
+                        [clearable]="true"
+                        [disabled]="!idDepartamentoSeleccionado">
+                        <ng-option *ngFor="let area of areasGastoSelector" [value]="area.id">
+                            {{ area.nombre }}
+                        </ng-option>
+                    </ng-select>
+                    <app-crear-area-empresa
+                        *ngIf="idDepartamentoSeleccionado"
+                        [id_departamento_preselected]="idDepartamentoSeleccionado"
+                        (update)="setAreaEmpresaCreada($event)">
+                    </app-crear-area-empresa>
+                </div>
+            </div>
+            <div class="form-group col-md-4 col-lg-3" *ngIf="!apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+                <label for="area_empresa">Área empresa</label>
+                <input type="text"
+                [(ngModel)]="gasto.area_empresa"
+                name="area_empresa"
+                class="form-control"
+                id="area_empresa"
                 placeholder="Ingrese el área de la empresa">
             </div>
             <div class="form-group col-md-4 col-lg-3" *ngIf="isColumnEnabled('columna_proyecto')">
@@ -151,10 +191,24 @@
                         <input type="text" class="form-control" [(ngModel)]="d.concepto" [name]="'det_concepto_'+i" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-3">
-                        <label>Categoría:</label>
+                        <label>Tipo de gasto:</label>
                         <select class="form-select" [(ngModel)]="d.tipo" [name]="'det_tipo_'+i">
+                            <option value="">Seleccione aquí</option>
                             <option *ngFor="let t of TIPOS_CATEGORIA" [value]="t">{{ t }}</option>
                         </select>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-3" *ngIf="apiService.isGastosCategoriasPersonalizadasHabilitadas()">
+                        <label>Categoría:</label>
+                        <ng-select
+                            class="form-select p-0"
+                            [items]="categorias"
+                            bindLabel="nombre"
+                            bindValue="id"
+                            placeholder="Seleccione aquí"
+                            [(ngModel)]="d.id_categoria"
+                            [clearable]="true"
+                            [name]="'det_id_categoria_'+i">
+                        </ng-select>
                     </div>
                     <div class="form-group col-md-3 col-lg-2">
                         <label>Cantidad:</label>
@@ -190,6 +244,10 @@
                             <input type="checkbox" class="form-check-input" [(ngModel)]="d.aplica_renta" (change)="recalcularDetalleLinea(i)" [name]="'det_aplica_renta_'+i" id="det_renta_{{i}}">
                             <label class="form-check-label" for="det_renta_{{i}}">Renta</label>
                         </div>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" [(ngModel)]="d.aplica_retencion_iva" (change)="recalcularDetalleLinea(i)" [name]="'det_aplica_retencion_iva_'+i" id="det_ret_iva_{{i}}">
+                            <label class="form-check-label" for="det_ret_iva_{{i}}">Ret. IVA</label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -198,6 +256,7 @@
                 <div class="text-end">
                     <span class="text-muted me-3">Sub total: <strong>{{ gasto.sub_total | number:'1.2-2' }}</strong></span>
                     <span class="text-muted me-3">IVA: <strong>{{ gasto.iva | number:'1.2-2' }}</strong></span>
+                    <span class="text-muted me-3" *ngIf="gasto.iva_retenido > 0">IVA retenido: <strong>{{ gasto.iva_retenido | number:'1.2-2' }}</strong></span>
                     <span class="fw-bold">Total: {{ gasto.total | number:'1.2-2' }}</span>
                 </div>
             </div>
@@ -209,7 +268,7 @@
                 <label for="">Concepto:</label>
                 <input type="text" class="form-control" name="concepto" [(ngModel)]="gasto.concepto" placeholder="Escriba aquí" />
             </div>
-            <div class="form-group col-md-4 col-lg-3">
+            <div class="form-group col-md-4 col-lg-2">
                 <label for="">Sub total:</label>
                 <input type='number' class="form-control" name="sub_total" (change)="setTotal()" [(ngModel)]="gasto.sub_total"/>
             </div>
@@ -218,14 +277,18 @@
                 <input type='number' disabled class="form-control" name="iva" [(ngModel)]="gasto.iva"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
-                <label for="">Percepción:</label>
+                <label for="">IVA percibido:</label>
                 <input type='number' disabled class="form-control" name="iva_percibido" [(ngModel)]="gasto.iva_percibido"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
                 <label for="">Renta:</label>
                 <input type='number' disabled class="form-control" name="renta_retenida" [(ngModel)]="gasto.renta_retenida"/>
             </div>
-            <div class="form-group col-md-4 col-lg-3">
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="">IVA retenido:</label>
+                <input type='number' disabled class="form-control" name="iva_retenido" [(ngModel)]="gasto.iva_retenido"/>
+            </div>
+            <div class="form-group col-md-4 col-lg-2">
                 <label for="" class="fw-medium">Total:</label>
                 <input type='number' class="form-control" name="total" (change)="setSubTotal()" [(ngModel)]="gasto.total"/>
             </div>
@@ -280,8 +343,14 @@
             </div>
             <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!varios_items">
                 <div class="form-switch bg-light-info rounded">
-                  <label for="percepcion">Percepción</label>
+                  <label for="percepcion">Percepción (1%)</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.percepcion" name="gasto.percepcion">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!varios_items">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="retencion">Retención (1%)</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.retencion" name="gasto.retencion">
                 </div>
             </div>
             <div class="form-group col-md-4 col-lg-3 without-label" *ngIf="!varios_items">

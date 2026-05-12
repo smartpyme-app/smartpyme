@@ -10,7 +10,8 @@ import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-empresa',
-    templateUrl: './empresa.component.html'
+    templateUrl: './empresa.component.html',
+    styleUrls: ['./empresa.component.css']
 })
 export class EmpresaComponent implements OnInit, AfterViewInit {
 
@@ -100,6 +101,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.loading = true;
         this.apiService.read('empresa/', this.apiService.auth_user().id_empresa).subscribe(empresa => {
             this.empresa = empresa;
+            if (!this.empresa.woocommerce_sync_mode) {
+                this.empresa.woocommerce_sync_mode = 'bidirectional';
+            }
 
             this.initializeCustomConfig();
             this.loading = false;
@@ -122,6 +126,22 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         }, error => { this.alertService.error(error); this.loading = false; });
     }
 
+    /** SmartPyme puede enviar/exportar catálogo a WooCommerce */
+    public woocommerceModoPuedeEnviarATienda(): boolean {
+        const m = this.empresa && this.empresa.woocommerce_sync_mode
+            ? this.empresa.woocommerce_sync_mode
+            : 'bidirectional';
+        return m === 'bidirectional' || m === 'sp_to_wc';
+    }
+
+    /** Se puede importar CSV exportado desde WooCommerce */
+    public woocommerceModoPuedeImportarDesdeWoo(): boolean {
+        const m = this.empresa && this.empresa.woocommerce_sync_mode
+            ? this.empresa.woocommerce_sync_mode
+            : 'bidirectional';
+        return m === 'bidirectional' || m === 'wc_to_sp';
+    }
+
     public onSubmit(): Promise<any> {
 
         return new Promise((resolve, reject) => {
@@ -135,12 +155,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 user = JSON.parse(localStorage.getItem('SP_auth_user')!);
                 user.empresa = empresa;
                 localStorage.setItem('SP_auth_user', JSON.stringify(user));
-
-                if (this.empresa.fe_ambiente == '01') {
-                    localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
-                } else {
-                    localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
-                }
 
                 this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
                 this.saving = false;
@@ -1146,8 +1160,17 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 lotes_dias_anticipacion: 30, // Días para alerta de vencimiento
                 componente_quimico_activo: false, // Habilitar campo componente químico en productos
                 modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
+                gastos_categorias_personalizadas: false, // Categorías de gasto BD, departamentos y áreas en gastos
                 estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
-                vista_modulo_restaurante_pedidos: 'ambos' as 'restaurante' | 'pedidos' | 'ambos' // Menú lateral: restaurante, pedidos o ambos
+                vista_modulo_restaurante_pedidos: 'ambos' as 'restaurante' | 'pedidos' | 'ambos', // Menú lateral: restaurante, pedidos o ambos
+                sku_correlativo_automatico: false, // obsoleto: migrar a barcode_correlativo_automatico; se lee por compatibilidad
+                barcode_correlativo_automatico: false, // Código de barras correlativo automático al crear productos
+                inventario_sumar_stock_busquedas: false, // Total de stock en listado de inventario según filtros
+                cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
+                cotizacion_mostrar_imagenes_productos: false, // Mostrar imágenes de productos en cotizaciones
+                bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
+                ventas_puede_cambiar_vendedor_facturacion: false, // Ventas/Limitado pueden elegir vendedor al facturar
+                dte_mostrar_descripcion_producto: true, // Descripción extendida del catálogo en PDF de factura y CCF (DTE)
             },
             campos_personalizados: {}
         };
@@ -1253,6 +1276,26 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.updateTicketEnPdf(!currentValue);
     }
 
+    public isDteMostrarDescripcionProductoEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'dte_mostrar_descripcion_producto', true);
+    }
+
+    public updateDteMostrarDescripcionProducto(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'dte_mostrar_descripcion_producto', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Se mostrará la descripción del producto en los PDF de DTE (factura y CCF).'
+                    : 'Ya no se mostrará la descripción extendida del producto en los PDF de DTE.'
+            );
+        });
+    }
+
+    public toggleDteMostrarDescripcionProducto() {
+        this.updateDteMostrarDescripcionProducto(!this.isDteMostrarDescripcionProductoEnabled());
+    }
+
     // Método para obtener la versión de facturación configurada
     public getVersionFacturacion(): string {
         return this.getCustomConfig('configuraciones', 'version_facturacion', 'original');
@@ -1298,6 +1341,62 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public toggleCamposContables() {
         const currentValue = this.isCamposContablesEnabled();
         this.updateCamposContables(!currentValue);
+    }
+
+    public isCotizacionMostrarDescripcionEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'cotizacion_mostrar_descripcion', true);
+    }
+
+    public updateCotizacionMostrarDescripcion(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'cotizacion_mostrar_descripcion', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Mostrar descripción en cotizaciones ${enabled ? 'activado' : 'desactivado'} correctamente`
+            );
+        });
+    }
+
+    public toggleCotizacionMostrarDescripcion() {
+        this.updateCotizacionMostrarDescripcion(!this.isCotizacionMostrarDescripcionEnabled());
+    }
+
+    public isCotizacionMostrarImagenesProductosEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'cotizacion_mostrar_imagenes_productos', false);
+    }
+
+    public updateCotizacionMostrarImagenesProductos(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'cotizacion_mostrar_imagenes_productos', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Imágenes de productos en cotizaciones ${enabled ? 'activadas' : 'desactivadas'} correctamente`
+            );
+        });
+    }
+
+    public toggleCotizacionMostrarImagenesProductos() {
+        this.updateCotizacionMostrarImagenesProductos(!this.isCotizacionMostrarImagenesProductosEnabled());
+    }
+
+    public isBloquearCotizacionesVendedoresEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'bloquear_cotizaciones_vendedores', false);
+    }
+
+    public updateBloquearCotizacionesVendedores(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'bloquear_cotizaciones_vendedores', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Restricciones de cotizaciones para vendedores activadas.'
+                    : 'Restricciones de cotizaciones para vendedores desactivadas.'
+            );
+        });
+    }
+
+    public toggleBloquearCotizacionesVendedores() {
+        this.updateBloquearCotizacionesVendedores(!this.isBloquearCotizacionesVendedoresEnabled());
     }
 
     // Métodos para configuraciones de lotes
@@ -1382,6 +1481,32 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         });
     }
 
+    public isGastosCategoriasPersonalizadasHabilitadas(): boolean {
+        return this.getCustomConfig('configuraciones', 'gastos_categorias_personalizadas', false);
+    }
+
+    public toggleGastosCategoriasPersonalizadas() {
+        const currentValue = this.isGastosCategoriasPersonalizadasHabilitadas();
+        this.updateGastosCategoriasPersonalizadas(!currentValue);
+    }
+
+    public updateGastosCategoriasPersonalizadas(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'gastos_categorias_personalizadas', activo);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                activo
+                    ? 'Categorías de gastos personalizadas habilitadas.'
+                    : 'Categorías de gastos personalizadas deshabilitadas.'
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
     // Métodos para estado de cuenta en facturación
     public isEstadoCuentaEnFacturacionHabilitado(): boolean {
         return this.getCustomConfig('configuraciones', 'estado_cuenta_en_facturacion', false);
@@ -1399,6 +1524,80 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.alertService.success(
                 'Configuración actualizada',
                 `Estado de cuenta en facturación ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    public isVentasPuedeCambiarVendedorFacturacion(): boolean {
+        return this.getCustomConfig('configuraciones', 'ventas_puede_cambiar_vendedor_facturacion', false);
+    }
+
+    public toggleVentasPuedeCambiarVendedorFacturacion() {
+        this.updateVentasPuedeCambiarVendedorFacturacion(!this.isVentasPuedeCambiarVendedorFacturacion());
+    }
+
+    public updateVentasPuedeCambiarVendedorFacturacion(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'ventas_puede_cambiar_vendedor_facturacion', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Permiso para que Ventas cambien vendedor ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    public isBarcodeCorrelativoAutomatico(): boolean {
+        return this.getCustomConfig('configuraciones', 'barcode_correlativo_automatico', false)
+            || this.getCustomConfig('configuraciones', 'sku_correlativo_automatico', false);
+    }
+
+    public toggleBarcodeCorrelativoAutomatico() {
+        this.updateBarcodeCorrelativoAutomatico(!this.isBarcodeCorrelativoAutomatico());
+    }
+
+    public updateBarcodeCorrelativoAutomatico(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'barcode_correlativo_automatico', activo);
+        this.addCustomConfig('configuraciones', 'sku_correlativo_automatico', false);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Código de barras correlativo automático ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    public isInventarioSumarStockBusquedas(): boolean {
+        return this.getCustomConfig('configuraciones', 'inventario_sumar_stock_busquedas', false);
+    }
+
+    public toggleInventarioSumarStockBusquedas() {
+        this.updateInventarioSumarStockBusquedas(!this.isInventarioSumarStockBusquedas());
+    }
+
+    public updateInventarioSumarStockBusquedas(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'inventario_sumar_stock_busquedas', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Total de stock en listado de inventario ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
             );
             const authUser = this.apiService.auth_user();
             if (authUser?.empresa?.id === this.empresa?.id) {

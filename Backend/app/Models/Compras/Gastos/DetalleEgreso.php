@@ -20,6 +20,7 @@ class DetalleEgreso extends Model
         'sub_total',
         'iva',
         'renta_retenida',
+        'iva_retenido',
         'iva_percibido',
         'total',
         'area_empresa',
@@ -27,6 +28,7 @@ class DetalleEgreso extends Model
         'aplica_iva',
         'aplica_renta',
         'aplica_percepcion',
+        'aplica_retencion_iva',
     ];
 
     protected $casts = [
@@ -35,11 +37,13 @@ class DetalleEgreso extends Model
         'sub_total' => 'decimal:2',
         'iva' => 'decimal:2',
         'renta_retenida' => 'decimal:2',
+        'iva_retenido' => 'decimal:2',
         'iva_percibido' => 'decimal:2',
         'total' => 'decimal:2',
         'aplica_iva' => 'boolean',
         'aplica_renta' => 'boolean',
         'aplica_percepcion' => 'boolean',
+        'aplica_retencion_iva' => 'boolean',
     ];
 
     public function egreso()

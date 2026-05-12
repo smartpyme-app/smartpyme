@@ -60,9 +60,9 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
             });
 
 
-        $libroCompras = $compras->merge($compras)->merge($gastos)->sortBy(function ($item) {
-                return [$item['fecha']];
-            });
+        $libroCompras = $compras->merge($gastos)->sortBy(function ($item) {
+            return $item->fecha;
+        });
 
         return $libroCompras;
         
@@ -72,13 +72,19 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
             setlocale(LC_NUMERIC, 'C');
             $proveedor = optional($compra->proveedor()->first());
 
+            $sello = SujetosExcluidosDteHelper::selloRecepcion($compra);
+            $codGen = SujetosExcluidosDteHelper::codigoGeneracion($compra);
+            // F07 Anexo 5: E = sello recepción DTE; F = código de generación (sin guiones). Fallback si aún no hay DTE.
+            $colSerie = $sello !== '' ? $sello : (string) ($compra->num_serie ?? '');
+            $colNumDoc = $codGen !== '' ? $codGen : preg_replace('/[^A-Z0-9]/i', '', (string) ($compra->referencia ?? ''));
+
             $data = [
                 $proveedor->nit ? 1 : 2,  // A - TIPO DE DOCUMENTO
                 $proveedor->nit ? $proveedor->nit : $proveedor->dui,  // B - NUMERO DE NIT, DI-II, IJ OTRO DOCUMENTO
                 $compra->nombre_proveedor,  // C - NOMBRE, RAZ N SOCIAL O DENOMINACI N
                 \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'),  // D - FECHA DE EMISI N DEL DOCUMENTO
-                $compra->sello_mh ? $compra->sello_mh : $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
-                $compra->sello_mh ? $compra->dte['identificacion']['codigoGeneracion'] : $compra->referencia,  // F - NUMERO DE DOCUMENTO
+                $colSerie,  // E - Número de serie = sello recepción (DTE)
+                $colNumDoc,  // F - Número documento = código generación DTE
                 number_format($compra->total, 2, '.', ''),  // G - MONTO DE LA OPERACIÖN
                 number_format($compra->iva, 2, '.', ''),  // H - MONTO DE LA RETENCIÖN IVA 13%
                 $this->tipoOperacion($compra->tipo_operacion),  // Q - TIPO DE OPERACIÖN

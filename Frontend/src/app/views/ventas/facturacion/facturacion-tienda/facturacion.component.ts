@@ -11,6 +11,7 @@ import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
+import { VentaDetallesComponent } from './detalles/venta-detalles.component';
 
 @Component({
   selector: 'app-facturacion',
@@ -47,6 +48,15 @@ export class FacturacionComponent implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
+  public habilitarCuentaTerceros = false;
+
+  /**
+   * Si el usuario movió el switch de retención IVA 1%, no aplicar la regla automática (gran contribuyente + monto)
+   * hasta cambiar de cliente o iniciar un documento nuevo desde carga inicial.
+   */
+  private retencionIvaGcUsuarioDecidio = false;
+
   /** Pre-cuenta restaurante: al facturar desde cuenta-mesa */
   preCuentaId: number | null = null;
   sesionId: number | null = null;
@@ -82,6 +92,9 @@ export class FacturacionComponent implements OnInit {
 
   @ViewChild('mcredito')
   public creditoTemplate!: TemplateRef<any>;
+
+  @ViewChild(VentaDetallesComponent)
+  private ventaDetalles?: VentaDetallesComponent;
 
   constructor(
     public apiService: ApiService,
@@ -140,13 +153,16 @@ export class FacturacionComponent implements OnInit {
     this.apiService.getAll('usuarios/list').subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
-        if (
-          this.apiService.auth_user().tipo != 'Administrador' &&
-          this.apiService.auth_user().tipo != 'Supervisor' &&
-          this.apiService.auth_user().tipo != 'Supervisor Limitado'
-        ) {
+        const auth = this.apiService.auth_user();
+        const listaCompletaVendedores =
+          auth.tipo === 'Administrador' ||
+          auth.tipo === 'Supervisor' ||
+          auth.tipo === 'Supervisor Limitado' ||
+          ((auth.tipo === 'Ventas' || auth.tipo === 'Ventas Limitado') &&
+            this.apiService.isVentasPuedeCambiarVendedorFacturacion());
+        if (!listaCompletaVendedores) {
           this.usuarios = this.usuarios.filter(
-            (item: any) => item.id == this.apiService.auth_user().id
+            (item: any) => item.id == auth.id
           );
         }
       },
@@ -275,6 +291,8 @@ export class FacturacionComponent implements OnInit {
 
   public cargarDatosIniciales() {
     this.venta = {};
+    this.habilitarCuentaTerceros = false;
+    this.retencionIvaGcUsuarioDecidio = false;
     this.venta.fecha = this.apiService.date();
     this.venta.fecha_pago = this.apiService.date();
     this.venta.forma_pago = 'Efectivo';
@@ -396,7 +414,7 @@ export class FacturacionComponent implements OnInit {
             pedido_id: pedidoCanalIdVal,
             cliente_id: pdata.cliente_id,
             id_sucursal: pdata.id_sucursal,
-            id_bodega_inventario: pdata.id_bodega_inventario,
+            id_bodega: pdata.id_bodega,
             fecha: pdata.fecha,
             canal: pdata.canal,
             referencia_externa: pdata.referencia_externa,
@@ -419,6 +437,7 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.sumTotal();
@@ -443,6 +462,7 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
                 this.venta.cliente = {};
@@ -479,45 +499,51 @@ export class FacturacionComponent implements OnInit {
       this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
       this.route.snapshot.queryParamMap.get('id_venta')!
     ) {
-      this.facturarCotizacion = true;
-      this.apiService
-        .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
-        .subscribe(
-          (venta) => {
-            this.venta = venta;
-            this.normalizarDetallesTipoGravado(this.venta);
-            if(!this.venta.cliente){
-                this.venta.cliente = {};
-            }else{
-              this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
-            }
-            this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
-            this.venta.fecha = this.apiService.date();
-            this.venta.fecha_pago = this.apiService.date();
-            this.venta.id_documento = null;
-            this.venta.correlativo = null;
-            this.venta.estado = 'Pagada';
-            this.venta.condicion = 'Contado';
-            this.venta.impuestos = this.impuestos;
-            this.venta.observaciones = '';
-            this.venta.cotizacion = 0;
-            this.venta.num_cotizacion = this.venta.id;
-            this.venta.id = null;
-            this.venta.detalles.forEach((detalle: any) => {
-              detalle.id = null;
-            });
-            this.sumTotal();
+      if (this.apiService.restriccionesCotizacionesVendedoresActivas()) {
+        this.alertService.error('No tiene permiso para facturar cotizaciones.');
+        this.router.navigate(['/cotizaciones']);
+      } else {
+        this.facturarCotizacion = true;
+        this.apiService
+          .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
+          .subscribe(
+            (venta) => {
+              this.venta = venta;
+              this.retencionIvaGcUsuarioDecidio = true;
+              this.normalizarDetallesTipoGravado(this.venta);
+              if(!this.venta.cliente){
+                  this.venta.cliente = {};
+              }else{
+                this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
+              }
+              this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+              this.venta.fecha = this.apiService.date();
+              this.venta.fecha_pago = this.apiService.date();
+              this.venta.id_documento = null;
+              this.venta.correlativo = null;
+              this.venta.estado = 'Pagada';
+              this.venta.condicion = 'Contado';
+              this.venta.impuestos = this.impuestos;
+              this.venta.observaciones = '';
+              this.venta.cotizacion = 0;
+              this.venta.num_cotizacion = this.venta.id;
+              this.venta.id = null;
+              this.venta.detalles.forEach((detalle: any) => {
+                detalle.id = null;
+              });
+              this.sumTotal();
 
-            // Para proyectos
-            if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
-              this.venta.detalles = [];
+              // Para proyectos
+              if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+                this.venta.detalles = [];
+              }
+            },
+            (error) => {
+              this.alertService.error(error);
+              this.loading = false;
             }
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.loading = false;
-          }
-        );
+          );
+      }
     }
 
     // Facturar orden de compra
@@ -574,12 +600,14 @@ export class FacturacionComponent implements OnInit {
           detalle.precio = parseFloat(producto.precio);
           detalle.costo = parseFloat(producto.costo);
           detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-          detalle.gravada = detalle.total;
+          detalle.descuento = 0;
           detalle.id_vendedor = this.venta.id_vendedor;
           detalle.exenta = 0;
           detalle.no_sujeta = 0;
           detalle.cuenta_a_terceros = 0;
           detalle.total = detalle.precio * detalle.cantidad;
+          // Base gravada para IVA: debe asignarse después de total (antes quedaba NaN y sumTotal dejaba IVA en 0)
+          detalle.gravada = detalle.total;
           this.venta.detalles.push(detalle);
           this.sumTotal();
         } else {
@@ -719,7 +747,8 @@ export class FacturacionComponent implements OnInit {
     this.venta.forma_pago = 'Multiple';
     this.venta.efectivo = this.formaPagos.find(
       (item: any) => item.nombre == 'Efectivo'
-    ).total;
+    )?.total;
+    this.actualizarCambioEfectivo();
     console.log(this.venta);
   }
 
@@ -737,6 +766,8 @@ export class FacturacionComponent implements OnInit {
     // 4 decimales en agregados para cuadrar con líneas (precio sin IVA + IVA por línea); el total final sigue en 2
     const rawSubTotal = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'));
     this.venta.sub_total = Number(rawSubTotal).toFixed(4);
+
+    this.sincronizarRetencionGranContribuyente();
 
     const rawExenta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'));
     this.venta.exenta = Number(rawExenta).toFixed(4);
@@ -779,7 +810,7 @@ export class FacturacionComponent implements OnInit {
           })
           .reduce((sum: number, d: any) => {
             const gravada = parseFloat(d.gravada || 0);
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
               ? parseFloat(d.iva) : gravada * (pctImp / 100);
             return sum + ivaLinea;
           }, 0);
@@ -797,7 +828,7 @@ export class FacturacionComponent implements OnInit {
             const gravada = parseFloat(d.gravada || 0);
             const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
               ? Number(d.porcentaje_impuesto) : empresaIva;
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
               ? parseFloat(d.iva) : gravada * (pct / 100);
             return sum + ivaLinea;
           }, 0);
@@ -846,16 +877,82 @@ export class FacturacionComponent implements OnInit {
             this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
         }
     }
+
+    this.actualizarCambioEfectivo();
   }
+
+  /** Vuelto: efectivo recibido (monto_pago) menos lo debido en efectivo (total o parte en pago mixto). */
+  public actualizarCambioEfectivo(): void {
+    const raw = this.venta.monto_pago;
+    if (raw === null || raw === undefined || raw === '') {
+      this.venta.cambio = '';
+      return;
+    }
+    const recibido = parseFloat(String(raw)) || 0;
+    const totalVenta = parseFloat(String(this.venta.total ?? 0)) || 0;
+    const enMultiple = this.venta.forma_pago === 'Multiple';
+    const parteEfectivo = parseFloat(String(this.venta.efectivo ?? 0)) || 0;
+    const aCobrarEfectivo = enMultiple && parteEfectivo > 0 ? parteEfectivo : totalVenta;
+    this.venta.cambio = (recibido - aCobrarEfectivo).toFixed(2);
+  }
+
+  /** Tras cargar una venta: mostrar el bloque de cuenta a terceros si hay monto en líneas o en cabecera. */
+  private aplicarEstadoCuentaTercerosDesdeVentaCargada(): void {
+    const cRaw = parseFloat(this.venta.cuenta_a_terceros) || 0;
+    const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
+    this.habilitarCuentaTerceros = sumDet > 0.0001 || cRaw > 0.0001;
+  }
+
+  onCuentaTercerosSwitchChange(): void {
+    this.sumTotal();
+  }
+
+  /** Paquetes: al detectar en listado (o al marcar/agregar uno) cuenta a terceros &gt; 0. */
+  onAlMenosUnPaqueteCuentaTerceros(): void {
+    this.habilitarCuentaTerceros = true;
+    this.sumTotal();
+  }
+
+    /** Umbral de subtotal (USD u otra moneda de la empresa): retención IVA 1% automática en GC si el subtotal alcanza este monto (por defecto 100). */
+    private montoMinimoRetencionIvaGc(): number {
+        const v = this.apiService.auth_user()?.empresa?.monto_minimo_retencion_iva_gc;
+        const n = parseFloat(v);
+        return !isNaN(n) && n >= 0 ? n : 100;
+    }
+
+    /** Activa o desactiva la retención según subtotal y tipo de contribuyente del cliente (si el usuario no la ajustó a mano). */
+    private sincronizarRetencionGranContribuyente(): void {
+        const c = this.venta?.cliente;
+        if (!c || c.tipo_contribuyente !== 'Grande') {
+            return;
+        }
+        if (this.retencionIvaGcUsuarioDecidio) {
+            return;
+        }
+        const sub = parseFloat(this.venta.sub_total) || 0;
+        const min = this.montoMinimoRetencionIvaGc();
+        this.venta.retencion = sub >= min;
+    }
+
+    /** El usuario movió el switch de retención IVA: no volver a imponer la regla automática en cada recálculo. */
+    public onRetencionIvaManualChange(): void {
+        this.retencionIvaGcUsuarioDecidio = true;
+        this.sumTotal();
+    }
+
+    public onCobrarImpuestosChange(): void {
+        this.ventaDetalles?.sincronizarIvasDetalles();
+        this.sumTotal();
+    }
 
     // Cliente
     public setCliente(cliente:any){
         if(cliente.id){
+            this.retencionIvaGcUsuarioDecidio = false;
             cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
             this.venta.id_cliente = cliente.id;
             this.venta.cliente = cliente;
             if(cliente.tipo_contribuyente == "Grande") {
-                this.venta.retencion = 1;
                 this.sumTotal();
             }
             // Resetear puntos cuando cambia el cliente
@@ -1062,6 +1159,7 @@ export class FacturacionComponent implements OnInit {
             this.venta.detalle_banco = '';
             this.mensajeErrorBanco = '';
         }
+        this.actualizarCambioEfectivo();
     }
 
     public setDocumento(id_documento: any) {
@@ -1143,7 +1241,7 @@ export class FacturacionComponent implements OnInit {
     pedido_id: number;
     cliente_id?: number | null;
     id_sucursal?: number | null;
-    id_bodega_inventario?: number | null;
+    id_bodega?: number | null;
     fecha?: string | null;
     canal?: string | null;
     referencia_externa?: string | null;
@@ -1154,8 +1252,8 @@ export class FacturacionComponent implements OnInit {
     if (data.id_sucursal) {
       this.venta.id_sucursal = data.id_sucursal;
     }
-    if (data.id_bodega_inventario) {
-      this.venta.id_bodega = data.id_bodega_inventario;
+    if (data.id_bodega) {
+      this.venta.id_bodega = data.id_bodega;
     }
     if (data.fecha) {
       this.venta.fecha = data.fecha;
@@ -1209,6 +1307,18 @@ export class FacturacionComponent implements OnInit {
         error: () => {},
       });
     }
+
+    const syncBodegaPedido = (attempt = 0) => {
+      if (data.id_bodega) {
+        this.venta.id_bodega = data.id_bodega;
+      }
+      if (this.bodegas?.length && this.venta.id_bodega) {
+        this.setBodega();
+      } else if (attempt < 40) {
+        setTimeout(() => syncBodegaPedido(attempt + 1), 100);
+      }
+    };
+    syncBodegaPedido();
   }
 
   private navegarPostFacturaPedidoCanal(ventaId: number) {
@@ -1240,6 +1350,10 @@ export class FacturacionComponent implements OnInit {
       return;
     }
 
+    if (this.tieneDetallesInvalidosParaFacturar()) {
+      return;
+    }
+
     if (
       confirm(
         '¿Confirma procesar la ' +
@@ -1253,6 +1367,38 @@ export class FacturacionComponent implements OnInit {
       }
       this.onSubmit();
     }
+  }
+
+  private tieneDetallesInvalidosParaFacturar(): boolean {
+    const detalles = this.venta.detalles || [];
+
+    const sinCantidad = detalles.find((detalle: any) => {
+      const c = Number(detalle?.cantidad);
+      return !Number.isFinite(c) || c <= 0;
+    });
+    if (sinCantidad) {
+      const nombre =
+        sinCantidad.descripcion || sinCantidad.nombre || 'el producto';
+      this.alertService.error(
+        `La cantidad de "${nombre}" debe ser mayor que 0 para procesar la venta.`
+      );
+      return true;
+    }
+
+    const totalInvalido = detalles.find((detalle: any) => {
+      const t = Number(detalle?.total);
+      return !Number.isFinite(t) || t < 0;
+    });
+    if (totalInvalido) {
+      const nombre =
+        totalInvalido.descripcion || totalInvalido.nombre || 'el producto';
+      this.alertService.error(
+        `El total de la línea "${nombre}" debe ser mayor o igual a 0.`
+      );
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -1282,14 +1428,14 @@ export class FacturacionComponent implements OnInit {
       this.venta.cambio = 0;
     }
 
+    if (this.pedidoCanalId) {
+      (this.venta as any).id_pedido_canal = this.pedidoCanalId;
+    }
+
     // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
     if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
       this.venta.credito = false;
       this.venta.consigna = false;
-    }
-
-    if (this.pedidoCanalId) {
-      (this.venta as any).id_restaurante_pedido = this.pedidoCanalId;
     }
 
     this.apiService.store('facturacion', this.venta).subscribe(

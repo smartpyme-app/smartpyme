@@ -4,8 +4,14 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { CompraJsonBulkService } from '@services/compra-json-bulk.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { Subject } from 'rxjs';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+
+/** Debe coincidir con el slug en Backend (FuncionalidadesSeeder / verificar-acceso). */
+const SLUG_IMPORTACION_MASIVA_COMPRAS_JSON = 'importacion-masiva-compras-json';
+import { debounceTime, distinctUntilChanged, switchMap, takeUntil, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 declare var $:any;
 
@@ -48,13 +54,67 @@ export class ComprasComponent implements OnInit, OnDestroy {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
-                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
-    ){}
+    /** Importación masiva JSON (listado de compras) */
+    public bulkModalRef!: BsModalRef;
+    public bulkItems: BulkCompraItem[] = [];
+    public bulkTabIndex = 0;
+    public bulkProcesandoArchivos = false;
+    public bulkGuardandoTodas = false;
+    public impuestosCompra: any[] = [];
+    public bodegasBulk: any[] = [];
+    public readonly maxBulkJsonFiles = 20; // este es el limite de archivos que se pueden cargar
+    /** Documentos de venta filtrados para compras (correlativo por tipo y sucursal) */
+    public documentosBulk: any[] = [];
+    public bulkSearchProductos$ = new Subject<string>();
+    public bulkSearchResults: any[] = [];
+    public bulkSearchLoading = false;
+    public bulkSearchTerm = '';
+    /** Importación masiva JSON en listado de compras (funcionalidad por empresa). */
+    public permiteImportacionMasivaComprasJson = false;
+
+    constructor(
+        public apiService: ApiService,
+        public mhService: MHService,
+        private alertService: AlertService,
+        private modalService: BsModalService,
+        private router: Router,
+        private route: ActivatedRoute,
+        private compraJsonBulk: CompraJsonBulkService,
+        private funcionalidadesService: FuncionalidadesService
+    ) {
+        this.bulkSearchProductos$
+            .pipe(
+                debounceTime(300),
+                distinctUntilChanged(),
+                switchMap((term) => {
+                    if (!term || term.length < 2) {
+                        return of([]);
+                    }
+                    this.bulkSearchLoading = true;
+                    this.bulkSearchTerm = term;
+                    return this.apiService
+                        .store('productos/buscar-modal', {
+                            termino: term,
+                            id_empresa: this.apiService.auth_user().id_empresa,
+                            limite: 15,
+                        })
+                        .pipe(catchError(() => of([])));
+                }),
+                takeUntil(this.destroy$)
+            )
+            .subscribe((results) => {
+                this.bulkSearchResults = results || [];
+                this.bulkSearchLoading = false;
+            });
+    }
 
     ngOnDestroy() {
         this.destroy$.next();
         this.destroy$.complete();
+    }
+
+    protected untilDestroyed() {
+        return takeUntil(this.destroy$);
     }
 
     ngOnInit() {
@@ -83,13 +143,19 @@ export class ComprasComponent implements OnInit, OnDestroy {
                 page: +params['page'] || 1,
             };
 
-            this.filtrarCompras();
+            this.filtrarCompras(false);
         });
 
         this.getNumsIds();
         this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
+
+        this.funcionalidadesService
+            .verificarAcceso(SLUG_IMPORTACION_MASIVA_COMPRAS_JSON)
+            .subscribe((ok) => {
+                this.permiteImportacionMasivaComprasJson = !!ok;
+            });
     }
 
     public loadAll() {
@@ -112,7 +178,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
         this.filtros.page = 1;
         this.filtros.num_identificacion = '';
 
-        this.filtrarCompras();
+        this.filtrarCompras(false);
     }
 
     public onBuscadorInput() {
@@ -126,7 +192,15 @@ export class ComprasComponent implements OnInit, OnDestroy {
         return Math.round((total - abonos - devoluciones) * 100) / 100;
     }
 
-    public filtrarCompras(){
+    /**
+     * @param resetPage Si es true (por defecto), vuelve a la página 1 (búsqueda, filtros, orden, paginate).
+     *                  false al paginar, sincronizar URL o refrescar tras guardar sin cambiar de página.
+     */
+    public filtrarCompras(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
+
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: this.filtros,
@@ -243,7 +317,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
             this.alertService.success('Venta guardado', 'La compra fue guardada exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
 
-        this.filtrarCompras();
+        this.filtrarCompras(false);
 
     }
 
@@ -261,7 +335,7 @@ export class ComprasComponent implements OnInit, OnDestroy {
     public setPagination(event:any):void{
         this.loading = true;
         this.filtros.page = event.page;
-        this.filtrarCompras();
+        this.filtrarCompras(false);
     }
 
     public openDescargar(template: TemplateRef<any>) {
@@ -341,12 +415,26 @@ export class ComprasComponent implements OnInit, OnDestroy {
     }
 
     openDTE(template: TemplateRef<any>, compra:any){
-        this.compra = compra;
-        this.modalRef = this.modalService.show(template);
-        this.alertService.modal = true;
-        if(!this.compra.dte){
-            this.emitirDTE();
+        const abrir = (c: any) => {
+            this.compra = c;
+            this.modalRef = this.modalService.show(template);
+            this.alertService.modal = true;
+            if (!this.compra.dte && !this.compra.dte_en_s3) {
+                this.emitirDTE();
+            }
+        };
+
+        if (compra.dte_en_s3 && !compra.dte) {
+            this.apiService.read('compra/', compra.id)
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: (c: any) => abrir(c),
+                    error: (e) => this.alertService.error(e),
+                });
+            return;
         }
+
+        abrir(compra);
     }
 
     imprimirDTEPDF(compra:any){
@@ -384,49 +472,61 @@ export class ComprasComponent implements OnInit, OnDestroy {
     }
 
     anularDTE(compra:any){
-        this.compra = compra;
-        if(compra.dte){
-            if (confirm('¿Confirma anular la compra y el DTE?')) {
-                this.compra = compra;
-                this.saving = true;
-                this.apiService.store('generarDTEAnuladoSujetoExcluidoCompra', this.compra).subscribe(dte => {
-                    // this.alertService.success('DTE generado.');
-                    this.compra.dte_invalidacion = dte;
-                    this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
-                        this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
-                        // this.alertService.success('DTE firmado.');
-                        
-                        this.mhService.anularDTE(this.compra, dteFirmado.body).subscribe(dte => {
-                            if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                                this.compra.dte_invalidacion.sello = dte.selloRecibido;
-                                this.compra.estado = 'Anulada';
-                                this.apiService.store('compra', this.compra).subscribe(data => {
-                                    // this.alertService.success('Compra guardada.');
-                                },error => {this.alertService.error(error); this.saving = false; });
-                            }
+        const conDte = (c: any) => {
+            this.compra = c;
+            if(c.sello_mh){
+                if (confirm('¿Confirma anular la compra y el DTE?')) {
+                    this.compra = c;
+                    this.saving = true;
+                    this.apiService.store('generarDTEAnuladoSujetoExcluidoCompra', this.compra).subscribe(dte => {
+                        this.compra.dte_invalidacion = dte;
+                        this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+                            this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
 
-                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
-                        },error => {
-                            if(error.error.descripcionMsg){
-                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
-                            }
-                            if(error.error.observaciones.length > 0){
-                                this.alertService.warning('Hubo un problema', error.error.observaciones);
-                            }
-                            this.saving = false;
-                        });
+                            this.mhService.anularDTE(this.compra, dteFirmado.body).subscribe(dte => {
+                                if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                                    this.compra.dte_invalidacion.sello = dte.selloRecibido;
+                                    this.compra.estado = 'Anulada';
+                                    this.apiService.store('compra', this.compra).subscribe(data => {
+                                    },error => {this.alertService.error(error); this.saving = false; });
+                                }
+
+                                this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                            },error => {
+                                if(error.error.descripcionMsg){
+                                    this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                                }
+                                if(error.error.observaciones.length > 0){
+                                    this.alertService.warning('Hubo un problema', error.error.observaciones);
+                                }
+                                this.saving = false;
+                            });
+
+                        },error => {this.alertService.error(error);this.saving = false; });
 
                     },error => {this.alertService.error(error);this.saving = false; });
+                }
+            }
+            else{
+                if (confirm('¿Confirma anular la compra?')){
+                    c.estado = 'Anulada';
+                    this.compra = c;
+                    this.onSubmit();
+                }
+            }
+        };
 
-                },error => {this.alertService.error(error);this.saving = false; });
-            }
+        if (compra.dte_en_s3 && !compra.dte) {
+            this.apiService.read('compra/', compra.id)
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: (c: any) => conDte(c),
+                    error: (e) => this.alertService.error(e),
+                });
+            return;
         }
-        else{
-            if (confirm('¿Confirma anular la compra?')){
-                compra.estado = 'Anulada';
-                this.onSubmit();
-            }
-        }
+
+        conDte(compra);
     }
 
    
@@ -502,4 +602,413 @@ export class ComprasComponent implements OnInit, OnDestroy {
     window.open(this.apiService.baseUrl + '/api/compra/impresion/' + compra.id + '?token=' + this.apiService.auth_token());
   }
 
+  // --- Importación masiva desde JSON (listado compras) ---
+
+  private filterDocumentosBulkLista(documentos: any[]): any[] {
+    const auth = this.apiService.auth_user();
+    const documentosPermitidos = [
+      'Factura',
+      'Crédito fiscal',
+      'Ticket',
+      'Recibo',
+      'Sujeto excluido',
+      'Factura de exportación',
+    ];
+    return (documentos || []).filter(
+      (x: any) =>
+        x.id_sucursal == auth.id_sucursal &&
+        documentosPermitidos.includes(x.nombre) &&
+        x.nombre != 'Nota de crédito' &&
+        x.nombre != 'Nota de débito'
+    );
+  }
+
+  /**
+   * Recarga `documentos/list` y reasigna referencias en pestañas pendientes.
+   * Tras guardar, se pasa `despuesDeGuardar` para numerar desde la referencia realmente registrada (+1, +2…),
+   * porque el correlativo del GET no siempre refleja de inmediato el incremento en servidor.
+   */
+  private refrescarCorrelativosBulkTrasGuardar(
+    done?: () => void,
+    despuesDeGuardar?: {
+      referenciaGuardada: any;
+      tipo_documento: string;
+      id_sucursal: any;
+    }
+  ) {
+    this.apiService.getAll('documentos/list').subscribe(
+      (documentos) => {
+        this.documentosBulk = this.filterDocumentosBulkLista(documentos);
+        this.compraJsonBulk.aplicarReferenciasSecuencialesImportacion(
+          this.bulkItems,
+          this.documentosBulk,
+          despuesDeGuardar ? { despuesDeGuardar } : undefined
+        );
+        done?.();
+      },
+      (e) => {
+        this.alertService.error(e);
+        if (despuesDeGuardar) {
+          this.compraJsonBulk.aplicarReferenciasSecuencialesImportacion(
+            this.bulkItems,
+            this.documentosBulk,
+            { despuesDeGuardar }
+          );
+        }
+        done?.();
+      }
+    );
+  }
+
+  openImportacionJsonMasivo(template: TemplateRef<any>) {
+    if (!this.permiteImportacionMasivaComprasJson) {
+      this.alertService.warning(
+        'Importación masiva',
+        'Su empresa no tiene habilitada la importación masiva de compras desde JSON. Solicite la activación al administrador.'
+      );
+      return;
+    }
+    this.bulkItems = [];
+    this.bulkTabIndex = 0;
+    this.documentosBulk = [];
+    this.apiService.getAll('impuestos').subscribe(
+      (impuestos) => {
+        this.impuestosCompra = (impuestos || []).filter(
+          (i: any) => i.aplica_compras !== false && i.aplica_compras !== 0
+        );
+        this.apiService.getAll('bodegas/list').subscribe(
+          (bodegas) => {
+            this.bodegasBulk = bodegas || [];
+            this.apiService.getAll('documentos/list').subscribe(
+              (documentos) => {
+                this.documentosBulk = this.filterDocumentosBulkLista(documentos);
+                this.bulkModalRef = this.modalService.show(template, {
+                  class: 'modal-xl modal-dialog-scrollable',
+                  backdrop: 'static',
+                });
+              },
+              (e) => this.alertService.error(e)
+            );
+          },
+          (e) => this.alertService.error(e)
+        );
+      },
+      (e) => this.alertService.error(e)
+    );
+  }
+
+  cerrarImportacionBulk() {
+    this.bulkModalRef?.hide();
+    this.bulkItems = [];
+    this.bulkTabIndex = 0;
+  }
+
+  private readFileText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result ?? ''));
+      r.onerror = () => reject(r.error);
+      r.readAsText(file);
+    });
+  }
+
+  async onBulkJsonFilesChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const files = input.files;
+    if (!files?.length) {
+      return;
+    }
+    const list = Array.from(files).slice(0, this.maxBulkJsonFiles);
+    if (files.length > this.maxBulkJsonFiles) {
+      this.alertService.warning(
+        'Límite',
+        `Solo se procesan los primeros ${this.maxBulkJsonFiles} archivos.`
+      );
+    }
+    this.bulkProcesandoArchivos = true;
+    const proveedores = this.proveedores || [];
+    for (const f of list) {
+      const uid = 'b-' + Math.random().toString(36).slice(2, 11);
+      try {
+        const text = await this.readFileText(f);
+        const jsonData = JSON.parse(text);
+        const prep = await this.compraJsonBulk.prepararCompraDesdeJson(
+          jsonData,
+          this.impuestosCompra,
+          proveedores,
+          this.documentosBulk
+        );
+        if (prep.error) {
+          this.bulkItems.push({
+            uid,
+            fileName: f.name,
+            compra: prep.compra,
+            jsonData,
+            noEncontrados: [],
+            error: prep.error,
+            estado: 'error',
+          });
+        } else {
+          const estado: BulkCompraItem['estado'] =
+            prep.noEncontrados.length > 0 ? 'pendiente_productos' : 'lista';
+          this.bulkItems.push({
+            uid,
+            fileName: f.name,
+            compra: prep.compra,
+            jsonData,
+            noEncontrados: prep.noEncontrados,
+            estado,
+          });
+        }
+      } catch (e: any) {
+        this.bulkItems.push({
+          uid,
+          fileName: f.name,
+          compra: this.compraJsonBulk.crearCompraBase(this.impuestosCompra),
+          jsonData: {},
+          noEncontrados: [],
+          error: e?.message || 'JSON inválido',
+          estado: 'error',
+        });
+      }
+    }
+    this.bulkProcesandoArchivos = false;
+    input.value = '';
+    this.compraJsonBulk.aplicarReferenciasSecuencialesImportacion(
+      this.bulkItems,
+      this.documentosBulk
+    );
+    if (this.bulkItems.length && this.bulkTabIndex >= this.bulkItems.length) {
+      this.bulkTabIndex = 0;
+    }
+  }
+
+  get bulkItemActivo(): BulkCompraItem | null {
+    return this.bulkItems[this.bulkTabIndex] ?? null;
+  }
+
+  /** Texto UX en pestañas (el estado interno sigue siendo `lista`, `pendiente_productos`, etc.). */
+  labelEstadoBulk(estado: string): string {
+    const m: Record<string, string> = {
+      lista: 'Listo para procesar',
+      pendiente_productos: 'Pendiente vinculación',
+      guardada: 'Registrada',
+      guardando: 'Guardando…',
+      error: 'Error',
+    };
+    return m[estado] ?? estado;
+  }
+
+  /**
+   * "Guardar todas" solo si hay compras por registrar y todas las pestañas activas están listas
+   * (productos vinculados, proveedor, lotes si aplica, etc.).
+   */
+  puedeGuardarTodasBulk(): boolean {
+    if (!this.bulkItems.length || this.bulkProcesandoArchivos || this.bulkGuardandoTodas) {
+      return false;
+    }
+    const activos = this.bulkItems.filter(
+      (i) => i.estado !== 'guardada' && i.estado !== 'error'
+    );
+    if (!activos.length) {
+      return false;
+    }
+    return activos.every((i) => i.estado === 'lista' && this.puedeGuardarBulkItem(i));
+  }
+
+  setProveedorBulk(item: BulkCompraItem, proveedor: any) {
+    if (!item.compra.id_proveedor) {
+      this.proveedores.push(proveedor);
+    }
+    item.compra.id_proveedor = proveedor.id;
+    if (proveedor.tipo_contribuyente === 'Grande') {
+      item.compra.retencion = 1;
+    }
+    this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
+  }
+
+  onBulkProveedorChange(item: BulkCompraItem) {
+    this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
+  }
+
+  onBulkBodegaChange(item: BulkCompraItem) {
+    const b = this.bodegasBulk.find((x: any) => x.id == item.compra.id_bodega);
+    if (b) {
+      item.compra.id_sucursal = b.id_sucursal;
+    }
+    this.compraJsonBulk.aplicarReferenciasSecuencialesImportacion(
+      this.bulkItems,
+      this.documentosBulk
+    );
+  }
+
+  /** Mismo flujo que facturación: líneas editables, búsqueda y lotes vía `app-compra-detalles`. */
+  onBulkDetallesRecalc(item: BulkCompraItem) {
+    if (item.estado === 'guardada' || item.estado === 'error' || item.estado === 'guardando') {
+      return;
+    }
+    this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
+    item.estado = item.noEncontrados?.length ? 'pendiente_productos' : 'lista';
+  }
+
+  incorporarProductosPendientes(item: BulkCompraItem) {
+    if (!item.noEncontrados?.length) {
+      return;
+    }
+    const faltan = item.noEncontrados.filter((x) => !x.productoSeleccionado?.id);
+    if (faltan.length) {
+      this.alertService.warning(
+        'Productos',
+        'Seleccione un producto del sistema para cada línea pendiente.'
+      );
+      return;
+    }
+    for (const row of item.noEncontrados) {
+      item.compra.detalles.push(
+        this.compraJsonBulk.crearDetalleDesdeItem(row, row.productoSeleccionado)
+      );
+    }
+    item.noEncontrados = [];
+    this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
+    item.estado = 'lista';
+    if (this.apiService.isLotesActivo()) {
+      const sinLote = item.compra.detalles.filter(
+        (d: any) => d.inventario_por_lotes && !d.lote_id
+      );
+      if (sinLote.length) {
+        this.alertService.info(
+          'Lotes / partidas',
+          'Hay líneas con control por lotes. Use el botón de lote en la tabla del detalle para elegir un lote existente o crear uno nuevo (no se infiere del JSON).'
+        );
+      }
+    }
+  }
+
+  /** Solo importación masiva: pide al backend avanzar el correlativo del documento en catálogo (no afecta facturación normal). */
+  private payloadFacturacionImportacionMasiva(compra: any): object {
+    return { ...compra, incrementar_correlativo_importacion_massiva: true };
+  }
+
+  puedeGuardarBulkItem(item: BulkCompraItem): boolean {
+    if (item.estado === 'error' || item.estado === 'guardada' || item.estado === 'guardando') {
+      return false;
+    }
+    if (!item.compra?.id_proveedor) {
+      return false;
+    }
+    if (!item.compra.detalles?.length) {
+      return false;
+    }
+    if (item.noEncontrados?.length) {
+      return false;
+    }
+    if (this.apiService.isLotesActivo()) {
+      for (const d of item.compra.detalles) {
+        if (d.inventario_por_lotes && !d.lote_id) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  guardarBulkItem(item: BulkCompraItem) {
+    if (!this.puedeGuardarBulkItem(item)) {
+      this.alertService.warning(
+        'Revisión',
+        'Complete proveedor, líneas de detalle y productos pendientes antes de guardar.'
+      );
+      return;
+    }
+    if (!confirm(`¿Registrar la compra del archivo "${item.fileName}"?`)) {
+      return;
+    }
+    item.estado = 'guardando';
+    item.compra.recibido = item.compra.total;
+    this.apiService
+      .store('compra/facturacion', this.payloadFacturacionImportacionMasiva(item.compra))
+      .subscribe(
+      () => {
+        item.estado = 'guardada';
+        const ref = item.compra.referencia;
+        const td = item.compra.tipo_documento;
+        const suc = item.compra.id_sucursal;
+        this.refrescarCorrelativosBulkTrasGuardar(() => {
+          this.alertService.success('Compra registrada', item.fileName);
+          this.filtrarCompras(false);
+        }, { referenciaGuardada: ref, tipo_documento: td, id_sucursal: suc });
+      },
+      (err) => {
+        item.estado = 'lista';
+        this.alertService.error(err);
+      }
+    );
+  }
+
+  guardarTodasBulkListas() {
+    const listas = this.bulkItems.filter((i) => this.puedeGuardarBulkItem(i));
+    if (!listas.length) {
+      this.alertService.warning('Nada que guardar', 'No hay compras listas para registrar.');
+      return;
+    }
+    if (
+      !confirm(
+        `Se registrarán ${listas.length} compra(s). ¿Continuar?`
+      )
+    ) {
+      return;
+    }
+    this.guardarBulkSecuencial(listas, 0);
+  }
+
+  private guardarBulkSecuencial(items: BulkCompraItem[], idx: number) {
+    if (idx >= items.length) {
+      this.bulkGuardandoTodas = false;
+      this.alertService.success(
+        'Importación',
+        `Se registraron ${items.length} compra(s).`
+      );
+      this.filtrarCompras(false);
+      this.cerrarImportacionBulk();
+      return;
+    }
+    const item = items[idx];
+    this.bulkGuardandoTodas = true;
+    item.estado = 'guardando';
+    item.compra.recibido = item.compra.total;
+    this.apiService
+      .store('compra/facturacion', this.payloadFacturacionImportacionMasiva(item.compra))
+      .subscribe(
+      () => {
+        item.estado = 'guardada';
+        const ref = item.compra.referencia;
+        const td = item.compra.tipo_documento;
+        const suc = item.compra.id_sucursal;
+        this.refrescarCorrelativosBulkTrasGuardar(
+          () => this.guardarBulkSecuencial(items, idx + 1),
+          { referenciaGuardada: ref, tipo_documento: td, id_sucursal: suc }
+        );
+      },
+      (err) => {
+        item.estado = 'lista';
+        this.bulkGuardandoTodas = false;
+        this.alertService.error(err);
+      }
+    );
+  }
+
+  compareProductosBulk(a: any, b: any): boolean {
+    return a && b && a.id === b.id;
+  }
+
+}
+
+export interface BulkCompraItem {
+  uid: string;
+  fileName: string;
+  compra: any;
+  jsonData: any;
+  noEncontrados: any[];
+  error?: string;
+  estado: 'error' | 'pendiente_productos' | 'lista' | 'guardando' | 'guardada';
 }

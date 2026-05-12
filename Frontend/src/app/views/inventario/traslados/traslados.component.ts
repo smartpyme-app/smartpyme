@@ -46,10 +46,12 @@ export class TrasladosComponent implements OnInit {
                 search: params['search'] || '',
                 id_bodega_de: +params['id_bodega_de'] || '',
                 id_bodega_para: +params['id_bodega_para'] || '',
-                id_sucursal: +params['id_sucursal'] || '',
+                id_producto: +params['id_producto'] || '',
+                inicio: params['inicio'] || '',
+                fin: params['fin'] || '',
                 estado: params['estado'] || '',
                 concepto: params['concepto'] || '',
-                orden: params['orden'] || 'id',
+                orden: params['orden'] || 'created_at',
                 direccion: params['direccion'] || 'desc',
                 paginate: params['paginate'] || 10,
                 page: params['page'] || 1,
@@ -67,14 +69,16 @@ export class TrasladosComponent implements OnInit {
         this.filtros.id_bodega_de = '';
         this.filtros.id_bodega_para = '';
         this.filtros.id_producto = '';
-        this.filtros.id_sucursal = '';
         this.filtros.estado = '';
         this.filtros.search = '';
         this.filtros.concepto = '';
+        this.filtros.inicio = '';
+        this.filtros.fin = '';
         this.filtros.orden = 'created_at';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
         this.filtros.page = 1;
+        this.productoFiltro = {};
 
         this.loading = true;
         this.filtrarTraslados();

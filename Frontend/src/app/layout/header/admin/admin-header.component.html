@@ -58,8 +58,8 @@
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/compras">Compras</a></li>
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/devoluciones/compras">Devoluciones</a></li>
             <li><hr class="dropdown-divider"> </li>
-            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/gastos">Gastos</a></li>
-            <li><hr class="dropdown-divider"> </li>
+            <li *ngIf="apiService.mostrarMenuModuloGastos()"><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/gastos">Gastos</a></li>
+            <li *ngIf="apiService.mostrarMenuModuloGastos()"><hr class="dropdown-divider"> </li>
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/proveedores">Proveedores</a></li>
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/proveedores/cuentas-pagar">Cuentas por pagar</a></li>
             <li><hr class="dropdown-divider"> </li>
@@ -80,7 +80,7 @@
             <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/libro-compras">Libro de Compras</a></li>
         </ul>
     </li>
-    <li class="nav-item dropdown me-3">
+    <li class="nav-item dropdown me-3" *ngIf="usuario?.tipo !== 'Supervisor Limitado'">
         <a class="nav-link dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           Planilla
         </a>

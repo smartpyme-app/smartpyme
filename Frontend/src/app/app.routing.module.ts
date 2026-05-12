@@ -62,6 +62,8 @@ const routes: Routes = [
         // Planilla
         {
           path: '',
+          canActivate: [SupervisorLimitadoGuard],
+          data: { bloquearSupervisorLimitadoModuloCompleto: true },
           loadChildren: () => import('./views/planillas/planillas.module').then(m => m.PlanillasModule),
         },
         // Proyectos
@@ -73,6 +75,7 @@ const routes: Routes = [
         {
           path: '',
           canActivate: [AdminGuard,SupervisorLimitadoGuard],
+          data: { bloquearSupervisorLimitadoModuloCompleto: false },
           loadChildren: () => import('./views/compras/compras.module').then(m => m.ComprasModule),
         },
         // Contabilidad

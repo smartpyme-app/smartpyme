@@ -130,8 +130,8 @@ export class RestauranteService {
     return this.api.getAsText(BASE + `pedidos/${id}/imprimir`);
   }
 
-  confirmarPedidoCanal(id: number): Observable<PedidoCanal> {
-    return this.api.putToUrl(`restaurante/pedidos/${id}/confirmar`, {});
+  confirmarPedidoCanal(id: number, body: Record<string, unknown> = {}): Observable<PedidoCanal> {
+    return this.api.putToUrl(`restaurante/pedidos/${id}/confirmar`, body);
   }
 
   anularPedidoCanal(id: number): Observable<PedidoCanal> {
@@ -196,6 +196,7 @@ export interface PedidoCanal {
   id: number;
   id_empresa: number;
   id_sucursal?: number;
+  id_bodega?: number;
   usuario_id: number;
   fecha: string;
   canal?: string;
@@ -219,6 +220,7 @@ export interface PedidoCanalPayload {
   cliente_id?: number;
   observaciones?: string;
   id_sucursal?: number;
+  id_bodega?: number;
   detalles: Array<{
     producto_id: number;
     cantidad: number;

@@ -1,0 +1,36 @@
+/* Grilla Facturación en Preferencias: misma altura por fila, controles alineados abajo */
+.empresa-pref-facturacion .empresa-pref-tile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 0.375rem;
+  padding: 0.75rem 0.875rem;
+  background: #fff;
+}
+
+.empresa-pref-facturacion .empresa-pref-desc {
+  flex: 1 1 auto;
+  min-height: 2.75rem;
+  line-height: 1.45;
+}
+
+.empresa-pref-facturacion .empresa-pref-tile > .form-switch.bg-light-info {
+  margin-top: auto;
+}
+
+.empresa-pref-facturacion .empresa-pref-tile > .form-select {
+  margin-top: auto;
+}
+
+.empresa-pref-facturacion .empresa-pref-tile > .mt-auto .input-group {
+  margin-top: 0;
+}
+
+.empresa-pref-facturacion .empresa-pref-tile > .form-label {
+  margin-bottom: 0.5rem;
+}
+
+.empresa-pref-facturacion .empresa-pref-tile > .text-muted.small:last-child {
+  margin-top: 0.5rem;
+}

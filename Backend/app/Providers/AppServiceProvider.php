@@ -7,11 +7,13 @@ use App\Services\ContextService;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Paquete;
 use App\Models\Inventario\Producto;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
 use App\Observers\FidelizacionCliente\ClienteNivelObserver;
 use App\Observers\InventarioObserver;
+use App\Observers\PaqueteWebhookObserver;
 use App\Observers\ProductoObserver;
 use App\Observers\ShopifyInventarioObserver;
 use App\Observers\ShopifyProductoObserver;
@@ -44,6 +46,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Cliente::observe(ClienteNivelObserver::class);
         Inventario::observe(InventarioObserver::class);
+
+        Paquete::observe(PaqueteWebhookObserver::class);
 
         // Registrar el observer de Producto solo cuando sea necesario
         if (config('services.woocommerce.enabled', false)) {

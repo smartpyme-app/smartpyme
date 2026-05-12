@@ -101,6 +101,8 @@ class AuthJWTController extends Controller
         $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
         $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
 
+        $this->adjuntarAccesoTemporalUsuario($user, $suscripcion);
+
         return response()->json(['token' => $token, 'user' => $user], 200);
     }
 
@@ -992,7 +994,26 @@ class AuthJWTController extends Controller
         $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
         $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
 
+        $this->adjuntarAccesoTemporalUsuario($user, $suscripcion);
+
         return response()->json(['user' => $user], 200);
+    }
+
+    /**
+     * Expone acceso temporal concedido por admin (sin cambiar fecha de pago) para el guard y la UI.
+     */
+    private function adjuntarAccesoTemporalUsuario($user, $suscripcion): void
+    {
+        $user->acceso_temporal_hasta = null;
+        $user->dias_restantes_acceso_temporal = null;
+        if (!$suscripcion || !$suscripcion->acceso_temporal_hasta) {
+            return;
+        }
+        $end = Carbon::parse($suscripcion->acceso_temporal_hasta);
+        $user->acceso_temporal_hasta = $end->toIso8601String();
+        if ($end->isFuture()) {
+            $user->dias_restantes_acceso_temporal = (int) max(0, now()->diffInDays($end, false));
+        }
     }
 
     private function createPlanillaConfiguration($empresa)

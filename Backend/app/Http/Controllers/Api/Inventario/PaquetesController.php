@@ -18,9 +18,14 @@ class PaquetesController extends Controller
 
     public function index(Request $request) {
 
+        $user = Auth::user();
+        $sucursalFiltro = ($user->tipo === 'Administrador')
+            ? ($request->filled('id_sucursal') ? $request->id_sucursal : null)
+            : $user->id_sucursal;
+
         $paquetes = Paquete::with('cliente', 'proveedor')
-                                ->when($request->id_sucursal, function($q) use ($request){
-                                    return $q->where('id_sucursal', $request->id_sucursal);
+                                ->when($sucursalFiltro, function ($q) use ($sucursalFiltro) {
+                                    return $q->where('id_sucursal', $sucursalFiltro);
                                 })
                                 ->when($request->wr, function($q) use ($request){
                                     $q->where('wr', $request->wr);
@@ -49,15 +54,18 @@ class PaquetesController extends Controller
                                 ->when($request->fin, function($query) use ($request){
                                     return $query->where('fecha', '<=', $request->fin);
                                 })
-                                ->when($request->buscador, function($query) use ($request){
-                                    return $query->whereHas('cliente', function($q) use ($request){
-                                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%");
-                                                 })
-                                                 ->orwhere('num_guia', 'like' ,'%' . $request->buscador . '%')
-                                                 ->orwhere('embalaje', 'like' ,"%" . $request->buscador . "%")
-                                                 ->orwhere('nota', 'like' ,"%" . $request->buscador . "%")
-                                                 ->orwhere('wr', 'like' ,"%" . $request->buscador . "%")
-                                                 ->orwhere('num_seguimiento', 'like' ,"%" . $request->buscador . "%");
+                                ->when($request->buscador, function ($query) use ($request) {
+                                    $term = $request->buscador;
+                                    return $query->where(function ($q) use ($term) {
+                                        $q->whereHas('cliente', function ($sub) use ($term) {
+                                            $sub->where('nombre', 'like', '%' . $term . '%');
+                                        })
+                                            ->orWhere('num_guia', 'like', '%' . $term . '%')
+                                            ->orWhere('embalaje', 'like', '%' . $term . '%')
+                                            ->orWhere('nota', 'like', '%' . $term . '%')
+                                            ->orWhere('wr', 'like', '%' . $term . '%')
+                                            ->orWhere('num_seguimiento', 'like', '%' . $term . '%');
+                                    });
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
                                 ->paginate($request->paginate);
@@ -212,14 +220,14 @@ class PaquetesController extends Controller
 
     public function listGuia()
     {
+        $user = Auth::user();
         $query = Paquete::select('num_guia')
-            ->where('id_empresa', Auth::user()->id_empresa);
+            ->where('id_empresa', $user->id_empresa);
 
-        // Si el rol del usuario es "Ventas", entonces filtrar por id_sucursal
-        // if (Auth::user()->tipo == 'Ventas') {
-        //     $query->where('id_sucursal', Auth::user()->id_sucursal);
-        // }
-    
+        if ($user->tipo !== 'Administrador') {
+            $query->where('id_sucursal', $user->id_sucursal);
+        }
+
         $paquetes = $query->distinct()
             ->orderBy('num_guia', 'asc')
             ->get();

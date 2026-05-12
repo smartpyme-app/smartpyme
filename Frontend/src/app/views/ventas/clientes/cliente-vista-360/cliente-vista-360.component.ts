@@ -378,15 +378,26 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
 
       // Cargar transacciones
       if (data.transacciones && Array.isArray(data.transacciones)) {
-        this.transactions = data.transacciones.map((transaccion: any) => ({
-          icon: transaccion.icon || '$',
-          type: transaccion.type || 'unknown',
-          title: transaccion.title || 'Sin título',
-          date: transaccion.date || '',
-          reference: transaccion.reference || '',
-          amount: parseFloat(transaccion.amount) || 0,
-          status: transaccion.status || 'unknown'
-        }));
+        this.transactions = data.transacciones.map((transaccion: any) => {
+          const type = transaccion.type || 'unknown';
+          const kindRaw = transaccion.amount_kind ?? transaccion.amountKind;
+          const amountKind =
+            kindRaw === 'points' ||
+            type === 'puntos_ganados' ||
+            type === 'puntos_canjeados'
+              ? 'points'
+              : 'currency';
+          return {
+            icon: transaccion.icon || '$',
+            type,
+            title: transaccion.title || 'Sin título',
+            date: transaccion.date || '',
+            reference: transaccion.reference || '',
+            amount: parseFloat(transaccion.amount) || 0,
+            amountKind,
+            status: (transaccion.status || 'unknown').toString().toLowerCase(),
+          };
+        });
       }
 
       // Cargar categorías
@@ -793,6 +804,35 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
     }).format(value);
+  }
+
+  /** Texto del estado en historial (evita mostrar "Descuento" para todo). */
+  transactionStatusLabel(transaction: { status: string; type?: string }): string {
+    const s = (transaction.status || '').toLowerCase();
+    if (s === 'completado' || s === 'completed') {
+      return 'Completada';
+    }
+    if (s === 'earned') {
+      return 'Puntos acumulados';
+    }
+    if (s === 'redeemed') {
+      return 'Canje de puntos';
+    }
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : '—';
+  }
+
+  /** Muestra puntos sin símbolo de moneda (canjes vienen negativos en BD). */
+  formatPuntosHistorial(transaction: { amount: number; type?: string }): string {
+    const raw = Number(transaction.amount);
+    if (isNaN(raw)) {
+      return '0 pts';
+    }
+    const n = Math.round(Math.abs(raw));
+    const formatted = new Intl.NumberFormat('es-GT', { maximumFractionDigits: 0 }).format(n);
+    if (transaction.type === 'puntos_canjeados') {
+      return `${formatted} pts canjeados`;
+    }
+    return `${formatted} pts`;
   }
 
   getAbcColor(clasificacion: string): string {

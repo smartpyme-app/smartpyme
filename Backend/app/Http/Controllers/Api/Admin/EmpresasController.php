@@ -101,6 +101,7 @@ class EmpresasController extends Controller
         $request->validate([
             'nombre' => 'required|max:255',
             'iva' => 'required|numeric',
+            'woocommerce_sync_mode' => 'nullable|in:bidirectional,wc_to_sp,sp_to_wc',
         ]);
 
         if ($request->id) {
@@ -773,13 +774,14 @@ class EmpresasController extends Controller
         $allowedConfigs = [
             'ticket_en_pdf',
             'componente_quimico_activo',
+            'dte_mostrar_descripcion_producto',
         ];
 
         foreach ($configuraciones as $config => $value) {
             // Solo permitir configuraciones válidas
             if (in_array($config, $allowedConfigs)) {
                 // Para configuraciones booleanas
-                if (in_array($config, ['ticket_en_pdf', 'componente_quimico_activo'])) {
+                if (in_array($config, ['ticket_en_pdf', 'componente_quimico_activo', 'dte_mostrar_descripcion_producto'])) {
                     $validatedConfig[$config] = (bool) $value;
                 } else {
                     $validatedConfig[$config] = $value;
@@ -800,7 +802,7 @@ class EmpresasController extends Controller
 
         $empresa = Auth::user()->empresa;
 
-        if ($request->input('section') === 'configuraciones' && in_array($request->input('key'), ['ticket_en_pdf', 'componente_quimico_activo'])) {
+        if ($request->input('section') === 'configuraciones' && in_array($request->input('key'), ['ticket_en_pdf', 'componente_quimico_activo', 'sku_correlativo_automatico', 'barcode_correlativo_automatico', 'ventas_puede_cambiar_vendedor_facturacion', 'dte_mostrar_descripcion_producto'])) {
             $request->validate([
                 'value' => 'boolean'
             ]);

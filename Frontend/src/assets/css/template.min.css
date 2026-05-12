@@ -134,11 +134,6 @@ img.icon-2{
         align-items: center;
     }
 
-    .form-check{
-        height: 20px;
-        width: 20px;
-        border-radius: 6px;
-    }
 
     table.table-hover tbody tr:hover td{
         background-color: #FDFBFF !important;

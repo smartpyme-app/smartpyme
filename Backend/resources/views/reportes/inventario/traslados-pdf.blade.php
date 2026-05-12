@@ -13,8 +13,7 @@
             margin: 40px 60px;
         }
         body {
-            font-family: 'Inter', sans-serif;
-            font-family: 'Nunito', sans-serif;
+            font-family: DejaVu Sans, sans-serif;
             width: 100%;
         }
         .header {
@@ -123,6 +122,7 @@
 <body>
     @php
         $totalTraslados = 0;
+        $simboloMoneda = optional($empresa->currency)->currency_symbol ?? '$';
     @endphp
 
     @foreach($trasladosAgrupados as $concepto => $trasladosGrupo)
@@ -201,13 +201,13 @@
                                 @endif
                             </td>
                             <td class="text-center">{{ number_format($traslado->cantidad, 0) }}</td>
-                            <td class="text-right">${{ number_format($traslado->costo ?? 0, 2) }}</td>
-                            <td class="text-right">${{ number_format(($traslado->costo ?? 0) * $traslado->cantidad, 2) }}</td>
+                            <td class="text-right">{{ $simboloMoneda }}{{ number_format($traslado->costo ?? 0, 2) }}</td>
+                            <td class="text-right">{{ $simboloMoneda }}{{ number_format(($traslado->costo ?? 0) * $traslado->cantidad, 2) }}</td>
                         </tr>
                         @endforeach
                         <tr style="background-color: #f8f9fa; font-weight: bold;">
                             <td colspan="3" class="text-right"><b>TOTAL:</b></td>
-                            <td class="text-right">${{ number_format($totalCosto, 2) }}</td>
+                            <td class="text-right">{{ $simboloMoneda }}{{ number_format($totalCosto, 2) }}</td>
                         </tr>
                     </tbody>
                 </table>

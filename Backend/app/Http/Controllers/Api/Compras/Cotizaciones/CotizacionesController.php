@@ -198,7 +198,7 @@ class CotizacionesController extends Controller
     }
 
     public function generarDoc($id){
-        $compra = Cotizacion::where('id', $id)->with('detalles', 'proveedor')->firstOrFail();
+        $compra = Cotizacion::where('id', $id)->with(['detalles', 'proveedor', 'empresa.currency'])->firstOrFail();
 
         $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.orden-de-compra', compact('compra'));
         $pdf->setPaper('US Letter', 'portrait');

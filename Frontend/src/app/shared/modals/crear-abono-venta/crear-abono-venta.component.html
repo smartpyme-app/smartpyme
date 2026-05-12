@@ -45,7 +45,7 @@
                         <td>{{ venta.total | currency}}</td>
                         <td>{{ venta.abonos_sum_total | currency}}</td>
                         <td>{{ venta.devoluciones_sum_total | currency}}</td>
-                        <td>{{ venta.saldo | currency}}</td>
+                        <td>{{ (venta.total - venta.abonos_sum_total - venta.devoluciones_sum_total) | currency}}</td>
                     </tr>
                 </tbody>
             </table>

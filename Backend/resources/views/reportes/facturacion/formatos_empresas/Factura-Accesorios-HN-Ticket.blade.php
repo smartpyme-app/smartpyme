@@ -148,7 +148,7 @@
     @php
         $corr = str_pad((string) $venta->correlativo, 8, '0', STR_PAD_LEFT);
         $prefijosSucursalPorDefectoAccesorios = [
-            '868' => '000-003-01-',
+            '868' => '000-004-01-',
             '897' => '000-002-01-',
             '898' => '000-003-01-',
         ];
@@ -178,6 +178,9 @@
         <tr>
             <td class="left" style="width:58%;">
                 <p><span class="b">{{ $etiquetaNumero }}:</span> {{ $numFacturaDisplay }}</p>
+                @if ($venta->id_cliente && $cliente && $cliente->tipo === 'Empresa')
+                    <p class="mt1"><span class="b">RTN:</span> {{ $cliente->nit ?? '' }}</p>
+                @endif
                 <p class="mt1"><span class="b">CLIENTE:</span> {{ $codCliente }} - {{ $nombreClienteFactura }}</p>
                 @if ($terminos !== '')
                     <p class="mt1"><span class="b">TERMINOS:</span> {{ $terminos }}</p>

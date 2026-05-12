@@ -65,6 +65,18 @@ use App\Models\Admin\Empresa;
         return trim((string) $venta->correlativo);
     }
 
+    /**
+     * Coherente con LibrosIVAController::montoVentaPropioSinCuentaTerceros.
+     */
+    private function montoVentaPropioSinCuentaTerceros($venta): float
+    {
+        $total = (float) ($venta->total ?? 0);
+        $ct = (float) ($venta->cuenta_a_terceros ?? 0);
+        $neto = $total - $ct;
+
+        return $neto > 0 ? $neto : 0.0;
+    }
+
     public function registerEvents(): array
     {
         return [
@@ -168,7 +180,7 @@ use App\Models\Admin\Empresa;
                 $exportaciones = $ventasDia->sum(function ($venta) {
                     $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
                     return strtolower($documentoNombre) === 'factura de exportación'
-                        ? (float) $venta->total
+                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
                         : 0;
                 });
 
@@ -177,7 +189,9 @@ use App\Models\Admin\Empresa;
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva == 0 ? (float) $venta->total : 0;
+                    return $venta->iva == 0
+                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
+                        : 0;
                 });
 
                 $ventasGravadas = $ventasDia->sum(function ($venta) {
@@ -185,7 +199,9 @@ use App\Models\Admin\Empresa;
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva > 0 ? (float) $venta->total : 0;
+                    return $venta->iva > 0
+                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
+                        : 0;
                 });
 
                 $ventasTerceros = $ventasDia->sum(function ($venta) {
@@ -193,7 +209,7 @@ use App\Models\Admin\Empresa;
                 });
 
                 $totalDiario = $ventasDia->sum(function ($venta) {
-                    return (float) $venta->total;
+                    return $this->montoVentaPropioSinCuentaTerceros($venta);
                 });
 
                 $primeraVenta = $ventasOrdenadasPorCodigo->first();

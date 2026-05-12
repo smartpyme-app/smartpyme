@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, TemplateRef, Input } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
@@ -10,9 +10,11 @@ import { ApiService } from '@services/api.service';
   selector: 'app-producto-informacion',
   templateUrl: './producto-informacion.component.html'
 })
-export class ProductoInformacionComponent implements OnInit {
+export class ProductoInformacionComponent implements OnInit, OnChanges {
 
     @Input() producto: any = {};
+    /** Evita múltiples llamadas al pedir código de barras sugerido */
+    private barcodeCorrelativoPendiente = true;
     public categorias:any = [];
     public usuario:any = {};
     public categoria:any = {};
@@ -42,6 +44,44 @@ export class ProductoInformacionComponent implements OnInit {
 
         this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
 
+        this.intentarCargarBarcodeSugerido();
+    }
+
+    ngOnChanges(changes: SimpleChanges) {
+        if (changes['producto']) {
+            this.intentarCargarBarcodeSugerido();
+        }
+    }
+
+    /** Precarga el código de barras correlativo desde la API cuando aplica (producto nuevo + opción de empresa). */
+    private intentarCargarBarcodeSugerido() {
+        const p = this.producto;
+        if (!p || p.id || !this.apiService.isBarcodeCorrelativoAutomatico()) {
+            return;
+        }
+        if (p.barcode) {
+            this.barcodeCorrelativoPendiente = false;
+            return;
+        }
+        if (!p.id_empresa) {
+            return;
+        }
+        if (!this.barcodeCorrelativoPendiente) {
+            return;
+        }
+
+        this.barcodeCorrelativoPendiente = false;
+        this.apiService.getAll('productos/siguiente-barcode-correlativo').subscribe(
+            (res: any) => {
+                const valor = res?.barcode ?? res?.codigo;
+                if (res?.habilitado && valor != null && p === this.producto && !this.producto.barcode) {
+                    this.producto.barcode = String(valor);
+                }
+            },
+            () => {
+                this.barcodeCorrelativoPendiente = true;
+            }
+        );
     }
 
     public setCategoria(categoria:any){
@@ -122,8 +162,16 @@ export class ProductoInformacionComponent implements OnInit {
         },error => {this.alertService.error(error); this.guardar = false; });
     }
 
-    public barcode(){
-        var ventana = window.open(this.apiService.baseUrl + "/api/barcode/" + this.producto.codigo + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
+    public barcode() {
+        const raw = String(this.producto.barcode || this.producto.codigo || '').trim();
+        if (!raw) {
+            return;
+        }
+        window.open(
+            this.apiService.baseUrl + '/api/barcode/' + encodeURIComponent(raw) + '?token=' + this.apiService.auth_token(),
+            '_new',
+            'toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900'
+        );
     }
 
     public verificarSiExiste(){

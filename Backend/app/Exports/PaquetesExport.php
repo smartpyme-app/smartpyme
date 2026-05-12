@@ -6,6 +6,7 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Inventario\Paquete;
 
 class PaquetesExport implements FromCollection, WithHeadings, WithMapping
@@ -65,19 +66,27 @@ class PaquetesExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         $request = $this->request;
+        $user = Auth::user();
+        $sucursalFiltro = ($user->tipo === 'Administrador')
+            ? ($request->filled('id_sucursal') ? $request->id_sucursal : null)
+            : $user->id_sucursal;
+
         return Paquete::with('cliente', 'proveedor')
-                                ->when($request->id_sucursal, function($q) use ($request){
-                                    return $q->where('id_sucursal', $request->id_sucursal);
+                                ->when($sucursalFiltro, function ($q) use ($sucursalFiltro) {
+                                    return $q->where('id_sucursal', $sucursalFiltro);
                                 })
-                                ->when($request->buscador, function($query) use ($request){
-                                    return $query->whereHas('cliente', function($q) use ($request){
-                                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%");
-                                                 })
-                                                 ->orwhere('num_guia', 'like' ,'%' . $request->buscador . '%')
-                                                 ->orwhere('embalaje', 'like' ,"%" . $request->buscador . "%")
-                                                 ->orwhere('nota', 'like' ,"%" . $request->buscador . "%")
-                                                 ->orwhere('wr', 'like' ,"%" . $request->buscador . "%")
-                                                 ->orwhere('num_seguimiento', 'like' ,"%" . $request->buscador . "%");
+                                ->when($request->buscador, function ($query) use ($request) {
+                                    $term = $request->buscador;
+                                    return $query->where(function ($q) use ($term) {
+                                        $q->whereHas('cliente', function ($sub) use ($term) {
+                                            $sub->where('nombre', 'like', '%' . $term . '%');
+                                        })
+                                            ->orWhere('num_guia', 'like', '%' . $term . '%')
+                                            ->orWhere('embalaje', 'like', '%' . $term . '%')
+                                            ->orWhere('nota', 'like', '%' . $term . '%')
+                                            ->orWhere('wr', 'like', '%' . $term . '%')
+                                            ->orWhere('num_seguimiento', 'like', '%' . $term . '%');
+                                    });
                                 })
                                 ->when($request->wr, function($q) use ($request){
                                     $q->where('wr', $request->wr);

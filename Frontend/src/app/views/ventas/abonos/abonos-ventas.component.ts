@@ -56,11 +56,16 @@ export class AbonosVentasComponent implements OnInit {
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
+        this.filtros.page = 1;
 
-        this.filtrarAbonos();
+        this.filtrarAbonos(false);
     }
 
-    public filtrarAbonos(){
+    /** @param resetPage true al buscar/filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll. */
+    public filtrarAbonos(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
         this.apiService.getAll('ventas/abonos', this.filtros).subscribe(abonos => { 
             this.abonos = abonos;
@@ -91,11 +96,8 @@ export class AbonosVentasComponent implements OnInit {
     }
 
     public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.abonos.path + '?page='+ event.page, this.filtros).subscribe(abonos => { 
-            this.abonos = abonos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.filtros.page = event.page;
+        this.filtrarAbonos(false);
     }
 
     public imprimir(abono:any){

@@ -43,7 +43,8 @@ export class ClientesComponent implements OnInit {
         this.filtros.orden = 'nombre';
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
-        this.filtrarClientes();
+        this.filtros.page = 1;
+        this.filtrarClientes(false);
 
         // Ocultar modal de importación
         if(this.modalRef){
@@ -51,7 +52,13 @@ export class ClientesComponent implements OnInit {
         }
     }
 
-    public filtrarClientes(){
+    /**
+     * @param resetPage true al buscar/filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll.
+     */
+    public filtrarClientes(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
         this.apiService.getAll('clientes', this.filtros).subscribe(clientes => {
             this.clientes = clientes;
@@ -103,11 +110,8 @@ export class ClientesComponent implements OnInit {
     }
 
     public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.clientes.path + '?page='+ event.page).subscribe(clientes => {
-            this.clientes = clientes;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.filtros.page = event.page;
+        this.filtrarClientes(false);
     }
 
     openModal(template: TemplateRef<any>) {

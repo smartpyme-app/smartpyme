@@ -22,6 +22,7 @@ use App\Services\FidelizacionCliente\LicenciaFidelizacionService;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use PgSql\Lob;
 
 class ClientesController extends Controller
@@ -437,9 +438,25 @@ class ClientesController extends Controller
     public function estadoCuenta($id)
     {
 
-        $cliente = Cliente::where('id', $id)->with('empresa')->firstOrFail();
-        $cliente->ventas = $cliente->ventas()->where('estado', 'Pendiente')->get();
-        // return $cliente;
+        $cliente = Cliente::where('id', $id)->with(['empresa.currency'])->firstOrFail();
+        // Misma base que saldoPendiente(): no incluir cotizaciones (no son CxC operativa hasta facturarse).
+        $cliente->ventas = $cliente->ventas()
+            ->where('estado', 'Pendiente')
+            ->where(function ($q) {
+                $q->where('cotizacion', 0)->orWhereNull('cotizacion');
+            })
+            ->with([
+                'documento',
+                'abonos' => function ($q) {
+                    $q->where('estado', 'Confirmado')
+                        ->with('documento')
+                        ->orderBy('fecha')
+                        ->orderBy('id');
+                },
+            ])
+            ->orderBy('fecha')
+            ->orderBy('id')
+            ->get();
         $reportes = app('dompdf.wrapper')->loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
         return $reportes->stream();
     }
@@ -480,12 +497,12 @@ class ClientesController extends Controller
     public function importPersonas(Request $request)
     {
         $request->validate([
-            'file' => 'required',
+            'file' => 'required|file',
         ]);
 
         try {
             $import = new ClientesPersonas();
-            Excel::import($import, $request->file);
+            Excel::import($import, $request->file('file'));
 
             $errores = $import->getErrores();
             $clientesProcesados = $import->getClientesProcesados();
@@ -523,6 +540,11 @@ class ClientesController extends Controller
                     'error' => 'No se pudo procesar ningún cliente. ' . implode("\n", $errores)
                 ], 400);
             }
+        } catch (ValidationException $e) {
+            return response()->json([
+                'error' => 'Los datos del archivo no son válidos.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error("Error en importación de clientes personas: " . $e->getMessage());
             return response()->json([

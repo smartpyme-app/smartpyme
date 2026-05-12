@@ -130,15 +130,22 @@ class Cliente360Service
         }
 
         return $actividades->map(function ($actividad) {
+            $esPuntos = in_array($actividad->tipo_actividad, ['puntos_ganados', 'puntos_canjeados'], true);
+            // Ventas: monto en moneda. Puntos: columna `puntos` (canje suele ser negativo en BD).
+            $amount = $esPuntos
+                ? (float) ($actividad->puntos ?? 0)
+                : (float) ($actividad->monto ?? 0);
+
             return [
                 'icon' => $actividad->icono,
                 'type' => $actividad->tipo_actividad,
                 'title' => $actividad->titulo,
                 'date' => \Carbon\Carbon::parse($actividad->fecha_actividad)->format('d M Y, h:i A'),
                 'reference' => $actividad->descripcion,
-                'amount' => $actividad->monto ?? $actividad->puntos,
+                'amount' => $amount,
+                'amount_kind' => $esPuntos ? 'points' : 'currency',
                 'status' => $actividad->estado,
-                'fecha' => $actividad->fecha_actividad
+                'fecha' => $actividad->fecha_actividad,
             ];
         });
     }

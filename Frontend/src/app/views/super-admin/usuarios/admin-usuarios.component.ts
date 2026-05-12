@@ -25,6 +25,7 @@ export class AdminUsuariosComponent implements OnInit {
     public filtros:any = {};
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
+    public downloading:boolean = false;
 
     modalRef?: BsModalRef;
 
@@ -32,6 +33,8 @@ export class AdminUsuariosComponent implements OnInit {
 
 	ngOnInit() {
         this.filtros.id_empresa = '';
+        this.filtros.id_sucursal = '';
+        this.filtros.tipo = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
@@ -43,16 +46,26 @@ export class AdminUsuariosComponent implements OnInit {
         this.apiService.getAll('empresas/list').subscribe(empresas => { 
             this.empresas = empresas;
         }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('sucursales/list').subscribe((sucursales) => {
+            this.sucursalesList = sucursales;
+        }, (error) => { this.alertService.error(error); });
     }
 
-    public loadAll(){
+    public loadAll(closeFilterModal = false) {
         this.loading = true;        
         this.apiService.getAll('admin-usuarios', this.filtros).subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.loading = false;
+            if (closeFilterModal) {
+                this.modalRef?.hide();
+            }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
+    openFilterModal(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+    }
 
     openModal(template: TemplateRef<any>, usuario:any) {
         this.usuario = usuario;
@@ -91,6 +104,27 @@ export class AdminUsuariosComponent implements OnInit {
             this.usuarios = usuarios;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    public descargarUsuarios(): void {
+        this.downloading = true;
+        const params = { ...this.filtros };
+        delete params.paginate;
+        this.apiService.export('admin-usuarios/exportar', params).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'usuarios-smartpyme.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+        }, (error) => {
+            this.alertService.error(error);
+            this.downloading = false;
+        });
     }
     
     public mostrarPassword(){

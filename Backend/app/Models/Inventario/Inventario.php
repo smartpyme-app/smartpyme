@@ -143,14 +143,13 @@ class Inventario extends Model {
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Otra Salida Anulada';
             }
-        }
-        else if ($clase == 'App\Models\Restaurante\PedidoRestaurante') {
+        }else if ($clase == 'App\Models\Restaurante\PedidoRestaurante') {
             if ($cantidad > 0) {
                 $salidaCantidad = $cantidad;
-                $clase = 'Pedido canal';
+                $clase = 'Pedido pendiente de facturar';
             } else {
                 $entradaCantidad = abs($cantidad);
-                $clase = 'Pedido canal anulado';
+                $clase = 'Anulación pedido pendiente';
             }
         }else{
             // return null;
@@ -348,13 +347,12 @@ class Inventario extends Model {
             }
         }
 
-        if ($clase == 'Pedido canal' || $clase == 'Pedido canal anulado') {
-            $detallePedido = \App\Models\Restaurante\PedidoRestauranteDetalle::where('pedido_id', $modelo->id)
+        if ($clase == 'Pedido pendiente de facturar' || $clase == 'Anulación pedido pendiente') {
+            $detPed = \App\Models\Restaurante\PedidoRestauranteDetalle::where('pedido_id', $modelo->id)
                 ->where('producto_id', $idProducto)
-                ->whereNotNull('lote_id')
                 ->first();
-            if ($detallePedido && $detallePedido->lote_id) {
-                return $detallePedido->lote_id;
+            if ($detPed && $detPed->lote_id) {
+                return $detPed->lote_id;
             }
         }
 

@@ -1,4 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
+import { ApiService } from '@services/api.service';
 
 
 @Component({
@@ -8,6 +9,8 @@ import { Component, OnInit, Input } from '@angular/core';
 export class AdminHeaderComponent implements OnInit {
 
     @Input() usuario:any = {};
+
+    constructor(public apiService: ApiService) {}
 
     ngOnInit() {
     }

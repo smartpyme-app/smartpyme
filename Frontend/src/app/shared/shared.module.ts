@@ -39,6 +39,8 @@ import { CrearAbonoGastoComponent } from './modals/crear-abono-gasto/crear-abono
 import { CrearEventoComponent } from './modals/crear-evento/crear-evento.component';
 import { CrearProyectoComponent } from './modals/crear-proyecto/crear-proyecto.component';
 import { CrearImpuestoComponent } from './modals/crear-impuesto/crear-impuesto.component';
+import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
+import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
 
 import { PaginationComponent } from './parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from './parts/notificaciones/notificaciones-container.component';
@@ -105,6 +107,8 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     CrearEventoComponent,
     CrearProyectoComponent,
     CrearImpuestoComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
     ThreedsModalComponent,
@@ -142,6 +146,8 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     CrearAbonoGastoComponent,
     CrearEventoComponent,
     CrearImpuestoComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent,
     CrearProyectoComponent,
     ThreedsModalComponent,
     VerHistorialButtonComponent,

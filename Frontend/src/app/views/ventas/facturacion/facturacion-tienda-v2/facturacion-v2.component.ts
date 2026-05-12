@@ -11,6 +11,7 @@ import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
+import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
 
 @Component({
   selector: 'app-facturacion-v2',
@@ -47,6 +48,15 @@ export class FacturacionV2Component implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
+  public habilitarCuentaTerceros = false;
+
+  /**
+   * Si el usuario movió el switch de retención IVA 1%, no aplicar la regla automática (gran contribuyente + monto)
+   * hasta cambiar de cliente o iniciar un documento nuevo desde carga inicial.
+   */
+  private retencionIvaGcUsuarioDecidio = false;
+
   preCuentaId: number | null = null;
   sesionId: number | null = null;
   pedidoCanalId: number | null = null;
@@ -75,6 +85,9 @@ export class FacturacionV2Component implements OnInit {
 
   @ViewChild('mcredito')
   public creditoTemplate!: TemplateRef<any>;
+
+  @ViewChild(VentaDetallesV2Component)
+  private ventaDetallesV2?: VentaDetallesV2Component;
 
   constructor(
     public apiService: ApiService,
@@ -133,13 +146,16 @@ export class FacturacionV2Component implements OnInit {
     this.apiService.getAll('usuarios/list').subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
-        if (
-          this.apiService.auth_user().tipo != 'Administrador' &&
-          this.apiService.auth_user().tipo != 'Supervisor' &&
-          this.apiService.auth_user().tipo != 'Supervisor Limitado'
-        ) {
+        const auth = this.apiService.auth_user();
+        const listaCompletaVendedores =
+          auth.tipo === 'Administrador' ||
+          auth.tipo === 'Supervisor' ||
+          auth.tipo === 'Supervisor Limitado' ||
+          ((auth.tipo === 'Ventas' || auth.tipo === 'Ventas Limitado') &&
+            this.apiService.isVentasPuedeCambiarVendedorFacturacion());
+        if (!listaCompletaVendedores) {
           this.usuarios = this.usuarios.filter(
-            (item: any) => item.id == this.apiService.auth_user().id
+            (item: any) => item.id == auth.id
           );
         }
       },
@@ -268,6 +284,8 @@ export class FacturacionV2Component implements OnInit {
 
   public cargarDatosIniciales() {
     this.venta = {};
+    this.habilitarCuentaTerceros = false;
+    this.retencionIvaGcUsuarioDecidio = false;
     this.venta.fecha = this.apiService.date();
     this.venta.fecha_pago = this.apiService.date();
     this.venta.forma_pago = 'Efectivo';
@@ -389,7 +407,7 @@ export class FacturacionV2Component implements OnInit {
             pedido_id: pedidoCanalIdVal,
             cliente_id: pdata.cliente_id,
             id_sucursal: pdata.id_sucursal,
-            id_bodega_inventario: pdata.id_bodega_inventario,
+            id_bodega: pdata.id_bodega,
             fecha: pdata.fecha,
             canal: pdata.canal,
             referencia_externa: pdata.referencia_externa,
@@ -412,6 +430,7 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.sumTotal();
@@ -436,6 +455,7 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             if(!this.venta.cliente){
                 this.venta.cliente = {};
@@ -472,93 +492,99 @@ export class FacturacionV2Component implements OnInit {
       this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
       this.route.snapshot.queryParamMap.get('id_venta')!
     ) {
-      this.facturarCotizacion = true;
-      this.apiService
-        .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
-        .subscribe(
-          (venta) => {
-            this.venta = venta;
-            this.normalizarDetallesTipoGravado(this.venta);
-            if(!this.venta.cliente){
-                this.venta.cliente = {};
-            }else{
-              this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
-            }
-            this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
-            this.venta.fecha = this.apiService.date();
-            this.venta.fecha_pago = this.apiService.date();
-            this.venta.id_documento = null;
-            this.venta.correlativo = null;
-            this.venta.estado = 'Pagada';
-            this.venta.condicion = 'Contado';
-            this.venta.impuestos = this.impuestos;
-            this.venta.observaciones = '';
-            this.venta.cotizacion = 0;
-            this.venta.num_cotizacion = this.venta.id;
-            this.venta.id = null;
-
-            // Obtener porcentaje de IVA para conversión de precios
-            const porcentajeIvaTotal = this.venta.cobrar_impuestos
-              ? (this.apiService.auth_user()?.empresa?.iva || 0)
-              : 0;
-
-            // Ajustar precios de los detalles para v2 (precios incluyen IVA)
-            this.venta.detalles.forEach((detalle: any) => {
-              detalle.id = null;
-
-              // Si el detalle no tiene precio_iva, asumir que precio es sin IVA (versión anterior)
-              // y calcular precio_iva
-              if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
-                if (porcentajeIvaTotal > 0) {
-                  // El precio actual es sin IVA, calcular precio con IVA
-                  detalle.precio_iva = (parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
-                } else {
-                  // Sin IVA, precio_iva es igual a precio
-                  detalle.precio_iva = parseFloat(detalle.precio || 0).toFixed(4);
-                }
-              } else {
-                // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
-                if (porcentajeIvaTotal > 0) {
-                  const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal);
-                  detalle.precio = precioSinIvaCalculado.toFixed(4);
-                } else {
-                  detalle.precio = parseFloat(detalle.precio_iva).toFixed(4);
-                }
+      if (this.apiService.restriccionesCotizacionesVendedoresActivas()) {
+        this.alertService.error('No tiene permiso para facturar cotizaciones.');
+        this.router.navigate(['/cotizaciones']);
+      } else {
+        this.facturarCotizacion = true;
+        this.apiService
+          .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
+          .subscribe(
+            (venta) => {
+              this.venta = venta;
+              this.retencionIvaGcUsuarioDecidio = true;
+              this.normalizarDetallesTipoGravado(this.venta);
+              if(!this.venta.cliente){
+                  this.venta.cliente = {};
+              }else{
+                this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
               }
+              this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+              this.venta.fecha = this.apiService.date();
+              this.venta.fecha_pago = this.apiService.date();
+              this.venta.id_documento = null;
+              this.venta.correlativo = null;
+              this.venta.estado = 'Pagada';
+              this.venta.condicion = 'Contado';
+              this.venta.impuestos = this.impuestos;
+              this.venta.observaciones = '';
+              this.venta.cotizacion = 0;
+              this.venta.num_cotizacion = this.venta.id;
+              this.venta.id = null;
 
-              // Asegurar que precio_iva esté como número
-              detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
+              // Obtener porcentaje de IVA para conversión de precios
+              const porcentajeIvaTotal = this.venta.cobrar_impuestos
+                ? (this.apiService.auth_user()?.empresa?.iva || 0)
+                : 0;
 
-              // Recalcular total del detalle usando precio sin IVA
-              const precioSinIva = parseFloat(detalle.precio || 0);
-              detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
-              detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
-              const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
-              detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
-              detalle.gravada = detalle.tipo_gravado === 'gravada' ? detalle.total : 0;
-              detalle.exenta = detalle.tipo_gravado === 'exenta' ? detalle.total : 0;
-              detalle.no_sujeta = detalle.tipo_gravado === 'no_sujeta' ? detalle.total : 0;
+              // Ajustar precios de los detalles para v2 (precios incluyen IVA)
+              this.venta.detalles.forEach((detalle: any) => {
+                detalle.id = null;
 
-              // Calcular total_iva para visualización (solo gravada lleva IVA)
-              if (detalle.tipo_gravado === 'gravada' && this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-                detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
-              } else {
-                detalle.total_iva = detalle.total;
+                // Si el detalle no tiene precio_iva, asumir que precio es sin IVA (versión anterior)
+                // y calcular precio_iva
+                if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
+                  if (porcentajeIvaTotal > 0) {
+                    // El precio actual es sin IVA, calcular precio con IVA
+                    detalle.precio_iva = (parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+                  } else {
+                    // Sin IVA, precio_iva es igual a precio
+                    detalle.precio_iva = parseFloat(detalle.precio || 0).toFixed(4);
+                  }
+                } else {
+                  // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
+                  if (porcentajeIvaTotal > 0) {
+                    const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal);
+                    detalle.precio = precioSinIvaCalculado.toFixed(4);
+                  } else {
+                    detalle.precio = parseFloat(detalle.precio_iva).toFixed(4);
+                  }
+                }
+
+                // Asegurar que precio_iva esté como número
+                detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
+
+                // Recalcular total del detalle usando precio sin IVA
+                const precioSinIva = parseFloat(detalle.precio || 0);
+                detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
+                detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
+                const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
+                detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
+                detalle.gravada = detalle.tipo_gravado === 'gravada' ? detalle.total : 0;
+                detalle.exenta = detalle.tipo_gravado === 'exenta' ? detalle.total : 0;
+                detalle.no_sujeta = detalle.tipo_gravado === 'no_sujeta' ? detalle.total : 0;
+
+                // Calcular total_iva para visualización (solo gravada lleva IVA)
+                if (detalle.tipo_gravado === 'gravada' && this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
+                  detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+                } else {
+                  detalle.total_iva = detalle.total;
+                }
+              });
+
+              this.sumTotal();
+
+              // Para proyectos
+              if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+                this.venta.detalles = [];
               }
-            });
-
-            this.sumTotal();
-
-            // Para proyectos
-            if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
-              this.venta.detalles = [];
+            },
+            (error) => {
+              this.alertService.error(error);
+              this.loading = false;
             }
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.loading = false;
-          }
-        );
+          );
+      }
     }
 
     // Facturar orden de compra
@@ -769,7 +795,8 @@ export class FacturacionV2Component implements OnInit {
     this.venta.forma_pago = 'Multiple';
     this.venta.efectivo = this.formaPagos.find(
       (item: any) => item.nombre == 'Efectivo'
-    ).total;
+    )?.total;
+    this.actualizarCambioEfectivo();
     console.log(this.venta);
   }
 
@@ -814,6 +841,8 @@ export class FacturacionV2Component implements OnInit {
     const rawSubTotal = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'));
     this.venta.sub_total = Number(rawSubTotal).toFixed(4);
 
+    this.sincronizarRetencionGranContribuyente();
+
     const rawExenta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'));
     this.venta.exenta = Number(rawExenta).toFixed(4);
     const rawNoSujeta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'));
@@ -855,7 +884,7 @@ export class FacturacionV2Component implements OnInit {
           })
           .reduce((sum: number, d: any) => {
             const gravada = parseFloat(d.gravada || 0);
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
               ? parseFloat(d.iva) : gravada * (pctImp / 100);
             return sum + ivaLinea;
           }, 0);
@@ -873,7 +902,7 @@ export class FacturacionV2Component implements OnInit {
             const gravada = parseFloat(d.gravada || 0);
             const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
               ? Number(d.porcentaje_impuesto) : empresaIva;
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
               ? parseFloat(d.iva) : gravada * (pct / 100);
             return sum + ivaLinea;
           }, 0);
@@ -924,16 +953,78 @@ export class FacturacionV2Component implements OnInit {
             this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
         }
     }
+
+    this.actualizarCambioEfectivo();
   }
+
+  /** Vuelto: efectivo recibido (monto_pago) menos lo debido en efectivo (total, o parte en pago mixto). */
+  public actualizarCambioEfectivo(): void {
+    const raw = this.venta.monto_pago;
+    if (raw === null || raw === undefined || raw === '') {
+      this.venta.cambio = '';
+      return;
+    }
+    const recibido = parseFloat(String(raw)) || 0;
+    const totalVenta = parseFloat(String(this.venta.total ?? 0)) || 0;
+    const enMultiple = this.venta.forma_pago === 'Multiple';
+    const parteEfectivo = parseFloat(String(this.venta.efectivo ?? 0)) || 0;
+    const aCobrarEfectivo = enMultiple && parteEfectivo > 0 ? parteEfectivo : totalVenta;
+    this.venta.cambio = (recibido - aCobrarEfectivo).toFixed(2);
+  }
+
+   /** Tras cargar una venta: mostrar el bloque de cuenta a terceros si hay monto en líneas o en cabecera. */
+    private aplicarEstadoCuentaTercerosDesdeVentaCargada(): void {
+      const cRaw = parseFloat(this.venta.cuenta_a_terceros) || 0;
+      const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
+      this.habilitarCuentaTerceros = sumDet > 0.0001 || cRaw > 0.0001;
+    }
+
+    onCuentaTercerosSwitchChange(): void {
+      this.sumTotal();
+    }
+
+    onAlMenosUnPaqueteCuentaTerceros(): void {
+      this.habilitarCuentaTerceros = true;
+      this.sumTotal();
+    }
+
+    private montoMinimoRetencionIvaGc(): number {
+        const v = this.apiService.auth_user()?.empresa?.monto_minimo_retencion_iva_gc;
+        const n = parseFloat(v);
+        return !isNaN(n) && n >= 0 ? n : 100;
+    }
+
+    private sincronizarRetencionGranContribuyente(): void {
+        const c = this.venta?.cliente;
+        if (!c || c.tipo_contribuyente !== 'Grande') {
+            return;
+        }
+        if (this.retencionIvaGcUsuarioDecidio) {
+            return;
+        }
+        const sub = parseFloat(this.venta.sub_total) || 0;
+        const min = this.montoMinimoRetencionIvaGc();
+        this.venta.retencion = sub >= min;
+    }
+
+    public onRetencionIvaManualChange(): void {
+        this.retencionIvaGcUsuarioDecidio = true;
+        this.sumTotal();
+    }
+
+    public onCobrarImpuestosChange(): void {
+        this.ventaDetallesV2?.sincronizarIvasDetalles();
+        this.sumTotal();
+    }
 
     // Cliente
     public setCliente(cliente:any){
         if(cliente.id){
+            this.retencionIvaGcUsuarioDecidio = false;
             cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
             this.venta.id_cliente = cliente.id;
             this.venta.cliente = cliente;
             if(cliente.tipo_contribuyente == "Grande") {
-                this.venta.retencion = 1;
                 this.sumTotal();
             }
 
@@ -1149,6 +1240,7 @@ export class FacturacionV2Component implements OnInit {
             this.venta.detalle_banco = '';
             this.mensajeErrorBanco = '';
         }
+        this.actualizarCambioEfectivo();
     }
 
     public setDocumento(id_documento: any) {
@@ -1216,6 +1308,10 @@ export class FacturacionV2Component implements OnInit {
       return;
     }
 
+    if (this.tieneDetallesInvalidosParaFacturar()) {
+      return;
+    }
+
     if (
       confirm(
         '¿Confirma procesar la ' +
@@ -1229,6 +1325,38 @@ export class FacturacionV2Component implements OnInit {
       }
       this.onSubmit();
     }
+  }
+
+  private tieneDetallesInvalidosParaFacturar(): boolean {
+    const detalles = this.venta.detalles || [];
+
+    const sinCantidad = detalles.find((detalle: any) => {
+      const c = Number(detalle?.cantidad);
+      return !Number.isFinite(c) || c <= 0;
+    });
+    if (sinCantidad) {
+      const nombre =
+        sinCantidad.descripcion || sinCantidad.nombre || 'el producto';
+      this.alertService.error(
+        `La cantidad de "${nombre}" debe ser mayor que 0 para procesar la venta.`
+      );
+      return true;
+    }
+
+    const totalInvalido = detalles.find((detalle: any) => {
+      const t = Number(detalle?.total);
+      return !Number.isFinite(t) || t < 0;
+    });
+    if (totalInvalido) {
+      const nombre =
+        totalInvalido.descripcion || totalInvalido.nombre || 'el producto';
+      this.alertService.error(
+        `El total de la línea "${nombre}" debe ser mayor o igual a 0.`
+      );
+      return true;
+    }
+
+    return false;
   }
 
   private navegarPostFacturaPreCuenta(ventaId: number) {
@@ -1255,7 +1383,7 @@ export class FacturacionV2Component implements OnInit {
     pedido_id: number;
     cliente_id?: number | null;
     id_sucursal?: number | null;
-    id_bodega_inventario?: number | null;
+    id_bodega?: number | null;
     fecha?: string | null;
     canal?: string | null;
     referencia_externa?: string | null;
@@ -1266,8 +1394,8 @@ export class FacturacionV2Component implements OnInit {
     if (data.id_sucursal) {
       this.venta.id_sucursal = data.id_sucursal;
     }
-    if (data.id_bodega_inventario) {
-      this.venta.id_bodega = data.id_bodega_inventario;
+    if (data.id_bodega) {
+      this.venta.id_bodega = data.id_bodega;
     }
     if (data.fecha) {
       this.venta.fecha = data.fecha;
@@ -1321,6 +1449,18 @@ export class FacturacionV2Component implements OnInit {
         error: () => {},
       });
     }
+
+    const syncBodegaPedido = (attempt = 0) => {
+      if (data.id_bodega) {
+        this.venta.id_bodega = data.id_bodega;
+      }
+      if (this.bodegas?.length && this.venta.id_bodega) {
+        this.setBodega();
+      } else if (attempt < 40) {
+        setTimeout(() => syncBodegaPedido(attempt + 1), 100);
+      }
+    };
+    syncBodegaPedido();
   }
 
   private navegarPostFacturaPedidoCanal(ventaId: number) {
@@ -1369,14 +1509,14 @@ export class FacturacionV2Component implements OnInit {
       this.venta.cambio = 0;
     }
 
+    if (this.pedidoCanalId) {
+      (this.venta as any).id_pedido_canal = this.pedidoCanalId;
+    }
+
     // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
     if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
       this.venta.credito = false;
       this.venta.consigna = false;
-    }
-
-    if (this.pedidoCanalId) {
-      (this.venta as any).id_restaurante_pedido = this.pedidoCanalId;
     }
 
     this.apiService.store('facturacion', this.venta).subscribe(

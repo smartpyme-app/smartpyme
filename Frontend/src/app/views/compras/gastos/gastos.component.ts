@@ -55,7 +55,7 @@ export class GastosComponent implements OnInit {
                 page: +params['page'] || 1,
             };
 
-            this.filtrarGastos();
+            this.filtrarGastos(false);
         });
 
         this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
@@ -82,11 +82,19 @@ export class GastosComponent implements OnInit {
         this.filtros.num_identificacion = '';
 
         this.loading = true;
-        this.filtrarGastos();
+        this.filtrarGastos(false);
         this.getNumsIds();
     }
 
-    public filtrarGastos(){
+    /**
+     * @param resetPage Si es true (por defecto), vuelve a la página 1 (búsqueda, filtros, orden, paginate).
+     *                  false al paginar o al sincronizar desde la URL.
+     */
+    public filtrarGastos(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
+
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: this.filtros,
@@ -164,7 +172,7 @@ export class GastosComponent implements OnInit {
     public setPagination(event:any):void{
         this.loading = true;
         this.filtros.page = event.page;
-        this.filtrarGastos();
+        this.filtrarGastos(false);
     }
 
 

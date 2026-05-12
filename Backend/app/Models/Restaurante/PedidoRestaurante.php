@@ -17,6 +17,7 @@ class PedidoRestaurante extends Model
     protected $fillable = [
         'id_empresa',
         'id_sucursal',
+        'id_bodega',
         'usuario_id',
         'fecha',
         'canal',

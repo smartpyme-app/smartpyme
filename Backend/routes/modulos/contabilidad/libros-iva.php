@@ -8,11 +8,13 @@ use Illuminate\Support\Facades\Route;
     Route::get('/libro-iva/consumidores/descargar-libro',         [LibrosIVAController::class, 'consumidoresLibroExport']);
     Route::get('/libro-iva/consumidores/descargar-anexo',         [LibrosIVAController::class, 'consumidoresAnexoExport']);
     Route::get('/libro-iva/consumidores/descargar-dttes',         [LibrosIVAController::class, 'GlobalDttesExport']);
+    Route::get('/libro-iva/consumidores/descargar-dttes-pdf',      [LibrosIVAController::class, 'exportGlobalDttesPdf']);
     
     Route::get('/libro-iva/contribuyentes',         [LibrosIVAController::class, 'contribuyentes']);
     Route::get('/libro-iva/contribuyentes/descargar-libro',         [LibrosIVAController::class, 'contribuyentesLibroExport']);
     Route::get('/libro-iva/contribuyentes/descargar-anexo',         [LibrosIVAController::class, 'contribuyentesAnexoExport']);
     Route::get('/libro-iva/contribuyentes/descargar-dttes',         [LibrosIVAController::class, 'GlobalDttesExport']);
+    Route::get('/libro-iva/contribuyentes/descargar-dttes-pdf',     [LibrosIVAController::class, 'exportGlobalDttesPdf']);
     Route::get('/libro-iva/contribuyentes/descargar-notas-credito-debito', [LibrosIVAController::class, 'notasCreditoDebitoExport']);
     
     Route::get('/libro-iva/compras',                        [LibrosIVAController::class, 'compras']);
