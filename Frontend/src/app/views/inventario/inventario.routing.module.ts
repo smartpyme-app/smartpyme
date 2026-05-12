@@ -35,6 +35,7 @@ import { InventarioSalidaComponent } from '@views/inventario/salidas/salida/inve
 import { EntradaDetalleComponent } from '@views/inventario/entradas/entrada-detalle/entrada-detalle.component';
 import { SalidaDetalleComponent } from '@views/inventario/salidas/salida-detalle/salida-detalle.component';
 import { LotesComponent } from '@views/inventario/lotes/lotes.component';
+import { ProductoPresentacionesComponent } from '@views/inventario/productos/producto/presentaciones/producto-presentaciones.component';
 
 const routes: Routes = [
   {
@@ -57,6 +58,7 @@ const routes: Routes = [
         { path: 'materia-prima/editar/:id', component: ProductoComponent, title: 'Materia prima'  },
 
         { path: 'producto/:id', component: ProductoComponent },
+        { path: 'producto/:id/presentaciones', component: ProductoPresentacionesComponent, title: 'Presentaciones del producto' },
         { path: 'kardex', component: KardexComponent, title: 'Kardex' },
         { path: 'kardex/:id', component: KardexComponent },
         { path: 'promociones', component: PromocionesComponent},

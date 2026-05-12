@@ -13,6 +13,7 @@ class Traslado extends Model
     protected $table = 'traslados';
     protected $fillable = [
         'id_producto',
+        'id_presentacion',
         'id_bodega_de',
         'id_bodega',
         'cantidad',

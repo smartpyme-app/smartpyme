@@ -1,0 +1,254 @@
+<!-- ── Cabecera ─────────────────────────────────────────────────────────────── -->
+<div class="d-flex justify-content-between align-items-center bg-white rounded p-3 mb-3">
+    <div>
+        <h5 class="mb-0">Presentaciones del Producto</h5>
+        <small class="text-muted" *ngIf="producto">
+            Unidad base: <strong>{{ nombreUnidadBase }}</strong>
+        </small>
+    </div>
+    <button class="btn btn-default" (click)="abrirModal(mNuevaPresentacion)">
+        <i class="fa fa-plus me-1"></i> Nueva Presentación
+    </button>
+</div>
+
+<!-- ── Tabla de presentaciones ─────────────────────────────────────────────── -->
+<section class="card border-0 p-3 mb-3">
+
+    <div class="table-responsive" *ngIf="producto">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Nombre Comercial</th>
+                    <th class="text-center">Equivalencia</th>
+                    <th class="text-center">Unidad Fiscal</th>
+                    <th class="text-center">Precio Venta</th>
+                    <th class="text-center d-none d-md-table-cell">Código Barras</th>
+                    <th class="text-center">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Empty state -->
+                <tr *ngIf="presentaciones.length === 0">
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        <i class="fa fa-box-open fa-2x d-block mb-2"></i>
+                        No hay presentaciones alternativas. La unidad base es
+                        <strong>{{ nombreUnidadBase }}</strong>.
+                    </td>
+                </tr>
+
+                <tr *ngFor="let p of presentaciones">
+                    <td><strong>{{ p.nombre_comercial }}</strong></td>
+                    <td class="text-center">
+                        <span class="badge bg-light text-dark border">
+                            1 {{ p.nombre_comercial }} = {{ p.factor_conversion }} {{ nombreUnidadBase }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-secondary">{{ p.unidad_medida?.nombre || p.id_unidad_medida }}</span>
+                    </td>
+                    <td class="text-center">{{ p.precio_venta | number:'1.2-6' }}</td>
+                    <td class="text-center d-none d-md-table-cell">
+                        <span *ngIf="p.codigo_barras">{{ p.codigo_barras }}</span>
+                        <span *ngIf="!p.codigo_barras" class="text-muted">—</span>
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-light" (click)="abrirEditar(p, mNuevaPresentacion)"
+                                title="Editar presentación">
+                                <i class="fa fa-pencil-alt"></i>
+                            </button>
+                            <button class="btn btn-light text-danger" (click)="eliminar(p)"
+                                title="Eliminar presentación">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ── Modal: Nueva Presentación ──────────────────────────────────────────── -->
+<ng-template #mNuevaPresentacion>
+    <div class="modal-header">
+        <h5 class="modal-title">
+            <i class="fa fa-cube me-2 text-primary"></i>
+            {{ editandoId ? 'Editar Presentación' : 'Nueva Presentación' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Close"></button>
+    </div>
+
+    <div class="modal-body">
+        <form #fPresentacion="ngForm">
+
+            <!-- Nombre comercial -->
+            <div class="mb-3">
+                <label for="nombre_comercial" class="form-label fw-semibold">
+                    Nombre comercial <span class="text-danger">*</span>
+                </label>
+                <input type="text" id="nombre_comercial" name="nombre_comercial" class="form-control"
+                    placeholder="Ej: Caja de 40, Galón, Blíster de 12…" [(ngModel)]="form.nombre_comercial" required>
+                <div class="form-text">Nombre libre que verá el cliente en la venta.</div>
+            </div>
+
+            <!-- Unidad de medida fiscal -->
+            <div class="mb-3">
+                <label for="id_unidad_medida" class="form-label fw-semibold">
+                    Unidad de medida fiscal <span class="text-danger">*</span>
+                </label>
+                <select id="id_unidad_medida" name="id_unidad_medida" class="form-select"
+                    [(ngModel)]="form.id_unidad_medida" required>
+                    <option value="">— Seleccione —</option>
+                    <option [value]="u.id" *ngFor="let u of unidades">
+                        {{ u.nombre }} ({{ u.cod }})
+                    </option>
+                </select>
+            </div>
+
+            <!-- ── Equivalencia ───────────────────────────────────────────────── -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    Equivalencia <span class="text-danger">*</span>
+                </label>
+
+                <!-- Pregunta conversacional -->
+                <p class="text-muted small mb-2">
+                    ¿Cómo se relaciona <strong>{{ form.nombre_comercial || 'esta presentación' }}</strong>
+                    con la unidad base <strong>{{ nombreUnidadBase }}</strong>?
+                </p>
+
+                <!-- Selector de modo -->
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="border rounded p-2 text-center"
+                             [class.border-primary]="modoEquivalencia === 'multiplicador'"
+                             [class.bg-primary-subtle]="modoEquivalencia === 'multiplicador'"
+                             style="cursor:pointer"
+                             (click)="modoEquivalencia = 'multiplicador'; calcularFactor('multiplicador')">
+                            <div class="fs-4 mb-1">📦</div>
+                            <div class="small fw-semibold">Agrupa varias unidades</div>
+                            <div class="text-muted" style="font-size:0.75rem">Ej: Caja, Galón, Blíster</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-2 text-center"
+                             [class.border-primary]="modoEquivalencia === 'divisor'"
+                             [class.bg-primary-subtle]="modoEquivalencia === 'divisor'"
+                             style="cursor:pointer"
+                             (click)="modoEquivalencia = 'divisor'; calcularFactor('divisor')">
+                            <div class="fs-4 mb-1">🔹</div>
+                            <div class="small fw-semibold">Es una fracción</div>
+                            <div class="text-muted" style="font-size:0.75rem">Ej: Unidad suelta, Dosis</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Transfer visual ─────────────────────────────────────────── -->
+                <div class="d-flex align-items-stretch" style="gap:0">
+
+                    <!-- Tarjeta IZQUIERDA -->
+                    <div class="flex-fill border rounded-start p-3 text-center"
+                         style="background:#f8f9fa; min-width:0">
+                        <div class="text-uppercase fw-semibold text-muted mb-1"
+                             style="font-size:0.65rem; letter-spacing:.06em">
+                            {{ modoEquivalencia === 'multiplicador' ? 'Presentación' : 'Presentaciones' }}
+                        </div>
+
+                        <ng-container *ngIf="modoEquivalencia === 'multiplicador'">
+                            <div class="fw-bold text-primary mb-1" style="font-size:2.2rem; line-height:1">1</div>
+                            <div class="fw-semibold small text-truncate">
+                                {{ form.nombre_comercial || '(nombre)' }}
+                            </div>
+                        </ng-container>
+
+                        <ng-container *ngIf="modoEquivalencia === 'divisor'">
+                            <input type="number" id="inputDivisor" name="inputDivisor"
+                                class="form-control text-center fw-bold border-0 bg-transparent p-0 mb-1"
+                                style="font-size:2.2rem; line-height:1; width:100%; color:#0d6efd; box-shadow:none"
+                                [(ngModel)]="inputDivisor"
+                                (input)="calcularFactor('divisor')"
+                                (change)="calcularFactor('divisor')"
+                                min="1" step="1" placeholder="100">
+                            <div class="fw-semibold small text-truncate">
+                                {{ form.nombre_comercial || '(nombre)' }}
+                            </div>
+                        </ng-container>
+                    </div>
+
+                    <!-- Flecha central -->
+                    <div class="d-flex align-items-center justify-content-center px-2
+                                border-top border-bottom"
+                         style="background:#fff; color:#adb5bd; font-size:1.4rem; white-space:nowrap">
+                        ⟶
+                    </div>
+
+                    <!-- Tarjeta DERECHA -->
+                    <div class="flex-fill border rounded-end p-3 text-center"
+                         style="background:#f8f9fa; min-width:0">
+                        <div class="text-uppercase fw-semibold text-muted mb-1"
+                             style="font-size:0.65rem; letter-spacing:.06em">
+                            Unidad base
+                        </div>
+
+                        <ng-container *ngIf="modoEquivalencia === 'multiplicador'">
+                            <input type="number" id="inputMultiplicador" name="inputMultiplicador"
+                                class="form-control text-center fw-bold border-0 bg-transparent p-0 mb-1"
+                                style="font-size:2.2rem; line-height:1; width:100%; color:#0d6efd; box-shadow:none"
+                                [(ngModel)]="inputMultiplicador"
+                                (input)="calcularFactor('multiplicador')"
+                                (change)="calcularFactor('multiplicador')"
+                                min="1" step="1" placeholder="30">
+                            <div class="fw-semibold small text-primary text-truncate">{{ nombreUnidadBase }}</div>
+                        </ng-container>
+
+                        <ng-container *ngIf="modoEquivalencia === 'divisor'">
+                            <div class="fw-bold text-primary mb-1" style="font-size:2.2rem; line-height:1">1</div>
+                            <div class="fw-semibold small text-primary text-truncate">{{ nombreUnidadBase }}</div>
+                        </ng-container>
+                    </div>
+
+                </div>
+
+                <!-- Factor resultante -->
+                <div class="form-text mt-2 text-center">
+                    Factor guardado:
+                    <code class="ms-1 text-success fw-semibold">{{ form.factor_conversion | number:'1.6-6' }}</code>
+                </div>
+            </div>
+
+            <!-- Precio de venta -->
+            <div class="mb-3">
+                <label for="precio_venta" class="form-label fw-semibold">Precio de venta</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" id="precio_venta" name="precio_venta" class="form-control" placeholder="0.00"
+                        [(ngModel)]="form.precio_venta" min="0" step="0.01">
+                </div>
+            </div>
+
+            <!-- Código de barras -->
+            <div class="mb-1">
+                <label for="codigo_barras" class="form-label fw-semibold">
+                    Código de barras <span class="text-muted fw-normal">(opcional)</span>
+                </label>
+                <input type="text" id="codigo_barras" name="codigo_barras" class="form-control"
+                    placeholder="Ej: 7501234567890" [(ngModel)]="form.codigo_barras">
+            </div>
+
+        </form>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()" [disabled]="saving">
+            Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="guardar()" [disabled]="saving">
+            <span *ngIf="!saving">
+                <i class="fa fa-save me-1"></i>
+                {{ editandoId ? 'Actualizar' : 'Guardar presentación' }}
+            </span>
+            <span *ngIf="saving">Guardando…</span>
+        </button>
+    </div>
+</ng-template>

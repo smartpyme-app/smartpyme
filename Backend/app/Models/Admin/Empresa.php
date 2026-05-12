@@ -748,6 +748,15 @@ class Empresa extends Model
     }
 
     /**
+     * Verificar si el módulo de Inventario Fraccionado (presentaciones de empaque) está activo.
+     * Permite que el buscador expanda las presentaciones en el punto de venta.
+     */
+    public function isInventarioFraccionadoActivo(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_fraccionado', false);
+    }
+
+    /**
      * Código de barras correlativo automático al crear productos (clave nueva: barcode_correlativo_automatico).
      * Compatibilidad: si aún existe sku_correlativo_automatico de versiones anteriores, se considera activo.
      */
