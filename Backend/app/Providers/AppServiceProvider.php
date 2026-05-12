@@ -74,8 +74,10 @@ class AppServiceProvider extends ServiceProvider
 
         Schema::defaultStringLength(191);
         \Carbon\Carbon::setLocale(config('app.locale'));
-        setlocale(LC_ALL, 'es_ES.UTF8');
-        setlocale(LC_TIME, 'es_ES.UTF8');
+        // Evitar fallos raros en CLI (composer / package:discover) si el locale no existe en el SO.
+        $lc = ['es_ES.UTF-8', 'es_ES.UTF8', 'es_SV.UTF-8', 'C.UTF-8', 'C'];
+        @setlocale(LC_ALL, ...$lc);
+        @setlocale(LC_TIME, ...$lc);
     }
 
     /**

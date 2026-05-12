@@ -28,8 +28,8 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.0",
         "league/flysystem-sftp-v3": "^3.0",
-        "laravel/ui": "^3.1",
-        "league/flysystem-aws-s3-v3": "^1.0",
+        "laravel/ui": "^4.0",
+        "league/flysystem-aws-s3-v3": "^3.0",
         "luecano/numero-a-letras": "^2.0",
         "maatwebsite/excel": "^3.1",
         "mpdf/mpdf": "^8.2",
@@ -67,7 +67,12 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "exclude-from-classmap": [
+            "vendor/league/flysystem/src/AwsS3V3",
+            "vendor/league/flysystem/src/PhpseclibV3",
+            "vendor/league/flysystem/src/Local"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

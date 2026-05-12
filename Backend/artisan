@@ -1,6 +1,11 @@
 #!/usr/bin/env php
 <?php
 
+// Alinear con public/index.php: evita fallos/segfaults de PCRE JIT en CLI (p. ej. package:discover).
+ini_set('pcre.jit', '0');
+ini_set('pcre.backtrack_limit', '1000000');
+ini_set('pcre.recursion_limit', '1000000');
+
 define('LARAVEL_START', microtime(true));
 
 /*
