@@ -3,9 +3,11 @@
 namespace App\Services\Contabilidad;
 
 use App\Models\Contabilidad\Catalogo\Cuenta;
+use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Detalle;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Estado de resultados (Estado de rendimiento financiero) NIIF para PYMES — El Salvador (CVPCPA), USD.
@@ -42,6 +44,13 @@ class EstadoResultadosNiifSvPresenter
     public const LBL_UTIL_NETA = 'UTILIDAD NETA DEL EJERCICIO (estimada)';
 
     private array $L = [];
+
+    /**
+     * Prefijos numéricos del código contable para COGS / gasto venta / gasto admin (ordenados de más largo a más corto por grupo).
+     *
+     * @var array{cogs: array<int, string>, gasto_venta: array<int, string>, gasto_admin: array<int, string>}
+     */
+    private array $prefijosEstadoResultados = [];
 
     public function build(int $empresaId, Carbon $startDate, Carbon $endDate): array
     {
@@ -125,6 +134,8 @@ class EstadoResultadosNiifSvPresenter
 
     private function accumulatePeriod(int $empresaId, Carbon $startDate, Carbon $endDate): void
     {
+        $this->prefijosEstadoResultados = $this->resolvePrefijosEstadoResultados($empresaId);
+
         $cuentas = Cuenta::withoutGlobalScopes()
             ->where('id_empresa', $empresaId)
             ->orderBy('codigo')
@@ -245,6 +256,24 @@ class EstadoResultadosNiifSvPresenter
         $h = $this->normalize($cuenta->nombre . ' ' . $cuenta->codigo . ' ' . $r);
         $toma = $this->montoEfectoPositivo($r, $neto, $h);
 
+        $codigoDigits = preg_replace('/\D+/', '', (string) $cuenta->codigo);
+        $clasePrefijo = $this->claseResultadosPorPrefijoCodigo($codigoDigits);
+        if ($clasePrefijo === 'cogs') {
+            $this->L['costo_ventas_directo'] += $toma;
+
+            return;
+        }
+        if ($clasePrefijo === 'gasto_venta') {
+            $this->distribuirGasto($h, $toma, true, false);
+
+            return;
+        }
+        if ($clasePrefijo === 'gasto_admin') {
+            $this->distribuirGasto($h, $toma, false, true);
+
+            return;
+        }
+
         if (strpos($r, 'ingreso') !== false) {
             $this->distribuirIngreso($h, $toma, $debe, $haber, $r);
 
@@ -256,10 +285,87 @@ class EstadoResultadosNiifSvPresenter
             return;
         }
         if (strpos($r, 'gasto') !== false) {
-            $this->distribuirGasto($h, $toma);
+            $this->distribuirGasto($h, $toma, false, false);
 
             return;
         }
+    }
+
+    /**
+     * @return array{cogs: array<int, string>, gasto_venta: array<int, string>, gasto_admin: array<int, string>}
+     */
+    private function resolvePrefijosEstadoResultados(int $empresaId): array
+    {
+        $base = [
+            'cogs' => $this->normalizePrefijoLista((array) config('contabilidad.estado_resultados_prefijos.cogs', ['4101'])),
+            'gasto_venta' => $this->normalizePrefijoLista((array) config('contabilidad.estado_resultados_prefijos.gasto_venta', ['4102'])),
+            'gasto_admin' => $this->normalizePrefijoLista((array) config('contabilidad.estado_resultados_prefijos.gasto_admin', ['4103'])),
+        ];
+        foreach (['cogs', 'gasto_venta', 'gasto_admin'] as $clave) {
+            if ($base[$clave] === []) {
+                $base[$clave] = $clave === 'cogs'
+                    ? ['4101']
+                    : ($clave === 'gasto_venta' ? ['4102'] : ['4103']);
+                $base[$clave] = $this->normalizePrefijoLista($base[$clave]);
+            }
+        }
+
+        if (! Schema::hasColumn('contabilidad_configuracion', 'estado_resultados_prefijos')) {
+            return $base;
+        }
+
+        $row = Configuracion::withoutGlobalScopes()->where('id_empresa', $empresaId)->first();
+        $override = $row?->estado_resultados_prefijos;
+        if (! is_array($override)) {
+            return $base;
+        }
+
+        foreach (['cogs', 'gasto_venta', 'gasto_admin'] as $clave) {
+            if (! empty($override[$clave]) && is_array($override[$clave])) {
+                $lista = $this->normalizePrefijoLista($override[$clave]);
+                if ($lista !== []) {
+                    $base[$clave] = $lista;
+                }
+            }
+        }
+
+        return $base;
+    }
+
+    /**
+     * @param  array<int, mixed>  $prefixes
+     * @return array<int, string>
+     */
+    private function normalizePrefijoLista(array $prefixes): array
+    {
+        $out = [];
+        foreach ($prefixes as $p) {
+            $d = preg_replace('/\D+/', '', (string) $p);
+            if ($d !== '') {
+                $out[] = $d;
+            }
+        }
+        $out = array_values(array_unique($out));
+        usort($out, static fn ($a, $b) => strlen((string) $b) <=> strlen((string) $a));
+
+        return $out;
+    }
+
+    private function claseResultadosPorPrefijoCodigo(string $codigoDigits): ?string
+    {
+        if ($codigoDigits === '') {
+            return null;
+        }
+
+        foreach (['cogs', 'gasto_venta', 'gasto_admin'] as $clase) {
+            foreach ($this->prefijosEstadoResultados[$clase] ?? [] as $prefix) {
+                if ($prefix !== '' && str_starts_with($codigoDigits, $prefix)) {
+                    return $clase;
+                }
+            }
+        }
+
+        return null;
     }
 
     private function montoEfectoPositivo(string $rubro, float $neto, string $h): float
@@ -410,12 +516,16 @@ class EstadoResultadosNiifSvPresenter
             return;
         }
 
-        $this->L['gasto_venta_otros'] += $monto;
+        // Cualquier otra cuenta de rubro «costo» que no encaje en inventario/compras va a COGS, no a gasto de venta.
+        $this->L['costo_ventas_directo'] += $monto;
     }
 
-    private function distribuirGasto(string $h, float $monto): void
+    private function distribuirGasto(string $h, float $monto, bool $forzarGastoVenta = false, bool $forzarGastoAdmin = false): void
     {
-        $enVenta = $this->esGastoVenta($h);
+        if ($forzarGastoVenta && $forzarGastoAdmin) {
+            $forzarGastoAdmin = false;
+        }
+        $enVenta = $forzarGastoVenta ? true : ($forzarGastoAdmin ? false : $this->esGastoVenta($h));
         if (preg_match('/(interes|interés|financ|comision|comisión).*(banc|prestam|préstam|banco)|gasto banc|comisiones banc|gastos banc|intereses sobre prest|intereses s\/p/u', $h)) {
             if (preg_match('/interes|interés|sobre prest|financ|prestam|préstam.*(banc|largo|cp)/u', $h)) {
                 $this->L['otros_gas_intereses'] += $monto;

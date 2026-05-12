@@ -22,6 +22,27 @@ class BalanceGeneralNiifSvPresenter
 
     public function build(int $empresaId, Carbon $startDate, Carbon $endDate): array
     {
+        $computed = $this->computeRawLines($empresaId, $startDate, $endDate);
+
+        return $this->composeReport($endDate, $computed['utilidad_ejercicio_computada']);
+    }
+
+    /**
+     * Totales por línea NIIF (mismas claves que emptyLineKeys) para un rango de fechas,
+     * sin armar bloques de presentación. Útil para variaciones entre cortes (p. ej. flujo de efectivo).
+     *
+     * @return array{lines: array<string, float>, utilidad_ejercicio_computada: float}
+     */
+    public function rawLines(int $empresaId, Carbon $startDate, Carbon $endDate): array
+    {
+        return $this->computeRawLines($empresaId, $startDate, $endDate);
+    }
+
+    /**
+     * @return array{lines: array<string, float>, utilidad_ejercicio_computada: float}
+     */
+    private function computeRawLines(int $empresaId, Carbon $startDate, Carbon $endDate): array
+    {
         $this->lines = $this->emptyLineKeys();
 
         $cuentasJerarquicas = Cuenta::withoutGlobalScopes()
@@ -105,7 +126,10 @@ class BalanceGeneralNiifSvPresenter
             $this->lines['utilidad_ejercicio'] = $utilidadCalculada;
         }
 
-        return $this->composeReport($endDate, $utilidadCalculada);
+        return [
+            'lines' => $this->lines,
+            'utilidad_ejercicio_computada' => $utilidadCalculada,
+        ];
     }
 
     private function emptyLineKeys(): array

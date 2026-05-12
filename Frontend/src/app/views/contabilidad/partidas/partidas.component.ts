@@ -10,6 +10,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { HttpCacheService } from '@services/http-cache.service';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { SharedModule } from '@shared/shared.module';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -19,7 +20,7 @@ import Swal from 'sweetalert2';
     templateUrl: './partidas.component.html',
     styleUrls: ['./partidas.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, NgSelectModule, SharedModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PartidasComponent extends BasePaginatedModalComponent implements OnInit {
@@ -34,6 +35,8 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     tipo_cuenta: 'all',
     /** Incluir columna y período anterior inmediato (misma duración) en Estado de resultados. */
     estadoCompararAnterior: false,
+    /** Comparativa en Flujo de efectivo (misma regla que estado de resultados). */
+    flujoCompararAnterior: false,
   };
   public catalogo: any = [];
   public months: Array<{ value: number; label: string }> = [];
@@ -190,7 +193,8 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       buscador: '',
       orden: 'correlativo', // NUEVO: Orden por correlativo por defecto
       direccion: 'desc',
-      paginate: 10,
+      paginate: 25,
+      page: 1,
       estado: '',
       incluir_anuladas: false // NUEVO: No mostrar anuladas por defecto
     };
@@ -221,7 +225,11 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     this.reporte.concepto = '';
   }
 
-  public filtrarPartidas() {
+  public filtrarPartidas(options?: { keepPage?: boolean }) {
+    if (!options?.keepPage) {
+      this.filtros.page = 1;
+    }
+
     this.loading = true;
 
     this.guardarFiltros();
@@ -314,7 +322,10 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     }
   }
 
-  // setPagination() ahora se hereda de BasePaginatedComponent
+  public setPagination(event: { page: number }): void {
+    this.filtros.page = event.page;
+    this.filtrarPartidas({ keepPage: true });
+  }
 
   public async delete(partida: any) {
     const result = await Swal.fire({
@@ -590,6 +601,24 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
         this.reporte.estadoCompararAnterior === true
           ? `${base}&comparar=1`
           : base;
+      window.open(url);
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirFlujoEfectivo() {
+    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.tipo_descarga) {
+      const base = this.buildReportDownloadUrl(
+        '/api/reportes/flujo/efectivo/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_descarga
+      );
+      const url =
+        this.reporte.flujoCompararAnterior === true ? `${base}&comparar=1` : base;
       window.open(url);
     } else {
       alert('Por favor, llenar los campos requeridos.');
