@@ -151,6 +151,14 @@ class Inventario extends Model {
                 $entradaCantidad = abs($cantidad);
                 $clase = 'Anulación pedido pendiente';
             }
+        }else if ($clase == 'App\Models\Inventario\Transformacion') {
+            if ($cantidad > 0) {
+                $entradaCantidad = $cantidad;
+                $clase = 'Transformación (Entrada)';
+            } else {
+                $salidaCantidad = abs($cantidad);
+                $clase = 'Transformación (Salida)';
+            }
         }else{
             // return null;
         }
