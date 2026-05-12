@@ -9,6 +9,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Admin\Empresa;
+use App\Services\ConversionInventarioService;
 
 class Salida extends Model {
 
@@ -89,6 +90,16 @@ class Salida extends Model {
         $empresa = Empresa::find($this->id_empresa);
         $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
         
+        $factor = 1;
+        if ($detalle->id_presentacion) {
+            $presentacion = \App\Models\Inventario\ProductoPresentacion::find($detalle->id_presentacion);
+            if ($presentacion) {
+                $factor = $presentacion->factor_conversion ?: 1;
+            }
+        }
+        
+        $cantidadBase = ConversionInventarioService::calcularCantidadBase($detalle->cantidad, $factor);
+
         if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
             // Actualizar stock del lote
             $lote = Lote::find($detalle->lote_id);
@@ -99,12 +110,12 @@ class Salida extends Model {
                 }
                 
                 // Validar que hay suficiente stock en el lote
-                if ($lote->stock < $detalle->cantidad) {
-                    throw new \Exception("No hay suficiente stock en el lote para el producto: {$producto->nombre}. Stock disponible en lote: {$lote->stock}, Cantidad requerida: {$detalle->cantidad}");
+                if ($lote->stock < $cantidadBase) {
+                    throw new \Exception("No hay suficiente stock en el lote para el producto: {$producto->nombre}. Stock disponible en lote: {$lote->stock}, Cantidad requerida: {$cantidadBase}");
                 }
                 
                 // Disminuir stock del lote
-                $lote->stock -= $detalle->cantidad;
+                $lote->stock -= $cantidadBase;
                 $lote->save();
             }
         }
@@ -116,16 +127,16 @@ class Salida extends Model {
 
         if ($inventario) {
             // Validar que hay suficiente stock
-            if ($inventario->stock < $detalle->cantidad) {
-                throw new \Exception("No hay suficiente stock para el producto: {$producto->nombre}. Stock disponible: {$inventario->stock}, Cantidad requerida: {$detalle->cantidad}");
+            if ($inventario->stock < $cantidadBase) {
+                throw new \Exception("No hay suficiente stock para el producto: {$producto->nombre}. Stock disponible: {$inventario->stock}, Cantidad requerida: {$cantidadBase}");
             }
 
             // Disminuir stock (siempre actualizar inventario tradicional para consistencia)
-            $inventario->stock -= $detalle->cantidad;
+            $inventario->stock -= $cantidadBase;
             $inventario->save();
 
             // Registrar en kardex
-            $inventario->kardex($this, $detalle->cantidad, null, $detalle->costo);
+            $inventario->kardex($this, $cantidadBase * -1, null, $detalle->costo);
         }
     }
 
@@ -149,12 +160,22 @@ class Salida extends Model {
         $empresa = Empresa::find($this->id_empresa);
         $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
         
+        $factor = 1;
+        if ($detalle->id_presentacion) {
+            $presentacion = \App\Models\Inventario\ProductoPresentacion::find($detalle->id_presentacion);
+            if ($presentacion) {
+                $factor = $presentacion->factor_conversion ?: 1;
+            }
+        }
+        
+        $cantidadBase = ConversionInventarioService::calcularCantidadBase($detalle->cantidad, $factor);
+        
         if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
             // Revertir stock del lote
             $lote = Lote::find($detalle->lote_id);
             if ($lote) {
                 // Aumentar stock del lote (revertir la salida)
-                $lote->stock += $detalle->cantidad;
+                $lote->stock += $cantidadBase;
                 $lote->save();
             }
         }
@@ -165,11 +186,11 @@ class Salida extends Model {
 
         if ($inventario) {
             // Aumentar stock (revertir la salida)
-            $inventario->stock += $detalle->cantidad;
+            $inventario->stock += $cantidadBase;
             $inventario->save();
 
             // Registrar en kardex
-            $inventario->kardex($this, $detalle->cantidad * -1, null, $detalle->costo);
+            $inventario->kardex($this, $cantidadBase, null, $detalle->costo);
         }
     }
 
