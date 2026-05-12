@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('transformaciones', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('id_usuario');
-            $table->unsignedBigInteger('id_bodega');
+            $table->integer('id_bodega');
             $table->dateTime('fecha');
             $table->text('observacion')->nullable();
             $table->timestamps();
