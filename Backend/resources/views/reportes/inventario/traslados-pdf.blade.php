@@ -13,8 +13,7 @@
             margin: 40px 60px;
         }
         body {
-            font-family: 'Inter', sans-serif;
-            font-family: 'Nunito', sans-serif;
+            font-family: DejaVu Sans, sans-serif;
             width: 100%;
         }
         .header {

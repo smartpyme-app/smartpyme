@@ -5,13 +5,14 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Orden de compra #{{ $compra->referencia }} - {{ $compra->nombre_proveedor }}</title>
     <style>
+        /* DejaVu Sans: fuente incluida en DomPDF; símbolos como ₡ € £ no aparecen como "?" */
         * {
             margin: 0cm;
-            font-family: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"';
+            font-family: DejaVu Sans, sans-serif;
         }
 
         body {
-            font-family: serif;
+            font-family: DejaVu Sans, sans-serif;
             margin: 50px;
         }
 
