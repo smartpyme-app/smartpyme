@@ -266,6 +266,8 @@ export class GastoComponent implements OnInit {
       this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
       this.gasto.id_sucursal = this.apiService.auth_user().id_sucursal;
       this.gasto.id_usuario = this.apiService.auth_user().id;
+      this.gasto.impuesto =
+        this.apiService.auth_user().empresa?.cobra_iva == 'Si';
       this.gasto.otros_impuestos = []; 
       this.gasto.impuestos_valores = [];
       this.gasto.area_empresa = '';
