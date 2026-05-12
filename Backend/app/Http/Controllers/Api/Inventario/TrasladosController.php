@@ -29,24 +29,25 @@ class TrasladosController extends Controller
     }
 
     public function index(Request $request) {
-       
-        $traslados = Traslado::when($request->fin, function($query) use ($request){
-                                return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
+
+        $traslados = Traslado::when($request->inicio, function($query) use ($request){
+                                return $query->where('created_at', '>=', $request->inicio . ' 00:00:00');
+                            })
+                            ->when($request->fin, function($query) use ($request){
+                                return $query->where('created_at', '<=', $request->fin . ' 23:59:59');
                             })
                             ->when($request->id_bodega_de, function($query) use ($request){
-                                return $query->whereHas('origen', function($q) use ($request){
-                                    $q->where('id_bodega_de', $request->id_bodega_de);
-                                });
+                                return $query->where('id_bodega_de', $request->id_bodega_de);
                             })
                             ->when($request->id_bodega_para, function($query) use ($request){
-                                return $query->whereHas('destino', function($q) use ($request){
-                                    $q->where('id_bodega', $request->id_bodega_para);
-                                });
+                                return $query->where('id_bodega', $request->id_bodega_para);
                             })
                             ->when($request->search, function($query) use ($request){
-                                return $query->whereHas('producto', function($q) use ($request){
-                                    $q->where('nombre', 'like',  '%'. $request->search . '%');
-                                })->orWhere('concepto', 'like',  '%'. $request->search . '%');
+                                return $query->where(function($q) use ($request){
+                                    $q->whereHas('producto', function($p) use ($request){
+                                        $p->where('nombre', 'like',  '%'. $request->search . '%');
+                                    })->orWhere('concepto', 'like',  '%'. $request->search . '%');
+                                });
                             })
                             ->when($request->concepto, function($query) use ($request){
                                 return $query->where('concepto', 'like', '%' . $request->concepto . '%');
@@ -57,7 +58,7 @@ class TrasladosController extends Controller
                             ->when($request->id_producto, function($query) use ($request){
                                 return $query->where('id_producto', $request->id_producto);
                             })
-                            ->orderBy($request->orden, $request->direccion)
+                            ->orderBy($request->orden ?? 'created_at', $request->direccion ?? 'desc')
                             ->paginate($request->paginate);
 
 
@@ -618,8 +619,11 @@ class TrasladosController extends Controller
     }
 
     public function exportarPdf(Request $request) {
-        $traslados = Traslado::when($request->fin, function($query) use ($request){
-                                return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
+        $traslados = Traslado::when($request->inicio, function($query) use ($request){
+                                return $query->where('created_at', '>=', $request->inicio . ' 00:00:00');
+                            })
+                            ->when($request->fin, function($query) use ($request){
+                                return $query->where('created_at', '<=', $request->fin . ' 23:59:59');
                             })
                             ->when($request->id_bodega_de, function($query) use ($request){
                                 return $query->where('id_bodega_de', $request->id_bodega_de);
@@ -628,9 +632,11 @@ class TrasladosController extends Controller
                                 return $query->where('id_bodega', $request->id_bodega_para);
                             })
                             ->when($request->search, function($query) use ($request){
-                                return $query->whereHas('producto', function($q) use ($request){
-                                    $q->where('nombre', 'like',  '%'. $request->search . '%');
-                                })->orWhere('concepto', 'like',  '%'. $request->search . '%');
+                                return $query->where(function($q) use ($request){
+                                    $q->whereHas('producto', function($p) use ($request){
+                                        $p->where('nombre', 'like',  '%'. $request->search . '%');
+                                    })->orWhere('concepto', 'like',  '%'. $request->search . '%');
+                                });
                             })
                             ->when($request->concepto, function($query) use ($request){
                                 return $query->where('concepto', 'like', '%' . $request->concepto . '%');
