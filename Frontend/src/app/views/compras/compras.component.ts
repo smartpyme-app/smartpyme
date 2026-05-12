@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, Params } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -169,16 +169,13 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         this.destroy$.complete();
     }
 
-    protected untilDestroyed() {
-        return takeUntil(this.destroy$);
-    }
-
-    private parseOptionalIdParam(params: Record<string, string | undefined>, key: string): number | null {
+    private parseOptionalIdParam(params: Params, key: string): number | null {
         const raw = params[key];
-        if (raw === undefined || raw === null || raw === '') {
+        const str = Array.isArray(raw) ? raw[0] : raw;
+        if (str === undefined || str === null || str === '') {
             return null;
         }
-        const n = Number(raw);
+        const n = Number(str);
         return Number.isFinite(n) && n > 0 ? n : null;
     }
 
@@ -203,7 +200,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
         this.route.queryParams
             .pipe(this.untilDestroyed())
-            .subscribe(params => {
+            .subscribe((params: Params) => {
             this.filtros = {
                 buscador: params['buscador'] || '',
                 id_proyecto: +params['id_proyecto'] || '',
@@ -429,7 +426,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                             .pipe(this.untilDestroyed())
                             .subscribe({
                                 next: (cuentas) => {
-                                    this.bancos = cuentas;
+                                    this.bancos = cuentas as any[];
                                     abrirModalEdicion();
                                 },
                                 error: (err) => {
@@ -482,8 +479,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         this.downloadingCompras = true; this.saving = true;
         this.apiService.export('compras/exportar', this.filtrosParaApi())
             .pipe(this.untilDestroyed())
-            .subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            .subscribe((data) => {
+            const blob = new Blob([data as Blob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -502,8 +499,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         this.downloadingDetalles = true; this.saving = true;
         this.apiService.export('compras-detalles/exportar', this.filtrosParaApi())
             .pipe(this.untilDestroyed())
-            .subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            .subscribe((data) => {
+            const blob = new Blob([data as Blob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -893,8 +890,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     this.apiService.exportAcumulado('compras-rentabilidad/exportar', this.filtrosRentabilidad)
       .pipe(this.untilDestroyed())
       .subscribe(
-      (data: Blob) => {
-        const blob = new Blob([data], {
+      (data) => {
+        const blob = new Blob([data as Blob], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         });
         const url = window.URL.createObjectURL(blob);
@@ -963,7 +960,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
       .pipe(this.untilDestroyed())
       .subscribe({
         next: (acceso) => {
-          this.contabilidadHabilitada = acceso;
+          this.contabilidadHabilitada = !!acceso;
           this.cdr.markForCheck();
         },
         error: (error) => {

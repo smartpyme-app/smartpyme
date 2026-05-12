@@ -19,23 +19,36 @@
   </div>
 </div> -->
 <div class="d-flex" style="min-height: 100vh; background: #FDFBFF;">
-  @if (apiService.verifyRoleAdmin() && !usuario.empresa.licencia) {
-      <app-sidebar-admin></app-sidebar-admin>
+  <!-- Una sola rama de sidebar: super_admin siempre ve menú plataforma; licencia → organizaciones; sin licencia → operación / ventas / citas. -->
+  @if (apiService.verifyRoleAdmin()) {
+    <app-sidebar-admin></app-sidebar-admin>
+  } @else if (
+    apiService.isNotSuperAdmin() &&
+    !usuario.empresa.licencia &&
+    (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado')
+  ) {
+    <app-sidebar-ventas></app-sidebar-ventas>
+  } @else if (apiService.isNotSuperAdmin() && !usuario.empresa.licencia && usuario.tipo == 'Citas') {
+    <app-sidebar-servicios></app-sidebar-servicios>
+  } @else if (
+    apiService.isNotSuperAdmin() &&
+    usuario.empresa.licencia &&
+    (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado') &&
+    usuario.empresa.es_empresa_padre
+  ) {
+    <app-sidebar-ventas></app-sidebar-ventas>
+  } @else if (
+    apiService.isNotSuperAdmin() &&
+    usuario.empresa.licencia &&
+    usuario.tipo == 'Citas' &&
+    usuario.empresa.es_empresa_padre
+  ) {
+    <app-sidebar-servicios></app-sidebar-servicios>
+  } @else if (apiService.isNotSuperAdmin() && usuario.empresa.licencia) {
+    <app-sidebar-organizaciones></app-sidebar-organizaciones>
+  } @else if (apiService.isNotSuperAdmin() && !usuario.empresa.licencia) {
+    <app-sidebar></app-sidebar>
   }
-  @if (apiService.isNotSuperAdmin() && !usuario.empresa.licencia) {
-      <app-sidebar></app-sidebar>
-  }
-  @if (apiService.isNotSuperAdmin() && (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
-  (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado')) {
-  <app-sidebar-ventas></app-sidebar-ventas>
-  }
-  @if (apiService.isNotSuperAdmin() && (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
-  usuario.tipo == 'Citas') {
-  <app-sidebar-servicios></app-sidebar-servicios>
-  }
-  <!-- <app-sidebar-ventas *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia && apiService.verifyVentasRole()"></app-sidebar-ventas> -->
-  <!-- <app-sidebar-servicios *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia && apiService.verifyCitasRole()"></app-sidebar-servicios> -->
-  <!-- <app-sidebar-organizaciones *ngIf="apiService.isNotSuperAdmin() && usuario.empresa.licencia"></app-sidebar-organizaciones> -->
 
   <div class="content pt-5 mt-5 p-2 px-lg-4 py-lg-5 position-relative overflow-hidden">
     <div class="container-fluid p-0 m-0">
@@ -151,7 +164,7 @@
               Importante: si persisten saldos pendientes con el sistema, mañana podría limitarse el acceso. Te invitamos a regularizar tu situación.
               <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark">Regularizar en suscripción</a>
             </div>
-            <div *ngSwitchCase="-3" class="text-dark text-center w-1                                                                                                                                                   00">
+            <div *ngSwitchCase="-3" class="text-dark text-center w-100">
               Último día de gracia: regulariza hoy tus saldos pendientes con el sistema para mantener el acceso.
               <a href="/suscripcion" class="fw-bold text-decoration-none no-underline text-dark">Regularizar ahora</a>
             </div>

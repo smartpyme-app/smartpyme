@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
@@ -10,7 +11,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     selector: 'app-sidebar-servicios',
     templateUrl: './sidebar-servicios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, TooltipModule],
+    imports: [CommonModule, RouterModule, TooltipModule, CollapseModule],
     
 })
 

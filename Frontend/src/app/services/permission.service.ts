@@ -30,26 +30,44 @@ export class PermissionService {
     return user ? JSON.parse(user) : null;
   }
 
-  loadUserPermissions(userId: number): void {
-    this.httpService.getAll(`roles-permissions/user/${userId}`).subscribe(
-      (response: any) => {
-        if (response.ok) {
-          const permissions: UserPermissions = {
-            rolePermissions: response.data.rolePermissions || [],
-            directPermissions: response.data.directPermissions || [],
-            revokedPermissions: response.data.revokedPermissions || [],
-            effectivePermissions: response.data.effectivePermissions || [],
-            role: response.data.role || '',
-          };
+  private toPermissionNameArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value.filter((x): x is string => typeof x === 'string');
+    }
+    if (value && typeof value === 'object') {
+      return Object.values(value as Record<string, unknown>).filter(
+        (x): x is string => typeof x === 'string'
+      );
+    }
+    return [];
+  }
 
-          localStorage.setItem(
-            'SP_user_permissions',
-            JSON.stringify(permissions)
-          );
-          this.currentUserPermissions = permissions;
+  loadUserPermissions(userId: number): void {
+    this.httpService.getAll(`roles-permissions/user/${userId}`).subscribe({
+      next: (response: any) => {
+        if (response?.ok === false) {
+          return;
         }
-      }
-    );
+        const data = response?.data ?? response;
+        if (!data || typeof data !== 'object') {
+          return;
+        }
+
+        const permissions: UserPermissions = {
+          rolePermissions: this.toPermissionNameArray(data.rolePermissions),
+          directPermissions: this.toPermissionNameArray(data.directPermissions),
+          revokedPermissions: this.toPermissionNameArray(data.revokedPermissions),
+          effectivePermissions: this.toPermissionNameArray(data.effectivePermissions),
+          role: typeof data.role === 'string' ? data.role : '',
+        };
+
+        localStorage.setItem('SP_user_permissions', JSON.stringify(permissions));
+        this.currentUserPermissions = permissions;
+      },
+      error: () => {
+        /* Mantiene SP_user_permissions previo si el request falla */
+      },
+    });
   }
 
   clearPermissions(): void {
@@ -66,24 +84,28 @@ export class PermissionService {
     if (this.currentUserPermissions.effectivePermissions.length === 0) {
       const storedPermissions = localStorage.getItem('SP_user_permissions');
       if (storedPermissions) {
-        this.currentUserPermissions = JSON.parse(storedPermissions);
+        try {
+          this.currentUserPermissions = JSON.parse(storedPermissions);
+        } catch {
+          /* ignore */
+        }
       }
     }
 
-    const effectivePermissions = Array.isArray(
+    const effectivePermissions = this.toPermissionNameArray(
       this.currentUserPermissions.effectivePermissions
-    )
-      ? this.currentUserPermissions.effectivePermissions
-      : Object.values(this.currentUserPermissions.effectivePermissions);
-
-    const revokedPermissions = Array.isArray(
+    );
+    const revokedPermissions = this.toPermissionNameArray(
       this.currentUserPermissions.revokedPermissions
-    )
-      ? this.currentUserPermissions.revokedPermissions
-      : Object.values(this.currentUserPermissions.revokedPermissions);
+    );
 
     if (revokedPermissions.includes(permission)) {
       return false;
+    }
+
+    const role = this.currentUserPermissions.role;
+    if (role === 'admin' || role === 'super_admin') {
+      return true;
     }
 
     return effectivePermissions.includes(permission);

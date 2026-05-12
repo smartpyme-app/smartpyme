@@ -2,6 +2,8 @@ import { NgModule } from '@angular/core';
 import { Routes, RouterModule, NoPreloading } from '@angular/router';
 
 import { AuthGuard } from './guards/auth.guard';
+import { AdminGuard } from './guards/admin.guard';
+import { SupervisorLimitadoGuard } from './guards/supervisor-limitado.guard';
 import { SubscriptionGuard } from './guards/SuscriptionGuard.guard';
 import { NotFoundComponent } from './shared/404/not-found.component';
 
