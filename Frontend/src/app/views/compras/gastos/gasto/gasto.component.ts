@@ -175,6 +175,8 @@ export class GastoComponent implements OnInit {
 
           if (this.gasto.iva_percibido > 0) this.gasto.percepcion = true;
 
+          if (parseFloat(this.gasto.iva_retenido) > 0) this.gasto.retencion = true;
+
           if (this.gasto.renta_retenida > 0)
             this.gasto.renta = true;
 
@@ -268,6 +270,8 @@ export class GastoComponent implements OnInit {
       this.gasto.impuestos_valores = [];
       this.gasto.area_empresa = '';
       this.gasto.id_area_empresa = null;
+      this.gasto.iva_retenido = 0;
+      this.gasto.retencion = false;
       this.varios_items = false;
       this.detalles = [];
 
@@ -506,6 +510,13 @@ export class GastoComponent implements OnInit {
         this.gasto.renta_retenida = 0;
     }
 
+    if(this.gasto.retencion) {
+        this.gasto.iva_retenido = (subtotal * 0.01).toFixed(2);
+        total -= parseFloat(this.gasto.iva_retenido);
+    } else {
+        this.gasto.iva_retenido = 0;
+    }
+
     if(this.gasto.percepcion) {
         this.gasto.iva_percibido = (subtotal * 0.01).toFixed(2);
         total += parseFloat(this.gasto.iva_percibido);
@@ -562,10 +573,12 @@ export class GastoComponent implements OnInit {
       sub_total: 0,
       iva: 0,
       renta_retenida: 0,
+      iva_retenido: 0,
       iva_percibido: 0,
       total: 0,
       aplica_iva: true,
       aplica_renta: false,
+      aplica_retencion_iva: false,
       aplica_percepcion: false,
       area_empresa: null,
       id_proyecto: this.gasto.id_proyecto || null,
@@ -597,6 +610,12 @@ export class GastoComponent implements OnInit {
     } else {
       d.renta_retenida = 0;
     }
+    if (d.aplica_retencion_iva) {
+      d.iva_retenido = parseFloat((sub * 0.01).toFixed(2));
+      total -= d.iva_retenido;
+    } else {
+      d.iva_retenido = 0;
+    }
     if (d.aplica_percepcion) {
       d.iva_percibido = parseFloat((sub * 0.01).toFixed(2));
       total += d.iva_percibido;
@@ -623,17 +642,19 @@ export class GastoComponent implements OnInit {
   }
 
   public recalcularTotalesDetalles() {
-    let st = 0, iv = 0, rr = 0, ip = 0, tot = 0;
+    let st = 0, iv = 0, rr = 0, ir = 0, ip = 0, tot = 0;
     this.detalles.forEach(d => {
       st += parseFloat(d.sub_total) || 0;
       iv += parseFloat(d.iva) || 0;
       rr += parseFloat(d.renta_retenida) || 0;
+      ir += parseFloat(d.iva_retenido) || 0;
       ip += parseFloat(d.iva_percibido) || 0;
       tot += parseFloat(d.total) || 0;
     });
     this.gasto.sub_total = parseFloat(st.toFixed(2));
     this.gasto.iva = parseFloat(iv.toFixed(2));
     this.gasto.renta_retenida = parseFloat(rr.toFixed(2));
+    this.gasto.iva_retenido = parseFloat(ir.toFixed(2));
     this.gasto.iva_percibido = parseFloat(ip.toFixed(2));
     this.gasto.total = parseFloat(tot.toFixed(2));
   }
@@ -691,10 +712,12 @@ export class GastoComponent implements OnInit {
           sub_total: parseFloat(d.sub_total) || 0,
           iva: parseFloat(d.iva) || 0,
           renta_retenida: parseFloat(d.renta_retenida) || 0,
+          iva_retenido: parseFloat(d.iva_retenido) || 0,
           iva_percibido: parseFloat(d.iva_percibido) || 0,
           total: parseFloat(d.total) || 0,
           aplica_iva: tg === 'gravada',
           aplica_renta: !!d.aplica_renta,
+          aplica_retencion_iva: !!d.aplica_retencion_iva,
           aplica_percepcion: !!d.aplica_percepcion,
           area_empresa: d.area_empresa || null,
           id_proyecto: d.id_proyecto || null,
@@ -975,10 +998,12 @@ export class GastoComponent implements OnInit {
               sub_total: parseFloat(sub.toFixed(2)),
               iva: parseFloat(iva.toFixed(2)),
               renta_retenida: 0,
+              iva_retenido: 0,
               iva_percibido: 0,
               total: parseFloat(total.toFixed(2)),
               aplica_iva: esGravada,
               aplica_renta: false,
+              aplica_retencion_iva: false,
               aplica_percepcion: false,
               area_empresa: null,
               id_proyecto: this.gasto.id_proyecto || null,
@@ -1022,6 +1047,25 @@ export class GastoComponent implements OnInit {
         ) {
           this.gasto.renta_retenida = parseFloat(jsonData.resumen.reteRenta);
           this.gasto.renta = true;
+        }
+
+        // IVA retenido (resumen DTE: ivaRete1)
+        if (
+          jsonData.resumen.ivaRete1 != null &&
+          parseFloat(jsonData.resumen.ivaRete1) > 0
+        ) {
+          this.gasto.retencion = true;
+          if (this.varios_items && this.detalles.length) {
+            this.detalles.forEach((det: any) => {
+              const grav = det.tipo_gravado === 'gravada' || det.aplica_iva;
+              det.aplica_retencion_iva = grav;
+            });
+            this.detalles.forEach((_: any, idx: number) =>
+              this.recalcularDetalleLinea(idx)
+            );
+          } else {
+            this.gasto.iva_retenido = parseFloat(jsonData.resumen.ivaRete1);
+          }
         }
 
         // Percepción
@@ -1246,6 +1290,13 @@ export class GastoComponent implements OnInit {
       total -= parseFloat(this.gasto.renta_retenida);
     } else {
       this.gasto.renta_retenida = 0;
+    }
+
+    if (this.gasto.retencion) {
+      this.gasto.iva_retenido = (subtotal * 0.01).toFixed(2);
+      total -= parseFloat(this.gasto.iva_retenido);
+    } else {
+      this.gasto.iva_retenido = 0;
     }
   
     // Percepción
