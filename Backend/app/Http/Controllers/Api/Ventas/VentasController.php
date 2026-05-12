@@ -679,9 +679,17 @@ class VentasController extends Controller
                         if (!isset($item['id_compuesto']) || empty($item['id_compuesto'])) {
                             continue; // Saltar esta composición si no tiene id_compuesto
                         }
+                        $factorComp = 1;
+                        if (isset($item['id_presentacion']) && $item['id_presentacion']) {
+                            $presentacionComp = \App\Models\Inventario\ProductoPresentacion::find($item['id_presentacion']);
+                            if ($presentacionComp) {
+                                $factorComp = $presentacionComp->factor_conversion;
+                            }
+                        }
+
                         $cd = new DetalleCompuesto;
                         $cd->id_producto = $item['id_compuesto'];
-                        $cd->cantidad   = $item['cantidad'];
+                        $cd->cantidad   = $item['cantidad'] * $factorComp;
                         $cd->id_detalle = $detalle->id;
                         $cd->save();
                     }
@@ -693,6 +701,20 @@ class VentasController extends Controller
 
                     // Obtener el producto para verificar si es servicio
                     $producto = Producto::where('id', $det['id_producto'])->first();
+
+                    // ── Resolución del factor de conversión (presentaciones) ──────────────
+                    $factorDet = 1;
+                    if (!empty($det['id_presentacion'])) {
+                        $presentacionDet = \App\Models\Inventario\ProductoPresentacion::find($det['id_presentacion']);
+                        if ($presentacionDet) {
+                            $factorDet = (float) $presentacionDet->factor_conversion;
+                        }
+                    }
+                    // Cantidad en unidades base que se descuenta del inventario y del Kardex
+                    $cantidadBaseDet = ConversionInventarioService::calcularCantidadBase(
+                        $det['cantidad'],
+                        $factorDet
+                    );
                     
                     // Validar stock solo si no es servicio y si la empresa no permite vender sin stock
                     if ($producto && $producto->tipo != 'Servicio') {
@@ -702,7 +724,7 @@ class VentasController extends Controller
                         // Validar stock disponible
                         if ($inventario) {
                             $stockDisponible = $inventario->stock;
-                            $cantidadRequerida = $det['cantidad'];
+                            $cantidadRequerida = $cantidadBaseDet;
                             
                             // Si no se permite vender sin stock y no hay suficiente stock
                             if (!$puedeVenderSinStock && $stockDisponible < $cantidadRequerida) {
@@ -768,17 +790,17 @@ class VentasController extends Controller
                         
                         if ($loteSeleccionado) {
                             // Validar stock del lote
-                            if ($loteSeleccionado->stock < $det['cantidad']) {
+                            if ($loteSeleccionado->stock < $cantidadBaseDet) {
                                 if (!$puedeVenderSinStock) {
                                     DB::rollback();
                                     return response()->json([
-                                        'error' => "No hay suficiente stock en el lote {$loteSeleccionado->numero_lote}. Stock disponible: {$loteSeleccionado->stock}, Cantidad requerida: {$det['cantidad']}"
+                                        'error' => "No hay suficiente stock en el lote {$loteSeleccionado->numero_lote}. Stock disponible: {$loteSeleccionado->stock}, Cantidad requerida: {$cantidadBaseDet}"
                                     ], 400);
                                 }
                             }
                             
                             // Descontar del lote
-                            $loteSeleccionado->stock -= $det['cantidad'];
+                            $loteSeleccionado->stock -= $cantidadBaseDet;
                             $loteSeleccionado->save();
                             
                             // Guardar lote_id en el detalle
@@ -789,9 +811,9 @@ class VentasController extends Controller
                             $inventario = Inventario::where('id_producto', $det['id_producto'])
                                 ->where('id_bodega', $venta->id_bodega)->first();
                             if ($inventario) {
-                                $inventario->stock -= $det['cantidad'];
+                                $inventario->stock -= $cantidadBaseDet;
                                 $inventario->save();
-                                $inventario->kardex($venta, $det['cantidad'], $det['precio']);
+                                $inventario->kardex($venta, $cantidadBaseDet, $det['precio']);
                             }
                         } else {
                             // No hay lotes disponibles o no se seleccionó (metodología Manual sin lote_id)
@@ -808,20 +830,6 @@ class VentasController extends Controller
                             }
                         }
                     } else {
-                        // ── Resolución del factor de conversión (presentaciones) ──────────────
-                        $factorDet = 1;
-                        if (!empty($det['id_presentacion'])) {
-                            $presentacionDet = \App\Models\Inventario\ProductoPresentacion::find($det['id_presentacion']);
-                            if ($presentacionDet) {
-                                $factorDet = (float) $presentacionDet->factor_conversion;
-                            }
-                        }
-                        // Cantidad en unidades base que se descuenta del inventario y del Kardex
-                        $cantidadBaseDet = ConversionInventarioService::calcularCantidadBase(
-                            $det['cantidad'],
-                            $factorDet
-                        );
-
                         // Restar inventario del producto principal (sin lotes)
                         $inventario = Inventario::where('id_producto', $det['id_producto'])
                             ->where('id_bodega', $venta->id_bodega)->first();
@@ -844,7 +852,14 @@ class VentasController extends Controller
                             
                             // Validar stock de productos compuestos solo si no es servicio
                             if ($productoCompuesto && $productoCompuesto->tipo != 'Servicio') {
-                                $cantidadCompRequerida = $det['cantidad'] * $comp['cantidad'];
+                                $factorComp = 1;
+                                if (isset($comp['id_presentacion']) && $comp['id_presentacion']) {
+                                    $presentacionComp = \App\Models\Inventario\ProductoPresentacion::find($comp['id_presentacion']);
+                                    if ($presentacionComp) {
+                                        $factorComp = $presentacionComp->factor_conversion;
+                                    }
+                                }
+                                $cantidadCompRequerida = $det['cantidad'] * $comp['cantidad'] * $factorComp;
                                 
                                 // Verificar si el producto compuesto tiene lotes activos
                                 if ($productoCompuesto->inventario_por_lotes && $lotesActivo) {

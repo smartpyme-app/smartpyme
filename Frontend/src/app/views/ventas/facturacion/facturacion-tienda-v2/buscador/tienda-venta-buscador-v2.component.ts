@@ -313,9 +313,9 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
      */
     getNombreCompleto(producto: any): string {
         if (this.tieneShopify && producto.nombre_variante) {
-            return `${producto.nombre} ${producto.nombre_variante}`;
+            return `${producto.nombre_mostrar || producto.nombre} ${producto.nombre_variante}`;
         }
-        return producto.nombre;
+        return producto.nombre_mostrar || producto.nombre;
     }
 
 }

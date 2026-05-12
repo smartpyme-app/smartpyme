@@ -180,8 +180,9 @@ export class InventarioSalidaComponent implements OnInit {
 	        	}, error => {this.alertService.error(error); });
 			}else{
 				for (var i = 0; i < this.salida.detalles.length; ++i) {
-					if (this.salida.detalles[i].id_producto === detalle.id_producto ){
+					if (this.salida.detalles[i].id_producto === detalle.id_producto && (this.salida.detalles[i].id_presentacion || null) === (detalle.id_presentacion || null)){
 						this.salida.detalles.splice(i, 1);
+						break;
 					}
 				}
 	        	this.alertService.success("Eliminado", "El registro fue eliminado exitosamente.");

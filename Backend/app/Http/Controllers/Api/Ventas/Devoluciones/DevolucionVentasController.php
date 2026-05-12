@@ -29,9 +29,11 @@ use App\Services\FidelizacionCliente\DevolucionPuntosService;
 
 class DevolucionVentasController extends Controller
 {
-    public function __construct(
-        private DevolucionPuntosService $devolucionPuntosService
-    ) {
+    private $devolucionPuntosService;
+
+    public function __construct(DevolucionPuntosService $devolucionPuntosService)
+    {
+        $this->devolucionPuntosService = $devolucionPuntosService;
     }
 
     public function index(Request $request) {

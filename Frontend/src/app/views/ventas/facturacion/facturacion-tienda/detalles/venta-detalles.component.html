@@ -88,9 +88,9 @@
                         <div *ngIf="usuario.empresa.editar_descripcion_venta">
                             <input class="form-control" type="text" [(ngModel)]="detalle.descripcion"
                                 name="descripcion">
-                            <small class="text-muted text-tiny">{{ detalle?.tipo }}<span
-                                    *ngIf="detalle.id_presentacion" class="badge bg-success ms-1"
-                                    style="font-size: 10px; cursor: help;" tooltip="Presentación">P</span></small>
+                            <small class="text-muted text-tiny">{{ detalle?.tipo }}<span *ngIf="detalle.id_presentacion"
+                                    class="badge bg-success ms-1" style="font-size: 10px; cursor: help;"
+                                    tooltip="Presentación">P4</span></small>
                             <div style="font-size: 14px;">
                                 <ul>
                                     <li class="mb-2" *ngFor="let composicion of detalle?.composiciones">

@@ -476,10 +476,11 @@ export class TrasladosComponent implements OnInit {
     /**
      * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
      */
-    getNombreCompleto(producto: any): string {
-        const nombre = producto.nombre_mostrar || producto.nombre;
-        if (this.tieneShopify && producto.nombre_variante) {
-            return `${nombre} (${producto.nombre_variante})`;
+    public getNombreCompleto(producto: any): string {
+        if (!producto) return '';
+        let nombre = producto.nombre_mostrar || producto.nombre || '';
+        if (producto.nombre_variante) {
+            nombre += ` (${producto.nombre_variante})`;
         }
         return nombre;
     }

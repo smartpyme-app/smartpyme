@@ -231,8 +231,9 @@ export class InventarioEntradaComponent implements OnInit {
 	        	}, error => {this.alertService.error(error); });
 			}else{
 				for (var i = 0; i < this.entrada.detalles.length; ++i) {
-					if (this.entrada.detalles[i].id_producto === detalle.id_producto ){
+					if (this.entrada.detalles[i].id_producto === detalle.id_producto && (this.entrada.detalles[i].id_presentacion || null) === (detalle.id_presentacion || null)){
 						this.entrada.detalles.splice(i, 1);
+						break;
 					}
 				}
 	        	this.alertService.success("Eliminado", "El registro fue eliminado exitosamente.");
