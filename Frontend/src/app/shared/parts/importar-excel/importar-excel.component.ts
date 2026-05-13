@@ -63,8 +63,38 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     }
 
     /**
+     * Resuelve qué variante de plantilla usar para clientes según país de la empresa.
+     * sv: El Salvador (-format.xlsx), cr: Costa Rica (-format-cr.xlsx), general: resto.
+     */
+    private plantillaClientesPorPais(empresa: { cod_pais?: string | null; pais?: string | null }): 'sv' | 'cr' | 'general' {
+        const codPais = empresa?.cod_pais;
+        const pais = (empresa?.pais ?? '').trim();
+        const paisLower = pais.toLowerCase();
+
+        if (codPais === 'SV') {
+            return 'sv';
+        }
+        if (codPais === 'CR') {
+            return 'cr';
+        }
+        if (codPais && codPais !== 'SV') {
+            return 'general';
+        }
+        if (paisLower === 'el salvador') {
+            return 'sv';
+        }
+        if (paisLower === 'costa rica') {
+            return 'cr';
+        }
+        if (!pais) {
+            return 'sv';
+        }
+        return 'general';
+    }
+
+    /**
      * Calcula la URL de la plantilla según el tipo y el país de la empresa
-     * Para clientes-personas y clientes-empresas, usa plantillas generales si no es El Salvador
+     * Para clientes-personas y clientes-empresas: SV (-format), CR (-format-cr), resto (-format-general)
      * Retrocompatibilidad: Si no se puede determinar el país, usa plantilla de El Salvador
      */
     calcularPlantillaUrl(): void {
@@ -94,37 +124,9 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
                     return;
                 }
 
-                // Verificar si es El Salvador
-                const codPais = empresa?.cod_pais;
-                const pais = empresa?.pais?.trim() || '';
-
-                let esElSalvador = false;
-
-                // Si tiene código 'SV', es El Salvador
-                if (codPais === 'SV') {
-                    esElSalvador = true;
-                }
-                // Si cod_pais es diferente a 'SV' y no es null/undefined, no es El Salvador
-                else if (codPais && codPais !== 'SV') {
-                    esElSalvador = false;
-                }
-                // Si cod_pais es null/undefined, verificar campo pais
-                else {
-                    if (pais.toLowerCase() === 'el salvador') {
-                        esElSalvador = true;
-                    }
-                    // Si pais está vacío, asumir El Salvador (retrocompatibilidad)
-                    else if (!pais) {
-                        esElSalvador = true;
-                    }
-                    // Si tiene otro valor, no es El Salvador
-                    else {
-                        esElSalvador = false;
-                    }
-                }
-
-                // Si es El Salvador, usar plantilla específica, sino usar general
-                const sufijo = esElSalvador ? '-format.xlsx' : '-format-general.xlsx';
+                const variante = this.plantillaClientesPorPais(empresa);
+                const sufijo =
+                    variante === 'sv' ? '-format.xlsx' : variante === 'cr' ? '-format-cr.xlsx' : '-format-general.xlsx';
                 this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}${sufijo}`;
             } catch (error) {
                 // En caso de error, usar plantilla de El Salvador (retrocompatibilidad)
