@@ -32,7 +32,7 @@
 <section class="d-flex justify-content-between gap-2">
     <div class="card p-3">
         <h3 class="text-center text-success">
-            {{ (indicadores.totalVentas ? (indicadores.totalVentas + indicadores.totalPropina) : 0) | currency }}
+            {{ (indicadores.totalVentas ? (indicadores.totalVentas + indicadores.totalPropina - (indicadores.totalPagadoGiftCard || 0)) : 0) | currency }}
         </h3>
         <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
     </div>
@@ -56,7 +56,7 @@
     </div>
     <div class="card p-3">
         <h3 class="text-center text-success">
-            {{ ((indicadores.totalVentas || 0) + (indicadores.totalPropina || 0) - (indicadores.totalDevolucionesVenta || 0)) | currency }}
+            {{ ((indicadores.totalVentas || 0) + (indicadores.totalPropina || 0) - (indicadores.totalDevolucionesVenta || 0) - (indicadores.totalPagadoGiftCard || 0)) | currency }}
         </h3>
         <p class="mb-0 text-center">VENTAS TOTALES <br> SIN DEVOLUCIONES</p>
     </div>
@@ -88,7 +88,7 @@
                     <tr>
                         <td>Ventas del día</td>
                         <td class="text-right">{{ indicadores.cantidadVentasPagadas }}</td>
-                        <td class="text-right">{{ indicadores.totalVentasPagadas | currency}}</td>
+                        <td class="text-right">{{ ((indicadores.totalVentasPagadas || 0) - (indicadores.totalPagadoGiftCard || 0)) | currency}}</td>
                     </tr>
                     <tr *ngIf="(indicadores.totalPropina || 0) > 0">
                         <td>Propina</td>
