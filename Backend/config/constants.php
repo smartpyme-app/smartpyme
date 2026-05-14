@@ -13,6 +13,19 @@ return [
     'TIPO_PAGO_TRANSFERENCIA' => 'Transferencia',
     'TIPO_PAGO_TARJETA' => 'Tarjeta de crédito/débito',
 
+    /**
+     * Nombres de forma de pago equivalentes a gift card (cierre de caja: no suman al total de ventas).
+     * Comparación sin distinguir mayúsculas; debe coincidir con el nombre en ventas o en venta_metodos_pago.
+     */
+    'FORMAS_PAGO_GIFT_CARD' => [
+        'Gift Card',
+        'Gif card',
+        'GIFTCARD',
+        'Tarjeta de regalo',
+        'Tarjeta regalo',
+        'Certificado de regalo',
+    ],
+
     'METODO_PAGO_N1CO' => 'n1co',
     'METODO_PAGO_TRANSFERENCIA' => 'Transferencia',
 
