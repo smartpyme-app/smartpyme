@@ -464,10 +464,30 @@ export class CierreMesComponent implements OnInit {
   /**
    * Verificar si se puede realizar el cierre
    */
-  public puedeRealizarCierre(): boolean {
+  public   puedeRealizarCierre(): boolean {
     return this.validacionesPrevias.periodoAnteriorCerrado &&
            (this.validacionesPrevias.balanceCuadra || this.validacionesPrevias.balanceCuadraConTolerancia) &&
            this.validacionesPrevias.partidasPendientes === 0;
+  }
+
+  puedeReabrirContabilidad(): boolean {
+    const usuario = this.apiService.auth_user();
+    if (usuario?.tipo === 'Administrador') {
+      return true;
+    }
+    if (this.apiService.verifyRoleAdmin()) {
+      return true;
+    }
+    try {
+      const raw = localStorage.getItem('SP_user_permissions');
+      if (raw) {
+        const role = JSON.parse(raw).role;
+        return role === 'admin' || role === 'super_admin';
+      }
+    } catch {
+      return false;
+    }
+    return false;
   }
 
   /**

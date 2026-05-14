@@ -20,6 +20,7 @@ use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use App\Services\Contabilidad\CierreMesService;
+use App\Services\Contabilidad\CierreEjercicioService;
 use App\Services\Contabilidad\SimulacionCierreService;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
@@ -337,6 +338,13 @@ class PartidasController extends Controller
             'id_usuario'    => 'required|numeric',
             'id_empresa'    => 'required|numeric',
         ]);
+
+        if ((int) $request->id_empresa !== (int) auth()->user()->id_empresa) {
+            return Response()->json([
+                'error' => ['La empresa no coincide con la sesión.'],
+                'code' => 403,
+            ], 403);
+        }
 
         DB::beginTransaction();
 
@@ -1769,6 +1777,12 @@ class PartidasController extends Controller
     public function reabrirPeriodo(Request $request)
     {
         try {
+            if (!$this->usuarioPuedeReabrirContabilidad()) {
+                return response()->json([
+                    'error' => 'Solo administradores pueden reabrir períodos contables.',
+                ], 403);
+            }
+
             $month = $request->input('month');
             $year = $request->input('year');
 
@@ -1909,6 +1923,86 @@ class PartidasController extends Controller
           ], 500);
       }
   }
+
+    public function ejercicioFiscalEstado(Request $request)
+    {
+        try {
+            $anio = (int) $request->input('anio_referencia', $request->input('year', 0));
+            if ($anio < 2000 || $anio > 2100) {
+                return response()->json(['error' => 'Año de referencia inválido'], 400);
+            }
+
+            $svc = app(CierreEjercicioService::class);
+            $data = $svc->obtenerEstado(auth()->user()->id_empresa, $anio);
+
+            return response()->json($data);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function ejercicioFiscalCerrar(Request $request)
+    {
+        try {
+            $anio = (int) $request->input('anio_referencia', 0);
+            if ($anio < 2000 || $anio > 2100) {
+                return response()->json(['error' => 'Año de referencia inválido'], 400);
+            }
+
+            $svc = app(CierreEjercicioService::class);
+            $resultado = $svc->cerrarEjercicio(
+                auth()->user()->id_empresa,
+                auth()->user()->id,
+                $anio
+            );
+
+            return response()->json($resultado);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function ejercicioFiscalReabrir(Request $request)
+    {
+        try {
+            if (!$this->usuarioPuedeReabrirContabilidad()) {
+                return response()->json([
+                    'error' => 'Solo administradores pueden reabrir un ejercicio fiscal.',
+                ], 403);
+            }
+
+            $anio = (int) $request->input('anio_referencia', 0);
+            $modo = $request->input('modo', 'reversa');
+            if ($anio < 2000 || $anio > 2100) {
+                return response()->json(['error' => 'Año de referencia inválido'], 400);
+            }
+            if (!in_array($modo, ['eliminar', 'reversa'], true)) {
+                return response()->json(['error' => 'Modo debe ser eliminar o reversa'], 400);
+            }
+
+            $svc = app(CierreEjercicioService::class);
+            $resultado = $svc->reabrirEjercicio(
+                auth()->user()->id_empresa,
+                auth()->user()->id,
+                $anio,
+                $modo
+            );
+
+            return response()->json($resultado);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    private function usuarioPuedeReabrirContabilidad(): bool
+    {
+        $u = auth()->user();
+        if ($u->tipo === 'Administrador') {
+            return true;
+        }
+
+        return $u->roles()->whereIn('name', ['admin', 'super_admin'])->exists();
+    }
 
     /**
      * Calcular totales generales con los mismos filtros aplicados

@@ -5,6 +5,10 @@
       <i class="fa fa-lock me-1"></i>
       Cierre de Mes
     </button>
+    <button routerLink="/contabilidad/cierre-ejercicio-fiscal" tooltip="Cierre de ejercicio fiscal" class="btn btn-primary">
+      <i class="fa fa-calendar-check-o me-1"></i>
+      Cierre ejercicio
+    </button>
     <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img
         src="/assets/icons/download.png" style="height: 16px; width: 16px;"></button>
     <button *ngIf="apiService.canCreateTest('contabilidad.partidas.crear')" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"

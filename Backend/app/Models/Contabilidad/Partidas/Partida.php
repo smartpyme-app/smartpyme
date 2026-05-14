@@ -2,6 +2,7 @@
 
 namespace App\Models\Contabilidad\Partidas;
 
+use App\Services\Contabilidad\CierreEjercicioService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,6 +40,21 @@ class Partida extends Model
         static::creating(function ($partida) {
             if (empty($partida->correlativo)) {
                 $partida->correlativo = $partida->generarCorrelativo();
+            }
+        });
+
+        static::saving(function (Partida $partida) {
+            if (($partida->estado ?? '') === 'Anulada') {
+                return;
+            }
+            $refsExentas = ['CierreEjercicioFiscal', 'ReversaCierreEjercicioFiscal'];
+            if (in_array($partida->referencia, $refsExentas, true)) {
+                return;
+            }
+            if (!empty($partida->fecha) && !empty($partida->id_empresa)
+                && CierreEjercicioService::fechaEnEjercicioCerrado((int) $partida->id_empresa, $partida->fecha)
+            ) {
+                throw new \RuntimeException('No puede registrar partidas en un ejercicio fiscal cerrado.');
             }
         });
         

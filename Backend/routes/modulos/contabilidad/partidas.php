@@ -29,6 +29,10 @@ use App\Http\Controllers\Api\Ventas\GenerarDocumentosController; //aplicado como
     Route::get('/partidas/balance-comprobacion', [PartidasController::class, 'obtenerBalanceComprobacion']);
     Route::get('/partidas/simular-cierre',      [PartidasController::class, 'simularCierreMes']);
 
+    Route::get('/partidas/ejercicio-fiscal/estado', [PartidasController::class, 'ejercicioFiscalEstado']);
+    Route::post('/partidas/ejercicio-fiscal/cerrar', [PartidasController::class, 'ejercicioFiscalCerrar']);
+    Route::post('/partidas/ejercicio-fiscal/reabrir', [PartidasController::class, 'ejercicioFiscalReabrir']);
+
     Route::post('/partidas/abrir', [PartidasController::class, 'abrirPartida']);
 
     Route::get('/partidas/descargar/{id}',  [PartidasController::class, 'generarPDF']);
