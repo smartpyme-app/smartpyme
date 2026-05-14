@@ -256,6 +256,10 @@ class SuscripcionesController extends Controller
                 $suscripcion->comentarios = $request->input('comentarios');
             }
 
+            if ($request->filled('tipo_factura')) {
+                $suscripcion->tipo_factura = $request->input('tipo_factura');
+            }
+
             $suscripcion->intentos_cobro = 0;
             $suscripcion->estado_ultimo_pago = 'Pendiente';
 
@@ -345,6 +349,9 @@ class SuscripcionesController extends Controller
             ];
             if ($request->exists('comentarios')) {
                 $datosActualizacion['comentarios'] = $request->input('comentarios');
+            }
+            if ($request->exists('tipo_factura')) {
+                $datosActualizacion['tipo_factura'] = $request->input('tipo_factura') ?: null;
             }
             $suscripcion->update($datosActualizacion);
 
@@ -1079,6 +1086,153 @@ class SuscripcionesController extends Controller
         } catch (\Exception $e) {
             Log::error('Error en SuscripcionesController@getCampanias: ' . $e->getMessage());
             return response()->json(['error' => 'Error al obtener campañas'], 500);
+        }
+    }
+
+    public function actualizarTipoFactura(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'suscripcion_id' => 'required|exists:suscripciones,id',
+                'tipo_factura' => 'nullable|string|max:100',
+            ]);
+
+            $suscripcion = Suscripcion::findOrFail($validated['suscripcion_id']);
+            if ($request->has('tipo_factura')) {
+                $suscripcion->tipo_factura = $request->input('tipo_factura') ?: null;
+            }
+            $suscripcion->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tipo de factura actualizado',
+                'data' => $suscripcion->fresh(['empresa', 'plan']),
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en SuscripcionesController@actualizarTipoFactura: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el tipo de factura',
+            ], 500);
+        }
+    }
+
+    /**
+     * Actualiza frecuencia de pago en la empresa de la suscripción y alinea tipo_plan (empresa + suscripción).
+     * Usado desde el modal de facturación al guardar datos del cliente.
+     */
+    public function actualizarFrecuenciaPago(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'suscripcion_id' => 'required|exists:suscripciones,id',
+                'frecuencia_pago' => 'nullable|string|max:50',
+                'monto_mensual' => 'nullable|numeric|min:0',
+                'monto_anual' => 'nullable|numeric|min:0',
+            ]);
+
+            $fp = $validated['frecuencia_pago'] ?? null;
+            if ($fp !== null && $fp !== '' && !in_array($fp, ['Mensual', 'Trimestral', 'Anual'], true)) {
+                throw ValidationException::withMessages([
+                    'frecuencia_pago' => ['La frecuencia de pago no es válida.'],
+                ]);
+            }
+            $fp = ($fp === '' || $fp === null) ? null : $fp;
+
+            $suscripcion = Suscripcion::findOrFail($validated['suscripcion_id']);
+            $empresa = Empresa::findOrFail($suscripcion->empresa_id);
+
+            $empresa->frecuencia_pago = $fp;
+            if ($fp) {
+                $empresa->tipo_plan = $fp;
+                $suscripcion->tipo_plan = $fp;
+            }
+
+            if ($request->has('monto_mensual')) {
+                $empresa->monto_mensual = $request->input('monto_mensual');
+            }
+            if ($request->has('monto_anual')) {
+                $empresa->monto_anual = $request->input('monto_anual');
+            }
+
+            $empresa->save();
+            $suscripcion->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Frecuencia de pago actualizada',
+                'data' => [
+                    'empresa' => $empresa->fresh(),
+                    'suscripcion' => $suscripcion->fresh(['empresa', 'plan']),
+                ],
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en SuscripcionesController@actualizarFrecuenciaPago: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar la frecuencia de pago',
+            ], 500);
+        }
+    }
+
+    public function asignarCliente(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'suscripcion_id' => 'required|exists:suscripciones,id',
+                'cliente_id' => 'required|exists:clientes,id',
+                'tipo_factura' => 'nullable|string|max:100',
+            ]);
+
+            $suscripcion = Suscripcion::findOrFail($validated['suscripcion_id']);
+
+            $payload = ['id_cliente' => $validated['cliente_id']];
+            if ($request->exists('tipo_factura')) {
+                $payload['tipo_factura'] = $request->input('tipo_factura') ?: null;
+            }
+
+            $suscripcion->update($payload);
+
+            // También actualizar la empresa relacionada para mantener consistencia
+            if ($suscripcion->empresa_id) {
+                Empresa::where('id', $suscripcion->empresa_id)->update([
+                    'id_cliente' => $validated['cliente_id']
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cliente asignado correctamente',
+                'data' => $suscripcion->fresh(['empresa', 'plan'])
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en SuscripcionesController@asignarCliente: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al asignar el cliente',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

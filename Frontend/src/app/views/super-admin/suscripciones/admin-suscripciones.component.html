@@ -1,10 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Estado de empresas</h2>
-  <button
-    routerLink="/admin/empresa/crear"
-    tooltip="Crear empresa (F4)"
-    class="btn btn-default tcla-F4"
-  >
+  <button routerLink="/admin/empresa/crear" tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4">
     <i class="fa fa-plus"></i> Añadir empresa
   </button>
 </section>
@@ -12,17 +8,10 @@
 <section class="bg-white p-4 rounded mb-3">
   <div class="row">
     <div class="col-md-6 mb-3">
-      <span
-        class="text-muted d-flex align-items-center gap-2"
-        *ngIf="suscripciones?.total"
-      >
+      <span class="text-muted d-flex align-items-center gap-2" *ngIf="suscripciones?.total">
         Mostrando
-        <select
-          name="paginate"
-          class="form-select w-auto"
-          (change)="filtrarSuscripciones()"
-          [(ngModel)]="filtros.paginate"
-        >
+        <select name="paginate" class="form-select w-auto" (change)="filtrarSuscripciones()"
+          [(ngModel)]="filtros.paginate">
           <option value="10">10</option>
           <option value="25">25</option>
           <option value="50">50</option>
@@ -36,38 +25,20 @@
         <!-- <form class="d-flex input-group" name="form" (ngSubmit)="filtrarSuscripciones()" autocomplete="off">
               <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
           </form> -->
-        <button
-          [disabled]="downloading"
-          tooltip="Descargar suscripciones"
-          (click)="descargar()"
-          class="btn btn-default tcla-F6"
-        >
+        <button [disabled]="downloading" tooltip="Descargar suscripciones" (click)="descargar()"
+          class="btn btn-default tcla-F6">
           <img src="/assets/icons/download.png" class="icon" />
         </button>
-        <form
-          class="d-flex input-group"
-          name="form"
-          (ngSubmit)="filtrarSuscripciones()"
-          autocomplete="off"
-        >
+        <form class="d-flex input-group" name="form" (ngSubmit)="filtrarSuscripciones()" autocomplete="off">
           <div class="input-group">
             <div class="input-group-text bg-white border-end-0">
               <i class="fa fa-search text-muted"></i>
             </div>
-            <input
-              type="search"
-              name="buscador"
-              class="form-control pull-right border-start-0"
-              placeholder="Buscar"
-              [(ngModel)]="filtros.buscador"
-            />
+            <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar"
+              [(ngModel)]="filtros.buscador" />
           </div>
         </form>
-        <button
-          tooltip="Filtrar (F3)"
-          (click)="openFilter(mfilterSuscriptions)"
-          class="btn btn-default tcla-F3"
-        >
+        <button tooltip="Filtrar (F3)" (click)="openFilter(mfilterSuscriptions)" class="btn btn-default tcla-F3">
           <img src="/assets/icons/filter.png" class="icon" />
         </button>
       </div>
@@ -76,24 +47,14 @@
 
   <div class="d-flex">
     <div class="col-md-6 d-flex gap-2 mb-3">
-      <button
-        class="tcla-F5 btn"
-        tooltip="Actualizar (F5)"
-        routerLinkActive="btn-primary"
-        [routerLinkActiveOptions]="{ exact: true }"
-        (click)="loadAll()"
-        routerLink="/admin/suscripciones"
-      >
+      <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary"
+        [routerLinkActiveOptions]="{ exact: true }" (click)="loadAll()" routerLink="/admin/suscripciones">
         Todos
       </button>
     </div>
     <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
-      <select
-        name="estado"
-        (change)="filtrarSuscripciones()"
-        [(ngModel)]="filtros.estado"
-        class="form-select bg-default w-auto"
-      >
+      <select name="estado" (change)="filtrarSuscripciones()" [(ngModel)]="filtros.estado"
+        class="form-select bg-default w-auto">
         <option value="">Estado</option>
         <option value="activo">Activo</option>
         <option value="cancelado">Cancelado</option>
@@ -112,119 +73,83 @@
       <table class="table table-borderless table-hover mb-0">
         <thead>
           <tr>
-            <th
-              (click)="setOrden('nombre')"
-              [ngClass]="{
+            <th (click)="setOrden('nombre')" [ngClass]="{
                 'sorted-asc':
                   filtros.orden == 'nombre' && filtros.direccion == 'asc',
                 'sorted-desc':
                   filtros.orden == 'nombre' && filtros.direccion == 'desc'
-              }"
-              class="click"
-            >
+              }" class="click">
               Empresa
             </th>
-            <th
-              (click)="setOrden('campania')"
-              [ngClass]="{
+            <th (click)="setOrden('campania')" [ngClass]="{
                 'sorted-asc':
                   filtros.orden == 'campania' && filtros.direccion == 'asc',
                 'sorted-desc':
                   filtros.orden == 'campania' && filtros.direccion == 'desc'
-              }"
-              class="click"
-            >
+              }" class="click">
               Campaña
             </th>
-            <th
-              (click)="setOrden('plan')"
-              [ngClass]="{
+            <th (click)="setOrden('plan')" [ngClass]="{
                 'sorted-asc':
                   filtros.orden == 'plan' && filtros.direccion == 'asc',
                 'sorted-desc':
                   filtros.orden == 'plan' && filtros.direccion == 'desc'
-              }"
-              class="click"
-            >
+              }" class="click">
               Plan
             </th>
-            <th
-              (click)="setOrden('tipo_plan')"
-              [ngClass]="{
+            <th (click)="setOrden('tipo_plan')" [ngClass]="{
                 'sorted-asc':
                   filtros.orden == 'tipo_plan' && filtros.direccion == 'asc',
                 'sorted-desc':
                   filtros.orden == 'tipo_plan' && filtros.direccion == 'desc'
-              }"
-              class="click text-center"
-            >
+              }" class="click text-center">
               Tipo Plan
             </th>
-            <th
-              (click)="setOrden('metodo_pago')"
-              [ngClass]="{
+            <th (click)="setOrden('metodo_pago')" [ngClass]="{
                 'sorted-asc':
                   filtros.orden == 'metodo_pago' && filtros.direccion == 'asc',
                 'sorted-desc':
                   filtros.orden == 'metodo_pago' && filtros.direccion == 'desc'
-              }"
-              class="click text-center"
-            >
+              }" class="click text-center">
               Método de pago
             </th>
             <th>Monto</th>
-            <th
-              (click)="setOrden('estado_suscripcion')"
-              [ngClass]="{
+            <th (click)="setOrden('estado_suscripcion')" [ngClass]="{
                 'sorted-asc':
                   filtros.orden == 'estado_suscripcion' &&
                   filtros.direccion == 'asc',
                 'sorted-desc':
                   filtros.orden == 'estado_suscripcion' &&
                   filtros.direccion == 'desc'
-              }"
-              class="click text-center"
-            >
+              }" class="click text-center">
               Estado suscripción
             </th>
-            <th
-              (click)="setOrden('estado_pago')"
-              [ngClass]="{
+            <th (click)="setOrden('estado_pago')" [ngClass]="{
                 'sorted-asc':
                   filtros.orden == 'estado_pago' && filtros.direccion == 'asc',
                 'sorted-desc':
                   filtros.orden == 'estado_pago' && filtros.direccion == 'desc'
-              }"
-              class="click text-center"
-            >
+              }" class="click text-center">
               Estado pago
             </th>
-            <th
-              (click)="setOrden('fecha_ultimo_pago')"
-              [ngClass]="{
+            <th (click)="setOrden('fecha_ultimo_pago')" [ngClass]="{
                 'sorted-asc':
                   filtros.orden == 'fecha_ultimo_pago' &&
                   filtros.direccion == 'asc',
                 'sorted-desc':
                   filtros.orden == 'fecha_ultimo_pago' &&
                   filtros.direccion == 'desc'
-              }"
-              class="click"
-            >
+              }" class="click">
               Último pago
             </th>
-            <th
-              (click)="setOrden('fecha_proximo_pago')"
-              [ngClass]="{
+            <th (click)="setOrden('fecha_proximo_pago')" [ngClass]="{
                 'sorted-asc':
                   filtros.orden == 'fecha_proximo_pago' &&
                   filtros.direccion == 'asc',
                 'sorted-desc':
                   filtros.orden == 'fecha_proximo_pago' &&
                   filtros.direccion == 'desc'
-              }"
-              class="click"
-            >
+              }" class="click">
               Próximo pago
             </th>
             <th class="text-center">Acciones</th>
@@ -232,14 +157,8 @@
         </thead>
         <tbody>
           <tr>
-            <td
-              colspan="11"
-              class="text-center"
-              *ngIf="suscripciones?.total < 1 && !loading"
-            >
-              <span class="badge bg-primary"
-                >No hay suscripciones registradas</span
-              >
+            <td colspan="11" class="text-center" *ngIf="suscripciones?.total < 1 && !loading">
+              <span class="badge bg-primary">No hay suscripciones registradas</span>
             </td>
             <td colspan="11" class="text-center" *ngIf="loading">
               <span class="badge bg-primary">Cargando...</span>
@@ -254,10 +173,10 @@
             <td>
               <span *ngIf="!empresa.suscripcion" class="text-muted">{{
                 empresa.plan
-              }}</span>
+                }}</span>
               <span *ngIf="empresa.suscripcion">{{
                 empresa.suscripcion.plan.nombre
-              }}</span>
+                }}</span>
             </td>
             <td>
               <span class="text-muted">{{ empresa?.tipo_plan }}</span>
@@ -268,15 +187,11 @@
             <td>
               <span *ngIf="empresa.suscripcion">{{
                 empresa.suscripcion.monto | currency
-              }}</span>
+                }}</span>
               <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
             </td>
             <td class="text-center">
-              <span
-                *ngIf="empresa.suscripcion"
-                class="badge py-2 text-center"
-                style="font-size: 0.8rem"
-                [ngClass]="{
+              <span *ngIf="empresa.suscripcion" class="badge py-2 text-center" style="font-size: 0.8rem" [ngClass]="{
                   'bg-success':
                     empresa.suscripcion?.estado.toLowerCase() == 'activo',
                   'bg-danger':
@@ -290,23 +205,15 @@
                     empresa.suscripcion?.estado.toLowerCase() == 'inactivo',
                   'bg-secondary':
                     empresa.suscripcion?.estado.toLowerCase() == 'pendiente'
-                }"
-              >
+                }">
                 {{ empresa.suscripcion.estado }}
               </span>
-              <span
-                *ngIf="!empresa.suscripcion"
-                class="badge py-2 bg-secondary"
-                style="font-size: 0.8rem"
-              >
+              <span *ngIf="!empresa.suscripcion" class="badge py-2 bg-secondary" style="font-size: 0.8rem">
                 Sin suscripción
               </span>
             </td>
             <td class="text-center">
-              <span
-                *ngIf="empresa.suscripcion?.estado_ultimo_pago"
-                class="badge py-2"
-                [ngClass]="{
+              <span *ngIf="empresa.suscripcion?.estado_ultimo_pago" class="badge py-2" [ngClass]="{
                   'bg-success':
                     empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
                     'completado',
@@ -318,62 +225,42 @@
                       'rechazada' ||
                     empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
                       'fallido'
-                }"
-              >
+                }">
                 {{ empresa.suscripcion.estado_ultimo_pago }}
               </span>
-              <span
-                *ngIf="!empresa.suscripcion?.estado_ultimo_pago"
-                class="text-muted"
-                >-</span
-              >
+              <span *ngIf="!empresa.suscripcion?.estado_ultimo_pago" class="text-muted">-</span>
             </td>
             <td>
               <span *ngIf="empresa.suscripcion">{{
                 empresa.suscripcion.fecha_ultimo_pago | date : "dd/MM/yyyy"
-              }}</span>
+                }}</span>
               <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
             </td>
             <td>
               <span *ngIf="empresa.suscripcion">{{
                 empresa.suscripcion.fecha_proximo_pago | date : "dd/MM/yyyy"
-              }}</span>
+                }}</span>
               <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
             </td>
             <td class="text-center">
-              <span
-                class="btn"
-                [popover]="accionesTemplate"
-                [outsideClick]="true"
-                tooltip="Acciones"
-              >
+              <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
               </span>
               <ng-template #accionesTemplate>
                 <div class="list-group border-0">
-                  <a
-                    routerLink="/admin/empresa/{{ empresa.id }}"
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
+                  <a routerLink="/admin/empresa/{{ empresa.id }}"
+                    class="list-group-item list-group-item-action border-0 click">
                     <i class="fa fa-fw fa-edit"></i> Editar
                   </a>
-                  <a
-                    *ngIf="empresa.suscripcion"
-                    (click)="openDetalles(mdetalles, empresa.suscripcion)"
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
+                  <a *ngIf="empresa.suscripcion" (click)="openDetalles(mdetalles, empresa.suscripcion)"
+                    class="list-group-item list-group-item-action border-0 click">
                     <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                   </a>
-                  <a
-                    *ngIf="empresa.suscripcion"
-                    (click)="openEditar(meditar, empresa.suscripcion)"
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
+                  <a *ngIf="empresa.suscripcion" (click)="openEditar(meditar, empresa.suscripcion)"
+                    class="list-group-item list-group-item-action border-0 click">
                     <i class="fa fa-fw fa-edit"></i>Editar suscripcion
                   </a>
-                  <a
-                    *ngIf="empresa.suscripcion"
-                    (click)="
+                  <a *ngIf="empresa.suscripcion" (click)="
                       pagoRecibido(
                         mconfirmPagoRecibido,
                         empresa.suscripcion,
@@ -381,71 +268,58 @@
                         empresa
                       );
                       $event.preventDefault()
-                    "
-                    class="list-group-item list-group-item-action border-0 click text-success"
-                    href="#"
-                  >
+                    " class="list-group-item list-group-item-action border-0 click text-success" href="#">
                     <i class="fa fa-fw fa-money-bill-wave text-success"></i>
                     Pago recibido
                   </a>
-                  <a
-                    *ngIf="empresa.suscripcion"
+                  <a *ngIf="empresa.suscripcion"
                     (click)="concederAccesoTemporal(empresa.suscripcion); $event.preventDefault()"
-                    class="list-group-item list-group-item-action border-0 click text-primary"
-                    href="#"
-                  >
+                    class="list-group-item list-group-item-action border-0 click text-primary" href="#">
                     <i class="fa fa-fw fa-clock text-primary"></i>
                     Conceder acceso temporal
                   </a>
-                  <a
-                    *ngIf="empresa.suscripcion?.acceso_temporal_hasta"
+                  <a *ngIf="empresa.suscripcion?.acceso_temporal_hasta"
                     (click)="cancelarAccesoTemporal(empresa.suscripcion); $event.preventDefault()"
-                    class="list-group-item list-group-item-action border-0 click text-danger"
-                    href="#"
-                  >
+                    class="list-group-item list-group-item-action border-0 click text-danger" href="#">
                     <i class="fa fa-fw fa-times-circle text-danger"></i>
                     Cancelar acceso temporal
                   </a>
-                  <a
-                    *ngIf="
+                  <a *ngIf="
                       empresa.suscripcion &&
                       empresa.suscripcion.estado.toLowerCase() != 'cancelado' &&
                       empresa.suscripcion.estado.toLowerCase() != 'suspendido'
-                    "
-                    (click)="openCancelar(mcancelar, empresa.suscripcion)"
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
+                    " (click)="openCancelar(mcancelar, empresa.suscripcion)"
+                    class="list-group-item list-group-item-action border-0 click">
                     <i class="fa fa-fw fa-ban"></i>Cancelar suscripción
                   </a>
-                  <a
-                    *ngIf="!empresa.suscripcion"
-                    (click)="openCrearSuscripcion(mcrear, empresa)"
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
+                  <a *ngIf="!empresa.suscripcion" (click)="openCrearSuscripcion(mcrear, empresa)"
+                    class="list-group-item list-group-item-action border-0 click">
                     <i class="fa fa-fw fa-plus me-2"></i>Crear suscripción
                   </a>
-                  <a
-                    *ngIf="
+                  <a *ngIf="
                       empresa.suscripcion?.estado.toLowerCase() != 'suspendido'
-                    "
-                    (click)="suspenderSistema(empresa)"
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
+                    " (click)="suspenderSistema(empresa)"
+                    class="list-group-item list-group-item-action border-0 click">
                     <i class="fa fa-fw fa-ban me-2"></i>Suspender sistema
                   </a>
 
-                  <a
-                    *ngIf="empresa.suscripcion"
-                    (click)="
+                  <a *ngIf="empresa.suscripcion" (click)="
                       openHistorialPagos(
                         mhistorialPagos,
                         empresa.suscripcion,
                         empresa
                       )
-                    "
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
+                    " class="list-group-item list-group-item-action border-0 click">
                     <i class="fa fa-fw fa-history me-2"></i>Historial de pagos
+                  </a>
+                  <a *ngIf="empresa.suscripcion" (click)="
+                      openFacturacion(
+                        mfacturacion,
+                        empresa.suscripcion,
+                        empresa
+                      )
+                    " class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa fa-fw fa-file-invoice me-2"></i>Facturación
                   </a>
                 </div>
               </ng-template>
@@ -456,10 +330,7 @@
     </div>
 
     <div class="col-12" *ngIf="suscripciones?.last_page > 1">
-      <app-pagination
-        [items]="suscripciones"
-        (setPagination)="setPagination($event)"
-      ></app-pagination>
+      <app-pagination [items]="suscripciones" (setPagination)="setPagination($event)"></app-pagination>
     </div>
   </div>
 </section>
@@ -467,12 +338,7 @@
 <ng-template #mdetalles>
   <div class="modal-header">
     <h4 class="modal-title text-center">Detalles de Suscripción</h4>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRef.hide()"
-      aria-label="Close"
-    ></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -520,12 +386,7 @@
 <ng-template #meditar>
   <div class="modal-header">
     <h4 class="modal-title text-center">Editar Suscripción</h4>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRef.hide()"
-      aria-label="Close"
-    ></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -533,13 +394,8 @@
       <div class="row">
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Plan:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="suscripcion.plan.id"
-            name="plan"
-            required
-            (change)="selectPlanEdit($event.target.value)"
-          >
+          <select class="form-select" [(ngModel)]="suscripcion.plan.id" name="plan" required
+            (change)="selectPlanEdit($event.target.value)">
             <option value="">Seleccione un plan</option>
             <option *ngFor="let plan of planes" [value]="plan.id">
               {{ plan.nombre }}
@@ -549,12 +405,8 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Frecuencia de Pago:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="suscripcion.frecuencia_pago"
-            name="frecuencia_pago"
-            (change)="onFrecuenciaPagoChange(suscripcion.frecuencia_pago, true)"
-          >
+          <select class="form-select" [(ngModel)]="suscripcion.frecuencia_pago" name="frecuencia_pago"
+            (change)="onFrecuenciaPagoChange(suscripcion.frecuencia_pago, true)">
             <option value="">Seleccione frecuencia</option>
             <option value="Mensual">Mensual</option>
             <option value="Trimestral">Trimestral</option>
@@ -567,12 +419,7 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Estado:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="suscripcion.estado"
-            name="estado"
-            required
-          >
+          <select class="form-select" [(ngModel)]="suscripcion.estado" name="estado" required>
             <option value="">Seleccione un estado</option>
             <option value="Activo">Activo</option>
             <option value="Inactivo">Inactivo</option>
@@ -586,12 +433,7 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Usuario Administrador:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="suscripcion.usuario_id"
-            name="usuario_id"
-            required
-          >
+          <select class="form-select" [(ngModel)]="suscripcion.usuario_id" name="usuario_id" required>
             <option value="">Seleccione un usuario</option>
             <option *ngFor="let user of users" [value]="user.id">
               {{ user.name }}
@@ -604,12 +446,7 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Estado de Pago:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="suscripcion.estado_ultimo_pago"
-            name="estado_ultimo_pago"
-            required
-          >
+          <select class="form-select" [(ngModel)]="suscripcion.estado_ultimo_pago" name="estado_ultimo_pago" required>
             <option value="">Seleccione un estado</option>
             <option value="Pendiente">Pendiente</option>
             <option value="Rechazada">Rechazada</option>
@@ -623,16 +460,8 @@
           <label class="form-label">Monto:</label>
           <div class="input-group">
             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-            <input
-              type="number"
-              class="form-control"
-              [(ngModel)]="suscripcion.monto"
-              name="monto"
-              step="0.01"
-              min="0"
-              required
-              (ngModelChange)="onMontoChange($event, true)"
-            />
+            <input type="number" class="form-control" [(ngModel)]="suscripcion.monto" name="monto" step="0.01" min="0"
+              required (ngModelChange)="onMontoChange($event, true)" />
           </div>
         </div>
 
@@ -640,14 +469,8 @@
           <label class="form-label">Monto Mensual:</label>
           <div class="input-group">
             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-            <input
-              type="number"
-              class="form-control"
-              [(ngModel)]="suscripcion.monto_mensual"
-              name="monto_mensual"
-              step="0.01"
-              min="0"
-            />
+            <input type="number" class="form-control" [(ngModel)]="suscripcion.monto_mensual" name="monto_mensual"
+              step="0.01" min="0" />
           </div>
           <small class="text-muted">
             Monto mensual de la empresa
@@ -658,14 +481,8 @@
           <label class="form-label">Monto Anual:</label>
           <div class="input-group">
             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-            <input
-              type="number"
-              class="form-control"
-              [(ngModel)]="suscripcion.monto_anual"
-              name="monto_anual"
-              step="0.01"
-              min="0"
-            />
+            <input type="number" class="form-control" [(ngModel)]="suscripcion.monto_anual" name="monto_anual"
+              step="0.01" min="0" />
           </div>
           <small class="text-muted">
             Monto anual de la empresa
@@ -679,18 +496,13 @@
               <div class="form-control bg-light border">
                 <span *ngIf="suscripcion?.fecha_proximo_pago">{{
                   suscripcion.fecha_proximo_pago | date : "dd/MM/yyyy"
-                }}</span>
-                <span *ngIf="!suscripcion?.fecha_proximo_pago" class="text-muted"
-                  >—</span
-                >
-                <span
-                  *ngIf="suscripcion?.acceso_temporal_hasta"
-                  class="d-block small text-muted mt-1"
-                >
+                  }}</span>
+                <span *ngIf="!suscripcion?.fecha_proximo_pago" class="text-muted">—</span>
+                <span *ngIf="suscripcion?.acceso_temporal_hasta" class="d-block small text-muted mt-1">
                   Acceso temporal hasta:
                   {{
-                    suscripcion.acceso_temporal_hasta
-                      | date : "dd/MM/yyyy HH:mm"
+                  suscripcion.acceso_temporal_hasta
+                  | date : "dd/MM/yyyy HH:mm"
                   }}
                 </span>
               </div>
@@ -701,59 +513,42 @@
             </div>
             <div class="col-md-6">
               <label class="form-label mb-2">Acciones de cobro y acceso</label>
-              <div
-                class="d-flex flex-row flex-wrap gap-2 align-items-center justify-content-start"
-              >
-                <button
-                  type="button"
-                  class="btn btn-success btn-sm"
-                  [disabled]="
+              <div class="d-flex flex-row flex-wrap gap-2 align-items-center justify-content-start">
+                <button type="button" class="btn btn-success btn-sm" [disabled]="
                     saving ||
                     accionPagoId === suscripcion?.id ||
                     accionCancelarAccesoId === suscripcion?.id
-                  "
-                  (click)="
+                  " (click)="
                     pagoRecibido(
                       mconfirmPagoRecibido,
                       suscripcion,
                       suscripcion.empresa?.nombre,
                       suscripcion.empresa
                     )
-                  "
-                >
+                  ">
                   <i class="fas fa-money-bill-wave me-1"></i>
                   Pago recibido
                 </button>
-                <button
-                  type="button"
+                <button type="button"
                   tooltip="{{ tieneAccesoTemporalVigente(suscripcion) ? 'Renovara el acceso temporal por 2 días más' : 'Concedera acceso temporal por 2 días' }}"
-                  class="btn btn-outline-primary btn-sm"
-                  [disabled]="
+                  class="btn btn-outline-primary btn-sm" [disabled]="
                     saving ||
                     accionAccesoId === suscripcion?.id ||
                     accionCancelarAccesoId === suscripcion?.id
-                  "
-                  (click)="concederAccesoTemporal(suscripcion)"
-                >
+                  " (click)="concederAccesoTemporal(suscripcion)">
                   <i class="fas fa-clock me-1"></i>
                   {{
-                    tieneAccesoTemporalVigente(suscripcion)
-                      ? "Extender acceso"
-                      : "Conceder acceso"
+                  tieneAccesoTemporalVigente(suscripcion)
+                  ? "Extender acceso"
+                  : "Conceder acceso"
                   }}
                 </button>
-                <button
-                  *ngIf="suscripcion?.acceso_temporal_hasta"
-                  type="button"
-                  tooltip="Cancelar acceso temporal"
-                  class="btn btn-outline-danger btn-sm"
-                  [disabled]="
+                <button *ngIf="suscripcion?.acceso_temporal_hasta" type="button" tooltip="Cancelar acceso temporal"
+                  class="btn btn-outline-danger btn-sm" [disabled]="
                     saving ||
                     accionCancelarAccesoId === suscripcion?.id ||
                     accionAccesoId === suscripcion?.id
-                  "
-                  (click)="cancelarAccesoTemporal(suscripcion)"
-                >
+                  " (click)="cancelarAccesoTemporal(suscripcion)">
                   <i class="fas fa-times me-1"></i>
                 </button>
               </div>
@@ -763,26 +558,14 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Fin Periodo Prueba:</label>
-          <input
-            type="date"
-            class="form-control"
-            [(ngModel)]="suscripcion.fin_periodo_prueba"
-            name="fin_periodo_prueba"
-            required
-          />
+          <input type="date" class="form-control" [(ngModel)]="suscripcion.fin_periodo_prueba" name="fin_periodo_prueba"
+            required />
         </div>
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Código Promocional:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="suscripcion.codigo_promocional"
-            name="codigo_promocional"
-          >
+          <select class="form-select" [(ngModel)]="suscripcion.codigo_promocional" name="codigo_promocional">
             <option value="">Ninguno (sin código promocional)</option>
-            <option
-              *ngFor="let codigo of codigosPromocionales"
-              [value]="codigo.codigo"
-            >
+            <option *ngFor="let codigo of codigosPromocionales" [value]="codigo.codigo">
               {{ getCodigoPromocionalDisplay(codigo) }}
             </option>
           </select>
@@ -798,69 +581,39 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
-          <label class="form-label">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT:' : 'Identificación fiscal:' }}</label>
-          <input
-            type="text"
-            class="form-control"
-            [(ngModel)]="suscripcion.nit"
-            name="nit"
-          />
+          <label class="form-label">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT:' :
+            'Identificación fiscal:' }}</label>
+          <input type="text" class="form-control" [(ngModel)]="suscripcion.nit" name="nit" />
         </div>
 
         <div class="form-group col-md-12 mb-3">
           <label class="form-label">Nombre Factura:</label>
-          <input
-            type="text"
-            class="form-control"
-            [(ngModel)]="suscripcion.nombre_factura"
-            name="nombre_factura"
-          />
+          <input type="text" class="form-control" [(ngModel)]="suscripcion.nombre_factura" name="nombre_factura" />
         </div>
 
         <div class="form-group col-md-12 mb-3">
           <label class="form-label">Dirección Factura:</label>
-          <textarea
-            class="form-control"
-            [(ngModel)]="suscripcion.direccion_factura"
-            name="direccion_factura"
-            rows="2"
-          ></textarea>
+          <textarea class="form-control" [(ngModel)]="suscripcion.direccion_factura" name="direccion_factura"
+            rows="2"></textarea>
         </div>
 
         <div class="form-group col-md-12 mb-3">
           <label class="form-label">Comentarios:</label>
-          <textarea
-            class="form-control"
-            [(ngModel)]="suscripcion.comentarios"
-            name="comentarios"
-            rows="4"
-            placeholder="Notas internas sobre esta suscripción…"
-          ></textarea>
+          <textarea class="form-control" [(ngModel)]="suscripcion.comentarios" name="comentarios" rows="4"
+            placeholder="Notas internas sobre esta suscripción…"></textarea>
           <small class="text-muted">
             Notas importantes visibles solo para administración
           </small>
         </div>
 
-        <div
-          class="form-group col-12 mb-3"
-          *ngIf="suscripcion.estado === 'Cancelado'"
-        >
+        <div class="form-group col-12 mb-3" *ngIf="suscripcion.estado === 'Cancelado'">
           <label class="form-label">Motivo Cancelación:</label>
-          <textarea
-            class="form-control"
-            [(ngModel)]="suscripcion.motivo_cancelacion"
-            name="motivo_cancelacion"
-            rows="3"
-            required
-          ></textarea>
+          <textarea class="form-control" [(ngModel)]="suscripcion.motivo_cancelacion" name="motivo_cancelacion" rows="3"
+            required></textarea>
         </div>
 
         <div class="d-grid mt-4">
-          <button
-            type="submit"
-            class="btn btn-primary"
-            [disabled]="saving || !suscripcionForm.form.valid"
-          >
+          <button type="submit" class="btn btn-primary" [disabled]="saving || !suscripcionForm.form.valid">
             <i class="fas fa-save me-2"></i>
             <span *ngIf="!saving">Guardar Cambios</span>
             <span *ngIf="saving">
@@ -877,12 +630,7 @@
 <ng-template #mcrear>
   <div class="modal-header">
     <h4 class="modal-title text-center">Crear Nueva Suscripción</h4>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRef.hide()"
-      aria-label="Close"
-    ></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -890,13 +638,8 @@
       <div class="row">
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Plan:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="nuevaSuscripcion.plan_id"
-            name="plan"
-            required
-            (change)="selectPlan($event.target.value)"
-          >
+          <select class="form-select" [(ngModel)]="nuevaSuscripcion.plan_id" name="plan" required
+            (change)="selectPlan($event.target.value)">
             <option value="">Seleccione un plan</option>
             <option *ngFor="let plan of planes" [value]="plan.id">
               {{ plan.nombre }}
@@ -906,13 +649,8 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Frecuencia de Pago:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="nuevaSuscripcion.frecuencia_pago"
-            name="frecuencia_pago"
-            required
-            (change)="onFrecuenciaPagoChange(nuevaSuscripcion.frecuencia_pago, false)"
-          >
+          <select class="form-select" [(ngModel)]="nuevaSuscripcion.frecuencia_pago" name="frecuencia_pago" required
+            (change)="onFrecuenciaPagoChange(nuevaSuscripcion.frecuencia_pago, false)">
             <option value="">Seleccione frecuencia</option>
             <option value="Mensual">Mensual</option>
             <option value="Trimestral">Trimestral</option>
@@ -925,12 +663,7 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Estado:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="nuevaSuscripcion.estado"
-            name="estado"
-            required
-          >
+          <select class="form-select" [(ngModel)]="nuevaSuscripcion.estado" name="estado" required>
             <option value="">Seleccione un estado</option>
             <option value="Activo" selected>Activo</option>
             <option value="En prueba">En prueba</option>
@@ -944,12 +677,7 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Estado de Pago:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="nuevaSuscripcion.estado_pago"
-            name="estado_pago"
-            required
-          >
+          <select class="form-select" [(ngModel)]="nuevaSuscripcion.estado_pago" name="estado_pago" required>
             <option value="" selected>Seleccione un estado</option>
             <option value="Pendiente">Pendiente</option>
             <option value="Rechazada">Rechazada</option>
@@ -961,12 +689,7 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Usuario Administrador:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="nuevaSuscripcion.usuario_id"
-            name="usuario_id"
-            required
-          >
+          <select class="form-select" [(ngModel)]="nuevaSuscripcion.usuario_id" name="usuario_id" required>
             <option value="">Seleccione un usuario</option>
             <option *ngFor="let user of users" [value]="user.id">
               {{ user.name }}
@@ -981,36 +704,19 @@
           <label class="form-label">Monto:</label>
           <div class="input-group">
             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-            <input
-              type="number"
-              class="form-control"
-              [(ngModel)]="nuevaSuscripcion.monto"
-              name="monto"
-              step="0.01"
-              min="0"
-              required
-              [class.bg-light]="true"
-              (ngModelChange)="onMontoChange($event, false)"
-            />
+            <input type="number" class="form-control" [(ngModel)]="nuevaSuscripcion.monto" name="monto" step="0.01"
+              min="0" required [class.bg-light]="true" (ngModelChange)="onMontoChange($event, false)" />
           </div>
-          <small class="text-muted"
-            >El monto se establece automáticamente según el plan
-            seleccionado</small
-          >
+          <small class="text-muted">El monto se establece automáticamente según el plan
+            seleccionado</small>
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto Mensual:</label>
           <div class="input-group">
             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-            <input
-              type="number"
-              class="form-control"
-              [(ngModel)]="nuevaSuscripcion.monto_mensual"
-              name="monto_mensual"
-              step="0.01"
-              min="0"
-            />
+            <input type="number" class="form-control" [(ngModel)]="nuevaSuscripcion.monto_mensual" name="monto_mensual"
+              step="0.01" min="0" />
           </div>
           <small class="text-muted">
             Monto mensual de la empresa
@@ -1021,14 +727,8 @@
           <label class="form-label">Monto Anual:</label>
           <div class="input-group">
             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-            <input
-              type="number"
-              class="form-control"
-              [(ngModel)]="nuevaSuscripcion.monto_anual"
-              name="monto_anual"
-              step="0.01"
-              min="0"
-            />
+            <input type="number" class="form-control" [(ngModel)]="nuevaSuscripcion.monto_anual" name="monto_anual"
+              step="0.01" min="0" />
           </div>
           <small class="text-muted">
             Monto anual de la empresa
@@ -1037,38 +737,21 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Fecha Próximo Pago:</label>
-          <input
-            type="date"
-            class="form-control"
-            [(ngModel)]="nuevaSuscripcion.fecha_proximo_pago"
-            name="fecha_proximo_pago"
-            required
-          />
+          <input type="date" class="form-control" [(ngModel)]="nuevaSuscripcion.fecha_proximo_pago"
+            name="fecha_proximo_pago" required />
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Fin Periodo Prueba:</label>
-          <input
-            type="date"
-            class="form-control"
-            [(ngModel)]="nuevaSuscripcion.fin_periodo_prueba"
-            name="fin_periodo_prueba"
-            required
-          />
+          <input type="date" class="form-control" [(ngModel)]="nuevaSuscripcion.fin_periodo_prueba"
+            name="fin_periodo_prueba" required />
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Código Promocional:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="nuevaSuscripcion.codigo_promocional"
-            name="codigo_promocional"
-          >
+          <select class="form-select" [(ngModel)]="nuevaSuscripcion.codigo_promocional" name="codigo_promocional">
             <option value="">Ninguno (sin código promocional)</option>
-            <option
-              *ngFor="let codigo of codigosPromocionales"
-              [value]="codigo.codigo"
-            >
+            <option *ngFor="let codigo of codigosPromocionales" [value]="codigo.codigo">
               {{ getCodigoPromocionalDisplay(codigo) }}
             </option>
           </select>
@@ -1076,7 +759,8 @@
             Código promocional aplicado a esta suscripción
           </small>
           <small class="text-success" *ngIf="nuevaSuscripcion.codigo_promocional">
-            <i class="fa fa-check-circle"></i> {{ getDescuentoCodigoPromocional(nuevaSuscripcion.codigo_promocional, false) }}
+            <i class="fa fa-check-circle"></i> {{ getDescuentoCodigoPromocional(nuevaSuscripcion.codigo_promocional,
+            false) }}
           </small>
           <div *ngIf="loadingCodigosPromocionales" class="text-muted mt-1">
             <i class="fas fa-spinner fa-spin"></i> Cargando códigos...
@@ -1084,28 +768,20 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
-          <label class="form-label">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT:' : 'Identificación fiscal:' }}</label>
-          <input
-            type="text"
-            class="form-control"
-            [(ngModel)]="nuevaSuscripcion.nit"
-            name="nit"
-            [class.bg-light]="nuevaSuscripcion.nit"
-          />
+          <label class="form-label">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT:' :
+            'Identificación fiscal:' }}</label>
+          <input type="text" class="form-control" [(ngModel)]="nuevaSuscripcion.nit" name="nit"
+            [class.bg-light]="nuevaSuscripcion.nit" />
           <small class="text-muted" *ngIf="nuevaSuscripcion.nit">
-            {{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT' : 'Identificación fiscal' }} de la empresa
+            {{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT' : 'Identificación fiscal' }} de la
+            empresa
           </small>
         </div>
 
         <div class="form-group col-md-12 mb-3">
           <label class="form-label">Nombre Factura:</label>
-          <input
-            type="text"
-            class="form-control"
-            [(ngModel)]="nuevaSuscripcion.nombre_factura"
-            name="nombre_factura"
-            [class.bg-light]="nuevaSuscripcion.nombre_factura"
-          />
+          <input type="text" class="form-control" [(ngModel)]="nuevaSuscripcion.nombre_factura" name="nombre_factura"
+            [class.bg-light]="nuevaSuscripcion.nombre_factura" />
           <small class="text-muted" *ngIf="nuevaSuscripcion.nombre_factura">
             Nombre de la empresa
           </small>
@@ -1113,24 +789,15 @@
 
         <div class="form-group col-md-12 mb-3">
           <label class="form-label">Dirección Factura:</label>
-          <textarea
-            class="form-control"
-            [(ngModel)]="nuevaSuscripcion.direccion_factura"
-            name="direccion_factura"
-            rows="2"
-            [class.bg-light]="nuevaSuscripcion.direccion_factura"
-          ></textarea>
+          <textarea class="form-control" [(ngModel)]="nuevaSuscripcion.direccion_factura" name="direccion_factura"
+            rows="2" [class.bg-light]="nuevaSuscripcion.direccion_factura"></textarea>
           <small class="text-muted" *ngIf="nuevaSuscripcion.direccion_factura">
             Dirección registrada de la empresa
           </small>
         </div>
 
         <div class="d-grid mt-4">
-          <button
-            type="submit"
-            class="btn btn-primary"
-            [disabled]="saving || !suscripcionForm.form.valid"
-          >
+          <button type="submit" class="btn btn-primary" [disabled]="saving || !suscripcionForm.form.valid">
             <i class="fas fa-save me-2"></i>
             <span *ngIf="!saving">Crear Suscripción</span>
             <span *ngIf="saving">
@@ -1147,12 +814,7 @@
 <ng-template #mconfirmPagoRecibido>
   <div class="modal-header">
     <h4 class="modal-title">Registrar pago recibido</h4>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="cerrarModalPagoRecibido()"
-      aria-label="Cerrar"
-    ></button>
+    <button type="button" class="btn-close" (click)="cerrarModalPagoRecibido()" aria-label="Cerrar"></button>
   </div>
   <div class="modal-body">
     <p class="mb-2" *ngIf="empresaNombrePagoModal">
@@ -1165,11 +827,8 @@
 
     <div class="mb-3">
       <label class="form-label fw-semibold mb-1">Cobertura / próximo cobro</label>
-      <select
-        class="form-select form-select-sm"
-        [(ngModel)]="pagoModalMesesCobertura"
-        [ngModelOptions]="{ standalone: true }"
-      >
+      <select class="form-select form-select-sm" [(ngModel)]="pagoModalMesesCobertura"
+        [ngModelOptions]="{ standalone: true }">
         <option *ngFor="let opt of mesesCoberturaOpcionesPago" [ngValue]="opt.meses">
           {{ opt.etiqueta }}
         </option>
@@ -1184,29 +843,16 @@
 
     <p class="fw-semibold mb-2">¿Cómo quedó registrado el cobro en el ERP?</p>
     <div class="btn-group btn-group-sm mb-3 flex-wrap" role="group">
-      <button
-        type="button"
-        class="btn btn-outline-primary"
-        [class.active]="pagoModalDocumentoOrigen === 'orden'"
-        [disabled]="ordenesPagoPendientesModal.length === 0"
-        (click)="setDocumentoOrigenPago('orden')"
-      >
+      <button type="button" class="btn btn-outline-primary" [class.active]="pagoModalDocumentoOrigen === 'orden'"
+        [disabled]="ordenesPagoPendientesModal.length === 0" (click)="setDocumentoOrigenPago('orden')">
         Orden N1CO / pendiente
       </button>
-      <button
-        type="button"
-        class="btn btn-outline-primary"
-        [class.active]="pagoModalDocumentoOrigen === 'venta'"
-        (click)="setDocumentoOrigenPago('venta')"
-      >
+      <button type="button" class="btn btn-outline-primary" [class.active]="pagoModalDocumentoOrigen === 'venta'"
+        (click)="setDocumentoOrigenPago('venta')">
         Buscar venta (transferencia)
       </button>
-      <button
-        type="button"
-        class="btn btn-outline-primary"
-        [class.active]="pagoModalDocumentoOrigen === 'ninguno'"
-        (click)="setDocumentoOrigenPago('ninguno')"
-      >
+      <button type="button" class="btn btn-outline-primary" [class.active]="pagoModalDocumentoOrigen === 'ninguno'"
+        (click)="setDocumentoOrigenPago('ninguno')">
         Solo suscripción
       </button>
     </div>
@@ -1216,34 +862,20 @@
       Cargando órdenes pendientes…
     </div>
 
-    <div
-      *ngIf="
+    <div *ngIf="
         pagoModalDocumentoOrigen === 'orden' &&
         !loadingOrdenesPendientesModal &&
         ordenesPagoPendientesModal.length > 0
-      "
-      class="border rounded p-3 bg-light mb-3"
-    >
+      " class="border rounded p-3 bg-light mb-3">
       <p class="mb-2 fw-semibold small">
         Elige la orden que quedó pagada con este abono:
       </p>
-      <div
-        class="list-group list-group-flush overflow-y-auto pe-1"
-        style="max-height: calc(5 * 5.75rem)"
-      >
-        <label
-          *ngFor="let op of ordenesPagoPendientesModal"
+      <div class="list-group list-group-flush overflow-y-auto pe-1" style="max-height: calc(5 * 5.75rem)">
+        <label *ngFor="let op of ordenesPagoPendientesModal"
           class="list-group-item list-group-item-action d-flex align-items-start gap-2 py-2 px-2 mb-0 cursor-pointer"
-          [class.active]="ordenPagoSeleccionadoId === op.id"
-        >
-          <input
-            class="form-check-input mt-1 flex-shrink-0"
-            type="radio"
-            name="ordenPagoPendiente"
-            [value]="op.id"
-            [(ngModel)]="ordenPagoSeleccionadoId"
-            [ngModelOptions]="{ standalone: true }"
-          />
+          [class.active]="ordenPagoSeleccionadoId === op.id">
+          <input class="form-check-input mt-1 flex-shrink-0" type="radio" name="ordenPagoPendiente" [value]="op.id"
+            [(ngModel)]="ordenPagoSeleccionadoId" [ngModelOptions]="{ standalone: true }" />
           <span class="small">
             <span class="d-block fw-medium">{{ op.id_orden }}</span>
             <span class="d-block text-muted mt-1" *ngIf="op.venta as v">
@@ -1251,13 +883,11 @@
               <ng-container *ngIf="v.documento_nombre">{{ v.documento_nombre }}</ng-container>
               <ng-container *ngIf="!v.documento_nombre">Factura</ng-container>
               <ng-container *ngIf="v.correlativo != null && v.correlativo !== ''">
-                #{{ v.correlativo }}</ng-container
-              >
+                #{{ v.correlativo }}</ng-container>
               <span *ngIf="v.fecha"> · {{ v.fecha | date : 'mediumDate' }}</span>
               <span *ngIf="v.estado"> · {{ v.estado }}</span>
               <span *ngIf="v.total != null">
-                · Total ${{ v.total | number : '1.2-2' }}</span
-              >
+                · Total ${{ v.total | number : '1.2-2' }}</span>
               <span *ngIf="v.forma_pago"> · {{ v.forma_pago }}</span>
               <span *ngIf="v.condicion"> · {{ v.condicion }}</span>
             </span>
@@ -1269,11 +899,9 @@
               ${{ op.monto | number : '1.2-2' }}
               <ng-container *ngIf="op.tipo_pago"> · {{ op.tipo_pago }}</ng-container>
               <ng-container *ngIf="op.nombre_cliente">
-                · {{ op.nombre_cliente }}</ng-container
-              >
+                · {{ op.nombre_cliente }}</ng-container>
               <ng-container *ngIf="op.created_at">
-                · Orden creada {{ op.created_at | date : 'short' }}</ng-container
-              >
+                · Orden creada {{ op.created_at | date : 'short' }}</ng-container>
             </span>
           </span>
         </label>
@@ -1286,20 +914,11 @@
         pagó por transferencia y la factura ya existe en el ERP sin orden N1CO.
       </p>
       <div class="input-group input-group-sm mb-2">
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Ej. correlativo, cotización o ID"
-          [(ngModel)]="ventaBusquedaPagoTexto"
-          [ngModelOptions]="{ standalone: true }"
-          (keyup.enter)="buscarVentasParaPagoModal()"
-        />
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          (click)="buscarVentasParaPagoModal()"
-          [disabled]="loadingVentasBusquedaPagoModal"
-        >
+        <input type="text" class="form-control" placeholder="Ej. correlativo, cotización o ID"
+          [(ngModel)]="ventaBusquedaPagoTexto" [ngModelOptions]="{ standalone: true }"
+          (keyup.enter)="buscarVentasParaPagoModal()" />
+        <button type="button" class="btn btn-outline-secondary" (click)="buscarVentasParaPagoModal()"
+          [disabled]="loadingVentasBusquedaPagoModal">
           <span *ngIf="!loadingVentasBusquedaPagoModal">Buscar</span>
           <span *ngIf="loadingVentasBusquedaPagoModal">
             <i class="fas fa-spinner fa-spin"></i>
@@ -1309,46 +928,31 @@
       <p class="text-muted small mb-2" *ngIf="!loadingVentasBusquedaPagoModal">
         Sin texto de búsqueda se listan ventas <strong>pendientes</strong> del cliente.
       </p>
-      <div
-        *ngIf="!loadingVentasBusquedaPagoModal && ventasBusquedaPagoModal.length > 0"
-        class="list-group list-group-flush overflow-y-auto pe-1"
-        style="max-height: calc(5 * 4.5rem)"
-      >
-        <label
-          *ngFor="let vv of ventasBusquedaPagoModal"
+      <div *ngIf="!loadingVentasBusquedaPagoModal && ventasBusquedaPagoModal.length > 0"
+        class="list-group list-group-flush overflow-y-auto pe-1" style="max-height: calc(5 * 4.5rem)">
+        <label *ngFor="let vv of ventasBusquedaPagoModal"
           class="list-group-item list-group-item-action d-flex align-items-start gap-2 py-2 px-2 mb-0 cursor-pointer small"
-          [class.active]="ventaSeleccionadaPagoId === vv.id"
-        >
-          <input
-            class="form-check-input mt-1 flex-shrink-0"
-            type="radio"
-            name="ventaPagoManual"
-            [value]="vv.id"
-            [(ngModel)]="ventaSeleccionadaPagoId"
-            [ngModelOptions]="{ standalone: true }"
-          />
+          [class.active]="ventaSeleccionadaPagoId === vv.id">
+          <input class="form-check-input mt-1 flex-shrink-0" type="radio" name="ventaPagoManual" [value]="vv.id"
+            [(ngModel)]="ventaSeleccionadaPagoId" [ngModelOptions]="{ standalone: true }" />
           <span>
             <span class="d-block fw-medium">
               <ng-container *ngIf="vv.documento_nombre">{{ vv.documento_nombre }}</ng-container>
               <ng-container *ngIf="!vv.documento_nombre">Venta</ng-container>
               <ng-container *ngIf="vv.correlativo != null && vv.correlativo !== ''">
-                #{{ vv.correlativo }}</ng-container
-              >
+                #{{ vv.correlativo }}</ng-container>
               <span class="text-muted"> · id {{ vv.id }}</span>
             </span>
             <span class="d-block text-muted mt-1">
               {{ vv.fecha | date : 'mediumDate' }} · {{ vv.estado }} · ${{
-                vv.total | number : '1.2-2'
+              vv.total | number : '1.2-2'
               }}
               <span *ngIf="vv.forma_pago"> · {{ vv.forma_pago }}</span>
             </span>
           </span>
         </label>
       </div>
-      <p
-        *ngIf="!loadingVentasBusquedaPagoModal && ventasBusquedaPagoModal.length === 0"
-        class="text-muted small mb-0"
-      >
+      <p *ngIf="!loadingVentasBusquedaPagoModal && ventasBusquedaPagoModal.length === 0" class="text-muted small mb-0">
         No hay resultados. Prueba otro término o verifica el cliente ERP de la empresa.
       </p>
     </div>
@@ -1360,36 +964,23 @@
         cobertura (transferencia / cobro manual).
       </p>
       <div class="form-check">
-        <input
-          class="form-check-input"
-          type="checkbox"
-          id="chkCrearVentaPagoSuscripcion"
-          [(ngModel)]="crearVentaManualPago"
-          [ngModelOptions]="{ standalone: true }"
-        />
+        <input class="form-check-input" type="checkbox" id="chkCrearVentaPagoSuscripcion"
+          [(ngModel)]="crearVentaManualPago" [ngModelOptions]="{ standalone: true }" />
         <label class="form-check-label small" for="chkCrearVentaPagoSuscripcion">
           Generar factura en ERP (Pagada, forma de pago Transferencia)
           <ng-container *ngIf="montoEstimadoCrearVentaModal() != null">
             — monto estimado
-            <strong>${{ montoEstimadoCrearVentaModal() | number : '1.2-2' }}</strong></ng-container
-          >
+            <strong>${{ montoEstimadoCrearVentaModal() | number : '1.2-2' }}</strong></ng-container>
         </label>
       </div>
     </div>
   </div>
   <div class="modal-footer d-flex gap-2 justify-content-end flex-wrap">
-    <button
-      type="button"
-      class="btn btn-secondary"
-      [disabled]="accionPagoId === suscripcionPagoPendiente?.id"
-      (click)="cerrarModalPagoRecibido()"
-    >
+    <button type="button" class="btn btn-secondary" [disabled]="accionPagoId === suscripcionPagoPendiente?.id"
+      (click)="cerrarModalPagoRecibido()">
       Cancelar
     </button>
-    <button
-      type="button"
-      class="btn btn-success"
-      [disabled]="
+    <button type="button" class="btn btn-success" [disabled]="
         accionPagoId === suscripcionPagoPendiente?.id ||
         loadingOrdenesPendientesModal ||
         loadingVentasBusquedaPagoModal ||
@@ -1397,9 +988,7 @@
           (ordenesPagoPendientesModal.length === 0 ||
             ordenPagoSeleccionadoId == null)) ||
         (pagoModalDocumentoOrigen === 'venta' && ventaSeleccionadaPagoId == null)
-      "
-      (click)="ejecutarPagoRecibido()"
-    >
+      " (click)="ejecutarPagoRecibido()">
       <span *ngIf="accionPagoId !== suscripcionPagoPendiente?.id">
         <i class="fas fa-check me-1"></i>
         Sí, registrar pago
@@ -1415,33 +1004,18 @@
 <ng-template #mcancelar>
   <div class="modal-header">
     <h4 class="modal-title text-center">Cancelar Suscripción</h4>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRef.hide()"
-      aria-label="Close"
-    ></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
     <form #cancelForm="ngForm" (ngSubmit)="cancelarSuscripcion()">
       <div class="form-group mb-3">
         <label class="form-label">Motivo de Cancelación:</label>
-        <textarea
-          class="form-control"
-          [(ngModel)]="suscripcion.motivo_cancelacion"
-          name="motivo_cancelacion"
-          rows="4"
-          required
-          placeholder="Por favor indique el motivo de la cancelación"
-        ></textarea>
+        <textarea class="form-control" [(ngModel)]="suscripcion.motivo_cancelacion" name="motivo_cancelacion" rows="4"
+          required placeholder="Por favor indique el motivo de la cancelación"></textarea>
       </div>
       <div class="d-grid gap-2">
-        <button
-          type="submit"
-          class="btn btn-danger"
-          [disabled]="!cancelForm.form.valid || saving"
-        >
+        <button type="submit" class="btn btn-danger" [disabled]="!cancelForm.form.valid || saving">
           <i class="fas fa-ban me-2"></i>
           <span *ngIf="!saving">Confirmar Cancelación</span>
           <span *ngIf="saving">
@@ -1449,11 +1023,7 @@
             Procesando...
           </span>
         </button>
-        <button
-          type="button"
-          class="btn btn-secondary"
-          (click)="modalRef.hide()"
-        >
+        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">
           <i class="fas fa-times me-2"></i>
           Cancelar
         </button>
@@ -1467,12 +1037,7 @@
     <div class="modal-title text-center">
       <h2 class="text-center">Filtrar</h2>
     </div>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRef.hide()"
-      aria-label="Close"
-    ></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -1482,26 +1047,14 @@
           <label for="">Fecha de suscripción:</label>
           <div class="row">
             <div class="col-6">
-              <label class="form-label" for="filtros.suscripcion_inicio"
-                >Desde</label
-              >
-              <input
-                type="date"
-                class="form-control"
-                name="filtros.suscripcion_inicio"
-                [(ngModel)]="filtros.suscripcion_inicio"
-              />
+              <label class="form-label" for="filtros.suscripcion_inicio">Desde</label>
+              <input type="date" class="form-control" name="filtros.suscripcion_inicio"
+                [(ngModel)]="filtros.suscripcion_inicio" />
             </div>
             <div class="col-6">
-              <label class="form-label" for="filtros.suscripcion_fin"
-                >Hasta</label
-              >
-              <input
-                type="date"
-                class="form-control"
-                name="filtros.suscripcion_fin"
-                [(ngModel)]="filtros.suscripcion_fin"
-              />
+              <label class="form-label" for="filtros.suscripcion_fin">Hasta</label>
+              <input type="date" class="form-control" name="filtros.suscripcion_fin"
+                [(ngModel)]="filtros.suscripcion_fin" />
             </div>
           </div>
         </div>
@@ -1510,21 +1063,11 @@
           <div class="row">
             <div class="col-6">
               <label class="form-label" for="filtros.pago_inicio">Desde</label>
-              <input
-                type="date"
-                class="form-control"
-                name="filtros.pago_inicio"
-                [(ngModel)]="filtros.pago_inicio"
-              />
+              <input type="date" class="form-control" name="filtros.pago_inicio" [(ngModel)]="filtros.pago_inicio" />
             </div>
             <div class="col-6">
               <label class="form-label" for="filtros.pago_fin">Hasta</label>
-              <input
-                type="date"
-                class="form-control"
-                name="filtros.pago_fin"
-                [(ngModel)]="filtros.pago_fin"
-              />
+              <input type="date" class="form-control" name="filtros.pago_fin" [(ngModel)]="filtros.pago_fin" />
             </div>
           </div>
         </div>
@@ -1533,21 +1076,13 @@
           <div class="row">
             <div class="col-6">
               <label class="form-label" for="filtros.fecha_pago_inicio">Desde</label>
-              <input
-                type="date"
-                class="form-control"
-                name="filtros.fecha_pago_inicio"
-                [(ngModel)]="filtros.fecha_pago_inicio"
-              />
+              <input type="date" class="form-control" name="filtros.fecha_pago_inicio"
+                [(ngModel)]="filtros.fecha_pago_inicio" />
             </div>
             <div class="col-6">
               <label class="form-label" for="filtros.fecha_pago_fin">Hasta</label>
-              <input
-                type="date"
-                class="form-control"
-                name="filtros.fecha_pago_fin"
-                [(ngModel)]="filtros.fecha_pago_fin"
-              />
+              <input type="date" class="form-control" name="filtros.fecha_pago_fin"
+                [(ngModel)]="filtros.fecha_pago_fin" />
             </div>
           </div>
           <small class="text-muted">
@@ -1556,11 +1091,7 @@
         </div>
         <div class="form-group col-12 col-md-6">
           <label for="filtros.plan">Plan:</label>
-          <select
-            class="form-select"
-            name="filtros.plan"
-            [(ngModel)]="filtros.plan"
-          >
+          <select class="form-select" name="filtros.plan" [(ngModel)]="filtros.plan">
             <option value="">Selecciona aquí</option>
             <option value="Emprendedor">Emprendedor</option>
             <option value="Estándar">Estándar</option>
@@ -1570,11 +1101,7 @@
         </div>
         <div class="form-group col-12 col-md-6">
           <label for="filtros.forma_pago">Forma de pago:</label>
-          <select
-            class="form-select"
-            [(ngModel)]="filtros.forma_pago"
-            name="forma_pago"
-          >
+          <select class="form-select" [(ngModel)]="filtros.forma_pago" name="forma_pago">
             <option value="">Seleccione aquí</option>
             <option value="Transferencia">Transferencia</option>
             <option value="N1co">N1co</option>
@@ -1582,11 +1109,7 @@
         </div>
         <div class="form-group col-sm-12">
           <label for="filtros.estado">Estado:</label>
-          <select
-            name="estado"
-            [(ngModel)]="filtros.estado"
-            class="form-select"
-          >
+          <select name="estado" [(ngModel)]="filtros.estado" class="form-select">
             <option value="">Seleccione aquí</option>
             <option value="activo">Activo</option>
             <option value="cancelado">Cancelado</option>
@@ -1600,21 +1123,10 @@
         </div>
         <div class="form-group col-12 col-md-6">
           <label for="filtros.campania">Campaña:</label>
-          <ng-select
-            [(ngModel)]="filtros.campania"
-            [typeahead]="searchCampanias$"
-            [typeaheadLoading]="loadingCampanias"
-            [clearable]="true"
-            placeholder="Escriba para buscar campañas..."
-            class="form-select"
-            name="filtros.campania"
-            [loading]="loadingCampanias"
-            notFoundText="No se encontraron campañas"
-          >
-            <ng-option
-              *ngFor="let campania of campaniasResults"
-              [value]="campania"
-            >
+          <ng-select [(ngModel)]="filtros.campania" [typeahead]="searchCampanias$" [typeaheadLoading]="loadingCampanias"
+            [clearable]="true" placeholder="Escriba para buscar campañas..." class="form-select" name="filtros.campania"
+            [loading]="loadingCampanias" notFoundText="No se encontraron campañas">
+            <ng-option *ngFor="let campania of campaniasResults" [value]="campania">
               {{ campania }}
             </ng-option>
           </ng-select>
@@ -1644,12 +1156,7 @@
 <ng-template #mhistorialPagos>
   <div class="modal-header">
     <h4 class="modal-title text-center">Historial de Pagos</h4>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRef.hide()"
-      aria-label="Close"
-    ></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -1670,20 +1177,13 @@
         <!-- Tabs de métodos de pago -->
         <ul class="nav nav-tabs mb-3">
           <li class="nav-item">
-            <a
-              class="nav-link cursor-pointer"
-              [class.active]="tabActivo === 'n1co'"
-              (click)="tabActivo = 'n1co'"
-            >
+            <a class="nav-link cursor-pointer" [class.active]="tabActivo === 'n1co'" (click)="tabActivo = 'n1co'">
               <i class="fas fa-credit-card me-2"></i>N1co
             </a>
           </li>
           <li class="nav-item">
-            <a
-              class="nav-link cursor-pointer"
-              [class.active]="tabActivo === 'transferencia'"
-              (click)="tabActivo = 'transferencia'"
-            >
+            <a class="nav-link cursor-pointer" [class.active]="tabActivo === 'transferencia'"
+              (click)="tabActivo = 'transferencia'">
               <i class="fas fa-university me-2"></i>Transferencia
             </a>
           </li>
@@ -1709,20 +1209,16 @@
                     <i class="fas fa-spinner fa-spin me-2"></i>Cargando...
                   </td>
                 </tr>
-                <tr
-                  *ngIf="
+                <tr *ngIf="
                     !loadingHistorial && getPagosFiltrados('n1co').length === 0
-                  "
-                >
+                  ">
                   <td colspan="5" class="text-center">
                     No hay registros de pagos con N1co
                   </td>
                 </tr>
-                <ng-container
-                  *ngIf="
+                <ng-container *ngIf="
                     !loadingHistorial && getPagosFiltrados('n1co').length > 0
-                  "
-                >
+                  ">
                   <tr *ngFor="let pago of getPagosFiltrados('n1co')">
                     <td>
                       {{ pago.fecha_transaccion | date : "dd/MM/yyyy HH:mm" }}
@@ -1730,9 +1226,7 @@
                     <td>{{ pago.id_orden }}</td>
                     <td>{{ pago.monto | currency : "USD" }}</td>
                     <td>
-                      <span
-                        class="badge"
-                        [ngClass]="{
+                      <span class="badge" [ngClass]="{
                           'bg-success':
                             pago.estado.toLowerCase() === 'completado',
                           'bg-danger':
@@ -1741,15 +1235,14 @@
                           'bg-warning':
                             pago.estado.toLowerCase() === 'pendiente',
                           'bg-info': pago.estado.toLowerCase() === 'procesando'
-                        }"
-                      >
+                        }">
                         {{ pago.estado }}
                       </span>
                     </td>
                     <td>
                       <small class="text-muted">{{
                         pago.codigo_autorizacion || "-"
-                      }}</small>
+                        }}</small>
                     </td>
                   </tr>
                 </ng-container>
@@ -1775,42 +1268,32 @@
                     <i class="fas fa-spinner fa-spin me-2"></i>Cargando...
                   </td>
                 </tr>
-                <tr
-                  *ngIf="
+                <tr *ngIf="
                     !loadingHistorial &&
                     getPagosFiltrados('transferencia').length === 0
-                  "
-                >
+                  ">
                   <td colspan="5" class="text-center">
                     No hay registros de pagos por transferencia
                   </td>
                 </tr>
-                <ng-container
-                  *ngIf="
+                <ng-container *ngIf="
                     !loadingHistorial &&
                     getPagosFiltrados('transferencia').length > 0
-                  "
-                >
+                  ">
                   <tr *ngFor="let pago of getPagosFiltrados('transferencia')">
                     <td>
                       {{ pago.fecha_transaccion | date : "dd/MM/yyyy HH:mm" }}
                     </td>
                     <td>{{ pago.monto | currency : "USD" }}</td>
                     <td>
-                      <a
-                        *ngIf="pago.comprobante_url"
-                        [href]="pago.comprobante_url"
-                        target="_blank"
-                        class="btn btn-sm btn-link"
-                      >
+                      <a *ngIf="pago.comprobante_url" [href]="pago.comprobante_url" target="_blank"
+                        class="btn btn-sm btn-link">
                         <i class="fas fa-eye me-1"></i>Ver comprobante
                       </a>
                       <span *ngIf="!pago.comprobante_url">-</span>
                     </td>
                     <td>
-                      <span
-                        class="badge"
-                        [ngClass]="{
+                      <span class="badge" [ngClass]="{
                           'bg-success':
                             pago.estado.toLowerCase() === 'completado',
                           'bg-danger':
@@ -1818,24 +1301,17 @@
                           'bg-warning':
                             pago.estado.toLowerCase() === 'pendiente',
                           'bg-info': pago.estado.toLowerCase() === 'verificando'
-                        }"
-                      >
+                        }">
                         {{ pago.estado }}
                       </span>
                     </td>
                     <td>
-                      <button
-                        *ngIf="pago.estado.toLowerCase() === 'pendiente'"
-                        class="btn btn-sm btn-success me-1"
-                        (click)="aprobarTransferencia(pago)"
-                      >
+                      <button *ngIf="pago.estado.toLowerCase() === 'pendiente'" class="btn btn-sm btn-success me-1"
+                        (click)="aprobarTransferencia(pago)">
                         <i class="fas fa-check me-1"></i>Aprobar
                       </button>
-                      <button
-                        *ngIf="pago.estado.toLowerCase() === 'pendiente'"
-                        class="btn btn-sm btn-danger"
-                        (click)="rechazarTransferencia(pago)"
-                      >
+                      <button *ngIf="pago.estado.toLowerCase() === 'pendiente'" class="btn btn-sm btn-danger"
+                        (click)="rechazarTransferencia(pago)">
                         <i class="fas fa-times me-1"></i>Rechazar
                       </button>
                     </td>
@@ -1852,5 +1328,404 @@
     <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">
       <i class="fas fa-times me-2"></i>Cerrar
     </button>
+  </div>
+</ng-template>
+
+<ng-template #mfacturacion>
+  <div class="modal-header border-0 pb-0">
+    <h4 class="modal-title fw-bold">Gestión de Facturación</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body pt-0">
+    <app-notificaciones-container></app-notificaciones-container>
+
+    <div class="text-center mb-4">
+      <div class="p-2 px-3 bg-light rounded-pill d-inline-block mb-2 border">
+        <i class="fas fa-building text-primary me-2"></i>
+        <span class="fw-bold">{{ empresa?.nombre }}</span>
+      </div>
+      <div class="mb-2" *ngIf="(empresa || suscripcion) && !editandoCliente">
+        <span class="badge rounded-pill bg-white text-secondary border px-3 py-2 fw-normal">
+          <i class="fas fa-sync-alt me-1"></i>
+          Frecuencia de pago:
+          <strong class="text-dark ms-1">{{ empresa?.frecuencia_pago_label || suscripcion?.tipo_plan || suscripcion?.frecuencia_pago || 'No definida' }}</strong>
+        </span>
+      </div>
+      <div class="mb-3 text-center px-2" *ngIf="suscripcion?.id && !editandoCliente">
+        <label class="form-label small fw-bold text-muted text-uppercase d-block mb-1">Tipo de factura</label>
+        <div class="d-flex flex-wrap align-items-center justify-content-center gap-2">
+          <select class="form-select form-select-sm" style="max-width: 280px" name="tipo_factura_suscripcion"
+            [(ngModel)]="suscripcion.tipo_factura">
+            <option [ngValue]="null">No definido</option>
+            <option *ngFor="let opt of opcionesTipoFactura" [ngValue]="opt.value">{{ opt.label }}</option>
+          </select>
+          <button type="button" class="btn btn-sm btn-outline-primary"
+            [disabled]="guardandoTipoFactura" (click)="guardarTipoFactura()">
+            <span *ngIf="!guardandoTipoFactura"><i class="fas fa-save me-1"></i> Guardar</span>
+            <span *ngIf="guardandoTipoFactura"><i class="fas fa-spinner fa-spin me-1"></i></span>
+          </button>
+        </div>
+        <small class="text-muted d-block mt-1">En suscripción: <strong>{{ etiquetaTipoFactura(suscripcion?.tipo_factura) }}</strong></small>
+      </div>
+      <p *ngIf="!suscripcion?.id_cliente && !reemplazandoCliente" class="text-muted mx-auto mb-0" style="max-width: 450px;">
+        La empresa no tiene un cliente asignado, por favor asignar uno para continuar.
+      </p>
+      <p *ngIf="reemplazandoCliente" class="text-muted mx-auto mb-0" style="max-width: 520px;">
+        <i class="fas fa-info-circle text-primary me-1"></i>
+        Elija <strong>vincular otro cliente</strong> o <strong>crear uno nuevo</strong>. La facturación de esta suscripción usará el cliente que confirme.
+      </p>
+    </div>
+
+    <!-- Sin cliente o modo «cambiar cliente asignado» -->
+    <div *ngIf="(!suscripcion?.id_cliente || reemplazandoCliente) && !editandoCliente">
+      <div *ngIf="reemplazandoCliente" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <span class="small text-muted mb-0">Puede volver a la vista del cliente actual sin aplicar cambios.</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelarCambioCliente()">
+          <i class="fas fa-arrow-left me-1"></i> Mantener cliente actual
+        </button>
+      </div>
+      <div class="row g-4 mb-2" *ngIf="!asignandoCliente">
+        <div class="col-md-6">
+          <div class="card h-100 border-0 shadow-sm action-card overflow-hidden"
+            (click)="crearNuevoCliente(suscripcion)">
+            <div class="card-body p-4 text-center">
+              <div class="icon-circle bg-primary-soft text-primary mb-3 mx-auto">
+                <i class="fas fa-user-plus fs-3"></i>
+              </div>
+              <h5 class="fw-bold mb-2">Nuevo Cliente</h5>
+              <p class="text-muted small mb-0">
+                {{ reemplazandoCliente ? 'Crear otro perfil de cliente para esta empresa y usarlo en la facturación.' : 'Crear un nuevo perfil de cliente automáticamente con los datos registrados.' }}
+              </p>
+            </div>
+            <div class="card-footer bg-primary text-white border-0 py-2 small fw-bold text-center">
+              CONTINUAR <i class="fas fa-chevron-right ms-1"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card h-100 border-0 shadow-sm action-card overflow-hidden"
+            (click)="asignarClienteExistente(suscripcion)">
+            <div class="card-body p-4 text-center">
+              <div class="icon-circle bg-success-soft text-success mb-3 mx-auto">
+                <i class="fas fa-link fs-3"></i>
+              </div>
+              <h5 class="fw-bold mb-2">Cliente Existente</h5>
+              <p class="text-muted small mb-0">
+                {{ reemplazandoCliente ? 'Buscar entre los clientes de tu empresa (sesión) y vincularlo a la facturación.' : 'Vincular a un cliente ya registrado en tu empresa (sesión) mediante búsqueda por nombre o NIT.' }}
+              </p>
+            </div>
+            <div class="card-footer bg-success text-white border-0 py-2 small fw-bold text-center">
+              VINCULAR <i class="fas fa-chevron-right ms-1"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buscador de clientes (Asignar Existente) -->
+      <div *ngIf="asignandoCliente" class="p-4 rounded-4 border">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Buscar Cliente Existente</h5>
+          <button type="button" class="btn btn-sm btn-outline-secondary border-0" (click)="cancelarAsignacion()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="form-group mb-4">
+          <label class="form-label small fw-bold text-muted text-uppercase">Nombre o NIT del cliente</label>
+          <ng-select [items]="clientesResults" bindLabel="_labelBusqueda" [(ngModel)]="clienteSeleccionado"
+            [typeahead]="searchClientes$" [loading]="loadingClientes" placeholder="Escriba para buscar..."
+            notFoundText="No se encontraron clientes">
+            <ng-template ng-option-tmp let-item="item">
+              <div class="d-flex flex-column">
+                <span class="fw-bold">{{ item.nombre_empresa || item.nombre }} {{ item.apellido || '' }}</span>
+                <small class="text-muted">{{ item.nit || 'Sin identificación fiscal' }}</small>
+              </div>
+            </ng-template>
+          </ng-select>
+          <small class="text-muted mt-2 d-block">
+            <i class="fas fa-info-circle me-1"></i> Ingrese al menos 2 caracteres para buscar.
+          </small>
+        </div>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+          <button type="button" class="btn btn-light px-4 fw-medium" (click)="cancelarAsignacion()">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-success px-4 fw-bold shadow-sm"
+            [disabled]="!clienteSeleccionado || saving" (click)="confirmarAsignacionCliente()">
+            <span *ngIf="!saving"><i class="fas fa-check me-2"></i> {{ reemplazandoCliente ? 'Confirmar cambio de cliente' : 'Confirmar asignación' }}</span>
+            <span *ngIf="saving"><i class="fas fa-spinner fa-spin me-2"></i> {{ reemplazandoCliente ? 'Actualizando...' : 'Asignando...' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cliente asignado: resumen (oculto mientras se elige otro) -->
+    <div *ngIf="suscripcion?.id_cliente && !editandoCliente && !reemplazandoCliente" class="py-3">
+      <div class="card border-0 rounded-4 mb-4 border">
+        <div class="card-body p-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <h5 class="fw-bold mb-0 text-primary">
+              <i class="fas fa-file-invoice me-2"></i>Datos de Facturación del Cliente
+              <a *ngIf="clienteSeleccionado" [routerLink]="['/cliente/editar', clienteSeleccionado.id]" target="_blank" class="ms-1 text-muted"
+                tooltip="Editar Información del Cliente">
+                <i class="fa-solid fa-arrow-up-right-from-square text-primary fa-xs"></i>
+              </a>
+            </h5>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm px-3 fw-bold rounded-pill"
+                (click)="iniciarCambioCliente()">
+                <i class="fas fa-exchange-alt me-1"></i> Cambiar cliente
+              </button>
+              <button class="btn btn-primary btn-sm px-4 fw-bold rounded-pill shadow-sm"
+                (click)="iniciarEdicionCliente()">
+                <i class="fas fa-edit me-1"></i> Editar información
+              </button>
+            </div>
+          </div>
+
+          <div class="row g-4">
+            <div class="col-md-12">
+              <label class="small text-muted text-uppercase fw-bold d-block mb-1">Nombre cliente / Razón Social</label>
+              <div class="p-2 bg-white rounded border flex flex-column">
+                <span class="fw-bold">{{ clienteSeleccionado?.nombre }} {{ clienteSeleccionado?.apellido }}</span>
+                /<span class="fw-bold"> {{
+                  clienteSeleccionado?.nombre_empresa }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="row g-4">
+            <div class="col-md-3">
+              <label class="small text-muted text-uppercase fw-bold d-block mb-1">NIT / Identificación</label>
+              <div class="p-2 bg-white rounded border">
+                <span>{{ clienteSeleccionado?.nit || clienteSeleccionado?.dui || 'N/A' }}</span>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted text-uppercase fw-bold d-block mb-1">NCR / Registro</label>
+              <div class="p-2 bg-white rounded border">
+                <span>{{ clienteSeleccionado?.ncr || 'N/A' }}</span>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted text-uppercase fw-bold d-block mb-1">Tipo de factura</label>
+              <div class="p-2 bg-white rounded border">
+                <span>{{ etiquetaTipoFactura(suscripcion?.tipo_factura) }}</span>
+              </div>
+            </div>
+            <div class="col-md-12">
+              <label class="small text-muted text-uppercase fw-bold d-block mb-1">Giro / Actividad Económica</label>
+              <div class="p-2 bg-white rounded border">
+                <span>{{ clienteSeleccionado?.giro || 'N/A' }}</span>
+              </div>
+            </div>
+            <div class="col-md-12">
+              <label class="small text-muted text-uppercase fw-bold d-block mb-1">Dirección de Facturación</label>
+              <div class="p-2 bg-white rounded border">
+                <span>{{ clienteSeleccionado?.direccion || clienteSeleccionado?.empresa_direccion || 'N/A' }}</span>
+                <div class="mt-1 small text-muted border-top pt-1">
+                  <i class="fas fa-map-marker-alt me-1"></i>
+                  {{ clienteSeleccionado?.municipio }}, {{ clienteSeleccionado?.departamento }}, {{
+                  clienteSeleccionado?.pais }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario de Edición (Exactamente como cliente-informacion) -->
+    <div *ngIf="editandoCliente && clienteSeleccionado" class="py-3">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold mb-0">
+          {{ esNuevoCliente ? 'Crear Nuevo Cliente' : 'Editar Información del Cliente' }}
+          <a *ngIf="!esNuevoCliente && clienteSeleccionado" [routerLink]="['/cliente/editar', clienteSeleccionado.id]" target="_blank"
+            class="ms-1 text-muted" tooltip="Editar Información del Cliente">
+            <i class="fa-solid fa-arrow-up-right-from-square text-primary fa-xs"></i>
+          </a>
+        </h5>
+        <button class="btn btn-outline-secondary btn-sm" (click)="cancelarEdicionCliente()">
+          <i class="fas fa-times me-1"></i> {{ esNuevoCliente ? 'Cancelar creación' : 'Cancelar edición' }}
+        </button>
+      </div>
+
+      <form (ngSubmit)="guardarCambiosCliente()">
+        <div class="row mb-3">
+          <div class="form-group col-12 col-md-6 col-lg-4">
+            <label class="form-label fw-bold small">Tipo de Cliente</label>
+            <select class="form-select" name="tipo" [(ngModel)]="clienteSeleccionado.tipo" (change)="onTipoChange()">
+              <option value="Persona">Persona</option>
+              <option value="Empresa">Empresa</option>
+              <option value="Extranjero">Extranjero</option>
+            </select>
+          </div>
+          <div class="form-group col-12 col-md-6 col-lg-4">
+            <label class="form-label fw-bold small">Clasificación</label>
+            <select class="form-select" name="clasificacion" [(ngModel)]="clienteSeleccionado.clasificacion">
+              <option [ngValue]="null">Seleccione una clasificación</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+            </select>
+          </div>
+          <div class="form-group col-12 col-md-6 col-lg-4">
+            <label class="form-label fw-bold small">Vendedor asignado</label>
+            <select class="form-select" name="id_vendedor" [(ngModel)]="clienteSeleccionado.id_vendedor">
+              <option [ngValue]="null">Sin vendedor asignado</option>
+              <option *ngFor="let vendedor of vendedores" [value]="vendedor.id">
+                {{ vendedor.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-end" *ngIf="empresa && suscripcion?.id">
+          <div class="col-12">
+            <hr class="my-3">
+            <h6 class="fw-bold mb-2 text-muted text-uppercase small">
+              <i class="fas fa-file-invoice-dollar me-2"></i>Frecuencia de pago y tipo de factura (suscripción / empresa)
+            </h6>
+            <p class="small text-muted mb-3">
+              Corresponden a la suscripción y a la empresa, no al cliente en ERP.
+              La <strong>frecuencia de pago</strong> y el <strong>tipo de factura</strong> se guardan con el botón principal del formulario («Guardar cambios» o «Crear y vincular cliente»).
+            </p>
+          </div>
+          <div class="form-group col-12 col-md-6">
+            <label class="form-label fw-bold small">Frecuencia de pago</label>
+            <select class="form-select" name="frecuencia_pago_facturacion_modal"
+              [(ngModel)]="empresa.frecuencia_pago"
+              (ngModelChange)="onFrecuenciaPagoFacturacionModalChange($event)">
+              <option value="">Seleccione frecuencia</option>
+              <option value="Mensual">Mensual</option>
+              <option value="Trimestral">Trimestral</option>
+              <option value="Anual">Anual</option>
+            </select>
+          </div>
+          <div class="form-group col-12 col-md-6">
+            <label class="form-label fw-bold small text-uppercase">Tipo de factura</label>
+            <select class="form-select form-select-sm" name="tipo_factura_suscripcion_edit"
+              [(ngModel)]="suscripcion.tipo_factura">
+              <option [ngValue]="null">No definido</option>
+              <option *ngFor="let opt of opcionesTipoFactura" [ngValue]="opt.value">{{ opt.label }}</option>
+            </select>
+            <small class="text-muted d-block mt-1">En suscripción: <strong>{{ etiquetaTipoFactura(suscripcion?.tipo_factura) }}</strong></small>
+          </div>
+        </div>
+
+        <!-- Secciones de datos según tipo -->
+        <div class="row g-3" *ngIf="clienteSeleccionado.tipo != 'Extranjero'">
+          <!-- Información de contacto -->
+          <div class="col-12">
+            <hr class="my-4">
+            <h6 class="fw-bold mb-3 text-muted"><i class="fas fa-address-card me-2"></i>Información General</h6>
+          </div>
+
+          <div class="form-group col-md-6" *ngIf="clienteSeleccionado.tipo == 'Empresa'">
+            <label class="form-label small">Nombre de la Empresa</label>
+            <input type="text" class="form-control" name="nombre_empresa"
+              [(ngModel)]="clienteSeleccionado.nombre_empresa">
+          </div>
+
+          <div class="form-group col-md-3">
+            <label class="form-label small">Nombre</label>
+            <input type="text" class="form-control" name="nombre" [(ngModel)]="clienteSeleccionado.nombre">
+          </div>
+          <div class="form-group col-md-3">
+            <label class="form-label small">Apellido</label>
+            <input type="text" class="form-control" name="apellido" [(ngModel)]="clienteSeleccionado.apellido">
+          </div>
+
+          <div class="form-group col-md-3" *ngIf="clienteSeleccionado.tipo == 'Empresa'">
+            <label class="form-label small">NIT / Identificación Fiscal</label>
+            <input type="text" class="form-control" name="nit" [(ngModel)]="clienteSeleccionado.nit">
+          </div>
+          <div class="form-group col-md-3" *ngIf="clienteSeleccionado.tipo == 'Persona'">
+            <label class="form-label small">DUI / Identificación</label>
+            <input type="text" class="form-control" name="dui" [(ngModel)]="clienteSeleccionado.dui">
+          </div>
+
+          <div class="form-group col-md-3" *ngIf="clienteSeleccionado.tipo == 'Empresa'">
+            <label class="form-label small">NCR / Registro Tributario</label>
+            <input type="text" class="form-control" name="ncr" [(ngModel)]="clienteSeleccionado.ncr">
+          </div>
+
+          <div class="form-group col-md-3">
+            <label class="form-label small">Teléfono</label>
+            <input type="text" class="form-control" name="telefono" [(ngModel)]="clienteSeleccionado.telefono">
+          </div>
+          <div class="form-group col-md-3">
+            <label class="form-label small">Correo</label>
+            <input type="email" class="form-control" name="correo" [(ngModel)]="clienteSeleccionado.correo">
+          </div>
+
+          <div class="form-group col-md-12" *ngIf="clienteSeleccionado.tipo == 'Empresa'">
+            <label class="form-label small">Giro / Actividad Económica</label>
+            <ng-select [(ngModel)]="clienteSeleccionado.cod_giro" (change)="setGiro()" placeholder="Seleccione giro"
+              class="form-select p-0 border-0" name="cod_giro">
+              <ng-option *ngFor="let actividad of actividad_economicas" [value]="actividad.cod">
+                {{ actividad.nombre }}
+              </ng-option>
+            </ng-select>
+          </div>
+
+          <!-- Ubicación -->
+          <div class="col-12">
+            <hr class="my-4">
+            <h6 class="fw-bold mb-3 text-muted"><i class="fas fa-map-marker-alt me-2"></i>Ubicación y Dirección</h6>
+          </div>
+
+          <div class="form-group col-md-3">
+            <label class="form-label small">País</label>
+            <ng-select [(ngModel)]="clienteSeleccionado.cod_pais" (change)="setPais()" class="form-select p-0 border-0"
+              name="cod_pais">
+              <ng-option *ngFor="let p of paises" [value]="p.cod">{{ p.nombre }}</ng-option>
+            </ng-select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="form-label small">Departamento</label>
+            <ng-select [(ngModel)]="clienteSeleccionado.cod_departamento" (change)="setDepartamento()"
+              class="form-select p-0 border-0" name="cod_departamento">
+              <ng-option *ngFor="let d of departamentos" [value]="d.cod">{{ d.nombre }}</ng-option>
+            </ng-select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="form-label small">Municipio</label>
+            <ng-select [(ngModel)]="clienteSeleccionado.cod_municipio" (change)="setMunicipio()"
+              class="form-select p-0 border-0" name="cod_municipio">
+              <ng-option *ngFor="let m of municipios | filter:'nombre_departamento':clienteSeleccionado.departamento"
+                [value]="m.cod">{{ m.nombre }}</ng-option>
+            </ng-select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="form-label small">Distrito</label>
+            <ng-select [(ngModel)]="clienteSeleccionado.cod_distrito" (change)="setDistrito()"
+              class="form-select p-0 border-0" name="cod_distrito">
+              <ng-option *ngFor="let dist of distritos | filter:'cod_departamento':clienteSeleccionado.cod_departamento"
+                [value]="dist.cod">{{ dist.nombre }}</ng-option>
+            </ng-select>
+          </div>
+
+          <div class="form-group col-12">
+            <label class="form-label small">Dirección Exacta</label>
+            <textarea class="form-control" name="direccion" [(ngModel)]="clienteSeleccionado.direccion"
+              rows="2"></textarea>
+          </div>
+        </div>
+
+        <div class="row mt-4">
+          <div class="col-12 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-light px-4" (click)="cancelarEdicionCliente()">Cancelar</button>
+            <button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm" [disabled]="saving">
+              <span *ngIf="!saving">
+                <i class="fas fa-save me-2"></i>
+                {{ esNuevoCliente ? 'CREAR Y VINCULAR CLIENTE' : 'GUARDAR CAMBIOS' }}
+              </span>
+              <span *ngIf="saving"><i class="fas fa-spinner fa-spin me-2"></i> PROCESANDO...</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
   </div>
 </ng-template>

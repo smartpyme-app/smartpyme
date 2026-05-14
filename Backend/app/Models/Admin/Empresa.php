@@ -174,7 +174,8 @@ class Empresa extends Model
         'acces_chatbot_whatsapp',
         'shopify_webhook_url',
         'status_conexion_shopify',
-        'is_current_user_connected_to_shopify'
+        'is_current_user_connected_to_shopify',
+        'frecuencia_pago_label',
     ];
 
     public function limiteUsuarios()
@@ -209,6 +210,20 @@ class Empresa extends Model
         }
 
         return $this->pagos->count();
+    }
+
+    /**
+     * Texto para UI: prioriza frecuencia_pago de la empresa y usa tipo_plan como respaldo.
+     */
+    public function getFrecuenciaPagoLabelAttribute(): string
+    {
+        $fp = trim((string) ($this->attributes['frecuencia_pago'] ?? ''));
+        if ($fp !== '') {
+            return $fp;
+        }
+        $tp = trim((string) ($this->attributes['tipo_plan'] ?? ''));
+
+        return $tp !== '' ? $tp : '';
     }
 
 

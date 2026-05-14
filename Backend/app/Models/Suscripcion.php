@@ -15,6 +15,7 @@ class Suscripcion extends Model
         'empresa_id',
         'plan_id',
         'usuario_id',
+        'id_cliente',
         'tipo_plan',
         'estado',
         'monto',
@@ -32,6 +33,7 @@ class Suscripcion extends Model
         'nit',
         'nombre_factura',
         'direccion_factura',
+        'tipo_factura',
         'intentos_cobro',
         'ultimo_intento_cobro',
         'historial_pagos'
