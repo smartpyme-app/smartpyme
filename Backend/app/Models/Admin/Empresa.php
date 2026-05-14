@@ -684,6 +684,7 @@ class Empresa extends Model
                 'ticket_en_pdf' => false,
                 'bloquear_cotizaciones_vendedores' => false,
                 'dte_mostrar_descripcion_producto' => true,
+                'inventario_reporte_analisis_ventas_mensual' => false,
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados
@@ -763,6 +764,14 @@ class Empresa extends Model
     public function isInventarioSumarStockBusquedasHabilitado(): bool
     {
         return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_sumar_stock_busquedas', false);
+    }
+
+    /**
+     * Reporte Excel de inventario vs ventas desde enero del año hasta el mes de la descarga.
+     */
+    public function isInventarioReporteAnalisisVentasMensualHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_reporte_analisis_ventas_mensual', false);
     }
 
     /**
