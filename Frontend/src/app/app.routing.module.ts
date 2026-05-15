@@ -7,9 +7,9 @@ import { SuperAdminGuard } from './guards/super-admin.guard';
 import { SubscriptionGuard } from './guards/SuscriptionGuard.guard';
 
 import { NotFoundComponent }    from './shared/404/not-found.component';
-import { LoginComponent }    from './auth/login/login.component';
-import { RegisterComponent }    from './auth/register/register.component';
-import { PagoComponent }    from './auth/register/pago/pago.component';
+import { LoginEntryComponent } from './auth/login/login-entry.component';
+import { RegisterEntryComponent } from './auth/register/register-entry.component';
+import { PagoEntryComponent } from './auth/register/pago/pago-entry.component';
 import { PaymentSuccessComponent }    from './auth/register/pago/payment-success.component';
 import { PaymentSuccessPaywallComponent }    from './layout/paywall/components/payment-success/payment-success.component';
 import { LockComponent }    from './auth/lock/lock.component';
@@ -19,9 +19,9 @@ import { SupervisorLimitadoGuard } from './guards/supervisor-limitado.guard';
 
 
 const routes: Routes = [
-    { path: 'login', component: LoginComponent, title: 'Inicio de sesión' },
-    { path: 'registro', component: RegisterComponent, title: 'Registro' },
-    { path: 'pago', component: PagoComponent, title: 'Pago' },
+    { path: 'login', component: LoginEntryComponent, title: 'Inicio de sesión' },
+    { path: 'registro', component: RegisterEntryComponent, title: 'Registro' },
+    { path: 'pago', component: PagoEntryComponent, title: 'Pago' },
     { path: 'pago-exitoso', component: PaymentSuccessComponent, title: 'Pago exitoso' },
     { path: 'pago-exitoso-paywall', component: PaymentSuccessPaywallComponent, title: 'Pago exitoso' },
     { path: 'restablecer-cuenta', component: ForgetComponent, title: 'Restablecer contraseña' },
