@@ -1369,7 +1369,8 @@
         <span class="badge rounded-pill bg-white text-secondary border px-3 py-2 fw-normal">
           <i class="fas fa-sync-alt me-1"></i>
           Frecuencia de pago:
-          <strong class="text-dark ms-1">{{ empresa?.frecuencia_pago_label || suscripcion?.tipo_plan || suscripcion?.frecuencia_pago || 'No definida' }}</strong>
+          <strong class="text-dark ms-1">{{ empresa?.frecuencia_pago_label || suscripcion?.tipo_plan ||
+            suscripcion?.frecuencia_pago || 'No definida' }}</strong>
         </span>
       </div>
       <div class="mb-3 text-center px-2" *ngIf="suscripcion?.id && !editandoCliente">
@@ -1380,20 +1381,23 @@
             <option [ngValue]="null">No definido</option>
             <option *ngFor="let opt of opcionesTipoFactura" [ngValue]="opt.value">{{ opt.label }}</option>
           </select>
-          <button type="button" class="btn btn-sm btn-outline-primary"
-            [disabled]="guardandoTipoFactura" (click)="guardarTipoFactura()">
+          <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="guardandoTipoFactura"
+            (click)="guardarTipoFactura()">
             <span *ngIf="!guardandoTipoFactura"><i class="fas fa-save me-1"></i> Guardar</span>
             <span *ngIf="guardandoTipoFactura"><i class="fas fa-spinner fa-spin me-1"></i></span>
           </button>
         </div>
-        <small class="text-muted d-block mt-1">En suscripción: <strong>{{ etiquetaTipoFactura(suscripcion?.tipo_factura) }}</strong></small>
+        <small class="text-muted d-block mt-1">En suscripción: <strong>{{ etiquetaTipoFactura(suscripcion?.tipo_factura)
+            }}</strong></small>
       </div>
-      <p *ngIf="!suscripcion?.id_cliente && !reemplazandoCliente" class="text-muted mx-auto mb-0" style="max-width: 450px;">
+      <p *ngIf="!suscripcion?.id_cliente && !reemplazandoCliente" class="text-muted mx-auto mb-0"
+        style="max-width: 450px;">
         La empresa no tiene un cliente asignado, por favor asignar uno para continuar.
       </p>
       <p *ngIf="reemplazandoCliente" class="text-muted mx-auto mb-0" style="max-width: 520px;">
         <i class="fas fa-info-circle text-primary me-1"></i>
-        Elija <strong>vincular otro cliente</strong> o <strong>crear uno nuevo</strong>. La facturación de esta suscripción usará el cliente que confirme.
+        Elija <strong>vincular otro cliente</strong> o <strong>crear uno nuevo</strong>. La facturación de esta
+        suscripción usará el cliente que confirme.
       </p>
     </div>
 
@@ -1415,7 +1419,8 @@
               </div>
               <h5 class="fw-bold mb-2">Nuevo Cliente</h5>
               <p class="text-muted small mb-0">
-                {{ reemplazandoCliente ? 'Crear otro perfil de cliente para esta empresa y usarlo en la facturación.' : 'Crear un nuevo perfil de cliente automáticamente con los datos registrados.' }}
+                {{ reemplazandoCliente ? 'Crear otro perfil de cliente para esta empresa y usarlo en la facturación.' :
+                'Crear un nuevo perfil de cliente automáticamente con los datos registrados.' }}
               </p>
             </div>
             <div class="card-footer bg-primary text-white border-0 py-2 small fw-bold text-center">
@@ -1432,7 +1437,9 @@
               </div>
               <h5 class="fw-bold mb-2">Cliente Existente</h5>
               <p class="text-muted small mb-0">
-                {{ reemplazandoCliente ? 'Buscar entre los clientes de tu empresa (sesión) y vincularlo a la facturación.' : 'Vincular a un cliente ya registrado en tu empresa (sesión) mediante búsqueda por nombre o NIT.' }}
+                {{ reemplazandoCliente ? 'Buscar entre los clientes de tu empresa (sesión) y vincularlo a la
+                facturación.' : 'Vincular a un cliente ya registrado en tu empresa (sesión) mediante búsqueda por nombre
+                o NIT.' }}
               </p>
             </div>
             <div class="card-footer bg-success text-white border-0 py-2 small fw-bold text-center">
@@ -1474,8 +1481,10 @@
           </button>
           <button type="button" class="btn btn-success px-4 fw-bold shadow-sm"
             [disabled]="!clienteSeleccionado || saving" (click)="confirmarAsignacionCliente()">
-            <span *ngIf="!saving"><i class="fas fa-check me-2"></i> {{ reemplazandoCliente ? 'Confirmar cambio de cliente' : 'Confirmar asignación' }}</span>
-            <span *ngIf="saving"><i class="fas fa-spinner fa-spin me-2"></i> {{ reemplazandoCliente ? 'Actualizando...' : 'Asignando...' }}</span>
+            <span *ngIf="!saving"><i class="fas fa-check me-2"></i> {{ reemplazandoCliente ? 'Confirmar cambio de
+              cliente' : 'Confirmar asignación' }}</span>
+            <span *ngIf="saving"><i class="fas fa-spinner fa-spin me-2"></i> {{ reemplazandoCliente ? 'Actualizando...'
+              : 'Asignando...' }}</span>
           </button>
         </div>
       </div>
@@ -1488,8 +1497,8 @@
           <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
             <h5 class="fw-bold mb-0 text-primary">
               <i class="fas fa-file-invoice me-2"></i>Datos de Facturación del Cliente
-              <a *ngIf="clienteSeleccionado" [routerLink]="['/cliente/editar', clienteSeleccionado.id]" target="_blank" class="ms-1 text-muted"
-                tooltip="Editar Información del Cliente">
+              <a *ngIf="clienteSeleccionado" [routerLink]="['/cliente/editar', clienteSeleccionado.id]" target="_blank"
+                class="ms-1 text-muted" tooltip="Editar Información del Cliente">
                 <i class="fa-solid fa-arrow-up-right-from-square text-primary fa-xs"></i>
               </a>
             </h5>
@@ -1561,8 +1570,8 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h5 class="fw-bold mb-0">
           {{ esNuevoCliente ? 'Crear Nuevo Cliente' : 'Editar Información del Cliente' }}
-          <a *ngIf="!esNuevoCliente && clienteSeleccionado" [routerLink]="['/cliente/editar', clienteSeleccionado.id]" target="_blank"
-            class="ms-1 text-muted" tooltip="Editar Información del Cliente">
+          <a *ngIf="!esNuevoCliente && clienteSeleccionado" [routerLink]="['/cliente/editar', clienteSeleccionado.id]"
+            target="_blank" class="ms-1 text-muted" tooltip="Editar Información del Cliente">
             <i class="fa-solid fa-arrow-up-right-from-square text-primary fa-xs"></i>
           </a>
         </h5>
@@ -1605,17 +1614,18 @@
           <div class="col-12">
             <hr class="my-3">
             <h6 class="fw-bold mb-2 text-muted text-uppercase small">
-              <i class="fas fa-file-invoice-dollar me-2"></i>Frecuencia de pago y tipo de factura (suscripción / empresa)
+              <i class="fas fa-file-invoice-dollar me-2"></i>Frecuencia de pago y tipo de factura (suscripción /
+              empresa)
             </h6>
             <p class="small text-muted mb-3">
               Corresponden a la suscripción y a la empresa, no al cliente en ERP.
-              La <strong>frecuencia de pago</strong> y el <strong>tipo de factura</strong> se guardan con el botón principal del formulario («Guardar cambios» o «Crear y vincular cliente»).
+              La <strong>frecuencia de pago</strong> y el <strong>tipo de factura</strong> se guardan con el botón
+              principal del formulario («Guardar cambios» o «Crear y vincular cliente»).
             </p>
           </div>
           <div class="form-group col-12 col-md-6">
             <label class="form-label fw-bold small">Frecuencia de pago</label>
-            <select class="form-select" name="frecuencia_pago_facturacion_modal"
-              [(ngModel)]="empresa.frecuencia_pago"
+            <select class="form-select" name="frecuencia_pago_facturacion_modal" [(ngModel)]="empresa.frecuencia_pago"
               (ngModelChange)="onFrecuenciaPagoFacturacionModalChange($event)">
               <option value="">Seleccione frecuencia</option>
               <option value="Mensual">Mensual</option>
@@ -1630,7 +1640,8 @@
               <option [ngValue]="null">No definido</option>
               <option *ngFor="let opt of opcionesTipoFactura" [ngValue]="opt.value">{{ opt.label }}</option>
             </select>
-            <small class="text-muted d-block mt-1">En suscripción: <strong>{{ etiquetaTipoFactura(suscripcion?.tipo_factura) }}</strong></small>
+            <small class="text-muted d-block mt-1">En suscripción: <strong>{{
+                etiquetaTipoFactura(suscripcion?.tipo_factura) }}</strong></small>
           </div>
         </div>
 

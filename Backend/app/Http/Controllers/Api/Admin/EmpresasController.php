@@ -393,7 +393,7 @@ class EmpresasController extends Controller
             $diasPrueba = $plan->dias_periodo_prueba;
 
             $data = array_merge($data, [
-                'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'),
+                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
                 'estado_ultimo_pago' => null,
                 'fecha_ultimo_pago' => null,
                 'fecha_proximo_pago' => now()->addDays($diasPrueba),
