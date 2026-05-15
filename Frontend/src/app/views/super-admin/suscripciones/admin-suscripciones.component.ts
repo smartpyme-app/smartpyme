@@ -59,6 +59,7 @@ interface VentaBusquedaSuscripcion {
   condicion?: string;
   num_cotizacion?: string | null;
   documento_nombre?: string | null;
+  nombre_cliente?: string | null;
 }
 
 @Component({

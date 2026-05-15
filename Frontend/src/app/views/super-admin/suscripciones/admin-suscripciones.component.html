@@ -931,11 +931,11 @@
 
     <div *ngIf="pagoModalDocumentoOrigen === 'venta'" class="border rounded p-3 bg-light mb-3">
       <p class="small mb-2">
-        Busca por correlativo, número de cotización o ID de venta. Útil cuando el cliente
+        Busca por correlativo, número de cotización, ID de venta o <strong>nombre del cliente</strong> (persona o empresa). Útil cuando el cliente
         pagó por transferencia y la factura ya existe en el ERP sin orden N1CO.
       </p>
       <div class="input-group input-group-sm mb-2">
-        <input type="text" class="form-control" placeholder="Ej. correlativo, cotización o ID"
+        <input type="text" class="form-control" placeholder="Correlativo, cotización, ID o nombre de cliente"
           [(ngModel)]="ventaBusquedaPagoTexto" [ngModelOptions]="{ standalone: true }"
           (keyup.enter)="buscarVentasParaPagoModal()" />
         <button type="button" class="btn btn-outline-secondary" (click)="buscarVentasParaPagoModal()"
@@ -964,6 +964,7 @@
                 #{{ vv.correlativo }}</ng-container>
               <span class="text-muted"> · id {{ vv.id }}</span>
             </span>
+            <span *ngIf="vv.nombre_cliente" class="d-block text-muted small mt-1">{{ vv.nombre_cliente }}</span>
             <span class="d-block text-muted mt-1">
               {{ vv.fecha | date : 'mediumDate' }} · {{ vv.estado }} · ${{
               vv.total | number : '1.2-2'

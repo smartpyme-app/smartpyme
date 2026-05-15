@@ -585,14 +585,27 @@ class SuscripcionesController extends Controller
             ->where('id_cliente', $idCliente);
 
         if ($buscar !== '') {
-            $q->where(function ($sub) use ($buscar) {
+            $escaped = addcslashes($buscar, '%_\\');
+            $like = '%'.$escaped.'%';
+            $q->where(function ($sub) use ($buscar, $like) {
                 if (ctype_digit($buscar)) {
                     $sub->where('id', (int) $buscar)
-                        ->orWhere('correlativo', 'like', '%'.$buscar.'%');
+                        ->orWhere('correlativo', 'like', $like);
                 } else {
-                    $sub->where('correlativo', 'like', '%'.$buscar.'%')
-                        ->orWhere('num_cotizacion', 'like', '%'.$buscar.'%');
+                    $sub->where('correlativo', 'like', $like)
+                        ->orWhere('num_cotizacion', 'like', $like);
                 }
+                $sub->orWhereHas('cliente', function ($cq) use ($like) {
+                    $cq->where(function ($c2) use ($like) {
+                        $c2->where('nombre', 'like', $like)
+                            ->orWhere('apellido', 'like', $like)
+                            ->orWhere('nombre_empresa', 'like', $like)
+                            ->orWhereRaw(
+                                "CONCAT(COALESCE(TRIM(nombre), ''), ' ', COALESCE(TRIM(apellido), '')) LIKE ?",
+                                [$like]
+                            );
+                    });
+                });
             });
         } else {
             $q->where(function ($sub) {
@@ -602,12 +615,16 @@ class SuscripcionesController extends Controller
             });
         }
 
-        $filas = $q->with(['documento:id,nombre'])
+        $filas = $q->with([
+            'documento:id,nombre',
+            'cliente:id,nombre,apellido,nombre_empresa,tipo',
+        ])
             ->orderBy('fecha', 'desc')
             ->orderBy('id', 'desc')
             ->limit($limite)
             ->get([
                 'id',
+                'id_cliente',
                 'correlativo',
                 'fecha',
                 'estado',
@@ -631,6 +648,7 @@ class SuscripcionesController extends Controller
                 'condicion' => $v->condicion,
                 'num_cotizacion' => $v->num_cotizacion,
                 'documento_nombre' => $doc ? $doc->nombre : null,
+                'nombre_cliente' => $v->nombre_cliente,
             ];
         });
 
