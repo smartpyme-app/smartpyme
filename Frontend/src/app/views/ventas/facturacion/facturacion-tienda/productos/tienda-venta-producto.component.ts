@@ -2,7 +2,7 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { FormControl } from '@angular/forms';
-import { debounceTime, switchMap, filter  } from 'rxjs/operators';
+import { debounceTime, switchMap, filter, tap } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
@@ -29,6 +29,8 @@ export class TiendaVentaProductoComponent implements OnInit {
     public buscador:any = '';
     public loading:boolean = false;
 
+    readonly minCaracteresBusqueda = 3;
+
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe
@@ -39,7 +41,12 @@ export class TiendaVentaProductoComponent implements OnInit {
         this.searchControl.valueChanges
               .pipe(
                 debounceTime(500),
-                filter((query: string) => query.trim().length > 0),
+                tap((query: string | null) => {
+                  if (String(query ?? '').trim().length < this.minCaracteresBusqueda) {
+                    this.productos = [];
+                  }
+                }),
+                filter((query: string | null) => String(query ?? '').trim().length >= this.minCaracteresBusqueda),
                 switchMap((query: any) => {
                   const params: any = {};
                   if (this.venta?.id_bodega) {
