@@ -207,7 +207,8 @@ class SuscripcionesController extends Controller
                 'motivo_cancelacion' => 'nullable|string|max:500',
                 'comentarios' => 'nullable|string',
                 'monto_mensual' => 'nullable|numeric|min:0',
-                'monto_anual' => 'nullable|numeric|min:0'
+                'monto_anual' => 'nullable|numeric|min:0',
+                'metodo_pago' => 'nullable|in:' . config('constants.METODO_PAGO_N1CO') . ',' . config('constants.METODO_PAGO_TRANSFERENCIA')
             ]);
 
             $existingSuscripcion = Suscripcion::where('empresa_id', $request->empresa_id)
@@ -233,6 +234,7 @@ class SuscripcionesController extends Controller
             $suscripcion->monto = $validated['monto'];
             $suscripcion->fecha_proximo_pago = $validated['fecha_proximo_pago'];
             $suscripcion->fin_periodo_prueba = $validated['fin_periodo_prueba'];
+            $suscripcion->metodo_pago = $request->input('metodo_pago');
 
             if ($request->requiere_factura) {
                 $suscripcion->requiere_factura = true;
@@ -267,6 +269,7 @@ class SuscripcionesController extends Controller
 
             // Actualizar campos monto_mensual y monto_anual en la empresa
             $empresa = Empresa::findOrFail($validated['empresa_id']);
+            $empresa->sincronizarMontosDesdeSuscripcion($suscripcion->monto, $suscripcion->tipo_plan);
             if ($request->has('monto_mensual')) {
                 $empresa->monto_mensual = $request->input('monto_mensual');
             }
@@ -276,6 +279,10 @@ class SuscripcionesController extends Controller
             // Actualizar frecuencia_pago si viene en el request
             if ($request->has('frecuencia_pago')) {
                 $empresa->frecuencia_pago = $request->input('frecuencia_pago');
+            }
+            if ($request->has('metodo_pago')) {
+                $empresa->forma_pago = $request->input('metodo_pago');
+                $empresa->metodo_pago = $request->input('metodo_pago');
             }
             $empresa->save();
 
@@ -317,7 +324,8 @@ class SuscripcionesController extends Controller
                 'comentarios' => 'nullable|string',
                 'nit' => 'nullable|string',
                 'monto_mensual' => 'nullable|numeric|min:0',
-                'monto_anual' => 'nullable|numeric|min:0'
+                'monto_anual' => 'nullable|numeric|min:0',
+                'metodo_pago' => 'nullable|in:' . config('constants.METODO_PAGO_N1CO') . ',' . config('constants.METODO_PAGO_TRANSFERENCIA')
             ]);
 
             $suscripcion = Suscripcion::findOrFail($validated['id']);
@@ -329,10 +337,11 @@ class SuscripcionesController extends Controller
                 $suscripcion->tipo_plan = $plan->getTipoPlanAttribute();
                 $suscripcion->save();
 
-                $empresa = Empresa::findOrFail($suscripcion->usuario->empresa->id);
-                $empresa->plan = $plan->nombre;
-                $empresa->tipo_plan = $plan->getTipoPlanAttribute();
-                $empresa->save();
+                $empresaPlan = Empresa::findOrFail($suscripcion->empresa_id);
+                $empresaPlan->plan = $plan->nombre;
+                $empresaPlan->tipo_plan = $plan->getTipoPlanAttribute();
+                $empresaPlan->sincronizarMontosDesdeSuscripcion($suscripcion->monto, $suscripcion->tipo_plan);
+                $empresaPlan->save();
             }
 
             // fecha_proximo_pago no se edita aquí: solo vía «Pago recibido» o integraciones.
@@ -340,12 +349,15 @@ class SuscripcionesController extends Controller
                 'estado_ultimo_pago' => $request->input('estado_ultimo_pago'),
                 'estado' => $validated['estado'],
                 'usuario_id' => $validated['usuario_id'],
+                'plan_id' => $validated['plan_id'],
+                'tipo_plan' => $validated['tipo_plan'],
                 'monto' => $validated['monto'],
                 'fin_periodo_prueba' => $validated['fin_periodo_prueba'],
                 'nit' => $request->input('nit'),
                 'nombre_factura' => $request->input('nombre_factura'),
                 'direccion_factura' => $request->input('direccion_factura'),
                 'motivo_cancelacion' => $request->input('motivo_cancelacion'),
+                'metodo_pago' => $request->input('metodo_pago'),
             ];
             if ($request->exists('comentarios')) {
                 $datosActualizacion['comentarios'] = $request->input('comentarios');
@@ -354,9 +366,11 @@ class SuscripcionesController extends Controller
                 $datosActualizacion['tipo_factura'] = $request->input('tipo_factura') ?: null;
             }
             $suscripcion->update($datosActualizacion);
+            $suscripcion->refresh();
 
             // Actualizar campos monto_mensual y monto_anual en la empresa
             $empresa = Empresa::findOrFail($suscripcion->empresa_id);
+            $empresa->sincronizarMontosDesdeSuscripcion($suscripcion->monto, $suscripcion->tipo_plan);
             if ($request->has('monto_mensual')) {
                 $empresa->monto_mensual = $request->input('monto_mensual');
             }
@@ -366,6 +380,10 @@ class SuscripcionesController extends Controller
             // Actualizar frecuencia_pago si viene en el request
             if ($request->has('frecuencia_pago')) {
                 $empresa->frecuencia_pago = $request->input('frecuencia_pago');
+            }
+            if ($request->has('metodo_pago')) {
+                $empresa->forma_pago = $request->input('metodo_pago');
+                $empresa->metodo_pago = $request->input('metodo_pago');
             }
             $empresa->save();
 

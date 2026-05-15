@@ -182,7 +182,7 @@
               <span class="text-muted">{{ empresa?.tipo_plan }}</span>
             </td>
             <td class="text-center">
-              <span class="text-muted">{{ empresa?.metodo_pago ?? "-" }}</span>
+              <span class="text-muted">{{ getMetodoPagoNombre(empresa?.metodo_pago) }}</span>
             </td>
             <td>
               <span *ngIf="empresa.suscripcion">{{
@@ -351,6 +351,7 @@
         </p>
         <p><strong>Tipo Plan:</strong> {{ suscripcion?.tipo_plan }}</p>
         <p><strong>Monto:</strong> {{ suscripcion?.monto | currency }}</p>
+        <p><strong>Método de pago:</strong> {{ getMetodoPagoNombre(suscripcion?.metodo_pago) }}</p>
       </div>
       <div class="col-md-6">
         <p><strong>Estado:</strong> {{ suscripcion?.estado }}</p>
@@ -454,6 +455,16 @@
             <option value="Fallido">Fallido</option>
           </select>
           <small class="text-muted"> Estado actual del proceso de pago </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Método de pago:</label>
+          <select class="form-select" [(ngModel)]="suscripcion.metodo_pago" name="metodo_pago">
+            <option value="">Seleccione método</option>
+            <option value="n1co">N1co</option>
+            <option value="Transferencia">Transferencia</option>
+          </select>
+          <small class="text-muted">Método de pago para la suscripción</small>
         </div>
 
         <div class="form-group col-md-6 mb-3">
@@ -685,6 +696,16 @@
             <option value="Fallido">Fallido</option>
           </select>
           <small class="text-muted"> Estado actual del proceso de pago </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Método de pago:</label>
+          <select class="form-select" [(ngModel)]="nuevaSuscripcion.metodo_pago" name="metodo_pago">
+            <option value="">Seleccione método</option>
+            <option value="n1co">N1co</option>
+            <option value="Transferencia">Transferencia</option>
+          </select>
+          <small class="text-muted">Método de pago para la suscripción</small>
         </div>
 
         <div class="form-group col-md-6 mb-3">

@@ -234,6 +234,13 @@ export class AdminSuscripcionesComponent implements OnInit {
     this.loadCatalogos();
   }
 
+  public getMetodoPagoNombre(metodo: any): string {
+    if (!metodo) return '-';
+    if (metodo === '1' || metodo === 1 || metodo.toLowerCase() === 'n1co') return 'N1co';
+    if (metodo === '2' || metodo === 2 || metodo.toLowerCase() === 'transferencia') return 'Transferencia';
+    return metodo;
+  }
+
   private loadCatalogos() {
     this.paises = JSON.parse(localStorage.getItem('paises') || '[]');
     this.departamentos = JSON.parse(localStorage.getItem('departamentos') || '[]');

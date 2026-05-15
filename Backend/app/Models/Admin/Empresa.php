@@ -226,6 +226,22 @@ class Empresa extends Model
         return $tp !== '' ? $tp : '';
     }
 
+    /**
+     * Alinea monto_mensual o monto_anual con el cobro de la suscripción según tipo_plan.
+     */
+    public function sincronizarMontosDesdeSuscripcion($monto, ?string $tipoPlan): void
+    {
+        $monto = (float) $monto;
+        $tipo = mb_strtolower(trim((string) $tipoPlan));
+
+        if ($tipo === 'anual') {
+            $this->monto_anual = $monto;
+
+            return;
+        }
+
+        $this->monto_mensual = $monto;
+    }
 
     public function usuarios()
     {
