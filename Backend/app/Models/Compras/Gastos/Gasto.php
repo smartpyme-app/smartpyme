@@ -30,6 +30,7 @@ class Gasto extends Model {
         'id_proveedor',
         'sub_total',
         'renta_retenida',
+        'iva_retenido',
         'iva',
         'iva_percibido',
         'otros_impuestos',

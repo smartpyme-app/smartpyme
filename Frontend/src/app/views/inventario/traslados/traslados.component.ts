@@ -101,22 +101,22 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
         const empresa = this.apiService.auth_user()?.empresa;
         this.tieneShopify = !!empresa?.shopify_store_url;
 
-        // Inicializar filtros desde queryParams o valores por defecto
         const params = this.route.snapshot.queryParams;
         this.filtros = {
             search: params['search'] || '',
             id_bodega_de: +params['id_bodega_de'] || '',
             id_bodega_para: +params['id_bodega_para'] || '',
-            id_sucursal: +params['id_sucursal'] || '',
+            id_producto: +params['id_producto'] || '',
+            inicio: params['inicio'] || '',
+            fin: params['fin'] || '',
             estado: params['estado'] || '',
             concepto: params['concepto'] || '',
-            orden: params['orden'] || 'id',
+            orden: params['orden'] || 'created_at',
             direccion: params['direccion'] || 'desc',
             paginate: params['paginate'] || 10,
             page: params['page'] || 1,
         };
 
-        // Cargar datos iniciales
         this.filtrarTrasladosSinNavegar();
 
         // Suscribirse a cambios en queryParams
@@ -132,10 +132,12 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
                         search: params['search'] || '',
                         id_bodega_de: +params['id_bodega_de'] || '',
                         id_bodega_para: +params['id_bodega_para'] || '',
-                        id_sucursal: +params['id_sucursal'] || '',
+                        id_producto: +params['id_producto'] || '',
+                        inicio: params['inicio'] || '',
+                        fin: params['fin'] || '',
                         estado: params['estado'] || '',
                         concepto: params['concepto'] || '',
-                        orden: params['orden'] || 'id',
+                        orden: params['orden'] || 'created_at',
                         direccion: params['direccion'] || 'desc',
                         paginate: params['paginate'] || 10,
                         page: params['page'] || 1,
@@ -162,14 +164,16 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
         this.filtros.id_bodega_de = '';
         this.filtros.id_bodega_para = '';
         this.filtros.id_producto = '';
-        this.filtros.id_sucursal = '';
         this.filtros.estado = '';
         this.filtros.search = '';
         this.filtros.concepto = '';
+        this.filtros.inicio = '';
+        this.filtros.fin = '';
         this.filtros.orden = 'created_at';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
         this.filtros.page = 1;
+        this.productoFiltro = {};
 
         this.loading = true;
         this.filtrarTraslados();
