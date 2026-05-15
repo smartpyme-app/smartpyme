@@ -256,7 +256,7 @@ class ProductosController extends Controller
                     $q->orWhere('componente_quimico', 'like', "%$txt%");
                 }
             })
-            ->take(15)
+            ->take(50)
             ->get();
 
         return Response()->json($productos, 200);
@@ -278,7 +278,7 @@ class ProductosController extends Controller
                     $q->orWhere('componente_quimico', 'like', "%$query%");
                 }
             })
-            ->take(15)
+            ->take(50)
             ->get();
 
         return Response()->json($productos, 200);
@@ -309,7 +309,7 @@ class ProductosController extends Controller
                         $q->orWhere('componente_quimico', 'like', "%$query%");
                     }
                 })
-                ->take(15)
+                ->take(50)
                 ->get();
         } else {
             $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
@@ -322,7 +322,7 @@ class ProductosController extends Controller
                         $q->orWhere('componente_quimico', 'like', "%$query%");
                     }
                 })
-                ->take(15)
+                ->take(50)
                 ->get();
         }
 
