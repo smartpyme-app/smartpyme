@@ -20,6 +20,7 @@ return [
     'FORMAS_PAGO_GIFT_CARD' => [
         'Gift Card',
         'Gif card',
+        'Giftcard',
         'GIFTCARD',
         'Tarjeta de regalo',
         'Tarjeta regalo',
