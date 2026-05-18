@@ -1166,6 +1166,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 sku_correlativo_automatico: false, // obsoleto: migrar a barcode_correlativo_automatico; se lee por compatibilidad
                 barcode_correlativo_automatico: false, // Código de barras correlativo automático al crear productos
                 inventario_sumar_stock_busquedas: false, // Total de stock en listado de inventario según filtros
+                inventario_reporte_analisis_ventas_mensual: false, // Botón Excel: ventas ene→mes actual + inventario
                 cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
                 cotizacion_mostrar_imagenes_productos: false, // Mostrar imágenes de productos en cotizaciones
                 bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
@@ -1598,6 +1599,30 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.alertService.success(
                 'Configuración actualizada',
                 `Total de stock en listado de inventario ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    public isInventarioReporteAnalisisVentasMensual(): boolean {
+        return this.getCustomConfig('configuraciones', 'inventario_reporte_analisis_ventas_mensual', false);
+    }
+
+    public toggleInventarioReporteAnalisisVentasMensual() {
+        this.updateInventarioReporteAnalisisVentasMensual(!this.isInventarioReporteAnalisisVentasMensual());
+    }
+
+    public updateInventarioReporteAnalisisVentasMensual(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'inventario_reporte_analisis_ventas_mensual', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Reporte de inventario y ventas ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
             );
             const authUser = this.apiService.auth_user();
             if (authUser?.empresa?.id === this.empresa?.id) {

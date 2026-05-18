@@ -9,9 +9,15 @@ import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { PipesModule } from '@pipes/pipes.module';
 
 import { LoginComponent } from './../auth/login/login.component';
+import { LoginAbacoComponent } from './../auth/login/login-abaco.component';
+import { LoginEntryComponent } from './../auth/login/login-entry.component';
 import { LockComponent } from './../auth/lock/lock.component';
 import { RegisterComponent } from './../auth/register/register.component';
+import { RegisterAbacoComponent } from './../auth/register/register-abaco.component';
+import { RegisterEntryComponent } from './../auth/register/register-entry.component';
 import { PagoComponent } from './../auth/register/pago/pago.component';
+import { PagoAbacoComponent } from './../auth/register/pago/pago-abaco.component';
+import { PagoEntryComponent } from './../auth/register/pago/pago-entry.component';
 import { ForgetComponent } from './../auth/forget/forget.component';
 // import { ThreedsModalComponent } from './../auth/register/pago/modal/threeds-modal.component';
 import { PaymentSuccessComponent } from './../auth/register/pago/payment-success.component';
@@ -29,19 +35,31 @@ import { PaymentSuccessComponent } from './../auth/register/pago/payment-success
   ],
   declarations: [
   	LoginComponent,
+    LoginAbacoComponent,
+    LoginEntryComponent,
     LockComponent,
     ForgetComponent,
     RegisterComponent,
+    RegisterAbacoComponent,
+    RegisterEntryComponent,
     PagoComponent,
+    PagoAbacoComponent,
+    PagoEntryComponent,
     // ThreedsModalComponent,
     PaymentSuccessComponent
   ],
   exports: [
   	LoginComponent,
+    LoginAbacoComponent,
+    LoginEntryComponent,
     LockComponent,
     ForgetComponent,
     RegisterComponent,
+    RegisterAbacoComponent,
+    RegisterEntryComponent,
     PagoComponent,
+    PagoAbacoComponent,
+    PagoEntryComponent,
     PaymentSuccessComponent
   ]
 })

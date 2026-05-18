@@ -1,0 +1,340 @@
+/* Contenedor del copy hero: inset desde el borde izquierdo del panel (fondo sigue a ancho completo) */
+.login-abaco-hero-inner {
+  width: 100%;
+  max-width: 602.77px;
+  margin-left: clamp(0.75rem, 2.2vw + 0.35rem, 49.74px);
+  gap: 28px;
+  opacity: 1;
+  container-type: inline-size;
+  min-width: 0;
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .login-abaco-hero-inner {
+    margin-left: clamp(0.5rem, 1.4vw + 0.35rem, 2.25rem);
+  }
+}
+
+/* Tipografía fluida del hero (se reduce cuando el panel es estrecho) */
+.login-abaco-hero-title {
+  font-size: clamp(1.5rem, 2.6vw + 0.9rem, 3.5rem);
+  line-height: 1.1;
+}
+
+.login-abaco-hero-lede {
+  font-size: clamp(0.875rem, 1.15vw + 0.72rem, 1.1rem);
+  line-height: 1.6;
+}
+
+.login-abaco-hero-logo {
+  display: block;
+  height: clamp(18px, 2vw + 14px, 30px);
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left center;
+}
+
+@supports (font-size: 1cqi) {
+  .login-abaco-hero-title {
+    font-size: clamp(1.5rem, 5.5cqi + 0.85rem, 3.5rem);
+  }
+
+  .login-abaco-hero-lede {
+    font-size: clamp(0.875rem, 2.8cqi + 0.55rem, 1.1rem);
+  }
+
+  .login-abaco-hero-logo {
+    height: clamp(18px, 6cqi + 8px, 30px);
+  }
+}
+
+/* Logo más compacto en tablet (md–lg: columna hero más estrecha) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .login-abaco-hero-logo {
+    height: clamp(16px, 1.2vw + 10px, 22px);
+  }
+}
+
+@supports (font-size: 1cqi) {
+  @media (min-width: 768px) and (max-width: 991.98px) {
+    .login-abaco-hero-logo {
+      height: clamp(16px, 4cqi + 5px, 22px);
+    }
+  }
+}
+
+/* Panel izquierdo: fondo animado */
+.login-abaco-hero-panel-dynamic {
+  background-color: #f5f5f5;
+  background-image: url('/assets/img/abaco-background.gif');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+.login-abaco-hero-panel-static {
+  /* Imagen + velo oscuro encima (sube la opacidad del negro para oscurecer más) */
+  background-color: #141414;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.20)),
+    url('/assets/img/static-background-abaco.png');
+    /* url('/assets/img/static2-background-abaco.png'); */
+  background-repeat: no-repeat, no-repeat;
+  background-position: center, center;
+  background-size: cover, cover;
+}
+
+.login-abaco-hero-panel-static2 {
+  /* Imagen + velo oscuro encima (sube la opacidad del negro para oscurecer más) */
+  background-color: #141414;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.00), rgba(0, 0, 0, 0.00)),
+    url('/assets/img/static2-background-abaco.png');
+  background-repeat: no-repeat, no-repeat;
+  background-position: center, center;
+  background-size: cover, cover;
+}
+
+/* Colores del copy del hero según variante de panel */
+.login-abaco-hero-panel-dynamic .login-abaco-hero-title {
+  color: #1a1a1a;
+}
+
+.login-abaco-hero-panel-dynamic .login-abaco-hero-accent {
+  color: #534aeb;
+}
+
+.login-abaco-hero-panel-dynamic .login-abaco-hero-lede {
+  color: #555;
+}
+
+.login-abaco-hero-panel-static .login-abaco-hero-title,
+.login-abaco-hero-panel-static .login-abaco-hero-accent,
+.login-abaco-hero-panel-static .login-abaco-hero-lede,
+.login-abaco-hero-panel-static .login-abaco-hero-lede strong {
+  color: #ffffff;
+}
+
+/* Colores del copy del hero según variante de panel */
+.login-abaco-hero-panel-static2 .login-abaco-hero-title {
+  color: #1a1a1a;
+}
+
+.login-abaco-hero-panel-static2 .login-abaco-hero-accent {
+  color: #534aeb;
+}
+
+.login-abaco-hero-panel-static2 .login-abaco-hero-lede {
+  color: #555;
+}
+
+.login-abaco-hero-rule {
+  width: 60px;
+  height: 5px;
+}
+
+.login-abaco-hero-panel-dynamic .login-abaco-hero-rule {
+  background-color: #534aeb;
+}
+
+.login-abaco-hero-panel-static .login-abaco-hero-rule {
+  background-color: #ffffff;
+}
+
+.login-abaco-hero-panel-static2 .login-abaco-hero-rule {
+  background-color: #ffffff;
+}
+
+/* Columna formulario: contenedor para cqi + scroll si la ventana es baja */
+.login-abaco-form-col {
+  container-type: inline-size;
+  min-width: 0;
+  min-height: 0;
+}
+
+.login-abaco-card {
+  width: 100%;
+  max-width: min(620px, 100%);
+  flex-shrink: 0;
+}
+
+.login-abaco-form-heading {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  vertical-align: middle;
+  font-size: clamp(1.375rem, 2.2vw + 0.75rem, 2.375rem);
+}
+
+.login-abaco-form-brand-icon {
+  display: block;
+  height: clamp(18px, 1.8vw + 10px, 24px);
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.login-abaco-footer-attribution__label {
+  font-size: clamp(0.625rem, 1.1vw + 0.5rem, 0.75rem);
+}
+
+.login-abaco-footer-attribution__logo {
+  width: auto;
+  max-width: min(150px, 100%);
+  height: auto;
+  vertical-align: middle;
+}
+
+@supports (font-size: 1cqi) {
+  .login-abaco-form-heading {
+    font-size: clamp(1.375rem, 5.2cqi + 0.5rem, 2.375rem);
+  }
+
+  .login-abaco-form-brand-icon {
+    height: clamp(18px, 3.5cqi + 6px, 24px);
+  }
+
+  .login-abaco-footer-attribution__label {
+    font-size: clamp(0.625rem, 1.8cqi + 0.45rem, 0.75rem);
+  }
+
+  .login-abaco-footer-attribution__logo {
+    max-width: min(275px, 28cqi);
+  }
+}
+
+@media (max-height: 700px) {
+  .login-abaco-form-col {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .login-abaco-card {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .login-abaco-card .card-body {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+}
+
+/* Bloque aviso login Ábaco (Figma) */
+.login-abaco-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  max-width: 620px;
+  min-height: 78px;
+  padding: 14px;
+  background-color: #b1adff26;
+  border-radius: 12px;
+  opacity: 1;
+  box-sizing: border-box;
+}
+
+.login-abaco-notice__title {
+  color: #1a1a1a;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.login-abaco-notice__text {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  letter-spacing: -0.01em;
+  vertical-align: middle;
+  color: #534aeb;
+  margin: 0;
+}
+
+/* Etiquetas de campos (Figma: Poppins Medium) */
+.login-abaco-field-label {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+/* Checkbox "Recordarme" (Figma: Poppins Regular) */
+.login-abaco-check-label {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 100%;
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+
+/* Enlace "Olvidé mi contraseña" (Figma) */
+.login-abaco-link-forgot {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0;
+  text-align: right;
+  vertical-align: middle;
+  color: #534aeb;
+}
+
+/* Botón principal (Figma: Inter Semi Bold) */
+.login-abaco-submit-btn {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0;
+  vertical-align: middle;
+  background-color: #534aeb;
+  border-color: #534aeb;
+  border-radius: 6px;
+}
+
+.login-abaco-submit-btn:hover:not(:disabled),
+.login-abaco-submit-btn:focus-visible:not(:disabled) {
+  background-color: #4539d4;
+  border-color: #4539d4;
+  color: #fff;
+}
+
+/* Pie registro (Figma: Poppins Medium) */
+.login-abaco-register-hint {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0;
+  text-align: center;
+  vertical-align: middle;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.login-abaco-register-hint__link {
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  vertical-align: inherit;
+  color: #534aeb;
+}
+
+/* Pie "Desarrollado por": debajo del formulario, sin pegarlo al borde inferior del viewport */
+.login-abaco-footer-attribution {
+  margin-top: 1.25rem;
+  padding-bottom: 4rem;
+}
