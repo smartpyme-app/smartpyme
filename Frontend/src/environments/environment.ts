@@ -10,7 +10,7 @@ export const environment = {
   // API_URL: 'https://apiconta.smartpyme.site',
   // API_URL: 'https://apitest.smartpyme.site',
   APP_URL: 'http://localhost:4200',
-  goApiUrl:    'http://localhost:8080',     // la nueva API de Go
+  goApiUrl: 'http://localhost:8080',     // la nueva API de Go
   goApiSecret: 'f93a080d7ca3dc5842f6112f7053ef3ada44ce213f04a6cc62c3c31d15beee63'
 };
 

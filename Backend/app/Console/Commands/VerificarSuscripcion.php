@@ -132,15 +132,25 @@ class VerificarSuscripcion extends Command
     private function manejarSuscripcionVencida(Suscripcion $suscripcion, int $diasVencidos)
     {
         $diasProrroga = max(1, (int) config('constants.DIAS_PRORROGA_SUSCRIPCION'));
+        $diasInactivacion = max($diasProrroga + 1, (int) config('constants.DIAS_INACTIVACION_EMPRESA_SUSCRIPCION', 30));
         $inactivo = config('constants.ESTADO_SUSCRIPCION_INACTIVO');
 
         if ($suscripcion->estado === $inactivo) {
             return;
         }
 
-        // Prórroga = N días con acceso; suspensión desde el día N+1 si siguen saldos pendientes con el sistema.
-        if ($diasVencidos > $diasProrroga) {
+        // Soft churn: la inactivación real se aplica al llegar al umbral configurado (ej. día 30).
+        if ($diasVencidos >= $diasInactivacion) {
             $this->desactivarCuenta($suscripcion);
+
+            return;
+        }
+
+        // Fuera de prórroga y antes de inactivación: mantener en limbo sin cambiar estado.
+        if ($diasVencidos > $diasProrroga) {
+            if ($diasVencidos === ($diasProrroga + 1)) {
+                $this->enviarNotificacionVencimiento($suscripcion, 'desactivacion');
+            }
 
             return;
         }
@@ -160,15 +170,9 @@ class VerificarSuscripcion extends Command
 
         $limitePrimera = max(1, (int) floor($diasProrroga / 3));
 
-        if ($diasVencidos >= 1 && $diasVencidos < $limitePrimera + 1) {
+        if ($diasVencidos >= 1 && $diasVencidos <= $limitePrimera) {
             $this->enviarNotificacionVencimiento($suscripcion, 'primera_alerta');
-        } elseif ($diasVencidos >= $limitePrimera + 1 && $diasVencidos < $diasProrroga - 1) {
-            $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
-        } elseif ($diasVencidos >= $diasProrroga - 1 && $diasVencidos < $diasProrroga) {
-            $this->enviarNotificacionVencimiento($suscripcion, 'cancelado');
-            $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_CANCELADO')]);
-        } elseif ($diasVencidos === $diasProrroga) {
-            // Último día de prórroga antes del bloqueo (día N+1 desactiva; p. ej. N=10 → día 10 aún en gracia).
+        } else {
             $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
         }
     }
