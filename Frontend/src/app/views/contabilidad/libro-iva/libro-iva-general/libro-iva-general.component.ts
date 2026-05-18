@@ -283,16 +283,6 @@ export class LibroIvaGeneralComponent implements OnInit {
     );
   }
 
-  /** Evita fila duplicada «Gravado (resumen)» cuando ya hay desglose por tarifa. */
-  private filtrarVentasPorImpuestoSoloTarifas(
-    rows: unknown[]
-  ): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
-    return rows.filter((row: any) => {
-      const et = String(row?.etiqueta ?? '').trim().toLowerCase();
-      return !(et.includes('gravado') && et.includes('resumen'));
-    }) as { tarifa: string; etiqueta: string; base: number; iva: number }[];
-  }
-
   get resumenTotales(): { ventas: number; compras: number; gastos: number } {
     const t = this.fiscalResumen?.totales;
     return {
@@ -303,8 +293,7 @@ export class LibroIvaGeneralComponent implements OnInit {
   }
 
   get ventasPorImpuestoResumen(): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
-    const raw = Array.isArray(this.fiscalResumen?.ventas_por_impuesto) ? this.fiscalResumen.ventas_por_impuesto : [];
-    return this.filtrarVentasPorImpuestoSoloTarifas(raw);
+    return Array.isArray(this.fiscalResumen?.ventas_por_impuesto) ? this.fiscalResumen.ventas_por_impuesto : [];
   }
 
   /** Suma bases + IVA del desglose (debe cuadrar con totales.ventas). */
