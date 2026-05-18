@@ -301,6 +301,10 @@ export class LibroIvaGeneralComponent implements OnInit {
     return this.ventasPorImpuestoResumen.reduce((s, r) => s + Number(r.base ?? 0) + Number(r.iva ?? 0), 0);
   }
 
+  get desgloseCuadraConTotalVentas(): boolean {
+    return Math.abs(this.sumaVentasDesglose - this.resumenTotales.ventas) < 0.02;
+  }
+
   get resumenIva(): {
     iva_a_favor: number;
     iva_en_contra: number;

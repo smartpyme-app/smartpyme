@@ -328,11 +328,17 @@
                     <tfoot class="border-top">
                       <tr class="fw-semibold">
                         <td class="text-dark">Suma (base + IVA)</td>
-                        <td colspan="2" class="text-end text-nowrap">{{ sumaVentasDesglose | currency }}</td>
+                        <td colspan="2" class="text-end text-nowrap" [class.text-danger]="!desgloseCuadraConTotalVentas">{{ sumaVentasDesglose | currency }}</td>
                       </tr>
                     </tfoot>
                   </table>
-                  <p class="text-muted small px-2 pb-2 mb-0">Debe coincidir con <strong>Total ventas</strong> del periodo.</p>
+                  @if (desgloseCuadraConTotalVentas) {
+                    <p class="text-muted small px-2 pb-2 mb-0">Coincide con <strong>Total ventas</strong> del periodo.</p>
+                  } @else {
+                    <p class="text-danger small px-2 pb-2 mb-0">
+                      La suma no coincide con Total ventas ({{ resumenTotales.ventas | currency }}). Revise ventas sin filas en venta_impuestos.
+                    </p>
+                  }
                 </div>
               </div>
             </div>

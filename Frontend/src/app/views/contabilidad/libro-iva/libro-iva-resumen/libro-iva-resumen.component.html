@@ -1,52 +1,44 @@
-<div class="card bg-white border-0 mb-3">
-  <div class="card-body">
-    <div class="row align-items-center flex-wrap gy-2">
-      <div class="col-md-8">
-        <h3 class="h5 text-dark mb-1">Resumen fiscal</h3>
-        <p class="text-muted small mb-0">Totales del periodo al estilo del panel principal, IVA y pago a cuenta cuando aplica.</p>
-      </div>
-    </div>
-  </div>
-</div>
+<section class="bg-white p-4 rounded mb-3">
+  <h2 class="h5 text-dark mb-1">Resumen fiscal</h2>
+          <p class="text-muted small mb-0">Totales según libros fiscales de ventas, compras y gastos; IVA por impuesto desde venta_impuestos.</p>
+</section>
 
-<div class="card bg-white border-0 shadow-sm mb-3">
-  <div class="card-body">
-    <div class="d-flex flex-wrap gap-2 mb-0">
-      <div class="d-flex gap-2 flex-wrap">
-        <button class="btn tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/contribuyentes">Contribuyentes</button>
-        <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
-        <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras">Compras</button>
-        <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-anulados">Anulados</button>
-        <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras-sujetos-excluidos">Sujetos Excluidos</button>
-        <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/resumen">Resumen</button>
-      </div>
-      <div class="ms-auto d-flex flex-wrap gap-2">
-        <select class="form-select" style="min-width: 10rem;" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadResumen()">
-          <option value="">Todas las sucursales</option>
-          @for (sucursal of sucursales; track sucursal.id || $index) {
-            <option [value]="sucursal.id">{{ sucursal.nombre }}</option>
-          }
-        </select>
-        <select class="form-select" style="min-width: 7rem;" name="mes" [(ngModel)]="filtros.mes" (change)="setTime()">
-          <option [value]="1">Enero</option>
-          <option [value]="2">Febrero</option>
-          <option [value]="3">Marzo</option>
-          <option [value]="4">Abril</option>
-          <option [value]="5">Mayo</option>
-          <option [value]="6">Junio</option>
-          <option [value]="7">Julio</option>
-          <option [value]="8">Agosto</option>
-          <option [value]="9">Septiembre</option>
-          <option [value]="10">Octubre</option>
-          <option [value]="11">Noviembre</option>
-          <option [value]="12">Diciembre</option>
-        </select>
-        <select class="form-select" style="min-width: 5.5rem;" name="anio" [(ngModel)]="filtros.anio" (change)="setTime()">
-          @for (year of years; track year) {
-            <option [value]="year">{{ year }}</option>
-          }
-        </select>
-      </div>
+<div class="bg-white p-4 rounded mb-3">
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/contribuyentes">Contribuyentes</button>
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras">Compras</button>
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-anulados">Anulados</button>
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras-sujetos-excluidos">Sujetos Excluidos</button>
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/resumen">Resumen</button>
+    </div>
+    <div class="ms-auto d-flex gap-2 align-items-center flex-shrink-0">
+      <select class="form-select" style="width: auto; min-width: 10rem;" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadResumen()">
+        <option [ngValue]="''">Todas las sucursales</option>
+        @for (sucursal of sucursales; track sucursal.id || $index) {
+          <option [ngValue]="sucursal.id">{{ sucursal.nombre }}</option>
+        }
+      </select>
+      <select class="form-select" style="width: auto;" name="mes" [(ngModel)]="filtros.mes" (change)="setTime()">
+        <option [ngValue]="1">Enero</option>
+        <option [ngValue]="2">Febrero</option>
+        <option [ngValue]="3">Marzo</option>
+        <option [ngValue]="4">Abril</option>
+        <option [ngValue]="5">Mayo</option>
+        <option [ngValue]="6">Junio</option>
+        <option [ngValue]="7">Julio</option>
+        <option [ngValue]="8">Agosto</option>
+        <option [ngValue]="9">Septiembre</option>
+        <option [ngValue]="10">Octubre</option>
+        <option [ngValue]="11">Noviembre</option>
+        <option [ngValue]="12">Diciembre</option>
+      </select>
+      <select class="form-select" style="width: auto; min-width: 5rem;" name="anio" [(ngModel)]="filtros.anio" (change)="setTime()">
+        @for (year of years; track year) {
+          <option [ngValue]="year">{{ year }}</option>
+        }
+      </select>
     </div>
   </div>
 </div>
@@ -131,11 +123,17 @@
             <tfoot class="border-top">
               <tr class="fw-semibold">
                 <td class="text-dark">Suma (base + IVA)</td>
-                <td colspan="2" class="text-end text-nowrap">{{ sumaVentasDesglose | currency }}</td>
+                <td colspan="2" class="text-end text-nowrap" [class.text-danger]="!desgloseCuadraConTotalVentas">{{ sumaVentasDesglose | currency }}</td>
               </tr>
             </tfoot>
           </table>
-          <p class="text-muted small px-2 pb-2 mb-0">Debe coincidir con <strong>Total ventas</strong> del periodo.</p>
+          @if (desgloseCuadraConTotalVentas) {
+            <p class="text-muted small px-2 pb-2 mb-0">Suma alineada con <strong>Total ventas</strong> (libros contribuyentes + consumidor final).</p>
+          } @else {
+            <p class="text-danger small px-2 pb-2 mb-0">
+              La suma (base + IVA) no coincide con Total ventas del libro ({{ resumenTotales.ventas | currency }}). Revise venta_impuestos y notas de crédito del periodo.
+            </p>
+          }
         </div>
       </div>
     </div>
