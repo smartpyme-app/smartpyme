@@ -27,8 +27,13 @@
           <div class="card border-0 shadow-sm h-100" [class.border-warning]="comanda.estado === 'pendiente'" [class.border-info]="comanda.estado === 'preparando'">
             <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
               <strong>{{ comanda.numero_comanda }}</strong>
-              <span class="badge" [class.bg-warning]="comanda.estado === 'pendiente'" [class.bg-info]="comanda.estado === 'preparando'">
-                {{ comanda.estado === 'pendiente' ? 'Pendiente' : 'Preparando' }}
+              <span>
+                <span class="badge bg-secondary me-1" *ngIf="comanda.destino === 'cocina'">Cocina</span>
+                <span class="badge bg-info text-dark me-1" *ngIf="comanda.destino === 'barra'">Barra</span>
+                <span class="badge bg-danger me-1" *ngIf="comanda.destino === 'eliminacion'">Eliminado</span>
+                <span class="badge" [class.bg-warning]="comanda.estado === 'pendiente'" [class.bg-info]="comanda.estado === 'preparando'">
+                  {{ comanda.estado === 'pendiente' ? 'Pendiente' : 'Preparando' }}
+                </span>
               </span>
             </div>
             <div class="card-body py-2">
@@ -61,7 +66,12 @@
       <h6 class="mb-2">Listas para servir</h6>
       <div class="list-group">
         <div *ngFor="let comanda of getComandasListas()" class="list-group-item d-flex justify-content-between align-items-center">
-          <span><strong>{{ comanda.numero_comanda }}</strong> — Mesa {{ comanda.sesion?.mesa?.numero }}</span>
+          <span>
+            <strong>{{ comanda.numero_comanda }}</strong> — Mesa {{ comanda.sesion?.mesa?.numero }}
+            <span class="badge bg-secondary ms-1" *ngIf="comanda.destino === 'cocina'">Cocina</span>
+            <span class="badge bg-info text-dark ms-1" *ngIf="comanda.destino === 'barra'">Barra</span>
+            <span class="badge bg-danger ms-1" *ngIf="comanda.destino === 'eliminacion'">Eliminado</span>
+          </span>
           <button type="button" class="btn btn-sm btn-outline-secondary" (click)="imprimir(comanda)" title="Reimprimir">
             <i class="fa fa-print"></i>
           </button>

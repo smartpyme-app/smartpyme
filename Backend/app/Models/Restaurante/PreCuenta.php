@@ -49,6 +49,8 @@ class PreCuenta extends Model
 
     public function ordenDetalles()
     {
-        return $this->belongsToMany(OrdenDetalle::class, 'pre_cuenta_orden_detalle', 'pre_cuenta_id', 'orden_detalle_id');
+        return $this->belongsToMany(OrdenDetalle::class, 'pre_cuenta_orden_detalle', 'pre_cuenta_id', 'orden_detalle_id')
+            ->withPivot('cantidad')
+            ->withTimestamps();
     }
 }

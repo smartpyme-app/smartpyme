@@ -4,9 +4,12 @@ namespace App\Models\Restaurante;
 
 use App\Models\Inventario\Producto;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class OrdenDetalle extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'orden_detalle_restaurante';
 
     protected $fillable = [
@@ -16,10 +19,12 @@ class OrdenDetalle extends Model
         'precio_unitario',
         'notas',
         'enviado_cocina',
+        'enviado_barra',
     ];
 
     protected $casts = [
         'enviado_cocina' => 'boolean',
+        'enviado_barra' => 'boolean',
     ];
 
     public function sesion()
