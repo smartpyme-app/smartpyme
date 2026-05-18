@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\Log;
 
 class MhDteProxyController extends Controller
 {
-    public function __construct(
-        protected MhGovSvGatewayService $gateway
-    ) {}
+    protected $gateway;
+
+    public function __construct(MhGovSvGatewayService $gateway)
+    {
+        $this->gateway = $gateway;
+    }
 
     protected function empresaAutenticada(): Empresa
     {

@@ -134,6 +134,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/planes.php');
 	require base_path('routes/modulos/super-admin/pagos.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
+	require base_path('routes/modulos/super-admin/clientes.php');
 
 	//Crequire base_path('rhatbot
 	require base_path('routes/modulos/chat/chat.php');

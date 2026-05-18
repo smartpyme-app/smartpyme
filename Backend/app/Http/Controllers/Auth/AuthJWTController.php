@@ -344,7 +344,7 @@ class AuthJWTController extends Controller
                 'plan_id' => $plan->id,
                 'usuario_id' => $usuario->id,
                 'tipo_plan' => $empresa->tipo_plan, // Guarda la frecuencia: Mensual, Trimestral o Anual
-                'estado' => config('constants.ESTADO_SUSCRIPCION_PRUEBA'),
+                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
                 'monto' => $montoSuscripcion, // Total a pagar según frecuencia (con descuentos aplicados)
                 'id_pago' => null,
                 'id_orden' => null,
@@ -750,37 +750,25 @@ class AuthJWTController extends Controller
         // Preservar el monto con descuento si ya viene en los datos
         $monto = $data['monto'] ?? $plan->precio;
 
-        if ($plan && $plan->permite_periodo_prueba) {
-            $diasPrueba = $plan->dias_periodo_prueba;
-            
-            // Preservar fin_periodo_prueba si ya viene en los datos (útil para códigos promocionales)
-            $finPeriodoPrueba = $data['fin_periodo_prueba'] ?? now()->addDays($diasPrueba);
+        // Ya no ocuparemos el período de prueba del plan, ahora solo se le dará 1 día
+        $diasGracia = 1;
+        $finPeriodoPrueba = now()->addDays($diasGracia);
 
-            $data = array_merge($data, [
-                'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'), // Cambiar estado a 'prueba'
-                'estado_ultimo_pago' => null,
-                'fecha_ultimo_pago' => null, // No hay pago inicial en período de prueba
-                'fecha_proximo_pago' => now()->addDays($diasPrueba), // Próximo pago al finalizar la prueba
-                'fin_periodo_prueba' => $finPeriodoPrueba,
-                'monto' => $monto, // Usar el monto con descuento aplicado
-                'intentos_cobro' => 0,
-                'ultimo_intento_cobro' => null,
-                'historial_pagos' => null,
-                'requiere_factura' => false,
-                'nit' => null,
-                'nombre_factura' => null,
-                'direccion_factura' => null
-            ]);
-        } else {
-            // Si el plan no permite período de prueba, mantener la configuración original
-            $data = array_merge($data, [
-                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
-                'fecha_ultimo_pago' => null,
-                'fecha_proximo_pago' => null,
-                'fin_periodo_prueba' => null,
-                'monto' => $monto // Usar el monto con descuento aplicado
-            ]);
-        }
+        $data = array_merge($data, [
+            'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
+            'estado_ultimo_pago' => null,
+            'fecha_ultimo_pago' => null, 
+            'fecha_proximo_pago' => now()->addDays($diasGracia), // Próximo pago en 1 día
+            'fin_periodo_prueba' => $finPeriodoPrueba,
+            'monto' => $monto,
+            'intentos_cobro' => 0,
+            'ultimo_intento_cobro' => null,
+            'historial_pagos' => null,
+            'requiere_factura' => false,
+            'nit' => null,
+            'nombre_factura' => null,
+            'direccion_factura' => null
+        ]);
 
         return $this->suscripcionService->createSuscripcion($data);
     }

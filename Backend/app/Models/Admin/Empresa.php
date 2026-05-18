@@ -174,7 +174,8 @@ class Empresa extends Model
         'acces_chatbot_whatsapp',
         'shopify_webhook_url',
         'status_conexion_shopify',
-        'is_current_user_connected_to_shopify'
+        'is_current_user_connected_to_shopify',
+        'frecuencia_pago_label',
     ];
 
     public function limiteUsuarios()
@@ -211,6 +212,36 @@ class Empresa extends Model
         return $this->pagos->count();
     }
 
+    /**
+     * Texto para UI: prioriza frecuencia_pago de la empresa y usa tipo_plan como respaldo.
+     */
+    public function getFrecuenciaPagoLabelAttribute(): string
+    {
+        $fp = trim((string) ($this->attributes['frecuencia_pago'] ?? ''));
+        if ($fp !== '') {
+            return $fp;
+        }
+        $tp = trim((string) ($this->attributes['tipo_plan'] ?? ''));
+
+        return $tp !== '' ? $tp : '';
+    }
+
+    /**
+     * Alinea monto_mensual o monto_anual con el cobro de la suscripción según tipo_plan.
+     */
+    public function sincronizarMontosDesdeSuscripcion($monto, ?string $tipoPlan): void
+    {
+        $monto = (float) $monto;
+        $tipo = mb_strtolower(trim((string) $tipoPlan));
+
+        if ($tipo === 'anual') {
+            $this->monto_anual = $monto;
+
+            return;
+        }
+
+        $this->monto_mensual = $monto;
+    }
 
     public function usuarios()
     {
@@ -684,6 +715,7 @@ class Empresa extends Model
                 'ticket_en_pdf' => false,
                 'bloquear_cotizaciones_vendedores' => false,
                 'dte_mostrar_descripcion_producto' => true,
+                'inventario_reporte_analisis_ventas_mensual' => false,
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados
@@ -763,6 +795,14 @@ class Empresa extends Model
     public function isInventarioSumarStockBusquedasHabilitado(): bool
     {
         return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_sumar_stock_busquedas', false);
+    }
+
+    /**
+     * Reporte Excel de inventario vs ventas desde enero del año hasta el mes de la descarga.
+     */
+    public function isInventarioReporteAnalisisVentasMensualHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_reporte_analisis_ventas_mensual', false);
     }
 
     /**

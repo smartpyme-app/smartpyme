@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         'App\Console\Commands\Notificaciones',
         'App\Console\Commands\VerificarSuscripcion',
+        'App\Console\Commands\GenerarFacturasSuscripciones',
         'App\Console\Commands\cliente360\CalcularClientes360Command',
     ];
 
@@ -81,6 +82,11 @@ class Kernel extends ConsoleKernel
             ->daily()
             ->at('01:00')
             ->appendOutputTo(storage_path('logs/verificar-suscripciones.log'));
+
+        $schedule->command('facturas:generar-suscripciones')
+            ->monthlyOn(1, '08:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/facturas-generar-suscripciones.log'));
 
         $schedule->command('suscripciones:enviar-recordatorios-correo')
             ->dailyAt('08:00')
