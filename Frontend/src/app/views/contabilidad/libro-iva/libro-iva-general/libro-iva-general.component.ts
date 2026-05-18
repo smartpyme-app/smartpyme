@@ -20,10 +20,12 @@ import * as moment from 'moment';
   imports: [CommonModule, FormsModule, LibroIvaCrDetalleTableComponent],
 })
 export class LibroIvaGeneralComponent implements OnInit {
-  activoSeccion: 'ventas' | 'compras' | 'retenciones' = 'ventas';
+  activoSeccion: 'ventas' | 'compras' | 'retenciones' | 'resumen' = 'ventas';
   ventas: any[] = [];
   compras: any[] = [];
   retenciones: any[] = [];
+  /** Respuesta API resumen-fiscal (pestaña Resumen). */
+  fiscalResumen: any = null;
   /** Totales numéricos del backend (solo CR). */
   totalesVentasCr: Record<string, number> | null = null;
   totalesComprasCr: Record<string, number> | null = null;
@@ -75,6 +77,20 @@ export class LibroIvaGeneralComponent implements OnInit {
   loadAll() {
     this.loading = true;
     const cr = this.esCostaRicaFe();
+
+    if (this.activoSeccion === 'resumen') {
+      this.apiService.getAll('libro-iva/resumen-fiscal', this.filtros).subscribe(
+        (data: any) => {
+          this.fiscalResumen = data;
+          this.loading = false;
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
+      return;
+    }
 
     if (this.activoSeccion === 'ventas') {
       if (cr) {
@@ -265,5 +281,63 @@ export class LibroIvaGeneralComponent implements OnInit {
       (data: Blob) => this.descargarBlob(data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Libro-retenciones.xlsx'),
       (error) => this.manejarErrorDescarga(error)
     );
+  }
+
+  /** Evita fila duplicada «Gravado (resumen)» cuando ya hay desglose por tarifa. */
+  private filtrarVentasPorImpuestoSoloTarifas(
+    rows: unknown[]
+  ): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
+    return rows.filter((row: any) => {
+      const et = String(row?.etiqueta ?? '').trim().toLowerCase();
+      return !(et.includes('gravado') && et.includes('resumen'));
+    }) as { tarifa: string; etiqueta: string; base: number; iva: number }[];
+  }
+
+  get resumenTotales(): { ventas: number; compras: number; gastos: number } {
+    const t = this.fiscalResumen?.totales;
+    return {
+      ventas: Number(t?.ventas ?? 0),
+      compras: Number(t?.compras ?? 0),
+      gastos: Number(t?.gastos ?? 0),
+    };
+  }
+
+  get ventasPorImpuestoResumen(): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
+    const raw = Array.isArray(this.fiscalResumen?.ventas_por_impuesto) ? this.fiscalResumen.ventas_por_impuesto : [];
+    return this.filtrarVentasPorImpuestoSoloTarifas(raw);
+  }
+
+  /** Suma bases + IVA del desglose (debe cuadrar con totales.ventas). */
+  get sumaVentasDesglose(): number {
+    return this.ventasPorImpuestoResumen.reduce((s, r) => s + Number(r.base ?? 0) + Number(r.iva ?? 0), 0);
+  }
+
+  get resumenIva(): {
+    iva_a_favor: number;
+    iva_en_contra: number;
+    diferencia_estimada_pago_iva: number;
+    credito_fiscal_compras: number | null;
+    credito_fiscal_gastos: number | null;
+    credito_fiscal_devoluciones_compras: number | null;
+  } {
+    const i = this.fiscalResumen?.iva;
+    return {
+      iva_a_favor: Number(i?.iva_a_favor ?? 0),
+      iva_en_contra: Number(i?.iva_en_contra ?? 0),
+      diferencia_estimada_pago_iva: Number(i?.diferencia_estimada_pago_iva ?? 0),
+      credito_fiscal_compras: i?.credito_fiscal_compras != null ? Number(i.credito_fiscal_compras) : null,
+      credito_fiscal_gastos: i?.credito_fiscal_gastos != null ? Number(i.credito_fiscal_gastos) : null,
+      credito_fiscal_devoluciones_compras:
+        i?.credito_fiscal_devoluciones_compras != null ? Number(i.credito_fiscal_devoluciones_compras) : null,
+    };
+  }
+
+  get pagoCuentaIvaResumen(): { aplica: boolean; monto: number; descripcion: string } {
+    const p = this.fiscalResumen?.pago_a_cuenta_iva;
+    return {
+      aplica: Boolean(p?.aplica),
+      monto: Number(p?.monto ?? 0),
+      descripcion: String(p?.descripcion ?? ''),
+    };
   }
 }

@@ -5,6 +5,7 @@ import { LayoutComponent } from '@layout/layout.component';
 import { ConsumidorFinalComponent } from '@views/contabilidad/libro-iva/consumidor-final/consumidor-final.component';
 import { ContribuyentesComponent } from '@views/contabilidad/libro-iva/contribuyentes/contribuyentes.component';
 import { LibroIvaGeneralComponent } from '@views/contabilidad/libro-iva/libro-iva-general/libro-iva-general.component';
+import { LibroIvaResumenComponent } from '@views/contabilidad/libro-iva/libro-iva-resumen/libro-iva-resumen.component';
 import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-compras.component';
 import { LibroAnuladosComponent } from '@views/contabilidad/libro-anulados/libro-anulados.component';
 import { LibroComprasSujetosExcluidosComponent } from '@views/contabilidad/libro-compras-sujetos-excluidos/libro-compras-sujetos-excluidos.component';
@@ -48,6 +49,11 @@ const routes: Routes = [
         {
           path: 'libro-iva/consumidor-final',
           loadComponent: () => import('@views/contabilidad/libro-iva/consumidor-final/consumidor-final.component').then(m => m.ConsumidorFinalComponent)
+        },
+        {
+          path: 'libro-iva/resumen',
+          loadComponent: () => import('@views/contabilidad/libro-iva/libro-iva-resumen/libro-iva-resumen.component').then(m => m.LibroIvaResumenComponent),
+          title: 'Resumen fiscal'
         },
         {
           path: 'libro-iva/general',
@@ -146,6 +152,8 @@ const routes: Routes = [
           title: 'Contribuyentes'},
         { path: 'libro-iva/consumidor-final', component: ConsumidorFinalComponent,
           title: 'Consumidor final'},
+        { path: 'libro-iva/resumen', component: LibroIvaResumenComponent,
+          title: 'Resumen fiscal'},
         { path: 'libro-iva/general', component: LibroIvaGeneralComponent,
           title: 'Libros fiscales'},
         { path: 'libro-compras', component: LibroComprasComponent, title: 'Libro de compras'},

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Contabilidad\LibrosIVAController;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/libro-iva/consumidores',           [LibrosIVAController::class, 'consumidores']);
+    Route::get('/libro-iva/resumen-fiscal',        [LibrosIVAController::class, 'resumenFiscal']);
     Route::get('/libro-iva/consumidores/descargar-libro',         [LibrosIVAController::class, 'consumidoresLibroExport']);
     Route::get('/libro-iva/consumidores/descargar-anexo',         [LibrosIVAController::class, 'consumidoresAnexoExport']);
     Route::get('/libro-iva/consumidores/descargar-dttes',         [LibrosIVAController::class, 'GlobalDttesExport']);
