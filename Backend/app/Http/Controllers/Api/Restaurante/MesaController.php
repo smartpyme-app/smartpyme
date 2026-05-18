@@ -27,7 +27,8 @@ class MesaController extends Controller
             $reserva = $mesa->reservasActivas->first();
 
             if ($sesion) {
-                $mesa->estado = $sesion->estado === 'pre_cuenta' ? 'pendiente_pago' : 'ocupada';
+                // Con pre-cuenta informativa la mesa permanece ocupada hasta cierre por facturación.
+                $mesa->estado = 'ocupada';
                 $mesa->tiempo_abierta = $sesion->opened_at?->diffForHumans(null, true);
             } elseif ($reserva) {
                 $mesa->estado = 'reservada';

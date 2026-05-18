@@ -56,6 +56,10 @@ export class RestauranteService {
     return this.api.read(BASE + 'sesiones-mesa/', id);
   }
 
+  reactivarConsumoSesion(sesionId: number): Observable<SesionMesa> {
+    return this.api.putToUrl(`restaurante/sesiones-mesa/${sesionId}/reactivar-consumo`, {});
+  }
+
   agregarItem(sesionId: number, data: { producto_id: number; cantidad: number; notas?: string }): Observable<any> {
     return this.api.store(BASE + `sesiones-mesa/${sesionId}/items`, data);
   }
@@ -64,19 +68,37 @@ export class RestauranteService {
     return this.api.update(BASE + `sesiones-mesa/${sesionId}/items`, itemId, data);
   }
 
-  eliminarItem(sesionId: number, itemId: number): Observable<void> {
-    return this.api.delete(BASE + `sesiones-mesa/${sesionId}/items/`, itemId);
-  }
-
-  enviarComanda(sesionId: number): Observable<any> {
+  enviarComanda(sesionId: number): Observable<{ comandas?: any[]; primera?: any }> {
     return this.api.store(BASE + `sesiones-mesa/${sesionId}/comandas`, {});
   }
 
-  solicitarCuenta(sesionId: number): Observable<any> {
-    return this.api.store(BASE + `sesiones-mesa/${sesionId}/pre-cuenta`, {});
+  eliminarItemSesion(
+    sesionId: number,
+    itemId: number,
+    body: { motivo_codigo: string; motivo_detalle?: string }
+  ): Observable<{ ok: boolean; comanda_eliminacion?: any }> {
+    return this.api.store(BASE + `sesiones-mesa/${sesionId}/items/${itemId}/eliminar`, body);
   }
 
-  dividirCuenta(preCuentaId: number, data: { tipo: 'equitativa' | 'por_items'; num_pagadores: number; asignaciones?: { orden_detalle_id: number; pagador_index: number }[] }): Observable<any[]> {
+  trasladarItems(
+    sesionId: number,
+    payload: { mesa_destino_id: number; orden_detalle_ids: number[] }
+  ): Observable<{ ok: boolean }> {
+    return this.api.store(BASE + `sesiones-mesa/${sesionId}/trasladar-items`, payload);
+  }
+
+  solicitarCuenta(sesionId: number, body: Record<string, unknown> = {}): Observable<any> {
+    return this.api.store(BASE + `sesiones-mesa/${sesionId}/pre-cuenta`, body);
+  }
+
+  dividirCuenta(
+    preCuentaId: number,
+    data: {
+      tipo: 'equitativa' | 'por_items';
+      num_pagadores: number;
+      asignaciones?: { orden_detalle_id: number; pagador_index: number; cantidad?: number }[];
+    }
+  ): Observable<any[]> {
     return this.api.store(BASE + `pre-cuentas/${preCuentaId}/dividir`, data);
   }
 
