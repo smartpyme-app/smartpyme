@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Admin\Empresa;
 use App\Services\Contabilidad\FacturacionElectronicaHelperService;
 use App\Services\Contabilidad\LibroIVAService;
+use App\Services\Contabilidad\LibroIvaResumenFiscalService;
 use App\Services\Contabilidad\CostaRica\ReporteDetalleIvaCrService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Exports\Contabilidad\CostaRica\ReporteDetalleIvaVentasExport;
@@ -49,15 +50,29 @@ class LibrosIVAController extends Controller
     protected $facturacionElectronicaHelper;
     protected $libroIVAService;
     protected $reporteDetalleIvaCrService;
+    protected LibroIvaResumenFiscalService $libroIvaResumenFiscalService;
 
     public function __construct(
         FacturacionElectronicaHelperService $facturacionElectronicaHelper,
         LibroIVAService $libroIVAService,
-        ReporteDetalleIvaCrService $reporteDetalleIvaCrService
+        ReporteDetalleIvaCrService $reporteDetalleIvaCrService,
+        LibroIvaResumenFiscalService $libroIvaResumenFiscalService
     ) {
         $this->facturacionElectronicaHelper = $facturacionElectronicaHelper;
         $this->libroIVAService = $libroIVAService;
         $this->reporteDetalleIvaCrService = $reporteDetalleIvaCrService;
+        $this->libroIvaResumenFiscalService = $libroIvaResumenFiscalService;
+    }
+
+    /** Resumen del periodo (totales, IVA, desglose por tarifa cuando aplica). */
+    public function resumenFiscal(BaseLibroIVARequest $request): JsonResponse
+    {
+        return response()->json($this->libroIvaResumenFiscalService->build($request), 200);
+    }
+
+    private function obtenerEmpresa(): ?Empresa
+    {
+        return $this->facturacionElectronicaHelper->obtenerEmpresa();
     }
 
     /** Libro detalle IVA Costa Rica (JSON): solo empresas cod_pais CR. */

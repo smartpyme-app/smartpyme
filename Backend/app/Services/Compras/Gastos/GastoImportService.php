@@ -155,6 +155,11 @@ class GastoImportService
             $gasto->renta_retenida = $resumen['reteRenta'];
         }
 
+        // IVA retenido (1 % — compras a gran contribuyente, etc.)
+        if (isset($resumen['ivaRete1']) && (float) $resumen['ivaRete1'] > 0) {
+            $gasto->iva_retenido = (float) $resumen['ivaRete1'];
+        }
+
         // Percepción
         if (isset($resumen['ivaPerci1']) && $resumen['ivaPerci1'] > 0) {
             $gasto->iva_percibido = $resumen['ivaPerci1'];
