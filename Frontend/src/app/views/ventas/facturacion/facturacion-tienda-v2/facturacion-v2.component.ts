@@ -634,28 +634,69 @@ export class FacturacionV2Component implements OnInit {
     detalles.forEach((detalleCompra: any) => {
       this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
         if (producto) {
-          let detalle: any = {};
+          const detalle: any = {};
           detalle.cantidad = detalleCompra.cantidad;
           detalle.descripcion = producto.nombre;
           detalle.id_producto = producto.id;
+          detalle.img = producto.img;
+          detalle.tipo = producto.tipo;
+          detalle.tipo_gravado = 'gravada';
 
-          // En v2, el precio se muestra con IVA pero se guarda sin IVA
-          const iva = this.apiService.auth_user()?.empresa?.iva || 0;
+          detalle.stock = this.resolveStockParaDetalle(producto);
+
+          // En v2, lista sin IVA (como configuración del producto); columna Precio muestra ese valor cuando hay lista
+          const pctImpuesto =
+            producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== ''
+              ? Number(producto.porcentaje_impuesto)
+              : this.apiService.auth_user()?.empresa?.iva ?? 0;
+          detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+
           const precioSinIva = parseFloat(producto.precio);
-          const precioConIva = precioSinIva * (1 + iva / 100);
-
-          // precio_iva: precio con IVA (para cálculos y visualización)
+          const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
           detalle.precio_iva = precioConIva.toFixed(4);
-          // precio: precio sin IVA (para guardar en BD)
           detalle.precio = precioSinIva.toFixed(4);
 
-          detalle.costo = parseFloat(producto.costo);
+          detalle.precios = producto.precios
+            ? producto.precios.map((p: any) => {
+                const sin = parseFloat(p.precio);
+                return {
+                  ...p,
+                  precio: sin.toFixed(4),
+                  precio_sin_iva: sin,
+                };
+              })
+            : [];
+          detalle.precios.unshift({
+            precio: precioSinIva.toFixed(4),
+            precio_sin_iva: precioSinIva,
+          });
+
+          this.aplicarCoincidenciaListaPreciosOrden(detalle, detalleCompra, pctImpuesto);
+
+          if (detalle.precios?.length) {
+            detalle.precios[0] = {
+              precio: typeof detalle.precio === 'string' ? detalle.precio : parseFloat(detalle.precio).toFixed(4),
+              precio_sin_iva: parseFloat(detalle.precio),
+            };
+          }
+
+          if (
+            this.apiService.auth_user().empresa.valor_inventario == 'promedio' &&
+            producto.costo_promedio > 0
+          ) {
+            detalle.costo = parseFloat(producto.costo_promedio);
+          } else {
+            detalle.costo = parseFloat(producto.costo);
+          }
           detalle.id_vendedor = this.venta.id_vendedor;
           detalle.exenta = 0;
           detalle.no_sujeta = 0;
           detalle.cuenta_a_terceros = 0;
-          detalle.total = precioConIva * detalle.cantidad;
-          detalle.gravada = detalle.total;
+          detalle.descuento = 0;
+          detalle.descuento_porcentaje = 0;
+          detalle.descuento_monto = 0;
+          detalle.descuento_is_monto = false;
+          this.aplicarLineaGravadaDesdePrecio(detalle);
           this.venta.detalles.push(detalle);
           this.sumTotal();
         } else {
@@ -818,6 +859,125 @@ export class FacturacionV2Component implements OnInit {
       return 0;
     }
     return precioConIva - this.calcularPrecioSinIva(precioConIva, porcentajeIva);
+  }
+
+  /**
+   * Totales por línea (gravada), coherente con VentaDetallesV2 — usado al cargar orden de compra.
+   */
+  private aplicarLineaGravadaDesdePrecio(detalle: any): void {
+    const precioSinIva = parseFloat(detalle.precio || 0);
+    const cant = parseFloat(String(detalle.cantidad ?? 0)) || 0;
+    detalle.sub_total = Number((cant * precioSinIva).toFixed(4));
+    const desc = parseFloat(detalle.descuento || 0) || 0;
+    detalle.total = Number((detalle.sub_total - desc).toFixed(4)).toFixed(4);
+
+    let pctDetalle = 0;
+    if (this.venta.cobrar_impuestos) {
+      pctDetalle =
+        detalle?.porcentaje_impuesto != null && detalle?.porcentaje_impuesto !== ''
+          ? Number(detalle.porcentaje_impuesto)
+          : this.apiService.auth_user()?.empresa?.iva ?? 0;
+      pctDetalle = Number(pctDetalle) || 0;
+    }
+
+    const totalNum = parseFloat(detalle.total) || 0;
+    detalle.gravada = 0;
+    detalle.exenta = 0;
+    detalle.no_sujeta = 0;
+    detalle.gravada = totalNum;
+    if (pctDetalle > 0) {
+      detalle.total_iva = (totalNum * (1 + pctDetalle / 100)).toFixed(4);
+      detalle.iva = parseFloat((totalNum * (pctDetalle / 100)).toFixed(4));
+    } else {
+      detalle.total_iva = detalle.total;
+      detalle.iva = 0;
+    }
+  }
+
+  /**
+   * En la orden de solicitud, `costo` es el precio unitario **con IVA**.
+   */
+  private precioConIvaReferenciaDesdeOrden(det: any): number | null {
+    const desdeCosto = Number(det?.costo);
+    return Number.isFinite(desdeCosto) && desdeCosto > 0 ? desdeCosto : null;
+  }
+
+  private igualdadPrecioMercado(a: number, b: number): boolean {
+    if (!Number.isFinite(a) || !Number.isFinite(b)) {
+      return false;
+    }
+    const diff = Math.abs(a - b);
+    return diff <= 0.015 || diff <= 1e-6 * Math.max(Math.abs(a), Math.abs(b), 1);
+  }
+
+  /**
+   * Compara solo precio unitario CON IVA (solicitud vs columna CON IVA de cada opción);
+   * al empatar guarda sin IVA de esa opción.
+   */
+  private aplicarCoincidenciaListaPreciosOrden(detalle: any, detalleCompra: any, pctImpuesto: number): void {
+    const referenciaConIva = this.precioConIvaReferenciaDesdeOrden(detalleCompra);
+    const lista = detalle?.precios;
+    if (referenciaConIva == null || !Array.isArray(lista) || lista.length === 0) {
+      return;
+    }
+    const pct = Number(pctImpuesto) || 0;
+    let mejor: any = null;
+    let mejorErr = Infinity;
+    for (const p of lista) {
+      const sinLista = parseFloat(String(p?.precio));
+      if (!Number.isFinite(sinLista)) continue;
+      const conLista = pct > 0 ? sinLista * (1 + pct / 100) : sinLista;
+      if (!this.igualdadPrecioMercado(referenciaConIva, conLista)) continue;
+      const err = Math.abs(referenciaConIva - conLista);
+      if (err < mejorErr - 1e-9) {
+        mejorErr = err;
+        mejor = p;
+      }
+    }
+    if (mejor == null || !Number.isFinite(mejorErr) || mejorErr > 0.015) return;
+
+    const sinSel =
+      mejor.precio_sin_iva !== undefined &&
+      mejor.precio_sin_iva !== null &&
+      mejor.precio_sin_iva !== ''
+        ? Number(mejor.precio_sin_iva)
+        : parseFloat(String(mejor.precio));
+    if (!Number.isFinite(sinSel)) return;
+    detalle.precio = sinSel.toFixed(4);
+    detalle.precio_iva = pct > 0 ? (sinSel * (1 + pct / 100)).toFixed(4) : sinSel.toFixed(4);
+  }
+
+  /** Stock desde producto ya cargado por bodega (misma regla que el buscador v2). */
+  private resolveStockParaDetalle(producto: any): number | null {
+    if (!producto) {
+      return null;
+    }
+    if (producto.tipo == 'Compuesto' && producto.composiciones) {
+      producto.composiciones.forEach((composicion: any) => {
+        if (!composicion.compuesto?.inventarios) {
+          return;
+        }
+        composicion.compuesto.inventarios = composicion.compuesto.inventarios.filter(
+          (item: any) => item.id_bodega == this.venta.id_bodega,
+        );
+        const stockComp = parseFloat(this.sumPipe.transform(composicion.compuesto.inventarios, 'stock'));
+        if (stockComp < composicion.cantidad) {
+          producto.inventarios = [];
+        }
+      });
+    }
+
+    producto.inventarios = producto.inventarios?.filter((item: any) => item.id_bodega == this.venta.id_bodega) || [];
+    if (producto.inventario_por_lotes && producto.lotes?.length > 0) {
+      const lotesBodega = this.venta.id_bodega
+        ? producto.lotes.filter((l: any) => l.id_bodega == this.venta.id_bodega)
+        : producto.lotes;
+      return lotesBodega.reduce((sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0);
+    }
+    if (producto.tipo != 'Servicio' && producto.inventarios.length > 0) {
+      return parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+    }
+    return null;
   }
 
   public sumTotal() {
