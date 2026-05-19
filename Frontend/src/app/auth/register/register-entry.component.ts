@@ -1,22 +1,29 @@
-import { Component, Type } from '@angular/core';
+import { Component, OnInit, Type } from '@angular/core';
 
 import { RegisterAbacoComponent } from './register-abaco.component';
 import { RegisterComponent } from './register.component';
-
-function resolveRegisterComponent(): Type<RegisterComponent | RegisterAbacoComponent> {
-  const host =
-    typeof window !== 'undefined' ? window.location.hostname.toLowerCase() : '';
-  if (host.startsWith('abaco.')) {
-    return RegisterAbacoComponent;
-  }
-  return RegisterComponent;
-}
 
 @Component({
   selector: 'app-register-entry',
   template:
     '<ng-container *ngComponentOutlet="activeRegisterComponent"></ng-container>',
 })
-export class RegisterEntryComponent {
-  readonly activeRegisterComponent = resolveRegisterComponent();
+export class RegisterEntryComponent implements OnInit {
+  activeRegisterComponent: Type<RegisterComponent | RegisterAbacoComponent> =
+    RegisterComponent;
+
+  ngOnInit(): void {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname.toLowerCase();
+      console.log('[RegisterEntry] Host detectado:', host);
+
+      if (host.includes('abaco')) {
+        this.activeRegisterComponent = RegisterAbacoComponent;
+        console.log('[RegisterEntry] Cargando RegisterAbacoComponent');
+      } else {
+        this.activeRegisterComponent = RegisterComponent;
+        console.log('[RegisterEntry] Cargando RegisterComponent estándar');
+      }
+    }
+  }
 }
