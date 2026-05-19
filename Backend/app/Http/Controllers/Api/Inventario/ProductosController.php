@@ -268,17 +268,22 @@ class ProductosController extends Controller
         $id_bodega = $request->query('id_bodega');
         $empresa   = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+        $incluirPresentaciones = $empresa && $empresa->isModuloPresentaciones();
 
         // ── 1. Buscar productos base ──────────────────────────────────────────────
+        $with = [
+            'inventarios',
+            'lotes',
+            'composiciones.opciones',
+            'composiciones.compuesto.inventarios',
+            'precios',
+        ];
+        if ($incluirPresentaciones) {
+            $with[] = 'presentaciones';
+        }
+
         $productos = Producto::where('enable', true)
-            ->with([
-                'inventarios',
-                'lotes',
-                'composiciones.opciones',
-                'composiciones.compuesto.inventarios',
-                'precios',
-                'presentaciones',   // cargar presentaciones activas
-            ])
+            ->with($with)
             ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                 $q->where('nombre',    'like', "%$query%")
                   ->orWhere('barcode', 'like', "%$query%")
@@ -312,25 +317,25 @@ class ProductosController extends Controller
                 'presentaciones'   => [],   // no repetir el array en cada fila
             ]);
 
-            // Filas de presentaciones (siempre, si el producto las tiene)
-            foreach ($producto->presentaciones as $pres) {
-                $factor = (float) $pres->factor_conversion ?: 1;
+            if ($incluirPresentaciones) {
+                foreach ($producto->presentaciones as $pres) {
+                    $factor = (float) $pres->factor_conversion ?: 1;
 
-                $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
+                    $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
 
-                // Stock expresado en unidades del empaque
-                $stockEmpaque = $factor > 0 ? round($stockBase / $factor, 4) : $stockBase;
+                    $stockEmpaque = $factor > 0 ? round($stockBase / $factor, 4) : $stockBase;
 
-                $resultado[] = array_merge($producto->toArray(), [
-                    'id_producto'      => $producto->id,
-                    'id_presentacion'  => $pres->id,
-                    'nombre_mostrar'   => $nombreMostrar,
-                    'precio'           => $pres->precio_venta,
-                    'stock_base_actual'=> $stockEmpaque,
-                    'factor_conversion'=> $factor,
-                    'codigo_barras'    => $pres->codigo_barras,
-                    'presentaciones'   => [],
-                ]);
+                    $resultado[] = array_merge($producto->toArray(), [
+                        'id_producto'      => $producto->id,
+                        'id_presentacion'  => $pres->id,
+                        'nombre_mostrar'   => $nombreMostrar,
+                        'precio'           => $pres->precio_venta,
+                        'stock_base_actual'=> $stockEmpaque,
+                        'factor_conversion'=> $factor,
+                        'codigo_barras'    => $pres->codigo_barras,
+                        'presentaciones'   => [],
+                    ]);
+                }
             }
         }
 
@@ -343,12 +348,21 @@ class ProductosController extends Controller
         $id_bodega = $request->query('id_bodega');
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+        $incluirPresentaciones = $empresa && $empresa->isModuloPresentaciones();
 
         if ($id_bodega) {
-            $productos = Producto::where('enable', true)
-                ->with(['inventarios' => function ($q) use ($id_bodega) {
+            $withBodega = [
+                'inventarios' => function ($q) use ($id_bodega) {
                     $q->where('id_bodega', $id_bodega);
-                }, 'lotes', 'presentaciones'])
+                },
+                'lotes',
+            ];
+            if ($incluirPresentaciones) {
+                $withBodega[] = 'presentaciones';
+            }
+
+            $productos = Producto::where('enable', true)
+                ->with($withBodega)
                 ->with('composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios')
                 ->whereHas('inventarios', function ($q) use ($id_bodega) {
                     $q->where('id_bodega', $id_bodega);
@@ -365,7 +379,12 @@ class ProductosController extends Controller
                 ->take(15)
                 ->get();
         } else {
-            $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios', 'presentaciones')->with('precios')
+            $withGlobal = ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios'];
+            if ($incluirPresentaciones) {
+                $withGlobal[] = 'presentaciones';
+            }
+
+            $productos = Producto::where('enable', true)->with($withGlobal)->with('precios')
                 ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
                         ->orWhere('barcode', 'like', "%$query%")
@@ -400,25 +419,25 @@ class ProductosController extends Controller
                 'presentaciones'   => [],   // no repetir el array en cada fila
             ]);
 
-            // Filas de presentaciones (siempre, si el producto las tiene)
-            foreach ($producto->presentaciones as $pres) {
-                $factor = (float) $pres->factor_conversion ?: 1;
+            if ($incluirPresentaciones) {
+                foreach ($producto->presentaciones as $pres) {
+                    $factor = (float) $pres->factor_conversion ?: 1;
 
-                $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
+                    $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
 
-                // Stock expresado en unidades del empaque
-                $stockEmpaque = $factor > 0 ? round($stockBase / $factor, 4) : $stockBase;
+                    $stockEmpaque = $factor > 0 ? round($stockBase / $factor, 4) : $stockBase;
 
-                $resultado[] = array_merge($producto->toArray(), [
-                    'id_producto'      => $producto->id,
-                    'id_presentacion'  => $pres->id,
-                    'nombre_mostrar'   => $nombreMostrar,
-                    'precio'           => $pres->precio_venta,
-                    'stock_base_actual'=> $stockEmpaque,
-                    'factor_conversion'=> $factor,
-                    'codigo_barras'    => $pres->codigo_barras,
-                    'presentaciones'   => [],
-                ]);
+                    $resultado[] = array_merge($producto->toArray(), [
+                        'id_producto'      => $producto->id,
+                        'id_presentacion'  => $pres->id,
+                        'nombre_mostrar'   => $nombreMostrar,
+                        'precio'           => $pres->precio_venta,
+                        'stock_base_actual'=> $stockEmpaque,
+                        'factor_conversion'=> $factor,
+                        'codigo_barras'    => $pres->codigo_barras,
+                        'presentaciones'   => [],
+                    ]);
+                }
             }
         }
 

@@ -90,10 +90,12 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::post('/producto/imagen',        [ImagenesController::class, 'store']);
     Route::delete('/producto/imagen/{id}', [ImagenesController::class, 'delete']);
 
-// Presentaciones
-    Route::post('/producto-presentaciones',        [PresentacionesController::class, 'store']);
-    Route::put('/producto-presentaciones/{id}',    [PresentacionesController::class, 'update']);
-    Route::delete('/producto-presentaciones/{id}', [PresentacionesController::class, 'delete']);
+// Presentaciones (requiere funcionalidad asignada en Super Admin)
+    Route::middleware(['verificar.funcionalidad:modulo-presentaciones-productos'])->group(function () {
+        Route::post('/producto-presentaciones',        [PresentacionesController::class, 'store']);
+        Route::put('/producto-presentaciones/{id}',    [PresentacionesController::class, 'update']);
+        Route::delete('/producto-presentaciones/{id}', [PresentacionesController::class, 'delete']);
+    });
 
     Route::get('/producto/compras/{id}',          [ProductosController::class, 'compras']);
     Route::get('/producto/ajustes/{id}',          [ProductosController::class, 'ajustes']);

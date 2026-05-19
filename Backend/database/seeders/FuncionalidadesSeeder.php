@@ -56,7 +56,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Permite importar varias compras desde archivos JSON de DTE en el listado de compras',
                 'orden' => 7
             ],
-            //Se pueden agregar mas funcionalidades con el mismo formato
+            [
+                'nombre' => 'Módulo de Presentaciones',
+                'slug' => 'modulo-presentaciones-productos',
+                'descripcion' => 'Permite gestionar presentaciones de productos',
+                'orden' => 8
+            ]
         ];
 
         $contador = 0;

@@ -770,26 +770,33 @@ class EmpresasController extends Controller
      */
     private function validateConfiguracionConfig(array $configuraciones): array
     {
-        $validatedConfig = [];
-        $allowedConfigs = [
+        $booleanConfigs = [
             'ticket_en_pdf',
             'componente_quimico_activo',
             'dte_mostrar_descripcion_producto',
+            'modulo_presentaciones',
+            'modulo_bancos',
+            'lotes_activo',
+            'gastos_categorias_personalizadas',
+            'estado_cuenta_en_facturacion',
+            'sku_correlativo_automatico',
+            'barcode_correlativo_automatico',
+            'inventario_sumar_stock_busquedas',
+            'cotizacion_mostrar_descripcion',
+            'cotizacion_mostrar_imagenes_productos',
+            'bloquear_cotizaciones_vendedores',
+            'ventas_puede_cambiar_vendedor_facturacion',
+            'mostrar_campos_contables',
+            'inventario_fraccionado',
         ];
 
-        foreach ($configuraciones as $config => $value) {
-            // Solo permitir configuraciones válidas
-            if (in_array($config, $allowedConfigs)) {
-                // Para configuraciones booleanas
-                if (in_array($config, ['ticket_en_pdf', 'componente_quimico_activo', 'dte_mostrar_descripcion_producto'])) {
-                    $validatedConfig[$config] = (bool) $value;
-                } else {
-                    $validatedConfig[$config] = $value;
-                }
+        foreach ($booleanConfigs as $key) {
+            if (array_key_exists($key, $configuraciones)) {
+                $configuraciones[$key] = (bool) $configuraciones[$key];
             }
         }
 
-        return $validatedConfig;
+        return $configuraciones;
     }
 
     public function updateCustomConfig(Request $request)
