@@ -2,7 +2,7 @@
     <h2 class="page-heading">Inventario</h2>
 
     <div class="d-flex">
-        <button *ngIf="apiService.canCreate()" routerLink="/transformacion" tooltip="Convertir productos"
+        <button *ngIf="apiService.canCreate() && mostrarTransformacionProductos" routerLink="/transformacion" tooltip="Convertir productos"
             class="btn btn-default font-weight-bold me-2"> <img src="/assets/icons/plus.png" class="icon me-2">
             Convertir Producto
         </button>

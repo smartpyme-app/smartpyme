@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Transformacion;
 use App\Models\Inventario\TransformacionDetalle;
 use App\Models\Inventario\Inventario;
@@ -14,6 +15,16 @@ class TransformacionController extends Controller
 {
     public function store(Request $request)
     {
+        $user = Auth::user();
+        $empresa = Empresa::find($user->id_empresa);
+
+        if (!$empresa || !$empresa->isTransformacionProductosActivo()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El módulo de transformación de productos no está habilitado para esta empresa.',
+            ], 403);
+        }
+
         $request->validate([
             'id_bodega' => 'required|integer',
             'detalles' => 'required|array|min:1',

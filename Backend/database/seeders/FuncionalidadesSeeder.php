@@ -56,6 +56,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Permite importar varias compras desde archivos JSON de DTE en el listado de compras',
                 'orden' => 7
             ],
+            [
+                'nombre' => 'Transformación de productos',
+                'slug' => 'transformacion-productos',
+                'descripcion' => 'Permite convertir un producto en otros (entradas y salidas de stock) desde el módulo de inventario',
+                'orden' => 9
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

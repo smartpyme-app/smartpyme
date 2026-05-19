@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '@layout/layout.component';
 import { CitasGuard } from '@guards/citas.guard';
 import { InventarioOperacionesAdminGuard } from '@guards/inventario-operaciones-admin.guard';
+import { TransformacionProductosGuard } from '@guards/transformacion-productos.guard';
 
 import { ProductosComponent } from '@views/inventario/productos/productos.component';
 import { DetalleProductoComponent } from '@views/inventario/productos/detalle-producto/detalle-producto.component';
@@ -89,7 +90,7 @@ const routes: Routes = [
         { path: 'salida/:id', canActivate: [InventarioOperacionesAdminGuard], component: InventarioSalidaComponent, title: 'Salida de Inventario' },
         { path: 'salida/detalle/:id', canActivate: [InventarioOperacionesAdminGuard], component: SalidaDetalleComponent, title: 'Detalle de salida' },
         
-        { path: 'transformacion', canActivate: [InventarioOperacionesAdminGuard], component: TransformacionCrearComponent, title: 'Conversión de Productos' },
+        { path: 'transformacion', canActivate: [InventarioOperacionesAdminGuard, TransformacionProductosGuard], component: TransformacionCrearComponent, title: 'Conversión de Productos' },
 
     ]
   }

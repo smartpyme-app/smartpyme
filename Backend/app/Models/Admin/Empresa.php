@@ -766,6 +766,31 @@ class Empresa extends Model
     }
 
     /**
+     * Funcionalidad asignada en Super Admin (empresa_funcionalidades).
+     */
+    public function tieneFuncionalidadTransformacionProductos(): bool
+    {
+        return $this->empresaFuncionalidad()
+            ->whereHas('funcionalidad', function ($query) {
+                $query->where('slug', 'transformacion-productos');
+            })
+            ->where('activo', true)
+            ->exists();
+    }
+
+    /**
+     * Módulo de transformación activo: funcionalidad asignada + preferencia en Mi cuenta.
+     */
+    public function isTransformacionProductosActivo(): bool
+    {
+        if (!$this->tieneFuncionalidadTransformacionProductos()) {
+            return false;
+        }
+
+        return (bool) $this->getCustomConfigValue('configuraciones', 'transformacion_productos_activo', false);
+    }
+
+    /**
      * Verificar si el módulo de bancos está activo para la empresa
      */
     public function isModuloBancos(): bool

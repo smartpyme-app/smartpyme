@@ -52,6 +52,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public canales: any = [];
     public tieneAccesoPropina: boolean = false;
     public tieneAccesoModuloRestaurantePedidos: boolean = false;
+    public tieneAccesoTransformacionProductos: boolean = false;
 
     public customConfig: any = {
         columnas: {
@@ -74,6 +75,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.loadAll();
         this.verificarAccesoPropina();
         this.verificarAccesoModuloRestaurantePedidos();
+        this.verificarAccesoTransformacionProductos();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
@@ -1166,6 +1168,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 sku_correlativo_automatico: false, // obsoleto: migrar a barcode_correlativo_automatico; se lee por compatibilidad
                 barcode_correlativo_automatico: false, // Código de barras correlativo automático al crear productos
                 inventario_sumar_stock_busquedas: false, // Total de stock en listado de inventario según filtros
+                transformacion_productos_activo: false, // Módulo de transformación/conversión de productos en inventario
                 cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
                 cotizacion_mostrar_imagenes_productos: false, // Mostrar imágenes de productos en cotizaciones
                 bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
@@ -1607,6 +1610,30 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         });
     }
 
+    public isTransformacionProductosActivo(): boolean {
+        return this.getCustomConfig('configuraciones', 'transformacion_productos_activo', false);
+    }
+
+    public toggleTransformacionProductosActivo() {
+        this.updateTransformacionProductosActivo(!this.isTransformacionProductosActivo());
+    }
+
+    public updateTransformacionProductosActivo(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'transformacion_productos_activo', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Transformación de productos ${activo ? 'habilitada' : 'deshabilitada'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
     // Métodos para componente químico
     public isComponenteQuimicoHabilitado(): boolean {
         return this.getCustomConfig('configuraciones', 'componente_quimico_activo', false);
@@ -1820,6 +1847,17 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             },
             error: () => {
                 this.tieneAccesoModuloRestaurantePedidos = false;
+            }
+        });
+    }
+
+    public verificarAccesoTransformacionProductos() {
+        this.funcionalidadesService.verificarAcceso('transformacion-productos').subscribe({
+            next: (acceso) => {
+                this.tieneAccesoTransformacionProductos = acceso;
+            },
+            error: () => {
+                this.tieneAccesoTransformacionProductos = false;
             }
         });
     }

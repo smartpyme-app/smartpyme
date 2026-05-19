@@ -3,6 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 @Component({
     selector: 'app-productos',
@@ -21,6 +22,7 @@ export class ProductosComponent implements OnInit {
     public marcas: any = [];
     /** Suma de stock de todos los productos del resultado filtrado (si está habilitado en Mi cuenta). */
     public stockTotalFiltrado: number | null = null;
+    public mostrarTransformacionProductos = false;
     public ajuste: any = {};
     public inventario: any = {};
     public filtrosKardex: any = {
@@ -32,10 +34,16 @@ export class ProductosComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+        private modalService: BsModalService, private router: Router, private route: ActivatedRoute,
+        private funcionalidadesService: FuncionalidadesService
     ) { }
 
     ngOnInit() {
+        this.funcionalidadesService.verificarAcceso('transformacion-productos').subscribe((tieneFuncionalidad) => {
+            this.mostrarTransformacionProductos = tieneFuncionalidad
+                && this.apiService.isTransformacionProductosConfigActivo();
+        });
+
         // Verificar si Shopify está activo y obtener la bodega del usuario
         const empresa = this.apiService.auth_user()?.empresa;
         const usuario = this.apiService.auth_user();
