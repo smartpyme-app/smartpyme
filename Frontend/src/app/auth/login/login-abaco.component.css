@@ -77,7 +77,7 @@
   background-color: #141414;
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.20)),
-    url('/assets/img/static-background-abaco.png');
+    url('/assets/img/static-background-abaco.webp');
     /* url('/assets/img/static2-background-abaco.png'); */
   background-repeat: no-repeat, no-repeat;
   background-position: center, center;
