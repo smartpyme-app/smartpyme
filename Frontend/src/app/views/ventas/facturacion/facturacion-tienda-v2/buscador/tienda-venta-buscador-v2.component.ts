@@ -189,15 +189,18 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
         // Guardar también el precio base para referencia
         this.detalle.precio_base    = precioSinIva;
         
-        // Actualizar precios con IVA incluido para el selector (con % del producto)
-        this.detalle.precios        = producto.precios ? producto.precios.map((p: any) => ({
+        // Lista de tarifas mostrada como precio sin IVA; `precio_iva` se deriva para la columna Total.
+        this.detalle.precios        = producto.precios ? producto.precios.map((p: any) => {
+          const sinIvaLista = parseFloat(p.precio);
+          return {
             ...p,
-            precio: (parseFloat(p.precio) * (1 + pctImpuesto / 100)).toFixed(4),
-            precio_sin_iva: parseFloat(p.precio)
-        })) : [];
-        
+            precio: sinIvaLista.toFixed(4),
+            precio_sin_iva: sinIvaLista,
+          };
+        }) : [];
+
         this.detalle.precios.unshift({
-                'precio' : this.detalle.precio_iva,
+                'precio' : precioSinIva.toFixed(4),
                 'precio_sin_iva': precioSinIva
             });
             
