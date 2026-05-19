@@ -30,9 +30,9 @@ class ProductoObserver
     {
         // No sincronizar si el producto está deshabilitado
         if (!$producto->enable) {
-            Log::info("Producto deshabilitado, no se sincronizará", [
-                'producto_id' => $producto->id
-            ]);
+            // Log::info("Producto deshabilitado, no se sincronizará", [
+            //     'producto_id' => $producto->id
+            // ]);
             return;
         }
 
@@ -84,10 +84,10 @@ class ProductoObserver
             ->get();
 
         if ($usuarios->isEmpty()) {
-            Log::info("No se encontraron usuarios con integración WooCommerce para este producto", [
-                'producto_id' => $producto->id,
-                'sucursal_id' => $producto->id_sucursal
-            ]);
+            // Log::info("No se encontraron usuarios con integración WooCommerce para este producto", [
+            //     'producto_id' => $producto->id,
+            //     'sucursal_id' => $producto->id_sucursal
+            // ]);
             return;
         }
 
@@ -100,7 +100,7 @@ class ProductoObserver
                     $usuario->id
                 );
             } catch (\Exception $e) {
-                Log::error("Error al sincronizar producto para usuario: " . $e->getMessage(), [
+                Log::channel('shopify')->error("Error al sincronizar producto para usuario: " . $e->getMessage(), [
                     'usuario_id' => $usuario->id,
                     'producto_id' => $producto->id
                 ]);
@@ -108,9 +108,9 @@ class ProductoObserver
         }
 
 
-        Log::info("Usuarios encontrados", [
-            'usuarios' => $usuarios
-        ]);
+        // Log::channel('shopify')->info("Usuarios encontrados", [
+        //     'usuarios' => $usuarios
+        // ]);
 
         return;
     }
