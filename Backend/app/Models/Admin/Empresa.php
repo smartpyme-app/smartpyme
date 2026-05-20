@@ -7,9 +7,11 @@ use App\Models\FidelizacionClientes\ConsumoPuntos;
 use App\Models\FidelizacionClientes\PuntosCliente;
 use App\Models\FidelizacionClientes\TipoClienteEmpresa;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
+use App\Models\Admin\Acceso;
 use App\Models\Planilla\CargoEmpresa;
 use App\Models\Planilla\DepartamentoEmpresa;
 use App\Models\Suscripcion;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
@@ -165,6 +167,7 @@ class Empresa extends Model
     ];
 
     protected $appends = [
+        'ultimo_login',
         'estado_plan',
         'woocommerce_api_url',
         'woocommerce_product_webhook_url',
@@ -226,12 +229,18 @@ class Empresa extends Model
         return $tp !== '' ? $tp : '';
     }
 
+    public function getUltimoLoginAttribute()
+    {
+        return $this->accesos()->max('fecha');
+    }
+
     /**
-     * Alinea monto_mensual o monto_anual con el cobro de la suscripción según tipo_plan.
+     * Alinea total, monto_mensual o monto_anual con el cobro de la suscripción según tipo_plan.
      */
     public function sincronizarMontosDesdeSuscripcion($monto, ?string $tipoPlan): void
     {
         $monto = (float) $monto;
+        $this->total = $monto;
         $tipo = mb_strtolower(trim((string) $tipoPlan));
 
         if ($tipo === 'anual') {
@@ -246,6 +255,18 @@ class Empresa extends Model
     public function usuarios()
     {
         return $this->hasMany('App\Models\User', 'id_empresa');
+    }
+
+    public function accesos()
+    {
+        return $this->hasManyThrough(
+            Acceso::class,
+            User::class,
+            'id_empresa',
+            'id_usuario',
+            'id',
+            'id'
+        )->withoutGlobalScopes();
     }
 
     public function ventas()
