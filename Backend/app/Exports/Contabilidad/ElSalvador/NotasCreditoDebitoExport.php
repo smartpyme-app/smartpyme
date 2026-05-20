@@ -50,7 +50,9 @@ class NotasCreditoDebitoExport
             ? 'No se encontraron notas de crédito que cumplan con los criterios de búsqueda.'
             : 'No se encontraron notas de débito que cumplan con los criterios de búsqueda.';
 
-        $devoluciones = Devolucion::with(['cliente', 'venta'])
+        $agruparPorSucursal = DteZipPorSucursalHelper::agruparPorSucursal($request);
+
+        $devoluciones = Devolucion::with(['cliente', 'venta', 'sucursal'])
             ->whereRaw('dte IS NOT NULL')
             ->whereNotNull('sello_mh')
             ->where('enable', true)
@@ -127,8 +129,9 @@ class NotasCreditoDebitoExport
                 continue;
             }
             $fileName = $codigoGeneracion . '.json';
+            $zipPath = DteZipPorSucursalHelper::rutaEnZip($fileName, $devolucion, $agruparPorSucursal);
             $fileContent = json_encode($dte, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            if ($zip->addFromString($fileName, $fileContent)) {
+            if ($zip->addFromString($zipPath, $fileContent)) {
                 $countDtes++;
                 $tempFiles[] = $tempDir . '/' . $fileName;
             }
