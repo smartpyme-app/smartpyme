@@ -163,7 +163,6 @@ class GlobalDttesExport
             $fileName = $codigoGeneracion . '.json';
             $zipPath = DteZipPorSucursalHelper::rutaEnZip($fileName, $venta, $agruparPorSucursal);
             $filePath = $tempDir . '/' . $fileName;
-
             $fileContent = json_encode($dte, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
             
             if ($zip->addFromString($zipPath, $fileContent)) {
