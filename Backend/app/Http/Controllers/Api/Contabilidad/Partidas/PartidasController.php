@@ -14,12 +14,17 @@ use App\Models\Ventas\Abono as AbonoVenta;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Compras\Abono as AbonoCompra;
+use App\Models\Compras\Gastos\Gasto;
+use App\Models\Compras\Gastos\Abono as AbonoGasto;
+use App\Services\Contabilidad\GastosService;
 use Illuminate\Support\Facades\DB;
+use Exception;
 use App\Models\Admin\FormaDePago;
 use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use App\Services\Contabilidad\CierreMesService;
+use App\Services\Contabilidad\CierreEjercicioService;
 use App\Services\Contabilidad\SimulacionCierreService;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
@@ -337,6 +342,13 @@ class PartidasController extends Controller
             'id_usuario'    => 'required|numeric',
             'id_empresa'    => 'required|numeric',
         ]);
+
+        if ((int) $request->id_empresa !== (int) auth()->user()->id_empresa) {
+            return Response()->json([
+                'error' => ['La empresa no coincide con la sesión.'],
+                'code' => 403,
+            ], 403);
+        }
 
         DB::beginTransaction();
 
@@ -1309,9 +1321,9 @@ class PartidasController extends Controller
 
         $configuracion = Configuracion::first();
         $compras = Compra::where('estado', 'Pagada')
-                            ->where('fecha', $request->fecha)->get();
+                            ->whereDate('fecha', $request->fecha)->get();
         $abonos_compras = AbonoCompra::where('estado', 'Confirmado')
-                            ->where('fecha', $request->fecha)->with('compra')->get();
+                            ->whereDate('fecha', $request->fecha)->with('compra')->get();
 
         $compras->each->setAttribute('tipo', 'compra');
         // $abonos_compras->each->setAttribute('tipo', 'abono');
@@ -1456,6 +1468,27 @@ class PartidasController extends Controller
                 }
 
             }
+
+        $gastosService = app(GastosService::class);
+        $gastosPagados = Gasto::with('categoria')
+            ->whereIn('estado', ['Confirmado', 'Pagado'])
+            ->whereDate('fecha', $request->fecha)
+            ->get();
+
+        foreach ($gastosPagados as $gasto) {
+            if (Partida::existeParaDocumentoOrigen('Gasto', $gasto->id)) {
+                continue;
+            }
+            try {
+                $detalles = array_merge($detalles, $gastosService->detallesGastoEgreso($gasto, $configuracion));
+            } catch (Exception $e) {
+                return Response()->json([
+                    'titulo' => 'Error en gasto',
+                    'error' => $e->getMessage() . ' (Gasto #' . $gasto->id . ')',
+                    'code' => 400,
+                ], 400);
+            }
+        }
 
         $data = [
             'partida' => $partida,
@@ -1644,6 +1677,55 @@ class PartidasController extends Controller
             ];
         }
 
+        $gastosService = app(GastosService::class);
+
+        $gastosPendientes = Gasto::with('categoria')
+            ->where('estado', 'Pendiente')
+            ->whereDate('fecha', $request->fecha)
+            ->get();
+
+        foreach ($gastosPendientes as $gasto) {
+            if (Partida::existeParaDocumentoOrigen('Gasto', $gasto->id)) {
+                continue;
+            }
+            try {
+                $detalles = array_merge($detalles, $gastosService->detallesGastoCxP($gasto, $configuracion));
+            } catch (Exception $e) {
+                return Response()->json([
+                    'titulo' => 'Error en gasto',
+                    'error' => $e->getMessage() . ' (Gasto #' . $gasto->id . ')',
+                    'code' => 400,
+                ], 400);
+            }
+        }
+
+        $abonosGastoHoy = AbonoGasto::with('gasto')
+            ->whereDate('fecha', $request->fecha)
+            ->where('estado', 'Confirmado')
+            ->get();
+
+        foreach ($abonosGastoHoy as $abonoGasto) {
+            if (Partida::existeParaDocumentoOrigen('Abono de Gasto', $abonoGasto->id)) {
+                continue;
+            }
+            $gastoRef = $abonoGasto->gasto;
+            if (! $gastoRef) {
+                continue;
+            }
+            try {
+                $detalles = array_merge(
+                    $detalles,
+                    $gastosService->detallesAbonoGasto($abonoGasto, $gastoRef, $configuracion)
+                );
+            } catch (Exception $e) {
+                return Response()->json([
+                    'titulo' => 'Error en abono de gasto',
+                    'error' => $e->getMessage() . ' (Abono #' . $abonoGasto->id . ')',
+                    'code' => 400,
+                ], 400);
+            }
+        }
+
         $data = [
             'partida' => $partida,
             'detalles' => $detalles,
@@ -1769,6 +1851,12 @@ class PartidasController extends Controller
     public function reabrirPeriodo(Request $request)
     {
         try {
+            if (!$this->usuarioPuedeReabrirContabilidad()) {
+                return response()->json([
+                    'error' => 'Solo administradores pueden reabrir períodos contables.',
+                ], 403);
+            }
+
             $month = $request->input('month');
             $year = $request->input('year');
 
@@ -1909,6 +1997,86 @@ class PartidasController extends Controller
           ], 500);
       }
   }
+
+    public function ejercicioFiscalEstado(Request $request)
+    {
+        try {
+            $anio = (int) $request->input('anio_referencia', $request->input('year', 0));
+            if ($anio < 2000 || $anio > 2100) {
+                return response()->json(['error' => 'Año de referencia inválido'], 400);
+            }
+
+            $svc = app(CierreEjercicioService::class);
+            $data = $svc->obtenerEstado(auth()->user()->id_empresa, $anio);
+
+            return response()->json($data);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function ejercicioFiscalCerrar(Request $request)
+    {
+        try {
+            $anio = (int) $request->input('anio_referencia', 0);
+            if ($anio < 2000 || $anio > 2100) {
+                return response()->json(['error' => 'Año de referencia inválido'], 400);
+            }
+
+            $svc = app(CierreEjercicioService::class);
+            $resultado = $svc->cerrarEjercicio(
+                auth()->user()->id_empresa,
+                auth()->user()->id,
+                $anio
+            );
+
+            return response()->json($resultado);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function ejercicioFiscalReabrir(Request $request)
+    {
+        try {
+            if (!$this->usuarioPuedeReabrirContabilidad()) {
+                return response()->json([
+                    'error' => 'Solo administradores pueden reabrir un ejercicio fiscal.',
+                ], 403);
+            }
+
+            $anio = (int) $request->input('anio_referencia', 0);
+            $modo = $request->input('modo', 'reversa');
+            if ($anio < 2000 || $anio > 2100) {
+                return response()->json(['error' => 'Año de referencia inválido'], 400);
+            }
+            if (!in_array($modo, ['eliminar', 'reversa'], true)) {
+                return response()->json(['error' => 'Modo debe ser eliminar o reversa'], 400);
+            }
+
+            $svc = app(CierreEjercicioService::class);
+            $resultado = $svc->reabrirEjercicio(
+                auth()->user()->id_empresa,
+                auth()->user()->id,
+                $anio,
+                $modo
+            );
+
+            return response()->json($resultado);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    private function usuarioPuedeReabrirContabilidad(): bool
+    {
+        $u = auth()->user();
+        if ($u->tipo === 'Administrador') {
+            return true;
+        }
+
+        return $u->roles()->whereIn('name', ['admin', 'super_admin'])->exists();
+    }
 
     /**
      * Calcular totales generales con los mismos filtros aplicados
