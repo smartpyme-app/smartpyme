@@ -25,6 +25,7 @@ import { ClienteVentasComponent } from './cliente/ventas/cliente-ventas.componen
 import { ClienteDocumentosComponent } from './cliente/documentos/cliente-documentos.component';
 import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.component';
 import { ClienteVista360Component } from './cliente-vista-360/cliente-vista-360.component';
+import { BuscadorClienteVista360Component } from './cliente-vista-360/buscador-cliente-vista360/buscador-cliente-vista360.component';
 
 @NgModule({
   imports: [
@@ -55,7 +56,8 @@ import { ClienteVista360Component } from './cliente-vista-360/cliente-vista-360.
     ClienteDocumentosComponent,
     ClienteVentasComponent,
     CuentasCobrarComponent,
-    ClienteVista360Component
+    ClienteVista360Component,
+    BuscadorClienteVista360Component
   ],
   exports: [
     ClientesComponent,
