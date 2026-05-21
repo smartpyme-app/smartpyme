@@ -26,6 +26,7 @@ class InventoryResource extends JsonResource
             'costo_anterior' => $this->costo_anterior,
             'costo_promedio' => $this->costo_promedio,
             'marca' => $this->marca,
+            'nombre_proveedor' => $this->resolveNombreProveedorPrincipal(),
             'tipo' => $this->tipo,
             'enable' => $this->enable,
             'created_at' => $this->created_at,
@@ -34,6 +35,35 @@ class InventoryResource extends JsonResource
             // Inventarios por bodega
             'inventarios' => InventoryStockResource::collection($this->whenLoaded('inventarios')),
         ];
+    }
+
+    /**
+     * Nombre del primer proveedor vinculado al producto (misma lógica que en inventarios/export).
+     */
+    protected function resolveNombreProveedorPrincipal(): ?string
+    {
+        if (!$this->relationLoaded('proveedores')) {
+            return null;
+        }
+
+        $link = $this->proveedores->first();
+        if (!$link) {
+            return null;
+        }
+
+        $proveedor = $link->relationLoaded('proveedor')
+            ? $link->getRelation('proveedor')
+            : null;
+
+        if (!$proveedor) {
+            return null;
+        }
+
+        if (($proveedor->tipo ?? '') === 'Persona') {
+            return trim(($proveedor->nombre ?? '') . ' ' . ($proveedor->apellido ?? '')) ?: null;
+        }
+
+        return $proveedor->nombre_empresa ?: null;
     }
 }
 
