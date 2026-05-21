@@ -94,9 +94,9 @@ class CierreMesService
     }
 
     /**
-     * Calcular saldos del período
+     * Calcular saldos del período (expuesto para cierre de resultados y otros servicios).
      */
-    private function calcularSaldosPeriodo($year, $month, $empresa_id)
+    public function calcularSaldosPeriodo($year, $month, $empresa_id)
     {
         $startDate = Carbon::create($year, $month, 1)->startOfMonth();
         $endDate = Carbon::create($year, $month, 1)->endOfMonth();
@@ -239,25 +239,51 @@ class CierreMesService
             //     ->where('id_empresa', $empresa_id)
             //     ->update(['saldo_inicial' => $saldo->saldo_final]);
 
-            // ✅ Solo crear registro para el siguiente período en saldos_mensuales
-            SaldoMensual::firstOrCreate(
-                [
-                    'id_cuenta' => $saldo->id_cuenta,
-                    'year' => $siguientePeriodo['year'],
-                    'month' => $siguientePeriodo['month'],
-                    'id_empresa' => $empresa_id,
-                ],
-                [
+            $siguiente = SaldoMensual::where('id_cuenta', $saldo->id_cuenta)
+                ->where('year', $siguientePeriodo['year'])
+                ->where('month', $siguientePeriodo['month'])
+                ->where('id_empresa', $empresa_id)
+                ->first();
+
+            $nuevoInicial = (float) ($saldo->saldo_final ?? 0);
+
+            if ($siguiente && $siguiente->estado === 'Abierto') {
+                $debe = (float) $siguiente->debe;
+                $haber = (float) $siguiente->haber;
+                if ($saldo->naturaleza === 'Deudor') {
+                    $saldoFinal = $nuevoInicial + $debe - $haber;
+                } else {
+                    $saldoFinal = $nuevoInicial - $debe + $haber;
+                }
+                $siguiente->update([
                     'codigo_cuenta' => $saldo->codigo_cuenta,
                     'nombre_cuenta' => $saldo->nombre_cuenta,
                     'naturaleza' => $saldo->naturaleza,
-                    'saldo_inicial' => $saldo->saldo_final,
-                    'debe' => 0,
-                    'haber' => 0,
-                    'saldo_final' => $saldo->saldo_final,
-                    'estado' => 'Abierto',
-                ]
-            );
+                    'saldo_inicial' => $nuevoInicial,
+                    'saldo_final' => $saldoFinal,
+                ]);
+
+                continue;
+            }
+
+            if ($siguiente) {
+                continue;
+            }
+
+            SaldoMensual::create([
+                'id_cuenta' => $saldo->id_cuenta,
+                'year' => $siguientePeriodo['year'],
+                'month' => $siguientePeriodo['month'],
+                'id_empresa' => $empresa_id,
+                'codigo_cuenta' => $saldo->codigo_cuenta,
+                'nombre_cuenta' => $saldo->nombre_cuenta,
+                'naturaleza' => $saldo->naturaleza,
+                'saldo_inicial' => $nuevoInicial,
+                'debe' => 0,
+                'haber' => 0,
+                'saldo_final' => $nuevoInicial,
+                'estado' => 'Abierto',
+            ]);
         }
     }
 

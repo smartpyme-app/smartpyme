@@ -29,6 +29,7 @@ import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.c
 
 import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configuracion/contabilidad-configuracion.component';
 import { CierreMesComponent } from '@views/contabilidad/cierre-mes/cierre-mes.component';
+import { CierreEjercicioFiscalComponent } from '@views/contabilidad/cierre-ejercicio-fiscal/cierre-ejercicio-fiscal.component';
 
 const routes: Routes = [
   {
@@ -66,6 +67,7 @@ const routes: Routes = [
         { path: 'contabilidad/partidas', component: PartidasComponent, title: 'Partidas' },
         { path: 'contabilidad/partida/:id', component: PartidaComponent, title: 'Partida' },
         { path: 'contabilidad/cierre-mes', component: CierreMesComponent, title: 'Cierre de Mes' },
+        { path: 'contabilidad/cierre-ejercicio-fiscal', component: CierreEjercicioFiscalComponent, title: 'Cierre de ejercicio fiscal' },
 
         { path: 'contabilidad/configuracion', component: ContabilidadConfiguracionComponent, title: 'Configuración' },
 
