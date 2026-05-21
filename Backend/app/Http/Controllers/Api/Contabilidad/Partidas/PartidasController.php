@@ -1470,7 +1470,7 @@ class PartidasController extends Controller
             }
 
         $gastosService = app(GastosService::class);
-        $gastosPagados = Gasto::with('categoria')
+        $gastosPagados = Gasto::with(['categoria', 'detalles.categoria'])
             ->whereIn('estado', ['Confirmado', 'Pagado'])
             ->whereDate('fecha', $request->fecha)
             ->get();
@@ -1679,7 +1679,7 @@ class PartidasController extends Controller
 
         $gastosService = app(GastosService::class);
 
-        $gastosPendientes = Gasto::with('categoria')
+        $gastosPendientes = Gasto::with(['categoria', 'detalles.categoria'])
             ->where('estado', 'Pendiente')
             ->whereDate('fecha', $request->fecha)
             ->get();
