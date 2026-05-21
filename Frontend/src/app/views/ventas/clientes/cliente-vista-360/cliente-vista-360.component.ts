@@ -1,11 +1,9 @@
-import { Component, OnInit, TemplateRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
-import { Location } from '@angular/common';
+import { Component, OnInit, AfterViewInit, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FidelizacionService } from '@services/fidelizacion.service';
+import { ClienteNotaModalComponent } from '@shared/modals/cliente-nota-modal/cliente-nota-modal.component';
 
 declare var bootstrap: any;
 
@@ -18,10 +16,11 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
 
   public cliente: any = {};
   public loading: boolean = false;
+  public backUrl = '/fidelizacion/clientes';
+  private currentClienteId: string | null = null;
   public activeTab: string = 'analytics';
   public activeHistoryTab: string = 'transactions';
-  public noteForm!: FormGroup;
-  
+
   // Inicializar con datos por defecto
   public metrics = {
     clv: 0,
@@ -50,6 +49,9 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
   };
 
   public monthlySales: any[] = [];
+  public allMonthlySales: any[] = [];
+  public salesChartMonths = 12;
+  public readonly salesChartPeriodOptions = [3, 6, 12];
   public topProducts: any[] = [];
   public transactions: any[] = [];
   public categories: any[] = [];
@@ -57,7 +59,6 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
   public visits: any[] = [];
   public notas: any[] = [];
   public allInteractions: any[] = []; // Lista combinada de visitas y notas
-  public usuarios: any[] = []; // Lista de usuarios de la empresa
   public visitStats = {
     total: 1,
     thisMonth: 1,
@@ -70,36 +71,40 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     altaPrioridad: 1
   };
 
-  // Variables para edición de notas
-  public isEditingNote: boolean = false;
-  public editingNoteId: number | null = null;
-  public editingNoteType: string = '';
-
-  // Variables para manejo de errores en el modal
-  public modalErrors: any = {};
-  public showModalErrors: boolean = false;
-
-  modalRef?: BsModalRef;
+  @ViewChild('clienteNotaModal') clienteNotaModal!: ClienteNotaModalComponent;
 
   constructor(
     private apiService: ApiService,
     private alertService: AlertService,
     private fidelizacionService: FidelizacionService,
-    private modalService: BsModalService,
     private route: ActivatedRoute,
     private router: Router,
-    private location: Location,
-    private formBuilder: FormBuilder,
     private cdr: ChangeDetectorRef
-  ) { 
-    this.initializeNoteForm();
-  }
+  ) { }
 
   ngOnInit(): void {
     this.combineInteractions();
-    
-    this.loadCliente();
-    this.loadUsuarios();
+
+    this.route.queryParamMap.subscribe(query => {
+      const returnUrl = query.get('returnUrl');
+      if (returnUrl && this.isAllowedBackUrl(returnUrl)) {
+        this.backUrl = returnUrl;
+      }
+    });
+
+    this.route.paramMap.subscribe(params => {
+      const clienteId = params.get('id');
+      if (!clienteId) {
+        if (this.currentClienteId) {
+          this.clearClienteState();
+        }
+        return;
+      }
+      if (clienteId !== this.currentClienteId) {
+        this.currentClienteId = clienteId;
+        this.loadCliente();
+      }
+    });
   }
 
   ngAfterViewInit(): void {
@@ -108,29 +113,68 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
   }
 
   initializeTooltips(): void {
-    // Esperar un poco para que el DOM esté completamente renderizado
     setTimeout(() => {
       const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-      tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+      tooltipTriggerList.forEach((tooltipTriggerEl: HTMLElement) => {
+        const existing = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+        if (existing) {
+          existing.dispose();
+        }
+        new bootstrap.Tooltip(tooltipTriggerEl);
       });
     }, 100);
   }
 
-  initializeNoteForm(): void {
-    this.noteForm = this.formBuilder.group({
-      tipo: ['', Validators.required],
-      fecha: [new Date().toISOString().split('T')[0], Validators.required],
-      hora: ['14:30', Validators.required],
-      titulo: ['', [Validators.required, Validators.minLength(5)]],
-      responsable: ['', Validators.required],
-      prioridad: ['medium', Validators.required],
-      estado: ['activo', Validators.required],
-      requiere_seguimiento: [false],
-      notas: ['', [Validators.required, Validators.minLength(10)]],
-      seguimiento: [''],
-      resolucion: ['']
-    });
+  initializeChartTooltips(): void {
+    setTimeout(() => {
+      const chartBars = document.querySelectorAll('.chart-bar[data-bs-toggle="tooltip"]');
+      chartBars.forEach((el: Element) => {
+        const existing = bootstrap.Tooltip.getInstance(el);
+        if (existing) {
+          existing.dispose();
+        }
+        new bootstrap.Tooltip(el);
+      });
+    }, 100);
+  }
+
+  setSalesChartMonths(months: number): void {
+    if (!this.salesChartPeriodOptions.includes(months) || this.salesChartMonths === months) {
+      return;
+    }
+    this.salesChartMonths = months;
+    this.updateMonthlySalesDisplay();
+  }
+
+  getSalesBarTooltip(sale: { month: string; amount: number }): string {
+    return `${sale.month}: ${this.formatCurrency(sale.amount)}`;
+  }
+
+  private mapMonthlySalesFromApi(ventas: any[]): any[] {
+    return ventas.map((venta: any) => ({
+      month: venta.month,
+      amount: parseFloat(venta.amount) || 0,
+      height: parseInt(venta.height, 10) || 0,
+      high: venta.high || false
+    }));
+  }
+
+  private updateMonthlySalesDisplay(): void {
+    if (!this.allMonthlySales.length) {
+      this.monthlySales = [];
+      return;
+    }
+
+    const slice = this.allMonthlySales.slice(-this.salesChartMonths);
+    const maxAmount = Math.max(...slice.map(s => s.amount), 0) || 1;
+
+    this.monthlySales = slice.map(sale => ({
+      ...sale,
+      height: maxAmount > 0 ? Math.round((sale.amount / maxAmount) * 100) : 0,
+      high: sale.amount > 0 && sale.amount === maxAmount
+    }));
+
+    this.initializeChartTooltips();
   }
 
   loadCliente(): void {
@@ -167,22 +211,6 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
         }
         
         this.loading = false;
-      }
-    });
-  }
-
-  loadUsuarios(): void {
-    this.apiService.getAll('usuarios/list').subscribe({
-      next: (response) => {
-        if (response && Array.isArray(response)) {
-          this.usuarios = response;
-        } else {
-          this.usuarios = [];
-        }
-      },
-      error: (error) => {
-        console.error('Error cargando usuarios:', error);
-        this.usuarios = [];
       }
     });
   }
@@ -354,14 +382,13 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
         };
       }
 
-      // Cargar ventas mensuales
+      // Cargar ventas mensuales (siempre 12 meses; el filtro 3/6/12 es en frontend)
       if (data.ventasMensuales && Array.isArray(data.ventasMensuales)) {
-        this.monthlySales = data.ventasMensuales.map((venta: any) => ({
-          month: venta.month,
-          amount: parseFloat(venta.amount) || 0,
-          height: parseInt(venta.height) || 0,
-          high: venta.high || false
-        }));
+        this.allMonthlySales = this.mapMonthlySalesFromApi(data.ventasMensuales);
+        this.updateMonthlySalesDisplay();
+      } else {
+        this.allMonthlySales = [];
+        this.monthlySales = [];
       }
 
       // Cargar productos top
@@ -411,6 +438,8 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
           emoji: categoria.emoji || '📦'
         }));
       }
+
+      setTimeout(() => this.initializeTooltips(), 150);
       
     } catch (error) {
       console.error('Error procesando datos del cliente:', error);
@@ -483,206 +512,23 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     setTimeout(() => this.initializeTooltips(), 100);
   }
 
-  openAddNoteModal(template: TemplateRef<any>): void {
-    console.log('Abriendo modal de agregar nota...');
-    this.isEditingNote = false;
-    this.editingNoteId = null;
-    this.editingNoteType = '';
-    
-    // Limpiar errores del modal
-    this.modalErrors = {};
-    this.showModalErrors = false;
-    
-    this.noteForm.reset({
-      tipo: '',
-      fecha: new Date().toISOString().split('T')[0],
-      hora: new Date().toTimeString().slice(0, 5),
-      titulo: '',
-      responsable: '',
-      prioridad: 'medium',
-      notas: '',
-      requiere_seguimiento: false,
-      seguimiento: ''
-    });
-    this.modalRef = this.modalService.show(template, {
-      class: 'modal-lg',
-      backdrop: 'static'
-    });
-  }
-
-  closeAddNoteModal(): void {
-    this.modalRef?.hide();
-    this.noteForm.reset();
-    this.isEditingNote = false;
-    this.editingNoteId = null;
-    this.editingNoteType = '';
-    
-    // Limpiar errores del modal
-    this.modalErrors = {};
-    this.showModalErrors = false;
-  }
-
-
-  editNote(interaction: any, template: TemplateRef<any>): void {
-    this.isEditingNote = true;
-    this.editingNoteId = interaction.id;
-    this.editingNoteType = interaction.type;
-    
-    // Limpiar errores del modal
-    this.modalErrors = {};
-    this.showModalErrors = false;
-    
-    // Mapear los datos de la interacción al formulario
-    const formData = {
-      tipo: interaction.type === 'visita' ? 'visita' : interaction.tipo,
-      fecha: interaction.fecha,
-      hora: interaction.hora,
-      titulo: interaction.titulo,
-      responsable: interaction.responsable,
-      prioridad: interaction.prioridad,
-      notas: interaction.type === 'visita' ? interaction.descripcion : interaction.contenido,
-      requiere_seguimiento: interaction.requiere_seguimiento || false,
-      seguimiento: interaction.fecha_seguimiento || ''
-    };
-    
-    this.noteForm.patchValue(formData);
-    
-    // Abrir el modal
-    this.modalRef = this.modalService.show(template, {
-      class: 'modal-lg',
-      backdrop: 'static'
-    });
-  }
-
-  saveNote(): void {
-    // Limpiar errores previos
-    this.modalErrors = {};
-    this.showModalErrors = false;
-    
-    if (this.noteForm.invalid) {
-      this.markFormGroupTouched();
-      this.modalErrors = { general: 'Por favor completa todos los campos obligatorios correctamente' };
-      this.showModalErrors = true;
-      this.alertService.error('Por favor completa todos los campos obligatorios correctamente');
+  openAddNoteModal(): void {
+    if (!this.cliente?.id) {
       return;
     }
+    this.clienteNotaModal.open(this.cliente.id, this.clienteDisplayName);
+  }
 
-    const clienteId = this.route.snapshot.params['id'];
-    const formValue = this.noteForm.value;
-    
-    if (this.isEditingNote && this.editingNoteId) {
-      // Actualizar nota existente
-      const updateData = {
-        tipo: formValue.tipo,
-        titulo: formValue.titulo,
-        contenido: formValue.notas,
-        responsable: formValue.responsable,
-        prioridad: formValue.prioridad,
-        estado: formValue.estado,
-        requiere_seguimiento: formValue.requiere_seguimiento || false,
-        fecha_interaccion: formValue.fecha,
-        hora_interaccion: formValue.hora,
-        fecha_seguimiento: formValue.seguimiento || null,
-        resolucion: formValue.resolucion || null
-      };
-
-      const endpoint = this.editingNoteType === 'visita' 
-        ? 'cliente-notas/visitas' 
-        : 'cliente-notas/notas';
-
-      this.apiService.update(endpoint, this.editingNoteId, updateData).subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.alertService.success('success','Nota actualizada exitosamente');
-            this.closeAddNoteModal();
-            
-            // Estrategia más agresiva: recarga completa del componente
-            this.forceRefresh();
-          } else {
-            this.modalErrors = { general: 'Error al actualizar la nota' };
-            this.showModalErrors = true;
-            this.alertService.error('Error al actualizar la nota');
-          }
-        },
-        error: (error) => {
-          console.error('Error actualizando nota:', error);
-          this.handleModalError(error);
-        }
-      });
-    } else {
-      // Crear nueva nota
-      const notaData = {
-        cliente_id: parseInt(clienteId),
-        tipo: formValue.tipo,
-        titulo: formValue.titulo,
-        contenido: formValue.notas,
-        responsable: formValue.responsable,
-        prioridad: formValue.prioridad,
-        estado: formValue.estado,
-        requiere_seguimiento: formValue.requiere_seguimiento || false,
-        fecha_interaccion: formValue.fecha,
-        hora_interaccion: formValue.hora,
-        fecha_seguimiento: formValue.seguimiento || null,
-        resolucion: formValue.resolucion || null
-      };
-
-      this.apiService.store('cliente-notas/notas', notaData).subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.alertService.success('success','Nota guardada exitosamente');
-            this.closeAddNoteModal();
-            // Estrategia más agresiva: recarga completa del componente
-            this.forceRefresh();
-          } else {
-            this.modalErrors = { general: 'Error al guardar la nota' };
-            this.showModalErrors = true;
-            this.alertService.error('Error al guardar la nota');
-          }
-        },
-        error: (error) => {
-          console.error('Error guardando nota:', error);
-          this.handleModalError(error);
-        }
-      });
+  editNote(interaction: any): void {
+    if (!this.cliente?.id) {
+      return;
     }
+    this.clienteNotaModal.openEdit(this.cliente.id, interaction, this.clienteDisplayName);
   }
 
-  private markFormGroupTouched(): void {
-    Object.keys(this.noteForm.controls).forEach(key => {
-      const control = this.noteForm.get(key);
-      control?.markAsTouched();
-    });
+  onNotaGuardada(): void {
+    this.forceRefresh();
   }
-
-  private handleModalError(error: any): void {
-    console.error('Error en modal:', error);
-    
-    if (error.status === 422 && error.error && error.error.errors) {
-      // Manejar errores de validación del backend
-      this.modalErrors = error.error.errors;
-      this.showModalErrors = true;
-      
-      // También mostrar en el sistema global con mensaje específico
-      const errorMessages = Object.values(error.error.errors).flat();
-      this.alertService.error({
-        status: 422,
-        error: {
-          error: errorMessages.join(', ')
-        }
-      });
-    } else if (error.status === 400 && error.error && error.error.message) {
-      // Manejar otros errores del backend
-      this.modalErrors = { general: error.error.message };
-      this.showModalErrors = true;
-      this.alertService.error(error.error.message);
-    } else {
-      // Error genérico
-      this.modalErrors = { general: 'Ha ocurrido un error inesperado. Por favor, intenta nuevamente.' };
-      this.showModalErrors = true;
-      this.alertService.error('Ha ocurrido un error inesperado. Por favor, intenta nuevamente.');
-    }
-  }
-
 
   private forceReloadData(clienteId: string): void {
     console.log('Iniciando recarga forzada de datos...');
@@ -695,6 +541,43 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       console.log('Ejecutando recarga después de reset completo...');
       this.loadNotasYVisitas(clienteId);
     }, 150);
+  }
+
+  private clearClienteState(): void {
+    this.currentClienteId = null;
+    this.cliente = {};
+    this.loading = false;
+    this.resetComponentState();
+    this.metrics = {
+      clv: 0,
+      averagePurchase: 0,
+      healthScore: 0,
+      recency: 0,
+      frequency: 0,
+      monetary: 0,
+      clasificacion_abc: '',
+      tendencia_consumo: '',
+      porcentaje_tendencia: 0,
+      recency_score: 0,
+      frequency_score: 0,
+      monetary_score: 0
+    };
+    this.loyaltyPoints = {
+      balance: 0,
+      redeemed: 0,
+      saved: 0,
+      puntosDisponibles: 0,
+      puntosTotalesGanados: 0,
+      puntosTotalesCanjeados: 0,
+      fechaUltimaActividad: null,
+      tasaRedencion: 0
+    };
+    this.monthlySales = [];
+    this.allMonthlySales = [];
+    this.salesChartMonths = 12;
+    this.topProducts = [];
+    this.transactions = [];
+    this.categories = [];
   }
 
   private resetComponentState(): void {
@@ -772,12 +655,18 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
   }
 
   goBack(): void {
-    this.location.back();
+    this.router.navigateByUrl(this.backUrl);
+  }
+
+  private isAllowedBackUrl(url: string): boolean {
+    return url.startsWith('/fidelizacion/clientes');
   }
 
   editCliente(): void {
     if (this.cliente?.id) {
-      this.router.navigate(['/cliente/editar/', this.cliente.id]);
+      this.router.navigate(['/cliente/editar', this.cliente.id], {
+        queryParams: { returnUrl: `/cliente/vista-360/${this.cliente.id}` }
+      });
     }
   }
 
@@ -911,8 +800,56 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     return Object.keys(this.cliente).length > 0;
   }
 
+  get sinClienteSeleccionado(): boolean {
+    return !this.loading && !this.cliente?.id;
+  }
+
   get clienteName(): string {
     return this.cliente?.nombre || 'Cliente sin nombre';
+  }
+
+  get clienteDisplayName(): string {
+    if (!this.cliente?.id) {
+      return 'Cliente';
+    }
+    if (this.cliente.tipo === 'Empresa' && this.cliente.nombre_empresa) {
+      return this.cliente.nombre_empresa;
+    }
+    const nombreCompleto = this.cliente.nombre_completo
+      || [this.cliente.nombre, this.cliente.apellido].filter(Boolean).join(' ').trim();
+    return nombreCompleto || this.cliente.nombre || 'Cliente sin nombre';
+  }
+
+  get clienteInitials(): string {
+    const name = (this.clienteDisplayName || '').trim();
+    if (!name) {
+      return '?';
+    }
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
+
+  get clienteMetaLine(): string {
+    const items: string[] = [];
+    if (this.clientePhone) {
+      items.push(`Tel: ${this.clientePhone}`);
+    }
+    if (this.clienteEmail) {
+      items.push(this.clienteEmail);
+    }
+    return items.join(' · ');
+  }
+
+  onClienteSeleccionado(cliente: any): void {
+    if (!cliente?.id || String(cliente.id) === String(this.cliente?.id)) {
+      return;
+    }
+    this.router.navigate(['/cliente/vista-360', cliente.id], {
+      queryParams: { returnUrl: this.backUrl }
+    });
   }
 
   get clientePhone(): string {
@@ -923,24 +860,4 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     return this.cliente?.correo || this.cliente?.contactos?.[0]?.correo || '';
   }
 
-  // Métodos para manejar errores del modal
-  getErrorFields(): string[] {
-    return Object.keys(this.modalErrors).filter(field => field !== 'general');
-  }
-
-  getFieldLabel(field: string): string {
-    const labels: { [key: string]: string } = {
-      'fecha_seguimiento': 'Fecha de Seguimiento',
-      'fecha': 'Fecha',
-      'hora': 'Hora',
-      'titulo': 'Título',
-      'tipo': 'Tipo de Interacción',
-      'responsable': 'Responsable',
-      'prioridad': 'Prioridad',
-      'estado': 'Estado',
-      'notas': 'Notas',
-      'contenido': 'Contenido'
-    };
-    return labels[field] || field;
-  }
 }
