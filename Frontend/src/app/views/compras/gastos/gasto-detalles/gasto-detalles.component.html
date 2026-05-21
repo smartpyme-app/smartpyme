@@ -51,8 +51,9 @@
                             <tr>
                                 <th>#</th>
                                 <th>Concepto</th>
+                                <th>Tipo de gasto</th>
                                 <th>Categoría</th>
-                                <th>Tipo</th>
+                                <th>Tipo operación</th>
                                 <th class="text-end">Sub total</th>
                                 <th class="text-end">IVA</th>
                                 <th class="text-end">Total</th>
@@ -63,6 +64,7 @@
                                 <td>{{ i + 1 }}</td>
                                 <td>{{ d.concepto }}</td>
                                 <td>{{ d.tipo }}</td>
+                                <td>{{ d.categoria?.nombre || d.nombre_categoria || '—' }}</td>
                                 <td>
                                     <span class="badge" [ngClass]="{
                                         'bg-success': d.tipo_gravado === 'gravada',
