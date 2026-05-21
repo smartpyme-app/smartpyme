@@ -210,6 +210,9 @@ class EmpresasController extends Controller
             DB::table('presupuestos')->where('id_empresa', $empresa->id)->delete();
         }
 
+        if ($request->m_catalogo_cuentas) {
+            DB::table('catalogo_cuentas')->where('id_empresa', $empresa->id)->update(['deleted_at' => Carbon::now()]);
+        }
 
         return Response()->json($empresa, 200);
     }

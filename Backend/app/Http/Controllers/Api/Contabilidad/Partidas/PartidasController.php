@@ -14,7 +14,11 @@ use App\Models\Ventas\Abono as AbonoVenta;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Compras\Abono as AbonoCompra;
+use App\Models\Compras\Gastos\Gasto;
+use App\Models\Compras\Gastos\Abono as AbonoGasto;
+use App\Services\Contabilidad\GastosService;
 use Illuminate\Support\Facades\DB;
+use Exception;
 use App\Models\Admin\FormaDePago;
 use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Catalogo\Cuenta;
@@ -1317,9 +1321,9 @@ class PartidasController extends Controller
 
         $configuracion = Configuracion::first();
         $compras = Compra::where('estado', 'Pagada')
-                            ->where('fecha', $request->fecha)->get();
+                            ->whereDate('fecha', $request->fecha)->get();
         $abonos_compras = AbonoCompra::where('estado', 'Confirmado')
-                            ->where('fecha', $request->fecha)->with('compra')->get();
+                            ->whereDate('fecha', $request->fecha)->with('compra')->get();
 
         $compras->each->setAttribute('tipo', 'compra');
         // $abonos_compras->each->setAttribute('tipo', 'abono');
@@ -1464,6 +1468,27 @@ class PartidasController extends Controller
                 }
 
             }
+
+        $gastosService = app(GastosService::class);
+        $gastosPagados = Gasto::with('categoria')
+            ->whereIn('estado', ['Confirmado', 'Pagado'])
+            ->whereDate('fecha', $request->fecha)
+            ->get();
+
+        foreach ($gastosPagados as $gasto) {
+            if (Partida::existeParaDocumentoOrigen('Gasto', $gasto->id)) {
+                continue;
+            }
+            try {
+                $detalles = array_merge($detalles, $gastosService->detallesGastoEgreso($gasto, $configuracion));
+            } catch (Exception $e) {
+                return Response()->json([
+                    'titulo' => 'Error en gasto',
+                    'error' => $e->getMessage() . ' (Gasto #' . $gasto->id . ')',
+                    'code' => 400,
+                ], 400);
+            }
+        }
 
         $data = [
             'partida' => $partida,
@@ -1650,6 +1675,55 @@ class PartidasController extends Controller
                 'haber' => $abono->total,
                 'saldo' => 0,
             ];
+        }
+
+        $gastosService = app(GastosService::class);
+
+        $gastosPendientes = Gasto::with('categoria')
+            ->where('estado', 'Pendiente')
+            ->whereDate('fecha', $request->fecha)
+            ->get();
+
+        foreach ($gastosPendientes as $gasto) {
+            if (Partida::existeParaDocumentoOrigen('Gasto', $gasto->id)) {
+                continue;
+            }
+            try {
+                $detalles = array_merge($detalles, $gastosService->detallesGastoCxP($gasto, $configuracion));
+            } catch (Exception $e) {
+                return Response()->json([
+                    'titulo' => 'Error en gasto',
+                    'error' => $e->getMessage() . ' (Gasto #' . $gasto->id . ')',
+                    'code' => 400,
+                ], 400);
+            }
+        }
+
+        $abonosGastoHoy = AbonoGasto::with('gasto')
+            ->whereDate('fecha', $request->fecha)
+            ->where('estado', 'Confirmado')
+            ->get();
+
+        foreach ($abonosGastoHoy as $abonoGasto) {
+            if (Partida::existeParaDocumentoOrigen('Abono de Gasto', $abonoGasto->id)) {
+                continue;
+            }
+            $gastoRef = $abonoGasto->gasto;
+            if (! $gastoRef) {
+                continue;
+            }
+            try {
+                $detalles = array_merge(
+                    $detalles,
+                    $gastosService->detallesAbonoGasto($abonoGasto, $gastoRef, $configuracion)
+                );
+            } catch (Exception $e) {
+                return Response()->json([
+                    'titulo' => 'Error en abono de gasto',
+                    'error' => $e->getMessage() . ' (Abono #' . $abonoGasto->id . ')',
+                    'code' => 400,
+                ], 400);
+            }
         }
 
         $data = [
