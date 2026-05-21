@@ -284,6 +284,7 @@ class SuscripcionesController extends Controller
                 $empresa->forma_pago = $request->input('metodo_pago');
                 $empresa->metodo_pago = $request->input('metodo_pago');
             }
+            $empresa->total = (float) $suscripcion->monto;
             $empresa->save();
 
             return response()->json([
@@ -385,6 +386,7 @@ class SuscripcionesController extends Controller
                 $empresa->forma_pago = $request->input('metodo_pago');
                 $empresa->metodo_pago = $request->input('metodo_pago');
             }
+            $empresa->total = (float) $suscripcion->monto;
             $empresa->save();
 
             // if ($request->input('estado_ultimo_pago') === config('constants.ESTADO_ORDEN_PAGO_COMPLETADO')) {

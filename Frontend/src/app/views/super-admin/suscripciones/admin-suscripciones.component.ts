@@ -999,6 +999,7 @@ export class AdminSuscripcionesComponent implements OnInit {
     if (planSeleccionado) {
       this.nuevaSuscripcion.plan_id = planSeleccionado.id;
       this.nuevaSuscripcion.monto = planSeleccionado.monto;
+      this.sincronizarTotalEmpresaDesdeMonto(planSeleccionado.monto, false);
       // Calcular montos si hay frecuencia de pago establecida
       if (this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan) {
         const frecuencia = this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan;
@@ -1017,6 +1018,7 @@ export class AdminSuscripcionesComponent implements OnInit {
       }
       this.suscripcion.plan.id = planSeleccionado.id;
       this.suscripcion.monto = planSeleccionado.monto;
+      this.sincronizarTotalEmpresaDesdeMonto(planSeleccionado.monto, true);
       // Calcular montos si hay frecuencia de pago establecida
       if (this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan) {
         const frecuencia = this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan;
@@ -1067,12 +1069,32 @@ export class AdminSuscripcionesComponent implements OnInit {
       return;
     }
 
+    this.sincronizarTotalEmpresaDesdeMonto(monto, isEdit);
+
     const frecuencia = isEdit
       ? this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan
       : this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan;
 
     if (frecuencia) {
       this.calcularMontos(monto, frecuencia, isEdit);
+    }
+  }
+
+  /** Vincula empresa.total con el monto de cobro de la suscripción (pago del plan). */
+  private sincronizarTotalEmpresaDesdeMonto(monto: number, isEdit: boolean): void {
+    if (!monto || monto <= 0) {
+      return;
+    }
+
+    if (isEdit) {
+      if (this.suscripcion?.empresa) {
+        this.suscripcion.empresa.total = monto;
+      }
+      return;
+    }
+
+    if (this.nuevaSuscripcion?.empresa) {
+      this.nuevaSuscripcion.empresa.total = monto;
     }
   }
 
@@ -1120,6 +1142,8 @@ export class AdminSuscripcionesComponent implements OnInit {
       this.nuevaSuscripcion.monto_mensual = montoMensual;
       this.nuevaSuscripcion.monto_anual = montoAnual;
     }
+
+    this.sincronizarTotalEmpresaDesdeMonto(monto, isEdit);
   }
 
   public loadCodigosPromocionales() {
