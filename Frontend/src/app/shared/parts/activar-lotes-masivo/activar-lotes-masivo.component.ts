@@ -1,5 +1,7 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter, TemplateRef, ViewChild } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import Swal from 'sweetalert2';
+
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
@@ -10,6 +12,7 @@ import { ApiService } from '@services/api.service';
 })
 export class ActivarLotesMasivoComponent implements OnInit {
 
+    @Output() lotesMasivoCompletado = new EventEmitter<any>();
     @ViewChild('mlotesMasivo') public mlotesMasivoTemplate!: TemplateRef<any>;
     
     public categorias: any[] = [];
@@ -95,19 +98,58 @@ export class ActivarLotesMasivoComponent implements OnInit {
             return;
         }
         
-        if (!confirm(`¿Está seguro de ${this.habilitarLotes ? 'habilitar' : 'deshabilitar'} el inventario por lotes para todos los productos de las categorías seleccionadas?`)) {
-            return;
-        }
-        
+        const n = this.categoriasSeleccionadas.length;
+        const htmlHabilitar = `
+            <p class="text-start mb-2">
+                Los productos (excepto servicios) de <strong>${n}</strong> categoría(s) pasarán a manejar stock <strong>por lotes</strong>.
+            </p>
+            <p class="text-start mb-2">
+                Donde haya inventario sin lotes, el sistema creará un <strong>lote inicial</strong>
+                (<em>STOCK-INICIAL</em>) por bodega con el stock actual. Luego podrá editar cada lote
+                (código y fecha de vencimiento).
+            </p>
+            <p class="text-start mb-0 text-muted">
+                Los productos que ya tenían lotes activos pero sin stock migrado también se completarán en este proceso.
+            </p>
+        `;
+        const htmlDeshabilitar = `
+            <p class="text-start mb-0">
+                Se desactivará el inventario por lotes en los productos de <strong>${n}</strong> categoría(s).
+                El stock en lotes no se elimina; solo deja de exigirse el control por lote en ventas y movimientos.
+            </p>
+        `;
+
+        Swal.fire({
+            title: this.habilitarLotes ? 'Inventario por lotes (masivo)' : 'Deshabilitar lotes (masivo)',
+            html: this.habilitarLotes ? htmlHabilitar : htmlDeshabilitar,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: this.habilitarLotes ? 'Aplicar' : 'Deshabilitar',
+            cancelButtonText: 'Cancelar',
+        }).then((result) => {
+            if (!result.isConfirmed) {
+                return;
+            }
+            this.ejecutarHabilitarLotesMasivo();
+        });
+    }
+
+    private ejecutarHabilitarLotesMasivo() {
         this.procesandoLotes = true;
         this.apiService.store('productos/habilitar-lotes-masivo', {
             categorias: this.categoriasSeleccionadas,
             habilitar: this.habilitarLotes
         }).subscribe((response: any) => {
+            let detalle = `Se actualizaron ${response.productos_actualizados} producto(s).`;
+            const trasladados = response.lotes_trasladados ?? response.lotes_creados ?? 0;
+            if (trasladados > 0) {
+                detalle += ` Stock trasladado a ${trasladados} lote(s) STOCK-INICIAL (${response.unidades_migradas} uds en ${response.productos_con_migracion} producto(s)).`;
+            }
             this.alertService.success(
                 response.message || 'Operación completada exitosamente',
-                `Se actualizaron ${response.productos_actualizados} productos.`
+                detalle
             );
+            this.lotesMasivoCompletado.emit(response);
             this.procesandoLotes = false;
             this.modalRef?.hide();
             this.categoriasSeleccionadas = [];

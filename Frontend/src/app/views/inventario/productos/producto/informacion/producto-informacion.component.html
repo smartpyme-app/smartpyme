@@ -154,7 +154,7 @@
         <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.tipo != 'Servicio' && isLotesActivo()">
             <div class="form-switch bg-light-info rounded">
                 <label>¿El inventario se maneja por lotes?</label>
-                <input class="form-check-input float-end" type="checkbox" role="switch" (change)=" producto.id ? onSubmit() : '' " [(ngModel)]="producto.inventario_por_lotes" name="inventario_por_lotes">
+                <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onInventarioPorLotesChange()" [(ngModel)]="producto.inventario_por_lotes" name="inventario_por_lotes">
             </div>
         </div>
 

@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/productos',         		    [ProductosController::class, 'index']);
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
+    Route::get('/producto/{id}/preview-migracion-lotes', [ProductosController::class, 'previewMigracionLotes']);
+    Route::post('/producto/{id}/migrar-stock-lotes', [ProductosController::class, 'migrarStockLotes']);
     Route::get('/producto/buscar-by-code/{codigo}', [ProductosController::class, 'searchByCode']);
     Route::get('/productos/list',               [ProductosController::class, 'list']);
     Route::get('/productos/siguiente-barcode-correlativo', [ProductosController::class, 'siguienteBarcodeCorrelativo']);
