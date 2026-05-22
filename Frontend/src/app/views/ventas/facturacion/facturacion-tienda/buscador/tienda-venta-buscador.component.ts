@@ -32,7 +32,7 @@ export class TiendaVentaBuscadorComponent implements OnInit {
     public descripcionesExpandidas: { [key: number]: boolean } = {};
 
     /** Mínimo de caracteres antes de llamar a la API (facturación). */
-    readonly minCaracteresBusqueda = 3;
+    readonly minCaracteresBusqueda = 2;
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,

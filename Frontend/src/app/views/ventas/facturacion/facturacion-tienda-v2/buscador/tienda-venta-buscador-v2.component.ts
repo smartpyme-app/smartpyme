@@ -30,7 +30,7 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
     public loading:boolean = false;
     private tieneShopify: boolean = false;
 
-    readonly minCaracteresBusqueda = 3;
+    readonly minCaracteresBusqueda = 2;
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,

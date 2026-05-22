@@ -29,7 +29,7 @@ export class TiendaVentaProductoComponent implements OnInit {
     public buscador:any = '';
     public loading:boolean = false;
 
-    readonly minCaracteresBusqueda = 3;
+    readonly minCaracteresBusqueda = 2;
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
