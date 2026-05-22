@@ -52,7 +52,12 @@ class AbonosVentasExport implements FromCollection, WithHeadings, WithMapping
                                 ->orWhere('referencia', 'like', $buscador)
                                 ->orWhereHas('venta', function ($qv) use ($buscador) {
                                     $qv->where('correlativo', 'like', $buscador)
-                                        ->orWhere('nombre_cliente', 'like', $buscador);
+                                        ->orWhereHas('cliente', function ($qc) use ($buscador) {
+                                            $qc->where('nombre', 'like', $buscador)
+                                                ->orWhere('apellido', 'like', $buscador)
+                                                ->orWhere('nombre_empresa', 'like', $buscador)
+                                                ->orWhereRaw("CONCAT(TRIM(nombre), ' ', TRIM(apellido)) LIKE ?", [$buscador]);
+                                        });
                                 });
                         });
                     })
