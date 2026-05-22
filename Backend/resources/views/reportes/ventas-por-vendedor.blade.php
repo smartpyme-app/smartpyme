@@ -151,6 +151,8 @@
                 <h1>Reporte de Ventas por Vendedor</h1>
             @elseif($datos['tipo_reporte'] === 'ventas-por-categoria-vendedor')
                 <h1>Reporte de Ventas por Categoría y Vendedor</h1>
+            @elseif($datos['tipo_reporte'] === 'ventas-por-categoria-sucursal')
+                <h1>Reporte de Ventas por Categoría y Sucursal</h1>
             @elseif($datos['tipo_reporte'] === 'estado-financiero-consolidado-sucursales')
                 <h1>Estado Financiero Consolidado por Sucursales</h1>
             @elseif($datos['tipo_reporte'] === 'detalle-ventas-vendedor')
@@ -201,6 +203,14 @@
                     <h2>Resumen del reporte:</h2>
                     <!-- Si tienes datos específicos para este tipo de reporte, agrégalos aquí -->
                     <p>Este reporte muestra las ventas realizadas por cada vendedor, clasificadas por categoría de productos, con los porcentajes aplicados según la configuración establecida.</p>
+                </div>
+
+            @elseif($datos['tipo_reporte'] === 'ventas-por-categoria-sucursal')
+                <p>Adjunto encontrará el reporte de ventas por categoría y sucursal para el período seleccionado (Productos 100%, Servicios 90%).</p>
+
+                <div class="summary ventas-categoria">
+                    <h2>Resumen del reporte:</h2>
+                    <p>Este reporte consolida {{ $datos['empresa'] ?? 'varias empresas' }} con una hoja por empresa. Cada hoja muestra las ventas por sucursal clasificadas en Productos y Servicios.</p>
                 </div>
                 
             @elseif($datos['tipo_reporte'] === 'estado-financiero-consolidado-sucursales')
