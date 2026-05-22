@@ -5,6 +5,8 @@ import {
   OnDestroy,
   Output,
 } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { of, Subject, Subscription } from 'rxjs';
@@ -12,6 +14,8 @@ import { catchError, debounceTime, distinctUntilChanged, filter, switchMap } fro
 
 @Component({
   selector: 'app-buscador-cliente-vista360',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './buscador-cliente-vista360.component.html',
   styleUrls: ['./buscador-cliente-vista360.component.css'],
 })

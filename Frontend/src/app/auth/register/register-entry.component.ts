@@ -5,6 +5,7 @@ import { RegisterComponent } from './register.component';
 
 @Component({
   selector: 'app-register-entry',
+  standalone: false,
   template:
     '<ng-container *ngComponentOutlet="activeRegisterComponent"></ng-container>',
 })

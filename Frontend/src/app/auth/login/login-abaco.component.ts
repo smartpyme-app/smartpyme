@@ -7,6 +7,7 @@ declare let $: any;
 
 @Component({
   selector: 'app-login-abaco',
+  standalone: false,
   templateUrl: './login-abaco.component.html',
   styleUrls: ['./login-abaco.component.css'],
 })

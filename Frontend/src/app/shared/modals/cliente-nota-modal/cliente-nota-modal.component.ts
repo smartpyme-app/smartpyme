@@ -1,11 +1,14 @@
 import { Component, EventEmitter, Output, TemplateRef, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-cliente-nota-modal',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './cliente-nota-modal.component.html'
 })
 export class ClienteNotaModalComponent {

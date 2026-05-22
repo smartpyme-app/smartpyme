@@ -10,6 +10,7 @@ import { Estado } from '../../../models/estado.interface';
 
 @Component({
   selector: 'app-pago-abaco',
+  standalone: false,
   templateUrl: './pago-abaco.component.html',
   styleUrls: ['./pago-layout.css'],
 })

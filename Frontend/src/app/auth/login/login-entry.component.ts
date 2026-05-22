@@ -5,6 +5,7 @@ import { LoginComponent } from './login.component';
 
 @Component({
   selector: 'app-login-entry',
+  standalone: false,
   template:
     '<ng-container *ngComponentOutlet="activeLoginComponent"></ng-container>',
 })

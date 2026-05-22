@@ -5,6 +5,7 @@ import { PagoComponent } from './pago.component';
 
 @Component({
   selector: 'app-pago-entry',
+  standalone: false,
   template:
     '<ng-container *ngComponentOutlet="activePagoComponent"></ng-container>',
 })

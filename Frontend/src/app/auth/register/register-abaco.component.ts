@@ -8,6 +8,7 @@ import { PromocionalService, CodigoPromocional } from '@services/promocional.ser
 
 @Component({
   selector: 'app-register-abaco',
+  standalone: false,
   templateUrl: './register-abaco.component.html',
   styleUrls: ['./register-abaco.component.css'],
 })

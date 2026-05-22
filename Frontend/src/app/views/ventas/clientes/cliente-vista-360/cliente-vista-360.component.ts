@@ -1,5 +1,9 @@
 import { Component, OnInit, AfterViewInit, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ActivatedRoute, Router } from '@angular/router';
+import { BuscadorClienteVista360Component } from './buscador-cliente-vista360/buscador-cliente-vista360.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FidelizacionService } from '@services/fidelizacion.service';
@@ -9,6 +13,15 @@ declare var bootstrap: any;
 
 @Component({
   selector: 'app-cliente-vista-360',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule,
+    ClienteNotaModalComponent,
+    BuscadorClienteVista360Component,
+  ],
   templateUrl: './cliente-vista-360.component.html',
   styleUrls: ['./cliente-vista-360.component.css']
 })
