@@ -80,9 +80,10 @@ class EmpresasController extends Controller
 
     public function list()
     {
-
-        $empresas = Empresa::orderby('nombre')
+        $empresas = DB::table('empresas')
+            ->select('id', 'nombre')
             ->where('activo', true)
+            ->orderBy('nombre')
             ->get();
 
         return Response()->json($empresas, 200);
