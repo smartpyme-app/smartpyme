@@ -220,7 +220,8 @@ class ComprasController extends Controller
                 }
             }
         
-        $compra->fill($request->all());
+        $compra->fill($request->except(['detalles', 'dte']));
+        $this->aplicarIdentificadoresDteImportado($compra, $request);
         $compra->save();
 
         return Response()->json($compra, 200);
@@ -282,7 +283,8 @@ class ComprasController extends Controller
             else
                 $compra = new Compra;
 
-            $compra->fill($request->all());
+            $compra->fill($request->except(['detalles', 'dte']));
+            $this->aplicarIdentificadoresDteImportado($compra, $request);
             $compra->save();
 
 
@@ -894,6 +896,38 @@ class ComprasController extends Controller
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('compra-' . $compra->id . '.pdf');
 
+    }
+
+    /**
+     * Persiste código de generación, número de control y DTE importado desde el frontend.
+     */
+    private function aplicarIdentificadoresDteImportado(Compra $compra, Request $request): void
+    {
+        if ($request->has('codigo_generacion')) {
+            $codigo = trim((string) $request->input('codigo_generacion', ''));
+            $compra->codigo_generacion = $codigo !== '' ? $codigo : null;
+        }
+
+        if ($request->has('numero_control')) {
+            $numero = trim((string) $request->input('numero_control', ''));
+            $compra->numero_control = $numero !== '' ? $numero : null;
+        }
+
+        if ($request->filled('tipo_dte')) {
+            $compra->tipo_dte = $request->input('tipo_dte');
+        }
+
+        if ($request->has('dte')) {
+            $dte = $request->input('dte');
+            if (is_array($dte) && !empty($dte)) {
+                $compra->dte = $dte;
+            } elseif (is_string($dte) && $dte !== '') {
+                $decoded = json_decode($dte, true);
+                $compra->dte = is_array($decoded) ? $decoded : null;
+            } else {
+                $compra->dte = null;
+            }
+        }
     }
 
     /**
