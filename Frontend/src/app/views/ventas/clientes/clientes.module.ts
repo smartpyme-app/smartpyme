@@ -8,6 +8,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { TagInputModule } from 'ngx-chips';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
+import { DashboardModule } from '@views/dashboard/dashboard.module';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { NgChartsModule } from 'ng2-charts';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -35,6 +36,7 @@ import { BuscadorClienteVista360Component } from './cliente-vista-360/buscador-c
     ReactiveFormsModule,
     RouterModule,
     SharedModule,
+    DashboardModule,
     PipesModule,
     TagInputModule,
     NgChartsModule,

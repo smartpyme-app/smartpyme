@@ -10,6 +10,9 @@ export interface ChartConfig {
     rotateLabels?: number; // Ángulo de rotación para labels del eje X (0 = horizontal, 45 = diagonal)
     horizontal?: boolean; // Si es true, las barras serán horizontales
     conditionalColors?: boolean; // Si es true, los colores serán condicionales (verde para positivos, rojo para negativos)
+    showBarLabels?: boolean; // Si es false, oculta el valor sobre cada barra (default: true)
+    gridBottom?: string | number; // Espacio inferior del grid (útil con etiquetas rotadas)
+    tooltipLabels?: string[]; // Etiquetas del tooltip (p. ej. nombre completo si el eje X está abreviado)
 }
 
 export interface MetricCard {
