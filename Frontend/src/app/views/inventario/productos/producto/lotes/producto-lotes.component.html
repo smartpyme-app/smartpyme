@@ -2,6 +2,16 @@
     <h6 class="my-3 font-weight-bold">
         Gestión de Lotes 
         <span class="badge bg-default text-dark">{{ getTotalStock() | number:'1.2' }} unidades</span>
+        <button type="button"
+                class="btn btn-outline-primary float-end me-2"
+                *ngIf="puedeMigrarStock"
+                [disabled]="migrandoStock"
+                (click)="migrarStockExistente()"
+                tooltip="Copiar el stock del inventario tradicional al lote STOCK-INICIAL">
+            <i class="fa fa-exchange"></i>
+            <span *ngIf="!migrandoStock">Importar stock existente</span>
+            <span *ngIf="migrandoStock">Importando...</span>
+        </button>
         <a class="btn btn-default float-end" (click)="openModal(mlote)" tooltip="Crear nuevo lote">
             <i class="fa fa-plus"></i> Crear lote
         </a>

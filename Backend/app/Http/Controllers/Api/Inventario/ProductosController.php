@@ -35,6 +35,7 @@ use App\Exports\PlantillaProductosImportExport;
 use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
 use App\Services\Inventario\ProductoImportacionDteService;
+use App\Services\Inventario\MigrarStockALotesService;
 use App\Services\ShopifyTransformer;
 use App\Services\ImpuestosService;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -405,10 +406,12 @@ class ProductosController extends Controller
             // 'costo.required' => 'Agregue el costo.'
         ]);
 
+        $inventarioPorLotesAntes = false;
         if ($request->id) {
             $producto = Producto::findOrFail($request->id);
             $precioAnterior = $producto->precio;
             $costoAnterior = $producto->costo;
+            $inventarioPorLotesAntes = (bool) $producto->inventario_por_lotes;
         } else {
 
             $producto = new Producto;
@@ -417,6 +420,15 @@ class ProductosController extends Controller
 
         $producto->fill($request->all());
         $producto->save();
+
+        $migracionLotes = null;
+        if (
+            $producto->tipo != 'Servicio'
+            && !$inventarioPorLotesAntes
+            && $producto->inventario_por_lotes
+        ) {
+            $migracionLotes = app(MigrarStockALotesService::class)->migrar($producto);
+        }
 
 
         // Configurar inventarios para las bodegas (firstOrCreate evita duplicados producto+bodega)
@@ -454,7 +466,78 @@ class ProductosController extends Controller
 
 
 
-        return Response()->json($producto, 200);
+        $payload = $producto->toArray();
+        if ($migracionLotes !== null) {
+            $payload['migracion_lotes'] = $migracionLotes;
+        }
+
+        return Response()->json($payload, 200);
+    }
+
+    /**
+     * Vista previa de migración de stock a lotes al activar inventario por lotes.
+     */
+    public function previewMigracionLotes($id)
+    {
+        $producto = Producto::findOrFail($id);
+
+        if ($producto->tipo === 'Servicio') {
+            return response()->json([
+                'requiere_migracion' => false,
+                'mensaje' => 'Los servicios no manejan inventario por lotes.',
+            ], 200);
+        }
+
+        return response()->json(
+            app(MigrarStockALotesService::class)->preview($producto),
+            200
+        );
+    }
+
+    /**
+     * Migra stock de inventario tradicional a lotes STOCK-INICIAL (productos ya con lotes activos).
+     */
+    public function migrarStockLotes($id)
+    {
+        $producto = Producto::findOrFail($id);
+
+        if ($producto->tipo === 'Servicio') {
+            return response()->json(['error' => 'Los servicios no manejan inventario por lotes.'], 400);
+        }
+
+        if (!$producto->inventario_por_lotes) {
+            return response()->json([
+                'error' => 'El producto no tiene inventario por lotes habilitado.',
+            ], 400);
+        }
+
+        $migracionService = app(MigrarStockALotesService::class);
+        $preview = $migracionService->preview($producto);
+
+        if (!$preview['requiere_migracion']) {
+            return response()->json([
+                'success' => true,
+                'message' => 'No hay stock pendiente de migrar. Todas las bodegas con inventario ya tienen lotes con stock.',
+                'migracion_lotes' => [
+                    'lotes_creados' => 0,
+                    'lotes_actualizados' => 0,
+                    'unidades_migradas' => 0,
+                    'bodegas' => [],
+                ],
+            ], 200);
+        }
+
+        $migracion = $migracionService->migrar($producto);
+
+        return response()->json([
+            'success' => true,
+            'message' => sprintf(
+                'Stock migrado: %d lote(s) creado(s), %.2f unidades en total.',
+                $migracion['lotes_creados'] + $migracion['lotes_actualizados'],
+                $migracion['unidades_migradas']
+            ),
+            'migracion_lotes' => $migracion,
+        ], 200);
     }
 
     public function storeDesdeCompras(Request $request)
@@ -839,24 +922,70 @@ class ProductosController extends Controller
         ]);
 
         $productosActualizados = 0;
+        $lotesCreados = 0;
+        $lotesActualizados = 0;
+        $unidadesMigradas = 0;
+        $productosConMigracion = 0;
+
+        $migracionService = app(MigrarStockALotesService::class);
 
         // Obtener todos los productos de las categorías seleccionadas
         $productos = Producto::whereIn('id_categoria', $request->categorias)
             ->where('tipo', '!=', 'Servicio')
             ->get();
 
-        foreach ($productos as $producto) {
-            $producto->inventario_por_lotes = $request->habilitar;
-            $producto->save();
-            $productosActualizados++;
+        DB::beginTransaction();
+        try {
+            foreach ($productos as $producto) {
+                $producto->inventario_por_lotes = $request->habilitar;
+                $producto->save();
+                $productosActualizados++;
+
+                // Al habilitar: migrar stock pendiente (nuevos y los que ya tenían flag sin lotes)
+                if ($request->habilitar) {
+                    $resultado = $migracionService->migrar($producto);
+                    $creados = (int) ($resultado['lotes_creados'] ?? 0);
+                    $actualizados = (int) ($resultado['lotes_actualizados'] ?? 0);
+                    if ($creados > 0 || $actualizados > 0) {
+                        $productosConMigracion++;
+                    }
+                    $lotesCreados += $creados;
+                    $lotesActualizados += $actualizados;
+                    $unidadesMigradas += (float) ($resultado['unidades_migradas'] ?? 0);
+                }
+            }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Error al habilitar lotes masivamente: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        $message = $request->habilitar
+            ? 'Inventario por lotes habilitado masivamente'
+            : 'Inventario por lotes deshabilitado masivamente';
+
+        $lotesTrasladados = $lotesCreados + $lotesActualizados;
+        if ($request->habilitar && $lotesTrasladados > 0) {
+            $message .= sprintf(
+                '. Se trasladó stock a %d lote(s) %s (%.2f uds en %d producto(s)).',
+                $lotesTrasladados,
+                MigrarStockALotesService::NUMERO_LOTE_INICIAL,
+                $unidadesMigradas,
+                $productosConMigracion
+            );
         }
 
         return response()->json([
             'success' => true,
-            'message' => $request->habilitar
-                ? 'Inventario por lotes habilitado masivamente'
-                : 'Inventario por lotes deshabilitado masivamente',
-            'productos_actualizados' => $productosActualizados
+            'message' => $message,
+            'productos_actualizados' => $productosActualizados,
+            'lotes_creados' => $lotesCreados,
+            'lotes_actualizados' => $lotesActualizados,
+            'lotes_trasladados' => $lotesTrasladados,
+            'unidades_migradas' => round($unidadesMigradas, 2),
+            'productos_con_migracion' => $productosConMigracion,
         ]);
     }
     public function exportarWooCommerceTemplate(Request $request)
