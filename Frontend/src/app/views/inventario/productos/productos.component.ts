@@ -190,6 +190,7 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
         });
 
         this.loading = true;
+        this.cdr.markForCheck();
 
         if (!this.filtros.sin_stock) {
             this.filtros.sin_stock = '';
@@ -203,17 +204,27 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             this.filtros.marca = '';
         }
 
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
-            this.productos = productos;
-            this.stockTotalFiltrado = this.apiService.isInventarioSumarStockBusquedas()
-                && productos?.stock_total_filtrado !== undefined && productos?.stock_total_filtrado !== null
-                ? Number(productos.stock_total_filtrado)
-                : null;
-            this.loading = false;
-            if (this.modalRef) {
-                this.modalRef.hide();
-            }
-        }, error => { this.alertService.error(error); this.loading = false; });
+        this.apiService.getAll('productos', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+            next: (productos) => {
+                this.productos = productos;
+                this.stockTotalFiltrado = this.apiService.isInventarioSumarStockBusquedas()
+                    && productos?.stock_total_filtrado !== undefined && productos?.stock_total_filtrado !== null
+                    ? Number(productos.stock_total_filtrado)
+                    : null;
+                this.loading = false;
+                if (this.modalRef) {
+                    this.modalRef.hide();
+                }
+                this.cdr.markForCheck();
+            },
+            error: (error) => {
+                this.alertService.error(error);
+                this.loading = false;
+                this.cdr.markForCheck();
+            },
+        });
     }
 
     public getPorcentajeProducto(producto: any): number {

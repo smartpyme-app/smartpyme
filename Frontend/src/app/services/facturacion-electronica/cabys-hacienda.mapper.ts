@@ -7,6 +7,56 @@ export interface CabysSelectOption {
   codigo: string;
   descripcion: string;
   label: string;
+  /** Tarifa de impuesto del catálogo CABYS (p. ej. 1, 2, 4, 13). */
+  impuestoTarifa: number | null;
+}
+
+/**
+ * Convierte el campo `impuesto` / `tax` de Hacienda al porcentaje de impuesto del producto.
+ * En CABYS suele venir el % directo (1, 2, 4, 13); a veces códigos de tarifa FE (08 → 13, 10 → 0).
+ */
+export function cabysImpuestoTarifaToPorcentaje(raw: unknown): number | null {
+  if (raw === null || raw === undefined || raw === '') {
+    return null;
+  }
+
+  const n = Number(raw);
+  if (!Number.isFinite(n)) {
+    return null;
+  }
+
+  const codigoTarifaFe: Record<number, number> = {
+    8: 13,
+    10: 0,
+    3: 2,
+  };
+  if (Object.prototype.hasOwnProperty.call(codigoTarifaFe, n)) {
+    return codigoTarifaFe[n];
+  }
+
+  const tarifasCr = [0, 1, 2, 4, 13];
+  if (tarifasCr.includes(n)) {
+    return n;
+  }
+
+  if (n >= 0 && n <= 100) {
+    return n;
+  }
+
+  return null;
+}
+
+function pickImpuestoTarifa(row: Record<string, unknown>): number | null {
+  const raw =
+    row['impuesto'] ??
+    row['Impuesto'] ??
+    row['tax'] ??
+    row['Tax'] ??
+    row['tarifa'] ??
+    row['Tarifa'] ??
+    null;
+
+  return cabysImpuestoTarifaToPorcentaje(raw);
 }
 
 function firstObjectArray(body: Record<string, unknown>): Record<string, unknown>[] | null {
@@ -143,10 +193,12 @@ export function mapCabysApiResponseToOptions(body: unknown): CabysSelectOption[]
       continue;
     }
     const descripcion = pickDescripcion(row);
+    const impuestoTarifa = pickImpuestoTarifa(row);
     out.push({
       codigo,
       descripcion,
       label: descripcion ? `${codigo} — ${descripcion}` : `${codigo}`,
+      impuestoTarifa,
     });
   }
 

@@ -29,6 +29,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { mapCabysApiResponseToOptions, CabysSelectOption } from '@services/facturacion-electronica/cabys-hacienda.mapper';
 import { HaciendaCabysClientService } from '@services/facturacion-electronica/hacienda-cabys-client.service';
+import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-producto-informacion',
@@ -230,11 +231,95 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     if (item) {
       this.producto.codigo_cabys = item.codigo;
       this.producto.descripcion_cabys = item.descripcion;
+      void this.aplicarImpuestoDesdeCabys(item);
     } else {
       this.producto.codigo_cabys = null;
       this.producto.descripcion_cabys = null;
     }
     this.cdr.markForCheck();
+  }
+
+  private async aplicarImpuestoDesdeCabys(item: CabysSelectOption): Promise<void> {
+    if (!this.esEmpresaCostaRica()) {
+      return;
+    }
+
+    const porcentaje = item.impuestoTarifa;
+    if (porcentaje == null) {
+      return;
+    }
+
+    if (porcentaje <= 0) {
+      this.seleccionarPorcentajeImpuesto(0);
+      return;
+    }
+
+    const existente = this.buscarImpuestoPorPorcentaje(porcentaje);
+    if (existente) {
+      this.seleccionarPorcentajeImpuesto(porcentaje);
+      return;
+    }
+
+    const nombreSugerido = this.nombreImpuestoSugerido(porcentaje);
+    const result = await Swal.fire({
+      title: 'Impuesto no configurado',
+      html:
+        `El CABYS seleccionado indica un impuesto de <strong>${porcentaje}%</strong>, ` +
+        `pero no existe un impuesto con ese porcentaje en su cuenta.<br><br>` +
+        `¿Desea crear el impuesto <strong>${nombreSugerido}</strong> y aplicarlo a este producto?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, crear y aplicar',
+      cancelButtonText: 'No',
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    this.crearYSeleccionarImpuesto(porcentaje, nombreSugerido);
+  }
+
+  private buscarImpuestoPorPorcentaje(porcentaje: number): any | undefined {
+    return this.impuestos.find((i) => Math.abs(Number(i.porcentaje) - porcentaje) < 0.001);
+  }
+
+  private nombreImpuestoSugerido(porcentaje: number): string {
+    if (porcentaje <= 0) {
+      return 'Exento (0%)';
+    }
+    return `Impuesto ${porcentaje}%`;
+  }
+
+  private seleccionarPorcentajeImpuesto(porcentaje: number): void {
+    this.producto.porcentaje_impuesto = porcentaje;
+    if (porcentaje > 0) {
+      this.calPrecioFinal();
+    }
+    this.cdr.markForCheck();
+  }
+
+  private crearYSeleccionarImpuesto(porcentaje: number, nombre: string): void {
+    const payload = {
+      nombre,
+      porcentaje,
+      id_empresa: this.usuario?.id_empresa ?? this.apiService.auth_user()?.id_empresa,
+      aplica_ventas: true,
+      aplica_gastos: true,
+      aplica_compras: true,
+    };
+
+    this.apiService.store('impuesto', payload).subscribe({
+      next: (impuesto) => {
+        this.impuestos = [...this.impuestos, impuesto];
+        this.seleccionarPorcentajeImpuesto(porcentaje);
+        this.alertService.success(
+          'Impuesto creado',
+          `Se creó "${impuesto.nombre}" y se aplicó al producto.`,
+        );
+      },
+      error: (err) => this.alertService.error(err),
+    });
   }
 
   private syncCabysSeleccionFromProducto(): void {
@@ -246,6 +331,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
         codigo: digits,
         descripcion: desc,
         label: desc ? `${digits} — ${desc}` : digits,
+        impuestoTarifa: null,
       };
     } else {
       this.cabysSeleccionado = null;
