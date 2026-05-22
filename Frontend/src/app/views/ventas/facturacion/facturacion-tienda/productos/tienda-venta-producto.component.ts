@@ -7,7 +7,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { FormControl } from '@angular/forms';
-import { debounceTime, switchMap, filter  } from 'rxjs/operators';
+import { debounceTime, switchMap, filter, tap } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
 import { inventariosParaStockVenta } from '@shared/utils/inventario-venta.util';
@@ -38,6 +38,8 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
     public override filtros:any = {};
     public buscador:any = '';
 
+    readonly minCaracteresBusqueda = 2;
+
     constructor(
         apiService: ApiService,
         alertService: AlertService,
@@ -61,7 +63,12 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         this.searchControl.valueChanges
               .pipe(
                 debounceTime(500),
-                filter((query: string) => query.trim().length > 0),
+                tap((query: string | null) => {
+                  if (String(query ?? '').trim().length < this.minCaracteresBusqueda) {
+                    this.productos = [];
+                  }
+                }),
+                filter((query: string | null) => String(query ?? '').trim().length >= this.minCaracteresBusqueda),
                 switchMap((query: any) => {
                   const params: any = {};
                   if (this.venta?.id_bodega) {

@@ -422,6 +422,18 @@ export class ApiService {
         return customConfig?.configuraciones?.inventario_sumar_stock_busquedas === true;
     }
 
+    /** Reporte Excel inventario vs ventas (ene → mes de descarga, Mi cuenta → Preferencias → Inventario). */
+    isInventarioReporteAnalisisVentasMensual(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.inventario_reporte_analisis_ventas_mensual === true;
+    }
+
     /** Ventas / Ventas limitado pueden elegir vendedor en facturación (Mi cuenta → Facturación). */
     isVentasPuedeCambiarVendedorFacturacion(): boolean {
         const empresa = this.auth_user()?.empresa;

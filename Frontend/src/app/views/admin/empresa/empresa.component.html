@@ -962,6 +962,17 @@
                                 name="inventario_sumar_stock_busquedas">
                         </div>
                     </div>
+                    <div class="form-group col-md-12 col-xl-6">
+                        <p>Habilitar reporte de proyeccción de inventario</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="inventario_reporte_analisis_ventas_mensual">Reporte Excel inventario vs ventas (año corrido hasta el mes actual)</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="inventario_reporte_analisis_ventas_mensual"
+                                [checked]="isInventarioReporteAnalisisVentasMensual()"
+                                (change)="toggleInventarioReporteAnalisisVentasMensual()"
+                                name="inventario_reporte_analisis_ventas_mensual">
+                        </div>
+                    </div>
                     <div class="form-group col-md-6">
                         <label for="valor_inventario">Valor de inventario:</label>
                         <select class="form-select" [(ngModel)]="empresa.valor_inventario" name="valor_inventario">

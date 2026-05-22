@@ -192,20 +192,34 @@ export class VentaDetallesV2Component implements OnInit {
      * Maneja el cambio de precio desde el selector dropdown
      */
     public onPrecioSelectChange(detalle:any){
-        // Buscar el precio seleccionado en la lista de precios para obtener precio_sin_iva
-        if (detalle.precios && detalle.precio_iva) {
-            const precioSeleccionado = detalle.precios.find((p: any) => parseFloat(p.precio) == parseFloat(detalle.precio_iva));
-            if (precioSeleccionado && precioSeleccionado.precio_sin_iva) {
-                detalle.precio = parseFloat(precioSeleccionado.precio_sin_iva).toFixed(4);
-            } else {
-                const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
-                if (pctDetalle > 0) {
-                    detalle.precio = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), pctDetalle).toFixed(4);
-                } else {
-                    detalle.precio = detalle.precio_iva;
-                }
-            }
+        /** Lista muestra valores sin IVA; `precio` en ngModel coincide con esa columna del catálogo. */
+        if (!detalle?.precios?.length) {
+            return;
         }
+        const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
+        const valSel = parseFloat(String(detalle.precio));
+        if (!Number.isFinite(valSel)) {
+            this.updateTotal(detalle);
+            return;
+        }
+        const eq = (a: number, b: number) => Math.abs(a - b) <= 5e-4;
+        const precioSeleccionado = detalle.precios.find((p: any) => eq(parseFloat(String(p.precio)), valSel));
+        const sinLista =
+            precioSeleccionado &&
+            precioSeleccionado.precio_sin_iva !== undefined &&
+            precioSeleccionado.precio_sin_iva !== null &&
+            precioSeleccionado.precio_sin_iva !== ''
+                ? Number(precioSeleccionado.precio_sin_iva)
+                : valSel;
+        if (!Number.isFinite(sinLista)) {
+            this.updateTotal(detalle);
+            return;
+        }
+        detalle.precio = sinLista.toFixed(4);
+        detalle.precio_iva =
+            pctDetalle > 0
+                ? (sinLista * (1 + pctDetalle / 100)).toFixed(4)
+                : sinLista.toFixed(4);
         this.updateTotal(detalle);
     }
 

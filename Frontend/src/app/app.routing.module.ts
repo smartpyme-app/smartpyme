@@ -6,6 +6,10 @@ import { AdminGuard } from './guards/admin.guard';
 import { SupervisorLimitadoGuard } from './guards/supervisor-limitado.guard';
 import { SubscriptionGuard } from './guards/SuscriptionGuard.guard';
 import { NotFoundComponent } from './shared/404/not-found.component';
+import { LoginEntryComponent } from './auth/login/login-entry.component';
+import { RegisterEntryComponent } from './auth/register/register-entry.component';
+import { PagoEntryComponent } from './auth/register/pago/pago-entry.component';
+import { AuthModule } from './auth/auth.module';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -14,21 +18,9 @@ export const GUARD_TYPES = {
 } as const;
 
 export const routes: Routes = [
-    {
-      path: 'login',
-      loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
-      title: 'Inicio de sesión'
-    },
-    {
-      path: 'registro',
-      loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent),
-      title: 'Registro'
-    },
-    {
-      path: 'pago',
-      loadComponent: () => import('./auth/register/pago/pago.component').then(m => m.PagoComponent),
-      title: 'Pago'
-    },
+    { path: 'login', component: LoginEntryComponent, title: 'Inicio de sesión' },
+    { path: 'registro', component: RegisterEntryComponent, title: 'Registro' },
+    { path: 'pago', component: PagoEntryComponent, title: 'Pago' },
     {
       path: 'pago-exitoso',
       loadComponent: () => import('./auth/register/pago/payment-success.component').then(m => m.PaymentSuccessComponent),
@@ -153,9 +145,12 @@ export const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes, {
-    preloadingStrategy: NoPreloading
-  })],
+  imports: [
+    AuthModule,
+    RouterModule.forRoot(routes, {
+      preloadingStrategy: NoPreloading
+    }),
+  ],
   exports: [RouterModule],
 })
 export class AppRoutingModule {}

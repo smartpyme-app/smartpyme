@@ -53,7 +53,8 @@ class Producto extends Model
         'color',
         'dimension',
         'material',
-        'dimensiones'
+        'dimensiones',
+        'destino_comanda',
     );
 
     protected $appends = ['nombre_categoria', 'img', 'nombre_completo', 'stock_total_lotes', 'fecha_vencimiento_proxima'];
@@ -65,6 +66,7 @@ class Producto extends Model
         'imported_from_woocommerce_csv' => 'boolean',
         'inventario_por_lotes' => 'boolean',
         'genera_comanda' => 'boolean',
+        'destino_comanda' => 'string',
     ];
 
     protected static function boot()

@@ -34,11 +34,17 @@ class InventoryController extends Controller
             // Construir query
             $query = Producto::withoutGlobalScopes()
                             ->where('id_empresa', $empresa->id)
-                            ->with(['inventarios' => function($query) {
-                                $query->whereHas('bodega', function($q) {
-                                    $q->where('activo', 1);
-                                });
-                            }]);
+                            ->with([
+                                'inventarios' => function ($query) {
+                                    $query->whereHas('bodega', function ($q) {
+                                        $q->where('activo', 1);
+                                    });
+                                },
+                                'proveedores' => function ($q) {
+                                    $q->orderBy('id')
+                                        ->with('proveedor:id,nombre,apellido,tipo,nombre_empresa');
+                                },
+                            ]);
 
             // Aplicar filtros
             if ($request->filled('codigo')) {
@@ -151,11 +157,17 @@ class InventoryController extends Controller
             $producto = Producto::withoutGlobalScopes()
                               ->where('id_empresa', $empresa->id)
                               ->where('id', $productoId)
-                              ->with(['inventarios' => function($query) {
-                                  $query->whereHas('bodega', function($q) {
-                                      $q->where('activo', 1);
-                                  });
-                              }])
+                              ->with([
+                                  'inventarios' => function ($query) {
+                                      $query->whereHas('bodega', function ($q) {
+                                          $q->where('activo', 1);
+                                      });
+                                  },
+                                  'proveedores' => function ($q) {
+                                      $q->orderBy('id')
+                                          ->with('proveedor:id,nombre,apellido,tipo,nombre_empresa');
+                                  },
+                              ])
                               ->first();
 
             if (!$producto) {

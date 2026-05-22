@@ -1,6 +1,7 @@
-import { Component, OnInit, OnDestroy, TemplateRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, TemplateRef, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ClienteNotaModalComponent } from '@shared/modals/cliente-nota-modal/cliente-nota-modal.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { FidelizacionService } from '@services/fidelizacion.service';
@@ -30,9 +31,11 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
     PopoverModule,
     TruncatePipe,
     PaginationComponent,
-    NotificacionesContainerComponent
+    NotificacionesContainerComponent,
+    ClienteNotaModalComponent,
   ],
-  templateUrl: './clientes-fidelizacion.component.html'
+  templateUrl: './clientes-fidelizacion.component.html',
+  styleUrls: ['./clientes-fidelizacion.component.css']
 })
 export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
 
@@ -69,6 +72,8 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
   };
 
   modalRef?: BsModalRef;
+
+  @ViewChild('clienteNotaModal') clienteNotaModal!: ClienteNotaModalComponent;
 
   constructor(
     private fidelizacionService: FidelizacionService,
@@ -276,10 +281,19 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Ver detalles de lealtad del cliente
+   * Abrir Vista 360° del cliente
    */
-  viewClienteLealtad(cliente: ClienteFidelizacion): void {
-    this.router.navigate(['/cliente/vista-360/', cliente.id]);
+  viewCliente360(cliente: ClienteFidelizacion): void {
+    this.router.navigate(['/cliente/vista-360', cliente.id], {
+      queryParams: { returnUrl: this.router.url }
+    });
+  }
+
+  /**
+   * Abrir modal de agregar nota sin salir de la vista
+   */
+  agregarNotaCliente(cliente: ClienteFidelizacion): void {
+    this.clienteNotaModal.open(cliente.id, cliente.nombre);
   }
 
   /**
@@ -294,6 +308,24 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
    */
   getNivelClass(nivel: number): string {
     return this.fidelizacionService.getNivelClass(nivel);
+  }
+
+  getNivelBadgeClass(nivel: number): string {
+    const clases: Record<number, string> = {
+      1: 'clientes-fid-badge badge-fid-nivel-1',
+      2: 'clientes-fid-badge badge-fid-nivel-2',
+      3: 'clientes-fid-badge badge-fid-nivel-3',
+    };
+    return clases[nivel] || 'clientes-fid-badge badge-fid-nivel-default';
+  }
+
+  getTipoClienteClass(tipo: string): string {
+    const clases: Record<string, string> = {
+      Empresa: 'clientes-fid-badge badge-fid-empresa',
+      Persona: 'clientes-fid-badge badge-fid-persona',
+      Extranjero: 'clientes-fid-badge badge-fid-extranjero',
+    };
+    return clases[tipo] || 'clientes-fid-badge badge-fid-tipo-default';
   }
 
   /**

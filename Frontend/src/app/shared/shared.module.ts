@@ -24,6 +24,7 @@ import { CrearCategoriaGastoComponent } from './modals/crear-categoria-gasto/cre
 import { CrearCargoEmpleadoComponent } from './modals/crear-cargo-empleado/crear-cargo-empleado.component';
 import { CrearProveedorComponent } from './modals/crear-proveedor/crear-proveedor.component';
 import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.component';
+import { ClienteNotaModalComponent } from './modals/cliente-nota-modal/cliente-nota-modal.component';
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
 import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
@@ -79,6 +80,7 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     CrearCargoEmpleadoComponent,
     CrearProveedorComponent,
     CrearClienteComponent,
+    ClienteNotaModalComponent,
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
@@ -112,6 +114,7 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     CrearCargoEmpleadoComponent,
     CrearProveedorComponent,
     CrearClienteComponent,
+    ClienteNotaModalComponent,
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,

@@ -28,6 +28,7 @@ export class ProductoComponent implements OnInit {
 	public producto: any = {};
 	public categorias:any[] = [];
   public loading = false;
+  public lotesRefreshKey = 0;
 
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -84,5 +85,4 @@ export class ProductoComponent implements OnInit {
   trackProductoMutado(): void {
     this.cdr.markForCheck();
   }
-
 }

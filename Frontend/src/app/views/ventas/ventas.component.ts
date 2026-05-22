@@ -1150,18 +1150,18 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   }
 
   imprimirDTEPDF(venta: any, tipoDte?: string) {
-    const t = tipoDte ?? venta.tipo_dte;
+    const t = tipoDte ?? venta.tipo_dte ?? venta.dte?.identificacion?.tipoDte;
     window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
   }
 
   imprimirDTEJSON(venta: any, tipoDte?: string) {
-    const t = tipoDte ?? venta.tipo_dte;
+    const t = tipoDte ?? venta.tipo_dte ?? venta.dte?.identificacion?.tipoDte;
     window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
   }
 
   /** XML de respuesta de Hacienda (Costa Rica), si existe tras consultar estado. */
   imprimirDTEXML(venta: any, tipoDte?: string) {
-    const t = tipoDte ?? venta.tipo_dte;
+    const t = tipoDte ?? venta.tipo_dte ?? venta.dte?.identificacion?.tipoDte;
     window.open(this.apiService.baseUrl + '/api/reporte/dte-xml/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
   }
 

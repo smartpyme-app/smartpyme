@@ -23,6 +23,7 @@ export class ClienteComponent implements OnInit {
 
     public cliente:any = {};
     public loading = false;
+    public returnUrl = '/clientes';
     modalRef?: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
@@ -38,7 +39,19 @@ export class ClienteComponent implements OnInit {
 	) { }
 
 	ngOnInit() {
+        this.route.queryParams.subscribe(params => {
+            const url = params['returnUrl'];
+            if (url && typeof url === 'string' && this.isAllowedReturnUrl(url)) {
+                this.returnUrl = url;
+            } else {
+                this.returnUrl = '/clientes';
+            }
+        });
         this.loadAll();
+    }
+
+    private isAllowedReturnUrl(url: string): boolean {
+        return url.startsWith('/cliente/vista-360') || url === '/clientes';
     }
 
     public loadAll(){

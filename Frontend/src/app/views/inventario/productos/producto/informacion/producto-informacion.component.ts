@@ -44,6 +44,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   @Input() producto: any = {};
   /** Notifica al padre (p. ej. OnPush) cuando cambia tipo compuesto u otros datos mutados en el mismo objeto. */
   @Output() productoActualizado = new EventEmitter<void>();
+  @Output() productoGuardado = new EventEmitter<any>();
   /** Evita múltiples llamadas al pedir código de barras sugerido */
   private barcodeCorrelativoPendiente = true;
   public categorias: any = [];
@@ -434,14 +435,81 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     }
 
 
+  public onInventarioPorLotesChange() {
+    if (!this.producto.id) {
+      return;
+    }
+
+    if (!this.producto.inventario_por_lotes) {
+      this.onSubmit();
+      return;
+    }
+
+    this.apiService.getAll(`producto/${this.producto.id}/preview-migracion-lotes`)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (preview: any) => {
+          if (preview.requiere_migracion) {
+            const listaHtml = (preview.bodegas || [])
+              .map((b: any) => `<li>${b.nombre_bodega}: <strong>${b.stock_inventario}</strong> uds</li>`)
+              .join('');
+            Swal.fire({
+              title: 'Inventario por lotes',
+              html: `
+                <p class="text-start mb-2">
+                  A partir de ahora este producto manejará su stock <strong>por lotes</strong>.
+                  Para no perder las existencias actuales, el sistema trasladará automáticamente
+                  ese stock a un <strong>lote inicial</strong> (<em>${preview.numero_lote || 'STOCK-INICIAL'}</em>) en cada bodega.
+                </p>
+                <p class="text-start mb-2">
+                  Después podrá editar ese lote y asignarle el <strong>código de lote</strong>
+                  y la <strong>fecha de vencimiento</strong> que correspondan.
+                </p>
+                <p class="text-start mb-1"><strong>Stock a trasladar</strong> (${preview.total_bodegas} bodega(s), ${preview.total_unidades} uds en total):</p>
+                <ul class="text-start mb-0">${listaHtml}</ul>
+              `,
+              icon: 'info',
+              showCancelButton: true,
+              confirmButtonText: 'Activar lotes',
+              cancelButtonText: 'Cancelar',
+            }).then((result) => {
+              if (result.isConfirmed) {
+                this.onSubmit();
+              } else {
+                this.producto.inventario_por_lotes = false;
+                this.cdr.markForCheck();
+              }
+            });
+            return;
+          }
+          this.onSubmit();
+        },
+        (error) => {
+          this.producto.inventario_por_lotes = false;
+          this.alertService.error(error);
+          this.cdr.markForCheck();
+        }
+      );
+  }
+
   public onSubmit() {
+    if (!this.producto.id) {
+      if (!this.producto.costo) {
+        this.producto.costo = this.producto.costo_promedio;
+      }
+      if (!this.producto.costo_promedio) {
+        this.producto.costo_promedio = this.producto.costo;
+      }
+    }
+
     this.guardar = true;
     this.cdr.markForCheck();
+    const esNuevo = !this.producto.id;
+
     this.apiService.store('producto', this.producto)
       .pipe(
         this.untilDestroyed(),
         finalize(() => {
-          // Si tu ApiService corre fuera de Angular, asegúrate de volver a la zona:
           this.zone.run(() => {
             this.guardar = false;
             this.cdr.markForCheck();
@@ -450,37 +518,52 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       )
       .subscribe({
         next: (producto) => {
-          // Invalidar cache del item específico si se está editando
-          const isNew = !this.producto.id;
-          if (!isNew && producto?.id) {
+          if (!esNuevo && producto?.id) {
             this.cacheService.delete(`/producto/${producto.id}`);
           }
-          // Invalidar cache de listas relacionadas
           this.cacheService.invalidatePattern('/productos');
           this.cacheService.invalidatePattern('/producto');
 
-          if (!isNew) this.producto = producto;
+          if (esNuevo) {
+            this.producto = producto;
+          } else {
+            Object.assign(this.producto, producto);
+          }
+          this.productoGuardado.emit(producto);
+          this.productoActualizado.emit();
 
-          // Navegación + alertas
+          if (producto.migracion_lotes && (producto.migracion_lotes.lotes_creados > 0 || producto.migracion_lotes.unidades_migradas > 0)) {
+            const m = producto.migracion_lotes;
+            this.alertService.success(
+              'Stock migrado a lotes',
+              `Se creó el lote STOCK-INICIAL con ${m.unidades_migradas} unidad(es) en ${m.lotes_creados} bodega(s).`
+            );
+          }
+
           const tipo = this.producto.tipo;
           if (tipo === 'Producto' || tipo === 'Compuesto') {
-            this.router.navigate(['/producto/editar/' + producto.id]);
+            if (esNuevo) {
+              this.router.navigate(['/producto/editar/' + producto.id]);
+            }
             this.alertService.success(
               tipo === 'Compuesto' ? 'Producto compuesto guardado' : 'Producto guardado',
               `El ${tipo.toLowerCase()} fue guardado exitosamente.`
             );
           } else if (tipo === 'Servicio') {
-            this.router.navigate(['/servicio/editar/' + producto.id]);
+            if (esNuevo) {
+              this.router.navigate(['/servicio/editar/' + producto.id]);
+            }
             this.alertService.success('Servicio guardado', 'El servicio fue guardado exitosamente.');
           } else if (tipo === 'Materia Prima') {
-            this.router.navigate(['/materias-prima/editar/' + producto.id]);
+            if (esNuevo) {
+              this.router.navigate(['/materias-prima/editar/' + producto.id]);
+            }
             this.alertService.success('Materia prima guardada', 'La materia prima fue guardada exitosamente.');
           }
         },
         error: (err) => {
           this.alertService.error(err);
           this.cdr.markForCheck();
-          // `guardar` se apaga en finalize()
         }
       });
   }

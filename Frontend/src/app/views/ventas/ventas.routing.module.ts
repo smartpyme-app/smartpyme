@@ -79,6 +79,7 @@ const routes: Routes = [
     // Clientes
         { path: 'clientes', component: ClientesComponent, title: 'Clientes'},
         { path: 'cliente/detalles/:id', component: ClienteDetallesComponent, title: 'Cliente'},
+        { path: 'cliente/vista-360', component: ClienteVista360Component, title: 'Vista 360° Cliente'},
         { path: 'cliente/vista-360/:id', component: ClienteVista360Component, title: 'Vista 360° Cliente'},
         { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente'},
         { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente'},

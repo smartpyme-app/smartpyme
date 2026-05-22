@@ -168,6 +168,15 @@
                     </div>
                 </div>
 
+                <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.genera_comanda">
+                    <label class="small text-muted">Imprimir comanda en</label>
+                    <select class="form-control form-select" [(ngModel)]="producto.destino_comanda" name="destino_comanda">
+                        <option value="cocina">Cocina</option>
+                        <option value="barra">Barra</option>
+                        <option value="ambos">Cocina y barra</option>
+                    </select>
+                </div>
+
                 <div class="form-group col-lg-12 mt-3">
                     <button [disabled]="guardar" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                         @if (!guardar) {

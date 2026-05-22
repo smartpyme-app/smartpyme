@@ -780,7 +780,17 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           detalle.descripcion = producto.nombre;
           detalle.id_producto = producto.id;
           detalle.precio = parseFloat(producto.precio);
-          detalle.costo = parseFloat(producto.costo);
+          detalle.precios = Array.isArray(producto.precios) ? [...producto.precios] : [];
+          detalle.precios.unshift({ precio: detalle.precio });
+          this.aplicarCoincidenciaListaPreciosOrdenV1(detalle, detalleCompra, producto);
+          if (
+            this.apiService.auth_user().empresa.valor_inventario == 'promedio' &&
+            producto.costo_promedio > 0
+          ) {
+            detalle.costo = parseFloat(producto.costo_promedio);
+          } else {
+            detalle.costo = parseFloat(producto.costo);
+          }
           detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
           detalle.descuento = 0;
           detalle.id_vendedor = this.venta.id_vendedor;
@@ -951,6 +961,50 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     console.log(this.venta);
   }
 
+  /** En la orden, `costo` es precio unitario **con IVA**. */
+  private precioConIvaReferenciaDesdeOrden(det: any): number | null {
+    const desdeCosto = Number(det?.costo);
+    return Number.isFinite(desdeCosto) && desdeCosto > 0 ? desdeCosto : null;
+  }
+
+  private igualdadPrecioMercadoV1(a: number, b: number): boolean {
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+    const diff = Math.abs(a - b);
+    return diff <= 0.015 || diff <= 1e-6 * Math.max(Math.abs(a), Math.abs(b), 1);
+  }
+
+  /** Lista guarda sin IVA: compara `costo` (con IVA) contra cada precio × (1+IVA). */
+  private aplicarCoincidenciaListaPreciosOrdenV1(
+    detalle: any,
+    detalleCompra: any,
+    producto: any,
+  ): void {
+    const refConIva = this.precioConIvaReferenciaDesdeOrden(detalleCompra);
+    const lista = detalle?.precios;
+    if (refConIva == null || !Array.isArray(lista) || lista.length === 0) return;
+
+    const pct =
+      producto?.porcentaje_impuesto != null && producto?.porcentaje_impuesto !== ''
+        ? Number(producto.porcentaje_impuesto)
+        : this.apiService.auth_user()?.empresa?.iva ?? 0;
+
+    let mejor: any = null;
+    let mejorErr = Infinity;
+    for (const p of lista) {
+      const sinLista = Number(p?.precio);
+      if (!Number.isFinite(sinLista)) continue;
+      const precioListaConIva = pct > 0 ? sinLista * (1 + Number(pct) / 100) : sinLista;
+      if (!this.igualdadPrecioMercadoV1(refConIva, precioListaConIva)) continue;
+      const err = Math.abs(refConIva - precioListaConIva);
+      if (err < mejorErr - 1e-9) {
+        mejorErr = err;
+        mejor = p;
+      }
+    }
+    if (mejor == null || mejorErr > 0.015) return;
+    detalle.precio = Number(mejor.precio);
+    detalle.precios[0] = { precio: detalle.precio };
+  }
   public sumTotal() {
     if (this.venta.cobrar_impuestos) {
       const sinImpuestosEnVenta =

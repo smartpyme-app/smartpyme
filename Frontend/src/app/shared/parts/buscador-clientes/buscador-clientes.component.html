@@ -1,6 +1,6 @@
 <form autocomplete="off" class="buscador position-relative w-100">
   <div class="position-relative">
-    <input id="buscadorCliente" type="text" name="cliente.nombre" class="form-control pr-5" placeholder="Consumidor Final" (keyup)="cliente.nombre == '' ? clienteSelect(cliente) : ''" [(ngModel)]="cliente.nombre">
+    <input #searchInput [id]="inputId" type="text" name="cliente.nombre" class="form-control pr-5" [placeholder]="placeholder" (keyup)="cliente.nombre == '' ? clienteSelect(cliente) : ''" [(ngModel)]="cliente.nombre">
     
     <!-- Ícono de carga -->
     @if (searching) {
@@ -23,10 +23,14 @@
       @for (cliente of clientes; track cliente.id || $index) {
         <a href="javascript:void(0);" class="list-group-item" (click)="clienteSelect(cliente)">
           {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-          @if (cliente.dui || cliente.nrc) {
-            <span>- </span>
+          @if (cliente.dui || cliente.nit || cliente.telefono || cliente.nrc) {
+            <small class="text-muted d-block">
+              @if (cliente.dui) { <span>DUI: {{ cliente.dui }}</span> }
+              @if (cliente.nit) { <span> · NIT: {{ cliente.nit }}</span> }
+              @if (cliente.nrc && !cliente.nit) { <span> · NRC: {{ cliente.nrc }}</span> }
+              @if (cliente.telefono) { <span> · Tel: {{ cliente.telefono }}</span> }
+            </small>
           }
-          <small class="text-muted">{{ cliente.dui ?? cliente.nrc }}</small>
         </a>
       }
     </ul>

@@ -31,6 +31,7 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
     public override loading: boolean = false;
     public downloading: boolean = false;
     public override filtros: any = {};
+    public downloadingReporteAnalisis: boolean = false;
     public producto: any = {};
     public bodegas: any = [];
     public categorias: any = [];
@@ -274,6 +275,27 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
 
     public openDescargar(template: TemplateRef<any>) {
         this.openModal(template);
+    }
+
+    public descargarReporteInventarioVentasMensual() {
+        this.downloadingReporteAnalisis = true;
+        const empresa = this.apiService.auth_user()?.empresa;
+        const params = {
+            id_empresa: empresa?.id,
+            fecha: this.apiService.date(),
+        };
+        this.apiService.export('inventarios/exportar-analisis-ventas-mensual', params).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'reporte-inventario-ventas.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloadingReporteAnalisis = false;
+        }, (error) => { this.alertService.error(error); this.downloadingReporteAnalisis = false; });
     }
 
     public descargar() {

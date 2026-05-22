@@ -1,4 +1,4 @@
-<div id="login-box" class="bg-white vh-100">
+﻿<div id="login-box" class="bg-white vh-100">
     <div class="container-fluid h-100">
         <div class="row d-flex align-items-center h-100">
             <!-- <div class="col-sm-8 col-md-6 d-none d-md-flex justify-content-center align-items-center position-relative" style="background-image: url('/assets/img/icon-bg.png'); background-size: 40%; background-position: bottom -100px right -100px; background-color: rgba(23,117,229,0.35)!important; height: 100vh;"> -->
@@ -9,7 +9,7 @@
                     <div class="card-body px-3 px-lg-5">
                     <app-notificaciones-container></app-notificaciones-container>
                     <h2>Pago</h2>
-                    <p>{{ user.name }} realiza el pago de tu plan {{ user.empresa.plan }} {{ user.empresa.tipo_plan }} a través de N1co.</p>
+                    <p>{{ user.name }} realiza el pago de tu plan {{ user.empresa.plan }} {{ user.empresa.tipo_plan }} a trav├®s de N1co.</p>
 
                     <!-- <div class="col-md-12">
                         <table class="table table-bordered my-3">
@@ -50,15 +50,15 @@
                     </div>
                     @if (!showDirectPayment) {
                         <p class="text-center">
-                            <b>Puedes pagar en este momento o después de 3 días de prueba</b>. <br>
-                                <!-- Puedes desactivar tu suscripción en cualquier momento. -->
+                            <b>Puedes pagar en este momento o despu├®s de 3 d├¡as de prueba</b>. <br>
+                                <!-- Puedes desactivar tu suscripci├│n en cualquier momento. -->
                         </p>
                     }
                     <div class="d-grid gap-1">
                         <div class="row justify-content-md-center">
                             <div class="col-12 col-md-8">
                                 <!-- <h4 class="text-center my-4">
-                                    Suscribirte a través de
+                                    Suscribirte a trav├®s de
                                     <img src="assets/img/logo-n1co.png" height="30px;" alt="N1co">
                                 </h4> -->
                                 @if (!showDirectPayment) {
@@ -71,7 +71,7 @@
                                         </div>
                                         <div class="d-grid gap-3">
                                             <button class="btn btn-link text-decoration-none text-dark" (click)="backToHome()">
-                                                Pagar después
+                                                Pagar despu├®s
                                             </button>
                                         </div>
                                     </div>
@@ -83,9 +83,9 @@
                     @if (showDirectPayment) {
                         <div class="payment-form">
                         <form (ngSubmit)="createMethodPaymentWithCharge()" #paymentForm="ngForm">
-                            <!-- Número de tarjeta -->
+                            <!-- N├║mero de tarjeta -->
                             <div class="mb-3">
-                                <label class="form-label">Número de Tarjeta</label>
+                                <label class="form-label">N├║mero de Tarjeta</label>
                                 <div class="input-group">
                                     <input
                                         type="text"
@@ -104,7 +104,7 @@
                                 </div>
                                 @if (cardNumber.invalid && (cardNumber.dirty || cardNumber.touched)) {
                                     <div class="invalid-feedback">
-                                        Por favor, ingrese un número de tarjeta válido
+                                        Por favor, ingrese un n├║mero de tarjeta v├ílido
                                     </div>
                                 }
                             </div>
@@ -129,9 +129,9 @@
                             </div>
 
                             <div class="row">
-                                <!-- Mes de expiración -->
+                                <!-- Mes de expiraci├│n -->
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Mes de expiración</label>
+                                    <label class="form-label">Mes de expiraci├│n</label>
                                     <input
                                         type="text"
                                         class="form-control"
@@ -145,14 +145,14 @@
                                         #expMonth="ngModel">
                                     @if (expMonth.invalid && (expMonth.dirty || expMonth.touched)) {
                                         <div class="invalid-feedback">
-                                            Mes inválido (01-12)
+                                            Mes inv├ílido (01-12)
                                         </div>
                                     }
                                 </div>
 
-                                <!-- Año de expiración -->
+                                <!-- A├▒o de expiraci├│n -->
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Año de expiración</label>
+                                    <label class="form-label">A├▒o de expiraci├│n</label>
                                     <input
                                         type="text"
                                         class="form-control"
@@ -166,7 +166,7 @@
                                         #expYear="ngModel">
                                     @if (expYear.invalid && (expYear.dirty || expYear.touched)) {
                                         <div class="invalid-feedback">
-                                            Año inválido
+                                            A├▒o inv├ílido
                                         </div>
                                     }
                                 </div>
@@ -187,16 +187,16 @@
                                         #cvv="ngModel">
                                     @if (cvv.invalid && (cvv.dirty || cvv.touched)) {
                                         <div class="invalid-feedback">
-                                            CVV inválido
+                                            CVV inv├ílido
                                         </div>
                                     }
                                 </div>
                             </div>
 
                             <div class="row">
-                                <!-- País -->
+                                <!-- Pa├¡s -->
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">País</label>
+                                    <label class="form-label">Pa├¡s</label>
                                     <select
                                       class="form-control"
                                       [(ngModel)]="billingInfo.countryCode"
@@ -211,7 +211,7 @@
                                       #countryCode="ngModel"
                                     >
                                       <option value="" disabled selected>
-                                        Seleccione un país
+                                        Seleccione un pa├¡s
                                       </option>
                                       @for (pais of paises; track pais.cod) {
                                           <option [value]="pais.cod">{{ pais.nombre }}</option>
@@ -219,12 +219,12 @@
                                     </select>
                                     @if (countryCode.invalid && (countryCode.dirty || countryCode.touched)) {
                                         <div class="invalid-feedback">
-                                            País inválido
+                                            Pa├¡s inv├ílido
                                         </div>
                                     }
                                   </div>
 
-                                <!-- Código de Estado -->
+                                <!-- C├│digo de Estado -->
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Estado</label>
                                     <select
@@ -247,14 +247,14 @@
                                     </select>
                                     @if (stateCode.invalid && (stateCode.dirty || stateCode.touched)) {
                                         <div class="invalid-feedback">
-                                            Estado inválido
+                                            Estado inv├ílido
                                         </div>
                                     }
                                   </div>
 
-                                <!-- Código ZIP -->
+                                <!-- C├│digo ZIP -->
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Código ZIP</label>
+                                    <label class="form-label">C├│digo ZIP</label>
                                     <input
                                       type="text"
                                       class="form-control"
@@ -271,13 +271,13 @@
                                     />
                                     @if (zipCode.invalid && (zipCode.dirty || zipCode.touched)) {
                                         <div class="invalid-feedback">
-                                            Código ZIP inválido
+                                            C├│digo ZIP inv├ílido
                                         </div>
                                     }
                                   </div>
                             </div>
 
-                            <!-- Botones de acción -->
+                            <!-- Botones de acci├│n -->
                             <div class="d-grid gap-2">
                                 <button
                                     type="submit"
@@ -297,7 +297,7 @@
                         </form>
                         </div>
                     }
-                    <!-- <p class="text-center">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p> -->
+                    <!-- <p class="text-center">┬┐Ya tienes una cuenta? <a routerLink="/login">Inicia sesi├│n</a></p> -->
                     <div class="bg-white text-center mt-5">
                         <p class="my-3">
                             <a href="https://websis.me" target="_blank">

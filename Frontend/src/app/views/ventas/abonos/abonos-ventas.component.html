@@ -26,7 +26,7 @@
                     <img appLazyImage="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarAbonos()" autocomplete="off">
-                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar por correlativo, cliente, venta..." [(ngModel)]="filtros.buscador">
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img appLazyImage="/assets/icons/filter.png" class="icon"> </button>
             </div>
@@ -59,6 +59,7 @@
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
+                        <th (click)="setOrden('correlativo')" [ngClass]="{'sorted-asc': filtros.orden == 'correlativo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'correlativo' && filtros.direccion == 'desc'}" class="click">N°</th>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>Cliente</th>
                         <th class="d-none d-md-table-cell">Venta</th>
@@ -72,14 +73,14 @@
                 <tbody>
                     @if (abonos?.total < 1 && !loading) {
                         <tr>
-                            <td colspan="6" class="text-center">
+                            <td colspan="8" class="text-center">
                                 <span class="badge bg-primary">No tiene abonos registrados</span>
                             </td>
                         </tr>
                     }
                     @if (loading) {
                         <tr>
-                            <td colspan="6" class="text-center">
+                            <td colspan="8" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
@@ -88,10 +89,11 @@
                     @for (abono of abonos?.data; track abono.id) {
                         <tr>
                         
+                        <td>{{ abono.correlativo ?? abono.id }}</td>
                         <td>{{abono.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{abono.venta?.nombre_cliente | truncate:30 }}@if (abono.venta?.id_cliente && abono.venta?.id_cliente != 1) {<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{abono.venta?.id_cliente}}"><i class="fa fa-edit"></i></a>}</td>
                         <td>
-                            {{abono.venta?.nombre_documento }} # {{abono.venta?.correlativo }}
+                            {{abono.venta?.nombre_documento }} #{{abono.venta?.correlativo }}
                             <a class="float-end d-none"  tooltip="Ver información de la venta" routerLink="/venta/{{abono.id_venta}}"><i class="fa fa-magnifying-glass"></i></a>
                         </td>
                         <td>{{abono.forma_pago}}</td>

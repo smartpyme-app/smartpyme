@@ -217,7 +217,6 @@
         <input class="form-check-input float-end" type="checkbox" role="switch" (change)=" producto.id ? onSubmit() : '' " [(ngModel)]="producto.inventario_por_lotes" name="inventario_por_lotes">
       </div>
     </div>
-
   <div class="form-group col-md-6 col-lg-5 without-label">
     <div class="form-switch bg-light-info rounded">
       <label>Genera comanda</label>
@@ -233,8 +232,7 @@
         @if (guardar) {
         <span>Guardando...</span>
         }
-      </button>
-    </div>
+      </button>    </div>
 </form>
 
 <ng-template #modalAtributo>

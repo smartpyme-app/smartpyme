@@ -268,8 +268,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
 
     imprimirDTEXML(venta: any, tipoDte?: string) {
         const t = tipoDte ?? venta.tipo_dte;
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-xml/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
-    }
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-xml/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');    }
 
     emitirDTE(){
         this.saving = true;

@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api\Inventario;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Inventario;
 use App\Exports\Inventario\InventarioAFechaExport;
+use App\Exports\Inventario\InventarioVentasMensualAnalisisExport;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Inventario\StoreInventarioRequest;
 use App\Http\Requests\Inventario\ExportInventarioRequest;
@@ -139,6 +142,43 @@ class InventariosController extends Controller
             return Excel::download($inventario, 'inventario.xlsx');
         } catch (\Throwable $e) {
             \Log::error('Error al exportar inventario: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+            ]);
+            throw $e;
+        }
+    }
+
+    public function exportAnalisisVentasMensual(Request $request)
+    {
+        $request->validate([
+            'id_empresa' => 'required|numeric',
+            'fecha' => 'nullable|date',
+        ]);
+
+        $idEmpresa = (int) $request->input('id_empresa');
+        if (!Auth::user() || (int) Auth::user()->id_empresa !== $idEmpresa) {
+            return response()->json([
+                'error' => 'No autorizado.',
+            ], 403);
+        }
+
+        $empresa = Empresa::find($idEmpresa);
+        if (!$empresa || !$empresa->isInventarioReporteAnalisisVentasMensualHabilitado()) {
+            return response()->json([
+                'error' => 'Reporte no habilitado en preferencias del sistema.',
+            ], 403);
+        }
+
+        try {
+            $export = new InventarioVentasMensualAnalisisExport();
+            $export->prepare($request, $empresa);
+
+            $filename = 'reporte-inventario-ventas-' . date('Y-m-d') . '.xlsx';
+
+            return Excel::download($export, $filename);
+        } catch (\Throwable $e) {
+            \Log::error('Error al exportar reporte inventario ventas mensual: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'request' => $request->all(),
             ]);

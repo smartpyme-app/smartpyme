@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
-import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
+import { debounceTime, switchMap, filter, catchError, tap } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
 import { inventariosParaStockVenta } from '@shared/utils/inventario-venta.util';
@@ -39,6 +39,9 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
     public override loading:boolean = false;
     public descripcionesExpandidas: { [key: number]: boolean } = {};
 
+    /** Mínimo de caracteres antes de llamar a la API (facturación). */
+    readonly minCaracteresBusqueda = 2;
+
     constructor(
         public override apiService: ApiService,
         alertService: AlertService,
@@ -65,7 +68,12 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
         this.searchControl.valueChanges
           .pipe(
             debounceTime(500),
-            filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
+            tap((query: string | null) => {
+              if (String(query ?? '').trim().length < this.minCaracteresBusqueda) {
+                this.productos = [];
+              }
+            }),
+            filter((query: string | null) => String(query ?? '').trim().length >= this.minCaracteresBusqueda),
             switchMap((query: any) => {
               const q = this.normalizeBusqueda(query);
               const params: any = { query: q };
@@ -264,6 +272,10 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
             .trim()
             .replace(/[\r\n\u0000]+/g, '')
             .replace(/~+$/g, '');
+    }
+
+    get puedeMostrarResultadosBusqueda(): boolean {
+        return String(this.searchControl.value ?? '').trim().length >= this.minCaracteresBusqueda;
     }
 
     /**

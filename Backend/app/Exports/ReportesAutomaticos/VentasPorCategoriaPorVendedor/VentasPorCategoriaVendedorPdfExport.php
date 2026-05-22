@@ -111,11 +111,9 @@ class VentasPorCategoriaVendedorPdfExport
                 ->orderBy('us.name')
                 ->get();
     
-            // Obtener lista de categorías únicas
-            $categorias = $ventasData->pluck('nombre_categoria', 'id_categoria')->unique();
-    
-            // Obtener lista de vendedores únicos
-            $vendedores = $ventasData->pluck('nombre_vendedor', 'id_vendedor')->unique();
+            // Obtener categorías y vendedores por ID (no usar unique() sobre valores: elimina IDs distintos con el mismo nombre)
+            $categorias = $ventasData->pluck('nombre_categoria', 'id_categoria');
+            $vendedores = $ventasData->pluck('nombre_vendedor', 'id_vendedor');
     
             // Crear un mapa de porcentajes por categoría
             $porcentajesCategorias = [];
@@ -179,6 +177,22 @@ class VentasPorCategoriaVendedorPdfExport
                 // Determinar nombre de categoría con porcentaje
                 $porcentaje = isset($porcentajesCategorias[$idCategoria]) ? $porcentajesCategorias[$idCategoria]['porcentaje'] : 1;
                 $nombreConPorcentaje = $nombreCategoria . ' (' . ($porcentaje * 100) . '%)';
+
+                if (!isset($resultadoFormateado[$idVendedor])) {
+                    $resultadoFormateado[$idVendedor] = [
+                        'id_vendedor' => $idVendedor,
+                        'Vendedor' => $venta->nombre_vendedor,
+                    ];
+                    foreach ($categorias as $idCat => $nombreCat) {
+                        $pct = isset($porcentajesCategorias[$idCat]) ? $porcentajesCategorias[$idCat]['porcentaje'] : 1;
+                        $resultadoFormateado[$idVendedor][$nombreCat . ' (' . ($pct * 100) . '%)'] = 0;
+                    }
+                    $resultadoFormateado[$idVendedor]['TOTAL'] = 0;
+                }
+
+                if (!isset($totales[$nombreConPorcentaje])) {
+                    $totales[$nombreConPorcentaje] = 0;
+                }
     
                 // Asignar valor a la celda correspondiente
                 $resultadoFormateado[$idVendedor][$nombreConPorcentaje] = $total;

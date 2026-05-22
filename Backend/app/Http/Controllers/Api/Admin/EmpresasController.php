@@ -180,6 +180,22 @@ class EmpresasController extends Controller
 
         $empresa->save();
 
+        if ($request->has('forma_pago')) {
+            $metodoValidado = $request->input('forma_pago');
+            if (!in_array($metodoValidado, [config('constants.METODO_PAGO_N1CO'), config('constants.METODO_PAGO_TRANSFERENCIA')])) {
+                $metodoValidado = config('constants.METODO_PAGO_TRANSFERENCIA');
+            }
+
+            $empresa->metodo_pago = $metodoValidado;
+            $empresa->save();
+            
+            $suscripcion = Suscripcion::where('empresa_id', $empresa->id)->first();
+            if ($suscripcion) {
+                $suscripcion->metodo_pago = $metodoValidado;
+                $suscripcion->save();
+            }
+        }
+
         return $empresa;
     }
 
@@ -198,6 +214,15 @@ class EmpresasController extends Controller
         }
 
         $empresa->save();
+
+        if ($request->has('forma_pago')) {
+            $metodoValidado = $request->input('forma_pago');
+            if (!in_array($metodoValidado, [config('constants.METODO_PAGO_N1CO'), config('constants.METODO_PAGO_TRANSFERENCIA')])) {
+                $metodoValidado = config('constants.METODO_PAGO_TRANSFERENCIA');
+            }
+            $empresa->metodo_pago = $metodoValidado;
+            $empresa->save();
+        }
 
         if (!isset($request->isRegister) || $request->isRegister !== false) {
             $this->createCompanySubscription($empresa, $request);
@@ -269,6 +294,11 @@ class EmpresasController extends Controller
     {
         $plan = $this->getPlan($empresa->plan, true, $empresa->plan);
 
+        $metodoValidado = $empresa->forma_pago;
+        if (!in_array($metodoValidado, [config('constants.METODO_PAGO_N1CO'), config('constants.METODO_PAGO_TRANSFERENCIA')])) {
+            $metodoValidado = config('constants.METODO_PAGO_TRANSFERENCIA');
+        }
+
         $this->createSuscripcion([
             'empresa_id' => $empresa->id,
             'plan_id' => $plan->id,
@@ -289,7 +319,8 @@ class EmpresasController extends Controller
             'direccion_factura' => $empresa->direccion,
             'intentos_cobro' => 0,
             'ultimo_intento_cobro' => null,
-            'historial_pagos' => null
+            'historial_pagos' => null,
+            'metodo_pago' => $metodoValidado
         ]);
     }
 
@@ -404,7 +435,7 @@ class EmpresasController extends Controller
             $diasPrueba = $plan->dias_periodo_prueba;
 
             $data = array_merge($data, [
-                'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'),
+                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
                 'estado_ultimo_pago' => null,
                 'fecha_ultimo_pago' => null,
                 'fecha_proximo_pago' => now()->addDays($diasPrueba),

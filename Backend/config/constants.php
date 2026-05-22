@@ -20,6 +20,7 @@ return [
     'FORMAS_PAGO_GIFT_CARD' => [
         'Gift Card',
         'Gif card',
+        'Giftcard',
         'GIFTCARD',
         'Tarjeta de regalo',
         'Tarjeta regalo',
@@ -34,6 +35,7 @@ return [
 
     // Días tras el vencimiento con acceso (1..N); suspensión desde el día N+1 si siguen saldos pendientes (p. ej. N=3).
     'DIAS_PRORROGA_SUSCRIPCION' => 3,
+    'DIAS_INACTIVACION_EMPRESA_SUSCRIPCION' => 30,
 
     /** Días que suma la acción admin «Conceder acceso temporal» (sin mover fecha_proximo_pago). */
     'DIAS_ACCESO_TEMPORAL_ADMIN' => 2,

@@ -78,7 +78,7 @@ export class GastoComponent implements OnInit {
 
   readonly TIPOS_CATEGORIA = [
     'Alquiler', 'Combustible', 'Costo de venta', 'Gastos varios', 'Insumos',
-    'Impuestos', 'Gastos Administrativos', 'Mantenimiento', 'Marketing',
+    'Impuestos', 'Activo Fijo', 'Gastos Administrativos', 'Mantenimiento', 'Marketing',
     'Materia Prima', 'Servicios', 'Pago comisión', 'Planilla', 'Préstamos', 'Publicidad'
   ];
 

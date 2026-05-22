@@ -138,20 +138,20 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
         // precio: precio sin IVA (para guardar en BD)
         this.detalle.precio         = precioSinIva.toFixed(4);
         
-        // Actualizar precios para el selector
+        // Lista sin IVA (como configuración del producto)
         this.detalle.precios        = paquete.precios ? paquete.precios.map((p: any) => {
             const precioConIvaP = parseFloat(p.precio);
             const precioSinIvaP = iva > 0 ? precioConIvaP / (1 + iva / 100) : precioConIvaP;
             return {
                 ...p,
-                precio: precioConIvaP.toFixed(4),
-                precio_sin_iva: precioSinIvaP.toFixed(4)
+                precio: precioSinIvaP.toFixed(4),
+                precio_sin_iva: precioSinIvaP,
             };
         }) : [];
-        
+
         this.detalle.precios.unshift({
-                'precio' : this.detalle.precio_iva,
-                'precio_sin_iva': precioSinIva.toFixed(4)
+                'precio' : precioSinIva.toFixed(4),
+                'precio_sin_iva': precioSinIva
             });
         this.detalle.costo          = parseFloat(paquete.costo);
         paquete.inventarios = inventariosParaStockVenta(paquete.inventarios, this.venta);

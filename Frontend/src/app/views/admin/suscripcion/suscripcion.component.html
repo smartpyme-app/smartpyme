@@ -4,13 +4,8 @@
 
   <div class="d-flex justify-content-end">
     <div class="dropdown">
-      <button
-        class="btn btn-light dropdown-toggle"
-        type="button"
-        id="dropdownMenuButton"
-        data-bs-toggle="dropdown"
-        aria-expanded="false"
-      >
+      <button class="btn btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
+        aria-expanded="false">
         <i class="fa fa-cog me-1"></i> Acciones
       </button>
       <ul
@@ -27,8 +22,7 @@
               pago
             </a>
           </li>
-        }
-        <li>
+        }        <li>
           <a class="dropdown-item cursor-pointer" (click)="openModal(mmPagar)">
             <i class="fa-regular fa-credit-card me-2"></i> Pagar suscripción
           </a>
@@ -37,10 +31,7 @@
           <hr class="dropdown-divider" />
         </li>
         <li>
-          <a
-            class="dropdown-item text-danger cursor-pointer"
-            (click)="openModal(mcancelarSuscripcion)"
-          >
+          <a class="dropdown-item text-danger cursor-pointer" (click)="openModal(mcancelarSuscripcion)">
             <i class="fa fa-ban me-2"></i> Cancelar suscripción
           </a>
         </li>
@@ -76,15 +67,12 @@
     </div>
     <div class="form-group col-md-6 col-lg-2">
       <label class="fw-bold">Estado</label> <br />
-      <p
-        class="badge"
-        [ngClass]="{
+      <p class="badge" [ngClass]="{
           'bg-success':
             suscripcion?.suscripcion?.estado?.toLowerCase() == 'activo',
           'bg-danger':
             suscripcion?.suscripcion?.estado?.toLowerCase() != 'activo'
-        }"
-      >
+        }">
         {{ suscripcion?.suscripcion?.estado }}
       </p>
     </div>
@@ -92,8 +80,7 @@
       <label class="fw-bold">Costo</label>
       <p>
         {{
-          suscripcion?.suscripcion?.monto | currency
-        }}
+          suscripcion?.suscripcion?.monto | currency        }}
       </p>
     </div>
   </div>
@@ -170,8 +157,7 @@
                 }
               </td>
             </tr>
-          }
-        </tbody>
+          }        </tbody>
       </table>
     </div>
   </div>
@@ -182,12 +168,7 @@
     <div class="modal-title">
       <h4 class="text-center">Actualizar método de pago</h4>
     </div>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRef.hide()"
-      aria-label="Close"
-    ></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <form #updatePaymentForm="ngForm" (ngSubmit)="onUpdatePaymentMethod()">
@@ -196,28 +177,21 @@
 
         <div class="row my-3">
           <div class="col-8">
-            <label
-              for="pagoRecurrente"
-              class="form-label fw-bold text-dark m-0"
-            >
+            <label for="pagoRecurrente" class="form-label fw-bold text-dark m-0">
               Pago recurrente
             </label>
           </div>
 
           <div class="col-4">
             <div class="form-check">
-              <input
-                type="checkbox"
-                class="form-check-input"
-                id="pagoRecurrente"
+              <input type="checkbox" class="form-check-input" id="pagoRecurrente"
                 (change)="onRecurrentPaymentChange($event)"
-                [checked]="suscripcion?.suscripcion?.pago_recurrente_empresa"
-              />
+                [checked]="suscripcion?.suscripcion?.pago_recurrente_empresa" />
               <label class="form-check-label ms-2" for="pagoRecurrente">
                 {{
-                  suscripcion?.suscripcion?.pago_recurrente_empresa
-                    ? "Activo"
-                    : "Inactivo"
+                suscripcion?.suscripcion?.pago_recurrente_empresa
+                ? "Activo"
+                : "Inactivo"
                 }}
               </label>
             </div>
@@ -246,34 +220,22 @@
                   <i class="fas fa-edit me-1"></i> Cambiar método de pago
                 </button>
               }
-            </div>
-          </div>
+            </div>          </div>
         }
 
         <div class="form-group col-md-12">
           @if (showUpdateForm || !suscripcion?.metodoPago) {
-            <div class="payment-form">
-            <!-- Formulario de tarjeta (igual que el original) -->
+            <div class="payment-form">            <!-- Formulario de tarjeta (igual que el original) -->
             <!-- Número de tarjeta -->
             <div class="mb-3">
               <label class="form-label">Número de Tarjeta</label>
               <div class="input-group">
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="paymentData.cardNumber"
-                  name="cardNumber"
-                  required
+                <input type="text" class="form-control" [(ngModel)]="paymentData.cardNumber" name="cardNumber" required
                   [ngClass]="{
                     'is-invalid':
                       cardNumber.invalid &&
                       (cardNumber.dirty || cardNumber.touched)
-                  }"
-                  pattern="[0-9\s]{13,19}"
-                  maxlength="19"
-                  placeholder="0000 0000 0000 0000"
-                  #cardNumber="ngModel"
-                />
+                  }" pattern="[0-9\s]{13,19}" maxlength="19" placeholder="0000 0000 0000 0000" #cardNumber="ngModel" />
                 <span class="input-group-text">
                   <i class="fas fa-credit-card"></i>
                 </span>
@@ -282,8 +244,7 @@
                 <div class="invalid-feedback">
                   Por favor, ingrese un número de tarjeta válido
                 </div>
-              }
-            </div>
+              }            </div>
 
             <!-- Resto del formulario (igual que el original) -->
             <!-- ... -->
@@ -291,12 +252,7 @@
             <!-- Nombre del titular -->
             <div class="mb-3">
               <label class="form-label">Nombre del Titular</label>
-              <input
-                type="text"
-                class="form-control"
-                [(ngModel)]="paymentData.cardHolder"
-                name="cardHolder"
-                required
+              <input type="text" class="form-control" [(ngModel)]="paymentData.cardHolder" name="cardHolder" required
                 [ngClass]="{
                   'is-invalid':
                     cardHolder.invalid &&
@@ -309,20 +265,14 @@
                 <div class="invalid-feedback">
                   El nombre del titular es requerido
                 </div>
-              }
-            </div>
+              }            </div>
 
             <div class="row">
               <!-- Mes de expiración -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">Mes de expiración</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="paymentData.expirationMonth"
-                  name="expirationMonth"
-                  required
-                  [ngClass]="{
+                <input type="text" class="form-control" [(ngModel)]="paymentData.expirationMonth" name="expirationMonth"
+                  required [ngClass]="{
                     'is-invalid':
                       expMonth.invalid && (expMonth.dirty || expMonth.touched)
                   }"
@@ -335,19 +285,13 @@
                   <div class="invalid-feedback">
                     Mes inválido (01-12)
                   </div>
-                }
-              </div>
+                }              </div>
 
               <!-- Año de expiración -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">Año de expiración</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="paymentData.expirationYear"
-                  name="expirationYear"
-                  required
-                  [ngClass]="{
+                <input type="text" class="form-control" [(ngModel)]="paymentData.expirationYear" name="expirationYear"
+                  required [ngClass]="{
                     'is-invalid':
                       expYear.invalid && (expYear.dirty || expYear.touched)
                   }"
@@ -360,19 +304,12 @@
                   <div class="invalid-feedback">
                     Año inválido
                   </div>
-                }
-              </div>
+                }              </div>
 
               <!-- CVV -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">CVV</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="paymentData.cvv"
-                  name="cvv"
-                  required
-                  [ngClass]="{
+                <input type="text" class="form-control" [(ngModel)]="paymentData.cvv" name="cvv" required [ngClass]="{
                     'is-invalid': cvv.invalid && (cvv.dirty || cvv.touched)
                   }"
                   pattern="[0-9]{3,4}"
@@ -384,21 +321,15 @@
                   <div class="invalid-feedback">
                     CVV inválido
                   </div>
-                }
-              </div>
+                }              </div>
             </div>
 
             <div class="row">
               <!-- País -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">País</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="billingInfo.countryCode"
-                  (change)="onPaisChange()"
-                  name="countryCode"
-                  required
-                  [ngClass]="{
+                <select class="form-control" [(ngModel)]="billingInfo.countryCode" (change)="onPaisChange()"
+                  name="countryCode" required [ngClass]="{
                     'is-invalid':
                       countryCode.invalid &&
                       (countryCode.dirty || countryCode.touched)
@@ -406,8 +337,7 @@
                   #countryCode="ngModel"
                 >
                   <option value="" disabled selected>
-                    Seleccione un país
-                  </option>
+                    Seleccione un país                  </option>
                   @for (pais of paises; track $index) {
                     <option [value]="pais.cod">{{ pais.nombre }}</option>
                   }
@@ -416,25 +346,17 @@
                   <div class="invalid-feedback">
                     País inválido
                   </div>
-                }
-              </div>
+                }              </div>
 
               <!-- Código de Estado -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">Estado</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="billingInfo.stateCode"
-                  name="stateCode"
-                  (change)="onEstadoChange()"
-                  required
-                  [ngClass]="{
+                <select class="form-control" [(ngModel)]="billingInfo.stateCode" name="stateCode"
+                  (change)="onEstadoChange()" required [ngClass]="{
                     'is-invalid':
                       stateCode.invalid &&
                       (stateCode.dirty || stateCode.touched)
-                  }"
-                  #stateCode="ngModel"
-                >
+                  }" #stateCode="ngModel">
                   <option value="" disabled selected>Selecciona estado</option>
                   @for (estado of estados; track estado.codigo) {
                     <option [value]="estado.codigo">{{ estado.nombre }}</option>
@@ -444,18 +366,12 @@
                   <div class="invalid-feedback">
                     Estado inválido
                   </div>
-                }
-              </div>
+                }              </div>
 
               <!-- Código ZIP -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">Código ZIP</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="billingInfo.zipCode"
-                  name="zipCode"
-                  required
+                <input type="text" class="form-control" [(ngModel)]="billingInfo.zipCode" name="zipCode" required
                   [ngClass]="{
                     'is-invalid':
                       zipCode.invalid && (zipCode.dirty || zipCode.touched)
@@ -468,8 +384,7 @@
                   <div class="invalid-feedback">
                     Código ZIP inválido
                   </div>
-                }
-              </div>
+                }              </div>
             </div>
             </div>
           }
@@ -496,8 +411,7 @@
             </button>
           }
         </div>
-      }
-    </form>
+      }    </form>
   </div>
 </ng-template>
 
@@ -506,12 +420,7 @@
     <div class="modal-title">
       <h4 class="text-center">Pagar suscripción</h4>
     </div>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRef.hide()"
-      aria-label="Close"
-    ></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <div class="row mb-4">
@@ -550,14 +459,12 @@
                   <i class="fas fa-edit me-1"></i> Usar otra tarjeta
                 </button>
               }
-            </div>
-          </div>
+            </div>          </div>
         }
 
         <div class="form-group col-md-12">
           @if (showPaymentForm || !suscripcion?.metodoPago) {
-            <div class="payment-form">
-            <div class="alert alert-info">
+            <div class="payment-form">            <div class="alert alert-info">
               <i class="fas fa-info-circle me-2"></i>
               <span>
                 Se actualizara automaticamente tu método de pago con la nueva
@@ -568,22 +475,12 @@
             <div class="mb-3">
               <label class="form-label">Número de Tarjeta</label>
               <div class="input-group">
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="paymentData.cardNumber"
-                  name="cardNumber"
-                  required
+                <input type="text" class="form-control" [(ngModel)]="paymentData.cardNumber" name="cardNumber" required
                   [ngClass]="{
                     'is-invalid':
                       cardNumber.invalid &&
                       (cardNumber.dirty || cardNumber.touched)
-                  }"
-                  pattern="[0-9\s]{13,19}"
-                  maxlength="19"
-                  placeholder="0000 0000 0000 0000"
-                  #cardNumber="ngModel"
-                />
+                  }" pattern="[0-9\s]{13,19}" maxlength="19" placeholder="0000 0000 0000 0000" #cardNumber="ngModel" />
                 <span class="input-group-text">
                   <i class="fas fa-credit-card"></i>
                 </span>
@@ -592,19 +489,13 @@
                 <div class="invalid-feedback">
                   Por favor, ingrese un número de tarjeta válido
                 </div>
-              }
-            </div>
+              }            </div>
 
             <!-- Resto del formulario (igual que el original) -->
             <!-- Nombre del titular -->
             <div class="mb-3">
               <label class="form-label">Nombre del Titular</label>
-              <input
-                type="text"
-                class="form-control"
-                [(ngModel)]="paymentData.cardHolder"
-                name="cardHolder"
-                required
+              <input type="text" class="form-control" [(ngModel)]="paymentData.cardHolder" name="cardHolder" required
                 [ngClass]="{
                   'is-invalid':
                     cardHolder.invalid &&
@@ -617,20 +508,14 @@
                 <div class="invalid-feedback">
                   El nombre del titular es requerido
                 </div>
-              }
-            </div>
+              }            </div>
 
             <div class="row">
               <!-- Mes de expiración -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">Mes de expiración</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="paymentData.expirationMonth"
-                  name="expirationMonth"
-                  required
-                  [ngClass]="{
+                <input type="text" class="form-control" [(ngModel)]="paymentData.expirationMonth" name="expirationMonth"
+                  required [ngClass]="{
                     'is-invalid':
                       expMonth.invalid && (expMonth.dirty || expMonth.touched)
                   }"
@@ -643,19 +528,13 @@
                   <div class="invalid-feedback">
                     Mes inválido (01-12)
                   </div>
-                }
-              </div>
+                }              </div>
 
               <!-- Año de expiración -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">Año de expiración</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="paymentData.expirationYear"
-                  name="expirationYear"
-                  required
-                  [ngClass]="{
+                <input type="text" class="form-control" [(ngModel)]="paymentData.expirationYear" name="expirationYear"
+                  required [ngClass]="{
                     'is-invalid':
                       expYear.invalid && (expYear.dirty || expYear.touched)
                   }"
@@ -668,19 +547,12 @@
                   <div class="invalid-feedback">
                     Año inválido
                   </div>
-                }
-              </div>
+                }              </div>
 
               <!-- CVV -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">CVV</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="paymentData.cvv"
-                  name="cvv"
-                  required
-                  [ngClass]="{
+                <input type="text" class="form-control" [(ngModel)]="paymentData.cvv" name="cvv" required [ngClass]="{
                     'is-invalid': cvv.invalid && (cvv.dirty || cvv.touched)
                   }"
                   pattern="[0-9]{3,4}"
@@ -692,27 +564,19 @@
                   <div class="invalid-feedback">
                     CVV inválido
                   </div>
-                }
-              </div>
+                }              </div>
             </div>
 
             <div class="row">
               <!-- País -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">País</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="billingInfo.countryCode"
-                  name="countryCode"
-                  required
-                  (change)="onPaisChange()"
-                  [ngClass]="{
+                <select class="form-control" [(ngModel)]="billingInfo.countryCode" name="countryCode" required
+                  (change)="onPaisChange()" [ngClass]="{
                     'is-invalid':
                       countryCode.invalid &&
                       (countryCode.dirty || countryCode.touched)
-                  }"
-                  #countryCode="ngModel"
-                >
+                  }" #countryCode="ngModel">
                   <option value="" disabled selected>Selecciona país</option>
                   @for (pais of paises; track $index) {
                     <option [value]="pais.cod">{{ pais.nombre }}</option>
@@ -722,25 +586,17 @@
                   <div class="invalid-feedback">
                     País inválido
                   </div>
-                }
-              </div>
+                }              </div>
 
               <!-- Código de Estado -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">Estado</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="billingInfo.stateCode"
-                  (change)="onEstadoChange()"
-                  name="stateCode"
-                  required
-                  [ngClass]="{
+                <select class="form-control" [(ngModel)]="billingInfo.stateCode" (change)="onEstadoChange()"
+                  name="stateCode" required [ngClass]="{
                     'is-invalid':
                       stateCode.invalid &&
                       (stateCode.dirty || stateCode.touched)
-                  }"
-                  #stateCode="ngModel"
-                >
+                  }" #stateCode="ngModel">
                   <option value="" disabled selected>Selecciona estado</option>
                   @for (estado of estados; track estado.codigo) {
                     <option [value]="estado.codigo">{{ estado.nombre }}</option>
@@ -750,18 +606,12 @@
                   <div class="invalid-feedback">
                     Estado inválido
                   </div>
-                }
-              </div>
+                }              </div>
 
               <!-- Código ZIP -->
               <div class="col-md-4 mb-3">
                 <label class="form-label">Código ZIP</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="billingInfo.zipCode"
-                  name="zipCode"
-                  required
+                <input type="text" class="form-control" [(ngModel)]="billingInfo.zipCode" name="zipCode" required
                   [ngClass]="{
                     'is-invalid':
                       zipCode.invalid && (zipCode.dirty || zipCode.touched)
@@ -774,8 +624,7 @@
                   <div class="invalid-feedback">
                     Código ZIP inválido
                   </div>
-                }
-              </div>
+                }              </div>
             </div>
             </div>
           }
@@ -817,8 +666,7 @@
           >
             Cancelar
           </button>
-        }
-      </div>
+        }      </div>
     </form>
   </div>
 </ng-template>
@@ -831,7 +679,6 @@
   >
   </app-threeds-modal>
 }
-
 <!--
 <section class="bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Pagos</h2>
@@ -884,12 +731,7 @@
 <ng-template #mcancelarSuscripcion>
   <div class="modal-header">
     <h4 class="modal-title">Cancelar suscripción</h4>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRef.hide()"
-      aria-label="Close"
-    ></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -911,49 +753,26 @@
     <form (ngSubmit)="onCancelar()" #cancelForm="ngForm">
       <div class="form-group mb-3">
         <label class="form-label">Motivo de cancelación:</label>
-        <textarea
-          class="form-control"
-          [(ngModel)]="cancelarSuscripcion.motivo_cancelacion"
-          name="motivo_cancelacion"
-          rows="3"
-          placeholder="Por favor, cuéntanos por qué cancelas tu suscripción"
-          required
-        ></textarea>
+        <textarea class="form-control" [(ngModel)]="cancelarSuscripcion.motivo_cancelacion" name="motivo_cancelacion"
+          rows="3" placeholder="Por favor, cuéntanos por qué cancelas tu suscripción" required></textarea>
       </div>
 
       <div class="form-group mb-3">
         <label class="form-label">Confirma tu contraseña:</label>
         <div class="input-group">
-          <input
-            [type]="showpassword ? 'text' : 'password'"
-            class="form-control"
-            name="password"
-            [(ngModel)]="cancelarSuscripcion.password"
-            placeholder="Ingresa tu contraseña actual"
-            required
-          />
-          <button
-            class="btn btn-outline-secondary"
-            type="button"
-            (click)="mostrarPassword()"
-          >
-            <i
-              class="fa"
-              [ngClass]="{
+          <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="password"
+            [(ngModel)]="cancelarSuscripcion.password" placeholder="Ingresa tu contraseña actual" required />
+          <button class="btn btn-outline-secondary" type="button" (click)="mostrarPassword()">
+            <i class="fa" [ngClass]="{
                 'fa-eye-slash': !showpassword,
                 'fa-eye': showpassword
-              }"
-            ></i>
+              }"></i>
           </button>
         </div>
       </div>
 
       <div class="d-grid gap-2 mt-4">
-        <button
-          type="submit"
-          class="btn btn-danger"
-          [disabled]="!cancelForm.form.valid || saving"
-        >
+        <button type="submit" class="btn btn-danger" [disabled]="!cancelForm.form.valid || saving">
           <i class="fas fa-ban me-2"></i>
           @if (!saving) {
             <span>Confirmar cancelación</span>
@@ -964,11 +783,7 @@
             </span>
           }
         </button>
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          (click)="modalRef.hide()"
-        >
+        <button type="button" class="btn btn-outline-secondary" (click)="modalRef.hide()">
           <i class="fas fa-times me-2"></i>Volver
         </button>
       </div>
