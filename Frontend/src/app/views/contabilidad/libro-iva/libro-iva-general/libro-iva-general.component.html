@@ -22,26 +22,26 @@
     </div>
     <div class="ms-auto d-flex gap-2 align-items-center">
       <ng-container>
-        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="onFiltroChange()">
-          <option value="">Todas las sucursales</option>
-          <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">
+          <option [ngValue]="''">Todas las sucursales</option>
+          <option [ngValue]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
         </select>
-        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.mes" name="mes" (change)="onFiltroChange()">
-          <option [value]="1">Enero</option>
-          <option [value]="2">Febrero</option>
-          <option [value]="3">Marzo</option>
-          <option [value]="4">Abril</option>
-          <option [value]="5">Mayo</option>
-          <option [value]="6">Junio</option>
-          <option [value]="7">Julio</option>
-          <option [value]="8">Agosto</option>
-          <option [value]="9">Septiembre</option>
-          <option [value]="10">Octubre</option>
-          <option [value]="11">Noviembre</option>
-          <option [value]="12">Diciembre</option>
+        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.mes" name="mes" (change)="setTime()">
+          <option [ngValue]="1">Enero</option>
+          <option [ngValue]="2">Febrero</option>
+          <option [ngValue]="3">Marzo</option>
+          <option [ngValue]="4">Abril</option>
+          <option [ngValue]="5">Mayo</option>
+          <option [ngValue]="6">Junio</option>
+          <option [ngValue]="7">Julio</option>
+          <option [ngValue]="8">Agosto</option>
+          <option [ngValue]="9">Septiembre</option>
+          <option [ngValue]="10">Octubre</option>
+          <option [ngValue]="11">Noviembre</option>
+          <option [ngValue]="12">Diciembre</option>
         </select>
-        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.anio" name="anio" (change)="onFiltroChange()">
-          <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+        <select class="form-select" style="width: auto;" [(ngModel)]="filtros.anio" name="anio" (change)="setTime()">
+          <option *ngFor="let year of years" [ngValue]="year">{{ year }}</option>
         </select>
       </ng-container>
       <div class="dropdown" *ngIf="activoSeccion === 'ventas' || activoSeccion === 'compras' || activoSeccion === 'retenciones'">

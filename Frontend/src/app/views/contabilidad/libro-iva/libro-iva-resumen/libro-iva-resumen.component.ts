@@ -57,29 +57,13 @@ export class LibroIvaResumenComponent implements OnInit {
     this.loadResumen();
   }
 
-  setTime(): boolean {
-    const anio = Number(this.filtros.anio);
-    const mes = Number(this.filtros.mes);
-    if (!Number.isFinite(anio) || !Number.isFinite(mes) || mes < 1 || mes > 12) {
-      return false;
-    }
-    const base = moment([anio, mes - 1]);
-    if (!base.isValid()) {
-      return false;
-    }
-    this.filtros.inicio = base.clone().startOf('month').format('YYYY-MM-DD');
-    this.filtros.fin = base.clone().endOf('month').format('YYYY-MM-DD');
-    return true;
+  setTime(): void {
+    this.filtros.inicio = moment([this.filtros.anio, this.filtros.mes - 1]).startOf('month').format('YYYY-MM-DD');
+    this.filtros.fin = moment([this.filtros.anio, this.filtros.mes - 1]).endOf('month').format('YYYY-MM-DD');
   }
 
   loadResumen(): void {
-    if (!this.setTime()) {
-      this.alertService.error({
-        status: 422,
-        error: { errors: { inicio: ['Seleccione un mes y año válidos.'] } },
-      });
-      return;
-    }
+    this.setTime();
     this.loading = true;
     this.apiService.getAll('libro-iva/resumen-fiscal', this.filtros).subscribe(
       (data) => {
