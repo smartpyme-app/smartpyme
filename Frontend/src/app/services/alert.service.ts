@@ -70,11 +70,8 @@ export class AlertService {
         }
         else if(message.status == 422) {
             const errBody = message.error;
-          // Manejar diferentes formatos de errores de validación
-          let errorMessage = '';
-          let errorTitle = 'Error de validación';
 
-          if (errBody && Array.isArray(errBody.failures) && errBody.failures.length > 0) {
+            if (errBody && Array.isArray(errBody.failures) && errBody.failures.length > 0) {
                 const byRow: { [row: number]: string[] } = {};
                 for (const f of errBody.failures) {
                     const r = Number(f.row);
@@ -97,61 +94,20 @@ export class AlertService {
                     }
                 }
                 this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Corrige los siguientes errores', 'mensaje' : alerts});
-            } else if(errBody && errBody.error) {
-                if(Array.isArray(errBody.error)) {
-                    let alerts='';
-                    for (var i = 0; i < errBody.error.length; ++i) {
-                        alerts += '- ' + errBody.error[i] + '<br>';
-                    }
-                }
-            }
-            // Formato 2: message.error.message (común en Laravel)
-            else if(message.error && message.error.message) {
-                if(Array.isArray(message.error.message)) {
-                    errorMessage = message.error.message.map((err: string) => `- ${err}`).join('<br>');
-                    errorTitle = 'Corrige los siguientes errores';
-                } else {
-                    // Si es una cadena, mostrarla directamente
-                    this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Error de validación', 'mensaje' : errBody.error});
-                }
-            }
-            // Formato 3: message.error.errors (objeto con campos) - MÁS COMÚN EN LARAVEL
-            else if(message.error && message.error.errors) {
-                const errors = message.error.errors;
-                const errorList: string[] = [];
-                Object.keys(errors).forEach(key => {
-                    if(Array.isArray(errors[key])) {
-                        errors[key].forEach((err: string) => {
-                            // Traducir el nombre del campo si es necesario
-                            const campoTraducido = this.translateFieldName(key);
-                            errorList.push(`- ${campoTraducido}: ${err}`);
-                        });
-                    } else {
-                        const campoTraducido = this.translateFieldName(key);
-                        errorList.push(`- ${campoTraducido}: ${errors[key]}`);
-                    }
-                });
-                errorMessage = errorList.join('<br>');
-                errorTitle = 'Corrige los siguientes errores';
-            }
-            // Formato 4: message.error directamente como string
-            else if(typeof message.error === 'string') {
-                errorMessage = message.error;
-            }
-            // Fallback - mostrar estructura completa para debugging
-            else {
-                errorMessage = 'Ocurrió un error de validación. Por favor, verifica los datos ingresados.';
+                return;
             }
 
-            const alertData = {
-                'tipo': 'alert-warning',
-                'titulo': errorTitle,
-                'mensaje': errorMessage
-            };
+            const validationLines = this.extractValidationMessages(errBody);
+            const errorTitle = validationLines.length ? 'Corrige los siguientes errores' : 'Error de validación';
+            const errorMessage = validationLines.length
+                ? validationLines.map((line) => `- ${line}`).join('<br>')
+                : 'Ocurrió un error de validación. Por favor, verifica los datos ingresados.';
 
-            // Emitir el alert inmediatamente
-            this.alertSubject.next(alertData);
-
+            this.alertSubject.next({
+                tipo: 'alert-warning',
+                titulo: errorTitle,
+                mensaje: errorMessage,
+            });
         }
         else if(message.status == 500) {
             const mensaje = message.error?.message
@@ -230,26 +186,104 @@ export class AlertService {
     }
 
     /**
+     * Extrae mensajes legibles de distintos formatos de error 422 del backend.
+     */
+    private extractValidationMessages(body: any): string[] {
+        if (body == null) {
+            return [];
+        }
+        if (typeof body === 'string') {
+            return [body];
+        }
+        if (Array.isArray(body)) {
+            return body.map((item) => String(item)).filter(Boolean);
+        }
+        if (typeof body !== 'object') {
+            return [String(body)];
+        }
+
+        const lines: string[] = [];
+
+        if (body.errors && typeof body.errors === 'object') {
+            Object.keys(body.errors).forEach((key) => {
+                const value = (body.errors as any)[key];
+                const label = this.translateFieldName(key);
+                if (Array.isArray(value)) {
+                    value.forEach((err: string) => {
+                        if (err) {
+                            lines.push(`${label}: ${err}`);
+                        }
+                    });
+                } else if (value) {
+                    lines.push(`${label}: ${value}`);
+                }
+            });
+        }
+
+        if (lines.length === 0 && Array.isArray(body.error)) {
+            body.error.forEach((err: string) => {
+                if (err) {
+                    lines.push(String(err));
+                }
+            });
+        } else if (lines.length === 0 && typeof body.error === 'string' && body.error.trim()) {
+            lines.push(body.error);
+        }
+
+        if (lines.length === 0 && Array.isArray(body.message)) {
+            body.message.forEach((err: string) => {
+                if (err) {
+                    lines.push(String(err));
+                }
+            });
+        } else if (lines.length === 0 && typeof body.message === 'string' && body.message.trim()) {
+            const genericMessages = [
+                'Error de validación',
+                'The given data was invalid.',
+                'Los datos proporcionados no son válidos.',
+            ];
+            if (!genericMessages.includes(body.message)) {
+                lines.push(body.message);
+            }
+        }
+
+        return lines;
+    }
+
+    /**
      * Traduce nombres de campos comunes del backend al español
      */
     private translateFieldName(fieldName: string): string {
         const translations: { [key: string]: string } = {
             'id_categoria': 'Categoría',
             'categoria': 'Categoría',
+            'id_subcategoria': 'Subcategoría',
+            'subcategoria': 'Subcategoría',
             'id_proveedor': 'Proveedor',
             'proveedor': 'Proveedor',
             'id_usuario': 'Usuario',
             'usuario': 'Usuario',
             'id_sucursal': 'Sucursal',
             'sucursal': 'Sucursal',
+            'id_empresa': 'Empresa',
+            'empresa': 'Empresa',
+            'nombre': 'Nombre',
+            'codigo': 'Código',
+            'barcode': 'Código de barras',
+            'precio': 'Precio',
+            'costo': 'Costo',
+            'costo_promedio': 'Costo promedio',
+            'porcentaje_impuesto': 'Impuesto',
+            'medida': 'Unidad de medida',
+            'marca': 'Marca',
+            'descripcion': 'Descripción',
             'monto': 'Monto',
             'total': 'Total',
             'fecha': 'Fecha',
-            'descripcion': 'Descripción',
             'detalle': 'Detalle',
             'detalles': 'Productos / líneas',
             'forma_pago': 'Forma de pago',
-            'estado': 'Estado'
+            'estado': 'Estado',
         };
 
         return translations[fieldName] || fieldName;

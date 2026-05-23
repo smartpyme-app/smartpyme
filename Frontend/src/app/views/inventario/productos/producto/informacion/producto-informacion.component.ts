@@ -29,13 +29,14 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { mapCabysApiResponseToOptions, CabysSelectOption } from '@services/facturacion-electronica/cabys-hacienda.mapper';
 import { HaciendaCabysClientService } from '@services/facturacion-electronica/hacienda-cabys-client.service';
+import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-producto-informacion',
     templateUrl: './producto-informacion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TagInputModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, TagInputModule, NgSelectModule, CrearCategoriaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
