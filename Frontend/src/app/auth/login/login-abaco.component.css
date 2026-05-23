@@ -1,5 +1,7 @@
 /* Contenedor del copy hero: inset desde el borde izquierdo del panel (fondo sigue a ancho completo) */
 .login-abaco-hero-inner {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 602.77px;
   margin-left: clamp(0.75rem, 2.2vw + 0.35rem, 49.74px);
@@ -64,14 +66,23 @@
   }
 }
 
-/* Panel izquierdo: fondo animado */
+/* Panel izquierdo: video de fondo (CSS background-image no soporta .mp4) */
 .login-abaco-hero-panel-dynamic {
   background-color: #f5f5f5;
-  background-image: url('/assets/img/abaco-background.gif');
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
+  overflow: hidden;
 }
+
+.login-abaco-hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .login-abaco-hero-panel-static {
   /* Imagen + velo oscuro encima (sube la opacidad del negro para oscurecer más) */
   background-color: #141414;
