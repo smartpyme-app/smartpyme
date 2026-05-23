@@ -5,18 +5,18 @@
 <div class="bg-white p-4 rounded mb-3">
   <div class="d-flex flex-wrap gap-2 mb-3">
     <div class="d-flex gap-2 flex-wrap">
-      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'ventas'}" (click)="activoSeccion = 'ventas'; loadAll()">
+      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'ventas'}" (click)="cambiarSeccion('ventas')">
         Ventas
       </button>
-      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'compras'}" (click)="activoSeccion = 'compras'; loadAll()">
+      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'compras'}" (click)="cambiarSeccion('compras')">
         Compras
       </button>
       @if (!esCostaRicaFe()) {
-        <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'retenciones'}" (click)="activoSeccion = 'retenciones'; loadAll()">
+        <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'retenciones'}" (click)="cambiarSeccion('retenciones')">
           Retenciones
         </button>
       }
-      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'resumen'}" (click)="activoSeccion = 'resumen'; loadAll()">
+      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'resumen'}" (click)="cambiarSeccion('resumen')">
         Resumen
       </button>
     </div>

@@ -69,12 +69,30 @@ export class LibroIvaGeneralComponent implements OnInit {
     this.loadAll();
   }
 
-  setTime() {
-    this.filtros.inicio = moment([this.filtros.anio, this.filtros.mes - 1]).startOf('month').format('YYYY-MM-DD');
-    this.filtros.fin = moment([this.filtros.anio, this.filtros.mes - 1]).endOf('month').format('YYYY-MM-DD');
+  setTime(): boolean {
+    const anio = Number(this.filtros.anio);
+    const mes = Number(this.filtros.mes);
+    if (!Number.isFinite(anio) || !Number.isFinite(mes) || mes < 1 || mes > 12) {
+      return false;
+    }
+    const base = moment([anio, mes - 1]);
+    if (!base.isValid()) {
+      return false;
+    }
+    this.filtros.inicio = base.clone().startOf('month').format('YYYY-MM-DD');
+    this.filtros.fin = base.clone().endOf('month').format('YYYY-MM-DD');
+    return true;
+  }
+
+  cambiarSeccion(seccion: 'ventas' | 'compras' | 'retenciones' | 'resumen'): void {
+    this.activoSeccion = seccion;
+    this.loadAll();
   }
 
   loadAll() {
+    if (!this.asegurarFechasFiltro()) {
+      return;
+    }
     this.loading = true;
     const cr = this.esCostaRicaFe();
 
@@ -168,12 +186,22 @@ export class LibroIvaGeneralComponent implements OnInit {
   }
 
   onFiltroChange() {
-    this.setTime();
     this.loadAll();
   }
 
   openModal(template: TemplateRef<any>) {
     this.modalRef = this.modalService.show(template);
+  }
+
+  private asegurarFechasFiltro(): boolean {
+    if (!this.setTime()) {
+      this.alertService.error({
+        status: 422,
+        error: { errors: { inicio: ['Seleccione un mes y año válidos.'] } },
+      });
+      return false;
+    }
+    return true;
   }
 
   private manejarErrorDescarga(error: any) {
@@ -206,6 +234,9 @@ export class LibroIvaGeneralComponent implements OnInit {
   }
 
   descargarVentasExcel() {
+    if (!this.asegurarFechasFiltro()) {
+      return;
+    }
     this.downloading = true;
     const path = this.esCostaRicaFe()
       ? 'libro-iva/cr/reporte-detalle-iva-ventas/descargar-excel'
@@ -221,6 +252,9 @@ export class LibroIvaGeneralComponent implements OnInit {
     if (!this.esCostaRicaFe()) {
       return;
     }
+    if (!this.asegurarFechasFiltro()) {
+      return;
+    }
     this.downloading = true;
     this.apiService.export('libro-iva/cr/reporte-detalle-iva-ventas/descargar-csv', this.filtros).subscribe(
       (data: Blob) => this.descargarBlob(data, 'text/csv;charset=utf-8', 'Reporte_Detalle_IVA.csv'),
@@ -232,6 +266,9 @@ export class LibroIvaGeneralComponent implements OnInit {
     if (this.esCostaRicaFe()) {
       return;
     }
+    if (!this.asegurarFechasFiltro()) {
+      return;
+    }
     this.downloading = true;
     const token = this.apiService.auth_token();
     const params = new URLSearchParams(this.filtros as any).toString();
@@ -241,6 +278,9 @@ export class LibroIvaGeneralComponent implements OnInit {
   }
 
   descargarComprasExcel() {
+    if (!this.asegurarFechasFiltro()) {
+      return;
+    }
     this.downloading = true;
     const path = this.esCostaRicaFe()
       ? 'libro-iva/cr/reporte-detalle-iva-compras/descargar-excel'
@@ -256,6 +296,9 @@ export class LibroIvaGeneralComponent implements OnInit {
     if (!this.esCostaRicaFe()) {
       return;
     }
+    if (!this.asegurarFechasFiltro()) {
+      return;
+    }
     this.downloading = true;
     this.apiService.export('libro-iva/cr/reporte-detalle-iva-compras/descargar-csv', this.filtros).subscribe(
       (data: Blob) => this.descargarBlob(data, 'text/csv;charset=utf-8', 'Reporte_Detalle_IVA_Compras.csv'),
@@ -267,6 +310,9 @@ export class LibroIvaGeneralComponent implements OnInit {
     if (this.esCostaRicaFe()) {
       return;
     }
+    if (!this.asegurarFechasFiltro()) {
+      return;
+    }
     this.downloading = true;
     const token = this.apiService.auth_token();
     const params = new URLSearchParams(this.filtros as any).toString();
@@ -276,6 +322,9 @@ export class LibroIvaGeneralComponent implements OnInit {
   }
 
   descargarRetencionesExcel() {
+    if (!this.asegurarFechasFiltro()) {
+      return;
+    }
     this.downloading = true;
     this.apiService.export('libro-iva/retencion1/descargar-libro', this.filtros).subscribe(
       (data: Blob) => this.descargarBlob(data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Libro-retenciones.xlsx'),

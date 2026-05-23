@@ -10,7 +10,6 @@ use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
-use App\Services\Contabilidad\CostaRica\ReporteDetalleIvaCrService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -22,14 +21,10 @@ final class LibroIvaResumenFiscalService
 {
     private FacturacionElectronicaHelperService $feHelper;
 
-    private ReporteDetalleIvaCrService $reporteDetalleIvaCrService;
-
     public function __construct(
-        FacturacionElectronicaHelperService $feHelper,
-        ReporteDetalleIvaCrService $reporteDetalleIvaCrService
+        FacturacionElectronicaHelperService $feHelper
     ) {
         $this->feHelper = $feHelper;
-        $this->reporteDetalleIvaCrService = $reporteDetalleIvaCrService;
     }
 
     public function build(BaseLibroIVARequest $request): array
@@ -49,61 +44,52 @@ final class LibroIvaResumenFiscalService
         return $this->buildHondurasYOtros($request, $pais);
     }
 
-    private function idSucursalInt(?string $id): ?int
-    {
-        if ($id === null || $id === '') {
-            return null;
-        }
-
-        return (int) $id;
-    }
-
     private function buildCostaRica(BaseLibroIVARequest $request, string $paisNombre): array
     {
-        $idSuc = $this->idSucursalInt($request->id_sucursal ? (string) $request->id_sucursal : null);
+        $ventas = $this->ventasLibroCr($request);
+        $devoluciones = $this->devolucionesLibroCr($request);
+        $ctxCompras = $this->contextoLibrosComprasCr($request);
 
-        $filasV = $this->reporteDetalleIvaCrService->filasVentas($request->inicio, $request->fin, $idSuc);
-        $totV = $this->reporteDetalleIvaCrService->totales($filasV);
+        $totalVentas = round(
+            (float) $ventas->sum(fn (Venta $v) => (float) $v->total)
+            + (float) $devoluciones->sum(function (DevolucionVenta $d) {
+                $total = (float) $d->total;
 
-        $filasC = $this->reporteDetalleIvaCrService->filasCompras($request->inicio, $request->fin, $idSuc);
-        $totC = $this->reporteDetalleIvaCrService->totales($filasC);
+                return $total > 0 ? -$total : $total;
+            }),
+            2
+        );
 
-        $basesV = $this->sumaBasesCr($totV);
-        $ivaV = $this->sumaIvaCr($totV);
-        $ivaDevV = (float) ($totV['iva_devuelto'] ?? 0);
+        $ivaDebito = round(
+            (float) $ventas->sum(fn (Venta $v) => (float) $v->iva)
+            - (float) $ventas->sum(fn (Venta $v) => (float) ($v->iva_devuelto ?? 0))
+            + (float) $devoluciones->sum(function (DevolucionVenta $d) {
+                $iva = (float) $d->iva;
 
-        $basesC = $this->sumaBasesCr($totC);
-        $ivaC = $this->sumaIvaCr($totC);
-        $ivaDevC = (float) ($totC['iva_devuelto'] ?? 0);
-
-        $totalVentasDoc = round($basesV + $ivaV - $ivaDevV, 2);
-        $totalComprasLibro = round($basesC + $ivaC - $ivaDevC, 2);
-        $totalGastosLibro = round((float) $this->sumTotalGastosCr($request), 2);
-
-        $ivaDebito = round($ivaV - $ivaDevV, 2);
-        $ivaCredito = round($ivaC - $ivaDevC, 2);
-
-        $ventasLibroCr = $this->ventasLibroCostaRica($request);
+                return $iva > 0 ? -$iva : $iva;
+            }),
+            2
+        );
 
         return [
             'pais' => $paisNombre,
             'periodo' => ['inicio' => $request->inicio, 'fin' => $request->fin],
             'totales' => [
-                'ventas' => $totalVentasDoc,
-                'compras' => $totalComprasLibro,
-                'gastos' => $totalGastosLibro,
+                'ventas' => $totalVentas,
+                'compras' => $ctxCompras['total_compras'],
+                'gastos' => $ctxCompras['total_gastos'],
             ],
             'ventas_por_impuesto' => $this->ventasPorImpuestoDesdeVentaImpuestos(
-                $ventasLibroCr,
-                collect()
+                $ventas,
+                $devoluciones
             ),
             'iva' => [
-                'iva_a_favor' => $ivaCredito,
-                'credito_fiscal_compras' => null,
-                'credito_fiscal_gastos' => null,
-                'credito_fiscal_devoluciones_compras' => null,
+                'iva_a_favor' => $ctxCompras['iva_credito'],
+                'credito_fiscal_compras' => $ctxCompras['credito_compras'],
+                'credito_fiscal_gastos' => $ctxCompras['credito_gastos'],
+                'credito_fiscal_devoluciones_compras' => $ctxCompras['credito_devoluciones'],
                 'iva_en_contra' => $ivaDebito,
-                'diferencia_estimada_pago_iva' => round($ivaDebito - $ivaCredito, 2),
+                'diferencia_estimada_pago_iva' => round($ivaDebito - $ctxCompras['iva_credito'], 2),
             ],
             'pago_a_cuenta_iva' => [
                 'aplica' => false,
@@ -113,65 +99,102 @@ final class LibroIvaResumenFiscalService
         ];
     }
 
-    /** @param  array<string, float>  $t */
-    private function sumaBasesCr(array $t): float
-    {
-        $s = 0.0;
-        $porTarifa = 0.0;
-        foreach (['13', '8', '4', '2', '1'] as $r) {
-            $v = (float) ($t['subtotal_'.$r] ?? 0);
-            $s += $v;
-            $porTarifa += $v;
-        }
-        $s += (float) ($t['subtotal_exonerado'] ?? 0);
-        $s += (float) ($t['subtotal_exento'] ?? 0);
-        // subtotal_gravado (total_taxed del DTE) ya suele estar en las columnas por tarifa; solo sumar el faltante.
-        $gravado = (float) ($t['subtotal_gravado'] ?? 0);
-        $sinTarifa = round($gravado - $porTarifa, 5);
-        if ($sinTarifa > 0.00001) {
-            $s += $sinTarifa;
-        } elseif (abs($porTarifa) < 0.00001 && abs($gravado) > 0.00001) {
-            $s += $gravado;
-        }
-
-        return $s;
-    }
-
-    /** @param  array<string, float>  $t */
-    private function sumaIvaCr(array $t): float
-    {
-        $s = 0.0;
-        foreach (['13', '8', '4', '2', '1'] as $r) {
-            $s += (float) ($t['iva_'.$r] ?? 0);
-        }
-
-        return $s;
-    }
-
     /**
-     * Ventas con DTE CR válido (mismo universo que el libro detalle IVA ventas).
+     * Ventas del periodo (tabla ventas + venta_impuestos; sin leer DTE en S3).
      *
      * @return Collection<int, Venta>
      */
-    private function ventasLibroCostaRica(BaseLibroIVARequest $request): Collection
+    private function ventasLibroCr(BaseLibroIVARequest $request): Collection
     {
-        $q = Venta::query()
+        return Venta::query()
             ->with(['impuestos.impuesto', 'documento'])
             ->where('estado', '!=', 'Anulada')
             ->where('cotizacion', 0)
-            ->whereBetween('fecha', [$request->inicio, $request->fin]);
-        if ($request->id_sucursal) {
-            $q->where('id_sucursal', $request->id_sucursal);
-        }
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->orderBy('fecha')
+            ->orderBy('id')
+            ->get();
+    }
 
-        $ventas = $q->get()->filter(function (Venta $v) {
-            $dte = $v->dte;
+    /**
+     * @return Collection<int, DevolucionVenta>
+     */
+    private function devolucionesLibroCr(BaseLibroIVARequest $request): Collection
+    {
+        return DevolucionVenta::query()
+            ->with(['venta.impuestos.impuesto'])
+            ->where('enable', true)
+            ->whereHas('venta', fn ($q) => $q->where('estado', '!=', 'Anulada'))
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->orderBy('fecha')
+            ->get();
+    }
 
-            return is_array($dte) && ($dte['pais'] ?? '') === 'CR'
-                && is_array($dte['documento'] ?? null) && ($dte['documento'] ?? []) !== [];
-        });
+    /**
+     * Totales de compras, gastos e IVA crédito desde tablas (sin DTE/S3).
+     *
+     * @return array{
+     *   total_compras: float,
+     *   total_gastos: float,
+     *   credito_compras: float,
+     *   credito_gastos: float,
+     *   credito_devoluciones: float,
+     *   iva_credito: float
+     * }
+     */
+    private function contextoLibrosComprasCr(BaseLibroIVARequest $request): array
+    {
+        $compras = Compra::query()
+            ->where('estado', '!=', 'Anulada')
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
 
-        return $ventas->values();
+        $gastos = Gasto::query()
+            ->where('estado', '!=', 'Cancelado')
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
+
+        $devoluciones = DevolucionCompra::query()
+            ->where('enable', true)
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
+
+        $creditoCompras = round((float) $compras->sum(fn (Compra $c) => (float) $c->iva), 2);
+        $creditoGastos = round((float) $gastos->sum(fn (Gasto $g) => (float) $g->iva), 2);
+        $creditoDevoluciones = round((float) $devoluciones->sum(function (DevolucionCompra $d) {
+            $iva = (float) $d->iva;
+
+            return $iva > 0 ? -$iva : $iva;
+        }), 2);
+
+        $totalCompras = round(
+            (float) $compras->sum(fn (Compra $c) => (float) $c->total)
+            + (float) $devoluciones->sum(function (DevolucionCompra $d) {
+                $total = (float) $d->total;
+
+                return $total > 0 ? -$total : $total;
+            }),
+            2
+        );
+
+        $totalGastos = round((float) $gastos->sum(fn (Gasto $g) => (float) $g->total), 2);
+        $ivaCredito = round($creditoCompras + $creditoGastos + $creditoDevoluciones, 2);
+
+        return [
+            'total_compras' => $totalCompras,
+            'total_gastos' => $totalGastos,
+            'credito_compras' => $creditoCompras,
+            'credito_gastos' => $creditoGastos,
+            'credito_devoluciones' => $creditoDevoluciones,
+            'iva_credito' => $ivaCredito,
+        ];
     }
 
     /**
@@ -553,19 +576,6 @@ final class LibroIvaResumenFiscalService
         $iva = (float) (optional($empresa)->iva ?? 0);
 
         return $iva > 0.0001 ? $iva : 13.0;
-    }
-
-    private function sumTotalGastosCr(BaseLibroIVARequest $request): float
-    {
-        $q = Gasto::query()
-            ->where('estado', '!=', 'Cancelado')
-            ->where('estado', '!=', 'Anulada')
-            ->whereBetween('fecha', [$request->inicio, $request->fin]);
-        if ($request->id_sucursal) {
-            $q->where('id_sucursal', $request->id_sucursal);
-        }
-
-        return (float) $q->sum('total');
     }
 
     private function buildHondurasYOtros(BaseLibroIVARequest $request, string $paisNombre): array

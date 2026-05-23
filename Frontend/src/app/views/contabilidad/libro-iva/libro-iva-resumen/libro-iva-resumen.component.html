@@ -20,7 +20,7 @@
           <option [ngValue]="sucursal.id">{{ sucursal.nombre }}</option>
         }
       </select>
-      <select class="form-select" style="width: auto;" name="mes" [(ngModel)]="filtros.mes" (change)="setTime()">
+      <select class="form-select" style="width: auto;" name="mes" [(ngModel)]="filtros.mes" (change)="loadResumen()">
         <option [ngValue]="1">Enero</option>
         <option [ngValue]="2">Febrero</option>
         <option [ngValue]="3">Marzo</option>
@@ -34,7 +34,7 @@
         <option [ngValue]="11">Noviembre</option>
         <option [ngValue]="12">Diciembre</option>
       </select>
-      <select class="form-select" style="width: auto; min-width: 5rem;" name="anio" [(ngModel)]="filtros.anio" (change)="setTime()">
+      <select class="form-select" style="width: auto; min-width: 5rem;" name="anio" [(ngModel)]="filtros.anio" (change)="loadResumen()">
         @for (year of years; track year) {
           <option [ngValue]="year">{{ year }}</option>
         }
