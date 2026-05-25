@@ -90,11 +90,6 @@
             <p style="background-color: #f8f8f8; padding: 12px 15px; border-left: 4px solid #1775e5; margin: 20px 0; font-size: 14px;">
                 <strong>Nota:</strong> Este reporte es generado automáticamente según la programación establecida. La información es confidencial y para uso interno.
             </p>
-
-            <p style="text-align: center; background-color: #f8f8f8; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <strong>¿Necesita ayuda?</strong><br>
-                Contacte a nuestro equipo de soporte al <strong>+503 7732 5932</strong>
-            </p>
         </article>
 
         <div style="width: 75%; margin: 30px auto; border: .1px solid #eee;"></div>
