@@ -4,6 +4,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FidelizacionService } from '@services/fidelizacion.service';
 import { ClienteNotaModalComponent } from '@shared/modals/cliente-nota-modal/cliente-nota-modal.component';
+import { ChartConfig } from '@views/dashboard/models/chart-config.model';
 
 declare var bootstrap: any;
 
@@ -18,6 +19,7 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
   public loading: boolean = false;
   public backUrl = '/fidelizacion/clientes';
   private currentClienteId: string | null = null;
+  private resolvingDefaultCliente = false;
   public activeTab: string = 'analytics';
   public activeHistoryTab: string = 'transactions';
 
@@ -50,6 +52,7 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
 
   public monthlySales: any[] = [];
   public allMonthlySales: any[] = [];
+  public salesChartConfig: ChartConfig | null = null;
   public salesChartMonths = 12;
   public readonly salesChartPeriodOptions = [3, 6, 12];
   public topProducts: any[] = [];
@@ -98,11 +101,45 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
         if (this.currentClienteId) {
           this.clearClienteState();
         }
+        if (!this.resolvingDefaultCliente) {
+          this.resolvingDefaultCliente = true;
+          this.loadClienteConMasPuntos();
+        }
         return;
       }
+      this.resolvingDefaultCliente = false;
       if (clienteId !== this.currentClienteId) {
         this.currentClienteId = clienteId;
         this.loadCliente();
+      }
+    });
+  }
+
+  private loadClienteConMasPuntos(): void {
+    this.loading = true;
+    this.apiService.getAll('cliente-360/top-puntos').subscribe({
+      next: (response) => {
+        const idCliente = response?.success ? response?.data?.id_cliente : null;
+        if (idCliente) {
+          this.router.navigate(['/cliente/vista-360', idCliente], {
+            queryParams: this.route.snapshot.queryParams,
+            replaceUrl: true
+          });
+          return;
+        }
+        this.resolvingDefaultCliente = false;
+        this.loading = false;
+        this.alertService.warning('warning', 'No se encontró un cliente con puntos en la empresa');
+      },
+      error: (error) => {
+        console.error('Error al obtener cliente con más puntos:', error);
+        this.resolvingDefaultCliente = false;
+        this.loading = false;
+        if (error?.status === 404) {
+          this.alertService.warning('warning', 'No se encontró un cliente con puntos en la empresa');
+        } else {
+          this.alertService.error('Error al cargar el cliente destacado');
+        }
       }
     });
   }
@@ -125,19 +162,6 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     }, 100);
   }
 
-  initializeChartTooltips(): void {
-    setTimeout(() => {
-      const chartBars = document.querySelectorAll('.chart-bar[data-bs-toggle="tooltip"]');
-      chartBars.forEach((el: Element) => {
-        const existing = bootstrap.Tooltip.getInstance(el);
-        if (existing) {
-          existing.dispose();
-        }
-        new bootstrap.Tooltip(el);
-      });
-    }, 100);
-  }
-
   setSalesChartMonths(months: number): void {
     if (!this.salesChartPeriodOptions.includes(months) || this.salesChartMonths === months) {
       return;
@@ -146,8 +170,23 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     this.updateMonthlySalesDisplay();
   }
 
-  getSalesBarTooltip(sale: { month: string; amount: number }): string {
-    return `${sale.month}: ${this.formatCurrency(sale.amount)}`;
+  private readonly salesMonthNames: Record<string, string> = {
+    Ene: 'Enero',
+    Feb: 'Febrero',
+    Mar: 'Marzo',
+    Abr: 'Abril',
+    May: 'Mayo',
+    Jun: 'Junio',
+    Jul: 'Julio',
+    Ago: 'Agosto',
+    Sep: 'Septiembre',
+    Oct: 'Octubre',
+    Nov: 'Noviembre',
+    Dic: 'Diciembre'
+  };
+
+  getSalesChartMonthLabel(month: string): string {
+    return this.salesMonthNames[month] || month;
   }
 
   private mapMonthlySalesFromApi(ventas: any[]): any[] {
@@ -162,19 +201,25 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
   private updateMonthlySalesDisplay(): void {
     if (!this.allMonthlySales.length) {
       this.monthlySales = [];
+      this.salesChartConfig = null;
       return;
     }
 
     const slice = this.allMonthlySales.slice(-this.salesChartMonths);
-    const maxAmount = Math.max(...slice.map(s => s.amount), 0) || 1;
+    this.monthlySales = slice;
 
-    this.monthlySales = slice.map(sale => ({
-      ...sale,
-      height: maxAmount > 0 ? Math.round((sale.amount / maxAmount) * 100) : 0,
-      high: sale.amount > 0 && sale.amount === maxAmount
-    }));
-
-    this.initializeChartTooltips();
+    this.salesChartConfig = {
+      type: 'bar',
+      labels: slice.map(sale =>
+        this.salesChartMonths >= 12 ? sale.month : this.getSalesChartMonthLabel(sale.month)
+      ),
+      tooltipLabels: slice.map(sale => this.getSalesChartMonthLabel(sale.month)),
+      data: slice.map(sale => sale.amount),
+      colors: ['#3b82f6'],
+      rotateLabels: this.salesChartMonths >= 12 ? 45 : 0,
+      gridBottom: this.salesChartMonths >= 12 ? '14%' : '8%',
+      showBarLabels: false
+    };
   }
 
   loadCliente(): void {
@@ -389,6 +434,7 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       } else {
         this.allMonthlySales = [];
         this.monthlySales = [];
+        this.salesChartConfig = null;
       }
 
       // Cargar productos top
@@ -574,6 +620,7 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     };
     this.monthlySales = [];
     this.allMonthlySales = [];
+    this.salesChartConfig = null;
     this.salesChartMonths = 12;
     this.topProducts = [];
     this.transactions = [];
@@ -800,10 +847,6 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     return Object.keys(this.cliente).length > 0;
   }
 
-  get sinClienteSeleccionado(): boolean {
-    return !this.loading && !this.cliente?.id;
-  }
-
   get clienteName(): string {
     return this.cliente?.nombre || 'Cliente sin nombre';
   }
@@ -832,17 +875,6 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     return name.slice(0, 2).toUpperCase();
   }
 
-  get clienteMetaLine(): string {
-    const items: string[] = [];
-    if (this.clientePhone) {
-      items.push(`Tel: ${this.clientePhone}`);
-    }
-    if (this.clienteEmail) {
-      items.push(this.clienteEmail);
-    }
-    return items.join(' · ');
-  }
-
   onClienteSeleccionado(cliente: any): void {
     if (!cliente?.id || String(cliente.id) === String(this.cliente?.id)) {
       return;
@@ -850,14 +882,6 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     this.router.navigate(['/cliente/vista-360', cliente.id], {
       queryParams: { returnUrl: this.backUrl }
     });
-  }
-
-  get clientePhone(): string {
-    return this.cliente?.telefono || this.cliente?.contactos?.[0]?.telefono || '';
-  }
-
-  get clienteEmail(): string {
-    return this.cliente?.correo || this.cliente?.contactos?.[0]?.correo || '';
   }
 
 }

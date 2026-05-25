@@ -2,12 +2,27 @@
 
 namespace App\Services\Cliente360;
 
+use App\Models\FidelizacionClientes\PuntosCliente;
 use App\Models\Ventas\Clientes\Cliente;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class Cliente360Service
 {
+    /**
+     * ID del cliente con más puntos disponibles en el ámbito de la empresa (y licencia, si aplica).
+     */
+    public function getClienteIdConMasPuntos(int $idEmpresa): ?int
+    {
+        $idCliente = PuntosCliente::porEmpresaConLicencia($idEmpresa)
+            ->orderByDesc('puntos_disponibles')
+            ->orderByDesc('puntos_totales_ganados')
+            ->orderBy('id_cliente')
+            ->value('id_cliente');
+
+        return $idCliente ? (int) $idCliente : null;
+    }
+
     /**
      * Obtener datos del cliente usando tablas agregadas (OPTIMIZADO)
      */

@@ -42,6 +42,35 @@ export class BarChartComponent implements OnInit, OnChanges {
                          this.config.data[0].hasOwnProperty('data');
 
     let series: any[] = [];
+    const showBarLabels = this.config.showBarLabels !== false;
+
+    const barValueLabel = showBarLabels ? {
+      show: true,
+      position: 'top',
+      rotate: 0,
+      formatter: (params: any) => {
+        const value = params.value;
+        const absValue = Math.abs(value);
+
+        let formatted: string;
+        if (absValue >= 1000000) {
+          formatted = `${(absValue / 1000000).toFixed(1)}M`;
+        } else if (absValue >= 1000) {
+          formatted = `${(absValue / 1000).toFixed(1)}K`;
+        } else {
+          formatted = absValue.toFixed(0);
+        }
+
+        return value < 0 ? `(${formatted})` : formatted;
+      },
+      color: '#333',
+      fontSize: 12,
+      fontWeight: 'medium',
+      offset: [0, -10],
+      align: 'center',
+      verticalAlign: 'middle',
+      padding: [4, 6, 4, 6]
+    } : { show: false };
 
     if (isMultiSeries) {
       // Gráfico de múltiples series (barras agrupadas)
@@ -53,34 +82,7 @@ export class BarChartComponent implements OnInit, OnChanges {
           color: this.config.colors?.[index] || (index === 0 ? '#5470c6' : '#ff9800'),
           borderRadius: [4, 4, 0, 0]
         },
-        label: {
-          show: true,
-          position: 'top',
-          rotate: 0,
-          formatter: (params: any) => {
-            const value = params.value;
-            const absValue = Math.abs(value);
-            
-            // Formatear con abreviaciones para valores grandes
-            let formatted: string;
-            if (absValue >= 1000000) {
-              formatted = `${(absValue / 1000000).toFixed(1)}M`;
-            } else if (absValue >= 1000) {
-              formatted = `${(absValue / 1000).toFixed(1)}K`;
-            } else {
-              formatted = absValue.toFixed(0);
-            }
-            
-            return value < 0 ? `(${formatted})` : formatted;
-          },
-          color: '#333',
-          fontSize: 12,
-          fontWeight: 'medium',
-          offset: [0, -10],
-          align: 'center',
-          verticalAlign: 'middle',
-          padding: [4, 6, 4, 6]
-        },
+        label: barValueLabel,
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
@@ -114,34 +116,7 @@ export class BarChartComponent implements OnInit, OnChanges {
           color: this.config.colors?.[0] || '#5470c6',
           borderRadius: [4, 4, 0, 0]
         },
-        label: {
-          show: true,
-          position: 'top',
-          rotate: 0,
-          formatter: (params: any) => {
-            const value = params.value;
-            const absValue = Math.abs(value);
-            
-            // Formatear con abreviaciones para valores grandes
-            let formatted: string;
-            if (absValue >= 1000000) {
-              formatted = `${(absValue / 1000000).toFixed(1)}M`;
-            } else if (absValue >= 1000) {
-              formatted = `${(absValue / 1000).toFixed(1)}K`;
-            } else {
-              formatted = absValue.toFixed(0);
-            }
-            
-            return value < 0 ? `(${formatted})` : formatted;
-          },
-          color: '#333',
-          fontSize: 12,
-          fontWeight: 'medium',
-          offset: [0, -10],
-          align: 'center',
-          verticalAlign: 'middle',
-          padding: [4, 6, 4, 6]
-        },
+        label: barValueLabel,
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
@@ -157,9 +132,19 @@ export class BarChartComponent implements OnInit, OnChanges {
         ? `(${Math.abs(value).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
         : value.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+    const labelCount = this.config.labels?.length ?? 0;
+    const rotateLabels = this.config.rotateLabels ?? 0;
+    const gridBottom = this.config.gridBottom ?? (
+      rotateLabels >= 45 ? '16%' : rotateLabels > 0 ? '10%' : '8%'
+    );
+
     const barTooltipFormatter = (params: any) => {
+      const resolveLabel = (item: any) =>
+        this.config.tooltipLabels?.[item.dataIndex] ?? item.name;
+
       if (Array.isArray(params)) {
-        let result = params[0].name + '<br/>';
+        const label = resolveLabel(params[0]);
+        let result = label + '<br/>';
         params.forEach((item: any) => {
           const value = item.value;
           const formattedValue = formatBarTooltipValue(value);
@@ -169,7 +154,8 @@ export class BarChartComponent implements OnInit, OnChanges {
       }
       const item = params;
       const formattedValue = formatBarTooltipValue(item.value);
-      return `${item.name}<br/>${item.marker} ${item.seriesName}: $${formattedValue}`;
+      const label = resolveLabel(item);
+      return `${label}<br/>${item.marker} ${item.seriesName}: $${formattedValue}`;
     };
 
     this.chartOption = {
@@ -200,7 +186,7 @@ export class BarChartComponent implements OnInit, OnChanges {
       grid: {
         left: (this.config as any).horizontal ? '15%' : '3%',
         right: '4%',
-        bottom: '3%',
+        bottom: gridBottom,
         top: isMultiSeries ? (this.config.title ? '20%' : '15%') : '10%',
         containLabel: true
       },
@@ -224,8 +210,10 @@ export class BarChartComponent implements OnInit, OnChanges {
         type: 'category',
         data: this.config.labels || [],
         axisLabel: {
-          rotate: this.config.rotateLabels !== undefined ? this.config.rotateLabels : 0,
-          interval: 0
+          rotate: rotateLabels,
+          interval: 0,
+          fontSize: labelCount > 6 ? 10 : 11,
+          hideOverlap: false
         }
       },
       yAxis: (this.config as any).horizontal ? {
@@ -261,6 +249,14 @@ export class BarChartComponent implements OnInit, OnChanges {
     };
 
     this.attachItemClickHandler();
+    this.refreshChartSize();
+  }
+
+  private refreshChartSize(): void {
+    if (!this.echartsInstance) {
+      return;
+    }
+    requestAnimationFrame(() => this.echartsInstance?.resize());
   }
 
   /**
@@ -385,5 +381,6 @@ export class BarChartComponent implements OnInit, OnChanges {
     if (this.echartsInstance && this.chartOption) {
       this.attachItemClickHandler();
     }
+    setTimeout(() => this.refreshChartSize(), 0);
   }
 }
