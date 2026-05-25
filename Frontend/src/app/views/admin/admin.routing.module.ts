@@ -17,6 +17,7 @@ import { NotificacionesComponent }     from '@views/admin/notificaciones/notific
 import { DocsComponent }     from '@views/admin/docs/docs.component';
 
 import { ReportesComponent }    from '@views/reportes/reportes.component';
+import { AdminReportesComponent } from '@views/admin/reportes/reportes.component';
 import { ReportesAutomaticosComponent }    from '@views/reportes/reportes-automaticos.component';
 import { WhatsAppComponent }    from '@views/admin/whatsapp/whatsapp.component';
 import { WhatsAppEstadisticasComponent } from '@views/admin/whatsapp/estadisticas/whatsapp-estadisticas.component';
@@ -37,6 +38,7 @@ const routes: Routes = [
         { path: 'notificaciones', component: NotificacionesComponent, title: 'Notificaciones' },
         { path: 'ayuda', component: DocsComponent, title: 'Ayuda' },
         { path: 'reportes', component: ReportesComponent, title: 'Inteligencia de negocios'},
+        { path: 'admin/reportes', component: AdminReportesComponent, title: 'Reportes'},
         //Reportes automáticamente
         { path: 'reportes-automaticos', component: ReportesAutomaticosComponent, title: 'Reportes automáticos'},
         { path: 'whatsapp', component: WhatsAppComponent, title: 'WhatsApp' },
