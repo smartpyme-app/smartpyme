@@ -2,7 +2,18 @@
     <div class="container-fluid h-100 px-0">
         <div class="row g-0 h-100 mx-0">
             
-            <div class="col-12 col-md-6 d-none d-md-flex flex-column h-100 position-relative py-5 pe-5 ps-0 login-abaco-hero-panel-static">
+            <div class="col-12 col-md-6 d-none d-md-flex flex-column h-100 position-relative py-5 pe-5 ps-0 login-abaco-hero-panel-dynamic">
+                <video
+                    class="login-abaco-hero-video"
+                    appHeroVideoAutoplay
+                    autoplay
+                    muted
+                    loop
+                    playsinline
+                    preload="auto"
+                    aria-hidden="true">
+                    <source src="assets/img/abaco-background.mp4" type="video/mp4">
+                </video>
                 <div class="my-auto d-flex flex-column login-abaco-hero-inner">
                     <div class="mb-auto">
                         <img
@@ -99,7 +110,7 @@
                                 ¿No tienes cuenta?
                                 <a
                                     routerLink="/registro"
-                                    [queryParams]="{ promo: 'ABACO30' }"
+                                    [queryParams]="queryParamsRegistro"
                                     class="login-abaco-register-hint__link text-decoration-none"
                                 >Crea una.</a>
                             </p>
@@ -108,7 +119,7 @@
                 </div>
 
                 <div class="w-100 text-center login-abaco-footer-attribution">
-                    <p class="mb-1 text-muted login-abaco-footer-attribution__label">Impulsado por </p>
+                    <p class="mb-1 text-muted login-abaco-footer-attribution__label">Powered by </p>
                     <a href="https://www.smartpyme.app" target="_blank">
                         <img
                             src="assets/img/smartpyme.png"

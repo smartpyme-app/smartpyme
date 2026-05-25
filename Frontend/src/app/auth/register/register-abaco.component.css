@@ -8,21 +8,24 @@
 
 /* ——— Panel izquierdo (marca, estilo referencia imagen) ——— */
 .register-abaco-hero {
-  /* background: linear-gradient(165deg, #e8e6ff 0%, #f4f2ff 38%, #ebe4ff 100%); */
   overflow: hidden;
   align-self: stretch;
   min-height: 100%;
   container-type: inline-size;
 }
 
-.register-abaco-hero__waves {
+.register-abaco-hero--video {
+  background-color: #f5f5f5;
+}
+
+.register-abaco-hero-video {
   position: absolute;
   inset: 0;
-  opacity: 0.35;
-  background:
-    radial-gradient(ellipse 120% 80% at 0% 0%, transparent 40%, rgba(94, 92, 230, 0.12) 41%, transparent 42%),
-    radial-gradient(ellipse 100% 70% at 0% 5%, transparent 48%, rgba(94, 92, 230, 0.08) 49%, transparent 50%),
-    radial-gradient(ellipse 90% 60% at 0% 12%, transparent 55%, rgba(94, 92, 230, 0.06) 56%, transparent 57%);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
   pointer-events: none;
 }
 

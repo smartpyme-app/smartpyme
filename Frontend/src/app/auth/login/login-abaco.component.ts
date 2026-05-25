@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { PromocionalService, CodigoPromocional } from '@services/promocional.service';
 declare let $: any;
 
 @Component({
@@ -16,15 +17,33 @@ export class LoginAbacoComponent implements OnInit {
   public saludo: string = '';
   public anio: any = '';
   public showpassword: boolean = false;
+  public codigoPromocionalAbaco: CodigoPromocional | null = null;
+
+  private readonly CAMPANIA_ABACO = 'ÁBACO';
 
   constructor(
     private apiService: ApiService,
     private router: Router,
     private alertService: AlertService,
+    private promocionalService: PromocionalService,
   ) {}
 
   ngOnInit() {
     localStorage.clear();
+    this.cargarCodigoPromocionalAbaco();
+  }
+
+  private cargarCodigoPromocionalAbaco(): void {
+    this.promocionalService.obtenerPorCampania(this.CAMPANIA_ABACO).subscribe((codigo) => {
+      this.codigoPromocionalAbaco = codigo;
+    });
+  }
+
+  public get queryParamsRegistro(): { promo?: string } {
+    if (this.codigoPromocionalAbaco?.codigo) {
+      return { promo: this.codigoPromocionalAbaco.codigo };
+    }
+    return {};
   }
 
   submit() {

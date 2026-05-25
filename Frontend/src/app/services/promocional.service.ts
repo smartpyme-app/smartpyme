@@ -150,6 +150,28 @@ export class PromocionalService {
     }
 
     /**
+     * Obtiene el primer código promocional activo de una campaña
+     */
+    obtenerPorCampania(campania: string): Observable<CodigoPromocional | null> {
+        if (!campania) {
+            return of(null);
+        }
+
+        return this.apiService.getAll('promocional/por-campania', { campania }).pipe(
+            map((response: { success?: boolean; data?: CodigoPromocional }) => {
+                if (response?.success && response?.data?.codigo) {
+                    return response.data;
+                }
+                return null;
+            }),
+            catchError(error => {
+                console.error('Error al obtener código promocional por campaña:', error);
+                return of(null);
+            })
+        );
+    }
+
+    /**
      * Limpia el cache de códigos promocionales
      */
     limpiarCache(): void {
