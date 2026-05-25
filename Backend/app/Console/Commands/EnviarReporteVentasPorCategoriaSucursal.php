@@ -18,7 +18,8 @@ class EnviarReporteVentasPorCategoriaSucursal extends Command
     private const EMPRESAS_IDS = [397, 396, 398, 428, 427, 429, 432, 543, 657, 690, 488];
 
     private const DESTINATARIOS = [
-        'davidcam20@gmail.com',
+        'david.c@smartpyme.sv',
+        'joseabrego201291@gmail.com'
     ];
 
     private const CATEGORIAS = [
