@@ -459,6 +459,9 @@ export class RegisterAbacoComponent implements OnInit {
         const userToSend = JSON.parse(JSON.stringify(this.user));
         userToSend.empresa.total = totalAPagar;
 
+        // Adjuntar el dominio de origen para que el backend identifique registros de ÁBACO
+        userToSend.origen_registro = window.location.origin;
+
         this.apiService.register(userToSend)
         .subscribe(
             data => {

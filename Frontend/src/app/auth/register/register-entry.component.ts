@@ -1,7 +1,10 @@
-import { Component, OnInit, Type } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, Type } from '@angular/core';
 
 import { RegisterAbacoComponent } from './register-abaco.component';
 import { RegisterComponent } from './register.component';
+
+/** Hostnames exactos que deben mostrar el formulario de registro ÁBACO. */
+const ABACO_HOSTS = ['abaco.smartpyme.site'];
 
 @Component({
   selector: 'app-register-entry',
@@ -12,18 +15,22 @@ export class RegisterEntryComponent implements OnInit {
   activeRegisterComponent: Type<RegisterComponent | RegisterAbacoComponent> =
     RegisterComponent;
 
+  constructor(private cdr: ChangeDetectorRef) { }
+
   ngOnInit(): void {
     if (typeof window !== 'undefined') {
       const host = window.location.hostname.toLowerCase();
-      console.log('[RegisterEntry] Host detectado:', host);
+      const esAbaco = ABACO_HOSTS.some((h) => host === h);
 
-      if (host.includes('abaco')) {
-        this.activeRegisterComponent = RegisterAbacoComponent;
-        console.log('[RegisterEntry] Cargando RegisterAbacoComponent');
-      } else {
-        this.activeRegisterComponent = RegisterComponent;
-        console.log('[RegisterEntry] Cargando RegisterComponent estándar');
-      }
+      console.log('[RegisterEntry] Host detectado:', host, '→ esAbaco:', esAbaco);
+
+      this.activeRegisterComponent = esAbaco
+        ? RegisterAbacoComponent
+        : RegisterComponent;
+
+      // Forzar detección de cambios para que *ngComponentOutlet refleje
+      // el componente correcto desde el primer render.
+      this.cdr.detectChanges();
     }
   }
 }

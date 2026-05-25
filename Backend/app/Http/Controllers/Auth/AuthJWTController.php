@@ -24,6 +24,7 @@ use JWTAuth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\Notificacion;
+use App\Mail\NuevaEmpresaAbacoMailable;
 use App\Models\EmpresaConfiguracionPlanilla;
 use App\Models\Plan;
 use App\Models\Promocional;
@@ -259,10 +260,16 @@ class AuthJWTController extends Controller
             $promocionalParaCampania = null;
             if ($codigoPromocional) {
                 $promocionalParaCampania = $this->obtenerConfiguracionCodigoPromocional($codigoPromocional, null);
-                // Guardar campaña si existe (para tracking de alianzas/partnerships)
+                // Guardar campaña del código promocional si existe
                 if ($promocionalParaCampania && $promocionalParaCampania->campania) {
                     $empresa->campania = $promocionalParaCampania->campania;
                 }
+            }
+
+            // El campo campania del request siempre tiene prioridad sobre el del código promocional
+            // (permite registros ÁBACO sin código promo o con un código de otra campaña)
+            if (!empty($request['empresa']['campania'])) {
+                $empresa->campania = $request['empresa']['campania'];
             }
             
             // Aplicar código promocional al total según la frecuencia seleccionada
@@ -325,6 +332,8 @@ class AuthJWTController extends Controller
 
 
             DB::commit();
+
+            $this->enviarNotificacionAbacoSiAplica($empresa, $request);
 
             $plan = $this->getPlan($request['empresa']['plan']);
             
@@ -597,6 +606,56 @@ class AuthJWTController extends Controller
                 'success' => false,
                 'error' => 'Ocurrió un error al procesar la solicitud: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Envía notificación interna cuando una empresa nueva se registra
+     * a través de la alianza con ÁBACO (http://abaco.smartpyme.site).
+     *
+     * Condiciones:
+     *  - empresa.campania === 'ÁBACO'
+     *  - El campo origen_registro del request contiene 'abaco.smartpyme.site'
+     *  - Es un registro nuevo (no una actualización)
+     */
+    private function enviarNotificacionAbacoSiAplica(Empresa $empresa, Request $request): void
+    {
+        try {
+            $campaniaNorm    = mb_strtoupper(trim($empresa->campania ?? ''), 'UTF-8');
+
+            // Acepta 'ÁBACO' (con tilde) y 'ABACO' (sin tilde)
+            $esCampaniaAbaco = in_array($campaniaNorm, ['ÁBACO', 'ABACO']);
+            $esNuevoRegistro = !$request->id;
+
+            // ── Log de diagnóstico (eliminar cuando esté estable en producción) ──
+            Log::info('[ÁBACO] Evaluando notificación', [
+                'empresa_id'      => $empresa->id,
+                'campania_raw'    => $empresa->campania,
+                'campania_norm'   => $campaniaNorm,
+                'esCampaniaAbaco' => $esCampaniaAbaco,
+                'esNuevoRegistro' => $esNuevoRegistro,
+            ]);
+
+            if (!$esCampaniaAbaco || !$esNuevoRegistro) {
+                Log::info('[ÁBACO] Notificación omitida — condiciones no cumplidas');
+                return;
+            }
+
+            $destinatarios = config('constants.CORREOS_ABACO_NOTIFICACION');
+
+            Mail::to($destinatarios)
+                ->send(new NuevaEmpresaAbacoMailable($empresa, $empresa->campania));
+
+            Log::info('Notificación ÁBACO enviada', [
+                'empresa_id' => $empresa->id,
+                'empresa'    => $empresa->nombre,
+                'campania'   => $empresa->campania,
+            ]);
+        } catch (\Exception $e) {
+            // El fallo de email NO debe romper el flujo de registro
+            Log::error('Error enviando notificación ÁBACO: ' . $e->getMessage(), [
+                'empresa_id' => $empresa->id ?? null,
+            ]);
         }
     }
 
