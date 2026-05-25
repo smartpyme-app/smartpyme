@@ -529,8 +529,22 @@ export class FacturacionCompraComponent implements OnInit {
             this.saving = true;
             if(this.duplicarcompra){
                 this.compra.recurrente = false;
-            }         
-            this.apiService.store('compra/facturacion', this.compra).subscribe(compra => {
+            }
+
+            const payload: any = { ...this.compra };
+            const codigoGen = this.compra.codigo_generacion;
+            if (codigoGen != null && String(codigoGen).trim() !== '') {
+                payload.codigo_generacion = String(codigoGen).trim();
+            }
+            const numeroCtrl = this.compra.numero_control;
+            if (numeroCtrl != null && String(numeroCtrl).trim() !== '') {
+                payload.numero_control = String(numeroCtrl).trim();
+            }
+            if (this.compra.tipo_dte) {
+                payload.tipo_dte = this.compra.tipo_dte;
+            }
+
+            this.apiService.store('compra/facturacion', payload).subscribe(compra => {
                 this.saving = false;
                 
                 if(this.compra.cotizacion == 1){
@@ -689,8 +703,20 @@ export class FacturacionCompraComponent implements OnInit {
         this.compra.id_bodega = this.apiService.auth_user().id_bodega;
 
         if (jsonData.identificacion.tipoDte) {
+            this.compra.tipo_dte = jsonData.identificacion.tipoDte;
             this.compra.tipo_documento =
                 this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
+        }
+
+        if (jsonData.identificacion.codigoGeneracion) {
+            this.compra.codigo_generacion = String(
+                jsonData.identificacion.codigoGeneracion
+            ).trim();
+        }
+        if (jsonData.identificacion.numeroControl) {
+            this.compra.numero_control = String(
+                jsonData.identificacion.numeroControl
+            ).trim();
         }
 
         const documentoRow = (this.documentos || []).find(
