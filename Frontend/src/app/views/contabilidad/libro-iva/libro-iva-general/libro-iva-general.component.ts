@@ -85,13 +85,23 @@ export class LibroIvaGeneralComponent implements OnInit {
     this.loadAll();
   }
 
+  /** Query API: sin id_sucursal vacío (Todas las sucursales), igual criterio que otros libros IVA. */
+  private filtrosParaApi(): Record<string, unknown> {
+    const f = { ...this.filtros };
+    if (f.id_sucursal === '' || f.id_sucursal == null) {
+      delete f.id_sucursal;
+    }
+    return f;
+  }
+
   loadAll(): void {
     this.aplicarRangoMes();
     this.loading = true;
     const cr = this.esCostaRicaFe();
+    const filtros = this.filtrosParaApi();
 
     if (this.activoSeccion === 'resumen') {
-      this.apiService.getAll('libro-iva/resumen-fiscal', this.filtros).subscribe(
+      this.apiService.getAll('libro-iva/resumen-fiscal', filtros).subscribe(
         (data: any) => {
           this.fiscalResumen = data;
           this.loading = false;
@@ -107,7 +117,7 @@ export class LibroIvaGeneralComponent implements OnInit {
 
     if (this.activoSeccion === 'ventas') {
       if (cr) {
-        this.apiService.getAll('libro-iva/cr/reporte-detalle-iva-ventas', this.filtros).subscribe(
+        this.apiService.getAll('libro-iva/cr/reporte-detalle-iva-ventas', filtros).subscribe(
           (data: any) => {
             this.ventas = data?.filas ?? [];
             this.totalesVentasCr = data?.totales ?? null;
@@ -120,7 +130,7 @@ export class LibroIvaGeneralComponent implements OnInit {
         );
       } else {
         this.totalesVentasCr = null;
-        this.apiService.getAll('libro-iva/consumidores', this.filtros).subscribe(
+        this.apiService.getAll('libro-iva/consumidores', filtros).subscribe(
           (data) => {
             this.ventas = data || [];
             this.loading = false;
@@ -136,7 +146,7 @@ export class LibroIvaGeneralComponent implements OnInit {
 
     if (this.activoSeccion === 'compras') {
       if (cr) {
-        this.apiService.getAll('libro-iva/cr/reporte-detalle-iva-compras', this.filtros).subscribe(
+        this.apiService.getAll('libro-iva/cr/reporte-detalle-iva-compras', filtros).subscribe(
           (data: any) => {
             this.compras = data?.filas ?? [];
             this.totalesComprasCr = data?.totales ?? null;
@@ -149,7 +159,7 @@ export class LibroIvaGeneralComponent implements OnInit {
         );
       } else {
         this.totalesComprasCr = null;
-        this.apiService.getAll('libro-iva/compras', this.filtros).subscribe(
+        this.apiService.getAll('libro-iva/compras', filtros).subscribe(
           (data) => {
             this.compras = data || [];
             this.loading = false;
@@ -164,7 +174,7 @@ export class LibroIvaGeneralComponent implements OnInit {
     }
 
     if (this.activoSeccion === 'retenciones') {
-      this.apiService.getAll('libro-iva/retenciones', this.filtros).subscribe(
+      this.apiService.getAll('libro-iva/retenciones', filtros).subscribe(
         (data) => {
           this.retenciones = data || [];
           this.loading = false;
@@ -220,7 +230,7 @@ export class LibroIvaGeneralComponent implements OnInit {
       ? 'libro-iva/cr/reporte-detalle-iva-ventas/descargar-excel'
       : 'libro-iva/consumidores/descargar-libro';
     const name = this.esCostaRicaFe() ? 'Reporte_Detalle_IVA.xlsx' : 'Libro-ventas.xlsx';
-    this.apiService.export(path, this.filtros).subscribe(
+    this.apiService.export(path, this.filtrosParaApi()).subscribe(
       (data: Blob) => this.descargarBlob(data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', name),
       (error) => this.manejarErrorDescarga(error)
     );
@@ -232,7 +242,7 @@ export class LibroIvaGeneralComponent implements OnInit {
     }
     this.aplicarRangoMes();
     this.downloading = true;
-    this.apiService.export('libro-iva/cr/reporte-detalle-iva-ventas/descargar-csv', this.filtros).subscribe(
+    this.apiService.export('libro-iva/cr/reporte-detalle-iva-ventas/descargar-csv', this.filtrosParaApi()).subscribe(
       (data: Blob) => this.descargarBlob(data, 'text/csv;charset=utf-8', 'Reporte_Detalle_IVA.csv'),
       (error) => this.manejarErrorDescarga(error)
     );
@@ -245,7 +255,7 @@ export class LibroIvaGeneralComponent implements OnInit {
     this.aplicarRangoMes();
     this.downloading = true;
     const token = this.apiService.auth_token();
-    const query = new URLSearchParams(this.filtros).toString();
+    const query = new URLSearchParams(this.filtrosParaApi() as Record<string, string>).toString();
     const url = `${this.apiService.baseUrl}/api/libro-iva/consumidores?${query}&formato=pdf&token=${token}`;
     window.open(url, '_blank');
     this.downloading = false;
@@ -258,7 +268,7 @@ export class LibroIvaGeneralComponent implements OnInit {
       ? 'libro-iva/cr/reporte-detalle-iva-compras/descargar-excel'
       : 'libro-iva/compras/descargar-libro';
     const name = this.esCostaRicaFe() ? 'Reporte_Detalle_IVA_Compras.xlsx' : 'Libro-compras.xlsx';
-    this.apiService.export(path, this.filtros).subscribe(
+    this.apiService.export(path, this.filtrosParaApi()).subscribe(
       (data: Blob) => this.descargarBlob(data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', name),
       (error) => this.manejarErrorDescarga(error)
     );
@@ -270,7 +280,7 @@ export class LibroIvaGeneralComponent implements OnInit {
     }
     this.aplicarRangoMes();
     this.downloading = true;
-    this.apiService.export('libro-iva/cr/reporte-detalle-iva-compras/descargar-csv', this.filtros).subscribe(
+    this.apiService.export('libro-iva/cr/reporte-detalle-iva-compras/descargar-csv', this.filtrosParaApi()).subscribe(
       (data: Blob) => this.descargarBlob(data, 'text/csv;charset=utf-8', 'Reporte_Detalle_IVA_Compras.csv'),
       (error) => this.manejarErrorDescarga(error)
     );
@@ -283,7 +293,7 @@ export class LibroIvaGeneralComponent implements OnInit {
     this.aplicarRangoMes();
     this.downloading = true;
     const token = this.apiService.auth_token();
-    const query = new URLSearchParams(this.filtros).toString();
+    const query = new URLSearchParams(this.filtrosParaApi() as Record<string, string>).toString();
     const url = `${this.apiService.baseUrl}/api/libro-iva/compras?${query}&formato=pdf&token=${token}`;
     window.open(url, '_blank');
     this.downloading = false;
@@ -292,7 +302,7 @@ export class LibroIvaGeneralComponent implements OnInit {
   descargarRetencionesExcel() {
     this.aplicarRangoMes();
     this.downloading = true;
-    this.apiService.export('libro-iva/retencion1/descargar-libro', this.filtros).subscribe(
+    this.apiService.export('libro-iva/retencion1/descargar-libro', this.filtrosParaApi()).subscribe(
       (data: Blob) => this.descargarBlob(data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Libro-retenciones.xlsx'),
       (error) => this.manejarErrorDescarga(error)
     );

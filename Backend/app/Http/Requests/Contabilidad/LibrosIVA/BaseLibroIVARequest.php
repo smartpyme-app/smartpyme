@@ -13,8 +13,9 @@ class BaseLibroIVARequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->input('id_sucursal') === '') {
-            $this->merge(['id_sucursal' => null]);
+        // id_sucursal= en la query rompe nullable|integer; quitar el param (como si no se enviara).
+        if ($this->query->has('id_sucursal') && $this->query('id_sucursal') === '') {
+            $this->query->remove('id_sucursal');
         }
     }
 

@@ -23,8 +23,10 @@
     <div class="ms-auto d-flex gap-2 align-items-center">
       <ng-container>
         <select class="form-select" style="width: auto;" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">
-          <option [ngValue]="''">Todas las sucursales</option>
-          <option [ngValue]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+          <option value="">Todas las sucursales</option>
+          @for (sucursal of sucursales; track sucursal.id || $index) {
+            <option [value]="sucursal.id">{{ sucursal.nombre }}</option>
+          }
         </select>
         <select class="form-select" style="width: auto;" [(ngModel)]="filtros.mes" name="mes" (change)="setTime()">
           <option [ngValue]="1">Enero</option>
