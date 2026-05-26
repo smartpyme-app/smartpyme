@@ -2,7 +2,6 @@
 
 namespace App\Exports\Contabilidad\Honduras;
 
-use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -17,40 +16,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Collection;
 
 /**
- * Libro de ventas - Formato Honduras (SAR).
- * Columnas según formato oficial.
+ * Libro de ventas Honduras (SAR).
+ * Mismas consultas que El Salvador (LibroContribuyentesExport / contribuyentes en LibrosIVAController);
+ * solo cambia el mapeo de columnas al formato SAR.
  */
 class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
     public $request;
     private $index = 1;
-
-    private const VENTA_COLUMNS = [
-        'id',
-        'fecha',
-        'num_orden_exento',
-        'correlativo',
-        'id_cliente',
-        'id_documento',
-        'iva',
-        'sub_total',
-        'no_sujeta',
-        'total',
-        'id_sucursal',
-    ];
-
-    private const DEVOLUCION_COLUMNS = [
-        'id',
-        'fecha',
-        'correlativo',
-        'id_cliente',
-        'id_venta',
-        'exenta',
-        'sub_total',
-        'iva',
-        'id_sucursal',
-        'enable',
-    ];
 
     public function filter(Request $request)
     {
@@ -91,25 +64,58 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
     }
 
     /**
+     * Ventas del periodo — misma consulta que contribuyentes SV (sin filtro por tipo de documento).
+     */
+    private function ventasDelPeriodo(): Collection
+    {
+        $request = $this->request;
+
+        return Venta::with(['cliente', 'documento'])
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->where('cotizacion', 0)
+            ->orderBy('fecha')
+            ->orderBy('correlativo')
+            ->get();
+    }
+
+    /**
+     * Devoluciones del periodo — misma consulta que contribuyentes SV.
+     */
+    private function devolucionesDelPeriodo(): Collection
+    {
+        $request = $this->request;
+
+        return DevolucionVenta::with(['cliente', 'venta'])
+            ->where('enable', true)
+            ->whereHas('venta', function ($query) {
+                $query->where('estado', '!=', 'Anulada');
+            })
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->orderBy('fecha')
+            ->get();
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     protected function buildDetailRowsArray(): array
     {
-        $rows = [];
+        $ventas = $this->ventasDelPeriodo()->map(fn (Venta $venta) => $this->mapVentaHonduras($venta));
 
-        foreach ($this->ventasQuery()->get() as $venta) {
-            $venta->setAppends([]);
-            $rows[] = $this->mapVentaRow($venta);
-        }
+        $devoluciones = $this->devolucionesDelPeriodo()->map(fn (DevolucionVenta $devolucion) => $this->mapDevolucionHonduras($devolucion));
 
-        foreach ($this->devolucionesQuery()->get() as $devolucion) {
-            $devolucion->setAppends([]);
-            $rows[] = $this->mapDevolucionRow($devolucion);
-        }
-
-        usort($rows, fn (array $a, array $b) => strcmp((string) $a['fecha'], (string) $b['fecha']));
-
-        return $rows;
+        return $ventas
+            ->merge($devoluciones)
+            ->sortBy(fn (array $row) => [$row['fecha'], $row['no_factura'] ?? ''])
+            ->values()
+            ->all();
     }
 
     protected function buildDetailRows(): Collection
@@ -117,100 +123,46 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
         return collect($this->buildDetailRowsArray());
     }
 
-    private function ventasQuery()
+    /**
+     * Mapeo SAR (Honduras) — equivalente a fila contribuyente SV con columnas distintas.
+     */
+    private function mapVentaHonduras(Venta $venta): array
     {
-        $request = $this->request;
-
-        return Venta::query()
-            ->select(self::VENTA_COLUMNS)
-            ->with([
-                'cliente:id,nit,ncr,tipo,nombre,nombre_empresa,apellido',
-                'documento:id,nombre',
-            ])
-            ->where('estado', '!=', 'Anulada')
-            ->where('cotizacion', 0)
-            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->orderBy('fecha')
-            ->orderBy('correlativo');
-    }
-
-    private function devolucionesQuery()
-    {
-        $request = $this->request;
-        $table = (new DevolucionVenta)->getTable();
-
-        return DevolucionVenta::query()
-            ->select(array_map(fn (string $col) => "{$table}.{$col}", self::DEVOLUCION_COLUMNS))
-            ->addSelect([
-                'ventas.fecha as venta_fecha_relacionada',
-                'ventas.correlativo as venta_correlativo_relacionado',
-            ])
-            ->join('ventas', 'ventas.id', '=', "{$table}.id_venta")
-            ->with(['cliente:id,nit,ncr,tipo,nombre,nombre_empresa,apellido'])
-            ->where("{$table}.enable", true)
-            ->where('ventas.estado', '!=', 'Anulada')
-            ->when($request->id_sucursal, fn ($q) => $q->where("{$table}.id_sucursal", $request->id_sucursal))
-            ->whereBetween("{$table}.fecha", [$request->inicio, $request->fin])
-            ->orderBy("{$table}.fecha");
-    }
-
-    private function mapVentaRow(Venta $v): array
-    {
-        $docNombre = trim((string) (optional($v->documento)->nombre ?? ''));
+        $cliente = optional($venta->cliente);
+        $docNombre = trim(optional($venta->documento)->nombre ?? '');
         $esExportacion = stripos($docNombre, 'exportación') !== false;
 
         return [
-            'fecha' => $v->fecha,
-            'num_orden_exenta' => $v->num_orden_exento ?? '',
-            'documento_dua_exportacion' => $esExportacion ? trim((string) $v->correlativo) : '',
-            'documento_fyduca' => '',
-            'nota_credito_numero' => '',
-            'fecha_factura_relacionada' => '',
-            'numero_factura_relacionada' => '',
-            'cliente' => $this->formatNombreCliente($v->cliente),
-            'rtn' => optional($v->cliente)->nit ?? optional($v->cliente)->ncr ?? '',
+            'fecha' => $venta->fecha,
+            'rtn' => $cliente->nit ?? $cliente->ncr ?? '',
             'descripcion' => $docNombre,
-            'no_factura' => trim((string) $v->correlativo),
-            'importe_exenta' => $v->iva == 0 && ! $esExportacion ? (float) $v->sub_total : 0,
-            'importe_gravada' => $v->iva > 0 ? (float) $v->sub_total : 0,
-            'importe_exonerada' => (float) ($v->no_sujeta ?? 0),
-            'impuesto_ventas' => (float) $v->iva,
-            'importe_exportacion' => $esExportacion ? (float) $v->total : 0,
+            'no_factura' => trim((string) $venta->correlativo),
+            'importe_exenta' => $venta->iva == 0 && ! $esExportacion ? (float) $venta->sub_total : 0,
+            'importe_gravada' => $venta->iva > 0 ? (float) $venta->sub_total : 0,
+            'importe_exonerada' => (float) ($venta->no_sujeta ?? 0),
+            'impuesto_ventas' => (float) $venta->iva,
+            'importe_exportacion' => $esExportacion ? (float) $venta->total : 0,
         ];
     }
 
-    private function mapDevolucionRow(DevolucionVenta $d): array
+    private function mapDevolucionHonduras(DevolucionVenta $devolucion): array
     {
+        $cliente = optional($devolucion->cliente);
+        $ventaOriginal = $devolucion->venta;
+
         return [
-            'fecha' => $d->fecha,
-            'num_orden_exenta' => '',
-            'documento_dua_exportacion' => '',
-            'documento_fyduca' => '',
-            'nota_credito_numero' => trim((string) $d->correlativo),
-            'fecha_factura_relacionada' => $d->venta_fecha_relacionada ?? '',
-            'numero_factura_relacionada' => trim((string) ($d->venta_correlativo_relacionado ?? '')),
-            'cliente' => $this->formatNombreCliente($d->cliente),
-            'rtn' => optional($d->cliente)->nit ?? optional($d->cliente)->ncr ?? '',
+            'fecha' => $devolucion->fecha,
+            'rtn' => $cliente->nit ?? $cliente->ncr ?? '',
             'descripcion' => 'Nota de crédito',
-            'no_factura' => trim((string) $d->correlativo),
-            'importe_exenta' => $d->exenta > 0 ? -1 * (float) $d->exenta : 0,
-            'importe_gravada' => $d->sub_total > 0 ? -1 * (float) $d->sub_total : 0,
+            'no_factura' => trim((string) $devolucion->correlativo),
+            'importe_exenta' => $devolucion->exenta > 0 ? -1 * (float) $devolucion->exenta : 0,
+            'importe_gravada' => $devolucion->sub_total > 0 ? -1 * (float) $devolucion->sub_total : 0,
             'importe_exonerada' => 0,
-            'impuesto_ventas' => $d->iva > 0 ? -1 * (float) $d->iva : 0,
+            'impuesto_ventas' => $devolucion->iva > 0 ? -1 * (float) $devolucion->iva : 0,
             'importe_exportacion' => 0,
+            'fecha_factura_relacionada' => $ventaOriginal ? $ventaOriginal->fecha : '',
+            'numero_factura_relacionada' => $ventaOriginal ? trim((string) $ventaOriginal->correlativo) : '',
         ];
-    }
-
-    private function formatNombreCliente(?Cliente $cliente): string
-    {
-        if (! $cliente) {
-            return 'Consumidor Final';
-        }
-
-        return $cliente->tipo === 'Empresa'
-            ? (string) $cliente->nombre_empresa
-            : trim((string) $cliente->nombre . ' ' . (string) $cliente->apellido);
     }
 
     public static function filaTotales(Collection $detalle): array
