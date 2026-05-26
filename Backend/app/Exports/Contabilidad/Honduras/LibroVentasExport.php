@@ -2,6 +2,7 @@
 
 namespace App\Exports\Contabilidad\Honduras;
 
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -23,6 +24,35 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
 {
     public $request;
     private $index = 1;
+
+    private const VENTA_COLUMNS = [
+        'id',
+        'fecha',
+        'num_orden_exento',
+        'correlativo',
+        'nombre_cliente',
+        'nombre_documento',
+        'id_cliente',
+        'id_documento',
+        'iva',
+        'sub_total',
+        'no_sujeta',
+        'total',
+        'id_sucursal',
+    ];
+
+    private const DEVOLUCION_COLUMNS = [
+        'id',
+        'fecha',
+        'correlativo',
+        'id_cliente',
+        'id_venta',
+        'exenta',
+        'sub_total',
+        'iva',
+        'id_sucursal',
+        'enable',
+    ];
 
     public function filter(Request $request)
     {
@@ -66,75 +96,120 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
     }
 
     /**
-     * Filas detalle; separado para reutilizar en collection() y rowsForApi().
+     * Filas detalle; cursor + columnas mínimas (sin dte JSON) para no agotar memoria.
      */
     protected function buildDetailRows(): Collection
     {
+        $rows = [];
+
+        foreach ($this->ventasQuery()->cursor() as $venta) {
+            $venta->setAppends([]);
+            $rows[] = $this->mapVentaRow($venta);
+        }
+
+        foreach ($this->devolucionesQuery()->cursor() as $devolucion) {
+            $devolucion->setAppends([]);
+            $rows[] = $this->mapDevolucionRow($devolucion);
+        }
+
+        usort($rows, fn (array $a, array $b) => strcmp((string) $a['fecha'], (string) $b['fecha']));
+
+        return collect($rows);
+    }
+
+    private function ventasQuery()
+    {
         $request = $this->request;
 
-        $ventas = Venta::with(['cliente', 'documento'])
+        return Venta::query()
+            ->select(self::VENTA_COLUMNS)
+            ->with([
+                'cliente:id,nit,ncr,tipo,nombre,nombre_empresa,apellido',
+                'documento:id,nombre',
+            ])
             ->where('estado', '!=', 'Anulada')
             ->where('cotizacion', 0)
-            ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->orderBy('fecha')
-            ->orderBy('correlativo')
-            ->get();
+            ->orderBy('correlativo');
+    }
 
-        $devoluciones = DevolucionVenta::with(['cliente', 'venta'])
+    private function devolucionesQuery()
+    {
+        $request = $this->request;
+
+        return DevolucionVenta::query()
+            ->select(self::DEVOLUCION_COLUMNS)
+            ->with([
+                'cliente:id,nit,ncr,tipo,nombre,nombre_empresa,apellido',
+                'venta:id,fecha,correlativo,estado',
+            ])
             ->where('enable', true)
-            ->whereHas('venta', fn($q) => $q->where('estado', '!=', 'Anulada'))
-            ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereHas('venta', fn ($q) => $q->where('estado', '!=', 'Anulada'))
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
             ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->orderBy('fecha')
-            ->get();
+            ->orderBy('fecha');
+    }
 
-        $filasVentas = $ventas->map(function ($v) {
-            $docNombre = trim(optional($v->documento)->nombre ?? $v->nombre_documento ?? '');
-            $esExportacion = stripos($docNombre, 'exportación') !== false;
-            return [
-                'fecha' => $v->fecha,
-                'num_orden_exenta' => $v->num_orden_exento ?? '',
-                'documento_dua_exportacion' => $esExportacion ? trim((string) $v->correlativo) : '',
-                'documento_fyduca' => '', // FYDUCA si aplica
-                'nota_credito_numero' => '',
-                'fecha_factura_relacionada' => '',
-                'numero_factura_relacionada' => '',
-                'cliente' => $v->nombre_cliente,
-                'rtn' => optional($v->cliente)->nit ?? optional($v->cliente)->ncr ?? '',
-                'descripcion' => $docNombre,
-                'no_factura' => trim((string) $v->correlativo),
-                'importe_exenta' => $v->iva == 0 && !$esExportacion ? (float) $v->sub_total : 0,
-                'importe_gravada' => $v->iva > 0 ? (float) $v->sub_total : 0,
-                'importe_exonerada' => (float) ($v->no_sujeta ?? 0),
-                'impuesto_ventas' => (float) $v->iva,
-                'importe_exportacion' => $esExportacion ? (float) $v->total : 0,
-            ];
-        });
+    private function mapVentaRow(Venta $v): array
+    {
+        $docNombre = trim(optional($v->documento)->nombre ?? $v->nombre_documento ?? '');
+        $esExportacion = stripos($docNombre, 'exportación') !== false;
 
-        $filasDevoluciones = $devoluciones->map(function ($d) {
-            $ventaOriginal = $d->venta;
-            return [
-                'fecha' => $d->fecha,
-                'num_orden_exenta' => '',
-                'documento_dua_exportacion' => '',
-                'documento_fyduca' => '',
-                'nota_credito_numero' => trim((string) $d->correlativo),
-                'fecha_factura_relacionada' => $ventaOriginal ? $ventaOriginal->fecha : '',
-                'numero_factura_relacionada' => $ventaOriginal ? trim((string) $ventaOriginal->correlativo) : '',
-                'cliente' => $d->nombre_cliente,
-                'rtn' => optional($d->cliente)->nit ?? optional($d->cliente)->ncr ?? '',
-                'descripcion' => 'Nota de crédito',
-                'no_factura' => trim((string) $d->correlativo),
-                'importe_exenta' => $d->exenta > 0 ? -1 * (float) $d->exenta : 0,
-                'importe_gravada' => $d->sub_total > 0 ? -1 * (float) $d->sub_total : 0,
-                'importe_exonerada' => 0,
-                'impuesto_ventas' => $d->iva > 0 ? -1 * (float) $d->iva : 0,
-                'importe_exportacion' => 0,
-            ];
-        });
+        return [
+            'fecha' => $v->fecha,
+            'num_orden_exenta' => $v->num_orden_exento ?? '',
+            'documento_dua_exportacion' => $esExportacion ? trim((string) $v->correlativo) : '',
+            'documento_fyduca' => '',
+            'nota_credito_numero' => '',
+            'fecha_factura_relacionada' => '',
+            'numero_factura_relacionada' => '',
+            'cliente' => $this->formatNombreCliente($v->cliente),
+            'rtn' => optional($v->cliente)->nit ?? optional($v->cliente)->ncr ?? '',
+            'descripcion' => $docNombre,
+            'no_factura' => trim((string) $v->correlativo),
+            'importe_exenta' => $v->iva == 0 && ! $esExportacion ? (float) $v->sub_total : 0,
+            'importe_gravada' => $v->iva > 0 ? (float) $v->sub_total : 0,
+            'importe_exonerada' => (float) ($v->no_sujeta ?? 0),
+            'impuesto_ventas' => (float) $v->iva,
+            'importe_exportacion' => $esExportacion ? (float) $v->total : 0,
+        ];
+    }
 
-        return $filasVentas->merge($filasDevoluciones)->sortBy('fecha')->values();
+    private function mapDevolucionRow(DevolucionVenta $d): array
+    {
+        $ventaOriginal = $d->venta;
+
+        return [
+            'fecha' => $d->fecha,
+            'num_orden_exenta' => '',
+            'documento_dua_exportacion' => '',
+            'documento_fyduca' => '',
+            'nota_credito_numero' => trim((string) $d->correlativo),
+            'fecha_factura_relacionada' => $ventaOriginal ? $ventaOriginal->fecha : '',
+            'numero_factura_relacionada' => $ventaOriginal ? trim((string) $ventaOriginal->correlativo) : '',
+            'cliente' => $this->formatNombreCliente($d->cliente),
+            'rtn' => optional($d->cliente)->nit ?? optional($d->cliente)->ncr ?? '',
+            'descripcion' => 'Nota de crédito',
+            'no_factura' => trim((string) $d->correlativo),
+            'importe_exenta' => $d->exenta > 0 ? -1 * (float) $d->exenta : 0,
+            'importe_gravada' => $d->sub_total > 0 ? -1 * (float) $d->sub_total : 0,
+            'importe_exonerada' => 0,
+            'impuesto_ventas' => $d->iva > 0 ? -1 * (float) $d->iva : 0,
+            'importe_exportacion' => 0,
+        ];
+    }
+
+    private function formatNombreCliente(?Cliente $cliente): string
+    {
+        if (! $cliente) {
+            return 'Consumidor Final';
+        }
+
+        return $cliente->tipo === 'Empresa'
+            ? (string) $cliente->nombre_empresa
+            : trim((string) $cliente->nombre . ' ' . (string) $cliente->apellido);
     }
 
     /**
