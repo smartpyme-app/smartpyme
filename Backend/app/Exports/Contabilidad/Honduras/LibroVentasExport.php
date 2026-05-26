@@ -76,9 +76,6 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
         ];
     }
 
-    /**
-     * Mismas columnas que reportes.contabilidad.honduras.libro-ventas (PDF pantalla libro-iva/general).
-     */
     public function headings(): array
     {
         return [
@@ -94,25 +91,30 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
     }
 
     /**
-     * Filas detalle; cursor + columnas mínimas (sin dte JSON) para no agotar memoria.
+     * @return array<int, array<string, mixed>>
      */
-    protected function buildDetailRows(): Collection
+    protected function buildDetailRowsArray(): array
     {
         $rows = [];
 
-        foreach ($this->ventasQuery()->cursor() as $venta) {
+        foreach ($this->ventasQuery()->get() as $venta) {
             $venta->setAppends([]);
             $rows[] = $this->mapVentaRow($venta);
         }
 
-        foreach ($this->devolucionesQuery()->cursor() as $devolucion) {
+        foreach ($this->devolucionesQuery()->get() as $devolucion) {
             $devolucion->setAppends([]);
             $rows[] = $this->mapDevolucionRow($devolucion);
         }
 
         usort($rows, fn (array $a, array $b) => strcmp((string) $a['fecha'], (string) $b['fecha']));
 
-        return collect($rows);
+        return $rows;
+    }
+
+    protected function buildDetailRows(): Collection
+    {
+        return collect($this->buildDetailRowsArray());
     }
 
     private function ventasQuery()
@@ -136,18 +138,21 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
     private function devolucionesQuery()
     {
         $request = $this->request;
+        $table = (new DevolucionVenta)->getTable();
 
         return DevolucionVenta::query()
-            ->select(self::DEVOLUCION_COLUMNS)
-            ->with([
-                'cliente:id,nit,ncr,tipo,nombre,nombre_empresa,apellido',
-                'venta:id,fecha,correlativo,estado',
+            ->select(array_map(fn (string $col) => "{$table}.{$col}", self::DEVOLUCION_COLUMNS))
+            ->addSelect([
+                'ventas.fecha as venta_fecha_relacionada',
+                'ventas.correlativo as venta_correlativo_relacionado',
             ])
-            ->where('enable', true)
-            ->whereHas('venta', fn ($q) => $q->where('estado', '!=', 'Anulada'))
-            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->orderBy('fecha');
+            ->join('ventas', 'ventas.id', '=', "{$table}.id_venta")
+            ->with(['cliente:id,nit,ncr,tipo,nombre,nombre_empresa,apellido'])
+            ->where("{$table}.enable", true)
+            ->where('ventas.estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, fn ($q) => $q->where("{$table}.id_sucursal", $request->id_sucursal))
+            ->whereBetween("{$table}.fecha", [$request->inicio, $request->fin])
+            ->orderBy("{$table}.fecha");
     }
 
     private function mapVentaRow(Venta $v): array
@@ -177,16 +182,14 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
 
     private function mapDevolucionRow(DevolucionVenta $d): array
     {
-        $ventaOriginal = $d->venta;
-
         return [
             'fecha' => $d->fecha,
             'num_orden_exenta' => '',
             'documento_dua_exportacion' => '',
             'documento_fyduca' => '',
             'nota_credito_numero' => trim((string) $d->correlativo),
-            'fecha_factura_relacionada' => $ventaOriginal ? $ventaOriginal->fecha : '',
-            'numero_factura_relacionada' => $ventaOriginal ? trim((string) $ventaOriginal->correlativo) : '',
+            'fecha_factura_relacionada' => $d->venta_fecha_relacionada ?? '',
+            'numero_factura_relacionada' => trim((string) ($d->venta_correlativo_relacionado ?? '')),
             'cliente' => $this->formatNombreCliente($d->cliente),
             'rtn' => optional($d->cliente)->nit ?? optional($d->cliente)->ncr ?? '',
             'descripcion' => 'Nota de crédito',
@@ -210,9 +213,6 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
             : trim((string) $cliente->nombre . ' ' . (string) $cliente->apellido);
     }
 
-    /**
-     * Fila resumen para Excel / mismo criterio que PDF.
-     */
     public static function filaTotales(Collection $detalle): array
     {
         return [
@@ -234,12 +234,9 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
         return $detalle->push(self::filaTotales($detalle));
     }
 
-    /**
-     * Filas para API / PDF libro-iva/general (mismas claves que espera el frontend).
-     */
     public function rowsForApi(): array
     {
-        return $this->buildDetailRows()->values()->all();
+        return $this->buildDetailRowsArray();
     }
 
     public function map($row): array
