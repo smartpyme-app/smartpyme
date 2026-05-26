@@ -5,10 +5,6 @@
       <i class="fa fa-lock me-1"></i>
       Cierre de Mes
     </button>
-    <button routerLink="/contabilidad/cierre-ejercicio-fiscal" tooltip="Cierre de ejercicio fiscal" class="btn btn-primary">
-      <i class="fa fa-calendar-check-o me-1"></i>
-      Cierre ejercicio
-    </button>
     <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img
         src="/assets/icons/download.png" style="height: 16px; width: 16px;"></button>
     <button *ngIf="apiService.canCreateTest('contabilidad.partidas.crear')" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
@@ -315,6 +311,11 @@
                   data-bs-toggle="pill" data-bs-target="#v-pills-flujo-efectivo" type="button" role="tab"
                   aria-controls="v-pills-flujo-efectivo" aria-selected="false">
             <i class="fas fa-water me-2"></i>Flujo de efectivo
+          </button>
+          <button class="nav-link text-start text-dark mb-2" id="v-pills-cambios-patrimonio-tab"
+                  data-bs-toggle="pill" data-bs-target="#v-pills-cambios-patrimonio" type="button" role="tab"
+                  aria-controls="v-pills-cambios-patrimonio" aria-selected="false">
+            <i class="fas fa-table me-2"></i>Cambios en el patrimonio
           </button>
         </div>
       </div>
@@ -666,6 +667,87 @@
                       Incluye conciliación con la variación de la línea de efectivo y equivalentes
                     </small>
                     <button type="submit" [disabled]="!flujoEfectivoForm.form.valid || saving" class="btn btn-primary">
+                      <i class="fas fa-download me-2"></i>
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- tab 7 formulario CAMBIOS EN EL PATRIMONIO -->
+          <div class="tab-pane fade" id="v-pills-cambios-patrimonio" role="tabpanel"
+               aria-labelledby="v-pills-cambios-patrimonio-tab">
+            <h5 class="mb-3 text-primary"><i class="fas fa-table me-2"></i>Estado de cambios en el patrimonio</h5>
+            <form (ngSubmit)="imprimirCambiosPatrimonio()" #cambiosPatrimonioForm="ngForm">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Del:</label>
+                  <input type="date" class="form-control" name="ecp_ini" required [(ngModel)]="reporte.fecha_inicio">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Al:</label>
+                  <input type="date" class="form-control" name="ecp_fin" required [(ngModel)]="reporte.fecha_fin">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de reporte:</label>
+                  <select name="tipo_descarga_ecp" class="form-select" required [(ngModel)]="reporte.tipo_descarga">
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group without-label mb-0">
+                    <div class="form-switch bg-light-info rounded">
+                      <label for="ecpDosAnios">Incluir dos años consecutivos</label>
+                      <input
+                        class="form-check-input float-end"
+                        type="checkbox"
+                        role="switch"
+                        name="ecpDosAnios"
+                        id="ecpDosAnios"
+                        [(ngModel)]="reporte.ecpDosAnios"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group without-label mb-0">
+                    <div class="form-switch bg-light-info rounded">
+                      <label for="ecpSoloMovimientos">Mostrar solo filas con movimiento</label>
+                      <input
+                        class="form-check-input float-end"
+                        type="checkbox"
+                        role="switch"
+                        name="ecpSoloMovimientos"
+                        id="ecpSoloMovimientos"
+                        [(ngModel)]="reporte.ecpSoloMovimientos"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="d-flex align-items-end h-100">
+                    <div class="alert alert-secondary mb-0 w-100">
+                      <small>
+                        <i class="fas fa-info-circle me-1"></i>
+                        Utilidad neta del estado de resultados NIIF; reserva legal 7% (Art. 123 C. Comercio SV).
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      El total de cierre debe coincidir con el patrimonio del balance general
+                    </small>
+                    <button type="submit" [disabled]="!cambiosPatrimonioForm.form.valid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
                       <span *ngIf="!saving">Generar Documento</span>
                       <span *ngIf="saving">Generando...</span>

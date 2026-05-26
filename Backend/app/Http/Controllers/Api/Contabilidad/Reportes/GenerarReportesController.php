@@ -8,9 +8,11 @@ use App\Exports\Contabilidad\DiarioMayorExport;
 use App\Exports\Contabilidad\BalanceGeneralExport;
 use App\Exports\Contabilidad\EstadoResultadosExport;
 use App\Exports\Contabilidad\FlujoEfectivoExport;
+use App\Exports\Contabilidad\CambiosPatrimonioExport;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Services\Contabilidad\BalanceGeneralNiifSvPresenter;
+use App\Services\Contabilidad\CambiosPatrimonioNiifSvPresenter;
 use App\Services\Contabilidad\EstadoResultadosNiifSvPresenter;
 use App\Services\Contabilidad\FlujoEfectivoHibridoNiifSvPresenter;
 use App\Models\Contabilidad\Catalogo\Cuenta;
@@ -918,6 +920,61 @@ class GenerarReportesController extends Controller
 
         return Excel::download(
             new FlujoEfectivoExport($flujo, (string) $empresa->nombre, $comparar),
+            $fname
+        );
+    }
+
+    public function generarCambiosPatrimonio(Request $request, $fecha_inicio, $fecha_fin, $type)
+    {
+        if ($type === 'pdf') {
+            return $this->generarCambiosPatrimonioPDF($request, $fecha_inicio, $fecha_fin);
+        }
+
+        return $this->generarCambiosPatrimonioExcel($request, $fecha_inicio, $fecha_fin);
+    }
+
+    public function generarCambiosPatrimonioPDF(Request $request, $fecha_inicio, $fecha_fin)
+    {
+        $empresa_id = auth()->user()->id_empresa;
+        $empresa = Empresa::findOrFail($empresa_id);
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        $dosAnios = $request->boolean('dos_anios');
+        $soloMovimientos = $request->boolean('solo_movimientos');
+        $presenter = app(CambiosPatrimonioNiifSvPresenter::class);
+        $estado = $presenter->build($empresa_id, $startDate, $endDate, $dosAnios, $soloMovimientos);
+
+        $columnCount = count($estado['columnas'] ?? []) + 2;
+        $orientation = $columnCount > 6 ? 'landscape' : 'portrait';
+
+        $pdf = PDF::loadView('reportes.contabilidad.cambios_patrimonio', [
+            'estado' => $estado,
+            'empresa' => $empresa,
+            'fecha_inicio' => $fecha_inicio,
+            'fecha_fin' => $fecha_fin,
+        ]);
+        $pdf->setPaper('US Letter', $orientation);
+
+        return $pdf->stream();
+    }
+
+    public function generarCambiosPatrimonioExcel(Request $request, $fecha_inicio, $fecha_fin)
+    {
+        $empresa_id = auth()->user()->id_empresa;
+        $empresa = Empresa::findOrFail($empresa_id);
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        $dosAnios = $request->boolean('dos_anios');
+        $soloMovimientos = $request->boolean('solo_movimientos');
+        $presenter = app(CambiosPatrimonioNiifSvPresenter::class);
+        $estado = $presenter->build($empresa_id, $startDate, $endDate, $dosAnios, $soloMovimientos);
+
+        $fname = 'cambios_patrimonio_' . $fecha_inicio . '_' . $fecha_fin . '.xlsx';
+
+        return Excel::download(
+            new CambiosPatrimonioExport($estado, (string) $empresa->nombre),
             $fname
         );
     }

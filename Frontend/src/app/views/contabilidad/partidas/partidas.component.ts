@@ -37,6 +37,10 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     estadoCompararAnterior: false,
     /** Comparativa en Flujo de efectivo (misma regla que estado de resultados). */
     flujoCompararAnterior: false,
+    /** Matriz de dos años en Estado de cambios en el patrimonio. */
+    ecpDosAnios: false,
+    /** Ocultar saldos de apertura/cierre sin movimiento en ECP. */
+    ecpSoloMovimientos: false,
   };
   public catalogo: any = [];
   public months: Array<{ value: number; label: string }> = [];
@@ -619,6 +623,32 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       );
       const url =
         this.reporte.flujoCompararAnterior === true ? `${base}&comparar=1` : base;
+      window.open(url);
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirCambiosPatrimonio() {
+    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.tipo_descarga) {
+      let url = this.buildReportDownloadUrl(
+        '/api/reportes/cambios/patrimonio/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_descarga
+      );
+      const params: string[] = [];
+      if (this.reporte.ecpDosAnios === true) {
+        params.push('dos_anios=1');
+      }
+      if (this.reporte.ecpSoloMovimientos === true) {
+        params.push('solo_movimientos=1');
+      }
+      if (params.length) {
+        url += (url.includes('?') ? '&' : '?') + params.join('&');
+      }
       window.open(url);
     } else {
       alert('Por favor, llenar los campos requeridos.');
