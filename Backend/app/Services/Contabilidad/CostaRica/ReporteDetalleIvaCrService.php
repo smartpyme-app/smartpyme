@@ -9,7 +9,8 @@ use Carbon\Carbon;
 
 /**
  * Formato libro fiscal CR alineado con plantillas Reporte_Detalle_IVA (ventas) y Reporte_Detalle_IVA_Compras.
- * Los montos provienen del JSON del comprobante DGT guardado en {@see Venta::$dte} / {@see Compra::$dte} (`documento`).
+ * Ventas: montos desde tablas {@see Venta} y {@see Venta::$impuestos} (sin leer DTE).
+ * Compras/gastos: JSON del comprobante en {@see Compra::$dte} / {@see Gasto::$dte} cuando aplica.
  */
 final class ReporteDetalleIvaCrService
 {
@@ -17,6 +18,8 @@ final class ReporteDetalleIvaCrService
     public function filasVentas(string $inicio, string $fin, ?int $idSucursal): array
     {
         $q = Venta::query()
+            ->with(['cliente', 'documento', 'empresa', 'impuestos.impuesto'])
+            ->withCount('detalles')
             ->where('estado', '!=', 'Anulada')
             ->where('cotizacion', 0)
             ->whereBetween('fecha', [$inicio, $fin])
@@ -29,7 +32,7 @@ final class ReporteDetalleIvaCrService
 
         $rows = [];
         foreach ($q->cursor() as $venta) {
-            $row = $this->filaDesdeModeloCr($venta->dte, $venta, 1, false);
+            $row = $this->filaDesdeVenta($venta);
             if ($row !== null) {
                 $rows[] = $row;
             }
@@ -123,6 +126,89 @@ final class ReporteDetalleIvaCrService
     }
 
     /**
+     * Fila del reporte detalle IVA ventas desde tablas ventas / venta_impuestos (mismo criterio que resumen-fiscal).
+     */
+    private function filaDesdeVenta(Venta $venta): ?array
+    {
+        return $this->mapearDocumento($this->documentoDesdeVenta($venta), $venta, 1, true, false);
+    }
+
+    /** @return array<string, mixed> */
+    private function documentoDesdeVenta(Venta $venta): array
+    {
+        $empresa = $venta->empresa;
+        $cliente = $venta->cliente;
+        $nombreReceptor = 'Consumidor final';
+        $idReceptor = '00000000000000000000';
+        if ($cliente) {
+            $nombreReceptor = $cliente->tipo === 'Empresa'
+                ? (string) ($cliente->nombre_empresa ?? 'Cliente')
+                : trim((string) $cliente->nombre.' '.(string) $cliente->apellido);
+            $idReceptor = preg_replace('/\D/', '', (string) ($cliente->nit ?? $cliente->ncr ?? $cliente->dui ?? ''));
+            if ($idReceptor === '') {
+                $idReceptor = '00000000000000000000';
+            }
+        }
+
+        $lineCount = (int) ($venta->detalles_count ?? 0);
+
+        return [
+            'date' => $venta->fecha,
+            'sequential' => (string) ($venta->correlativo ?? ''),
+            'issuer' => [
+                'name' => (string) (optional($empresa)->nombre ?? ''),
+                'identification_number' => preg_replace('/\D/', '', (string) (optional($empresa)->nit ?? '')),
+            ],
+            'receiver' => [
+                'name' => $nombreReceptor,
+                'identification_number' => $idReceptor,
+            ],
+            'summary' => $this->resumenDesdeVenta($venta),
+            'line_items' => array_fill(0, max(0, $lineCount), []),
+            'currency' => [
+                'currency_code' => 'CRC',
+                'exchange_rate' => 1,
+            ],
+            'payments' => [],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function resumenDesdeVenta(Venta $venta): array
+    {
+        $taxes = [];
+        if ($venta->relationLoaded('impuestos') && $venta->impuestos->isNotEmpty()) {
+            foreach ($venta->impuestos as $linea) {
+                $rate = (float) (optional($linea->impuesto)->porcentaje ?? 0);
+                $amount = (float) ($linea->monto ?? 0);
+                if (abs($amount) > 0.00001 || $rate > 0.00001) {
+                    $taxes[] = ['rate' => $rate, 'amount' => $amount];
+                }
+            }
+        } elseif ((float) $venta->iva > 0.00001) {
+            $base = (float) ($venta->gravada ?? 0) > 0.00001
+                ? (float) $venta->gravada
+                : (float) $venta->sub_total;
+            $rate = $base > 0.00001
+                ? round(((float) $venta->iva / $base) * 100, 2)
+                : 13.0;
+            $taxes[] = ['rate' => $rate, 'amount' => (float) $venta->iva];
+        }
+
+        $exempt = (float) ($venta->exenta ?? 0) + (float) ($venta->no_sujeta ?? 0);
+        $taxed = (float) ($venta->gravada ?? 0);
+        if ($taxed <= 0.00001 && (float) $venta->iva > 0.00001) {
+            $taxed = max(0.0, (float) $venta->sub_total - $exempt);
+        }
+
+        return [
+            'total_exempt' => $exempt,
+            'total_taxed' => $taxed,
+            'taxes' => $taxes,
+        ];
+    }
+
+    /**
      * @param  Venta|Compra|Gasto  $model
      * @return array<string, mixed>|null
      */
@@ -147,6 +233,9 @@ final class ReporteDetalleIvaCrService
         $tipoNombre = '';
         if (is_object($model) && property_exists($model, 'nombre_documento')) {
             $tipoNombre = (string) ($model->nombre_documento ?? '');
+        }
+        if ($tipoNombre === '' && is_object($model) && method_exists($model, 'documento')) {
+            $tipoNombre = trim((string) (optional($model->documento)->nombre ?? ''));
         }
         if ($tipoNombre === '' && is_object($model) && property_exists($model, 'tipo_documento')) {
             $tipoNombre = (string) ($model->tipo_documento ?? '');
