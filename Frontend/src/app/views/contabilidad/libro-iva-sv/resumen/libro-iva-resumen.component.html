@@ -1,0 +1,205 @@
+<section class="bg-white p-4 rounded mb-3">
+  <h2 class="h5 text-dark mb-1">Resumen fiscal</h2>
+          <p class="text-muted small mb-0">Totales según libros fiscales de ventas, compras y gastos; IVA por impuesto desde venta_impuestos.</p>
+</section>
+
+<div class="bg-white p-4 rounded mb-3">
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/contribuyentes">Contribuyentes</button>
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/consumidor-final">Consumidor Final</button>
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/compras">Compras</button>
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/anulados">Anulados</button>
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/compras-sujetos-excluidos">Sujetos Excluidos</button>
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/resumen">Resumen</button>
+    </div>
+    <div class="ms-auto d-flex gap-2 align-items-center flex-shrink-0">
+      <select class="form-select" style="width: auto; min-width: 10rem;" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadResumen()">
+        <option [ngValue]="''">Todas las sucursales</option>
+        @for (sucursal of sucursales; track sucursal.id || $index) {
+          <option [ngValue]="sucursal.id">{{ sucursal.nombre }}</option>
+        }
+      </select>
+      <select class="form-select" style="width: auto;" name="mes" [(ngModel)]="filtros.mes" (change)="loadResumen()">
+        <option [ngValue]="1">Enero</option>
+        <option [ngValue]="2">Febrero</option>
+        <option [ngValue]="3">Marzo</option>
+        <option [ngValue]="4">Abril</option>
+        <option [ngValue]="5">Mayo</option>
+        <option [ngValue]="6">Junio</option>
+        <option [ngValue]="7">Julio</option>
+        <option [ngValue]="8">Agosto</option>
+        <option [ngValue]="9">Septiembre</option>
+        <option [ngValue]="10">Octubre</option>
+        <option [ngValue]="11">Noviembre</option>
+        <option [ngValue]="12">Diciembre</option>
+      </select>
+      <select class="form-select" style="width: auto; min-width: 5rem;" name="anio" [(ngModel)]="filtros.anio" (change)="loadResumen()">
+        @for (year of years; track year) {
+          <option [ngValue]="year">{{ year }}</option>
+        }
+      </select>
+    </div>
+  </div>
+</div>
+
+@if (loading) {
+  <div class="card border-0 shadow-sm">
+    <div class="card-body py-5 text-center">
+      <span class="badge bg-primary">Cargando...</span>
+    </div>
+  </div>
+} @else if (resumen) {
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <h3 class="h5 text-dark mb-1">Resumen del periodo</h3>
+      <p class="text-muted small mb-0">Cifras según libros fiscales y filtros de sucursal / mes seleccionados.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card border-0 shadow-sm mb-0 h-100">
+        <div class="card-body pt-2 pb-3">
+          <div class="col py-3">
+            <h6 class="text-dark mb-3">
+              <img src="/assets/icons/trending-up.png" class="icon me-2" alt="" />Total ventas
+            </h6>
+            <h3 class="text-dark mb-0">{{ resumenTotales.ventas | currency }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card border-0 shadow-sm mb-0 h-100">
+        <div class="card-body pt-2 pb-3">
+          <div class="col py-3">
+            <h6 class="text-dark mb-3">
+              <img src="/assets/icons/repeat.png" class="icon me-2" alt="" />Total compras
+            </h6>
+            <h3 class="text-dark mb-0">{{ resumenTotales.compras | currency }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card border-0 shadow-sm mb-0 h-100">
+        <div class="card-body pt-2 pb-3">
+          <div class="col py-3">
+            <h6 class="text-dark mb-3">
+              <img src="/assets/icons/log-out.png" class="icon me-2" alt="" />Total gastos
+            </h6>
+            <h3 class="text-dark mb-0">{{ resumenTotales.gastos | currency }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (ventasPorImpuesto.length > 0) {
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-0">
+        <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
+          <h6 class="text-dark mb-0 fw-semibold">Ventas por impuesto / tarifa</h6>
+        </div>
+        <div class="table-responsive px-2 pb-2">
+          <table class="table table-borderless table-hover align-middle mb-0">
+            <thead class="border-bottom">
+              <tr>
+                <th class="text-muted small fw-semibold">Concepto</th>
+                <th class="text-end text-muted small fw-semibold">Base</th>
+                <th class="text-end text-muted small fw-semibold">IVA / impuesto</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of ventasPorImpuesto; track row.tarifa + row.etiqueta + $index) {
+                <tr>
+                  <td class="text-dark">{{ row.etiqueta }}</td>
+                  <td class="text-end">{{ row.base | currency }}</td>
+                  <td class="text-end">{{ row.iva | currency }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot class="border-top">
+              <tr class="fw-semibold">
+                <td class="text-dark">Suma (base + IVA)</td>
+                <td colspan="2" class="text-end text-nowrap" [class.text-danger]="!desgloseCuadraConTotalVentas">{{ sumaVentasDesglose | currency }}</td>
+              </tr>
+            </tfoot>
+          </table>
+          @if (desgloseCuadraConTotalVentas) {
+            <p class="text-muted small px-2 pb-2 mb-0">Suma alineada con <strong>Total ventas</strong> (libros contribuyentes + consumidor final).</p>
+          } @else {
+            <p class="text-danger small px-2 pb-2 mb-0">
+              La suma (base + IVA) no coincide con Total ventas del libro ({{ resumenTotales.ventas | currency }}). Revise venta_impuestos y notas de crédito del periodo.
+            </p>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-0">
+      <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
+        <h6 class="text-dark mb-0 fw-semibold">Resumen de IVA</h6>
+      </div>
+      <div class="table-responsive px-2 pb-2">
+        <table class="table table-borderless table-hover align-middle mb-0">
+          <tbody>
+            <tr>
+              <td class="text-dark">IVA a favor (crédito fiscal del libro de compras: compras + gastos ± devoluciones)</td>
+              <td class="text-end fw-medium text-nowrap">{{ resumenIva.iva_a_favor | currency }}</td>
+            </tr>
+            @if (resumenIva.credito_fiscal_compras != null) {
+              <tr>
+                <td class="ps-md-4 text-muted small">Crédito fiscal por compras (libro)</td>
+                <td class="text-end small text-nowrap">{{ resumenIva.credito_fiscal_compras | currency }}</td>
+              </tr>
+            }
+            @if (resumenIva.credito_fiscal_gastos != null) {
+              <tr>
+                <td class="ps-md-4 text-muted small">Crédito fiscal por gastos (libro)</td>
+                <td class="text-end small text-nowrap">{{ resumenIva.credito_fiscal_gastos | currency }}</td>
+              </tr>
+            }
+            @if (resumenIva.credito_fiscal_devoluciones_compras != null) {
+              <tr>
+                <td class="ps-md-4 text-muted small">Ajuste por devoluciones de compra (libro)</td>
+                <td class="text-end small text-nowrap">{{ resumenIva.credito_fiscal_devoluciones_compras | currency }}</td>
+              </tr>
+            }
+            <tr>
+              <td class="text-dark">IVA en contra (débito fiscal / ventas)</td>
+              <td class="text-end fw-medium text-nowrap">{{ resumenIva.iva_en_contra | currency }}</td>
+            </tr>
+            <tr class="border-top">
+              <td class="fw-semibold text-dark">Diferencia estimada (a pagar si es positiva)</td>
+              <td class="text-end fw-bold text-nowrap">{{ resumenIva.diferencia_estimada_pago_iva | currency }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  @if (pagoCuentaIva.aplica) {
+    <div class="card border-0 shadow-sm mb-0">
+      <div class="card-body p-0">
+        <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
+          <h6 class="text-dark mb-0 fw-semibold">Pago a cuenta (IVA)</h6>
+        </div>
+        <div class="px-3 py-3">
+          <h3 class="text-dark mb-2">{{ pagoCuentaIva.monto | currency }}</h3>
+          <p class="text-muted small mb-0">{{ pagoCuentaIva.descripcion }}</p>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="card border-0 shadow-sm mb-0 bg-light bg-opacity-25">
+      <div class="card-body py-3">
+        <p class="text-muted small mb-0">Pago a cuenta de IVA no aplica en este país o no hay monto registrado en el periodo.</p>
+      </div>
+    </div>
+  }
+}

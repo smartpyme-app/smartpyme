@@ -7,6 +7,7 @@ import { AlertService } from '@services/alert.service';
 import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { LibroIvaPaisService } from '@views/contabilidad/libro-iva-shared/libro-iva-pais.service';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -70,7 +71,8 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         public apiService: ApiService,
         public alertService: AlertService,
         private router: Router,
-        private funcionalidadesService: FuncionalidadesService
+        private funcionalidadesService: FuncionalidadesService,
+        private libroIvaPais: LibroIvaPaisService
     ) {
         super();
     }
@@ -209,10 +211,9 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     }
 
 
-    /** Ruta de Libros de IVA según país: El Salvador tiene vista completa; otros países vista general (ventas, compras, retenciones). */
+    /** Ruta de Libros de IVA según país (SV / CR / HD / general). */
     get libroIvaRoute(): string[] {
-        const pais = this.apiService.auth_user()?.empresa?.pais ?? '';
-        return pais === 'El Salvador' ? ['/libro-iva/contribuyentes'] : ['/libro-iva/general'];
+        return this.libroIvaPais.rutaInicioLibroIva();
     }
 
     toggleSidebar() {

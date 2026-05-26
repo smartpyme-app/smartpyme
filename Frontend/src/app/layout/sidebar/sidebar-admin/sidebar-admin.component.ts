@@ -7,6 +7,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { LibroIvaPaisService } from '@views/contabilidad/libro-iva-shared/libro-iva-pais.service';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -46,15 +47,15 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
     constructor(
         public apiService: ApiService,
         public alertService: AlertService,
-        private funcionalidadesService: FuncionalidadesService
+        private funcionalidadesService: FuncionalidadesService,
+        private libroIvaPais: LibroIvaPaisService
     ) {
         super();
     }
 
-  /** Ruta de Libros de IVA según país: El Salvador vista completa; otros países vista general. */
+  /** Ruta de Libros de IVA según país (SV / CR / HD / general). */
   get libroIvaRoute(): string[] {
-    const pais = this.apiService.auth_user()?.empresa?.pais ?? '';
-    return pais === 'El Salvador' ? ['/libro-iva/contribuyentes'] : ['/libro-iva/general'];
+    return this.libroIvaPais.rutaInicioLibroIva();
   }
 
     ngOnInit() {

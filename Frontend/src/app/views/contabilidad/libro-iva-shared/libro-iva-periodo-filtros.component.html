@@ -1,0 +1,27 @@
+<div class="d-flex gap-2 align-items-center flex-wrap">
+  <select class="form-select" style="width: auto; min-width: 10rem;" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (ngModelChange)="periodoChange.emit()">
+    <option value="">Todas las sucursales</option>
+    @for (sucursal of sucursales; track sucursal.id || $index) {
+      <option [value]="sucursal.id">{{ sucursal.nombre }}</option>
+    }
+  </select>
+  <select class="form-select" style="width: auto;" name="mes" [(ngModel)]="filtros.mes" (ngModelChange)="periodoChange.emit()">
+    <option [ngValue]="1">Enero</option>
+    <option [ngValue]="2">Febrero</option>
+    <option [ngValue]="3">Marzo</option>
+    <option [ngValue]="4">Abril</option>
+    <option [ngValue]="5">Mayo</option>
+    <option [ngValue]="6">Junio</option>
+    <option [ngValue]="7">Julio</option>
+    <option [ngValue]="8">Agosto</option>
+    <option [ngValue]="9">Septiembre</option>
+    <option [ngValue]="10">Octubre</option>
+    <option [ngValue]="11">Noviembre</option>
+    <option [ngValue]="12">Diciembre</option>
+  </select>
+  <select class="form-select" style="width: auto;" name="anio" [(ngModel)]="filtros.anio" (ngModelChange)="periodoChange.emit()">
+    @for (year of years; track year) {
+      <option [ngValue]="year">{{ year }}</option>
+    }
+  </select>
+</div>

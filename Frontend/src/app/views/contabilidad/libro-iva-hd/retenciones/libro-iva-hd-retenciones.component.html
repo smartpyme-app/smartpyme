@@ -1,0 +1,68 @@
+<section class="bg-white p-4 rounded mb-3">
+  <h2 class="mb-0">Libros fiscales — Honduras</h2>
+</section>
+
+<div class="bg-white p-4 rounded mb-3">
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <app-libro-iva-hd-nav />
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      <app-libro-iva-periodo-filtros
+        [filtros]="filtros"
+        [years]="years"
+        [sucursales]="sucursales"
+        (periodoChange)="loadData()"
+      />
+      <div class="dropdown">
+        <button class="btn btn-default dropdown-toggle" type="button" data-bs-toggle="dropdown" [disabled]="downloading">
+          Descargas
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><button class="dropdown-item" (click)="descargarExcel()">Libro fiscal - Retenciones (Excel)</button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body py-5 text-center"><span class="badge bg-primary">Cargando...</span></div>
+    </div>
+  } @else if ((retenciones?.length ?? 0) === 0) {
+    <div class="card border-0 shadow-sm bg-light bg-opacity-25">
+      <div class="card-body py-5 text-center">
+        <p class="text-muted mb-0">No hay registros para el periodo seleccionado.</p>
+      </div>
+    </div>
+  } @else {
+    <div class="table-responsive bg-white">
+      <table class="table table-bordered table-hover mr-top">
+        <thead>
+          <tr>
+            <th>Fecha de Comprobante de Retención</th>
+            <th>Número de Comprobante de Retención</th>
+            <th>Fecha de Factura</th>
+            <th>Factura relacionada con Comprobante</th>
+            <th>Nombre del Agente Retenedor</th>
+            <th>Registro Tributario Nacional</th>
+            <th class="text-end">Importe Base de Retención</th>
+            <th class="text-end">Impuesto Retenido</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of retenciones; track $index) {
+            <tr>
+              <td>{{ $any(row).fecha_comprobante | date:'dd/MM/yyyy' }}</td>
+              <td>{{ $any(row).numero_comprobante }}</td>
+              <td>{{ $any(row).fecha_factura | date:'dd/MM/yyyy' }}</td>
+              <td>{{ $any(row).factura_relacionada }}</td>
+              <td>{{ $any(row).nombre_agente_retenedor }}</td>
+              <td>{{ $any(row).registro_tributario_nacional }}</td>
+              <td class="text-end">{{ $any(row).importe_base_retencion | currency }}</td>
+              <td class="text-end">{{ $any(row).impuesto_retenido | currency }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

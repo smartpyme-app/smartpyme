@@ -1,49 +1,20 @@
 <?php
 
-use App\Http\Controllers\Api\Contabilidad\LibrosIVAController;
-//use Route;
+use App\Http\Controllers\Api\Contabilidad\LibrosIva\LibrosIvaLegacyController;
+use App\Http\Controllers\Api\Contabilidad\LibrosIva\LibrosIvaResumenController;
 use Illuminate\Support\Facades\Route;
 
-    Route::get('/libro-iva/consumidores',           [LibrosIVAController::class, 'consumidores']);
-    Route::get('/libro-iva/resumen-fiscal',        [LibrosIVAController::class, 'resumenFiscal']);
-    Route::get('/libro-iva/consumidores/descargar-libro',         [LibrosIVAController::class, 'consumidoresLibroExport']);
-    Route::get('/libro-iva/consumidores/descargar-anexo',         [LibrosIVAController::class, 'consumidoresAnexoExport']);
-    Route::get('/libro-iva/consumidores/descargar-dttes',         [LibrosIVAController::class, 'GlobalDttesExport']);
-    Route::get('/libro-iva/consumidores/descargar-dttes-pdf',      [LibrosIVAController::class, 'exportGlobalDttesPdf']);
+require base_path('routes/modulos/contabilidad/libros-iva-sv.php');
+require base_path('routes/modulos/contabilidad/libros-iva-cr.php');
+require base_path('routes/modulos/contabilidad/libros-iva-hd.php');
+require base_path('routes/modulos/contabilidad/libros-iva-general.php');
 
-    Route::get('/libro-iva/contribuyentes',         [LibrosIVAController::class, 'contribuyentes']);
-    Route::get('/libro-iva/contribuyentes/descargar-libro',         [LibrosIVAController::class, 'contribuyentesLibroExport']);
-    Route::get('/libro-iva/contribuyentes/descargar-anexo',         [LibrosIVAController::class, 'contribuyentesAnexoExport']);
-    Route::get('/libro-iva/contribuyentes/descargar-dttes',         [LibrosIVAController::class, 'GlobalDttesExport']);
-    Route::get('/libro-iva/contribuyentes/descargar-dttes-pdf',     [LibrosIVAController::class, 'exportGlobalDttesPdf']);
-    Route::get('/libro-iva/contribuyentes/descargar-notas-credito-debito', [LibrosIVAController::class, 'notasCreditoDebitoExport']);
+// Resumen fiscal (todos los países)
+Route::get('/libro-iva/resumen-fiscal', [LibrosIvaResumenController::class, 'resumenFiscal']);
 
-    Route::get('/libro-iva/compras',                        [LibrosIVAController::class, 'compras']);
-    Route::get('/libro-iva/compras/descargar-libro',         [LibrosIVAController::class, 'comprasLibroExport']);
-    Route::get('/libro-iva/compras/descargar-anexo',         [LibrosIVAController::class, 'comprasAnexoExport']);
-
-    Route::get('/libro-iva/anulados',                        [LibrosIVAController::class, 'anulados']);
-    Route::get('/libro-iva/anulados/descargar-libro',         [LibrosIVAController::class, 'anuladosLibroExport']);
-    Route::get('/libro-iva/anulados/descargar-anexo',         [LibrosIVAController::class, 'anuladosAnexoExport']);
-
-    Route::get('/libro-iva/compras-sujetos-excluidos',                        [LibrosIVAController::class, 'comprasSujetosExcluidos']);
-    Route::get('/libro-iva/compras-sujetos-excluidos/descargar-libro',         [LibrosIVAController::class, 'comprasSujetosExcluidosLibroExport']);
-    Route::get('/libro-iva/compras-sujetos-excluidos/descargar-anexo',         [LibrosIVAController::class, 'comprasSujetosExcluidosAnexoExport']);
-
-    Route::get('/libro-iva/retenciones',                        [LibrosIVAController::class, 'retencionesList']);
-    Route::get('/libro-iva/retencion1/descargar-libro',         [LibrosIVAController::class, 'libroRetencion1Export']);
-    Route::get('/libro-iva/retencion1/descargar-anexo',         [LibrosIVAController::class, 'anexoRetencion1Export']);
-    Route::get('/libro-iva/percepcion1/descargar-libro',         [LibrosIVAController::class, 'libroPercepcion1Export']);
-    Route::get('/libro-iva/percepcion1/descargar-anexo',         [LibrosIVAController::class, 'anexoPercepcion1Export']);
-
-    Route::get('/libro-iva/cr/reporte-detalle-iva-ventas', [LibrosIVAController::class, 'reporteDetalleIvaVentasCr']);
-    Route::get('/libro-iva/cr/reporte-detalle-iva-compras', [LibrosIVAController::class, 'reporteDetalleIvaComprasCr']);
-    Route::get('/libro-iva/cr/reporte-detalle-iva-ventas/descargar-excel', [LibrosIVAController::class, 'reporteDetalleIvaVentasCrExcel']);
-    Route::get('/libro-iva/cr/reporte-detalle-iva-ventas/descargar-csv', [LibrosIVAController::class, 'reporteDetalleIvaVentasCrCsv']);
-    Route::get('/libro-iva/cr/reporte-detalle-iva-compras/descargar-excel', [LibrosIVAController::class, 'reporteDetalleIvaComprasCrExcel']);
-    Route::get('/libro-iva/cr/reporte-detalle-iva-compras/descargar-csv', [LibrosIVAController::class, 'reporteDetalleIvaComprasCrCsv']);
-
-
-?>
-
-
+// Rutas compartidas legacy → despacho por país
+Route::get('/libro-iva/consumidores', [LibrosIvaLegacyController::class, 'consumidores']);
+Route::get('/libro-iva/consumidores/descargar-libro', [LibrosIvaLegacyController::class, 'consumidoresLibroExport']);
+Route::get('/libro-iva/compras', [LibrosIvaLegacyController::class, 'compras']);
+Route::get('/libro-iva/compras/descargar-libro', [LibrosIvaLegacyController::class, 'comprasLibroExport']);
+Route::get('/libro-iva/retenciones', [LibrosIvaLegacyController::class, 'retenciones']);

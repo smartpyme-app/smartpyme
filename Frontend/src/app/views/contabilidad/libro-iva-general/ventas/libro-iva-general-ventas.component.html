@@ -1,0 +1,71 @@
+<section class="bg-white p-4 rounded mb-3">
+  <h2 class="mb-0">Libros fiscales</h2>
+</section>
+
+<div class="bg-white p-4 rounded mb-3">
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <app-libro-iva-general-nav />
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      <app-libro-iva-periodo-filtros
+        [filtros]="filtros"
+        [years]="years"
+        [sucursales]="sucursales"
+        (periodoChange)="loadData()"
+      />
+      <div class="dropdown">
+        <button class="btn btn-default dropdown-toggle" type="button" data-bs-toggle="dropdown" [disabled]="downloading">
+          Descargas
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><button class="dropdown-item" (click)="descargarExcel()">Libro fiscal - Ventas (Excel)</button></li>
+          <li><button class="dropdown-item" (click)="descargarPdf()">Libro fiscal - Ventas (PDF)</button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body py-5 text-center"><span class="badge bg-primary">Cargando...</span></div>
+    </div>
+  } @else if ((ventas?.length ?? 0) === 0) {
+    <div class="card border-0 shadow-sm bg-light bg-opacity-25">
+      <div class="card-body py-5 text-center">
+        <p class="text-muted mb-0">No hay registros para el periodo seleccionado.</p>
+      </div>
+    </div>
+  } @else {
+    <div class="table-responsive bg-white">
+      <table class="table table-bordered table-hover mr-top">
+        <thead>
+          <tr>
+            <th>N°</th>
+            <th>RTN del Cliente</th>
+            <th>Descripción</th>
+            <th>No. de Factura que respalda la venta</th>
+            <th class="text-end">Importe Venta Exenta</th>
+            <th class="text-end">Importe Venta Gravada</th>
+            <th class="text-end">Importe Venta Exonerada</th>
+            <th class="text-end">Impuesto Sobre Ventas</th>
+            <th class="text-end">Importe Exportación</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of ventas; track $index) {
+            <tr>
+              <td>{{ $index + 1 }}</td>
+              <td>{{ $any(row).rtn }}</td>
+              <td>{{ $any(row).descripcion }}</td>
+              <td>{{ $any(row).no_factura }}</td>
+              <td class="text-end">{{ $any(row).importe_exenta | currency }}</td>
+              <td class="text-end">{{ $any(row).importe_gravada | currency }}</td>
+              <td class="text-end">{{ ($any(row).importe_exonerada ?? 0) | currency }}</td>
+              <td class="text-end">{{ $any(row).impuesto_ventas | currency }}</td>
+              <td class="text-end">{{ ($any(row).importe_exportacion ?? 0) | currency }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

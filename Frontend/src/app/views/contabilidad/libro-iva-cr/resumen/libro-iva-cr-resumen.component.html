@@ -1,0 +1,19 @@
+<section class="bg-white p-4 rounded mb-3">
+  <h2 class="mb-0">Libros fiscales — Costa Rica</h2>
+</section>
+
+<div class="bg-white p-4 rounded mb-3">
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <app-libro-iva-cr-nav />
+    <div class="ms-auto">
+      <app-libro-iva-periodo-filtros
+        [filtros]="filtros"
+        [years]="years"
+        [sucursales]="sucursales"
+        (periodoChange)="loadData()"
+      />
+    </div>
+  </div>
+
+  <app-libro-iva-resumen-panel [fiscalResumen]="fiscalResumen" [loading]="loading" />
+</div>

@@ -14,12 +14,11 @@ import { ContabilidadRoutingModule } from './contabilidad.routing.module';
 import { PresupuestosComponent } from './presupuestos/presupuestos.component';
 import { PresupuestoComponent } from './presupuestos/presupuesto/presupuesto.component';
 import { PresupuestoDetallesComponent } from './presupuestos/presupuesto-detalles/presupuesto-detalles.component';
-import { ConsumidorFinalComponent } from '@views/contabilidad/libro-iva/consumidor-final/consumidor-final.component';
-import { ContribuyentesComponent } from '@views/contabilidad/libro-iva/contribuyentes/contribuyentes.component';
-import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-compras.component';
-import { LibroAnuladosComponent } from '@views/contabilidad/libro-anulados/libro-anulados.component';
-import { LibroComprasSujetosExcluidosComponent } from '@views/contabilidad/libro-compras-sujetos-excluidos/libro-compras-sujetos-excluidos.component';
-import { LibroIvaGeneralComponent } from '@views/contabilidad/libro-iva/libro-iva-general/libro-iva-general.component';
+import { ConsumidorFinalComponent } from '@views/contabilidad/libro-iva-sv/consumidor-final/consumidor-final.component';
+import { ContribuyentesComponent } from '@views/contabilidad/libro-iva-sv/contribuyentes/contribuyentes.component';
+import { LibroComprasComponent } from '@views/contabilidad/libro-iva-sv/compras/libro-compras.component';
+import { LibroAnuladosComponent } from '@views/contabilidad/libro-iva-sv/anulados/libro-anulados.component';
+import { LibroComprasSujetosExcluidosComponent } from '@views/contabilidad/libro-iva-sv/compras-sujetos-excluidos/libro-compras-sujetos-excluidos.component';
 import { CuentasComponent } from '@views/contabilidad/bancos/cuentas/cuentas.component';
 import { CuentaComponent } from '@views/contabilidad/bancos/cuentas/cuenta/cuenta.component';
 import { ChequesComponent } from '@views/contabilidad/bancos/cheques/cheques.component';
@@ -60,7 +59,6 @@ import { ComprasModule } from '@views/compras/compras.module';
     LibroComprasComponent,
     LibroAnuladosComponent,
     LibroComprasSujetosExcluidosComponent,
-    LibroIvaGeneralComponent,
     CuentasComponent,
     CuentaComponent,
     ChequesComponent,
@@ -101,8 +99,7 @@ import { ComprasModule } from '@views/compras/compras.module';
     ParditasDatosComponent,
     ContabilidadConfiguracionComponent,
     CierreMesComponent,
-    LibroComprasSujetosExcluidosComponent,
-    LibroIvaGeneralComponent
+    LibroComprasSujetosExcluidosComponent
   ]
 })
 export class ContabilidadModule {}
