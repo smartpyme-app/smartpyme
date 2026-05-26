@@ -93,44 +93,50 @@
   @if (activoSeccion === 'ventas' && !esCostaRicaFe()) {
     <div class="row">
       <div class="col-12">
-        <div class="table-responsive bg-white">
-          <table class="table table-bordered table-hover mr-top" id="tablaVentas">
-            <thead>
-              <tr>
-                <th>N°</th>
-                <th>RTN del Cliente</th>
-                <th>Descripción</th>
-                <th>No. de Factura que respalda la venta</th>
-                <th class="text-end">Importe Venta Exenta</th>
-                <th class="text-end">Importe Venta Gravada</th>
-                <th class="text-end">Importe Venta Exonerada</th>
-                <th class="text-end">Impuesto Sobre Ventas</th>
-                <th class="text-end">Importe Exportación</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colspan="9" class="text-center" *ngIf="(ventas?.length ?? 0) === 0 && !loading">
-                  <span class="badge bg-primary">No tiene registros</span>
-                </td>
-                <td colspan="9" class="text-center" *ngIf="loading">
-                  <span class="badge bg-primary">Cargando...</span>
-                </td>
-              </tr>
-              <tr class="animated fadeIn" *ngFor="let row of ventas; let i = index">
-                <td>{{ i + 1 }}</td>
-                <td>{{ row.rtn }}</td>
-                <td>{{ row.descripcion }}</td>
-                <td>{{ row.no_factura }}</td>
-                <td class="text-end">{{ row.importe_exenta | currency }}</td>
-                <td class="text-end">{{ row.importe_gravada | currency }}</td>
-                <td class="text-end">{{ (row.importe_exonerada ?? 0) | currency }}</td>
-                <td class="text-end">{{ row.impuesto_ventas | currency }}</td>
-                <td class="text-end">{{ (row.importe_exportacion ?? 0) | currency }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        @if (loading) {
+          <div class="card border-0 shadow-sm">
+            <div class="card-body py-5 text-center">
+              <span class="badge bg-primary">Cargando...</span>
+            </div>
+          </div>
+        } @else if ((ventas?.length ?? 0) === 0) {
+          <div class="card border-0 shadow-sm bg-light bg-opacity-25">
+            <div class="card-body py-5 text-center">
+              <p class="text-muted mb-0">No hay registros para el periodo seleccionado.</p>
+            </div>
+          </div>
+        } @else {
+          <div class="table-responsive bg-white">
+            <table class="table table-bordered table-hover mr-top" id="tablaVentas">
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>RTN del Cliente</th>
+                  <th>Descripción</th>
+                  <th>No. de Factura que respalda la venta</th>
+                  <th class="text-end">Importe Venta Exenta</th>
+                  <th class="text-end">Importe Venta Gravada</th>
+                  <th class="text-end">Importe Venta Exonerada</th>
+                  <th class="text-end">Impuesto Sobre Ventas</th>
+                  <th class="text-end">Importe Exportación</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="animated fadeIn" *ngFor="let row of ventas; let i = index">
+                  <td>{{ i + 1 }}</td>
+                  <td>{{ row.rtn }}</td>
+                  <td>{{ row.descripcion }}</td>
+                  <td>{{ row.no_factura }}</td>
+                  <td class="text-end">{{ row.importe_exenta | currency }}</td>
+                  <td class="text-end">{{ row.importe_gravada | currency }}</td>
+                  <td class="text-end">{{ (row.importe_exonerada ?? 0) | currency }}</td>
+                  <td class="text-end">{{ row.impuesto_ventas | currency }}</td>
+                  <td class="text-end">{{ (row.importe_exportacion ?? 0) | currency }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </div>
   }
@@ -153,50 +159,56 @@
   @if (activoSeccion === 'compras' && !esCostaRicaFe()) {
     <div class="row">
       <div class="col-12">
-        <div class="table-responsive bg-white">
-          <table class="table table-bordered table-hover mr-top" id="tablaCompras">
-            <thead>
-              <tr>
-                <th>Fecha de Documento</th>
-                <th>Fecha de Contabilización</th>
-                <th>Documento / DUA Importación</th>
-                <th>Documento de adquisiciones FYDUCA</th>
-                <th>Proveedor</th>
-                <th>Registro Tributario Nacional del proveedor</th>
-                <th>Descripción de la compra</th>
-                <th>No. de Factura de la compra</th>
-                <th class="text-end">Importe Compra Exenta</th>
-                <th class="text-end">Importe Compra Gravada</th>
-                <th class="text-end">Impuesto Sobre Ventas</th>
-                <th class="text-end">Importe Importación</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colspan="12" class="text-center" *ngIf="(compras?.length ?? 0) === 0 && !loading">
-                  <span class="badge bg-primary">No tiene registros</span>
-                </td>
-                <td colspan="12" class="text-center" *ngIf="loading">
-                  <span class="badge bg-primary">Cargando...</span>
-                </td>
-              </tr>
-              <tr class="animated fadeIn" *ngFor="let row of compras">
-                <td>{{ row.fecha_documento | date:'dd/MM/yyyy' }}</td>
-                <td>{{ row.fecha_contabilizacion | date:'dd/MM/yyyy' }}</td>
-                <td>{{ row.documento_dua_importacion }}</td>
-                <td>{{ row.documento_fyduca }}</td>
-                <td>{{ row.proveedor }}</td>
-                <td>{{ row.rtn_proveedor }}</td>
-                <td>{{ row.descripcion_compra }}</td>
-                <td>{{ row.no_factura_compra }}</td>
-                <td class="text-end">{{ row.importe_exenta | currency }}</td>
-                <td class="text-end">{{ row.importe_gravada | currency }}</td>
-                <td class="text-end">{{ row.impuesto_ventas | currency }}</td>
-                <td class="text-end">{{ (row.importe_importacion ?? 0) | currency }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        @if (loading) {
+          <div class="card border-0 shadow-sm">
+            <div class="card-body py-5 text-center">
+              <span class="badge bg-primary">Cargando...</span>
+            </div>
+          </div>
+        } @else if ((compras?.length ?? 0) === 0) {
+          <div class="card border-0 shadow-sm bg-light bg-opacity-25">
+            <div class="card-body py-5 text-center">
+              <p class="text-muted mb-0">No hay registros para el periodo seleccionado.</p>
+            </div>
+          </div>
+        } @else {
+          <div class="table-responsive bg-white">
+            <table class="table table-bordered table-hover mr-top" id="tablaCompras">
+              <thead>
+                <tr>
+                  <th>Fecha de Documento</th>
+                  <th>Fecha de Contabilización</th>
+                  <th>Documento / DUA Importación</th>
+                  <th>Documento de adquisiciones FYDUCA</th>
+                  <th>Proveedor</th>
+                  <th>Registro Tributario Nacional del proveedor</th>
+                  <th>Descripción de la compra</th>
+                  <th>No. de Factura de la compra</th>
+                  <th class="text-end">Importe Compra Exenta</th>
+                  <th class="text-end">Importe Compra Gravada</th>
+                  <th class="text-end">Impuesto Sobre Ventas</th>
+                  <th class="text-end">Importe Importación</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="animated fadeIn" *ngFor="let row of compras">
+                  <td>{{ row.fecha_documento | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ row.fecha_contabilizacion | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ row.documento_dua_importacion }}</td>
+                  <td>{{ row.documento_fyduca }}</td>
+                  <td>{{ row.proveedor }}</td>
+                  <td>{{ row.rtn_proveedor }}</td>
+                  <td>{{ row.descripcion_compra }}</td>
+                  <td>{{ row.no_factura_compra }}</td>
+                  <td class="text-end">{{ row.importe_exenta | currency }}</td>
+                  <td class="text-end">{{ row.importe_gravada | currency }}</td>
+                  <td class="text-end">{{ row.impuesto_ventas | currency }}</td>
+                  <td class="text-end">{{ (row.importe_importacion ?? 0) | currency }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </div>
   }
@@ -205,42 +217,48 @@
   @if (activoSeccion === 'retenciones' && !esCostaRicaFe()) {
     <div class="row">
       <div class="col-12">
-        <div class="table-responsive bg-white">
-          <table class="table table-bordered table-hover mr-top" id="tablaRetenciones">
-            <thead>
-              <tr>
-                <th>Fecha de Comprobante de Retención</th>
-                <th>Número de Comprobante de Retención</th>
-                <th>Fecha de Factura</th>
-                <th>Factura relacionada con Comprobante</th>
-                <th>Nombre del Agente Retenedor</th>
-                <th>Registro Tributario Nacional</th>
-                <th class="text-end">Importe Base de Retención</th>
-                <th class="text-end">Impuesto Retenido</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colspan="8" class="text-center" *ngIf="(retenciones?.length ?? 0) === 0 && !loading">
-                  <span class="badge bg-primary">No tiene registros</span>
-                </td>
-                <td colspan="8" class="text-center" *ngIf="loading">
-                  <span class="badge bg-primary">Cargando...</span>
-                </td>
-              </tr>
-              <tr class="animated fadeIn" *ngFor="let row of retenciones">
-                <td>{{ row.fecha_comprobante | date:'dd/MM/yyyy' }}</td>
-                <td>{{ row.numero_comprobante }}</td>
-                <td>{{ row.fecha_factura | date:'dd/MM/yyyy' }}</td>
-                <td>{{ row.factura_relacionada }}</td>
-                <td>{{ row.nombre_agente_retenedor }}</td>
-                <td>{{ row.registro_tributario_nacional }}</td>
-                <td class="text-end">{{ row.importe_base_retencion | currency }}</td>
-                <td class="text-end">{{ row.impuesto_retenido | currency }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        @if (loading) {
+          <div class="card border-0 shadow-sm">
+            <div class="card-body py-5 text-center">
+              <span class="badge bg-primary">Cargando...</span>
+            </div>
+          </div>
+        } @else if ((retenciones?.length ?? 0) === 0) {
+          <div class="card border-0 shadow-sm bg-light bg-opacity-25">
+            <div class="card-body py-5 text-center">
+              <p class="text-muted mb-0">No hay registros para el periodo seleccionado.</p>
+            </div>
+          </div>
+        } @else {
+          <div class="table-responsive bg-white">
+            <table class="table table-bordered table-hover mr-top" id="tablaRetenciones">
+              <thead>
+                <tr>
+                  <th>Fecha de Comprobante de Retención</th>
+                  <th>Número de Comprobante de Retención</th>
+                  <th>Fecha de Factura</th>
+                  <th>Factura relacionada con Comprobante</th>
+                  <th>Nombre del Agente Retenedor</th>
+                  <th>Registro Tributario Nacional</th>
+                  <th class="text-end">Importe Base de Retención</th>
+                  <th class="text-end">Impuesto Retenido</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="animated fadeIn" *ngFor="let row of retenciones">
+                  <td>{{ row.fecha_comprobante | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ row.numero_comprobante }}</td>
+                  <td>{{ row.fecha_factura | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ row.factura_relacionada }}</td>
+                  <td>{{ row.nombre_agente_retenedor }}</td>
+                  <td>{{ row.registro_tributario_nacional }}</td>
+                  <td class="text-end">{{ row.importe_base_retencion | currency }}</td>
+                  <td class="text-end">{{ row.impuesto_retenido | currency }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </div>
   }
@@ -255,6 +273,11 @@
             </div>
           </div>
         } @else if (fiscalResumen) {
+          @if (resumenPeriodoSinMovimientos) {
+            <div class="alert alert-light border mb-4 text-center" role="status">
+              No hay movimientos fiscales registrados en el periodo seleccionado.
+            </div>
+          }
           <div class="card border-0 shadow-sm mb-4">
             <div class="card-body py-3">
               <h3 class="h5 text-dark mb-1">Resumen del periodo</h3>
@@ -407,6 +430,12 @@
               </div>
             </div>
           }
+        } @else {
+          <div class="card border-0 shadow-sm bg-light bg-opacity-25">
+            <div class="card-body py-5 text-center">
+              <p class="text-muted mb-0">No hay datos de resumen para el periodo seleccionado.</p>
+            </div>
+          </div>
         }
       </div>
     </div>

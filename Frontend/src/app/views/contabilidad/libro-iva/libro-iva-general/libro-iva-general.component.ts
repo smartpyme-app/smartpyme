@@ -77,7 +77,6 @@ export class LibroIvaGeneralComponent implements OnInit {
   }
 
   setTime(): void {
-    this.aplicarRangoMes();
     this.loadAll();
   }
 
@@ -87,6 +86,7 @@ export class LibroIvaGeneralComponent implements OnInit {
   }
 
   loadAll(): void {
+    this.aplicarRangoMes();
     this.loading = true;
     const cr = this.esCostaRicaFe();
 
@@ -98,6 +98,7 @@ export class LibroIvaGeneralComponent implements OnInit {
         },
         (error) => {
           this.alertService.error(error);
+          this.fiscalResumen = null;
           this.loading = false;
         }
       );
@@ -244,7 +245,7 @@ export class LibroIvaGeneralComponent implements OnInit {
     this.aplicarRangoMes();
     this.downloading = true;
     const token = this.apiService.auth_token();
-    const query = new URLSearchParams(this.filtros as any).toString();
+    const query = new URLSearchParams(this.filtros).toString();
     const url = `${this.apiService.baseUrl}/api/libro-iva/consumidores?${query}&formato=pdf&token=${token}`;
     window.open(url, '_blank');
     this.downloading = false;
@@ -282,7 +283,7 @@ export class LibroIvaGeneralComponent implements OnInit {
     this.aplicarRangoMes();
     this.downloading = true;
     const token = this.apiService.auth_token();
-    const query = new URLSearchParams(this.filtros as any).toString();
+    const query = new URLSearchParams(this.filtros).toString();
     const url = `${this.apiService.baseUrl}/api/libro-iva/compras?${query}&formato=pdf&token=${token}`;
     window.open(url, '_blank');
     this.downloading = false;
@@ -295,6 +296,14 @@ export class LibroIvaGeneralComponent implements OnInit {
       (data: Blob) => this.descargarBlob(data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Libro-retenciones.xlsx'),
       (error) => this.manejarErrorDescarga(error)
     );
+  }
+
+  get resumenPeriodoSinMovimientos(): boolean {
+    if (!this.fiscalResumen) {
+      return false;
+    }
+    const t = this.resumenTotales;
+    return t.ventas === 0 && t.compras === 0 && t.gastos === 0;
   }
 
   get resumenTotales(): { ventas: number; compras: number; gastos: number } {

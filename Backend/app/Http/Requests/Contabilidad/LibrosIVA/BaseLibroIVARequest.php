@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Contabilidad\LibrosIVA;
 
-use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BaseLibroIVARequest extends FormRequest
@@ -16,16 +15,6 @@ class BaseLibroIVARequest extends FormRequest
     {
         if ($this->input('id_sucursal') === '') {
             $this->merge(['id_sucursal' => null]);
-        }
-
-        if ((! $this->filled('inicio') || ! $this->filled('fin'))
-            && $this->filled('anio')
-            && $this->filled('mes')) {
-            $base = Carbon::create((int) $this->input('anio'), (int) $this->input('mes'), 1)->startOfMonth();
-            $this->merge([
-                'inicio' => $base->format('Y-m-d'),
-                'fin' => $base->copy()->endOfMonth()->format('Y-m-d'),
-            ]);
         }
     }
 
