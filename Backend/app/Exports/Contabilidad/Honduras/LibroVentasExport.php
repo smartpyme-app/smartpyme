@@ -30,7 +30,6 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
         'fecha',
         'num_orden_exento',
         'correlativo',
-        'tipo_documento',
         'id_cliente',
         'id_documento',
         'iva',
@@ -153,7 +152,7 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
 
     private function mapVentaRow(Venta $v): array
     {
-        $docNombre = trim(optional($v->documento)->nombre ?? $v->tipo_documento ?? '');
+        $docNombre = trim((string) (optional($v->documento)->nombre ?? ''));
         $esExportacion = stripos($docNombre, 'exportación') !== false;
 
         return [
