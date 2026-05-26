@@ -24,7 +24,7 @@ class VerificarSuscripcion extends Command
             $this->verificarPeriodosPrueba();
             $this->verificarSuscripcionesVencidas();
             $this->procesarSuscripcionesCanceladas();
-            $this->verificarInactividadNoPagados();
+            $this->verificarInactividad();
 
             $this->info('Verificación completada exitosamente');
             Log::channel('suscripciones')->info('Verificación completada exitosamente');
@@ -80,21 +80,19 @@ class VerificarSuscripcion extends Command
         Log::channel('suscripciones')->info('Procesamiento de suscripciones canceladas completado');
     }
 
-    private function verificarInactividadNoPagados(): void
+    private function verificarInactividad(): void
     {
-        $this->info('Verificando inactividad de suscripciones no pagadas (>45 días sin login)...');
-        Log::channel('suscripciones')->info('Iniciando verificación de inactividad (no pagados > 45 días)');
+        $this->info('Verificando inactividad general (> 45 días sin login)...');
+        Log::channel('suscripciones')->info('Iniciando verificación de inactividad general (> 45 días)');
 
-        $activo = config('constants.ESTADO_SUSCRIPCION_ACTIVO');
         $inactivo = config('constants.ESTADO_SUSCRIPCION_INACTIVO');
         $cancelado = config('constants.ESTADO_SUSCRIPCION_CANCELADO');
 
         $suscripciones = Suscripcion::with(['usuario.empresa', 'empresa'])
-            ->where('estado', '!=', $activo)
             ->whereNotIn('estado', [$inactivo, $cancelado])
             ->get();
 
-        $this->info('Suscripciones no pagadas a evaluar: ' . $suscripciones->count());
+        $this->info('Suscripciones a evaluar por inactividad general: ' . $suscripciones->count());
 
         foreach ($suscripciones as $suscripcion) {
             $usuario = $suscripcion->usuario;
@@ -118,25 +116,25 @@ class VerificarSuscripcion extends Command
                     $usuario->update(['enable' => false]);
                 }
 
-                $this->reiniciarMontosFinancieros($suscripcion, $usuario, 'inactividad (no pago > 45 días)', true);
+                $this->reiniciarMontosFinancieros($suscripcion, $usuario, 'inactividad general (> 45 días)', true);
 
-                $this->info("Suscripción {$suscripcion->id} desactivada por inactividad (>45 días sin login, no pagada)");
-                Log::channel('suscripciones')->info('Suscripción desactivada por inactividad (no pago > 45 días)', [
+                $this->info("Suscripción {$suscripcion->id} desactivada por inactividad general (> 45 días sin login)");
+                Log::channel('suscripciones')->info('Suscripción desactivada por inactividad general (> 45 días)', [
                     'suscripcion_id' => $suscripcion->id,
-                    'usuario_id' => $usuario?->id,
-                    'empresa_id' => $empresa->id,
-                    'ultimo_login' => $empresa->ultimo_login,
+                    'usuario_id'     => $usuario?->id,
+                    'empresa_id'     => $empresa->id,
+                    'ultimo_login'   => $empresa->ultimo_login,
                 ]);
             } catch (\Exception $e) {
-                $this->error("Error al desactivar suscripción {$suscripcion->id} por inactividad: {$e->getMessage()}");
-                Log::channel('suscripciones')->error('Error al desactivar por inactividad (no pago > 45 días)', [
+                $this->error("Error al desactivar suscripción {$suscripcion->id} por inactividad general: {$e->getMessage()}");
+                Log::channel('suscripciones')->error('Error al desactivar por inactividad general (> 45 días)', [
                     'suscripcion_id' => $suscripcion->id,
-                    'error' => $e->getMessage(),
+                    'error'          => $e->getMessage(),
                 ]);
             }
         }
 
-        Log::channel('suscripciones')->info('Verificación de inactividad (no pagados > 45 días) completada');
+        Log::channel('suscripciones')->info('Verificación de inactividad general (> 45 días) completada');
     }
 
     private function empresaInactivaMasDe45Dias($empresa): bool
