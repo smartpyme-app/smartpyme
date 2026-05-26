@@ -1,12 +1,18 @@
 <div class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}" tourAnchor="tour.sidebar" id="tour.sidebar">
-    <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative" style="min-height: 7vh;">
-        <img src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
-        <a routerLink="/" tooltip="Dashboard"> <img src="assets/img/logo.png" class="logo" height="25px"> </a>
-        <button tourAnchor="tour.sidebar_toogle" id="tour.sidebar_toogle"  id="toggleBtn" class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button" (click)="toggleSidebar()">
-            <img src="/assets/icons/sidebar.png">
-        </button>
-        <!-- <p>{{ usuario.name }}</p> -->
-    </div>
+  <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative"
+    style="min-height: 7vh;">
+    <img *ngIf="!isAbacoSite" src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
+    <a routerLink="/" tooltip="Dashboard" style="display: flex; align-items: center;">
+      <img *ngIf="!isAbacoSite" src="assets/img/logo.png" class="logo" height="25px">
+      <img *ngIf="isAbacoSite" src="assets/img/logo-abaco.png" class="logo" height="15px">
+    </a>
+    <button tourAnchor="tour.sidebar_toogle" id="tour.sidebar_toogle" id="toggleBtn"
+      class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button"
+      (click)="toggleSidebar()">
+      <img src="/assets/icons/sidebar.png">
+    </button>
+    <!-- <p>{{ usuario.name }}</p> -->
+  </div>
     <div class="mb-3" style="min-height: 5vh;">
         <form action="" autocomplete="off">
             <ul class="list-unstyled ps-0">
@@ -219,5 +225,11 @@
                 </a>
             </li>
         </ul>
+    </div>
+    <div *ngIf="isAbacoSite" class="w-100 text-center register-abaco-footer-attribution">
+      <p class="mb-1 text-muted register-abaco-footer-attribution__label" style="font-size: 10px;">Powered by </p>
+      <a href="https://www.smartpyme.app" target="_blank" rel="noopener noreferrer">
+        <img src="assets/img/smartpyme.png" style="height: 25px; width: auto;" alt="SmartPyme" />
+      </a>
     </div>
 </div>
