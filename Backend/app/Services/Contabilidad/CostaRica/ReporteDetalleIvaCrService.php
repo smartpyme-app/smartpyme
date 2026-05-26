@@ -9,8 +9,7 @@ use Carbon\Carbon;
 
 /**
  * Formato libro fiscal CR alineado con plantillas Reporte_Detalle_IVA (ventas) y Reporte_Detalle_IVA_Compras.
- * Ventas: montos desde tablas {@see Venta} y {@see Venta::$impuestos} (sin leer DTE).
- * Compras/gastos: JSON del comprobante en {@see Compra::$dte} / {@see Gasto::$dte} cuando aplica.
+ * Montos desde tablas del registro (ventas/venta_impuestos, compras, egresos/detalles); sin leer DTE.
  */
 final class ReporteDetalleIvaCrService
 {
@@ -61,6 +60,8 @@ final class ReporteDetalleIvaCrService
         $rows = [];
 
         $qc = Compra::query()
+            ->with(['proveedor', 'empresa'])
+            ->withCount('detalles')
             ->where('estado', '!=', 'Anulada')
             ->where('cotizacion', 0)
             ->whereBetween('fecha', [$inicio, $fin])
@@ -70,13 +71,14 @@ final class ReporteDetalleIvaCrService
             $qc->where('id_sucursal', $idSucursal);
         }
         foreach ($qc->cursor() as $compra) {
-            $row = $this->filaDesdeModeloCr($compra->dte, $compra, 1, true);
+            $row = $this->filaDesdeCompra($compra);
             if ($row !== null) {
                 $rows[] = $row;
             }
         }
 
         $qg = Gasto::query()
+            ->with(['proveedor', 'empresa', 'detalles'])
             ->where('estado', '!=', 'Cancelado')
             ->where('estado', '!=', 'Anulada')
             ->whereBetween('fecha', [$inicio, $fin])
@@ -86,7 +88,7 @@ final class ReporteDetalleIvaCrService
             $qg->where('id_sucursal', $idSucursal);
         }
         foreach ($qg->cursor() as $gasto) {
-            $row = $this->filaDesdeModeloCr($gasto->dte, $gasto, 1, true);
+            $row = $this->filaDesdeGasto($gasto);
             if ($row !== null) {
                 $rows[] = $row;
             }
@@ -110,22 +112,6 @@ final class ReporteDetalleIvaCrService
     }
 
     /**
-     * @param  Venta|Compra|Gasto  $model
-     */
-    private function filaDesdeModeloCr(?array $dte, $model, int $signe, bool $libroCompras): ?array
-    {
-        if (! is_array($dte) || ($dte['pais'] ?? '') !== 'CR') {
-            return null;
-        }
-        $doc = $dte['documento'] ?? null;
-        if (! is_array($doc) || $doc === []) {
-            return null;
-        }
-
-        return $this->mapearDocumento($doc, $model, $signe, true, $libroCompras);
-    }
-
-    /**
      * Fila del reporte detalle IVA ventas desde tablas ventas / venta_impuestos (mismo criterio que resumen-fiscal).
      */
     private function filaDesdeVenta(Venta $venta): ?array
@@ -133,22 +119,21 @@ final class ReporteDetalleIvaCrService
         return $this->mapearDocumento($this->documentoDesdeVenta($venta), $venta, 1, true, false);
     }
 
+    private function filaDesdeCompra(Compra $compra): ?array
+    {
+        return $this->mapearDocumento($this->documentoDesdeCompra($compra), $compra, 1, true, true);
+    }
+
+    private function filaDesdeGasto(Gasto $gasto): ?array
+    {
+        return $this->mapearDocumento($this->documentoDesdeGasto($gasto), $gasto, 1, true, true);
+    }
+
     /** @return array<string, mixed> */
     private function documentoDesdeVenta(Venta $venta): array
     {
         $empresa = $venta->empresa;
-        $cliente = $venta->cliente;
-        $nombreReceptor = 'Consumidor final';
-        $idReceptor = '00000000000000000000';
-        if ($cliente) {
-            $nombreReceptor = $cliente->tipo === 'Empresa'
-                ? (string) ($cliente->nombre_empresa ?? 'Cliente')
-                : trim((string) $cliente->nombre.' '.(string) $cliente->apellido);
-            $idReceptor = preg_replace('/\D/', '', (string) ($cliente->nit ?? $cliente->ncr ?? $cliente->dui ?? ''));
-            if ($idReceptor === '') {
-                $idReceptor = '00000000000000000000';
-            }
-        }
+        [$nombreReceptor, $idReceptor] = $this->datosTercero($venta->cliente, 'Consumidor final');
 
         $lineCount = (int) ($venta->detalles_count ?? 0);
 
@@ -174,31 +159,208 @@ final class ReporteDetalleIvaCrService
     }
 
     /** @return array<string, mixed> */
-    private function resumenDesdeVenta(Venta $venta): array
+    private function documentoDesdeCompra(Compra $compra): array
     {
-        $taxes = [];
-        if ($venta->relationLoaded('impuestos') && $venta->impuestos->isNotEmpty()) {
-            foreach ($venta->impuestos as $linea) {
-                $rate = (float) (optional($linea->impuesto)->porcentaje ?? 0);
-                $amount = (float) ($linea->monto ?? 0);
-                if (abs($amount) > 0.00001 || $rate > 0.00001) {
-                    $taxes[] = ['rate' => $rate, 'amount' => $amount];
-                }
-            }
-        } elseif ((float) $venta->iva > 0.00001) {
-            $base = (float) ($venta->gravada ?? 0) > 0.00001
-                ? (float) $venta->gravada
-                : (float) $venta->sub_total;
-            $rate = $base > 0.00001
-                ? round(((float) $venta->iva / $base) * 100, 2)
-                : 13.0;
-            $taxes[] = ['rate' => $rate, 'amount' => (float) $venta->iva];
+        $empresa = $compra->empresa;
+        $proveedor = $compra->proveedor;
+        [$nombreEmisor, $idEmisor] = $this->datosTercero($proveedor, 'Proveedor');
+
+        $folio = trim((string) ($compra->referencia ?? ''));
+        if ($folio === '') {
+            $folio = trim((string) ($compra->num_serie ?? ''));
         }
 
-        $exempt = (float) ($venta->exenta ?? 0) + (float) ($venta->no_sujeta ?? 0);
-        $taxed = (float) ($venta->gravada ?? 0);
-        if ($taxed <= 0.00001 && (float) $venta->iva > 0.00001) {
-            $taxed = max(0.0, (float) $venta->sub_total - $exempt);
+        return [
+            'date' => $compra->fecha,
+            'sequential' => $folio,
+            'issuer' => [
+                'name' => $nombreEmisor,
+                'identification_number' => $idEmisor,
+            ],
+            'receiver' => [
+                'name' => (string) (optional($empresa)->nombre ?? ''),
+                'identification_number' => preg_replace('/\D/', '', (string) (optional($empresa)->nit ?? '')),
+            ],
+            'summary' => $this->resumenDesdeCompra($compra),
+            'line_items' => array_fill(0, max(0, (int) ($compra->detalles_count ?? 0)), []),
+            'currency' => [
+                'currency_code' => 'CRC',
+                'exchange_rate' => 1,
+            ],
+            'payments' => [],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function documentoDesdeGasto(Gasto $gasto): array
+    {
+        $empresa = $gasto->empresa;
+        $proveedor = $gasto->proveedor;
+        [$nombreEmisor, $idEmisor] = $this->datosTercero($proveedor, 'Proveedor');
+
+        $folio = trim((string) ($gasto->referencia ?? ''));
+        if ($folio === '') {
+            $folio = trim((string) ($gasto->num_identificacion ?? ''));
+        }
+
+        $lineCount = $gasto->relationLoaded('detalles') ? $gasto->detalles->count() : 0;
+
+        return [
+            'date' => $gasto->fecha,
+            'sequential' => $folio,
+            'issuer' => [
+                'name' => $nombreEmisor,
+                'identification_number' => $idEmisor,
+            ],
+            'receiver' => [
+                'name' => (string) (optional($empresa)->nombre ?? ''),
+                'identification_number' => preg_replace('/\D/', '', (string) (optional($empresa)->nit ?? '')),
+            ],
+            'summary' => $this->resumenDesdeGasto($gasto),
+            'line_items' => array_fill(0, max(0, $lineCount), []),
+            'currency' => [
+                'currency_code' => 'CRC',
+                'exchange_rate' => 1,
+            ],
+            'payments' => [],
+        ];
+    }
+
+    /** @return array{0: string, 1: string} */
+    private function datosTercero(?object $tercero, string $defectoNombre): array
+    {
+        if (! $tercero) {
+            return [$defectoNombre, '00000000000000000000'];
+        }
+        $nombre = $tercero->tipo === 'Empresa'
+            ? (string) ($tercero->nombre_empresa ?? $defectoNombre)
+            : trim((string) $tercero->nombre.' '.(string) $tercero->apellido);
+        $id = preg_replace('/\D/', '', (string) ($tercero->nit ?? $tercero->ncr ?? $tercero->dui ?? ''));
+        if ($id === '') {
+            $id = '00000000000000000000';
+        }
+
+        return [$nombre !== '' ? $nombre : $defectoNombre, $id];
+    }
+
+    /** @return array<string, mixed> */
+    private function resumenDesdeVenta(Venta $venta): array
+    {
+        $impuestos = ($venta->relationLoaded('impuestos') && $venta->impuestos->isNotEmpty())
+            ? $venta->impuestos
+            : [];
+
+        return $this->resumenDesdeMontos(
+            $impuestos,
+            (float) $venta->iva,
+            (float) $venta->sub_total,
+            (float) ($venta->exenta ?? 0),
+            (float) ($venta->no_sujeta ?? 0),
+            isset($venta->gravada) ? (float) $venta->gravada : null
+        );
+    }
+
+    /** @return array<string, mixed> */
+    private function resumenDesdeCompra(Compra $compra): array
+    {
+        return $this->resumenDesdeMontos(
+            [],
+            (float) $compra->iva,
+            (float) $compra->sub_total,
+            (float) ($compra->exenta ?? 0),
+            (float) ($compra->no_sujeta ?? 0),
+            null
+        );
+    }
+
+    /** @return array<string, mixed> */
+    private function resumenDesdeGasto(Gasto $gasto): array
+    {
+        $taxes = [];
+        if ($gasto->relationLoaded('detalles') && $gasto->detalles->isNotEmpty()) {
+            foreach ($gasto->detalles as $detalle) {
+                $ivaLine = (float) ($detalle->iva ?? 0);
+                if (abs($ivaLine) <= 0.00001) {
+                    continue;
+                }
+                $base = (float) ($detalle->sub_total ?? 0);
+                $rate = $base > 0.00001
+                    ? round(($ivaLine / $base) * 100, 2)
+                    : 13.0;
+                $taxes[] = ['rate' => $rate, 'amount' => $ivaLine];
+            }
+        }
+
+        if ($taxes !== []) {
+            $exempt = 0.0;
+            $taxed = 0.0;
+            if ($gasto->relationLoaded('detalles')) {
+                foreach ($gasto->detalles as $detalle) {
+                    $sub = (float) ($detalle->sub_total ?? 0);
+                    $tipo = strtolower((string) ($detalle->tipo_gravado ?? 'gravada'));
+                    if (in_array($tipo, ['exenta', 'no_sujeta', 'no sujeta'], true)) {
+                        $exempt += $sub;
+                    } else {
+                        $taxed += $sub;
+                    }
+                }
+            }
+
+            return [
+                'total_exempt' => $exempt,
+                'total_taxed' => $taxed,
+                'taxes' => $taxes,
+            ];
+        }
+
+        return $this->resumenDesdeMontos(
+            [],
+            (float) $gasto->iva,
+            (float) $gasto->sub_total,
+            0.0,
+            0.0,
+            null
+        );
+    }
+
+    /**
+     * @param  iterable<int, object>  $lineasImpuesto  filas con ->impuesto y ->monto
+     * @return array<string, mixed>
+     */
+    private function resumenDesdeMontos(
+        iterable $lineasImpuesto,
+        float $iva,
+        float $subTotal,
+        float $exenta,
+        float $noSujeta,
+        ?float $gravada
+    ): array {
+        $taxes = [];
+        foreach ($lineasImpuesto as $linea) {
+            $rate = (float) (optional($linea->impuesto)->porcentaje ?? 0);
+            $amount = (float) ($linea->monto ?? 0);
+            if (abs($amount) > 0.00001 || $rate > 0.00001) {
+                $taxes[] = ['rate' => $rate, 'amount' => $amount];
+            }
+        }
+
+        if ($taxes === [] && $iva > 0.00001) {
+            $base = ($gravada !== null && $gravada > 0.00001)
+                ? $gravada
+                : max(0.0, $subTotal - $exenta - $noSujeta);
+            if ($base <= 0.00001) {
+                $base = $subTotal;
+            }
+            $rate = $base > 0.00001
+                ? round(($iva / $base) * 100, 2)
+                : 13.0;
+            $taxes[] = ['rate' => $rate, 'amount' => $iva];
+        }
+
+        $exempt = $exenta + $noSujeta;
+        $taxed = $gravada ?? 0.0;
+        if ($taxed <= 0.00001 && $iva > 0.00001) {
+            $taxed = max(0.0, $subTotal - $exempt);
         }
 
         return [
@@ -238,7 +400,10 @@ final class ReporteDetalleIvaCrService
             $tipoNombre = trim((string) (optional($model->documento)->nombre ?? ''));
         }
         if ($tipoNombre === '' && is_object($model) && property_exists($model, 'tipo_documento')) {
-            $tipoNombre = (string) ($model->tipo_documento ?? '');
+            $tipoNombre = trim((string) ($model->tipo_documento ?? ''));
+        }
+        if ($tipoNombre === '' && $model instanceof Gasto) {
+            $tipoNombre = trim((string) ($model->concepto ?? ''));
         }
 
         $dist = $this->distribuirResumen($summary, $signe);
