@@ -33,6 +33,13 @@ import {
     NOMBRE_DOCUMENTO_CR,
 } from '@views/ventas/documentos/documento-nombre-options';
 import { BsModalRef } from 'ngx-bootstrap/modal';
+import { DocumentoImportService } from '@services/compras/documento-import.service';
+import { ProveedorDesdeEmisorService } from '@services/compras/proveedor-desde-emisor.service';
+import {
+  costoUnitarioDesdeLineaDte,
+  descuentoDesdeLineaDte,
+  totalLineaDesdeDte,
+} from '@services/compras/compra-detalle-desde-dte.util';
 
 @Component({
     selector: 'app-facturacion-compra',
@@ -74,6 +81,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     public jsonContent: string = '';
     /** Etiqueta para el bloque de conciliación (nombre de archivo o texto pegado). */
     public jsonImportEtiqueta = 'DTE importado';
+    /** DTE en curso de importación (para totales y otros cargos al confirmar productos). */
+    private dteImportadoActivo: any = null;
     public processingJson: boolean = false;
     /** Bloques de productos sin match, uno por cada JSON que requiera conciliación. */
     public ajusteBloques: { etiqueta: string; items: any[] }[] = [];
@@ -116,6 +125,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
 
     private cdr = inject(ChangeDetectorRef);
+    public documentoImportService = inject(DocumentoImportService);
+    private proveedorDesdeEmisor = inject(ProveedorDesdeEmisorService);
 
     constructor(
         public apiService: ApiService,
@@ -341,6 +352,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.compra.iva = 0;
         this.compra.total_costo = 0;
         this.compra.total = 0;
+        this.compra.otros_cargos = 0;
         this.compra.fob_tot = 0;
         this.compra.impuestos = [];
         this.detalle = {};
@@ -549,7 +561,15 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
         this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
         this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);
-        this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.percepcion) - parseFloat(this.compra.iva_retenido) - parseFloat(this.compra.renta_retenida)).toFixed(2);
+        const otrosCargos = parseFloat(this.compra.otros_cargos) || 0;
+        this.compra.total = (
+            parseFloat(this.compra.sub_total) +
+            parseFloat(this.compra.iva) +
+            parseFloat(this.compra.percepcion) -
+            parseFloat(this.compra.iva_retenido) -
+            parseFloat(this.compra.renta_retenida) +
+            otrosCargos
+        ).toFixed(2);
 
         if (this.compra.cobrar_impuestos) {
             this.compra.tipo_operacion = 'Gravada';
@@ -930,21 +950,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         try {
             const texto = this.jsonContent.trim();
             if (!texto) {
-                this.alertService.warning('Sin datos', 'Seleccione un archivo JSON o pegue el contenido.');
-                return;
-            }
-
-            let data: any;
-            try {
-                data = JSON.parse(texto);
-            } catch (e) {
-                this.alertService.error('JSON inválido: revise el formato del archivo o del texto pegado.');
-                return;
-            }
-            if (!data?.identificacion) {
-                this.alertService.error(
-                    'Formato incorrecto: el JSON no contiene la estructura esperada de DTE (identificacion).'
-                );
+                this.alertService.warning('Sin datos', this.documentoImportService.ui.sinDatos);
                 return;
             }
 
@@ -952,6 +958,22 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 this.jsonImportEtiqueta && this.jsonImportEtiqueta !== 'DTE importado'
                     ? this.jsonImportEtiqueta
                     : 'Contenido pegado';
+
+            const res = await firstValueFrom(this.documentoImportService.importarCompra(texto));
+            const data = res?.dte;
+            if (!data?.identificacion) {
+                this.alertService.error(
+                    'Formato incorrecto: el documento no contiene la estructura esperada (identificacion).'
+                );
+                return;
+            }
+
+            if (res.tipo_documento_nombre) {
+                data.identificacion = {
+                    ...data.identificacion,
+                    _tipoDocumentoNombre: res.tipo_documento_nombre,
+                };
+            }
 
             await this.importarUnDocumentoDte(data, etiqueta);
 
@@ -962,13 +984,22 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             }
             this.jsonImportEtiqueta = 'DTE importado';
             if (!this.ajusteBloques.length) {
-                this.alertService.success('Datos importados', 'El documento JSON se importó correctamente.');
+                this.alertService.success('Datos importados', 'El documento se importó correctamente.');
             }
-        } catch (error) {
-            this.alertService.error('Error al procesar JSON: ' + error);
+        } catch (error: any) {
+            const msg =
+                error?.error?.error ||
+                error?.message ||
+                'No se pudo interpretar el documento electrónico.';
+            this.alertService.error(msg);
         } finally {
             this.processingJson = false;
+            this.cdr.markForCheck();
         }
+    }
+
+    extensionesImportDocumento(): string {
+        return this.documentoImportService.extensionesAceptadas();
     }
 
   getTipoDocumento(tipoDte: string) {
@@ -987,6 +1018,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
   }
     /** Importa un único DTE (compras: un JSON por operación). */
     async importarUnDocumentoDte(data: any, etiqueta: string) {
+        this.dteImportadoActivo = data;
         this.compra.detalles = [];
         this.ajusteBloques = [];
         this.ajusteTabActivo = 0;
@@ -1007,7 +1039,21 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             this.mostrarModalAjusteProductos();
         } else {
             this.sumTotal();
+            this.sincronizarTotalDocumentoImportado(data);
         }
+        this.notificarDetallesActualizados();
+    }
+
+    /**
+     * OnPush: al mutar compra.detalles hay que nueva referencia + markForCheck
+     * para que app-compra-detalles renderice las líneas importadas.
+     */
+    private notificarDetallesActualizados(): void {
+        if (!Array.isArray(this.compra.detalles)) {
+            this.compra.detalles = [];
+        }
+        this.compra = { ...this.compra, detalles: [...this.compra.detalles] };
+        this.cdr.markForCheck();
     }
 
     /** Cabecera, proveedor y totales iniciales (primer documento). */
@@ -1019,7 +1065,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.compra.id_usuario = this.apiService.auth_user().id;
         this.compra.id_bodega = this.apiService.auth_user().id_bodega;
 
-        if (jsonData.identificacion.tipoDte) {
+        if (jsonData.identificacion['_tipoDocumentoNombre']) {
+            this.compra.tipo_documento = jsonData.identificacion['_tipoDocumentoNombre'];
+        } else if (jsonData.identificacion.tipoDte) {
             const defFact =
                 resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR
                     ? NOMBRE_DOCUMENTO_CR.factura
@@ -1044,11 +1092,13 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             this.compra.referencia = documentoRow.correlativo;
         }
 
-        const proveedor = await this.getProveedor(jsonData.emisor);
-        if (proveedor && proveedor.id) {
+        const { proveedor } = await this.proveedorDesdeEmisor.buscarOcrear(
+            jsonData.emisor,
+            this.proveedores
+        );
+        if (proveedor?.id) {
             this.compra.id_proveedor = proveedor.id;
-        } else {
-            console.log('No se pudo asignar proveedor. Proveedor encontrado:', proveedor);
+            this.cdr.markForCheck();
         }
 
         if (jsonData.resumen) {
@@ -1077,6 +1127,28 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                     this.compra.sello_mh = sello;
                 }
             }
+
+            const totalOtros = parseFloat(jsonData.resumen.totalOtrosCargos) || 0;
+            if (totalOtros > 0) {
+                this.compra.otros_cargos = totalOtros;
+            }
+        }
+    }
+
+    /** Alinea el total de la compra con el comprobante importado si hay diferencia por redondeo. */
+    private sincronizarTotalDocumentoImportado(jsonData: any): void {
+        const resumen = jsonData?.resumen;
+        if (!resumen) {
+            return;
+        }
+        const totalDoc =
+            parseFloat(resumen.totalPagar) || parseFloat(resumen.montoTotalOperacion) || 0;
+        if (totalDoc <= 0) {
+            return;
+        }
+        const totalCalc = parseFloat(this.compra.total) || 0;
+        if (Math.abs(totalCalc - totalDoc) > 0.05) {
+            this.compra.total = totalDoc.toFixed(2);
         }
     }
 
@@ -1159,13 +1231,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         } else {
           // Producto no encontrado
           this.productosNoEncontrados.push({
-            numItem: item.numItem,
-            codigo: item.codigo,
-            descripcion: item.descripcion,
-            cantidad: item.cantidad,
-            precioUni: item.precioUni,
+            ...item,
             productoSeleccionado: null,
-            sugerencias: [] // Para almacenar sugerencias de búsqueda
+            sugerencias: [],
           });
           todosEncontrados = false;
         }
@@ -1182,6 +1250,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       this.mostrarModalAjusteProductos();
     } else {
       this.sumTotal();
+      this.notificarDetallesActualizados();
       this.alertService.success('Productos importados', 'Todos los productos fueron reconocidos automáticamente.');
     }
   }
@@ -1226,11 +1295,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                     this.productosEncontrados.push(productoEncontrado);
                 } else {
                     noEncontrados.push({
-                        numItem: item.numItem,
-                        codigo: item.codigo,
-                        descripcion: item.descripcion,
-                        cantidad: item.cantidad,
-                        precioUni: item.precioUni,
+                        ...item,
                         productoSeleccionado: null,
                         sugerencias: [],
                     });
@@ -1245,11 +1310,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             );
             for (const item of cuerpoDocumento) {
                 noEncontrados.push({
-                    numItem: item.numItem,
-                    codigo: item.codigo,
-                    descripcion: item.descripcion,
-                    cantidad: item.cantidad,
-                    precioUni: item.precioUni,
+                    ...item,
                     productoSeleccionado: null,
                     sugerencias: [],
                 });
@@ -1416,17 +1477,10 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
   }
 
   crearDetalleDesdeItem(item: any, producto: any) {
-    // Calcular total de forma segura
-    const ventaGravada = parseFloat(item.ventaGravada) || 0;
-    const ventaExenta = parseFloat(item.ventaExenta) || 0;
-    const ventaNoSuj = parseFloat(item.ventaNoSuj) || 0;
-    const totalCalculado = ventaGravada + ventaExenta + ventaNoSuj;
-
-    // Si no hay total del DTE, calcular basado en cantidad y precio
     const cantidad = parseFloat(item.cantidad) || 0;
-    const precio = parseFloat(item.precioUni) || 0;
-    const descuento = parseFloat(item.montoDescu) || 0;
-    const totalFinal = totalCalculado > 0 ? totalCalculado : (cantidad * precio - descuento);
+    const descuento = descuentoDesdeLineaDte(item);
+    const costo = costoUnitarioDesdeLineaDte(item);
+    const totalFinal = totalLineaDesdeDte(item);
 
     return {
       id: null,
@@ -1435,11 +1489,11 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       nombre_producto: producto.nombre, // Campo requerido por el template
       descripcion: producto.descripcion || item.descripcion,
       cantidad: cantidad,
-      precio: precio,
-      costo: producto.costo || 0, // Campo requerido por el template
+      precio: costo,
+      costo,
       descuento: descuento,
       total: totalFinal,
-      total_costo: cantidad * (producto.costo || 0),
+      total_costo: cantidad * costo,
       codigo: producto.codigo,
       marca: producto.marca,
       tipo: producto.tipo,
@@ -1481,6 +1535,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.ajusteBloques = [];
         this.ajusteTabActivo = 0;
         this.sumTotal();
+        this.sincronizarTotalDocumentoImportado(this.dteImportadoActivo);
+        this.notificarDetallesActualizados();
 
         this.alertService.success('Productos asignados', 'Los productos han sido asignados correctamente.');
     }
@@ -1594,14 +1650,14 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             this.compra.referencia = jsonData.identificacion.codigoGeneracion;
         }
 
-        this.getProveedor(jsonData.emisor).then((proveedor: any) => {
-            if(proveedor && proveedor.id){
-                this.compra.id_proveedor = proveedor.id;
-                //console.log('Proveedor asignado:', proveedor.nombre_empresa || proveedor.nombre, 'ID:', proveedor.id);
-            } else {
-                console.log('No se pudo asignar proveedor. Proveedor encontrado:', proveedor);
-            }
-        });
+        this.proveedorDesdeEmisor
+            .buscarOcrear(jsonData.emisor, this.proveedores)
+            .then(({ proveedor }) => {
+                if (proveedor?.id) {
+                    this.compra.id_proveedor = proveedor.id;
+                    this.cdr.markForCheck();
+                }
+            });
 
         // Procesar totales del resumen
         if (jsonData.resumen) {

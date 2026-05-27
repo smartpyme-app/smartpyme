@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Compras\ComprasController;
+use App\Http\Controllers\Api\Compras\DocumentoImportController;
 use App\Http\Controllers\Api\Compras\SalidasController;
 use Illuminate\Support\Facades\Route;
 
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Route;
     Route::post('/compra',                  [ComprasController::class, 'store']);
     Route::delete('/compra/{id}',           [ComprasController::class, 'delete']);
 
+    Route::post('/compras/importar-documento', [DocumentoImportController::class, 'importarCompra']);
     Route::post('/compra/facturacion',      [ComprasController::class, 'facturacion']);
     Route::post('/compra/facturacion/consigna',  [ComprasController::class, 'facturacionConsigna']);
 

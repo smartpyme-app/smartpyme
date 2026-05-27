@@ -45,6 +45,7 @@ class Compra extends Model {
         'sub_total',
         'observaciones',
         'total',
+        'otros_cargos',
         'id_bodega',
         'id_proyecto',
         'id_usuario',

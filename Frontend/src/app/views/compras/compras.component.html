@@ -27,7 +27,7 @@
                 <button
                     *ngIf="apiService.canCreate() && permiteImportacionMasivaComprasJson"
                     type="button"
-                    tooltip="Importar varias compras desde archivos JSON (DTE)"
+                    tooltip="Importar varias compras desde documentos electrónicos"
                     (click)="openImportacionJsonMasivo(mbulkJson)"
                     class="btn btn-default">
                     <img src="/assets/icons/upload.png" class="icon">
@@ -717,19 +717,21 @@
 
 <ng-template #mbulkJson>
   <div class="modal-header">
-    <h4 class="modal-title">Importar compras desde JSON (masivo)</h4>
+    <h4 class="modal-title">
+      Importar compras desde documentos electrónicos (masivo)
+    </h4>
     <button type="button" class="btn-close" (click)="cerrarImportacionBulk()" aria-label="Cerrar"></button>
   </div>
   <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
     <p class="text-muted small">
-      Agregue hasta {{ maxBulkJsonFiles }} archivos DTE. Cada pestaña pasa a <strong>Listo para procesar</strong> cuando no quedan ítems por vincular. Revise proveedor (puede <strong>crear proveedor</strong>), bodega y detalle; con el botón <strong>+</strong> del detalle puede <strong>crear producto o servicio</strong> (elija el tipo en el formulario). Los <strong>lotes</strong> no se leen del JSON: si un producto es por lotes, use el botón de lote en la tabla para elegir o crear lote. Guarde cada compra o use <strong>Guardar todas las listas</strong> cuando todas las pestañas estén listas.
+      Agregue hasta {{ maxBulkJsonFiles }} comprobantes del proveedor. Cada pestaña pasa a <strong>Listo para procesar</strong> cuando no quedan ítems por vincular. Revise proveedor (puede <strong>crear proveedor</strong>), bodega y detalle; con el botón <strong>+</strong> del detalle puede <strong>crear producto o servicio</strong> (elija el tipo en el formulario). Los <strong>lotes</strong> no se leen del archivo importado: si un producto es por lotes, use el botón de lote en la tabla para elegir o crear lote. Guarde cada compra o use <strong>Guardar todas las listas</strong> cuando todas las pestañas estén listas.
     </p>
     <div class="mb-3 d-flex flex-wrap align-items-center gap-2">
       <input
         #bulkFileIn
         type="file"
         multiple
-        accept=".json,application/json"
+        accept=".xml,.json,.txt"
         class="d-none"
         (change)="onBulkJsonFilesChange($event)">
       <button
@@ -737,7 +739,8 @@
         class="btn btn-outline-primary btn-sm"
         [disabled]="bulkProcesandoArchivos"
         (click)="bulkFileIn.click()">
-        <i class="fa fa-plus"></i> Agregar archivos JSON
+        <i class="fa fa-plus"></i>
+        Agregar archivos
       </button>
       <span *ngIf="bulkProcesandoArchivos" class="text-muted small">Procesando archivos…</span>
     </div>

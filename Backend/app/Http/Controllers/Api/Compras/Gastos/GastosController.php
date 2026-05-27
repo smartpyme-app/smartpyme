@@ -10,7 +10,9 @@ use App\Models\Compras\Gastos\Gasto;
 use App\Services\Bancos\TransaccionesService;
 use App\Services\Bancos\ChequesService;
 use App\Services\Compras\Gastos\GastoService;
+use App\Services\Compras\DocumentoImport\DocumentoImportService;
 use App\Services\Compras\Gastos\GastoImportService;
+use App\Exceptions\Compras\DocumentoImportException;
 use App\Models\Compras\Gastos\DetalleEgreso;
 use Illuminate\Support\Facades\DB;
 
@@ -45,11 +47,16 @@ class GastosController extends Controller
 
     protected $gastoService;
     protected $gastoImportService;
+    protected $documentoImportService;
 
-    public function __construct(GastoService $gastoService, GastoImportService $gastoImportService)
-    {
+    public function __construct(
+        GastoService $gastoService,
+        GastoImportService $gastoImportService,
+        DocumentoImportService $documentoImportService
+    ) {
         $this->gastoService = $gastoService;
         $this->gastoImportService = $gastoImportService;
+        $this->documentoImportService = $documentoImportService;
     }
 
 
@@ -467,23 +474,27 @@ class GastosController extends Controller
         ]);
 
         try {
-            $jsonData = json_decode($request->json_data, true);
+            $result = $this->documentoImportService->importar($request->json_data);
+            $gasto = $this->gastoImportService->importarDesdeJson($result->dte);
+            $gasto->tipo_documento = $result->tipoDocumentoNombre;
 
-            $gasto = $this->gastoImportService->importarDesdeJson($jsonData);
-
-            // Retornar el gasto mapeado sin guardar
-            return response()->json([
-                'gasto' => $gasto,
-                'mensaje' => 'DTE importado exitosamente'
-            ], 200);
+            return response()->json(array_merge(
+                $result->toResponseArray(),
+                [
+                    'gasto' => $gasto,
+                    'mensaje' => 'DTE importado exitosamente',
+                ]
+            ), 200);
+        } catch (DocumentoImportException|\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
         } catch (\Exception $e) {
-            Log::error("Error importando gasto desde JSON", [
+            Log::error('Error importando gasto desde documento', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
-                'error' => 'Error al procesar el JSON: ' . $e->getMessage()
+                'error' => 'Error al procesar el documento: '.$e->getMessage(),
             ], 422);
         }
     }

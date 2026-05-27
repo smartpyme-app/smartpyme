@@ -50,6 +50,27 @@ class ProductoImportacionDteService
                     }
                 }
             }
+
+            // Costa Rica: CABYS en línea del XML o código interno de 13 dígitos.
+            $productosCabys = Producto::where('enable', true)
+                ->where('id_empresa', $idEmpresa)
+                ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
+                ->where(function ($q) use ($codigosLista) {
+                    $q->whereIn('codigo_cabys', $codigosLista)
+                        ->orWhereIn('codigo', $codigosLista);
+                })
+                ->with(['inventarios', 'lotes', 'precios'])
+                ->orderBy('id')
+                ->get();
+
+            foreach ($productosCabys as $p) {
+                foreach ([$p->codigo_cabys, $p->codigo] as $codProd) {
+                    $codProd = $codProd !== null ? trim((string) $codProd) : '';
+                    if ($codProd !== '' && isset($codigosSet[$codProd]) && ! isset($mapPorCodigo[$codProd])) {
+                        $mapPorCodigo[$codProd] = $p;
+                    }
+                }
+            }
         }
 
         $descripcionesUnicas = [];
@@ -83,6 +104,8 @@ class ProductoImportacionDteService
                 $producto = $mapPorCodigo[$cod];
             } elseif (strlen($desc) >= 2 && isset($mapPorDescripcion[$desc])) {
                 $producto = $mapPorDescripcion[$desc];
+            } elseif ($cod === '' && strlen($desc) >= 2 && $this->esDescripcionOtrosCargos($desc)) {
+                $producto = $this->productoServicioParaOtrosCargos($idEmpresa, $desc);
             }
 
             $resultados[] = [
@@ -181,5 +204,40 @@ class ProductoImportacionDteService
         return $query->orderBy('nombre', 'asc')
             ->take($limite)
             ->get();
+    }
+
+    private function esDescripcionOtrosCargos(string $descripcion): bool
+    {
+        $d = mb_strtolower($descripcion);
+
+        return str_contains($d, 'propina')
+            || str_contains($d, 'servicio')
+            || str_contains($d, 'otros cargo')
+            || str_contains($d, 'impuesto de servicio');
+    }
+
+    private function productoServicioParaOtrosCargos(int $idEmpresa, string $descripcion): ?Producto
+    {
+        $termino = '%'.$descripcion.'%';
+
+        $porNombre = Producto::where('enable', true)
+            ->where('id_empresa', $idEmpresa)
+            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
+            ->where(function ($q) use ($termino) {
+                $q->where('nombre', 'like', $termino)
+                    ->orWhere('descripcion', 'like', $termino);
+            })
+            ->orderBy('nombre')
+            ->first();
+
+        if ($porNombre) {
+            return $porNombre;
+        }
+
+        return Producto::where('enable', true)
+            ->where('id_empresa', $idEmpresa)
+            ->where('tipo', 'Servicio')
+            ->orderBy('nombre')
+            ->first();
     }
 }

@@ -102,7 +102,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     constructor(
         protected override apiService: ApiService,
         public mhService: MHService,
-        private facturacionElectronica: FacturacionElectronicaService,
+        public facturacionElectronica: FacturacionElectronicaService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private modalService: BsModalService,
@@ -1032,7 +1032,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     if (!this.permiteImportacionMasivaComprasJson) {
       this.alertService.warning(
         'Importación masiva',
-        'Su empresa no tiene habilitada la importación masiva de compras desde JSON. Solicite la activación al administrador.'
+        'Su empresa no tiene habilitada la importación masiva de compras desde documentos electrónicos. Solicite la activación al administrador.'
       );
       return;
     }
@@ -1099,13 +1099,13 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
       const uid = 'b-' + Math.random().toString(36).slice(2, 11);
       try {
         const text = await this.readFileText(f);
-        const jsonData = JSON.parse(text);
-        const prep = await this.compraJsonBulk.prepararCompraDesdeJson(
-          jsonData,
+        const prep = await this.compraJsonBulk.prepararCompraDesdeContenido(
+          text,
           this.impuestosCompra,
           proveedores,
           this.documentosBulk
         );
+        const jsonData = prep.jsonData ?? {};
         if (prep.error) {
           this.bulkItems.push({
             uid,
@@ -1135,7 +1135,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
           compra: this.compraJsonBulk.crearCompraBase(this.impuestosCompra),
           jsonData: {},
           noEncontrados: [],
-          error: e?.message || 'JSON inválido',
+          error: e?.message || 'No se pudo leer el comprobante',
           estado: 'error',
         });
       }
@@ -1246,7 +1246,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
       if (sinLote.length) {
         this.alertService.info(
           'Lotes / partidas',
-          'Hay líneas con control por lotes. Use el botón de lote en la tabla del detalle para elegir un lote existente o crear uno nuevo (no se infiere del JSON).'
+          'Hay líneas con control por lotes. Use el botón de lote en la tabla del detalle para elegir un lote existente o crear uno nuevo (no se infiere del comprobante importado).'
         );
       }
     }

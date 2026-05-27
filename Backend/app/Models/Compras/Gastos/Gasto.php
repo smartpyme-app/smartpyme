@@ -35,6 +35,7 @@ class Gasto extends Model {
         'iva_percibido',
         'otros_impuestos',
         'total',
+        'otros_cargos',
         'nota',
         'area_empresa',
         'id_area_empresa',

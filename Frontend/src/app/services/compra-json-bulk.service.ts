@@ -1,12 +1,25 @@
 import { Injectable } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { ApiService } from '@services/api.service';
+import { DocumentoImportService } from '@services/compras/documento-import.service';
+import { ProveedorDesdeEmisorService } from '@services/compras/proveedor-desde-emisor.service';
+import {
+  costoUnitarioDesdeLineaDte,
+  totalLineaDesdeDte,
+} from '@services/compras/compra-detalle-desde-dte.util';
+import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { NOMBRE_DOCUMENTO_CR } from '@views/ventas/documentos/documento-nombre-options';
 
 /**
  * Prepara compras desde JSON DTE para importación masiva (listado de compras).
  */
 @Injectable({ providedIn: 'root' })
 export class CompraJsonBulkService {
-    constructor(private apiService: ApiService) {}
+    constructor(
+        private apiService: ApiService,
+        private documentoImportService: DocumentoImportService,
+        private proveedorDesdeEmisor: ProveedorDesdeEmisorService
+    ) {}
 
     private sumAttr(items: any[], attr: string): number {
         if (!items?.length) {
@@ -19,16 +32,25 @@ export class CompraJsonBulkService {
     }
 
     getTipoDocumento(tipoDte: string): string {
-        const tiposDte: Record<string, string> = {
-            '01': 'Factura',
-            '03': 'Crédito fiscal',
-            '05': 'Nota de débito',
-            '06': 'Nota de crédito',
-            '07': 'Comprobante de retención',
-            '11': 'Factura de exportación',
-            '14': 'Sujeto excluido',
-        };
-        return tiposDte[tipoDte] || 'Factura';
+        const cr = resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+        const tiposDte: Record<string, string> = cr
+            ? {
+                  '01': NOMBRE_DOCUMENTO_CR.factura,
+                  '02': NOMBRE_DOCUMENTO_CR.notaDebito,
+                  '03': NOMBRE_DOCUMENTO_CR.notaCredito,
+                  '04': NOMBRE_DOCUMENTO_CR.tiquete,
+                  '08': NOMBRE_DOCUMENTO_CR.fecCompra,
+              }
+            : {
+                  '01': 'Factura',
+                  '03': 'Crédito fiscal',
+                  '05': 'Nota de débito',
+                  '06': 'Nota de crédito',
+                  '07': 'Comprobante de retención',
+                  '11': 'Factura de exportación',
+                  '14': 'Sujeto excluido',
+              };
+        return tiposDte[tipoDte] || (cr ? NOMBRE_DOCUMENTO_CR.factura : 'Factura');
     }
 
     findProveedor(emisor: any, proveedores: any[]): any | null {
@@ -253,17 +275,28 @@ export class CompraJsonBulkService {
         return isNaN(n) ? NaN : n;
     }
 
-    aplicarCabeceraDte(
+    async aplicarCabeceraDte(
         compra: any,
         jsonData: any,
-        proveedorRow: any | null,
+        proveedores: any[],
         documentos: any[] = []
-    ): void {
+    ): Promise<void> {
+        let proveedorRow: any | null = null;
+        if (jsonData.emisor) {
+            const res = await this.proveedorDesdeEmisor.buscarOcrear(
+                jsonData.emisor,
+                proveedores,
+                { notificarCreacion: false }
+            );
+            proveedorRow = res.proveedor;
+        }
         if (jsonData.identificacion?.fecEmi) {
             compra.fecha = jsonData.identificacion.fecEmi;
             compra.fecha_pago = jsonData.identificacion.fecEmi;
         }
-        if (jsonData.identificacion?.tipoDte) {
+        if (jsonData.identificacion?.['_tipoDocumentoNombre']) {
+            compra.tipo_documento = jsonData.identificacion['_tipoDocumentoNombre'];
+        } else if (jsonData.identificacion?.tipoDte) {
             compra.tipo_documento = this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
         }
         this.aplicarReferenciaCorrelativo(compra, documentos, jsonData);
@@ -298,14 +331,10 @@ export class CompraJsonBulkService {
     }
 
     crearDetalleDesdeItem(item: any, producto: any): any {
-        const ventaGravada = parseFloat(item.ventaGravada) || 0;
-        const ventaExenta = parseFloat(item.ventaExenta) || 0;
-        const ventaNoSuj = parseFloat(item.ventaNoSuj) || 0;
-        const totalCalculado = ventaGravada + ventaExenta + ventaNoSuj;
         const cantidad = parseFloat(item.cantidad) || 0;
-        const precio = parseFloat(item.precioUni) || 0;
         const descuento = parseFloat(item.montoDescu) || 0;
-        const totalFinal = totalCalculado > 0 ? totalCalculado : cantidad * precio - descuento;
+        const costo = costoUnitarioDesdeLineaDte(item);
+        const totalFinal = totalLineaDesdeDte(item);
 
         const auth = this.apiService.auth_user();
         return {
@@ -315,11 +344,11 @@ export class CompraJsonBulkService {
             nombre_producto: producto.nombre,
             descripcion: producto.descripcion || item.descripcion,
             cantidad,
-            precio,
-            costo: producto.costo || 0,
+            precio: costo,
+            costo,
             descuento,
             total: totalFinal,
-            total_costo: cantidad * (producto.costo || 0),
+            total_costo: cantidad * costo,
             codigo: producto.codigo,
             marca: producto.marca,
             tipo: producto.tipo,
@@ -508,12 +537,11 @@ export class CompraJsonBulkService {
             return {
                 compra: this.crearCompraBase(impuestosCompra),
                 noEncontrados: [],
-                error: 'El JSON no contiene identificacion (DTE).',
+                error: 'El documento no contiene identificacion (DTE).',
             };
         }
         const compra = this.crearCompraBase(impuestosCompra);
-        const prov = this.findProveedor(jsonData.emisor, proveedores);
-        this.aplicarCabeceraDte(compra, jsonData, prov, documentos);
+        await this.aplicarCabeceraDte(compra, jsonData, proveedores, documentos);
         const cuerpo = jsonData.cuerpoDocumento || [];
         let noEncontrados: any[] = [];
         if (cuerpo.length) {
@@ -523,5 +551,51 @@ export class CompraJsonBulkService {
         }
         this.recalcularTotales(compra, proveedores);
         return { compra, noEncontrados };
+    }
+
+    /**
+     * Interpreta XML/JSON vía API y prepara la compra (importación masiva).
+     */
+    async prepararCompraDesdeContenido(
+        contenido: string,
+        impuestosCompra: any[],
+        proveedores: any[],
+        documentos: any[] = []
+    ): Promise<{ compra: any; noEncontrados: any[]; jsonData?: any; error?: string }> {
+        try {
+            const res = await firstValueFrom(
+                this.documentoImportService.importarCompra(contenido.trim())
+            );
+            const jsonData = res?.dte;
+            if (!jsonData?.identificacion) {
+                return {
+                    compra: this.crearCompraBase(impuestosCompra),
+                    noEncontrados: [],
+                    error: 'El documento no contiene la estructura esperada.',
+                };
+            }
+            if (res.tipo_documento_nombre) {
+                jsonData.identificacion = {
+                    ...jsonData.identificacion,
+                    _tipoDocumentoNombre: res.tipo_documento_nombre,
+                };
+            }
+            const prep = await this.prepararCompraDesdeJson(
+                jsonData,
+                impuestosCompra,
+                proveedores,
+                documentos
+            );
+            if (jsonData.identificacion?.['_tipoDocumentoNombre']) {
+                prep.compra.tipo_documento = jsonData.identificacion['_tipoDocumentoNombre'];
+            }
+            return { ...prep, jsonData };
+        } catch (e: any) {
+            return {
+                compra: this.crearCompraBase(impuestosCompra),
+                noEncontrados: [],
+                error: e?.error?.error || e?.message || 'No se pudo interpretar el documento.',
+            };
+        }
     }
 }

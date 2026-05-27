@@ -22,7 +22,8 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
-import { forkJoin } from 'rxjs';
+import { firstValueFrom, forkJoin } from 'rxjs';
+import { DocumentoImportService } from '@services/compras/documento-import.service';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {
   esTipoFacturaElectronicaCompraCr,
@@ -37,7 +38,7 @@ import {
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GastoComponent implements OnInit {
-  public gasto: any = {iva: 0, renta_retenida: 0, iva_percibido: 0, otros_impuestos: 0};
+  public gasto: any = {iva: 0, renta_retenida: 0, iva_percibido: 0, otros_impuestos: 0, otros_cargos: 0};
   public categorias: any = [];
   public proyectos: any = [];
   public proveedores: any = [];
@@ -86,6 +87,7 @@ export class GastoComponent implements OnInit {
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   private cdr = inject(ChangeDetectorRef);
+  public documentoImportService = inject(DocumentoImportService);
 
   constructor(
     public apiService: ApiService,
@@ -600,6 +602,9 @@ export class GastoComponent implements OnInit {
         });
     }
 
+    const otrosCargos = parseFloat(this.gasto.otros_cargos) || 0;
+    total += otrosCargos;
+
     this.gasto.total = total.toFixed(2);
 
     // Asignar tipoOperacion según los detalles
@@ -778,7 +783,8 @@ export class GastoComponent implements OnInit {
     this.gasto.renta_retenida = parseFloat(rr.toFixed(2));
     this.gasto.iva_retenido = parseFloat(ir.toFixed(2));
     this.gasto.iva_percibido = parseFloat(ip.toFixed(2));
-    this.gasto.total = parseFloat(tot.toFixed(2));
+    const otrosCargos = parseFloat(this.gasto.otros_cargos) || 0;
+    this.gasto.total = parseFloat((tot + otrosCargos).toFixed(2));
   }
 
   public cambioFormaPago() {
@@ -1027,26 +1033,45 @@ export class GastoComponent implements OnInit {
     }
   }
 
-  processJsonData() {
+  async processJsonData() {
     this.processingJson = true;
 
     try {
-      // Parsear el JSON
-      const jsonData = JSON.parse(this.jsonContent);
+      const texto = this.jsonContent.trim();
+      if (!texto) {
+        this.alertService.warning('Sin datos', this.documentoImportService.ui.sinDatos);
+        return;
+      }
 
-      // Mapear los datos del JSON al modelo de Gasto
+      const res = await firstValueFrom(this.documentoImportService.importarGasto(texto));
+      const jsonData = res?.dte;
+      if (!jsonData?.identificacion) {
+        this.alertService.error('El documento no contiene la estructura esperada.');
+        return;
+      }
+      if (res.tipo_documento_nombre) {
+        jsonData.identificacion = {
+          ...jsonData.identificacion,
+          _tipoDocumentoNombre: res.tipo_documento_nombre,
+        };
+      }
+
       this.mapJsonToGasto(jsonData);
 
-      // Cerrar el modal y mostrar mensaje de éxito
       this.modalRef?.hide();
       this.alertService.success(
         'Datos importados',
-        'Los datos del JSON han sido importados exitosamente.'
+        'El documento se importó correctamente.'
       );
-    } catch (error) {
-      this.alertService.error('Error al procesar el JSON: ' + error);
+    } catch (error: any) {
+      const msg =
+        error?.error?.error ||
+        error?.message ||
+        'No se pudo interpretar el documento electrónico.';
+      this.alertService.error(msg);
     } finally {
       this.processingJson = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -1086,7 +1111,9 @@ export class GastoComponent implements OnInit {
         }
 
         // Tipo de documento
-        if (jsonData.identificacion.tipoDte) {
+        if (jsonData.identificacion['_tipoDocumentoNombre']) {
+          this.gasto.tipo_documento = jsonData.identificacion['_tipoDocumentoNombre'];
+        } else if (jsonData.identificacion.tipoDte) {
           const cr = resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
           const tiposDte: { [key: string]: string } = {
             '01': cr ? NOMBRE_DOCUMENTO_CR.factura : 'Factura',
@@ -1234,6 +1261,11 @@ export class GastoComponent implements OnInit {
         ) {
           this.gasto.iva_percibido = parseFloat(jsonData.resumen.ivaPerci1);
           this.gasto.percepcion = true;
+        }
+
+        const totalOtros = parseFloat(jsonData.resumen.totalOtrosCargos) || 0;
+        if (totalOtros > 0) {
+          this.gasto.otros_cargos = totalOtros;
         }
 
         // Total
