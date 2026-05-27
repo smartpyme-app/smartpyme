@@ -7,6 +7,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
+import { TabsModule } from 'ngx-bootstrap/tabs';
 import { FocusModule } from 'angular2-focus';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
@@ -28,7 +29,9 @@ import { CorteComponent } from './corte/corte.component';
 import { ReportesComponent } from './reportes.component';
 import { ReportesAutomaticosComponent } from './reportes-automaticos.component';
 import { ReplacePipe } from './reportes-automaticos.component';
+import { FlujoEfectivoComponent } from './flujo-efectivo/flujo-efectivo.component';
 import { DashboardModule } from '@views/dashboard/dashboard.module';
+import { WebdatarocksPivotModule } from '@webdatarocks/ngx-webdatarocks';
 
 @NgModule({
   imports: [
@@ -40,11 +43,13 @@ import { DashboardModule } from '@views/dashboard/dashboard.module';
     NgSelectModule,
     NgxEchartsModule.forRoot({ echarts }),
     ProgressbarModule.forRoot(),
+    TabsModule.forRoot(),
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
     ModalModule.forRoot(),
     FocusModule.forRoot(),
-    DashboardModule
+    DashboardModule,
+    WebdatarocksPivotModule
   ],
   declarations: [
     HistorialVentasComponent,
@@ -57,7 +62,8 @@ import { DashboardModule } from '@views/dashboard/dashboard.module';
     CorteComponent,
     ReportesComponent,
     ReportesAutomaticosComponent,
-    ReplacePipe
+    ReplacePipe,
+    FlujoEfectivoComponent,
   ],
   exports: [
     HistorialVentasComponent,
@@ -70,7 +76,8 @@ import { DashboardModule } from '@views/dashboard/dashboard.module';
     CorteComponent,
     ReportesComponent,
     ReportesAutomaticosComponent,
-    ReplacePipe
+    ReplacePipe,
+    FlujoEfectivoComponent,
   ]
 })
 export class ReportesModule { }
