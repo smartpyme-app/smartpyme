@@ -29,6 +29,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
+    /** true cuando el dominio es abaco.smartpyme.site */
+    public isAbacoSite: boolean = false;
     public filtros: any = {};
     public items: any = [];
     public notificaciones: any = [];
@@ -47,6 +49,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     constructor(public apiService: ApiService, public alertService: AlertService, private funcionalidadesService: FuncionalidadesService, private router: Router) {}
 
     ngOnInit() {
+        this.isAbacoSite = window.location.hostname === 'abaco.smartpyme.site';
         if (!localStorage.getItem('sidebarCollapsed')) {
             localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
         }else{

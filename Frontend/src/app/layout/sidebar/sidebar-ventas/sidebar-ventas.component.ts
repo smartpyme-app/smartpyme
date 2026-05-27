@@ -16,10 +16,13 @@ export class SidebarVentasComponent implements OnInit {
     public finanzasIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
+    /** true cuando el dominio es abaco.smartpyme.site */
+    public isAbacoSite: boolean = false;
 
     constructor(private apiService: ApiService) {}
 
     ngOnInit() {
+        this.isAbacoSite = window.location.hostname === 'abaco.smartpyme.site';
         if (!localStorage.getItem('sidebarCollapsed')) {
             localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
         }else{

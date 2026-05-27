@@ -1,8 +1,13 @@
-<div  id="tour.sidebar"  class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
-    <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative" style="min-height: 7vh;">
-        <img src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
-        <a routerLink="/" tooltip="Dashboard"> <img src="assets/img/logo.png" class="logo" height="25px"> </a>
-        <button  id="toggleBtn" class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button" (click)="toggleSidebar()">
+<div id="tour.sidebar" class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
+    <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative"
+        style="min-height: 7vh;">
+        <img *ngIf="!isAbacoSite" src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
+        <a routerLink="/" tooltip="Dashboard" style="display: flex; align-items: center;">
+            <img *ngIf="!isAbacoSite" src="assets/img/logo.png" class="logo" height="25px">
+            <img *ngIf="isAbacoSite" src="assets/img/logo-abaco.png" class="logo" height="15px">
+        </a>
+        <button id="toggleBtn" class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button"
+            (click)="toggleSidebar()">
             <img src="/assets/icons/sidebar.png">
         </button>
     </div>
@@ -10,9 +15,11 @@
         <form action="" autocomplete="off">
             <ul class="list-unstyled ps-0">
                 <li class="mb-1 d-flex rounded" style="background-color: #F2F0F4; height: 40px;">
-                    <div (click)="toggleSidebarMenu()" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <div (click)="toggleSidebarMenu()"
+                        class="btn d-inline-flex align-items-center text-decoration-none py-1">
                         <img src="/assets/icons/search.png" class="icon me-2">
-                        <input type="text" name="search" class="form-control border-0 bg-transparent" id="search" placeholder="Buscar" >
+                        <input type="text" name="search" class="form-control border-0 bg-transparent" id="search"
+                            placeholder="Buscar">
                     </div>
                 </li>
             </ul>
@@ -21,32 +28,38 @@
     <div style="min-height: 45vh;">
         <ul class="list-unstyled ps-0">
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/vendedor/ventas']" tooltip="Ventas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                <a [routerLink]="['/vendedor/ventas']" tooltip="Ventas" [adaptivePosition]="false" placement="right"
+                    class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/trending-up.png" class="icon me-2">Ventas
                 </a>
             </li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/servicios']" tooltip="Servicios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                <a [routerLink]="['/servicios']" tooltip="Servicios" [adaptivePosition]="false" placement="right"
+                    class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/tool.png" class="icon me-2">Servicios
                 </a>
             </li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/cotizaciones']" tooltip="Cotizaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                <a [routerLink]="['/cotizaciones']" tooltip="Cotizaciones" [adaptivePosition]="false" placement="right"
+                    class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/tag.png" class="icon me-2">Cotizaciones
                 </a>
             </li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                <a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right"
+                    class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/briefcase.png" class="icon me-2">Citas
                 </a>
             </li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/clientes']" tooltip="Clientes" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                <a [routerLink]="['/clientes']" tooltip="Clientes" [adaptivePosition]="false" placement="right"
+                    class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/users.png" class="icon me-2">Clientes
                 </a>
             </li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/cierre-de-caja']" tooltip="Cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                <a [routerLink]="['/cierre-de-caja']" tooltip="Cierre de caja" [adaptivePosition]="false"
+                    placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja
                 </a>
             </li>
@@ -54,7 +67,7 @@
     </div>
     <div style="min-height: 37vh;">
         <ul class="list-unstyled ps-0 border-top pt-2">
-   <!--          <li class="mb-1">
+            <!--          <li class="mb-1">
                 <button (click)="togglePreferencias()" tooltip="Preferencias" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
                   <img src="/assets/icons/sliders.png" class="icon me-2">Preferencias
                 </button>
@@ -67,10 +80,18 @@
                 </div>
             </li> -->
             <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                <a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right"
+                    class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión
                 </a>
             </li>
         </ul>
+    </div>
+    <!-- Footer de atribución: solo visible en abaco.smartpyme.site -->
+    <div *ngIf="isAbacoSite" class="w-100 text-center">
+        <p class="mb-1 text-muted" style="font-size: 10px;">Powered by </p>
+        <a href="https://www.smartpyme.app" target="_blank" rel="noopener noreferrer">
+            <img src="assets/img/smartpyme.png" style="height: 25px; width: auto;" alt="SmartPyme" />
+        </a>
     </div>
 </div>
