@@ -13,6 +13,7 @@ Route::middleware('reports.no_cache')->group(function () {
     Route::get('/reportes/balance/general/{fecha_inicio}/{fecha_fin}/{type}',            [GenerarReportesController::class, 'generarBalanceGeneral']);
     Route::get('/reportes/estado/resultados/{fecha_inicio}/{fecha_fin}/{type}',          [GenerarReportesController::class, 'generarEstadoResultados']);
     Route::get('/reportes/flujo/efectivo/{fecha_inicio}/{fecha_fin}/{type}',              [GenerarReportesController::class, 'generarFlujoEfectivo']);
+    Route::get('/reportes/cambios/patrimonio/{fecha_inicio}/{fecha_fin}/{type}',          [GenerarReportesController::class, 'generarCambiosPatrimonio']);
 });
 
 ?>

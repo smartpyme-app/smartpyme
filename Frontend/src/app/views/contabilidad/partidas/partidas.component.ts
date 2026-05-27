@@ -37,7 +37,19 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     estadoCompararAnterior: false,
     /** Comparativa en Flujo de efectivo (misma regla que estado de resultados). */
     flujoCompararAnterior: false,
+    /** Matriz de dos años en Estado de cambios en el patrimonio. */
+    ecpDosAnios: false,
+    /** Ocultar saldos de apertura/cierre sin movimiento en ECP. */
+    ecpSoloMovimientos: false,
+    /** Notas a los estados financieros */
+    notasFechaAprobacion: '',
+    notasIncluirComparativo: false,
+    notasNivelDetalle: 'completo',
+    notasProvisionPct: 2,
   };
+  public notasPayload: any = null;
+  public notasLoading = false;
+  public notasGuardadoId: number | null = null;
   public catalogo: any = [];
   public months: Array<{ value: number; label: string }> = [];
   public years: number[] = [];
@@ -623,6 +635,165 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     } else {
       alert('Por favor, llenar los campos requeridos.');
     }
+  }
+
+  public imprimirCambiosPatrimonio() {
+    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.tipo_descarga) {
+      let url = this.buildReportDownloadUrl(
+        '/api/reportes/cambios/patrimonio/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_descarga
+      );
+      const params: string[] = [];
+      if (this.reporte.ecpDosAnios === true) {
+        params.push('dos_anios=1');
+      }
+      if (this.reporte.ecpSoloMovimientos === true) {
+        params.push('solo_movimientos=1');
+      }
+      if (params.length) {
+        url += (url.includes('?') ? '&' : '?') + params.join('&');
+      }
+      window.open(url);
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirNotasEstadosFinancieros() {
+    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.tipo_descarga) {
+      let url = this.buildReportDownloadUrl(
+        '/api/reportes/notas/estados-financieros/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin +
+          '/' +
+          this.reporte.tipo_descarga
+      );
+      const params = this.buildNotasQueryParams();
+      if (params.length) {
+        url += (url.includes('?') ? '&' : '?') + params.join('&');
+      }
+      window.open(url);
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirEstadosFinancierosCompletos() {
+    if (this.reporte.fecha_inicio && this.reporte.fecha_fin) {
+      let url = this.buildReportDownloadUrl(
+        '/api/reportes/estados-financieros/completos/' +
+          this.reporte.fecha_inicio +
+          '/' +
+          this.reporte.fecha_fin
+      );
+      const params = this.buildNotasQueryParams();
+      if (params.length) {
+        url += (url.includes('?') ? '&' : '?') + params.join('&');
+      }
+      window.open(url);
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public verNotasEnPantalla(template: TemplateRef<any>) {
+    if (!this.reporte.fecha_inicio || !this.reporte.fecha_fin) {
+      alert('Por favor, llenar las fechas del periodo.');
+      return;
+    }
+    this.notasLoading = true;
+    this.apiService
+      .store('notas-estados-financieros/generar', this.buildNotasRequestBody(true))
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response) => {
+          this.notasPayload = response;
+          this.notasGuardadoId = response.id ?? null;
+          this.notasLoading = false;
+          this.openModalConfig(template, {
+            class: 'modal-xl',
+            backdrop: 'static',
+            keyboard: false,
+          });
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          this.notasLoading = false;
+          this.alertService.error(error?.error?.error || 'Error al generar las notas');
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  public emitirNotas() {
+    if (!this.notasGuardadoId) {
+      this.alertService.warning(
+        'Notas pendientes',
+        'Genere y guarde las notas antes de emitir.'
+      );
+      return;
+    }
+    this.apiService
+      .store('notas-estados-financieros/' + this.notasGuardadoId + '/emitir', {})
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: () => {
+          this.alertService.success('Notas emitidas', 'El documento fue emitido correctamente.');
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          this.alertService.error(error?.error?.error || 'No se pudo emitir');
+        },
+      });
+  }
+
+  public notasListaOrdenada(): Array<{ numero: number; nota: any }> {
+    if (!this.notasPayload?.notas) {
+      return [];
+    }
+    return Object.keys(this.notasPayload.notas)
+      .map((k) => ({ numero: +k, nota: this.notasPayload.notas[k] }))
+      .sort((a, b) => a.numero - b.numero);
+  }
+
+  public estadoNotaClass(estado: string): string {
+    if (estado === 'COMPLETA') return 'bg-success';
+    if (estado === 'PARCIAL') return 'bg-warning text-dark';
+    return 'bg-secondary';
+  }
+
+  private buildNotasRequestBody(guardar = false): Record<string, unknown> {
+    return {
+      fecha_inicio: this.reporte.fecha_inicio,
+      fecha_fin: this.reporte.fecha_fin,
+      fecha_aprobacion_junta: this.reporte.notasFechaAprobacion || null,
+      incluir_comparativo: this.reporte.notasIncluirComparativo,
+      nivel_detalle: this.reporte.notasNivelDetalle,
+      configuracion: { provision_incobrables_pct: this.reporte.notasProvisionPct },
+      guardar,
+    };
+  }
+
+  private buildNotasQueryParams(): string[] {
+    const params: string[] = [];
+    if (this.reporte.notasFechaAprobacion) {
+      params.push('fecha_aprobacion_junta=' + encodeURIComponent(this.reporte.notasFechaAprobacion));
+    }
+    if (this.reporte.notasIncluirComparativo) {
+      params.push('incluir_comparativo=1');
+    }
+    if (this.reporte.notasNivelDetalle) {
+      params.push('nivel_detalle=' + encodeURIComponent(this.reporte.notasNivelDetalle));
+    }
+    if (this.reporte.notasProvisionPct != null) {
+      params.push('configuracion[provision_incobrables_pct]=' + this.reporte.notasProvisionPct);
+    }
+    return params;
   }
 
   public abrirPartida(partida: any) {

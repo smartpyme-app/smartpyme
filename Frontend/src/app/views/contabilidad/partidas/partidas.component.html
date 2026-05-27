@@ -5,10 +5,6 @@
       <i class="fa fa-lock me-1"></i>
       Cierre de Mes
     </button>
-    <button routerLink="/contabilidad/cierre-ejercicio-fiscal" tooltip="Cierre de ejercicio fiscal" class="btn btn-primary">
-      <i class="fa fa-calendar-check-o me-1"></i>
-      Cierre ejercicio
-    </button>
     <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img
         src="/assets/icons/download.png" style="height: 16px; width: 16px;"></button>
     <button *ngIf="apiService.canCreateTest('contabilidad.partidas.crear')" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
@@ -316,6 +312,16 @@
                   aria-controls="v-pills-flujo-efectivo" aria-selected="false">
             <i class="fas fa-water me-2"></i>Flujo de efectivo
           </button>
+          <button class="nav-link text-start text-dark mb-2" id="v-pills-cambios-patrimonio-tab"
+                  data-bs-toggle="pill" data-bs-target="#v-pills-cambios-patrimonio" type="button" role="tab"
+                  aria-controls="v-pills-cambios-patrimonio" aria-selected="false">
+            <i class="fas fa-table me-2"></i>Cambios en el patrimonio
+          </button>
+          <!-- <button class="nav-link text-start text-dark mb-2" id="v-pills-notas-eeff-tab"
+                  data-bs-toggle="pill" data-bs-target="#v-pills-notas-eeff" type="button" role="tab"
+                  aria-controls="v-pills-notas-eeff" aria-selected="false">
+            <i class="fas fa-sticky-note me-2"></i>Notas a los EEFF
+          </button> -->
         </div>
       </div>
 
@@ -675,12 +681,215 @@
               </div>
             </form>
           </div>
+
+          <!-- tab 7 formulario CAMBIOS EN EL PATRIMONIO -->
+          <div class="tab-pane fade" id="v-pills-cambios-patrimonio" role="tabpanel"
+               aria-labelledby="v-pills-cambios-patrimonio-tab">
+            <h5 class="mb-3 text-primary"><i class="fas fa-table me-2"></i>Estado de cambios en el patrimonio</h5>
+            <form (ngSubmit)="imprimirCambiosPatrimonio()" #cambiosPatrimonioForm="ngForm">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Del:</label>
+                  <input type="date" class="form-control" name="ecp_ini" required [(ngModel)]="reporte.fecha_inicio">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Al:</label>
+                  <input type="date" class="form-control" name="ecp_fin" required [(ngModel)]="reporte.fecha_fin">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de reporte:</label>
+                  <select name="tipo_descarga_ecp" class="form-select" required [(ngModel)]="reporte.tipo_descarga">
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group without-label mb-0">
+                    <div class="form-switch bg-light-info rounded">
+                      <label for="ecpDosAnios">Incluir dos años consecutivos</label>
+                      <input
+                        class="form-check-input float-end"
+                        type="checkbox"
+                        role="switch"
+                        name="ecpDosAnios"
+                        id="ecpDosAnios"
+                        [(ngModel)]="reporte.ecpDosAnios"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group without-label mb-0">
+                    <div class="form-switch bg-light-info rounded">
+                      <label for="ecpSoloMovimientos">Mostrar solo filas con movimiento</label>
+                      <input
+                        class="form-check-input float-end"
+                        type="checkbox"
+                        role="switch"
+                        name="ecpSoloMovimientos"
+                        id="ecpSoloMovimientos"
+                        [(ngModel)]="reporte.ecpSoloMovimientos"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="d-flex align-items-end h-100">
+                    <div class="alert alert-secondary mb-0 w-100">
+                      <small>
+                        <i class="fas fa-info-circle me-1"></i>
+                        Utilidad neta del estado de resultados NIIF; reserva legal 7% (Art. 123 C. Comercio SV).
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      El total de cierre debe coincidir con el patrimonio del balance general
+                    </small>
+                    <button type="submit" [disabled]="!cambiosPatrimonioForm.form.valid || saving" class="btn btn-primary">
+                      <i class="fas fa-download me-2"></i>
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- tab 8 NOTAS A LOS ESTADOS FINANCIEROS -->
+          <div class="tab-pane fade" id="v-pills-notas-eeff" role="tabpanel"
+               aria-labelledby="v-pills-notas-eeff-tab">
+            <h5 class="mb-3 text-primary"><i class="fas fa-sticky-note me-2"></i>Notas a los estados financieros</h5>
+            <form (ngSubmit)="imprimirNotasEstadosFinancieros()" #notasEeffForm="ngForm">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Del:</label>
+                  <input type="date" class="form-control" name="notas_ini" required [(ngModel)]="reporte.fecha_inicio">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Al:</label>
+                  <input type="date" class="form-control" name="notas_fin" required [(ngModel)]="reporte.fecha_fin">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Fecha aprobación junta:</label>
+                  <input type="date" class="form-control" name="notas_aprobacion" [(ngModel)]="reporte.notasFechaAprobacion">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Nivel de detalle:</label>
+                  <select name="notas_nivel" class="form-select" [(ngModel)]="reporte.notasNivelDetalle">
+                    <option value="completo">Completo</option>
+                    <option value="resumido">Resumido</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Provisión incobrables (%):</label>
+                  <input type="number" class="form-control" name="notas_provision" min="0" max="100" step="0.1"
+                         [(ngModel)]="reporte.notasProvisionPct">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de reporte:</label>
+                  <select name="tipo_descarga_notas" class="form-select" required [(ngModel)]="reporte.tipo_descarga">
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex flex-wrap gap-2 justify-content-end">
+                    <button type="button" class="btn btn-outline-primary" [disabled]="notasLoading || !notasEeffForm.form.valid"
+                            (click)="verNotasEnPantalla(mnotasVista)">
+                      <i class="fas fa-eye me-2"></i>
+                      <span *ngIf="!notasLoading">Ver en pantalla</span>
+                      <span *ngIf="notasLoading">Generando...</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" [disabled]="!notasEeffForm.form.valid"
+                            (click)="imprimirEstadosFinancierosCompletos()">
+                      <i class="fas fa-file-pdf me-2"></i>PDF completo (5 estados)
+                    </button>
+                    <button type="submit" [disabled]="!notasEeffForm.form.valid || saving" class="btn btn-primary">
+                      <i class="fas fa-download me-2"></i>
+                      <span *ngIf="!saving">Generar notas</span>
+                      <span *ngIf="saving">Generando...</span>
+                    </button>
+                  </div>
+                  <small class="text-muted d-block mt-2">
+                    Las notas 1, 2 y 3 deben estar completas para emitir. Validaciones cruzadas con Balance y ER.
+                  </small>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </ng-template>
 <!-- AGREGAR ANTES de los modales existentes -->
+<ng-template #mnotasVista>
+  <div class="modal-header">
+    <div class="modal-title">
+      <h2 class="h5 mb-0">Notas a los estados financieros</h2>
+      <small class="text-muted" *ngIf="notasPayload?.fecha_inicio">
+        {{ notasPayload.fecha_inicio }} al {{ notasPayload.fecha_fin }}
+      </small>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body" *ngIf="notasPayload">
+    <div class="alert alert-info d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span>
+        Completitud: <strong>{{ notasPayload.completitud?.porcentaje }}%</strong>
+        ({{ notasPayload.completitud?.completas }}/{{ notasPayload.completitud?.total_notas }} completas)
+      </span>
+      <span *ngIf="notasPayload.puede_emitir" class="badge bg-success">Listo para emitir</span>
+      <span *ngIf="!notasPayload.puede_emitir" class="badge bg-warning text-dark">Notas 1–3 pendientes</span>
+    </div>
+
+    <div class="accordion" id="accordionNotas">
+      <div class="accordion-item" *ngFor="let item of notasListaOrdenada()">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                  [attr.data-bs-target]="'#nota-collapse-' + item.numero">
+            Nota {{ item.numero }}. {{ item.nota.titulo }}
+            <span class="badge ms-2" [ngClass]="estadoNotaClass(item.nota.estado)">{{ item.nota.estado }}</span>
+          </button>
+        </h2>
+        <div [id]="'nota-collapse-' + item.numero" class="accordion-collapse collapse" data-bs-parent="#accordionNotas">
+          <div class="accordion-body">
+            <pre class="mb-0 small" style="white-space: pre-wrap;">{{ item.nota.contenido | json }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-3" *ngIf="notasPayload.validaciones_cruzadas?.length">
+      <h6>Validaciones cruzadas</h6>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item d-flex justify-content-between" *ngFor="let v of notasPayload.validaciones_cruzadas">
+          <span>{{ v.descripcion }}</span>
+          <span [class.text-success]="v.cuadra" [class.text-danger]="!v.cuadra">
+            {{ v.cuadra ? 'OK' : ('Diff $' + v.diferencia) }}
+          </span>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cerrar</button>
+    <button type="button" class="btn btn-success" *ngIf="notasGuardadoId && notasPayload?.puede_emitir"
+            (click)="emitirNotas()">Emitir</button>
+  </div>
+</ng-template>
+
 <ng-template #mreordenar>
   <div class="modal-header">
     <div class="modal-title text-center">
