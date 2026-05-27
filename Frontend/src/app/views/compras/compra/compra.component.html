@@ -67,6 +67,14 @@
                 <label class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT' : 'Identificación fiscal' }}</label>
                 <p>{{ compra?.proveedor?.nit || 'N/A' }}</p>
             </div>
+            <div class="form-group col-lg-3" *ngIf="compra.codigo_generacion">
+                <label class="fw-medium">Código de generación</label>
+                <p class="text-break mb-0">{{ compra.codigo_generacion }}</p>
+            </div>
+            <div class="form-group col-lg-3" *ngIf="compra.numero_control">
+                <label class="fw-medium">Número de control</label>
+                <p class="text-break mb-0">{{ compra.numero_control }}</p>
+            </div>
         </div>
     </div>
 

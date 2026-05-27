@@ -7,6 +7,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
+import { TabsModule } from 'ngx-bootstrap/tabs';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -21,13 +22,15 @@ import { HistorialComprasComponent } from './compras/historial/historial-compras
 import { DetalleComprasComponent } from './compras/detalle/detalle-compras.component';
 import { CategoriasComprasComponent } from './compras/categorias/categorias-compras.component';
 
-import { EmpleadosVentasComponent } from './empleados/ventas/empleados-ventas.component'; // Ahora es standalone
+import { EmpleadosVentasComponent } from './empleados/ventas/empleados-ventas.component';
 
 import { CorteComponent } from './corte/corte.component';
 import { ReportesComponent } from './reportes.component';
 import { ReportesAutomaticosComponent } from './reportes-automaticos.component';
 import { ReplacePipe } from './reportes-automaticos.component';
+import { FlujoEfectivoComponent } from './flujo-efectivo/flujo-efectivo.component';
 import { DashboardModule } from '@views/dashboard/dashboard.module';
+import { WebdatarocksPivotModule } from '@webdatarocks/ngx-webdatarocks';
 
 @NgModule({
   imports: [
@@ -39,11 +42,12 @@ import { DashboardModule } from '@views/dashboard/dashboard.module';
     NgSelectModule,
     NgxEchartsModule.forRoot({ echarts }),
     ProgressbarModule.forRoot(),
+    TabsModule.forRoot(),
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
     ModalModule.forRoot(),
     DashboardModule,
-    // Componentes standalone
+    WebdatarocksPivotModule,
     EmpleadosVentasComponent,
     HistorialVentasComponent,
     DetalleVentasComponent,
@@ -54,12 +58,11 @@ import { DashboardModule } from '@views/dashboard/dashboard.module';
     CorteComponent,
     ReportesComponent,
     ReportesAutomaticosComponent,
-    ReplacePipe
+    ReplacePipe,
+    FlujoEfectivoComponent,
   ],
-  declarations: [
-  ],
+  declarations: [],
   exports: [
-    // Todos los componentes standalone se exportan como imports standalone
     HistorialVentasComponent,
     DetalleVentasComponent,
     CategoriasVentasComponent,
@@ -70,7 +73,8 @@ import { DashboardModule } from '@views/dashboard/dashboard.module';
     CorteComponent,
     ReportesComponent,
     ReportesAutomaticosComponent,
-    ReplacePipe
+    ReplacePipe,
+    FlujoEfectivoComponent,
   ]
 })
 export class ReportesModule { }

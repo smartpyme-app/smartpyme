@@ -19,6 +19,7 @@ import { PagoAbacoComponent } from './../auth/register/pago/pago-abaco.component
 import { PagoEntryComponent } from './../auth/register/pago/pago-entry.component';
 import { ForgetComponent } from './../auth/forget/forget.component';
 import { PaymentSuccessComponent } from './../auth/register/pago/payment-success.component';
+import { HeroVideoAutoplayDirective } from './shared/hero-video-autoplay.directive';
 
 @NgModule({
   imports: [
@@ -43,6 +44,7 @@ import { PaymentSuccessComponent } from './../auth/register/pago/payment-success
     RegisterEntryComponent,
     PagoAbacoComponent,
     PagoEntryComponent,
+    HeroVideoAutoplayDirective,
   ],
   exports: [
     LoginComponent,

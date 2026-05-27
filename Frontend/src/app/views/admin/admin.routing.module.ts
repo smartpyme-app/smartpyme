@@ -67,6 +67,11 @@ const routes: Routes = [
           loadComponent: () => import('@views/reportes/reportes-automaticos.component').then(m => m.ReportesAutomaticosComponent), 
           title: 'Reportes automáticos'
         },
+        {
+          path: 'admin/reportes',
+          loadComponent: () => import('@views/admin/reportes/reportes.component').then(m => m.AdminReportesComponent),
+          title: 'Reportes'
+        },
         { 
           path: 'whatsapp', 
           loadComponent: () => import('@views/admin/whatsapp/whatsapp.component').then(m => m.WhatsAppComponent), 

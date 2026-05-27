@@ -1,52 +1,45 @@
 <div id="login-box" class="bg-white vh-100 w-100 overflow-x-hidden">
     <div class="container-fluid h-100 px-0">
         <div class="row g-0 h-100 mx-0">
-            
-            <div class="col-12 col-md-6 d-none d-md-flex flex-column h-100 position-relative py-5 pe-5 ps-0 login-abaco-hero-panel-static">
+
+            <div
+                class="col-12 col-md-6 d-none d-md-flex flex-column h-100 position-relative py-5 pe-5 ps-0 login-abaco-hero-panel-dynamic">
+                <video class="login-abaco-hero-video" appHeroVideoAutoplay autoplay muted loop playsinline
+                    preload="auto" aria-hidden="true">
+                    <source src="assets/img/abaco-background.mp4" type="video/mp4">
+                </video>
                 <div class="my-auto d-flex flex-column login-abaco-hero-inner">
-                    <div class="mb-auto">
-                        <img
-                            src="assets/img/logo-abaco.png"
-                            alt="Ábaco Business Suite"
-                            class="login-abaco-hero-logo"
-                        />
+                    <div class="mb-3">
+                        <img src="assets/img/logo-abaco.png" alt="Ábaco Business Suite" class="login-abaco-hero-logo" />
                     </div>
                     <h1 class="fw-bold m-0 login-abaco-hero-title">
                         Herramientas de <br>
                         negocio & facturación <br>
                         electrónica, <span class="login-abaco-hero-accent">sin limites.</span>
                     </h1>
-                    <div
-                        class="login-abaco-hero-rule flex-shrink-0 align-self-start"
-                        role="presentation"
-                        aria-hidden="true"
-                    ></div>
+                    <div class="login-abaco-hero-rule flex-shrink-0 align-self-start" role="presentation"
+                        aria-hidden="true"></div>
 
                     <p class="m-0 login-abaco-hero-lede">
-                        Nuevo software de inteligencia de negocios para operadores de 
-                        PYMES. Facilita la gestión de compras, ventas, gastos, finanzas y 
+                        Nuevo software de inteligencia de negocios para operadores de
+                        PYMES. Facilita la gestión de compras, ventas, gastos, finanzas y
                         contabilidad. Todo en un solo lugar con <strong>Ábaco Business Suite.</strong>
                     </p>
                 </div>
-                
-                <div class="mt-auto"></div>
+
             </div>
 
             <div class="col-12 col-md-6 d-flex flex-column h-100 position-relative login-abaco-form-col">
                 <div class="card border-0 shadow-none m-auto w-100 login-abaco-card">
                     <div class="card-body px-3 px-lg-4">
                         <app-notificaciones-container></app-notificaciones-container>
-                        
+
                         <div class="mb-4">
-                            <img
-                                src="assets/img/Abaco.png"
-                                alt="Icono"
-                                class="login-abaco-form-brand-icon"
-                            />
+                            <img src="assets/img/Abaco.png" alt="Icono" class="login-abaco-form-brand-icon" />
                         </div>
 
                         <h2 class="mb-4 login-abaco-form-heading">Inicio de sesión</h2>
-                        
+
                         <div class="login-abaco-notice mb-4">
                             <strong class="login-abaco-notice__title">Aviso</strong>
                             <p class="login-abaco-notice__text">
@@ -56,38 +49,51 @@
                         </div>
 
                         <form name="form" (ngSubmit)="f.form.valid && submit()" #f="ngForm" novalidate>
-                            
-                            <div class="form-group mb-3 has-feedback" [ngClass]="{ 'has-error': f.submitted && !email.valid }">
+
+                            <div class="form-group mb-3 has-feedback"
+                                [ngClass]="{ 'has-error': f.submitted && !email.valid }">
                                 <label class="text-muted mb-2 login-abaco-field-label">Correo</label>
-                                <input type="email" class="form-control py-2" name="correo" [(ngModel)]="user.email" #email="ngModel" placeholder="Escribe tu correo electrónico" required focus="true"/>
+                                <input type="email" class="form-control py-2" name="correo" [(ngModel)]="user.email"
+                                    #email="ngModel" placeholder="Escribe tu correo electrónico" required
+                                    focus="true" />
                             </div>
-                            
-                            <div class="form-group mb-4 has-feedback" [ngClass]="{ 'has-error': f.submitted && !password.valid }">
+
+                            <div class="form-group mb-4 has-feedback"
+                                [ngClass]="{ 'has-error': f.submitted && !password.valid }">
                                 <label class="text-muted mb-2 login-abaco-field-label">Contraseña</label>
                                 <div class="input-group">
-                                    <input [type]="showpassword ? 'text' : 'password'" class="form-control py-2 border-end-0" name="password" [(ngModel)]="user.password" placeholder="Escribe tu contraseña" #password="ngModel" id="password" required />
-                                    <button class="btn border border-start-0 bg-white text-muted" type="button" (click)="mostrarPassword()">
-                                        <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword, 'fa-eye': showpassword }"></i>
+                                    <input [type]="showpassword ? 'text' : 'password'"
+                                        class="form-control py-2 border-end-0" name="password"
+                                        [(ngModel)]="user.password" placeholder="Escribe tu contraseña"
+                                        #password="ngModel" id="password" required />
+                                    <button class="btn border border-start-0 bg-white text-muted" type="button"
+                                        (click)="mostrarPassword()">
+                                        <i class="fa"
+                                            [ngClass]="{'fa-eye-slash': !showpassword, 'fa-eye': showpassword }"></i>
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div class="row mb-4 align-items-center">
                                 <div class="col-6">
                                     <div class="form-check">
-                                      <input class="form-check-input" type="checkbox" name="rememberMe" [(ngModel)]="user.rememberMe" id="flexCheckDefault">
-                                      <label class="form-check-label text-dark login-abaco-check-label" for="flexCheckDefault">
-                                        Recordarme
-                                      </label>
+                                        <input class="form-check-input" type="checkbox" name="rememberMe"
+                                            [(ngModel)]="user.rememberMe" id="flexCheckDefault">
+                                        <label class="form-check-label text-dark login-abaco-check-label"
+                                            for="flexCheckDefault">
+                                            Recordarme
+                                        </label>
                                     </div>
                                 </div>
                                 <div class="col-6 text-end">
-                                    <a routerLink="/restablecer-cuenta" class="login-abaco-link-forgot text-decoration-none">Olvidé mi contraseña</a>
+                                    <a routerLink="/restablecer-cuenta"
+                                        class="login-abaco-link-forgot text-decoration-none">Olvidé mi contraseña</a>
                                 </div>
                             </div>
-                            
+
                             <div class="d-grid gap-1 mb-4">
-                                <button type="submit" [disabled]="loading" class="btn text-white py-2 login-abaco-submit-btn">
+                                <button type="submit" [disabled]="loading"
+                                    class="btn text-white py-2 login-abaco-submit-btn">
                                     <span *ngIf="!loading">Iniciar sesión</span>
                                     <span *ngIf="loading">Verificando...</span>
                                 </button>
@@ -97,28 +103,22 @@
                         <div class="text-center">
                             <p class="mb-0 login-abaco-register-hint">
                                 ¿No tienes cuenta?
-                                <a
-                                    routerLink="/registro"
-                                    [queryParams]="{ promo: 'ABACO30' }"
-                                    class="login-abaco-register-hint__link text-decoration-none"
-                                >Crea una.</a>
+                                <a routerLink="/registro" [queryParams]="queryParamsRegistro"
+                                    class="login-abaco-register-hint__link text-decoration-none">Crea una.</a>
                             </p>
                         </div>
                     </div>
                 </div>
 
                 <div class="w-100 text-center login-abaco-footer-attribution">
-                    <p class="mb-1 text-muted login-abaco-footer-attribution__label">Impulsado por </p>
+                    <p class="mb-1 text-muted login-abaco-footer-attribution__label">Powered by </p>
                     <a href="https://www.smartpyme.app" target="_blank">
-                        <img
-                            src="assets/img/smartpyme.png"
-                            class="login-abaco-footer-attribution__logo"
-                            alt="SmartPyme logo"
-                        />
+                        <img src="assets/img/smartpyme.png" class="login-abaco-footer-attribution__logo"
+                            alt="SmartPyme logo" />
                     </a>
                 </div>
             </div>
-            
+
         </div>
     </div>
 </div>

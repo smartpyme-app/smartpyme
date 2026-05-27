@@ -2,8 +2,18 @@
     <div class="container-fluid px-0 min-vh-100 d-flex flex-column">
         <div class="row g-0 flex-grow-1 mx-0 min-vh-100 align-items-stretch">
 
-            <div class="col-12 col-md-6 d-none d-md-flex flex-column position-relative register-abaco-hero">
-                <div class="register-abaco-hero__waves" aria-hidden="true"></div>
+            <div class="col-12 col-md-6 d-none d-md-flex flex-column position-relative register-abaco-hero register-abaco-hero--video">
+                <video
+                    class="register-abaco-hero-video"
+                    appHeroVideoAutoplay
+                    autoplay
+                    muted
+                    loop
+                    playsinline
+                    preload="auto"
+                    aria-hidden="true">
+                    <source src="assets/img/abaco-background.mp4" type="video/mp4">
+                </video>
 
                 <div class="m-auto text-center px-4 register-abaco-hero__content">
                     <div class="mb-auto">
@@ -33,11 +43,21 @@
 
                         <div
                             class="register-abaco-notice mb-4"
-                            *ngIf="!(codigoPromocionalValido && user.empresa.codigo_promocional)"
+                            *ngIf="tieneCodigoPromocionalAbacoAplicado()"
                         >
                             <strong class="register-abaco-notice__title">Aviso</strong>
                             <p class="register-abaco-notice__text mb-0">
-                                Utiliza el código <strong>ABACO30</strong> para un 30% de descuento en tu plan mensual.
+                                Los datos de tu usuario no son los mismos que dentro de la plataforma de Ábaco. Debes crear un nuevo registro en Business Suite si aún no cuentas con uno.
+                            </p>
+                        </div>
+
+                        <div
+                            class="register-abaco-notice mb-4"
+                            *ngIf="codigoPromocionalAbaco && !tieneCodigoPromocionalAbacoAplicado()"
+                        >
+                            <strong class="register-abaco-notice__title">Aviso</strong>
+                            <p class="register-abaco-notice__text mb-0">
+                                Utiliza el código <strong>{{ codigoPromocionalAbaco.codigo }}</strong> para {{ getTextoDescuentoPromocional() }} en {{ getTextoPlanesPermitidos() }}.
                             </p>
                         </div>
 
@@ -95,9 +115,12 @@
                                         (change)="onFrecuenciaPagoChange()"
                                     >
                                         <option value="">Selecciona aquí</option>
-                                        <option value="Mensual">Mensual</option>
-                                        <option value="Trimestral">Trimestral</option>
-                                        <option value="Anual">Anual</option>
+                                        <option
+                                            *ngFor="let frecuencia of frecuenciasPagoDisponibles"
+                                            [value]="frecuencia"
+                                        >
+                                            {{ frecuencia }}
+                                        </option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
@@ -213,7 +236,7 @@
                                 <label class="text-muted mb-2 register-abaco-field-label">
                                     Código promocional
                                     <span class="text-success ms-1" *ngIf="codigoPromocionalValido && codigoPromocionalValidado">
-                                        ({{ obtenerPorcentajeDescuentoCodigo() }}% de descuento)
+                                        ({{ getEtiquetaDescuentoCodigo() }})
                                     </span>
                                 </label>
                                 <input
@@ -222,7 +245,7 @@
                                     name="codigo_promocional"
                                     [(ngModel)]="user.empresa.codigo_promocional"
                                     (input)="aplicarDescuento()"
-                                    placeholder="ABACO30"
+                                    placeholder="{{ codigoPromocionalAbaco?.codigo || 'Código promocional' }}"
                                     #codigo_promocional="ngModel"
                                     [class.is-valid]="codigoPromocionalValido"
                                     [class.is-invalid]="mensajeErrorCodigo && !codigoPromocionalValido"
@@ -250,7 +273,7 @@
                 </div>
 
                 <div class="w-100 text-center register-abaco-footer-attribution">
-                    <p class="mb-1 text-muted register-abaco-footer-attribution__label">Impulsado por </p>
+                    <p class="mb-1 text-muted register-abaco-footer-attribution__label">Powered by </p>
                     <a href="https://www.smartpyme.app" target="_blank" rel="noopener noreferrer">
                         <img
                             src="assets/img/smartpyme.png"

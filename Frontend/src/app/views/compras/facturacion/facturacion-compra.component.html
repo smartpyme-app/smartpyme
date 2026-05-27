@@ -65,6 +65,24 @@
             <input type="text" class="form-control" [(ngModel)]="compra.sello_mh" name="sello_mh" placeholder="Sello de recepción">
         </div>
     </div>
+    @if (compra.codigo_generacion || compra.numero_control) {
+      <div class="row">
+        @if (compra.codigo_generacion) {
+          <div class="form-group col-md-6 col-lg-5">
+            <label for="codigo_generacion">Código de generación</label>
+            <input type="text" class="form-control" id="codigo_generacion" name="codigo_generacion"
+              [ngModel]="compra.codigo_generacion" disabled readonly>
+          </div>
+        }
+        @if (compra.numero_control) {
+          <div class="form-group col-md-6 col-lg-5">
+            <label for="numero_control">Número de control</label>
+            <input type="text" class="form-control" id="numero_control" name="numero_control"
+              [ngModel]="compra.numero_control" disabled readonly>
+          </div>
+        }
+      </div>
+    }
   <div class="row">
     <div class="form-group col-md-6 col-lg-4">
       <label for="">Proveedor</label>

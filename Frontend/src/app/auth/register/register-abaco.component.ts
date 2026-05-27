@@ -27,6 +27,10 @@ export class RegisterAbacoComponent implements OnInit {
     public mensajeErrorCodigo: string = '';
     public planes: any[] = [];
     public planesMap: Map<number, any> = new Map(); // Mapa de planes por ID
+    public codigoPromocionalAbaco: CodigoPromocional | null = null;
+
+    private readonly CAMPANIA_ABACO = 'ÁBACO';
+    private readonly TODAS_FRECUENCIAS_PAGO = ['Mensual', 'Trimestral', 'Anual'];
 
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
@@ -79,22 +83,7 @@ export class RegisterAbacoComponent implements OnInit {
                 this.user.empresa.codigo_promocional = this.route.snapshot.queryParamMap.get('promo')!;
             }
 
-            // Cargar planes desde el backend y luego inicializar precios
-            this.cargarPlanes();
-            
-            // Inicializar tieneDescuento y codigoPromocionalValido si ya hay un código promocional
-            if (this.user.empresa.codigo_promocional) {
-                this.promocionalService.validarCodigo(
-                    this.user.empresa.codigo_promocional,
-                    this.user.empresa.tipo_plan
-                ).subscribe(codigoPromo => {
-                    if (codigoPromo) {
-                        this.codigoPromocionalValidado = codigoPromo;
-                        this.tieneDescuento = true;
-                        this.codigoPromocionalValido = true;
-                    }
-                });
-            }
+            this.iniciarFlujoAbaco();
 
         } else {
             // Datos parciales en sesión: si viene promo en la URL, priorizar sobre lo guardado
@@ -103,43 +92,54 @@ export class RegisterAbacoComponent implements OnInit {
                 this.user.empresa = this.user.empresa || {};
                 this.user.empresa.codigo_promocional = promoUrl;
             }
-            this.cargarPlanes();
-            if (promoUrl && this.user.empresa?.codigo_promocional) {
-                this.promocionalService
-                    .validarCodigo(
-                        this.user.empresa.codigo_promocional,
-                        this.user.empresa.frecuencia_pago || this.user.empresa.tipo_plan,
-                    )
-                    .subscribe((codigoPromo) => {
-                        if (codigoPromo) {
-                            this.codigoPromocionalValidado = codigoPromo;
-                            this.tieneDescuento = true;
-                            this.codigoPromocionalValido = true;
-                        }
-                    });
-            }
+            this.iniciarFlujoAbaco();
         }
 
     }
 
+    private iniciarFlujoAbaco(): void {
+        this.promocionalService.obtenerPorCampania(this.CAMPANIA_ABACO).subscribe((codigo) => {
+            this.codigoPromocionalAbaco = codigo;
+
+            if (!this.user.empresa.campania) {
+                this.user.empresa.campania = codigo?.campania || this.CAMPANIA_ABACO;
+            }
+
+            this.cargarPlanes();
+        });
+    }
+
     /**
-     * Flujo Ábaco: plan mensual estándar y código ABACO30 por defecto cuando faltan datos.
+     * Flujo Ábaco: plan estándar y código promocional de campaña ÁBACO por defecto.
      */
     private aplicarValoresPorDefectoAbaco(): void {
         if (!this.user?.empresa) {
             return;
         }
+
+        const promoRef = this.codigoPromocionalAbaco ?? this.codigoPromocionalValidado;
+        const planesPermitidos = this.normalizarPlanesPermitidos(promoRef?.planes_permitidos);
+
         if (!this.user.empresa.frecuencia_pago) {
-            this.user.empresa.frecuencia_pago = 'Mensual';
+            if (planesPermitidos?.length === 1) {
+                this.user.empresa.frecuencia_pago = planesPermitidos[0];
+            } else {
+                this.user.empresa.frecuencia_pago = 'Mensual';
+            }
+        } else if (planesPermitidos?.length && promoRef && !this.esPlanPermitido(promoRef, this.user.empresa.frecuencia_pago)) {
+            this.user.empresa.frecuencia_pago = planesPermitidos[0];
         }
+
         if (!this.user.empresa.plan) {
             this.user.empresa.plan = '2';
         }
-        if (!this.user.empresa.codigo_promocional) {
-            this.user.empresa.codigo_promocional = 'ABACO30';
+
+        if (!this.user.empresa.codigo_promocional && this.codigoPromocionalAbaco?.codigo) {
+            this.user.empresa.codigo_promocional = this.codigoPromocionalAbaco.codigo;
         }
+
         if (!this.user.empresa.tipo_plan) {
-            this.user.empresa.tipo_plan = 'Mensual';
+            this.user.empresa.tipo_plan = this.user.empresa.frecuencia_pago || 'Mensual';
         }
     }
 
@@ -460,6 +460,9 @@ export class RegisterAbacoComponent implements OnInit {
         const userToSend = JSON.parse(JSON.stringify(this.user));
         userToSend.empresa.total = totalAPagar;
 
+        // Adjuntar el dominio de origen para que el backend identifique registros de ÁBACO
+        userToSend.origen_registro = window.location.origin;
+
         this.apiService.register(userToSend)
         .subscribe(
             data => {
@@ -532,9 +535,101 @@ export class RegisterAbacoComponent implements OnInit {
         return this.user.empresa.frecuencia_pago === 'Anual';
     }
 
+    public esFrecuenciaOpcionVisible(frecuencia: string): boolean {
+        return this.frecuenciasPagoDisponibles.some(
+            (plan) => plan.toLowerCase() === frecuencia.toLowerCase(),
+        );
+    }
+
+    public get frecuenciasPagoDisponibles(): string[] {
+        const planesPermitidos = this.obtenerPlanesPermitidosPromo();
+        if (!planesPermitidos.length) {
+            return [...this.TODAS_FRECUENCIAS_PAGO];
+        }
+        return this.TODAS_FRECUENCIAS_PAGO.filter((frecuencia) =>
+            planesPermitidos.some((plan) => plan.toLowerCase() === frecuencia.toLowerCase()),
+        );
+    }
+
+    private obtenerPlanesPermitidosPromo(): string[] {
+        if (this.tieneCodigoPromocionalAbacoAplicado() && this.codigoPromocionalAbaco) {
+            return this.normalizarPlanesPermitidos(this.codigoPromocionalAbaco.planes_permitidos);
+        }
+        if (this.codigoPromocionalValidado) {
+            return this.normalizarPlanesPermitidos(this.codigoPromocionalValidado.planes_permitidos);
+        }
+        return this.normalizarPlanesPermitidos(this.codigoPromocionalAbaco?.planes_permitidos);
+    }
+
+    private normalizarPlanesPermitidos(planes: unknown): string[] {
+        if (!planes) {
+            return [];
+        }
+        if (Array.isArray(planes)) {
+            return planes.map((plan) => String(plan).trim()).filter(Boolean);
+        }
+        if (typeof planes === 'string') {
+            try {
+                const parsed = JSON.parse(planes);
+                return Array.isArray(parsed)
+                    ? parsed.map((plan) => String(plan).trim()).filter(Boolean)
+                    : [];
+            } catch {
+                return [];
+            }
+        }
+        return [];
+    }
+
+    public getTextoDescuentoPromocional(codigo?: CodigoPromocional | null): string {
+        const promo = codigo ?? this.codigoPromocionalAbaco;
+        if (!promo) {
+            return 'un descuento especial';
+        }
+        if (promo.tipo === 'monto_fijo') {
+            return `un descuento de $${Math.round(promo.descuento)}`;
+        }
+        return `un ${Math.round(promo.descuento)}% de descuento`;
+    }
+
+    public getTextoPlanesPermitidos(codigo?: CodigoPromocional | null): string {
+        const promo = codigo ?? this.codigoPromocionalAbaco;
+        const planes = this.normalizarPlanesPermitidos(promo?.planes_permitidos);
+        if (!planes.length) {
+            return 'todos los tipos de plan';
+        }
+        if (planes.length === 1) {
+            return `tu plan ${planes[0].toLowerCase()}`;
+        }
+        const planesTexto = planes.map((plan) => plan.toLowerCase());
+        if (planesTexto.length === 2) {
+            return `planes ${planesTexto[0]} y ${planesTexto[1]}`;
+        }
+        const ultimo = planesTexto.pop();
+        return `planes ${planesTexto.join(', ')} y ${ultimo}`;
+    }
+
+    public getEtiquetaDescuentoCodigo(): string {
+        if (!this.codigoPromocionalValidado) {
+            return '';
+        }
+        if (this.codigoPromocionalValidado.tipo === 'monto_fijo') {
+            return `$${Math.round(this.codigoPromocionalValidado.descuento)} de descuento`;
+        }
+        return `${this.obtenerPorcentajeDescuentoCodigo()}% de descuento`;
+    }
+
+    public tieneCodigoPromocionalAbacoAplicado(): boolean {
+        const codigoIngresado = this.user.empresa?.codigo_promocional?.trim();
+        const codigoAbaco = this.codigoPromocionalAbaco?.codigo?.trim();
+        if (!codigoIngresado || !codigoAbaco) {
+            return false;
+        }
+        return codigoIngresado.toUpperCase() === codigoAbaco.toUpperCase();
+    }
+
     public obtenerPorcentajeDescuentoCodigo(): number {
         let promocional = this.promocionalService.obtenerPorcentajeDescuento(this.codigoPromocionalValidado);
-        // Redondear a número entero para mostrar "50%" en vez de "50.00%"
         return Math.round(promocional);
     }
 

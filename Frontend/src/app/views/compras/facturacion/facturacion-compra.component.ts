@@ -505,22 +505,28 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
         const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
         const porcentajesImpuestos = (this.compra.impuestos || []).map((i: any) => Number(i.porcentaje));
+        const pctDetalleDe = (d: any) => (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+            ? Number(d.porcentaje_impuesto) : empresaIva;
 
         this.compra.impuestos.forEach((impuesto: any) => {
             if (this.compra.cobrar_impuestos) {
                 const pctImp = Number(impuesto.porcentaje);
-                const monto = this.compra.detalles
-                    .filter((d: any) => {
-                        const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-                            ? Number(d.porcentaje_impuesto) : empresaIva;
-                        return pctIgual(pctImp, pctDetalle);
-                    })
-                    .reduce((sum: number, d: any) => {
-                        const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
-                            ? parseFloat(d.iva) : parseFloat(d.total || 0) * (pctImp / 100);
-                        return sum + ivaLinea;
-                    }, 0);
-                impuesto.monto = parseFloat(Number(monto).toFixed(4));
+                const esIvaEmpresa = pctIgual(pctImp, empresaIva);
+                const tieneLineasConEstaTasa = this.compra.detalles.some((d: any) => pctIgual(pctImp, pctDetalleDe(d)));
+
+                if (esIvaEmpresa || tieneLineasConEstaTasa) {
+                    const monto = this.compra.detalles
+                        .filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)))
+                        .reduce((sum: number, d: any) => {
+                            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+                                ? parseFloat(d.iva) : parseFloat(d.total || 0) * (pctImp / 100);
+                            return sum + ivaLinea;
+                        }, 0);
+                    impuesto.monto = parseFloat(Number(monto).toFixed(4));
+                } else {
+                    const baseGravada = parseFloat(this.compra.sub_total || 0);
+                    impuesto.monto = parseFloat((baseGravada * (pctImp / 100)).toFixed(4));
+                }
             } else {
                 impuesto.monto = 0;
             }
@@ -529,14 +535,10 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         // Detalles cuyo % no coincide con ningún impuesto: asignar su IVA al impuesto de la empresa o al primero
         if (this.compra.cobrar_impuestos && this.compra.detalles.length && this.compra.impuestos.length) {
             const ivaSinAsignar = this.compra.detalles
-                .filter((d: any) => {
-                    const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-                        ? Number(d.porcentaje_impuesto) : empresaIva;
-                    return !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalle));
-                })
+                .filter((d: any) => !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalleDe(d))))
                 .reduce((sum: number, d: any) => {
                     const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
-                        ? parseFloat(d.iva) : parseFloat(d.total || 0) * (((d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '') ? Number(d.porcentaje_impuesto) : empresaIva) / 100);
+                        ? parseFloat(d.iva) : parseFloat(d.total || 0) * (pctDetalleDe(d) / 100);
                     return sum + ivaLinea;
                 }, 0);
             if (ivaSinAsignar > 0) {
@@ -711,7 +713,20 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             if(this.duplicarcompra){
                 this.compra.recurrente = false;
             }
-            this.apiService.store('compra/facturacion', this.compra).subscribe(compra => {
+            const payload: any = { ...this.compra };
+            const codigoGen = this.compra.codigo_generacion;
+            if (codigoGen != null && String(codigoGen).trim() !== '') {
+                payload.codigo_generacion = String(codigoGen).trim();
+            }
+            const numeroCtrl = this.compra.numero_control;
+            if (numeroCtrl != null && String(numeroCtrl).trim() !== '') {
+                payload.numero_control = String(numeroCtrl).trim();
+            }
+            if (this.compra.tipo_dte) {
+                payload.tipo_dte = this.compra.tipo_dte;
+            }
+
+            this.apiService.store('compra/facturacion', payload).subscribe(compra => {
                 this.saving = false;
 
                 if(this.compra.cotizacion == 1){
@@ -1068,12 +1083,24 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         if (jsonData.identificacion['_tipoDocumentoNombre']) {
             this.compra.tipo_documento = jsonData.identificacion['_tipoDocumentoNombre'];
         } else if (jsonData.identificacion.tipoDte) {
+            this.compra.tipo_dte = jsonData.identificacion.tipoDte;
             const defFact =
                 resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR
                     ? NOMBRE_DOCUMENTO_CR.factura
                     : 'Factura';
             this.compra.tipo_documento =
                 this.getTipoDocumento(jsonData.identificacion.tipoDte) || defFact;
+        }
+
+        if (jsonData.identificacion.codigoGeneracion) {
+            this.compra.codigo_generacion = String(
+                jsonData.identificacion.codigoGeneracion
+            ).trim();
+        }
+        if (jsonData.identificacion.numeroControl) {
+            this.compra.numero_control = String(
+                jsonData.identificacion.numeroControl
+            ).trim();
         }
 
         const documentoRow = (this.documentos || []).find(

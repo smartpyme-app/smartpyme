@@ -13,6 +13,13 @@ return [
     'TIPO_PAGO_TRANSFERENCIA' => 'Transferencia',
     'TIPO_PAGO_TARJETA' => 'Tarjeta de crédito/débito',
 
+    // Correos
+    'CORREOS_ABACO_NOTIFICACION' => [
+        'jennifer.d@smartpyme.sv',
+        'karla.b@smartpyme.sv',
+        'alejandro.a@smartpyme.sv',
+    ],
+
     /**
      * Nombres de forma de pago equivalentes a gift card (cierre de caja: no suman al total de ventas).
      * Comparación sin distinguir mayúsculas; debe coincidir con el nombre en ventas o en venta_metodos_pago.
@@ -126,3 +133,5 @@ return [
     'FRECUENCIA_PAGO_TRIMESTRAL' => 'Trimestral',
     'FRECUENCIA_PAGO_ANUAL' => 'Anual',
 ];
+
+

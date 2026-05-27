@@ -79,6 +79,17 @@ class Gasto extends Model {
         return is_string($value) ? json_decode($value, true) : $value;
     }
 
+    public function setDteAttribute($value): void
+    {
+        if ($value === null || $value === '') {
+            $this->attributes['dte'] = null;
+            return;
+        }
+        $this->attributes['dte'] = is_array($value)
+            ? json_encode($value, JSON_UNESCAPED_UNICODE)
+            : $value;
+    }
+
     public function getDteInvalidacionAttribute($value)
     {
         return is_string($value) ? json_decode($value, true) : $value;

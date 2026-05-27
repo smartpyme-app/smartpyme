@@ -27,8 +27,10 @@
               "moment",
               "google-libphonenumber",
               "pdfjs-dist/es5/build/pdf",
-              "pdfjs-dist/es5/web/pdf_viewer"
-           ],
+              "pdfjs-dist/es5/web/pdf_viewer",
+              "pdfjs-dist",
+              "@webdatarocks/webdatarocks"
+            ],
             "assets": [
               "src/favicon.ico",
               "src/assets",

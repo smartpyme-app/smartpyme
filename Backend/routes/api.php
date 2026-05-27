@@ -142,6 +142,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/admin/cr-fe.php');
     require base_path('routes/modulos/admin/reportes-automaticos.php');
     require base_path('routes/modulos/admin/roles-permissions.php');
+    require base_path('routes/modulos/reportes.php');
 
     require base_path('routes/modulos/planilla/departamentos-empresa.php');
     require base_path('routes/modulos/planilla/areas-empresa.php');
