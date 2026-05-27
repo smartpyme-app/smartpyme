@@ -267,7 +267,7 @@ final class ReporteDetalleIvaCrService
             [],
             (float) $compra->iva,
             (float) $compra->sub_total,
-            (float) ($compra->exenta ?? 0),
+            (float) ($compra->exenta ?? 0) + (float) ($compra->otros_cargos ?? 0),
             (float) ($compra->no_sujeta ?? 0),
             null
         );
@@ -306,8 +306,10 @@ final class ReporteDetalleIvaCrService
                 }
             }
 
+            $otrosCargos = (float) ($gasto->otros_cargos ?? 0);
+
             return [
-                'total_exempt' => $exempt,
+                'total_exempt' => $exempt + $otrosCargos,
                 'total_taxed' => $taxed,
                 'taxes' => $taxes,
             ];
@@ -317,7 +319,7 @@ final class ReporteDetalleIvaCrService
             [],
             (float) $gasto->iva,
             (float) $gasto->sub_total,
-            0.0,
+            (float) ($gasto->otros_cargos ?? 0),
             0.0,
             null
         );

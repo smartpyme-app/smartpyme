@@ -9,7 +9,7 @@
     <div class="d-flex align-items-center float-end gap-3">
         @if (!compra.id) {
           <button class="btn btn-primary me-2" (click)="openJsonImport(jsonImportTemplate)">
-              <i class="fa fa-file-import"></i> Importar JSON
+              <i class="fa fa-file-import"></i> {{ documentoImportService.ui.boton }}
           </button>
         }
         @if (compra.cotizacion == 1) {
@@ -167,6 +167,15 @@
                         <td style="width: 50px;"></td>
                       </tr>
                     }
+                    <tr>
+                        <td class="text-right"><b>Otros cargos</b></td>
+                        <td style="width: 150px;" class="text-right">
+                            <input type="number" min="0" step="0.01" class="form-control form-control-sm text-end"
+                                name="otros_cargos" [(ngModel)]="compra.otros_cargos" (ngModelChange)="sumTotal()"
+                                placeholder="0.00">
+                        </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency}}</b> </td>
@@ -406,26 +415,24 @@
 
 <ng-template #jsonImportTemplate>
     <div class="modal-header">
-      <h4 class="modal-title">Importar compra desde JSON</h4>
+      <h4 class="modal-title">{{ documentoImportService.ui.tituloCompra }}</h4>
       <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
-      <p class="text-muted small mb-3">
-        Importe <strong>un solo</strong> documento DTE por vez: elija un archivo <code>.json</code> o pegue el contenido en el cuadro de texto.
-      </p>
+      <p class="text-muted small mb-3">{{ documentoImportService.ui.ayudaModal }}</p>
       <div class="mb-3">
-        <label for="jsonFileInput" class="form-label">Archivo JSON</label>
+        <label for="jsonFileInput" class="form-label">Archivo</label>
         <input
           #jsonFileInput
           type="file"
           class="form-control"
           id="jsonFileInput"
           (change)="handleFileInput($event)"
-          accept=".json,application/json">
+          [attr.accept]="extensionesImportDocumento()">
       </div>
       <div class="mb-3">
-        <label class="form-label">O pegar JSON</label>
-        <textarea class="form-control" rows="8" [(ngModel)]="jsonContent" name="jsonContent" placeholder="Contenido del DTE en JSON"></textarea>
+        <label class="form-label">O pegar contenido</label>
+        <textarea class="form-control" rows="8" [(ngModel)]="jsonContent" name="jsonContent" [placeholder]="documentoImportService.ui.placeholder"></textarea>
       </div>
       <div class="d-grid">
         <button
