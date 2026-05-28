@@ -1,8 +1,17 @@
-export function resumenTotalesLibroIva(fiscalResumen: unknown): { ventas: number; compras: number; gastos: number } {
+export function resumenTotalesLibroIva(fiscalResumen: unknown): {
+  ventas: number;
+  compras: number;
+  compras_sin_devoluciones: number;
+  gastos: number;
+} {
   const t = (fiscalResumen as { totales?: Record<string, unknown> })?.totales;
+  const compras = Number(t?.['compras'] ?? 0);
+  const comprasSinDevoluciones =
+    t?.['compras_sin_devoluciones'] != null ? Number(t['compras_sin_devoluciones']) : compras;
   return {
     ventas: Number(t?.['ventas'] ?? 0),
-    compras: Number(t?.['compras'] ?? 0),
+    compras,
+    compras_sin_devoluciones: comprasSinDevoluciones,
     gastos: Number(t?.['gastos'] ?? 0),
   };
 }
@@ -14,10 +23,35 @@ export function ventasPorImpuestoResumenLibroIva(
   return Array.isArray(rows) ? (rows as { tarifa: string; etiqueta: string; base: number; iva: number }[]) : [];
 }
 
+export function sumaBaseDesgloseLibroIva(rows: { base?: number; iva?: number }[]): number {
+  return rows.reduce((s, r) => s + Number(r.base ?? 0), 0);
+}
+
+export function sumaImpuestoDesgloseLibroIva(rows: { base?: number; iva?: number }[]): number {
+  return rows.reduce((s, r) => s + Number(r.iva ?? 0), 0);
+}
+
+export function totalFilaDesgloseLibroIva(row: { base?: number; iva?: number }): number {
+  return Number(row.base ?? 0) + Number(row.iva ?? 0);
+}
+
 export function sumaVentasDesgloseLibroIva(
   ventasPorImpuesto: { base?: number; iva?: number }[]
 ): number {
   return ventasPorImpuesto.reduce((s, r) => s + Number(r.base ?? 0) + Number(r.iva ?? 0), 0);
+}
+
+export function comprasPorImpuestoResumenLibroIva(
+  fiscalResumen: unknown
+): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
+  const rows = (fiscalResumen as { compras_por_impuesto?: unknown[] })?.compras_por_impuesto;
+  return Array.isArray(rows) ? (rows as { tarifa: string; etiqueta: string; base: number; iva: number }[]) : [];
+}
+
+export function sumaComprasDesgloseLibroIva(
+  comprasPorImpuesto: { base?: number; iva?: number }[]
+): number {
+  return comprasPorImpuesto.reduce((s, r) => s + Number(r.base ?? 0) + Number(r.iva ?? 0), 0);
 }
 
 export function resumenIvaLibroIva(fiscalResumen: unknown): {

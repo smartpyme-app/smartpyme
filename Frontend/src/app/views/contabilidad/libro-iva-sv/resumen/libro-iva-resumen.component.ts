@@ -6,6 +6,16 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { LibroIvaPaisService } from '@views/contabilidad/libro-iva-shared/libro-iva-pais.service';
+import {
+  comprasPorImpuestoResumenLibroIva,
+  resumenTotalesLibroIva,
+  sumaBaseDesgloseLibroIva,
+  sumaComprasDesgloseLibroIva,
+  sumaImpuestoDesgloseLibroIva,
+  sumaVentasDesgloseLibroIva,
+  totalFilaDesgloseLibroIva,
+  ventasPorImpuestoResumenLibroIva,
+} from '@views/contabilidad/libro-iva-shared/libro-iva-resumen.util';
 import * as moment from 'moment';
 
 @Component({
@@ -16,6 +26,8 @@ import * as moment from 'moment';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LibroIvaResumenComponent implements OnInit {
+  readonly totalFilaDesglose = totalFilaDesgloseLibroIva;
+
   resumen: any = null;
   years: number[] = [];
   sucursales: any[] = [];
@@ -79,21 +91,44 @@ export class LibroIvaResumenComponent implements OnInit {
     );
   }
 
-  get resumenTotales(): { ventas: number; compras: number; gastos: number } {
-    const t = this.resumen?.totales;
-    return {
-      ventas: Number(t?.ventas ?? 0),
-      compras: Number(t?.compras ?? 0),
-      gastos: Number(t?.gastos ?? 0),
-    };
+  get resumenTotales(): { ventas: number; compras: number; compras_sin_devoluciones: number; gastos: number } {
+    return resumenTotalesLibroIva(this.resumen);
   }
 
   get ventasPorImpuesto(): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
-    return Array.isArray(this.resumen?.ventas_por_impuesto) ? this.resumen.ventas_por_impuesto : [];
+    return ventasPorImpuestoResumenLibroIva(this.resumen);
+  }
+
+  get comprasPorImpuesto(): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
+    return comprasPorImpuestoResumenLibroIva(this.resumen);
+  }
+
+  get sumaBaseCompras(): number {
+    return sumaBaseDesgloseLibroIva(this.comprasPorImpuesto);
+  }
+
+  get sumaImpuestoCompras(): number {
+    return sumaImpuestoDesgloseLibroIva(this.comprasPorImpuesto);
+  }
+
+  get sumaComprasDesglose(): number {
+    return sumaComprasDesgloseLibroIva(this.comprasPorImpuesto);
+  }
+
+  get desgloseComprasCuadra(): boolean {
+    return Math.abs(this.sumaComprasDesglose - this.resumenTotales.compras_sin_devoluciones) < 0.02;
+  }
+
+  get sumaBaseVentas(): number {
+    return sumaBaseDesgloseLibroIva(this.ventasPorImpuesto);
+  }
+
+  get sumaImpuestoVentas(): number {
+    return sumaImpuestoDesgloseLibroIva(this.ventasPorImpuesto);
   }
 
   get sumaVentasDesglose(): number {
-    return this.ventasPorImpuesto.reduce((s, r) => s + Number(r.base ?? 0) + Number(r.iva ?? 0), 0);
+    return sumaVentasDesgloseLibroIva(this.ventasPorImpuesto);
   }
 
   get desgloseCuadraConTotalVentas(): boolean {
