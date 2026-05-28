@@ -1,13 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { Location } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-detalle-producto',
-  templateUrl: './detalle-producto.component.html'
+  templateUrl: './detalle-producto.component.html',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
 })
 export class DetalleProductoComponent implements OnInit {
 
