@@ -172,6 +172,11 @@ class Compra extends Model {
         return $this->hasMany('App\Models\Compras\Detalle','id_compra');
     }
 
+    public function impuestos()
+    {
+        return $this->hasMany('App\Models\Compras\Impuesto', 'id_compra');
+    }
+
     public function devoluciones(){
         return $this->hasMany('App\Models\Compras\Devoluciones\Devolucion', 'id_compra');
     }

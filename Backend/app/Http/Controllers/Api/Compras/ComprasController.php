@@ -159,7 +159,7 @@ class ComprasController extends Controller
 
     public function read($id) {
         $compra = Compra::where('id', $id)
-            ->with('detalles', 'proveedor', 'abonos', 'devoluciones')
+            ->with('detalles', 'proveedor', 'abonos', 'devoluciones', 'impuestos.impuesto')
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')
@@ -341,10 +341,14 @@ class ComprasController extends Controller
             else
                 $compra = new Compra;
 
-            $compra->fill($request->except(['detalles', 'dte']));
+            $compra->fill($request->except(['detalles', 'dte', 'impuestos']));
             $this->aplicarIdentificadoresDteImportado($compra, $request);
             $compra->save();
 
+        // Impuestos (compra_impuestos)
+            if ($request->has('impuestos')) {
+                $this->compraService->guardarImpuestos($compra, $request->impuestos);
+            }
 
         // Detalles
 
@@ -470,6 +474,8 @@ class ComprasController extends Controller
         if ($request->cotizacion == 0) {
             $this->sincronizarStockCompraConShopify($compra);
         }
+
+        $compra->load(['detalles', 'proveedor', 'impuestos.impuesto']);
 
         return Response()->json($compra, 200);
 
@@ -1052,7 +1058,7 @@ class ComprasController extends Controller
     }
 
     public function generarDoc($id){
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
+        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa', 'impuestos.impuesto')->firstOrFail();
 
         $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.compra', compact('compra'));
         $pdf->setPaper('US Letter', 'portrait');

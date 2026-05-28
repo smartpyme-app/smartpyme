@@ -149,13 +149,30 @@
                           <td class="text-end"><b>{{ compra?.descuento | currency }}</b></td>
                         }
                     </tr>
-                    <tr>
+                    @if (compra?.impuestos?.length) {
+                      @for (impuesto of compra.impuestos; track impuesto.id || $index) {
+                        @if ((impuesto.monto ?? 0) > 0) {
+                          <tr>
+                            <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
+                            <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end">
+                              {{ impuesto.nombre || impuesto?.impuesto?.nombre || 'Impuesto' }}
+                              <small class="text-muted">({{ (impuesto.porcentaje ?? impuesto?.impuesto?.porcentaje) | number:'1.0-2' }}%)</small>
+                            </td>
+                            @if (!apiService.isSupervisorLimitado()) {
+                              <td class="text-end"><b>{{ impuesto.monto | currency }}</b></td>
+                            }
+                          </tr>
+                        }
+                      }
+                    } @else if (compra?.iva > 0) {
+                      <tr>
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>IVA</b></td>
                         @if (!apiService.isSupervisorLimitado()) {
-                          <td class="text-end"><b>{{ compra?.iva | currency}}</b> </td>
+                          <td class="text-end"><b>{{ compra?.iva | currency }}</b></td>
                         }
-                    </tr>
+                      </tr>
+                    }
                     @if (compra?.percepcion > 0) {
                       <tr>
                         <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>

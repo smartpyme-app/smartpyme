@@ -1,6 +1,6 @@
 <section class="bg-white p-4 rounded mb-3">
   <h2 class="h5 text-dark mb-1">Resumen fiscal</h2>
-          <p class="text-muted small mb-0">Totales según libros fiscales de ventas, compras y gastos; IVA por impuesto desde venta_impuestos.</p>
+          <p class="text-muted small mb-0">Totales según libros fiscales de ventas, compras y gastos; desglose por impuesto desde venta_impuestos y compra_impuestos.</p>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
@@ -96,11 +96,11 @@
     </div>
   </div>
 
-  @if (ventasPorImpuesto.length > 0) {
+  @if (comprasPorImpuesto.length > 0) {
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-body p-0">
         <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
-          <h6 class="text-dark mb-0 fw-semibold">Ventas por impuesto / tarifa</h6>
+          <h6 class="text-dark mb-0 fw-semibold">Compras por impuesto</h6>
         </div>
         <div class="table-responsive px-2 pb-2">
           <table class="table table-borderless table-hover align-middle mb-0">
@@ -108,7 +108,55 @@
               <tr>
                 <th class="text-muted small fw-semibold">Concepto</th>
                 <th class="text-end text-muted small fw-semibold">Base</th>
-                <th class="text-end text-muted small fw-semibold">IVA / impuesto</th>
+                <th class="text-end text-muted small fw-semibold">Impuesto</th>
+                <th class="text-end text-muted small fw-semibold">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of comprasPorImpuesto; track row.tarifa + row.etiqueta + $index) {
+                <tr>
+                  <td class="text-dark">{{ row.etiqueta }}</td>
+                  <td class="text-end">{{ row.base | currency }}</td>
+                  <td class="text-end">{{ row.iva | currency }}</td>
+                  <td class="text-end">{{ totalFilaDesglose(row) | currency }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot class="border-top">
+              <tr class="fw-semibold">
+                <td class="text-dark">Total</td>
+                <td class="text-end">{{ sumaBaseCompras | currency }}</td>
+                <td class="text-end">{{ sumaImpuestoCompras | currency }}</td>
+                <td class="text-end text-nowrap" [class.text-danger]="!desgloseComprasCuadra">{{ sumaComprasDesglose | currency }}</td>
+              </tr>
+            </tfoot>
+          </table>
+          @if (desgloseComprasCuadra) {
+            <p class="text-muted small px-2 pb-2 mb-0">Suma alineada con compras registradas del periodo (sin devoluciones).</p>
+          } @else {
+            <p class="text-danger small px-2 pb-2 mb-0">
+              El total no coincide con Total compras registradas ({{ resumenTotales.compras_sin_devoluciones | currency }}). Revise compra_impuestos del periodo.
+            </p>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (ventasPorImpuesto.length > 0) {
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-0">
+        <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
+          <h6 class="text-dark mb-0 fw-semibold">Ventas por impuesto</h6>
+        </div>
+        <div class="table-responsive px-2 pb-2">
+          <table class="table table-borderless table-hover align-middle mb-0">
+            <thead class="border-bottom">
+              <tr>
+                <th class="text-muted small fw-semibold">Concepto</th>
+                <th class="text-end text-muted small fw-semibold">Base</th>
+                <th class="text-end text-muted small fw-semibold">Impuesto</th>
+                <th class="text-end text-muted small fw-semibold">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -117,13 +165,16 @@
                   <td class="text-dark">{{ row.etiqueta }}</td>
                   <td class="text-end">{{ row.base | currency }}</td>
                   <td class="text-end">{{ row.iva | currency }}</td>
+                  <td class="text-end">{{ totalFilaDesglose(row) | currency }}</td>
                 </tr>
               }
             </tbody>
             <tfoot class="border-top">
               <tr class="fw-semibold">
-                <td class="text-dark">Suma (base + IVA)</td>
-                <td colspan="2" class="text-end text-nowrap" [class.text-danger]="!desgloseCuadraConTotalVentas">{{ sumaVentasDesglose | currency }}</td>
+                <td class="text-dark">Total</td>
+                <td class="text-end">{{ sumaBaseVentas | currency }}</td>
+                <td class="text-end">{{ sumaImpuestoVentas | currency }}</td>
+                <td class="text-end text-nowrap" [class.text-danger]="!desgloseCuadraConTotalVentas">{{ sumaVentasDesglose | currency }}</td>
               </tr>
             </tfoot>
           </table>
@@ -131,7 +182,7 @@
             <p class="text-muted small px-2 pb-2 mb-0">Suma alineada con <strong>Total ventas</strong> (libros contribuyentes + consumidor final).</p>
           } @else {
             <p class="text-danger small px-2 pb-2 mb-0">
-              La suma (base + IVA) no coincide con Total ventas del libro ({{ resumenTotales.ventas | currency }}). Revise venta_impuestos y notas de crédito del periodo.
+              El total no coincide con Total ventas del libro ({{ resumenTotales.ventas | currency }}). Revise venta_impuestos y notas de crédito del periodo.
             </p>
           }
         </div>
@@ -140,45 +191,33 @@
   }
 
   <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body p-0">
-      <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
-        <h6 class="text-dark mb-0 fw-semibold">Resumen de IVA</h6>
-      </div>
-      <div class="table-responsive px-2 pb-2">
-        <table class="table table-borderless table-hover align-middle mb-0">
-          <tbody>
-            <tr>
-              <td class="text-dark">IVA a favor (crédito fiscal del libro de compras: compras + gastos ± devoluciones)</td>
-              <td class="text-end fw-medium text-nowrap">{{ resumenIva.iva_a_favor | currency }}</td>
-            </tr>
-            @if (resumenIva.credito_fiscal_compras != null) {
-              <tr>
-                <td class="ps-md-4 text-muted small">Crédito fiscal por compras (libro)</td>
-                <td class="text-end small text-nowrap">{{ resumenIva.credito_fiscal_compras | currency }}</td>
-              </tr>
-            }
-            @if (resumenIva.credito_fiscal_gastos != null) {
-              <tr>
-                <td class="ps-md-4 text-muted small">Crédito fiscal por gastos (libro)</td>
-                <td class="text-end small text-nowrap">{{ resumenIva.credito_fiscal_gastos | currency }}</td>
-              </tr>
-            }
-            @if (resumenIva.credito_fiscal_devoluciones_compras != null) {
-              <tr>
-                <td class="ps-md-4 text-muted small">Ajuste por devoluciones de compra (libro)</td>
-                <td class="text-end small text-nowrap">{{ resumenIva.credito_fiscal_devoluciones_compras | currency }}</td>
-              </tr>
-            }
-            <tr>
-              <td class="text-dark">IVA en contra (débito fiscal / ventas)</td>
-              <td class="text-end fw-medium text-nowrap">{{ resumenIva.iva_en_contra | currency }}</td>
-            </tr>
-            <tr class="border-top">
-              <td class="fw-semibold text-dark">Diferencia estimada (a pagar si es positiva)</td>
-              <td class="text-end fw-bold text-nowrap">{{ resumenIva.diferencia_estimada_pago_iva | currency }}</td>
-            </tr>
-          </tbody>
-        </table>
+    <div class="card-body py-3">
+      <h6 class="text-dark mb-3 fw-semibold">Resumen de impuestos</h6>
+      <div class="row">
+        <div class="col-md-4 mb-3 mb-md-0">
+          <div class="card border-0 shadow-sm mb-0 h-100 bg-light bg-opacity-25">
+            <div class="card-body py-3">
+              <h6 class="text-muted small mb-2">Crédito</h6>
+              <h3 class="text-dark mb-0">{{ resumenIva.iva_a_favor | currency }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3 mb-md-0">
+          <div class="card border-0 shadow-sm mb-0 h-100 bg-light bg-opacity-25">
+            <div class="card-body py-3">
+              <h6 class="text-muted small mb-2">Débito</h6>
+              <h3 class="text-dark mb-0">{{ resumenIva.iva_en_contra | currency }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm mb-0 h-100 bg-light bg-opacity-25">
+            <div class="card-body py-3">
+              <h6 class="text-muted small mb-2">Diferencia</h6>
+              <h3 class="text-dark mb-0">{{ resumenIva.diferencia_estimada_pago_iva | currency }}</h3>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -187,18 +226,12 @@
     <div class="card border-0 shadow-sm mb-0">
       <div class="card-body p-0">
         <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
-          <h6 class="text-dark mb-0 fw-semibold">Pago a cuenta (IVA)</h6>
+          <h6 class="text-dark mb-0 fw-semibold">Pago a cuenta (impuesto)</h6>
         </div>
         <div class="px-3 py-3">
           <h3 class="text-dark mb-2">{{ pagoCuentaIva.monto | currency }}</h3>
           <p class="text-muted small mb-0">{{ pagoCuentaIva.descripcion }}</p>
         </div>
-      </div>
-    </div>
-  } @else {
-    <div class="card border-0 shadow-sm mb-0 bg-light bg-opacity-25">
-      <div class="card-body py-3">
-        <p class="text-muted small mb-0">Pago a cuenta de IVA no aplica en este país o no hay monto registrado en el periodo.</p>
       </div>
     </div>
   }

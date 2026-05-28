@@ -4,6 +4,7 @@ namespace App\Services\Compras;
 
 use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle;
+use App\Models\Compras\Impuesto as CompraImpuesto;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
@@ -156,6 +157,44 @@ class CompraService
                     $producto->save();
                 }
             }
+        }
+    }
+
+    /**
+     * Guardar impuestos de la compra (reemplaza filas existentes si es edición).
+     *
+     * @param  array<int, array<string, mixed>>|null  $impuestos
+     */
+    public function guardarImpuestos(Compra $compra, ?array $impuestos, bool $reemplazar = true): void
+    {
+        if ($impuestos === null) {
+            return;
+        }
+
+        if ($reemplazar) {
+            CompraImpuesto::where('id_compra', $compra->id)->delete();
+        }
+
+        if ($impuestos === []) {
+            return;
+        }
+
+        foreach ($impuestos as $impuesto) {
+            $idImpuesto = $impuesto['id_impuesto'] ?? $impuesto['id'] ?? null;
+            if (!$idImpuesto) {
+                continue;
+            }
+
+            $monto = (float) ($impuesto['monto'] ?? 0);
+            if (abs($monto) < 0.00001) {
+                continue;
+            }
+
+            $compraImpuesto = new CompraImpuesto();
+            $compraImpuesto->id_impuesto = (int) $idImpuesto;
+            $compraImpuesto->monto = $monto;
+            $compraImpuesto->id_compra = $compra->id;
+            $compraImpuesto->save();
         }
     }
 
