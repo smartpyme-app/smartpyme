@@ -127,17 +127,10 @@
                 <td class="text-dark">Total</td>
                 <td class="text-end">{{ sumaBaseCompras | currency }}</td>
                 <td class="text-end">{{ sumaImpuestoCompras | currency }}</td>
-                <td class="text-end text-nowrap" [class.text-danger]="!desgloseComprasCuadra">{{ sumaComprasDesglose | currency }}</td>
+                <td class="text-end text-nowrap">{{ sumaComprasDesglose | currency }}</td>
               </tr>
             </tfoot>
           </table>
-          @if (desgloseComprasCuadra) {
-            <p class="text-muted small px-2 pb-2 mb-0">Suma alineada con compras registradas del periodo (sin devoluciones).</p>
-          } @else {
-            <p class="text-danger small px-2 pb-2 mb-0">
-              El total no coincide con Total compras registradas ({{ resumenTotales.compras_sin_devoluciones | currency }}). Revise compra_impuestos del periodo.
-            </p>
-          }
         </div>
       </div>
     </div>
@@ -174,17 +167,10 @@
                 <td class="text-dark">Total</td>
                 <td class="text-end">{{ sumaBaseVentas | currency }}</td>
                 <td class="text-end">{{ sumaImpuestoVentas | currency }}</td>
-                <td class="text-end text-nowrap" [class.text-danger]="!desgloseCuadraConTotalVentas">{{ sumaVentasDesglose | currency }}</td>
+                <td class="text-end text-nowrap">{{ sumaVentasDesglose | currency }}</td>
               </tr>
             </tfoot>
           </table>
-          @if (desgloseCuadraConTotalVentas) {
-            <p class="text-muted small px-2 pb-2 mb-0">Suma alineada con <strong>Total ventas</strong> (libros contribuyentes + consumidor final).</p>
-          } @else {
-            <p class="text-danger small px-2 pb-2 mb-0">
-              El total no coincide con Total ventas del libro ({{ resumenTotales.ventas | currency }}). Revise venta_impuestos y notas de crédito del periodo.
-            </p>
-          }
         </div>
       </div>
     </div>

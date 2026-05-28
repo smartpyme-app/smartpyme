@@ -51,10 +51,6 @@ export class LibroIvaResumenPanelComponent {
     return sumaVentasDesgloseLibroIva(this.ventasPorImpuesto);
   }
 
-  get desgloseCuadra(): boolean {
-    return Math.abs(this.sumaDesglose - this.totales.ventas) < 0.02;
-  }
-
   get comprasPorImpuesto(): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
     return comprasPorImpuestoResumenLibroIva(this.fiscalResumen);
   }
@@ -69,10 +65,6 @@ export class LibroIvaResumenPanelComponent {
 
   get sumaComprasDesglose(): number {
     return sumaComprasDesgloseLibroIva(this.comprasPorImpuesto);
-  }
-
-  get desgloseComprasCuadra(): boolean {
-    return Math.abs(this.sumaComprasDesglose - this.totales.compras_sin_devoluciones) < 0.02;
   }
 
   get iva() {

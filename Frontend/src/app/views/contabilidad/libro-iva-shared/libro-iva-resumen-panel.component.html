@@ -87,17 +87,10 @@
                 <td class="text-dark">Total</td>
                 <td class="text-end">{{ sumaBaseCompras | currency }}</td>
                 <td class="text-end">{{ sumaImpuestoCompras | currency }}</td>
-                <td class="text-end text-nowrap" [class.text-danger]="!desgloseComprasCuadra">{{ sumaComprasDesglose | currency }}</td>
+                <td class="text-end text-nowrap">{{ sumaComprasDesglose | currency }}</td>
               </tr>
             </tfoot>
           </table>
-          @if (desgloseComprasCuadra) {
-            <p class="text-muted small px-2 pb-2 mb-0">Coincide con el total de compras registradas del periodo (sin devoluciones).</p>
-          } @else {
-            <p class="text-danger small px-2 pb-2 mb-0">
-              El total no coincide con Total compras registradas ({{ totales.compras_sin_devoluciones | currency }}). Revise compras sin filas en compra_impuestos.
-            </p>
-          }
         </div>
       </div>
     </div>
@@ -134,17 +127,10 @@
                 <td class="text-dark">Total</td>
                 <td class="text-end">{{ sumaBaseVentas | currency }}</td>
                 <td class="text-end">{{ sumaImpuestoVentas | currency }}</td>
-                <td class="text-end text-nowrap" [class.text-danger]="!desgloseCuadra">{{ sumaDesglose | currency }}</td>
+                <td class="text-end text-nowrap">{{ sumaDesglose | currency }}</td>
               </tr>
             </tfoot>
           </table>
-          @if (desgloseCuadra) {
-            <p class="text-muted small px-2 pb-2 mb-0">Coincide con <strong>Total ventas</strong> del periodo.</p>
-          } @else {
-            <p class="text-danger small px-2 pb-2 mb-0">
-              El total no coincide con Total ventas ({{ totales.ventas | currency }}). Revise ventas sin filas en venta_impuestos.
-            </p>
-          }
         </div>
       </div>
     </div>

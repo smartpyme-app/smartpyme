@@ -115,10 +115,6 @@ export class LibroIvaResumenComponent implements OnInit {
     return sumaComprasDesgloseLibroIva(this.comprasPorImpuesto);
   }
 
-  get desgloseComprasCuadra(): boolean {
-    return Math.abs(this.sumaComprasDesglose - this.resumenTotales.compras_sin_devoluciones) < 0.02;
-  }
-
   get sumaBaseVentas(): number {
     return sumaBaseDesgloseLibroIva(this.ventasPorImpuesto);
   }
@@ -129,10 +125,6 @@ export class LibroIvaResumenComponent implements OnInit {
 
   get sumaVentasDesglose(): number {
     return sumaVentasDesgloseLibroIva(this.ventasPorImpuesto);
-  }
-
-  get desgloseCuadraConTotalVentas(): boolean {
-    return Math.abs(this.sumaVentasDesglose - this.resumenTotales.ventas) < 0.02;
   }
 
   get resumenIva(): {
