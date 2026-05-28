@@ -1274,7 +1274,7 @@ export class FacturacionCompraComponent implements OnInit {
             errores.push('Tipo');
         }
 
-        if (!this.apiService.isSupervisorLimitado()) {
+        if (!this.apiService.supervisorLimitadoRestringidoEnCompras()) {
             if (!this.nuevoProducto.costo || this.nuevoProducto.costo <= 0) {
                 errores.push('Costo');
             }
@@ -1293,7 +1293,7 @@ export class FacturacionCompraComponent implements OnInit {
         this.creandoProducto = true;
 
         const precioNum = parseFloat(this.nuevoProducto.precio) || 0;
-        const costoNum = this.apiService.isSupervisorLimitado()
+        const costoNum = this.apiService.supervisorLimitadoRestringidoEnCompras()
             ? precioNum
             : parseFloat(this.nuevoProducto.costo);
 
