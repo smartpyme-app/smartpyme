@@ -181,6 +181,10 @@ class ComprasController extends Controller
 
         $compra = Compra::where('id', $request->id)->with('detalles')->firstOrFail();
 
+        if ($bloqueado = $this->respuestaComprasRestringidasSupervisorLimitado(auth()->user(), $compra->estado, $request->estado)) {
+            return $bloqueado;
+        }
+
             // Ajustar stocks
             foreach ($compra->detalles as $detalle) {
 
@@ -946,6 +950,29 @@ class ComprasController extends Controller
             ->where('id_funcionalidad', $funcionalidad->id)
             ->where('activo', 1)
             ->exists();
+    }
+
+    /**
+     * Empresa configurada para impedir que Supervisor limitado altere el estado de compras.
+     */
+    private function respuestaComprasRestringidasSupervisorLimitado($user, ?string $estadoActual, ?string $estadoNuevo): ?\Illuminate\Http\JsonResponse
+    {
+        if (!$user || ($user->tipo ?? null) !== 'Supervisor Limitado') {
+            return null;
+        }
+
+        $empresa = $user->empresa ?? null;
+        if (!$empresa || !($empresa->restringir_compras_supervisor_limitado ?? false)) {
+            return null;
+        }
+
+        if ($estadoActual !== $estadoNuevo) {
+            return Response()->json([
+                'error' => 'La empresa tiene activa la opción de restringir compras para usuarios Supervisor limitado.',
+            ], 403);
+        }
+
+        return null;
     }
 
 

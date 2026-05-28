@@ -1,0 +1,40 @@
+---
+description: Usar solo el código de la rama/commit actual; no revivir archivos ni patrones de commits viejos
+alwaysApply: true
+---
+
+# Fuente de verdad: rama y working tree actuales
+
+## Principio
+
+El código válido es el que existe **ahora** en el working tree y en el commit base de la rama (p. ej. `main` o la rama de la tarea). No asumir que algo del historial de git sigue vigente.
+
+## Prohibido (salvo que el usuario lo pida explícitamente)
+
+- Copiar, restaurar o “revivir” archivos desde commits antiguos, otras ramas o `git log -S`.
+- Agregar `use`, traits, servicios o imports porque aparecieron en un commit viejo del historial.
+- Reemplazar un archivo entero por una versión de otro commit/branch para “arreglar” un error.
+- Mezclar código de ramas distintas (p. ej. pegar lógica de una rama experimental en `main`).
+
+## Obligatorio antes de editar archivos grandes o controladores
+
+1. Confirmar que el archivo existe en el working tree actual.
+2. Si hay duda de versión, comparar con la base de la rama:
+   - `git diff main -- <archivo>` o `git diff HEAD -- <archivo>`
+   - `git show main:<ruta>` o `git show HEAD:<ruta>`
+3. Si el working tree difiere mucho de `HEAD`/ `main` sin que el usuario lo haya pedido, **no editar encima**: avisar y restaurar desde `HEAD` o `main`, luego aplicar solo el cambio pedido.
+
+## Al investigar errores (p. ej. "Class/Trait not found")
+
+1. Buscar primero en el **código actual** (`grep`, lectura de archivos).
+2. Comprobar si la referencia existe en `main`/ `HEAD`; si no existe, **eliminar la referencia rota**, no recrear el archivo desde el historial.
+3. Usar `git log` solo para **entender** cuándo se rompió algo, nunca como plantilla para generar código.
+
+## Cambios mínimos
+
+- Un bug fix = diff pequeño sobre la versión correcta del archivo.
+- No reintroducir dependencias, traits ni servicios que `main` ya no tiene.
+
+## Si hace falta código de otra rama
+
+Detenerse y preguntar al usuario si quiere merge, cherry-pick o reimplementar la funcionalidad en la rama actual.
