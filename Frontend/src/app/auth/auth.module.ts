@@ -36,6 +36,7 @@ import { HeroVideoAutoplayDirective } from './shared/hero-video-autoplay.directi
     RegisterComponent,
     PagoComponent,
     PaymentSuccessComponent,
+    HeroVideoAutoplayDirective,
   ],
   declarations: [
     LoginAbacoComponent,
@@ -44,7 +45,6 @@ import { HeroVideoAutoplayDirective } from './shared/hero-video-autoplay.directi
     RegisterEntryComponent,
     PagoAbacoComponent,
     PagoEntryComponent,
-    HeroVideoAutoplayDirective,
   ],
   exports: [
     LoginComponent,

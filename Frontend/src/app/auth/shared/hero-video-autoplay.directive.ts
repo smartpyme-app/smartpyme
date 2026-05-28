@@ -2,6 +2,7 @@ import { AfterViewInit, Directive, ElementRef, OnDestroy } from '@angular/core';
 
 @Directive({
   selector: 'video[appHeroVideoAutoplay]',
+  standalone: true,
 })
 export class HeroVideoAutoplayDirective implements AfterViewInit, OnDestroy {
   private readonly onMediaReady = () => this.tryPlay();

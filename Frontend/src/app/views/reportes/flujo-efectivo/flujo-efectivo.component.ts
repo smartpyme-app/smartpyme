@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { WebdatarocksComponent, WebdatarocksPivotModule } from '@webdatarocks/ngx-webdatarocks';
 
 @Component({
     selector: 'app-flujo-efectivo',
     templateUrl: './flujo-efectivo.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, WebdatarocksPivotModule],
+    imports: [CommonModule, FormsModule, TooltipModule, WebdatarocksPivotModule],
 })
 export class FlujoEfectivoComponent implements OnInit {
 

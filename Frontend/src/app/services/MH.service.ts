@@ -76,7 +76,7 @@ export class MHService {
         }
 
         let formData:any = {};
-        formData.nit = user.empresa.nit.replace(/-/g, '');
+        // formData.nit = user.empresa.nit.replace(/-/g, '');
         formData.activo = true;
         formData.passwordPri = user.empresa.mh_pwd_certificado;
         formData.dteJson = DTE;
