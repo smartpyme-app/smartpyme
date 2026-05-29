@@ -12,13 +12,14 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-abonos-ventas',
     templateUrl: './abonos-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, EditarAbonoComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
@@ -159,16 +160,13 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
     }
 
     openModalEdit(template: TemplateRef<any>, abono:any) {
-        this.abono = abono;
+        this.abono = { ...abono };
+        this.modalRef = this.modalService.show(template);
+    }
 
-        this.apiService.getAll('documentos')
-            .pipe(this.untilDestroyed())
-            .subscribe(documentos => {
-                this.documentos = documentos;
-                this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
-
-        this.openModal(template, abono);
+    public onAbonoSaved() {
+        this.modalRef.hide();
+        this.filtrarAbonos(false);
     }
 
     public openFilter(template: TemplateRef<any>) {

@@ -56,7 +56,7 @@
                         <th>Proveedor</th>
                         <th>Correlativo</th>
                         <th>Estado</th>
-                        <th  (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
+                        <th  (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right" *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()">Total</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
@@ -92,23 +92,33 @@
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{compra.referencia ?? '-'}}</td>
                         <td>
-                          <span class="badge py-2 text-dark" style="font-size: 0.8rem;" 
-                                [ngClass]="{
-                                  'bg-light-warning' : compra?.estado == 'Pendiente' || compra?.estado == 'Pendiente Autorización',
-                                  'bg-light-danger' : compra?.estado == 'Anulada', 
-                                  'bg-light-success' : compra?.estado == 'Aceptada' || compra?.estado == 'Aprobada'
-                                }">
-                            {{ compra.estado }}
-                          </span>
+                          @if (!apiService.supervisorLimitadoRestringidoEnCompras() && (compra.estado == 'Pendiente' || compra.estado == 'Aceptada' || compra.estado == 'Anulada')) {
+                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(compra)" [(ngModel)]="compra.estado" [ngClass]="{'bg-light-warning' : compra?.estado == 'Pendiente', 'bg-light-danger' : compra?.estado == 'Anulada', 'bg-light-success' : compra?.estado == 'Aceptada'}">
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="Aceptada">Aceptada</option>
+                                <option value="Anulada">Anulada</option>
+                            </select>
+                          } @else {
+                            <span class="badge py-2 text-dark" style="font-size: 0.8rem;" 
+                                  [ngClass]="{
+                                    'bg-light-warning' : compra?.estado == 'Pendiente' || compra?.estado == 'Pendiente Autorización',
+                                    'bg-light-danger' : compra?.estado == 'Anulada', 
+                                    'bg-light-success' : compra?.estado == 'Aceptada' || compra?.estado == 'Aprobada'
+                                  }">
+                              {{ compra.estado }}
+                            </span>
+                          }
                         </td>
-                        <td class="text-right">{{compra.total | currency}}</td>
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
+                          <td class="text-right">{{compra.total | currency}}</td>
+                        }
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
                             </span>
                           <ng-template #accionesTemplate>
                             <div class="d-flex flex-column align-items-start">
-                              @if (compra.estado == 'Pendiente' && apiService.canEditTest('compras.ordenes_compra.editar')) {
+                              @if (compra.estado == 'Pendiente' && apiService.canEditTest('compras.ordenes_compra.editar') && !apiService.supervisorLimitadoRestringidoEnCompras()) {
                                 <a routerLink="/orden-de-compra/{{compra.id}}" class="btn">
                                   <i class="fa fa-fw fa-edit"></i> Editar
                                 </a>
@@ -116,18 +126,17 @@
                               <a routerLink="/orden-de-compra/{{compra.id}}" class="btn">
                                 <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                               </a>
-                              @if (compra.estado == 'Pendiente') {
+                              @if (compra.estado == 'Pendiente' && !apiService.supervisorLimitadoRestringidoEnCompras()) {
                                 <a routerLink="/compra/crear"
                                    [queryParams]="{ facturar_cotizacion: 1, id_compra: compra.id }" class="btn">
                                   <i class="fa fa-fw fa-money-bill"></i> Generar compra
                                 </a>
                               }
-                              <a (click)="imprimir(compra)" class="btn">
-                                <i class="fa fa-fw fa-print"></i> Imprimir
-                              </a>
-                              <!-- <a routerLink="/devolucion-compra/nueva" class="btn text-danger">
-                                                    <i class="fa fa-fw fa-trash"></i> Eliminar
-                                                </a> -->
+                              @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
+                                <a (click)="imprimir(compra)" class="btn">
+                                  <i class="fa fa-fw fa-print"></i> Imprimir
+                                </a>
+                              }
                             </div>
                           </ng-template>
                         </td>

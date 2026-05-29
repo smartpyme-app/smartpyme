@@ -11,17 +11,19 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BaseComponent } from '@shared/base/base.component';
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
+import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.component';
 
 @Component({
     selector: 'app-gasto-detalles',
     templateUrl: './gasto-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, CrearAbonoGastoComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, CrearAbonoGastoComponent, EditarAbonoComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GastoDetallesComponent extends BaseComponent implements OnInit {
 
     public gasto:any = {};
+    public abonoEdit:any = {};
     public loading = false;
     modalRef?: BsModalRef;
 
@@ -79,6 +81,18 @@ export class GastoDetallesComponent extends BaseComponent implements OnInit {
 
     public goBack() {
         this.location.back();
+    }
+
+    public openModalEditAbono(template: TemplateRef<any>, abono: any) {
+        this.abonoEdit = { ...abono };
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public onAbonoSaved() {
+        if (this.modalRef) {
+            this.modalRef.hide();
+        }
+        this.loadAll();
     }
 
 }

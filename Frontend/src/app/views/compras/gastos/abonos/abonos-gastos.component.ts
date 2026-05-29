@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -16,7 +18,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
   selector: 'app-abonos-gastos',
   templateUrl: './abonos-gastos.component.html',
   standalone: true,
-  imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, PaginationComponent, LazyImageDirective],
+  imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, PopoverModule, PaginationComponent, LazyImageDirective, EditarAbonoComponent],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 
@@ -138,6 +140,16 @@ export class AbonosGastosComponent extends BaseCrudComponent<any> implements OnI
 
     public override setPagination(event:any):void{
         this.filtros.page = event.page;
+        this.filtrarAbonos(false);
+    }
+
+    openModalEdit(template: TemplateRef<any>, abono:any) {
+        this.abono = { ...abono };
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public onAbonoSaved() {
+        this.modalRef.hide();
         this.filtrarAbonos(false);
     }
 

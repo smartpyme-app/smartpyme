@@ -87,6 +87,7 @@ class Empresa extends Model
         'modulo_citas',
         'modulo_proyectos',
         'restringir_gastos_supervisor_limitado',
+        'restringir_compras_supervisor_limitado',
         'activo',
         'alerta_suscripcion',
         'cotizacion_compras_terminos',
@@ -165,6 +166,7 @@ class Empresa extends Model
         'shopify_sync_bidirectional' => 'boolean',
         'webhook_paquete_venta_enabled' => 'boolean',
         'restringir_gastos_supervisor_limitado' => 'boolean',
+        'restringir_compras_supervisor_limitado' => 'boolean',
     ];
 
     protected $appends = [

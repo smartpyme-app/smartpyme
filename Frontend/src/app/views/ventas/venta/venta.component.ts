@@ -10,6 +10,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
+import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -21,7 +22,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     selector: 'app-venta',
     templateUrl: './venta.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, CrearAbonoVentaComponent, LazyImageDirective, TooltipModule],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, CrearAbonoVentaComponent, EditarAbonoComponent, LazyImageDirective, TooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
@@ -33,6 +34,8 @@ export class VentaComponent implements OnInit {
     public loading = false;
     public saving = false;
     public type: string = '';
+
+    public abonoEdit:any = {};
 
     modalRef!: BsModalRef;
     public filtros:any = {
@@ -214,6 +217,16 @@ export class VentaComponent implements OnInit {
             (cf: any) => cf.custom_field?.id === fieldId
         );
         return customField ? customField.value : '';
+    }
+
+    public openModalEditAbono(template: TemplateRef<any>, abono: any) {
+        this.abonoEdit = { ...abono };
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public onAbonoSaved() {
+        this.modalRef.hide();
+        this.loadAll();
     }
 
     public goBack() {

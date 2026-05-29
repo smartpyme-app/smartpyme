@@ -1086,23 +1086,15 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
       this.venta.impuestos.forEach((impuesto: any) => {
         const pctImp = Number(impuesto.porcentaje);
-        const esIvaEmpresa = pctIgual(pctImp, empresaIva);
-        const tieneLineasConEstaTasa = this.venta.detalles.some((d: any) => pctIgual(pctImp, pctDetalleDe(d)));
-
-        if (esIvaEmpresa || tieneLineasConEstaTasa) {
-          const monto = this.venta.detalles
-            .filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)))
-            .reduce((sum: number, d: any) => {
-              const gravada = parseFloat(d.gravada || 0);
-              const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
-                ? parseFloat(d.iva) : gravada * (pctImp / 100);
-              return sum + ivaLinea;
-            }, 0);
-          impuesto.monto = parseFloat(Number(monto).toFixed(4));
-        } else {
-          const baseGravada = parseFloat(this.venta.gravada || 0);
-          impuesto.monto = parseFloat((baseGravada * (pctImp / 100)).toFixed(4));
-        }
+        const monto = this.venta.detalles
+          .filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)))
+          .reduce((sum: number, d: any) => {
+            const gravada = parseFloat(d.gravada || 0);
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
+              ? parseFloat(d.iva) : gravada * (pctImp / 100);
+            return sum + ivaLinea;
+          }, 0);
+        impuesto.monto = parseFloat(Number(monto).toFixed(4));
       });
       // Detalles cuyo % no coincide con ningún impuesto: asignar su IVA al impuesto de la empresa o al primero
       if (this.venta.detalles.length && this.venta.impuestos.length) {

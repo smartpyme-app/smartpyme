@@ -504,6 +504,27 @@ export class ApiService {
     }
 
     /**
+     * Preferencia en empresa: restringe compras y órdenes de compra para Supervisor limitado.
+     * Por defecto en BD es false para no cambiar comportamiento tras la migración.
+     */
+    empresaRestringeComprasSupervisorLimitado(): boolean {
+        const e = this.auth_user()?.empresa;
+        if (!e) {
+            return false;
+        }
+        const v = (e as { restringir_compras_supervisor_limitado?: boolean | number }).restringir_compras_supervisor_limitado;
+        return v === true || v === 1;
+    }
+
+    /**
+     * Supervisor limitado con restricción activa en compras/órdenes de compra.
+     * Oculta montos, impresión, edición de estado y acciones del listado.
+     */
+    supervisorLimitadoRestringidoEnCompras(): boolean {
+        return this.isSupervisorLimitado() && this.empresaRestringeComprasSupervisorLimitado();
+    }
+
+    /**
      * Actualiza `empresa` en `SP_auth_user` desde el API (p. ej. preferencia recién guardada).
      * Evita usar `me/` que modifica ultimo_login en cada llamada.
      */

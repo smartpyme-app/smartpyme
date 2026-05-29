@@ -110,6 +110,11 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
+                                    @if (apiService.canEdit()) {
+                                        <a (click)="openModalEdit(meditAbono, abono)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                    }
                                     @if (apiService.canEditTest('ventas.abonos.editar')) {
                                         <a (click)="imprimir(abono)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-print"></i> Imprimir
@@ -201,5 +206,15 @@
             </button>
         </div>
     </form>
+  </div>
+</ng-template>
+
+<ng-template #meditAbono>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Editar abono</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-editar-abono [abono]="abono" endpoint="venta/abono" (saved)="onAbonoSaved()"></app-editar-abono>
   </div>
 </ng-template>

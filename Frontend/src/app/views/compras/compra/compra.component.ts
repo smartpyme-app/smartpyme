@@ -9,6 +9,7 @@ import { Location } from '@angular/common';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { CrearAbonoCompraComponent } from '@shared/modals/crear-abono-compra/crear-abono-compra.component';
+import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -19,7 +20,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     selector: 'app-compra',
     templateUrl: './compra.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, CrearAbonoCompraComponent, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, CrearAbonoCompraComponent, EditarAbonoComponent, LazyImageDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CompraComponent extends BaseComponent implements OnInit {
@@ -28,6 +29,7 @@ export class CompraComponent extends BaseComponent implements OnInit {
     public loading = false;
 
     modalRef!: BsModalRef;
+    public abonoEdit:any = {};
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
@@ -69,6 +71,22 @@ export class CompraComponent extends BaseComponent implements OnInit {
     public openAbono(template: TemplateRef<any>, compra:any){
         this.compra = compra;
         this.modalRef = this.modalService.show(template);
+    }
+
+    public setEstado(abono:any){
+        this.apiService.store('compra/abono', abono).subscribe(() => {
+            this.loadAll();
+        }, error => {this.alertService.error(error); });
+    }
+
+    public openModalEditAbono(template: TemplateRef<any>, abono: any) {
+        this.abonoEdit = { ...abono };
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public onAbonoSaved() {
+        this.modalRef.hide();
+        this.loadAll();
     }
 
     public goBack() {

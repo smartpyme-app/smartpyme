@@ -84,6 +84,13 @@ class CotizacionesController extends Controller
 
         Log::info("Procesando orden de compra normal o autorizada");
 
+        if ($request->id) {
+            $cotizacionExistente = OrdenCompra::findOrFail($request->id);
+            if ($bloqueado = $this->respuestaComprasRestringidasSupervisorLimitado(auth()->user(), $cotizacionExistente->estado, $request->estado)) {
+                return $bloqueado;
+            }
+        }
+
         DB::beginTransaction();
 
         try {
@@ -234,5 +241,27 @@ class CotizacionesController extends Controller
         $cotizacion = Cotizacion::withoutGlobalScope('empresa')->where('id', $id)->with('proveedor', 'detalles')->firstOrFail();
         return Response()->json($cotizacion, 200);
 
+    }
+    /**
+     * Empresa configurada para impedir que Supervisor limitado altere el estado de órdenes de compra.
+     */
+    private function respuestaComprasRestringidasSupervisorLimitado($user, ?string $estadoActual, ?string $estadoNuevo): ?\Illuminate\Http\JsonResponse
+    {
+        if (!$user || ($user->tipo ?? null) !== 'Supervisor Limitado') {
+            return null;
+        }
+
+        $empresa = $user->empresa ?? null;
+        if (!$empresa || !($empresa->restringir_compras_supervisor_limitado ?? false)) {
+            return null;
+        }
+
+        if ($estadoActual !== $estadoNuevo) {
+            return Response()->json([
+                'error' => 'La empresa tiene activa la opción de restringir compras para usuarios Supervisor limitado.',
+            ], 403);
+        }
+
+        return null;
     }
 }

@@ -511,22 +511,14 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.compra.impuestos.forEach((impuesto: any) => {
             if (this.compra.cobrar_impuestos) {
                 const pctImp = Number(impuesto.porcentaje);
-                const esIvaEmpresa = pctIgual(pctImp, empresaIva);
-                const tieneLineasConEstaTasa = this.compra.detalles.some((d: any) => pctIgual(pctImp, pctDetalleDe(d)));
-
-                if (esIvaEmpresa || tieneLineasConEstaTasa) {
-                    const monto = this.compra.detalles
-                        .filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)))
-                        .reduce((sum: number, d: any) => {
-                            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
-                                ? parseFloat(d.iva) : parseFloat(d.total || 0) * (pctImp / 100);
-                            return sum + ivaLinea;
-                        }, 0);
-                    impuesto.monto = parseFloat(Number(monto).toFixed(4));
-                } else {
-                    const baseGravada = parseFloat(this.compra.sub_total || 0);
-                    impuesto.monto = parseFloat((baseGravada * (pctImp / 100)).toFixed(4));
-                }
+                const monto = this.compra.detalles
+                    .filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)))
+                    .reduce((sum: number, d: any) => {
+                        const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
+                            ? parseFloat(d.iva) : parseFloat(d.total || 0) * (pctImp / 100);
+                        return sum + ivaLinea;
+                    }, 0);
+                impuesto.monto = parseFloat(Number(monto).toFixed(4));
             } else {
                 impuesto.monto = 0;
             }
@@ -1794,7 +1786,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             errores.push('Tipo');
         }
 
-        if (!this.apiService.isSupervisorLimitado()) {
+        if (!this.apiService.supervisorLimitadoRestringidoEnCompras()) {
             if (!this.nuevoProducto.costo || this.nuevoProducto.costo <= 0) {
                 errores.push('Costo');
             }
@@ -1813,7 +1805,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.creandoProducto = true;
 
         const precioNum = parseFloat(this.nuevoProducto.precio) || 0;
-        const costoNum = this.apiService.isSupervisorLimitado()
+        const costoNum = this.apiService.supervisorLimitadoRestringidoEnCompras()
             ? precioNum
             : parseFloat(this.nuevoProducto.costo);
 

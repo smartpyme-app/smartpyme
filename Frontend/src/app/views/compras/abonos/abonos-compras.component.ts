@@ -10,12 +10,13 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.component';
 
 @Component({
     selector: 'app-abonos-compras',
     templateUrl: './abonos-compras.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, EditarAbonoComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
@@ -133,21 +134,18 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
         this.filtrarAbonos(false);
     }
 
-    public reemprimir(abono:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + abono.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+    public imprimir(abono:any){
+        window.open(this.apiService.baseUrl + '/api/compra/abono/imprimir/' + abono.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
     openModalEdit(template: TemplateRef<any>, abono:any) {
-        this.abono = abono;
+        this.abono = { ...abono };
+        this.modalRef = this.modalService.show(template);
+    }
 
-        this.apiService.getAll('documentos')
-            .pipe(this.untilDestroyed())
-            .subscribe(documentos => {
-                this.documentos = documentos;
-                this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
-
-        this.openModal(template, abono);
+    public onAbonoSaved() {
+        this.modalRef.hide();
+        this.filtrarAbonos(false);
     }
 
     public openFilter(template: TemplateRef<any>) {

@@ -8,7 +8,7 @@
         }
     </h2>
     <div class="d-flex gap-2">
-        <button *ngIf="compra.id" (click)="imprimir()" class="btn btn-default" tooltip="Imprimir compra">
+        <button *ngIf="compra.id && !apiService.supervisorLimitadoRestringidoEnCompras()" (click)="imprimir()" class="btn btn-default" tooltip="Imprimir compra">
             <i class="fa fa-print"></i> Imprimir
         </button>
         <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>
@@ -90,13 +90,13 @@
                         <!-- <th>N°</th> -->
                         <th>Producto</th>
                         <th width="100">Cantidad</th>
-                        @if (!apiService.isSupervisorLimitado()) {
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <th width="100">Costo</th>
                         }
-                        @if (!apiService.isSupervisorLimitado()) {
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <th width="100">Descuento</th>
                         }
-                        @if (!apiService.isSupervisorLimitado()) {
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <th width="100" class="text-end">Total</th>
                         }
                     </tr>
@@ -104,14 +104,14 @@
                 <tbody>
                     @if (compra.detalles?.length < 1 && !loading) {
                       <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 3 : 6" class="text-center">
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 3 : 6" class="text-center">
                             <span class="badge bg-primary">No tiene productos agregados</span>
                         </td>
                       </tr>
                     }
                     @if (loading) {
                       <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 3 : 6" class="text-center">
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 3 : 6" class="text-center">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                       </tr>
@@ -124,28 +124,28 @@
                             {{ detalle.nombre_producto }}
                         </td>
                         <td>{{ detalle.cantidad }}</td>
-                        @if (!apiService.isSupervisorLimitado()) {
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <td>{{ detalle.costo | currency }}</td>
                         }
-                        @if (!apiService.isSupervisorLimitado()) {
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <td>{{ detalle.descuento | currency }}</td>
                         }
-                        @if (!apiService.isSupervisorLimitado()) {
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <td class="text-end">{{ detalle.total | currency }}</td>
                         }
                       </tr>
                     }
                     <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Sub Total:</b></td>
-                        @if (!apiService.isSupervisorLimitado()) {
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Sub Total:</b></td>
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <td class="text-end"><b>{{ compra?.sub_total + compra?.descuento | currency }}</b></td>
                         }
                     </tr>
                     <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Descuento:</b></td>
-                        @if (!apiService.isSupervisorLimitado()) {
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Descuento:</b></td>
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <td class="text-end"><b>{{ compra?.descuento | currency }}</b></td>
                         }
                     </tr>
@@ -153,12 +153,12 @@
                       @for (impuesto of compra.impuestos; track impuesto.id || $index) {
                         @if ((impuesto.monto ?? 0) > 0) {
                           <tr>
-                            <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                            <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end">
+                            <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                            <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end">
                               {{ impuesto.nombre || impuesto?.impuesto?.nombre || 'Impuesto' }}
                               <small class="text-muted">({{ (impuesto.porcentaje ?? impuesto?.impuesto?.porcentaje) | number:'1.0-2' }}%)</small>
                             </td>
-                            @if (!apiService.isSupervisorLimitado()) {
+                            @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                               <td class="text-end"><b>{{ impuesto.monto | currency }}</b></td>
                             }
                           </tr>
@@ -166,35 +166,35 @@
                       }
                     } @else if (compra?.iva > 0) {
                       <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>IVA</b></td>
-                        @if (!apiService.isSupervisorLimitado()) {
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>IVA</b></td>
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <td class="text-end"><b>{{ compra?.iva | currency }}</b></td>
                         }
                       </tr>
                     }
                     @if (compra?.percepcion > 0) {
                       <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Percepción (1%)</b></td>
-                        @if (!apiService.isSupervisorLimitado()) {
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Percepción (1%)</b></td>
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <td class="text-end"><b>{{ compra?.percepcion | currency }}</b></td>
                         }
                       </tr>
                     }
                     @if (compra?.renta_retenida > 0) {
                       <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Renta retenida</b></td>
-                        @if (!apiService.isSupervisorLimitado()) {
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Renta retenida</b></td>
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <td class="text-end"><b>{{ compra?.renta_retenida | currency}}</b> </td>
                         }
                       </tr>
                     }
                     <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Total:</b></td>
-                        @if (!apiService.isSupervisorLimitado()) {
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Total:</b></td>
+                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <td class="text-end"><b>{{ compra?.total | currency }}</b></td>
                         }
                     </tr>
@@ -229,31 +229,33 @@
             <table class="table table-borderless">
                 <thead>
                     <tr>
+                        <th>N°</th>
                         <th>Fecha</th>
                         <th>Concepto</th>
                         <th>Forma de pago</th>
                         <th>Estado</th>
                         <th class="text-end">Total</th>
-                        <!-- <th class="text-center">Mas</th> -->
+                        <th class="text-center">Mas</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (compra.abonos?.length < 1 && !loading) {
                       <tr>
-                        <td colspan="5" class="text-center">
+                        <td colspan="7" class="text-center">
                             <span class="badge bg-primary">No tiene abonos agregados</span>
                         </td>
                       </tr>
                     }
                     @if (loading) {
                       <tr>
-                        <td colspan="5" class="text-center">
+                        <td colspan="7" class="text-center">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                       </tr>
                     }
                     @for (abono of compra.abonos; track abono.id || $index) {
                       <tr>
+                        <td>{{ abono.correlativo ?? abono.id }}</td>
                         <td>{{ abono.fecha | date:'dd/MM/yyyy' }}</td>
                         <td>{{ abono.concepto }}</td>
                         <td>{{ abono.forma_pago }} 
@@ -268,11 +270,13 @@
                             </select>
                         </td>
                         <td class="text-end">{{ abono.total | currency }}</td>
-                       <!--  <td class="text-center">
-                            <a (click)="imprimirRecibo(abono)" class="btn btn-light">
-                                <i class="fa fa-fw fa-print"></i>
-                            </a>
-                        </td> -->
+                        <td class="text-center">
+                            @if (apiService.canEdit()) {
+                                <a (click)="openModalEditAbono(meditAbono, abono)" class="btn btn-light" tooltip="Editar">
+                                    <i class="fa fa-fw fa-edit"></i>
+                                </a>
+                            }
+                        </td>
                       </tr>
                     }
                 </tbody>
@@ -334,5 +338,15 @@
     </div>
     <div class="modal-body">
         <app-crear-abono-compra [compra]="compra" (update)="loadAll()"></app-crear-abono-compra>
+    </div>
+</ng-template>
+
+<ng-template #meditAbono>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">Editar abono</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-editar-abono [abono]="abonoEdit" endpoint="compra/abono" (saved)="onAbonoSaved()"></app-editar-abono>
     </div>
 </ng-template>

@@ -152,8 +152,7 @@
     <h6 class="mt-3">Productos y servicios</h6>
 
     <app-compra-detalles [compra]="compra" (update)="updatecompra($event)" (sumTotal)="sumTotal()"></app-compra-detalles>
-
-    <div class="row" *ngIf="!apiService.isSupervisorLimitado()">
+    <div class="row" *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()">
         <div class="col-md-12">
             <table class="table table-sm table-borderless table-condensed mb-0">
                 <tbody>
@@ -516,7 +515,7 @@
               <th style="width: 120px;">Código DTE</th>
               <th style="width: 200px;">Descripción DTE</th>
               <th style="width: 80px;">Cant.</th>
-              <th *ngIf="!apiService.isSupervisorLimitado()" style="width: 100px;">Precio Unit.</th>
+              <th *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" style="width: 100px;">Precio Unit.</th>
               <th>Producto a Asignar</th>
             </tr>
           </thead>
@@ -534,7 +533,7 @@
               <td class="text-center">
                 {{ item.cantidad }}
               </td>
-              <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end">
+              <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end">
                 {{ item.precioUni | currency:'USD':'symbol':'1.2' }}
               </td>
               <td>
@@ -603,9 +602,11 @@
 
                         <!-- Información de precio y stock alineada a la derecha -->
                         <div class="text-end ms-3">
-                          <small class="text-success d-block">
-                            ${{ producto.precio | number:'1.2-2' }}
-                          </small>
+                          @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
+                            <small class="text-success d-block">
+                              ${{ producto.precio | number:'1.2-2' }}
+                            </small>
+                          }
                           @if (producto.tipo !== 'Servicio') {
                             <small class="text-muted">
                               Stock: {{ producto.stock || 0 }}
@@ -644,7 +645,9 @@
                           <span class="text-muted">{{ item.productoSeleccionado.descripcion }}</span>
                         </div>
                         <div class="col-4 text-end">
-                          <div class="text-success">Precio: ${{ item.productoSeleccionado.precio }}</div>
+                          @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
+                            <div class="text-success">Precio: ${{ item.productoSeleccionado.precio }}</div>
+                          }
                           @if (item.productoSeleccionado.tipo !== 'Servicio') {
                             <div class="text-muted">
                               Stock: {{ item.productoSeleccionado.stock || 0 }}
@@ -807,7 +810,7 @@
         </div>
 
         <div class="row">
-          <div class="col-md-6" *ngIf="!apiService.isSupervisorLimitado()">
+          <div class="col-md-6" *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()">
             <div class="form-group mb-3">
               <label for="costo">Costo *</label>
               <input
@@ -821,7 +824,7 @@
                 placeholder="0.00">
             </div>
           </div>
-          <div [class.col-md-6]="!apiService.isSupervisorLimitado()" [class.col-md-12]="apiService.isSupervisorLimitado()">
+          <div [class.col-md-6]="!apiService.supervisorLimitadoRestringidoEnCompras()" [class.col-md-12]="apiService.supervisorLimitadoRestringidoEnCompras()">
             <div class="form-group mb-3">
               <label for="precio">Precio de Venta</label>
               <input
