@@ -26,35 +26,15 @@ export class EditarAbonoComponent implements OnInit {
       this.formaPagos = formaPagos;
     }, error => { this.alertService.error(error); });
 
-    if (this.endpoint !== 'venta/abono') {
-      if (this.apiService.isModuloBancos()) {
-        this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
-          this.bancos = bancos;
-        }, error => { this.alertService.error(error); });
-      } else {
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
-          this.bancos = bancos;
-        }, error => { this.alertService.error(error); });
-      }
+    if (this.apiService.isModuloBancos()) {
+      this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+        this.bancos = bancos;
+      }, error => { this.alertService.error(error); });
+    } else {
+      this.apiService.getAll('bancos/list').subscribe(bancos => {
+        this.bancos = bancos;
+      }, error => { this.alertService.error(error); });
     }
-  }
-
-  public mostrarBanco(): boolean {
-    if (this.endpoint === 'venta/abono') {
-      return false;
-    }
-    return this.requiereBanco();
-  }
-
-  public mostrarReferencia(): boolean {
-    const fp = this.abono?.forma_pago;
-    if (!fp || fp === 'Efectivo') {
-      return false;
-    }
-    if (this.endpoint === 'venta/abono' || this.endpoint === 'gasto/abono') {
-      return fp !== 'Wompi';
-    }
-    return true;
   }
 
   public requiereBanco(): boolean {
