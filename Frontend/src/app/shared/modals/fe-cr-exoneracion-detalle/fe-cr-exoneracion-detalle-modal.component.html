@@ -1,0 +1,81 @@
+<ng-template #tpl>
+  <div class="modal-header">
+    <h4 class="modal-title">Exoneración de IVA — {{ detalleEdit?.descripcion || 'Línea' }}</h4>
+    <button type="button" class="btn-close" (click)="cerrar()" aria-label="Cerrar"></button>
+  </div>
+  <div class="modal-body">
+    <p class="small text-muted mb-3">Datos del documento de exoneración ante Hacienda (nota 10.1). Aplica solo a esta línea del comprobante.</p>
+    <div class="row g-2">
+      <div class="form-group col-md-6">
+        <label for="fe_cr_tipo_doc_shared">Tipo de documento EX <span class="text-danger">*</span></label>
+        <select class="form-select" id="fe_cr_tipo_doc_shared" [(ngModel)]="form.tipo_documento_ex">
+          <option value="">Seleccione…</option>
+          @for (t of tiposDocumentoEx; track t.codigo) {
+            <option [value]="t.codigo">{{ t.codigo }} — {{ t.nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-group col-md-6">
+        <label for="fe_cr_num_doc_shared">Número de autorización <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <input
+            type="text"
+            class="form-control"
+            id="fe_cr_num_doc_shared"
+            [(ngModel)]="form.numero_documento"
+            placeholder="AL-XXXXXXXX-XX"
+            autocomplete="off"
+          />
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="consultarHacienda()"
+            [disabled]="loadingHacienda"
+            title="Consultar en Hacienda"
+          >
+            @if (loadingHacienda) {
+              <span class="spinner-border spinner-border-sm"></span>
+            } @else {
+              <i class="fa fa-search"></i>
+            }
+          </button>
+        </div>
+      </div>
+      <div class="form-group col-md-6">
+        <label for="fe_cr_inst_shared">Institución u órgano emisor <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="fe_cr_inst_shared" [(ngModel)]="form.nombre_institucion" autocomplete="off" />
+      </div>
+      <div class="form-group col-md-6">
+        <label for="fe_cr_fecha_shared">Fecha emisión documento EX <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" id="fe_cr_fecha_shared" [(ngModel)]="form.fecha_emision" />
+      </div>
+      <div class="form-group col-md-4">
+        <label for="fe_cr_tarifa_shared">Tarifa exonerada (%) <span class="text-danger">*</span></label>
+        <input type="number" class="form-control" id="fe_cr_tarifa_shared" [(ngModel)]="form.tarifa_exonerada" min="0.01" step="0.01" />
+      </div>
+      <div class="form-group col-md-4">
+        <label for="fe_cr_art_shared">Nº artículo (si aplica)</label>
+        <input type="text" class="form-control" id="fe_cr_art_shared" [(ngModel)]="form.numero_articulo" placeholder="0 o vacío" />
+      </div>
+      <div class="form-group col-md-4">
+        <label for="fe_cr_inc_shared">Nº inciso (si aplica)</label>
+        <input type="text" class="form-control" id="fe_cr_inc_shared" [(ngModel)]="form.numero_inciso" placeholder="0 o vacío" />
+      </div>
+      <div class="form-group col-12">
+        <label for="fe_cr_otro_shared">Tipo / documento «otro» (solo si tipo 99)</label>
+        <input type="text" class="form-control" id="fe_cr_otro_shared" [(ngModel)]="form.documento_otro" autocomplete="off" />
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer justify-content-between">
+    <div>
+      @if (detalleTeniaExoneracion) {
+        <button type="button" class="btn btn-outline-danger btn-sm" (click)="quitarExoneracion()">Quitar exoneración</button>
+      }
+    </div>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-light" (click)="cerrar()">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="guardar()">Guardar</button>
+    </div>
+  </div>
+</ng-template>

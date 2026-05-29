@@ -69,6 +69,11 @@ export class CostaRicaFacturacionElectronicaService {
     return this.api.store('consultarFeCrNotaDebitoVenta', { id: ventaId });
   }
 
+  /** Consulta autorización de exoneración en Hacienda (/fe/ex). */
+  consultarExoneracion(autorizacion: string): Observable<any> {
+    return this.api.getAll('fe-cr/exoneracion', { autorizacion: autorizacion.trim() });
+  }
+
   /**
    * Nota de débito 02 sobre venta con factura/tiquete CR ya aceptado.
    */

@@ -16,6 +16,12 @@ import { BsModalService } from 'ngx-bootstrap/modal';
 
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
+import { FeCrExoneracionDetalleModalComponent } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle-modal.component';
+import {
+  detalleTieneExoneracionCr,
+  initFeCrExoneracionDetalle,
+} from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
+import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 
 @Component({
     selector: 'app-venta-detalles',
@@ -29,7 +35,8 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
         TiendaVentaProductoComponent,
         TiendaVentaPaquetesComponent,
         TiendaVentaCitasComponent,
-        LazyImageDirective
+        LazyImageDirective,
+        FeCrExoneracionDetalleModalComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -43,6 +50,8 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   @Input() selectedCustomFields: number[] = [];
   @Input() cotizacion: number = 0;
   @Input() mode: "create" | "edit" | "show" = "create";
+  /** Si no se pasa, se infiere del país FE de la empresa. */
+  @Input() esFeCostaRica: boolean | null = null;
   public usuario: any = {};
   public detalle: any = {};
   public composicion: any = {};
@@ -57,6 +66,9 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
 
     @ViewChild('mloteVenta')
     public mloteVenta!: TemplateRef<any>;
+
+    @ViewChild('feCrExoneracionModal')
+    feCrExoneracionModal!: FeCrExoneracionDetalleModalComponent;
 
   public buscador: string = '';
   public override loading: boolean = false;
@@ -74,6 +86,15 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
   }
+
+  get esFeCostaRicaActivo(): boolean {
+    if (this.esFeCostaRica != null) {
+      return this.esFeCostaRica;
+    }
+    return resolveCodigoPaisFe(this.usuario?.empresa) === FE_PAIS_CR;
+  }
+
+  readonly detalleTieneExoneracionCr = detalleTieneExoneracionCr;
 
     get mostrarCuentaTercerosEnLinea(): boolean {
         return this.habilitarCuentaTerceros
@@ -143,6 +164,9 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
         } else if (tipo === 'exenta') {
             detalle.exenta = total;
             detalle.iva = 0;
+        } else if (tipo === 'exonerada') {
+            detalle.gravada = total;
+            detalle.iva = 0;
         } else {
             detalle.no_sujeta = total;
             detalle.iva = 0;
@@ -170,9 +194,30 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     }
 
     public onTipoGravadoChange(detalle: any) {
+        const tipo = (detalle.tipo_gravado || '').toLowerCase();
+        if (this.esFeCostaRicaActivo && tipo === 'exonerada') {
+            initFeCrExoneracionDetalle(detalle);
+            if (!detalle.fe_cr_exoneracion?.aplica) {
+                detalle.fe_cr_exoneracion.aplica = true;
+            }
+        } else if (detalle.fe_cr_exoneracion?.aplica && tipo !== 'exonerada') {
+            detalle.fe_cr_exoneracion.aplica = false;
+        }
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();
+        this.cdr.markForCheck();
+    }
+
+    abrirModalExoneracionCr(detalle: any): void {
+        this.feCrExoneracionModal.abrir(detalle);
+    }
+
+    onExoneracionDetalleSaved(detalle: any): void {
+        this.aplicarTipoGravado(detalle);
+        this.update.emit(this.venta);
+        this.sumTotal.emit();
+        this.cdr.markForCheck();
     }
 
   public modalSupervisor(detalle: any) {
@@ -300,6 +345,9 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
 
             if(!this.detalle.tipo_gravado){
                 this.detalle.tipo_gravado = 'gravada';
+            }
+            if (this.esFeCostaRicaActivo) {
+                initFeCrExoneracionDetalle(this.detalle);
             }
             if(!this.detalle.exenta){
                 this.detalle.exenta = 0;

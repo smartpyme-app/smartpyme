@@ -10,6 +10,7 @@ import { ApiService } from '@services/api.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { NOMBRE_DOCUMENTO_CR } from '@views/ventas/documentos/documento-nombre-options';
+import { migrarExoneracionCrLegacyADetalles as migrarExoneracionLegacyUtil } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { xmlComprobanteDesdeRechazoFeCr } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
 import { FuncionalidadesService } from '@services/functionalities.service';
@@ -2128,7 +2129,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura gravada/exenta/no_sujeta para que el IVA cuadre. */
   private normalizarDetallesTipoGravado(venta: any) {
     if (!venta?.detalles?.length) return;
-    const tiposValidos = ['gravada', 'exenta', 'no_sujeta'];
+    if (this.esFeCostaRicaFacturacion()) {
+      migrarExoneracionLegacyUtil(venta);
+    }
+    const tiposValidos = ['gravada', 'exenta', 'no_sujeta', 'exonerada'];
     venta.detalles.forEach((d: any) => {
       if (d.sub_total == null || d.sub_total === undefined) {
         d.sub_total = Number((parseFloat(d.cantidad) * parseFloat(d.precio)).toFixed(4));
@@ -2141,9 +2145,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       }
       const tipo = String(d.tipo_gravado).toLowerCase();
       d.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
-      d.gravada = (d.tipo_gravado === 'gravada') ? totalLinea : 0;
-      d.exenta = (d.tipo_gravado === 'exenta') ? totalLinea : 0;
-      d.no_sujeta = (d.tipo_gravado === 'no_sujeta') ? totalLinea : 0;
+      d.gravada =
+        d.tipo_gravado === 'gravada' || d.tipo_gravado === 'exonerada' ? totalLinea : 0;
+      d.exenta = d.tipo_gravado === 'exenta' ? totalLinea : 0;
+      d.no_sujeta = d.tipo_gravado === 'no_sujeta' ? totalLinea : 0;
     });
   }
 
