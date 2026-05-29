@@ -773,10 +773,13 @@ final class CostaRicaInvoiceFromVentaMapper
      */
     private function normalizarExoneracionCr(array $ex): array
     {
+        $inst = CostaRicaFeNota23Catalog::resolverCodigo($ex['nombre_institucion'] ?? '');
+
         return [
             'tipo_documento_ex' => (string) ($ex['tipo_documento_ex'] ?? ''),
             'numero_documento' => (string) ($ex['numero_documento'] ?? ''),
-            'nombre_institucion' => (string) ($ex['nombre_institucion'] ?? ''),
+            'nombre_institucion' => $inst,
+            'nombre_institucion_otro' => (string) ($ex['nombre_institucion_otro'] ?? ''),
             'fecha_emision' => (string) ($ex['fecha_emision'] ?? ''),
             'tarifa_exonerada' => (float) ($ex['tarifa_exonerada'] ?? 13),
             'numero_articulo' => (string) ($ex['numero_articulo'] ?? ''),

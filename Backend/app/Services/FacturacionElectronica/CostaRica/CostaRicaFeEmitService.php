@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use ReflectionClass;
 use ReflectionException;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeNota23Catalog;
 use RuntimeException;
 use Throwable;
 
@@ -493,12 +494,23 @@ final class CostaRicaFeEmitService
         }
         $tipo = trim((string) ($ex['tipo_documento_ex'] ?? ''));
         $num = trim((string) ($ex['numero_documento'] ?? ''));
-        $inst = trim((string) ($ex['nombre_institucion'] ?? ''));
+        $inst = CostaRicaFeNota23Catalog::resolverCodigo($ex['nombre_institucion'] ?? '');
+        $instOtro = trim((string) ($ex['nombre_institucion_otro'] ?? ''));
         $fecha = trim((string) ($ex['fecha_emision'] ?? ''));
         $tarifa = (float) ($ex['tarifa_exonerada'] ?? 0);
         if ($tipo === '' || $num === '' || $inst === '' || $fecha === '' || $tarifa <= 0) {
             throw new RuntimeException(
-                "Exoneración de IVA incompleta en {$contexto}: indique tipo de documento EX, número de autorización, institución, fecha de emisión del documento y tarifa exonerada (%)."
+                "Exoneración de IVA incompleta en {$contexto}: indique tipo de documento EX, número de autorización, institución (nota 23), fecha de emisión del documento y tarifa exonerada (%)."
+            );
+        }
+        if (! CostaRicaFeNota23Catalog::esCodigoValido($inst)) {
+            throw new RuntimeException(
+                "En {$contexto}, la institución emisora debe ser un código válido de la nota 23."
+            );
+        }
+        if ($inst === '99' && mb_strlen($instOtro) < 5) {
+            throw new RuntimeException(
+                "En {$contexto}, si la institución es «Otros» (99) debe indicar el nombre de la institución (mínimo 5 caracteres)."
             );
         }
         if ($tipo === '99' && trim((string) ($ex['documento_otro'] ?? '')) === '') {

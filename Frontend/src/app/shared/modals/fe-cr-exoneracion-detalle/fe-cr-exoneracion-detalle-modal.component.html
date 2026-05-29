@@ -4,18 +4,9 @@
     <button type="button" class="btn-close" (click)="cerrar()" aria-label="Cerrar"></button>
   </div>
   <div class="modal-body">
-    <p class="small text-muted mb-3">Datos del documento de exoneración ante Hacienda (nota 10.1). Aplica solo a esta línea del comprobante.</p>
+    <p class="small text-muted mb-3">Ingrese el número de autorización y consulte en Hacienda para completar el resto. Aplica solo a esta línea del comprobante.</p>
     <div class="row g-2">
-      <div class="form-group col-md-6">
-        <label for="fe_cr_tipo_doc_shared">Tipo de documento EX <span class="text-danger">*</span></label>
-        <select class="form-select" id="fe_cr_tipo_doc_shared" [(ngModel)]="form.tipo_documento_ex">
-          <option value="">Seleccione…</option>
-          @for (t of tiposDocumentoEx; track t.codigo) {
-            <option [value]="t.codigo">{{ t.codigo }} — {{ t.nombre }}</option>
-          }
-        </select>
-      </div>
-      <div class="form-group col-md-6">
+      <div class="form-group col-12">
         <label for="fe_cr_num_doc_shared">Número de autorización <span class="text-danger">*</span></label>
         <div class="input-group">
           <input
@@ -42,9 +33,36 @@
         </div>
       </div>
       <div class="form-group col-md-6">
-        <label for="fe_cr_inst_shared">Institución u órgano emisor <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" id="fe_cr_inst_shared" [(ngModel)]="form.nombre_institucion" autocomplete="off" />
+        <label for="fe_cr_tipo_doc_shared">Tipo de documento EX <span class="text-danger">*</span></label>
+        <select class="form-select" id="fe_cr_tipo_doc_shared" [(ngModel)]="form.tipo_documento_ex">
+          <option value="">Seleccione…</option>
+          @for (t of tiposDocumentoEx; track t.codigo) {
+            <option [value]="t.codigo">{{ t.codigo }} — {{ t.nombre }}</option>
+          }
+        </select>
       </div>
+      <div class="form-group col-md-6">
+        <label for="fe_cr_inst_shared">Institución u órgano emisor <span class="text-danger">*</span></label>
+        <select class="form-select" id="fe_cr_inst_shared" [(ngModel)]="form.nombre_institucion">
+          <option value="">Seleccione…</option>
+          @for (i of institucionesEx; track i.codigo) {
+            <option [value]="i.codigo">{{ i.nombre }}</option>
+          }
+        </select>
+      </div>
+      @if (form.nombre_institucion === '99') {
+        <div class="form-group col-12">
+          <label for="fe_cr_inst_otro_shared">Nombre institución «otro» <span class="text-danger">*</span></label>
+          <input
+            type="text"
+            class="form-control"
+            id="fe_cr_inst_otro_shared"
+            [(ngModel)]="form.nombre_institucion_otro"
+            maxlength="160"
+            autocomplete="off"
+          />
+        </div>
+      }
       <div class="form-group col-md-6">
         <label for="fe_cr_fecha_shared">Fecha emisión documento EX <span class="text-danger">*</span></label>
         <input type="date" class="form-control" id="fe_cr_fecha_shared" [(ngModel)]="form.fecha_emision" />

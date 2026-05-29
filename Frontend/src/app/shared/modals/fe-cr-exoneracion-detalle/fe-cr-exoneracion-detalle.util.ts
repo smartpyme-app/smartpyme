@@ -2,7 +2,10 @@ export interface FeCrExoneracionDetalle {
   aplica: boolean;
   tipo_documento_ex: string;
   numero_documento: string;
+  /** Código nota 23 (NombreInstitucion en XML). */
   nombre_institucion: string;
+  /** Obligatorio si nombre_institucion es 99 (NombreInstitucionOtros). */
+  nombre_institucion_otro: string;
   fecha_emision: string;
   tarifa_exonerada: number;
   numero_articulo: string;
@@ -26,6 +29,68 @@ export const FE_CR_TIPOS_DOCUMENTO_EXONERACION: { codigo: string; nombre: string
   { codigo: '99', nombre: 'Otros' },
 ];
 
+/** Catálogo nota 23 DGT — NombreInstitucion (FE 4.4). */
+export const FE_CR_INSTITUCIONES_EXONERACION: { codigo: string; nombre: string }[] = [
+  { codigo: '01', nombre: 'Ministerio de Hacienda' },
+  { codigo: '02', nombre: 'Ministerio de Relaciones Exteriores y Culto' },
+  { codigo: '03', nombre: 'Ministerio de Agricultura y Ganadería' },
+  { codigo: '04', nombre: 'Ministerio de Economía, Industria y Comercio' },
+  { codigo: '05', nombre: 'Cruz Roja Costarricense' },
+  { codigo: '06', nombre: 'Benemérito Cuerpo de Bomberos de Costa Rica' },
+  { codigo: '07', nombre: 'Asociación Obras del Espíritu Santo' },
+  { codigo: '08', nombre: 'Federación Cruzada Nacional de Protección al Anciano (Fecrunapa)' },
+  { codigo: '09', nombre: 'Escuela de Agricultura de la Región Húmeda (EARTH)' },
+  { codigo: '10', nombre: 'Instituto Centroamericano de Administración de Empresas (INCAE)' },
+  { codigo: '11', nombre: 'Junta de Protección Social (JPS)' },
+  { codigo: '12', nombre: 'Autoridad Reguladora de los Servicios Públicos (Aresep)' },
+  { codigo: '99', nombre: 'Otros' },
+];
+
+function normTextoInstitucion(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .trim();
+}
+
+/** Resuelve código nota 23 desde código o nombre (p. ej. respuesta Hacienda). */
+export function normalizarCodigoInstitucionEx(valor: string): string {
+  const v = (valor || '').trim();
+  if (!v) {
+    return '';
+  }
+  const codigo = v.padStart(2, '0').slice(-2);
+  if (v.length <= 2 && FE_CR_INSTITUCIONES_EXONERACION.some((i) => i.codigo === codigo)) {
+    return codigo;
+  }
+  const nv = normTextoInstitucion(v);
+  const exacta = FE_CR_INSTITUCIONES_EXONERACION.find(
+    (i) => i.codigo !== '99' && normTextoInstitucion(i.nombre) === nv
+  );
+  if (exacta) {
+    return exacta.codigo;
+  }
+  for (const i of FE_CR_INSTITUCIONES_EXONERACION) {
+    if (i.codigo === '99') {
+      continue;
+    }
+    const nn = normTextoInstitucion(i.nombre);
+    if (nv.includes(nn) || nn.includes(nv)) {
+      return i.codigo;
+    }
+  }
+  if (FE_CR_INSTITUCIONES_EXONERACION.some((i) => i.codigo === codigo)) {
+    return codigo;
+  }
+  return '';
+}
+
+export function labelInstitucionEx(codigo: string): string {
+  const c = (codigo || '').padStart(2, '0').slice(-2);
+  return FE_CR_INSTITUCIONES_EXONERACION.find((i) => i.codigo === c)?.nombre ?? codigo;
+}
+
 export const TIPOS_GRAVADO_CON_EXONERADA = ['gravada', 'exenta', 'no_sujeta', 'exonerada'] as const;
 
 export function baseFeCrExoneracionDetalle(): FeCrExoneracionDetalle {
@@ -34,6 +99,7 @@ export function baseFeCrExoneracionDetalle(): FeCrExoneracionDetalle {
     tipo_documento_ex: '',
     numero_documento: '',
     nombre_institucion: '',
+    nombre_institucion_otro: '',
     fecha_emision: '',
     tarifa_exonerada: 13,
     numero_articulo: '',
@@ -50,6 +116,12 @@ export function initFeCrExoneracionDetalle(detalle: any): void {
     return;
   }
   detalle.fe_cr_exoneracion = { ...base, ...cur };
+  detalle.fe_cr_exoneracion.nombre_institucion = normalizarCodigoInstitucionEx(
+    detalle.fe_cr_exoneracion.nombre_institucion || ''
+  );
+  if (!detalle.fe_cr_exoneracion.nombre_institucion_otro) {
+    detalle.fe_cr_exoneracion.nombre_institucion_otro = '';
+  }
 }
 
 export function detalleTieneExoneracionCr(detalle: any): boolean {
@@ -70,7 +142,8 @@ export function migrarExoneracionCrLegacyADetalles(venta: any): void {
     aplica: true,
     tipo_documento_ex: legacy.tipo_documento_ex || '',
     numero_documento: legacy.numero_documento || '',
-    nombre_institucion: legacy.nombre_institucion || '',
+    nombre_institucion: normalizarCodigoInstitucionEx(legacy.nombre_institucion || ''),
+    nombre_institucion_otro: legacy.nombre_institucion_otro || '',
     fecha_emision: legacy.fecha_emision || '',
     tarifa_exonerada: legacy.tarifa_exonerada ?? 13,
     numero_articulo: legacy.numero_articulo || '',
@@ -98,8 +171,16 @@ export function validarExoneracionForm(ex: FeCrExoneracionDetalle): string[] {
   if (!(ex.numero_documento || '').trim()) {
     faltan.push('número de autorización');
   }
-  if (!(ex.nombre_institucion || '').trim()) {
+  if (!ex.nombre_institucion) {
     faltan.push('institución emisora');
+  } else if (!FE_CR_INSTITUCIONES_EXONERACION.some((i) => i.codigo === ex.nombre_institucion)) {
+    faltan.push('institución emisora (código nota 23)');
+  }
+  if (ex.nombre_institucion === '99') {
+    const otro = (ex.nombre_institucion_otro || '').trim();
+    if (otro.length < 5) {
+      faltan.push('nombre de institución «otro» (mín. 5 caracteres)');
+    }
   }
   if (!(ex.fecha_emision || '').trim()) {
     faltan.push('fecha de emisión del documento');
@@ -130,10 +211,23 @@ export function aplicarRespuestaExoneracionHacienda(
   if (numDoc != null && String(numDoc).trim() !== '') {
     out.numero_documento = String(numDoc).trim();
   }
-  const inst =
-    data['nombreInstitucion'] ?? data['nombre_institucion'] ?? data['institucion'];
-  if (inst != null && String(inst).trim() !== '') {
-    out.nombre_institucion = String(inst).trim();
+  const instRaw =
+    data['codigoInstitucion'] ??
+    data['codigo_institucion'] ??
+    (data['institucion'] && typeof data['institucion'] === 'object'
+      ? (data['institucion'] as Record<string, unknown>)['codigo']
+      : null) ??
+    data['nombreInstitucion'] ??
+    data['nombre_institucion'] ??
+    data['institucion'];
+  if (instRaw != null && String(instRaw).trim() !== '') {
+    const codigo = normalizarCodigoInstitucionEx(String(instRaw).trim());
+    if (codigo) {
+      out.nombre_institucion = codigo;
+    } else if (String(instRaw).trim().length >= 5) {
+      out.nombre_institucion = '99';
+      out.nombre_institucion_otro = String(instRaw).trim();
+    }
   }
   const tarifa =
     data['porcentajeExoneracion'] ?? data['tarifaExoneracion'] ?? data['tarifa'];

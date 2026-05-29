@@ -5,12 +5,14 @@ import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { CostaRicaFacturacionElectronicaService } from '@services/facturacion-electronica/costa-rica-facturacion-electronica.service';
 import {
+  FE_CR_INSTITUCIONES_EXONERACION,
   FE_CR_TIPOS_DOCUMENTO_EXONERACION,
   FeCrExoneracionDetalle,
   aplicarExoneracionGuardadaEnDetalle,
   aplicarRespuestaExoneracionHacienda,
   baseFeCrExoneracionDetalle,
   initFeCrExoneracionDetalle,
+  normalizarCodigoInstitucionEx,
   validarExoneracionForm,
 } from './fe-cr-exoneracion-detalle.util';
 
@@ -25,6 +27,7 @@ export class FeCrExoneracionDetalleModalComponent {
   @Output() saved = new EventEmitter<any>();
 
   readonly tiposDocumentoEx = FE_CR_TIPOS_DOCUMENTO_EXONERACION;
+  readonly institucionesEx = FE_CR_INSTITUCIONES_EXONERACION;
 
   detalleEdit: any = null;
   detalleTeniaExoneracion = false;
@@ -42,6 +45,7 @@ export class FeCrExoneracionDetalleModalComponent {
     this.detalleEdit = detalle;
     initFeCrExoneracionDetalle(detalle);
     this.form = { ...baseFeCrExoneracionDetalle(), ...detalle.fe_cr_exoneracion, aplica: true };
+    this.form.nombre_institucion = normalizarCodigoInstitucionEx(this.form.nombre_institucion || '');
     this.detalleTeniaExoneracion = !!(detalle.fe_cr_exoneracion?.aplica);
     if (!this.form.fecha_emision) {
       this.form.fecha_emision = new Date().toISOString().slice(0, 10);
