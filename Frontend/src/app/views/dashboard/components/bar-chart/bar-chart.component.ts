@@ -9,7 +9,7 @@ import { ChartConfig } from '../../models/chart-config.model';
 export class BarChartComponent implements OnInit, OnChanges {
   @Input() config!: ChartConfig;
   @Output() itemClick = new EventEmitter<{ name: string; value: any; index: number }>();
-  
+
   chartOption: any = {};
   echartsInstance: any;
 
@@ -35,11 +35,11 @@ export class BarChartComponent implements OnInit, OnChanges {
     }
 
     // Verificar si es un gráfico de múltiples series (ventas y gastos)
-    const isMultiSeries = Array.isArray(this.config.data) && 
-                         this.config.data.length > 0 && 
-                         typeof this.config.data[0] === 'object' && 
-                         this.config.data[0].hasOwnProperty('name') &&
-                         this.config.data[0].hasOwnProperty('data');
+    const isMultiSeries = Array.isArray(this.config.data) &&
+      this.config.data.length > 0 &&
+      typeof this.config.data[0] === 'object' &&
+      this.config.data[0].hasOwnProperty('name') &&
+      this.config.data[0].hasOwnProperty('data');
 
     let series: any[] = [];
     const showBarLabels = this.config.showBarLabels !== false;
@@ -66,7 +66,7 @@ export class BarChartComponent implements OnInit, OnChanges {
       color: '#333',
       fontSize: 12,
       fontWeight: 'medium',
-      offset: [0, -10],
+      offset: [0, -5],
       align: 'center',
       verticalAlign: 'middle',
       padding: [4, 6, 4, 6]
@@ -83,6 +83,7 @@ export class BarChartComponent implements OnInit, OnChanges {
           borderRadius: [4, 4, 0, 0]
         },
         label: barValueLabel,
+        barMaxWidth: 60,
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
@@ -96,7 +97,7 @@ export class BarChartComponent implements OnInit, OnChanges {
       const data = this.config.data as number[];
       const hasConditionalColors = (this.config as any).conditionalColors === true;
       const originalValues = (this.config as any).originalValues as number[] | undefined;
-      
+
       series = [{
         name: this.config.title || 'Datos',
         type: 'bar',
@@ -105,8 +106,8 @@ export class BarChartComponent implements OnInit, OnChanges {
           color: (params: any) => {
             // Si hay valores originales, usarlos para determinar el color
             // Si no, usar el valor mostrado (que ya es absoluto)
-            const originalValue = originalValues && originalValues[params.dataIndex] !== undefined 
-              ? originalValues[params.dataIndex] 
+            const originalValue = originalValues && originalValues[params.dataIndex] !== undefined
+              ? originalValues[params.dataIndex]
               : params.value;
             // Verde para valores positivos, rojo para negativos
             return originalValue >= 0 ? '#4caf50' : '#f44336';
@@ -117,6 +118,7 @@ export class BarChartComponent implements OnInit, OnChanges {
           borderRadius: [4, 4, 0, 0]
         },
         label: barValueLabel,
+        barMaxWidth: 60,
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
@@ -169,25 +171,34 @@ export class BarChartComponent implements OnInit, OnChanges {
       } : undefined,
       tooltip: isMultiSeries
         ? {
-            trigger: 'axis',
-            axisPointer: { type: 'shadow' },
-            formatter: barTooltipFormatter,
-          }
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          formatter: barTooltipFormatter,
+        }
         : {
-            trigger: 'item',
-            axisPointer: { type: 'none' },
-            formatter: barTooltipFormatter,
-          },
+          trigger: 'item',
+          axisPointer: { type: 'none' },
+          formatter: barTooltipFormatter,
+        },
       legend: isMultiSeries ? {
         data: (this.config.data as any[]).map((s: any) => s.name),
-        top: this.config.title ? 30 : 10,
-        left: 'left'
+        top: this.config.title ? 30 : 0,
+        left: 'left',
+        icon: 'circle',
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 24,
+        textStyle: {
+          fontSize: 13,
+          color: '#4a5568',
+          fontWeight: 'normal'
+        }
       } : undefined,
       grid: {
         left: (this.config as any).horizontal ? '15%' : '3%',
         right: '4%',
         bottom: gridBottom,
-        top: isMultiSeries ? (this.config.title ? '20%' : '15%') : '10%',
+        top: isMultiSeries ? (this.config.title ? 60 : 40) : 30,
         containLabel: true
       },
       xAxis: (this.config as any).horizontal ? {
@@ -235,12 +246,14 @@ export class BarChartComponent implements OnInit, OnChanges {
       },
       series: series.map(s => {
         if ((this.config as any).horizontal) {
-          // Para barras horizontales, ajustar el label position
+          // Para barras horizontales, ajustar el label position y rotación
           return {
             ...s,
             label: {
               ...s.label,
-              position: 'right'
+              position: 'right',
+              rotate: 0,
+              align: 'left'
             }
           };
         }

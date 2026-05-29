@@ -13,9 +13,11 @@ import {
 import { CashFlowItem } from '../../models/chart-config.model';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
+import { WebdatarocksComponent } from '@webdatarocks/ngx-webdatarocks';
 import { ApiService } from '@services/api.service';
 import { DropdownMultiFiltroSelection } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { DashboardFiltrosCatalogoService } from '../../services/dashboard-filtros-catalogo.service';
+import { ColDef, GridOptions, GridApi } from 'ag-grid-community';
 
 @Component({
   selector: 'app-resultados',
@@ -36,24 +38,179 @@ export class ResultadosComponent implements OnInit, OnChanges {
   private _totalPagar30Cache: number = 0;
   private _lastDatosHash: string = '';
 
+  // AG Grid APIs y configuraciones
+  private ventasGridApi!: GridApi;
+  private gastosGridApi!: GridApi;
+  private cobrar30GridApi!: GridApi;
+  private pagar30GridApi!: GridApi;
+
+  ventasGridOptions: GridOptions = {};
+  gastosGridOptions: GridOptions = {};
+  cobrar30GridOptions: GridOptions = {};
+  pagar30GridOptions: GridOptions = {};
+
+  ventasColumnDefs: ColDef[] = [
+    { 
+      field: 'cliente', 
+      headerName: 'Cliente', 
+      flex: 2,
+      sortable: true,
+      filter: true
+    },
+    { 
+      field: 'factura', 
+      headerName: '# factura', 
+      width: 130,
+      sortable: true,
+      filter: true
+    },
+    { 
+      field: 'monto', 
+      headerName: 'Monto', 
+      width: 160,
+      sortable: true,
+      filter: true,
+      valueFormatter: (params: any) => {
+        return params.value ? this.formatCurrency(params.value) : '';
+      },
+      cellStyle: { textAlign: 'right' },
+      type: 'numericColumn'
+    }
+  ];
+
+  gastosColumnDefs: ColDef[] = [
+    { 
+      field: 'proveedor', 
+      headerName: 'Proveedor', 
+      flex: 2,
+      sortable: true,
+      filter: true
+    },
+    { 
+      field: 'factura', 
+      headerName: '# factura', 
+      width: 130,
+      sortable: true,
+      filter: true
+    },
+    { 
+      field: 'monto', 
+      headerName: 'Monto', 
+      width: 160,
+      sortable: true,
+      filter: true,
+      valueFormatter: (params: any) => {
+        return params.value ? this.formatCurrency(params.value) : '';
+      },
+      cellStyle: { textAlign: 'right' },
+      type: 'numericColumn'
+    }
+  ];
+
+  cobrar30ColumnDefs: ColDef[] = [
+    { field: 'factura',         headerName: '# Factura',   width: 120,  sortable: true, filter: true },
+    { field: 'cliente',         headerName: 'Cliente',     flex: 2,     sortable: true, filter: true },
+    { field: 'vence',           headerName: 'Vence',       width: 120,  sortable: true, filter: true },
+    {
+      field: 'diasVencimiento',
+      headerName: 'Días venc.',
+      width: 110,
+      sortable: true,
+      filter: true,
+      cellStyle: { textAlign: 'right' },
+      type: 'numericColumn'
+    },
+    {
+      field: 'monto',
+      headerName: 'Monto',
+      width: 150,
+      sortable: true,
+      filter: true,
+      valueFormatter: (params: any) => params.value ? this.formatCurrency(params.value) : '',
+      cellStyle: { textAlign: 'right' },
+      type: 'numericColumn'
+    }
+  ];
+
+  pagar30ColumnDefs: ColDef[] = [
+    { field: 'factura',         headerName: '# Factura',   width: 120,  sortable: true, filter: true },
+    { field: 'proveedor',       headerName: 'Proveedor',   flex: 2,     sortable: true, filter: true },
+    { field: 'vence',           headerName: 'Vence',       width: 120,  sortable: true, filter: true },
+    {
+      field: 'diasVencimiento',
+      headerName: 'Días venc.',
+      width: 110,
+      sortable: true,
+      filter: true,
+      cellStyle: { textAlign: 'right' },
+      type: 'numericColumn'
+    },
+    {
+      field: 'monto',
+      headerName: 'Monto',
+      width: 150,
+      sortable: true,
+      filter: true,
+      valueFormatter: (params: any) => params.value ? this.formatCurrency(params.value) : '',
+      cellStyle: { textAlign: 'right' },
+      type: 'numericColumn'
+    }
+  ];
+
   private inicializado: boolean = false;
 
-  @ViewChild('ventasGrid') ventasGrid!: RevoGrid;
-  @ViewChild('gastosGrid') gastosGrid!: RevoGrid;
-  @ViewChild('cobrar30Grid') cobrar30Grid!: RevoGrid;
-  @ViewChild('pagar30Grid') pagar30Grid!: RevoGrid;
+  @ViewChild('ventasPivot')   ventasPivotRef!:   WebdatarocksComponent;
+  @ViewChild('gastosPivot')   gastosPivotRef!:   WebdatarocksComponent;
+  @ViewChild('cobrar30Pivot') cobrar30PivotRef!: WebdatarocksComponent;
+  @ViewChild('pagar30Pivot')  pagar30PivotRef!:  WebdatarocksComponent;
 
-  // Plugins para las tablas
-  ventasPlugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
-  gastosPlugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
+  // Plugins para revo-grid legacy (CXC/CXP aún en uso si los hay)
   cobrar30Plugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
-  pagar30Plugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
+  pagar30Plugins  = [SortingPlugin, FilterPlugin, ExportFilePlugin];
 
-  // Búsqueda
+  // ── WebDataRocks: Ventas del mes ──────────────────────────────────────────
+  private _ventasPivotInstance: any = null;
+
+  /** Configuración global: idioma español */
+  ventasPivotGlobal: any = {
+    localization: 'https://cdn.webdatarocks.com/loc/es.json'
+  };
+
+  /** Reporte inicial (vacío; se actualiza en onVentasPivotReady / ngOnChanges) */
+  ventasPivotReport: any = {};
+
+  // ── WebDataRocks: Gastos del mes ─────────────────────────────────────────
+  private _gastosPivotInstance: any = null;
+
+  /** Configuración global: idioma español */
+  gastosPivotGlobal: any = {
+    localization: 'https://cdn.webdatarocks.com/loc/es.json'
+  };
+
+  /** Reporte inicial (vacío; se actualiza en onGastosPivotReady / ngOnChanges) */
+  gastosPivotReport: any = {};
+
+  // ── WebDataRocks: CXC próximos 30 días ─────────────────────────────────
+  private _cobrar30PivotInstance: any = null;
+  cobrar30PivotGlobal: any = { localization: 'https://cdn.webdatarocks.com/loc/es.json' };
+  cobrar30PivotReport: any = {};
+
+  // ── WebDataRocks: CXP próximos 30 días ─────────────────────────────────
+  private _pagar30PivotInstance: any = null;
+  pagar30PivotGlobal: any = { localization: 'https://cdn.webdatarocks.com/loc/es.json' };
+  pagar30PivotReport: any = {};
+
+  // Búsqueda (quick filter)
   busquedaVentas: string = '';
   busquedaGastos: string = '';
   busquedaCobrar30: string = '';
   busquedaPagar30: string = '';
+
+  // Quick filter para ag-grid
+  quickFilterVentas: string = '';
+  quickFilterGastos: string = '';
+  quickFilterCobrar30: string = '';
+  quickFilterPagar30: string = '';
 
   // Filtros
   anios = [2024, 2025, 2026];
@@ -195,7 +352,66 @@ export class ResultadosComponent implements OnInit, OnChanges {
     );
   }
 
+  configurarAGGrid(): void {
+    const defaultDefs = {
+      resizable: true,
+      sortable: true,
+      filter: true
+    };
+
+    const sizeToFit = (api: any) => { try { api.sizeColumnsToFit(); } catch {} };
+    
+    this.ventasGridOptions = {
+      defaultColDef: defaultDefs,
+      enableCellTextSelection: true,
+      ensureDomOrder: true,
+      onGridReady: (params: any) => {
+        this.ventasGridApi = params.api;
+        sizeToFit(params.api);
+      },
+      onFirstDataRendered: (params: any) => sizeToFit(params.api),
+      onGridSizeChanged: (params: any) => sizeToFit(params.api)
+    };
+
+    this.gastosGridOptions = {
+      defaultColDef: defaultDefs,
+      enableCellTextSelection: true,
+      ensureDomOrder: true,
+      onGridReady: (params: any) => {
+        this.gastosGridApi = params.api;
+        sizeToFit(params.api);
+      },
+      onFirstDataRendered: (params: any) => sizeToFit(params.api),
+      onGridSizeChanged: (params: any) => sizeToFit(params.api)
+    };
+
+    this.cobrar30GridOptions = {
+      defaultColDef: defaultDefs,
+      enableCellTextSelection: true,
+      ensureDomOrder: true,
+      onGridReady: (params: any) => {
+        this.cobrar30GridApi = params.api;
+        sizeToFit(params.api);
+      },
+      onFirstDataRendered: (params: any) => sizeToFit(params.api),
+      onGridSizeChanged: (params: any) => sizeToFit(params.api)
+    };
+
+    this.pagar30GridOptions = {
+      defaultColDef: defaultDefs,
+      enableCellTextSelection: true,
+      ensureDomOrder: true,
+      onGridReady: (params: any) => {
+        this.pagar30GridApi = params.api;
+        sizeToFit(params.api);
+      },
+      onFirstDataRendered: (params: any) => sizeToFit(params.api),
+      onGridSizeChanged: (params: any) => sizeToFit(params.api)
+    };
+  }
+
   ngOnInit(): void {
+    this.configurarAGGrid();
     // Recalcular cache si hay datos
     if (this.datos && Object.keys(this.datos).length > 0) {
       this.recalcularRowsCache();
@@ -211,12 +427,10 @@ export class ResultadosComponent implements OnInit, OnChanges {
   }
 
   /**
-   * Año en curso → mes actual por defecto. Años pasados/futuros → todo el año (`null`).
+   * Siempre inicia en "Todo el año" (null).
    */
   private aplicarDefectoMesFlujoEfectivo(): void {
-    const now = new Date();
-    const cy = now.getFullYear();
-    this.mesFlujoEfectivo = this.anioSeleccionado === cy ? now.getMonth() + 1 : null;
+    this.mesFlujoEfectivo = null;
   }
 
   /** Último mes disponible en el desplegable según año (año actual → hasta hoy; otro año → 12). */
@@ -264,6 +478,10 @@ export class ResultadosComponent implements OnInit, OnChanges {
       if (this.datos && Object.keys(this.datos).length > 0) {
         // Recalcular cache cuando los datos cambien
         this.recalcularRowsCache();
+        this.actualizarVentasPivot();
+        this.actualizarGastosPivot();
+        this.actualizarCobrar30Pivot();
+        this.actualizarPagar30Pivot();
         console.log('Resultados - cache recalculado');
         console.log('Resultados - ventasRows:', this._ventasRowsCache);
         console.log('Resultados - gastosRows:', this._gastosRowsCache);
@@ -396,14 +614,276 @@ export class ResultadosComponent implements OnInit, OnChanges {
     );
   }
 
-  onBusquedaVentasChange(): void {
-  }
-
   onBusquedaGastosChange(): void {
   }
 
+  // ─── Quick-filter handlers ─────────────────────────────────────────────────
+
+  onQuickFilterVentasChange(): void {
+    // El binding [quickFilterText] en el template propaga el valor automáticamente
+  }
+
+  onQuickFilterGastosChange(): void {
+    // El binding [quickFilterText] en el template propaga el valor automáticamente
+  }
+
+  onQuickFilterCobrar30Change(): void {
+    // El binding [quickFilterText] en el template propaga el valor automáticamente
+  }
+
+  onQuickFilterPagar30Change(): void {
+    // El binding [quickFilterText] en el template propaga el valor automáticamente
+  }
+
+  // ─── Limpiar filtros ───────────────────────────────────────────────────────
+
+  limpiarFiltrosVentas(): void {
+    this.quickFilterVentas = '';
+    if (this.ventasGridApi) {
+      this.ventasGridApi.setFilterModel(null);
+    }
+  }
+
+  limpiarFiltrosGastos(): void {
+    this.quickFilterGastos = '';
+    if (this.gastosGridApi) {
+      this.gastosGridApi.setFilterModel(null);
+    }
+  }
+
+  limpiarFiltrosCobrar30(): void {
+    this.quickFilterCobrar30 = '';
+    if (this.cobrar30GridApi) {
+      this.cobrar30GridApi.setFilterModel(null);
+    }
+  }
+
+  limpiarFiltrosPagar30(): void {
+    this.quickFilterPagar30 = '';
+    if (this.pagar30GridApi) {
+      this.pagar30GridApi.setFilterModel(null);
+    }
+  }
+
+  // ─── Exportar CSV ──────────────────────────────────────────────────────────
+
+  exportarVentasCSV(): void {
+    if (this.ventasGridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.ventasGridApi.exportDataAsCsv({ fileName: `ventas-mes-${fecha}.csv` });
+    } else {
+      alert('No hay datos de ventas para exportar');
+    }
+  }
+
+  exportarGastosCSV(): void {
+    if (this.gastosGridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.gastosGridApi.exportDataAsCsv({ fileName: `gastos-mes-${fecha}.csv` });
+    } else {
+      alert('No hay datos de gastos para exportar');
+    }
+  }
+
+  exportarCobrar30CSV(): void {
+    if (this.cobrar30GridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.cobrar30GridApi.exportDataAsCsv({ fileName: `cxc-30-dias-${fecha}.csv` });
+    } else {
+      alert('No hay datos de CXC para exportar');
+    }
+  }
+
+  exportarPagar30CSV(): void {
+    if (this.pagar30GridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.pagar30GridApi.exportDataAsCsv({ fileName: `cxp-30-dias-${fecha}.csv` });
+    } else {
+      alert('No hay datos de CXP para exportar');
+    }
+  }
+
+  // ─── Exportar Excel (CSV con extensión .xlsx como fallback) ──────────────
+
+  private exportarComoExcel(api: GridApi | undefined, filename: string): void {
+    if (!api) { alert('No hay datos para exportar'); return; }
+    try {
+      (api as any).exportDataAsExcel({ fileName: filename });
+    } catch {
+      // Fallback a CSV si no hay módulo enterprise
+      api.exportDataAsCsv({ fileName: filename.replace('.xlsx', '.csv') });
+    }
+  }
+
+  exportarVentasExcel(): void {
+    const fecha = new Date().toISOString().split('T')[0];
+    this.exportarComoExcel(this.ventasGridApi, `ventas-mes-${fecha}.xlsx`);
+  }
+
+  exportarGastosExcel(): void {
+    const fecha = new Date().toISOString().split('T')[0];
+    this.exportarComoExcel(this.gastosGridApi, `gastos-mes-${fecha}.xlsx`);
+  }
+
+  exportarCobrar30Excel(): void {
+    const fecha = new Date().toISOString().split('T')[0];
+    this.exportarComoExcel(this.cobrar30GridApi, `cxc-30-dias-${fecha}.xlsx`);
+  }
+
+  exportarPagar30Excel(): void {
+    const fecha = new Date().toISOString().split('T')[0];
+    this.exportarComoExcel(this.pagar30GridApi, `cxp-30-dias-${fecha}.xlsx`);
+  }
+
+  // ── WebDataRocks: Ventas ─────────────────────────────────────────────────
+
+  onVentasPivotReady(pivot: any): void {
+    this._ventasPivotInstance = pivot;
+    // setTimeout(0): espera al siguiente tick para que WebDataRocks
+    // termine su inicialización interna antes de llamar setReport()
+    setTimeout(() => this.actualizarVentasPivot(), 0);
+  }
+
+  private actualizarVentasPivot(): void {
+    if (!this._ventasPivotInstance) return;
+    const filas: any[] = this._ventasRowsCache.map(v => ({
+      Cliente: v.cliente || '',
+      Factura: v.factura || '',
+      Monto:   typeof v.monto === 'number' ? v.monto : parseFloat(v.monto) || 0,
+    }));
+    this._ventasPivotInstance.setReport({
+      dataSource: { data: filas },
+      slice: {
+        rows:     [{ uniqueName: 'Cliente' }, { uniqueName: 'Factura' }],
+        columns:  [{ uniqueName: '[Measures]' }],
+        measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
+      },
+      formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
+      options:  { grid: { showGrandTotals: 'on', showTotals: 'on' } }
+    });
+  }
+
+  exportarVentasPivot(): void {
+    if (this._ventasPivotInstance) {
+      this._ventasPivotInstance.exportTo('csv', { filename: `ventas-mes-${new Date().toISOString().split('T')[0]}` });
+    } else {
+      alert('No hay datos de ventas para exportar');
+    }
+  }
+
+  // ── WebDataRocks: Gastos ─────────────────────────────────────────────────
+
+  onGastosPivotReady(pivot: any): void {
+    this._gastosPivotInstance = pivot;
+    setTimeout(() => this.actualizarGastosPivot(), 0);
+  }
+
+  private actualizarGastosPivot(): void {
+    if (!this._gastosPivotInstance) return;
+    const filas: any[] = this._gastosRowsCache.map(g => ({
+      Proveedor: g.proveedor || '',
+      Factura:   g.factura   || '',
+      Monto:     typeof g.monto === 'number' ? g.monto : parseFloat(g.monto) || 0,
+    }));
+    this._gastosPivotInstance.setReport({
+      dataSource: { data: filas },
+      slice: {
+        rows:     [{ uniqueName: 'Proveedor' }, { uniqueName: 'Factura' }],
+        columns:  [{ uniqueName: '[Measures]' }],
+        measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
+      },
+      formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
+      options:  { grid: { showGrandTotals: 'on', showTotals: 'on' } }
+    });
+  }
+
+  exportarGastosPivot(): void {
+    if (this._gastosPivotInstance) {
+      this._gastosPivotInstance.exportTo('csv', { filename: `gastos-mes-${new Date().toISOString().split('T')[0]}` });
+    } else {
+      alert('No hay datos de gastos para exportar');
+    }
+  }
+
+  // ── WebDataRocks: CXC próximos 30 días ────────────────────────────────
+
+  onCobrar30PivotReady(pivot: any): void {
+    this._cobrar30PivotInstance = pivot;
+    setTimeout(() => this.actualizarCobrar30Pivot(), 0);
+  }
+
+  private actualizarCobrar30Pivot(): void {
+    if (!this._cobrar30PivotInstance) return;
+    const filas: any[] = this._cobrar30RowsCache.map(r => ({
+      Cliente:         r.cliente          || '',
+      Factura:         r.factura          || '',
+      Vence:           r.vence            || '',
+      DiasVenc:        typeof r.diasVencimiento === 'number' ? r.diasVencimiento : 0,
+      Monto:           typeof r.monto === 'number' ? r.monto : parseFloat(r.monto) || 0,
+    }));
+    this._cobrar30PivotInstance.setReport({
+      dataSource: { data: filas },
+      slice: {
+        rows:     [{ uniqueName: 'Cliente' }, { uniqueName: 'Factura' }, { uniqueName: 'Vence' }, { uniqueName: 'DiasVenc', caption: 'Días venc.' }],
+        columns:  [{ uniqueName: '[Measures]' }],
+        measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
+      },
+      formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
+      options:  { grid: { showGrandTotals: 'on', showTotals: 'on' } }
+    });
+  }
+
+  exportarCobrar30Pivot(): void {
+    if (this._cobrar30PivotInstance) {
+      this._cobrar30PivotInstance.exportTo('csv', { filename: `cxc-30-dias-${new Date().toISOString().split('T')[0]}` });
+    } else {
+      alert('No hay datos de CXC para exportar');
+    }
+  }
+
+  // ── WebDataRocks: CXP próximos 30 días ────────────────────────────────
+
+  onPagar30PivotReady(pivot: any): void {
+    this._pagar30PivotInstance = pivot;
+    setTimeout(() => this.actualizarPagar30Pivot(), 0);
+  }
+
+  private actualizarPagar30Pivot(): void {
+    if (!this._pagar30PivotInstance) return;
+    const filas: any[] = this._pagar30RowsCache.map(r => ({
+      Proveedor:  r.proveedor        || '',
+      Factura:    r.factura          || '',
+      Vence:      r.vence            || '',
+      DiasVenc:   typeof r.diasVencimiento === 'number' ? r.diasVencimiento : 0,
+      Monto:      typeof r.monto === 'number' ? r.monto : parseFloat(r.monto) || 0,
+    }));
+    this._pagar30PivotInstance.setReport({
+      dataSource: { data: filas },
+      slice: {
+        rows:     [{ uniqueName: 'Proveedor' }, { uniqueName: 'Factura' }, { uniqueName: 'Vence' }, { uniqueName: 'DiasVenc', caption: 'Días venc.' }],
+        columns:  [{ uniqueName: '[Measures]' }],
+        measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
+      },
+      formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
+      options:  { grid: { showGrandTotals: 'on', showTotals: 'on' } }
+    });
+  }
+
+  exportarPagar30Pivot(): void {
+    if (this._pagar30PivotInstance) {
+      this._pagar30PivotInstance.exportTo('csv', { filename: `cxp-30-dias-${new Date().toISOString().split('T')[0]}` });
+    } else {
+      alert('No hay datos de CXP para exportar');
+    }
+  }
+
   exportarVentas(): void {
-    if (this.ventasRows.length > 0) {
+    if (this.ventasGridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.ventasGridApi.exportDataAsCsv({
+        fileName: `ventas-mes-${fecha}.csv`
+      });
+    } else if (this.ventasRows.length > 0) {
       const fecha = new Date().toISOString().split('T')[0];
       this.exportarACSV(this.ventasRows, this.ventasColumns, `ventas-mes-${fecha}.csv`);
     } else {
@@ -412,7 +892,12 @@ export class ResultadosComponent implements OnInit, OnChanges {
   }
 
   exportarGastos(): void {
-    if (this.gastosRows.length > 0) {
+    if (this.gastosGridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.gastosGridApi.exportDataAsCsv({
+        fileName: `gastos-mes-${fecha}.csv`
+      });
+    } else if (this.gastosRows.length > 0) {
       const fecha = new Date().toISOString().split('T')[0];
       this.exportarACSV(this.gastosRows, this.gastosColumns, `gastos-mes-${fecha}.csv`);
     } else {
@@ -554,7 +1039,10 @@ export class ResultadosComponent implements OnInit, OnChanges {
   }
 
   exportarCobrar30(): void {
-    if (this.cobrar30Rows.length > 0) {
+    if (this.cobrar30GridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.cobrar30GridApi.exportDataAsCsv({ fileName: `cuentas-por-cobrar-30-dias-${fecha}.csv` });
+    } else if (this.cobrar30Rows.length > 0) {
       const fecha = new Date().toISOString().split('T')[0];
       this.exportarACSV(this.cobrar30Rows, this.cobrar30Columns, `cuentas-por-cobrar-30-dias-${fecha}.csv`);
     } else {
@@ -563,7 +1051,10 @@ export class ResultadosComponent implements OnInit, OnChanges {
   }
 
   exportarPagar30(): void {
-    if (this.pagar30Rows.length > 0) {
+    if (this.pagar30GridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.pagar30GridApi.exportDataAsCsv({ fileName: `cuentas-por-pagar-30-dias-${fecha}.csv` });
+    } else if (this.pagar30Rows.length > 0) {
       const fecha = new Date().toISOString().split('T')[0];
       this.exportarACSV(this.pagar30Rows, this.pagar30Columns, `cuentas-por-pagar-30-dias-${fecha}.csv`);
     } else {

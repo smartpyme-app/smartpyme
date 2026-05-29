@@ -18,6 +18,7 @@ export interface ChartConfig {
 export interface MetricCard {
     title: string;
     value: number | string;
+    type?: 'currency' | 'percentage' | 'number';
     icon?: string;
     color?: string;
     trend?: {

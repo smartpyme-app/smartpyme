@@ -24,7 +24,7 @@ class VerificarSuscripcion extends Command
             $this->verificarPeriodosPrueba();
             $this->verificarSuscripcionesVencidas();
             $this->procesarSuscripcionesCanceladas();
-            $this->verificarInactividad();
+            // $this->verificarInactividad();
 
             $this->info('Verificación completada exitosamente');
             Log::channel('suscripciones')->info('Verificación completada exitosamente');

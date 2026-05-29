@@ -7,7 +7,31 @@ import { DashboardAnalyticsApiService } from './dashboard-analytics-api.service'
   providedIn: 'root',
 })
 export class ResultadosDashboardDataService {
-  constructor(private analytics: DashboardAnalyticsApiService) {}
+  constructor(private analytics: DashboardAnalyticsApiService) { }
+
+  private obtenerNombreMes(val: any): string {
+    if (!val) return '';
+    const meses = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    const valStr = String(val);
+    if (valStr.includes('-')) {
+      const parts = valStr.split('-');
+      const mesNum = parseInt(parts[1], 10);
+      if (mesNum >= 1 && mesNum <= 12) {
+        return meses[mesNum - 1];
+      }
+    }
+
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num >= 1 && num <= 12) {
+      return meses[num - 1];
+    }
+
+    return valStr;
+  }
 
   private mapearResultadosCritico(raw: {
     cards: any;
@@ -53,10 +77,24 @@ export class ResultadosDashboardDataService {
           icon: 'percent',
           color: '#007bff',
         },
+        {
+          title: 'Cuentas por cobrar',
+          value: cxcTotal,
+          type: 'currency',
+          icon: 'dollar-sign',
+          color: '#28a745',
+        },
+        {
+          title: 'Cuentas por pagar',
+          value: cxpTotal,
+          type: 'currency',
+          icon: 'dollar-sign',
+          color: '#dc3545',
+        },
       ],
       ventasGastosConfig: {
         type: 'bar',
-        labels: (porMes ?? []).map((f: any) => f.anioMes || f.mes),
+        labels: (porMes ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes || f.mes)),
         data: [
           {
             name: 'Ventas',
@@ -67,6 +105,7 @@ export class ResultadosDashboardDataService {
             data: (porMes ?? []).map((f: any) => f.egresosConIva || 0),
           },
         ],
+        colors: ['#7CABFF', '#F19447'],
       },
       cuentasPorCobrar: (cxc ?? []).map((i: any) => ({
         name: i.name,
@@ -110,22 +149,21 @@ export class ResultadosDashboardDataService {
   obtenerResultadosProgresivo(filtros: any = {}): Observable<any> {
     const api = this.analytics.baseUrl;
     const p = this.analytics.params(filtros);
-    const pAnual = this.analytics.paramsAnual(filtros);
     const safe = (path: string) => this.analytics.getSafe(`${api}${path}`);
 
     const critico$ = forkJoin({
-      cards: safe(`/api/resultados/cards?${pAnual}`),
+      cards: safe(`/api/resultados/cards?${p}`),
       porMes: safe(`/api/resultados/ventas-gastos-mes?${p}`),
-      cxc: safe(`/api/resultados/cxc-clientes?${pAnual}&limite=10`),
-      cxp: safe(`/api/resultados/cxp-proveedores?${pAnual}&limite=10`),
+      cxc: safe(`/api/resultados/cxc-clientes?${p}&limite=10`),
+      cxp: safe(`/api/resultados/cxp-proveedores?${p}&limite=10`),
     }).pipe(map((r) => this.mapearResultadosCritico(r)));
 
     const pesado$ = forkJoin({
       cashflow: safe(`/api/resultados/cashflow?${p}`),
       cashflowVentas: safe(`/api/resultados/cashflow-ventas-detalle?${p}`),
       cashflowGastos: safe(`/api/resultados/cashflow-gastos-detalle?${p}`),
-      cxc30: safe(`/api/resultados/cxc-30dias?${pAnual}`),
-      cxp30: safe(`/api/resultados/cxp-30dias?${pAnual}`),
+      cxc30: safe(`/api/resultados/cxc-30dias?${p}`),
+      cxp30: safe(`/api/resultados/cxp-30dias?${p}`),
     }).pipe(map((r) => this.mapearResultadosPesado(r)));
 
     return critico$.pipe(

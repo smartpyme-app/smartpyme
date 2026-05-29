@@ -6,6 +6,7 @@ import { NgxEchartsModule } from 'ngx-echarts';
 import * as echarts from 'echarts';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { AgGridModule } from 'ag-grid-angular';
+import { WebdatarocksPivotModule } from '@webdatarocks/ngx-webdatarocks';
 
 import { DashboardComponent } from './dashboard.component';
 import { ChartCardComponent } from './components/chart-card/chart-card.component';
@@ -38,6 +39,7 @@ import { PipesModule } from '@pipes/pipes.module';
     NgxEchartsModule.forRoot({ echarts }),
     RevoGrid,
     AgGridModule,
+    WebdatarocksPivotModule,
     SharedModule,
     PipesModule
   ],

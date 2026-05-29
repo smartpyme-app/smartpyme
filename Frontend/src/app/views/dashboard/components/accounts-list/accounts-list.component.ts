@@ -19,6 +19,13 @@ export class AccountsListComponent implements OnInit, OnChanges {
   chartOption: any = {};
   echartsInstance: any;
 
+  private hexToRgba(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   ngOnInit(): void {
     this.initChart();
   }
@@ -42,7 +49,7 @@ export class AccountsListComponent implements OnInit, OnChanges {
     const sorted = this.sortedAccounts;
     const labels = sorted.map(a => a.name);
     const data = sorted.map(a => Math.abs(a.amount));
-    const color = this.type === 'payable' ? '#ff9800' : '#4a90e2';
+    const color = this.type === 'payable' ? '#F19447' : '#7CABFF';
 
     this.chartOption = {
       tooltip: {
@@ -98,7 +105,9 @@ export class AccountsListComponent implements OnInit, OnChanges {
         data: data,
         barWidth: '80%',
         itemStyle: {
-          color: color,
+          color: (params: any) => {
+            return params.dataIndex === 0 ? color : this.hexToRgba(color, 0.4);
+          },
           borderRadius: [0, 4, 4, 0]
         },
         label: {
