@@ -10,6 +10,11 @@ import { TiendaVentaBuscadorV2Component } from '../buscador/tienda-venta-buscado
 import { TiendaVentaProductoComponent } from '../../facturacion-tienda/productos/tienda-venta-producto.component';
 import { TiendaVentaPaquetesV2Component } from '../paquetes/tienda-venta-paquetes-v2.component';
 import { TiendaVentaCitasComponent } from '../../facturacion-tienda/citas/tienda-venta-citas.component';
+import { FeCrExoneracionDetalleModalComponent } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle-modal.component';
+import {
+  detalleTieneExoneracionCr,
+  initFeCrExoneracionDetalle,
+} from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 
 import Swal from 'sweetalert2';
 
@@ -24,7 +29,8 @@ import Swal from 'sweetalert2';
     TiendaVentaBuscadorV2Component,
     TiendaVentaProductoComponent,
     TiendaVentaPaquetesV2Component,
-    TiendaVentaCitasComponent
+    TiendaVentaCitasComponent,
+    FeCrExoneracionDetalleModalComponent,
   ]
 })
 export class VentaDetallesV2Component implements OnInit {
@@ -32,6 +38,7 @@ export class VentaDetallesV2Component implements OnInit {
     @Input() venta: any = {};
     @Input() usuarios: any = {};
     @Input() habilitarCuentaTerceros = false;
+    @Input() esFeCostaRica = false;
     public usuario:any = {};
     public detalle:any = {};
     public composicion:any = {};
@@ -48,13 +55,19 @@ export class VentaDetallesV2Component implements OnInit {
     @ViewChild('mloteVenta')
     public mloteVenta!: TemplateRef<any>;
 
+    @ViewChild('feCrExoneracionModal')
+    feCrExoneracionModal!: FeCrExoneracionDetalleModalComponent;
+
     public buscador:string = '';
     public loading:boolean = false;
 
-    constructor( 
-        public apiService: ApiService, private alertService: AlertService,
+    constructor(
+        public apiService: ApiService,
+        private alertService: AlertService,
         private modalService: BsModalService
     ) { }
+
+    readonly detalleTieneExoneracionCr = detalleTieneExoneracionCr;
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
@@ -165,6 +178,10 @@ export class VentaDetallesV2Component implements OnInit {
             detalle.exenta = total;
             detalle.total_iva = detalle.total;
             detalle.iva = 0;
+        } else if (tipo === 'exonerada') {
+            detalle.gravada = total;
+            detalle.total_iva = detalle.total;
+            detalle.iva = 0;
         } else {
             detalle.no_sujeta = total;
             detalle.total_iva = detalle.total;
@@ -173,6 +190,25 @@ export class VentaDetallesV2Component implements OnInit {
     }
 
     public onTipoGravadoChange(detalle: any) {
+        const tipo = (detalle.tipo_gravado || '').toLowerCase();
+        if (this.esFeCostaRica && tipo === 'exonerada') {
+            initFeCrExoneracionDetalle(detalle);
+            if (!detalle.fe_cr_exoneracion?.aplica) {
+                detalle.fe_cr_exoneracion.aplica = true;
+            }
+        } else if (detalle.fe_cr_exoneracion?.aplica && tipo !== 'exonerada') {
+            detalle.fe_cr_exoneracion.aplica = false;
+        }
+        this.aplicarTipoGravado(detalle);
+        this.update.emit(this.venta);
+        this.sumTotal.emit();
+    }
+
+    abrirModalExoneracionCr(detalle: any): void {
+        this.feCrExoneracionModal.abrir(detalle);
+    }
+
+    onExoneracionDetalleSaved(detalle: any): void {
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();
@@ -391,6 +427,9 @@ export class VentaDetallesV2Component implements OnInit {
             
             if(!this.detalle.tipo_gravado){
                 this.detalle.tipo_gravado = 'gravada';
+            }
+            if (this.esFeCostaRica) {
+                initFeCrExoneracionDetalle(this.detalle);
             }
             if(!this.detalle.exenta){
                 this.detalle.exenta = 0;

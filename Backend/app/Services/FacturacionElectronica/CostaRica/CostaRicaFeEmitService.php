@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use ReflectionClass;
 use ReflectionException;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeNota23Catalog;
 use RuntimeException;
 use Throwable;
 
@@ -466,19 +467,55 @@ final class CostaRicaFeEmitService
     }
 
     /**
-     * Si la venta declara exoneración de IVA (fe_cr_exoneracion.aplica), exige tipo y número de documento.
+     * Valida datos de exoneración por línea (o legacy a nivel venta).
      */
     private function assertDatosExoneracionCrSiAplica(Venta $venta): void
     {
+        $venta->loadMissing('detalles');
+        $linea = 0;
+        foreach ($venta->detalles as $detalle) {
+            $linea++;
+            $this->assertExoneracionCrCompleta($detalle->fe_cr_exoneracion, "línea {$linea}");
+        }
+
         $ex = $venta->fe_cr_exoneracion;
+        if (is_array($ex) && ! empty($ex['aplica'])) {
+            $this->assertExoneracionCrCompleta($ex, 'venta (formato anterior)');
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $ex
+     */
+    private function assertExoneracionCrCompleta(?array $ex, string $contexto): void
+    {
         if (! is_array($ex) || empty($ex['aplica'])) {
             return;
         }
         $tipo = trim((string) ($ex['tipo_documento_ex'] ?? ''));
         $num = trim((string) ($ex['numero_documento'] ?? ''));
-        if ($tipo === '' || $num === '') {
+        $inst = CostaRicaFeNota23Catalog::resolverCodigo($ex['nombre_institucion'] ?? '');
+        $instOtro = trim((string) ($ex['nombre_institucion_otro'] ?? ''));
+        $fecha = trim((string) ($ex['fecha_emision'] ?? ''));
+        $tarifa = (float) ($ex['tarifa_exonerada'] ?? 0);
+        if ($tipo === '' || $num === '' || $inst === '' || $fecha === '' || $tarifa <= 0) {
             throw new RuntimeException(
-                'Para exoneración de IVA en Costa Rica indique el tipo de documento y el número de autorización (facturación sin IVA).'
+                "Exoneración de IVA incompleta en {$contexto}: indique tipo de documento EX, número de autorización, institución (nota 23), fecha de emisión del documento y tarifa exonerada (%)."
+            );
+        }
+        if (! CostaRicaFeNota23Catalog::esCodigoValido($inst)) {
+            throw new RuntimeException(
+                "En {$contexto}, la institución emisora debe ser un código válido de la nota 23."
+            );
+        }
+        if ($inst === '99' && mb_strlen($instOtro) < 5) {
+            throw new RuntimeException(
+                "En {$contexto}, si la institución es «Otros» (99) debe indicar el nombre de la institución (mínimo 5 caracteres)."
+            );
+        }
+        if ($tipo === '99' && trim((string) ($ex['documento_otro'] ?? '')) === '') {
+            throw new RuntimeException(
+                "En {$contexto}, si el tipo de documento EX es 99 debe especificar el documento «otro»."
             );
         }
     }

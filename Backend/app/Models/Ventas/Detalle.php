@@ -30,7 +30,12 @@ class Detalle extends Model
         'id_vendedor',
         'iva',
         'porcentaje_impuesto',
+        'fe_cr_exoneracion',
     );
+
+    protected $casts = [
+        'fe_cr_exoneracion' => 'array',
+    ];
 
     protected $appends = ['nombre_producto', 'img', 'codigo', 'descuento_porcentaje', 'marca'];
 

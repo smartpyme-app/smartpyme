@@ -180,6 +180,12 @@
                                         <span class="text-info"> ({{ detalle?.producto?.nombre_variante }})</span>
                                     } <br>
                                     <small class="text-muted text-tiny">{{ detalle?.producto?.tipo }}</small>
+                                    @if (esFeCostaRica() && detalleTieneExoneracionCr(detalle)) {
+                                      <br><span class="badge bg-info mt-1">Exoneración IVA</span>
+                                      @if (detalle.fe_cr_exoneracion?.numero_documento) {
+                                        <br><small class="text-muted">{{ detalle.fe_cr_exoneracion.numero_documento }}</small>
+                                      }
+                                    }
                                     <ul style="font-size: 14px;">
                                         @for (comp of detalle?.composiciones; track comp.id || $index) {
                                             <li class="text-muted">{{ comp.producto_nombre }} X {{ comp.cantidad }}</li>
@@ -195,7 +201,7 @@
                             }
                             <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.precio | number:'1.0-6':'en-US' }}</td>
                             <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.descuento | number:'1.0-6':'en-US' }}</td>
-                            <td>{{ (detalle.tipo_gravado || 'gravada') === 'gravada' ? 'Gravada' : ((detalle.tipo_gravado || '') === 'exenta' ? 'Exenta' : 'No sujeta') }}</td>
+                            <td>{{ etiquetaTipoGravado(detalle) }}</td>
                             <td class="text-end">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.total | number:'1.0-6':'en-US' }}</td>
                         </tr>
                     }

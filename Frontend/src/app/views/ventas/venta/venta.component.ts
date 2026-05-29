@@ -14,7 +14,8 @@ import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.c
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { detalleTieneExoneracionCr } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
@@ -73,6 +74,20 @@ export class VentaComponent implements OnInit {
     /** Detalle MH exportación (incoterm, recinto, etc.): solo El Salvador. */
     esFacturacionElSalvador(): boolean {
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
+    }
+
+    esFeCostaRica(): boolean {
+        return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+    }
+
+    readonly detalleTieneExoneracionCr = detalleTieneExoneracionCr;
+
+    etiquetaTipoGravado(detalle: any): string {
+        const t = (detalle?.tipo_gravado || 'gravada').toLowerCase();
+        if (t === 'exenta') return 'Exenta';
+        if (t === 'exonerada') return 'Exonerada';
+        if (t === 'no_sujeta') return 'No sujeta';
+        return 'Gravada';
     }
 
     // public loadAll(){

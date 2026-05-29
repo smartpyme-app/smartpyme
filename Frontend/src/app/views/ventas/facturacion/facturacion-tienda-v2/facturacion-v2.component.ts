@@ -12,6 +12,7 @@ import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { migrarExoneracionCrLegacyADetalles as migrarExoneracionLegacyUtil } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { NOMBRE_DOCUMENTO_CR } from '@views/ventas/documentos/documento-nombre-options';
 import { xmlComprobanteDesdeRechazoFeCr } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
@@ -85,17 +86,6 @@ export class FacturacionV2Component implements OnInit {
    * hasta cambiar de cliente o iniciar un documento nuevo desde carga inicial.
    */
   private retencionIvaGcUsuarioDecidio = false;
-
-  /** Códigos nota 10.1 DGT (ejemplos frecuentes; ver documentación oficial para el caso concreto). */
-  public readonly feCrTiposDocumentoExoneracion: { codigo: string; nombre: string }[] = [
-    { codigo: '01', nombre: 'Compras autorizadas por Dirección General de Hacienda' },
-    { codigo: '02', nombre: 'Ventas de mercancía en casos especiales' },
-    { codigo: '03', nombre: 'Casos especiales de venta de bienes o prestación de servicios' },
-    { codigo: '04', nombre: 'Órgano de las corporaciones municipales' },
-    { codigo: '08', nombre: 'Exoneración a Zona Franca' },
-    { codigo: '09', nombre: 'Servicios complementarios exportación (RLIVA)' },
-    { codigo: '99', nombre: 'Otros (especificar en documento otro)' },
-  ];
 
   preCuentaId: number | null = null;
   sesionId: number | null = null;
@@ -394,7 +384,7 @@ export class FacturacionV2Component implements OnInit {
     this.venta.id_vendedor = this.apiService.auth_user().id;
     this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.venta.id_empresa = this.apiService.auth_user().id_empresa;
-    this.initFeCrExoneracionVenta();
+    this.migrarExoneracionCrLegacyADetalles();
     let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
     if (corte) {
       this.venta.fecha = JSON.parse(sessionStorage.getItem('SP_corte')!).fecha;
@@ -498,7 +488,7 @@ export class FacturacionV2Component implements OnInit {
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
-            this.initFeCrExoneracionVenta();
+            this.migrarExoneracionCrLegacyADetalles();
             this.sumTotal();
           },
           (error) => {
@@ -529,7 +519,7 @@ export class FacturacionV2Component implements OnInit {
               this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
             }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
-            this.initFeCrExoneracionVenta();
+            this.migrarExoneracionCrLegacyADetalles();
             this.syncVentaCreditoConsignaFlagsFromEstado();
             this.venta.fecha = this.apiService.date();
             this.venta.fecha_pago = this.apiService.date();
@@ -581,7 +571,7 @@ export class FacturacionV2Component implements OnInit {
                     : this.venta.cliente.nombre_completo;
               }
               this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
-              this.initFeCrExoneracionVenta();
+              this.migrarExoneracionCrLegacyADetalles();
               this.venta.fecha = this.apiService.date();
               this.venta.fecha_pago = this.apiService.date();
               this.venta.id_documento = null;
@@ -633,9 +623,11 @@ export class FacturacionV2Component implements OnInit {
                 const precioSinIva = parseFloat(detalle.precio || 0);
                 detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
                 detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
+                const tiposValidos = ['gravada', 'exenta', 'no_sujeta', 'exonerada'];
                 const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
-                detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
-                detalle.gravada = detalle.tipo_gravado === 'gravada' ? detalle.total : 0;
+                detalle.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
+                detalle.gravada =
+                  detalle.tipo_gravado === 'gravada' || detalle.tipo_gravado === 'exonerada' ? detalle.total : 0;
                 detalle.exenta = detalle.tipo_gravado === 'exenta' ? detalle.total : 0;
                 detalle.no_sujeta = detalle.tipo_gravado === 'no_sujeta' ? detalle.total : 0;
 
@@ -945,36 +937,17 @@ export class FacturacionV2Component implements OnInit {
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
   }
 
-  /** Datos de exoneración DGT (se guardan en ventas.fe_cr_exoneracion). */
-  initFeCrExoneracionVenta(): void {
+  /**
+   * Ventas antiguas guardaban exoneración en ventas.fe_cr_exoneracion; copiar a cada detalle sin datos propios.
+   */
+  migrarExoneracionCrLegacyADetalles(): void {
     if (!this.esFeCostaRicaFacturacion()) {
       return;
     }
-    const base = {
-      aplica: false,
-      tipo_documento_ex: '',
-      numero_documento: '',
-      nombre_institucion: '',
-      tarifa_exonerada: 13,
-      numero_articulo: '',
-      numero_inciso: '',
-      documento_otro: '',
-    };
-    const cur = this.venta?.fe_cr_exoneracion;
-    if (!cur || typeof cur !== 'object') {
-      this.venta.fe_cr_exoneracion = { ...base };
-      return;
-    }
-    this.venta.fe_cr_exoneracion = { ...base, ...cur };
+    migrarExoneracionLegacyUtil(this.venta);
   }
 
   onCobrarImpuestosChange(): void {
-    if (this.venta.cobrar_impuestos && this.venta.fe_cr_exoneracion) {
-      this.venta.fe_cr_exoneracion.aplica = false;
-    }
-    if (!this.venta.cobrar_impuestos) {
-      this.initFeCrExoneracionVenta();
-    }
     this.ventaDetallesV2?.sincronizarIvasDetalles();
     this.sumTotal();
   }
@@ -2085,7 +2058,7 @@ export class FacturacionV2Component implements OnInit {
   /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura gravada/exenta/no_sujeta para que el IVA cuadre. */
   private normalizarDetallesTipoGravado(venta: any) {
     if (!venta?.detalles?.length) return;
-    const tiposValidos = ['gravada', 'exenta', 'no_sujeta'];
+    const tiposValidos = ['gravada', 'exenta', 'no_sujeta', 'exonerada'];
     venta.detalles.forEach((d: any) => {
       if (d.sub_total == null || d.sub_total === undefined) {
         const precio = parseFloat(d.precio) || 0;
@@ -2099,9 +2072,10 @@ export class FacturacionV2Component implements OnInit {
       }
       const tipo = String(d.tipo_gravado).toLowerCase();
       d.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
-      d.gravada = (d.tipo_gravado === 'gravada') ? totalLinea : 0;
-      d.exenta = (d.tipo_gravado === 'exenta') ? totalLinea : 0;
-      d.no_sujeta = (d.tipo_gravado === 'no_sujeta') ? totalLinea : 0;
+      d.gravada =
+        d.tipo_gravado === 'gravada' || d.tipo_gravado === 'exonerada' ? totalLinea : 0;
+      d.exenta = d.tipo_gravado === 'exenta' ? totalLinea : 0;
+      d.no_sujeta = d.tipo_gravado === 'no_sujeta' ? totalLinea : 0;
     });
   }
 

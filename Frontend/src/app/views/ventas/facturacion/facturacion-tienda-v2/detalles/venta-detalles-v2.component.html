@@ -48,6 +48,9 @@
                             <div>
                                 {{ detalle.descripcion }} <br>
                                 <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
+                                @if (esFeCostaRica && detalleTieneExoneracionCr(detalle)) {
+                                  <br><span class="badge bg-info mt-1">Exoneración IVA</span>
+                                }
                                 <br>
                                 <small class="text-muted" *ngIf="detalle.inventario_por_lotes">
                                     <button class="btn btn-sm btn-outline-primary mt-1" 
@@ -136,6 +139,9 @@
                         <select class="form-select" [(ngModel)]="detalle.tipo_gravado" (change)="onTipoGravadoChange(detalle)" name="tipo_gravado">
                             <option value="gravada">Gravada</option>
                             <option value="exenta">Exenta</option>
+                            @if (esFeCostaRica) {
+                              <option value="exonerada">Exonerada</option>
+                            }
                             <option value="no_sujeta">No sujeta</option>
                         </select>
                     </td>
@@ -144,7 +150,17 @@
                     </td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
-                            <button class="btn btn-light" (click)="delete(detalle)">
+                            @if (esFeCostaRica) {
+                              <button
+                                type="button"
+                                class="btn btn-light"
+                                (click)="abrirModalExoneracionCr(detalle)"
+                                [attr.title]="detalleTieneExoneracionCr(detalle) ? 'Editar exoneración de IVA' : 'Configurar exoneración de IVA'"
+                              >
+                                <i class="fa fa-fw fa-file-invoice" [class.text-info]="detalleTieneExoneracionCr(detalle)"></i>
+                              </button>
+                            }
+                            <button type="button" class="btn btn-light" (click)="delete(detalle)">
                               <i class="fa fa-trash"></i>
                             </button>
                         </div>
@@ -270,3 +286,7 @@
     </div>
 </ng-template>
 
+<app-fe-cr-exoneracion-detalle-modal
+  #feCrExoneracionModal
+  (saved)="onExoneracionDetalleSaved($event)"
+></app-fe-cr-exoneracion-detalle-modal>

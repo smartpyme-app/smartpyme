@@ -684,8 +684,14 @@ final class CostaRicaInvoiceFromVentaMapper
             $totalLinea = round($subTotal + $ivaMonto, 5);
         }
 
+        $exoneracion = $this->detalleDeclaraExoneracionCr($detalle);
         $pct = (float) ($detalle->porcentaje_impuesto ?? 0);
-        [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $ivaMonto > 0);
+        if ($exoneracion) {
+            $ex = $this->exoneracionCrArrayDetalle($detalle);
+            $pct = (float) ($ex['tarifa_exonerada'] ?? $pct ?: 13);
+            $ivaMonto = 0.0;
+        }
+        [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $exoneracion || $ivaMonto > 0);
 
         $esServicio = $this->esUnidadServicioLineaVentaCr($producto, $empresa, $cabys);
 
@@ -705,36 +711,76 @@ final class CostaRicaInvoiceFromVentaMapper
         ];
 
         // XSD v4.4: antes de <ImpuestoNeto> debe existir al menos un <Impuesto> o <ImpuestoAsumidoEmisorFabrica>.
-        $gravado = $ivaMonto > 0 && $rate > 0;
-        $line['taxes'] = [[
+        $gravado = ($ivaMonto > 0 && $rate > 0) || ($exoneracion && $rate > 0);
+        $taxLine = [
             'tax_type' => '01',
             'iva_type' => $this->codigoTarifaIvaDosDigitos($ivaTarifaCode),
             'rate' => $gravado ? $rate : 0.0,
-            'amount' => $gravado ? $ivaMonto : 0.0,
-        ]];
+            'amount' => $gravado && ! $exoneracion ? $ivaMonto : 0.0,
+        ];
+        if ($exoneracion) {
+            $taxLine['exoneration'] = $this->bloqueExoneracionLineaCr($detalle, $subTotal, $rate);
+            $line['fe_cr_exoneracion'] = $this->metadataExoneracionDetalleCr($detalle);
+        }
+        $line['taxes'] = [$taxLine];
 
         return $line;
     }
 
     /**
-     * Metadatos de exoneración guardados en el JSON del comprobante (trazabilidad).
+     * Metadatos de exoneración por línea en el JSON del comprobante (trazabilidad).
      * El generador XML actual (dgt-xml-generator) no incluye aún el nodo de exoneración v4.4 en línea.
      *
      * @return array<string, mixed>|null
      */
     private function metadataExoneracionCr(Venta $venta): ?array
     {
-        if (! $this->ventaDeclaraExoneracionCr($venta)) {
+        $venta->loadMissing('detalles');
+        $porLinea = [];
+        foreach ($venta->detalles as $idx => $detalle) {
+            if (! $this->detalleDeclaraExoneracionCr($detalle)) {
+                continue;
+            }
+            $porLinea[] = array_merge(
+                ['indice' => $idx],
+                $this->metadataExoneracionDetalleCr($detalle)
+            );
+        }
+
+        if ($porLinea === []) {
+            $ex = $venta->fe_cr_exoneracion;
+            if (is_array($ex) && ! empty($ex['aplica'])) {
+                return array_merge(['aplica' => true, 'legacy_venta' => true], $this->normalizarExoneracionCr($ex));
+            }
+
             return null;
         }
 
-        $ex = $this->exoneracionCrArray($venta);
+        return ['por_linea' => $porLinea];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function metadataExoneracionDetalleCr(Detalle $detalle): array
+    {
+        return array_merge(['aplica' => true], $this->normalizarExoneracionCr($this->exoneracionCrArrayDetalle($detalle)));
+    }
+
+    /**
+     * @param  array<string, mixed>  $ex
+     * @return array<string, mixed>
+     */
+    private function normalizarExoneracionCr(array $ex): array
+    {
+        $inst = CostaRicaFeNota23Catalog::resolverCodigo($ex['nombre_institucion'] ?? '');
 
         return [
-            'aplica' => true,
             'tipo_documento_ex' => (string) ($ex['tipo_documento_ex'] ?? ''),
             'numero_documento' => (string) ($ex['numero_documento'] ?? ''),
-            'nombre_institucion' => (string) ($ex['nombre_institucion'] ?? ''),
+            'nombre_institucion' => $inst,
+            'nombre_institucion_otro' => (string) ($ex['nombre_institucion_otro'] ?? ''),
+            'fecha_emision' => (string) ($ex['fecha_emision'] ?? ''),
             'tarifa_exonerada' => (float) ($ex['tarifa_exonerada'] ?? 13),
             'numero_articulo' => (string) ($ex['numero_articulo'] ?? ''),
             'numero_inciso' => (string) ($ex['numero_inciso'] ?? ''),
@@ -742,11 +788,54 @@ final class CostaRicaInvoiceFromVentaMapper
         ];
     }
 
+    /**
+     * Bloque para futura plantilla XML / trazabilidad en taxes[].exoneration.
+     *
+     * @return array<string, mixed>
+     */
+    private function bloqueExoneracionLineaCr(Detalle $detalle, float $base, float $rate): array
+    {
+        $ex = $this->exoneracionCrArrayDetalle($detalle);
+        $montoExonerado = $rate > 0 ? round($base * ($rate / 100), 5) : 0.0;
+
+        return array_merge($this->normalizarExoneracionCr($ex), [
+            'monto_exoneracion' => $montoExonerado,
+            'tarifa_exonerada' => (float) ($ex['tarifa_exonerada'] ?? $rate),
+        ]);
+    }
+
     private function ventaDeclaraExoneracionCr(Venta $venta): bool
     {
+        $venta->loadMissing('detalles');
+        foreach ($venta->detalles as $detalle) {
+            if ($this->detalleDeclaraExoneracionCr($detalle)) {
+                return true;
+            }
+        }
+
         $ex = $venta->fe_cr_exoneracion;
 
         return is_array($ex) && ! empty($ex['aplica']);
+    }
+
+    private function detalleDeclaraExoneracionCr(Detalle $detalle): bool
+    {
+        $ex = $detalle->fe_cr_exoneracion;
+        if (is_array($ex) && ! empty($ex['aplica'])) {
+            return true;
+        }
+
+        return strtolower(trim((string) ($detalle->tipo_gravado ?? ''))) === 'exonerada';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function exoneracionCrArrayDetalle(Detalle $detalle): array
+    {
+        $ex = $detalle->fe_cr_exoneracion;
+
+        return is_array($ex) ? $ex : [];
     }
 
     /**
@@ -819,6 +908,8 @@ final class CostaRicaInvoiceFromVentaMapper
         $taxedServices = 0.0;
         $exemptGoods = 0.0;
         $exemptServices = 0.0;
+        $exoneratedGoods = 0.0;
+        $exoneratedServices = 0.0;
         $nsGoods = 0.0;
         $nsServices = 0.0;
 
@@ -836,7 +927,7 @@ final class CostaRicaInvoiceFromVentaMapper
                 : $this->esLineaServicioVentaFe($detalle->producto);
             $clas = $this->clasificarDetalleVentaCr($detalle);
 
-            if ($clas === 'gravada') {
+            if (in_array($clas, ['gravada', 'exonerada'], true)) {
                 $monto = round((float) ($line['taxable_base'] ?? $line['sub_total'] ?? 0), 5);
             } else {
                 $monto = $this->montoDetallePorClasificacionCr($detalle, $clas);
@@ -851,6 +942,12 @@ final class CostaRicaInvoiceFromVentaMapper
                     $taxedServices += $monto;
                 } else {
                     $taxedGoods += $monto;
+                }
+            } elseif ($clas === 'exonerada') {
+                if ($esServicio) {
+                    $exoneratedServices += $monto;
+                } else {
+                    $exoneratedGoods += $monto;
                 }
             } elseif ($clas === 'exenta') {
                 if ($esServicio) {
@@ -871,6 +968,8 @@ final class CostaRicaInvoiceFromVentaMapper
         $taxedServices = round($taxedServices, 2);
         $exemptGoods = round($exemptGoods, 2);
         $exemptServices = round($exemptServices, 2);
+        $exoneratedGoods = round($exoneratedGoods, 2);
+        $exoneratedServices = round($exoneratedServices, 2);
         $nsGoods = round($nsGoods, 2);
         $nsServices = round($nsServices, 2);
 
@@ -881,19 +980,23 @@ final class CostaRicaInvoiceFromVentaMapper
 
         $totalTaxed = round($taxedGoods + $taxedServices, 2);
         $totalExempt = round($exemptGoods + $exemptServices, 2);
+        $totalExonerado = round($exoneratedGoods + $exoneratedServices, 2);
         $totalNs = round($nsGoods + $nsServices, 2);
 
         $summary = [
             'total_taxed_goods' => $taxedGoods,
             'total_exempt_goods' => $exemptGoods,
+            'total_exonerated_goods' => $exoneratedGoods,
             'total_non_taxable_goods' => $nsGoods,
             'total_taxed_services' => $taxedServices,
             'total_exempt_services' => $exemptServices,
+            'total_exonerated_services' => $exoneratedServices,
             'total_non_taxable_services' => $nsServices,
             'total_taxed' => $totalTaxed,
             'total_exempt' => $totalExempt,
+            'total_exonerated' => $totalExonerado,
             'total_non_taxable' => $totalNs,
-            'total_sale' => $sub + $desc,
+            'total_sale' => round($totalTaxed + $totalExempt + $totalExonerado + $totalNs, 2),
             'total_discounts' => $desc,
             'total_net_sale' => $sub,
             'total_tax' => $iva,
@@ -1041,12 +1144,16 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
-     * @return 'gravada'|'exenta'|'no_sujeta'
+     * @return 'gravada'|'exenta'|'exonerada'|'no_sujeta'
      */
     private function clasificarDetalleVentaCr(Detalle $detalle): string
     {
+        if ($this->detalleDeclaraExoneracionCr($detalle)) {
+            return 'exonerada';
+        }
+
         $t = strtolower(trim((string) ($detalle->tipo_gravado ?? '')));
-        if (in_array($t, ['gravada', 'exenta', 'no_sujeta'], true)) {
+        if (in_array($t, ['gravada', 'exenta', 'exonerada', 'no_sujeta'], true)) {
             return $t;
         }
         if ((float) ($detalle->iva ?? 0) > 0.00001) {
@@ -1065,7 +1172,7 @@ final class CostaRicaInvoiceFromVentaMapper
     private function montoDetallePorClasificacionCr(Detalle $detalle, string $clasificacion): float
     {
         return match ($clasificacion) {
-            'gravada' => $this->montoGravadoLineaResumenCr($detalle),
+            'gravada', 'exonerada' => $this->montoGravadoLineaResumenCr($detalle),
             'exenta' => round(max((float) ($detalle->exenta ?? 0), 0), 2) > 0.00001
                 ? round((float) $detalle->exenta, 2)
                 : round((float) $detalle->sub_total, 2),

@@ -873,6 +873,10 @@ if (
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
   }
 
+  esFeCostaRicaFacturacion(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+  }
+
   public setDocumento(id_documento: any) {
     let documento = this.documentos.find((x: any) => x.id == id_documento);
     this.venta.nombre_documento = documento.nombre;

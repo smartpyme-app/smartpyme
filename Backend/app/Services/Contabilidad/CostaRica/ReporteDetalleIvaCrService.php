@@ -17,7 +17,7 @@ final class ReporteDetalleIvaCrService
     public function filasVentas(string $inicio, string $fin, ?int $idSucursal): array
     {
         $q = Venta::query()
-            ->with(['cliente', 'documento', 'empresa', 'impuestos.impuesto'])
+            ->with(['cliente', 'documento', 'empresa', 'impuestos.impuesto', 'detalles'])
             ->withCount('detalles')
             ->where('estado', '!=', 'Anulada')
             ->where('cotizacion', 0)
@@ -250,7 +250,7 @@ final class ReporteDetalleIvaCrService
             ? $venta->impuestos
             : [];
 
-        return $this->resumenDesdeMontos(
+        $summary = $this->resumenDesdeMontos(
             $impuestos,
             (float) $venta->iva,
             (float) $venta->sub_total,
@@ -258,6 +258,69 @@ final class ReporteDetalleIvaCrService
             (float) ($venta->no_sujeta ?? 0),
             isset($venta->gravada) ? (float) $venta->gravada : null
         );
+
+        if ($venta->relationLoaded('detalles') && $venta->detalles->isNotEmpty()) {
+            $exonerado = 0.0;
+            foreach ($venta->detalles as $detalle) {
+                if (! $this->detalleTieneExoneracionCr($detalle)) {
+                    continue;
+                }
+                $exonerado += (float) ($detalle->sub_total ?? $detalle->gravada ?? 0);
+            }
+            if ($exonerado > 0.00001) {
+                $summary['total_exonerated'] = round($exonerado, 2);
+            }
+        }
+
+        return $summary;
+    }
+
+    private function detalleTieneExoneracionCr(object $detalle): bool
+    {
+        $ex = null;
+        if (method_exists($detalle, 'getAttribute')) {
+            $ex = $detalle->getAttribute('fe_cr_exoneracion');
+        }
+        if (is_array($ex) && ! empty($ex['aplica'])) {
+            return true;
+        }
+
+        return strtolower(trim((string) ($detalle->tipo_gravado ?? ''))) === 'exonerada';
+    }
+
+    private function ventaTieneExoneracionCr(Venta $venta): bool
+    {
+        $ex = $venta->getAttribute('fe_cr_exoneracion');
+        if (is_array($ex) && ! empty($ex['aplica'])) {
+            return true;
+        }
+        if ($venta->relationLoaded('detalles')) {
+            foreach ($venta->detalles as $detalle) {
+                if ($this->detalleTieneExoneracionCr($detalle)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function primeraTarifaExoneracionVentaCr(Venta $venta): float|string
+    {
+        if ($venta->relationLoaded('detalles')) {
+            foreach ($venta->detalles as $detalle) {
+                $ex = $detalle->fe_cr_exoneracion;
+                if (is_array($ex) && ! empty($ex['aplica']) && isset($ex['tarifa_exonerada'])) {
+                    return (float) $ex['tarifa_exonerada'];
+                }
+            }
+        }
+        $ex = $venta->fe_cr_exoneracion;
+        if (is_array($ex) && isset($ex['tarifa_exonerada'])) {
+            return (float) $ex['tarifa_exonerada'];
+        }
+
+        return '';
     }
 
     /** @return array<string, mixed> */
@@ -410,13 +473,19 @@ final class ReporteDetalleIvaCrService
 
         $dist = $this->distribuirResumen($summary, $signe);
 
-        $exFe = null;
-        if (is_object($model) && method_exists($model, 'getAttribute')) {
+        $tieneExo = false;
+        $exoPorc = '';
+        if ($model instanceof Venta) {
+            $tieneExo = $this->ventaTieneExoneracionCr($model);
+            if ($tieneExo) {
+                $exoPorc = $this->primeraTarifaExoneracionVentaCr($model);
+            }
+        } elseif (is_object($model) && method_exists($model, 'getAttribute')) {
             $exFe = $model->getAttribute('fe_cr_exoneracion');
+            $exonArr = is_array($exFe) ? $exFe : [];
+            $tieneExo = ! empty($exonArr['aplica']);
+            $exoPorc = isset($exonArr['tarifa_exonerada']) ? (float) $exonArr['tarifa_exonerada'] : '';
         }
-        $exonArr = is_array($exFe) ? $exFe : [];
-        $tieneExo = ! empty($exonArr['aplica']);
-        $exoPorc = isset($exonArr['tarifa_exonerada']) ? (float) $exonArr['tarifa_exonerada'] : '';
 
         $retenciones = 0.0;
         if (is_object($model) && property_exists($model, 'iva_retenido')) {
@@ -520,7 +589,7 @@ final class ReporteDetalleIvaCrService
             'iva_1' => 0.0,
             'subtotal_exento' => $sgn((float) ($summary['total_exempt'] ?? 0)),
             'subtotal_gravado' => $sgn((float) ($summary['total_taxed'] ?? 0)),
-            'subtotal_exonerado' => 0.0,
+            'subtotal_exonerado' => $sgn((float) ($summary['total_exonerated'] ?? 0)),
         ];
 
         foreach ($summary['taxes'] ?? [] as $tax) {
