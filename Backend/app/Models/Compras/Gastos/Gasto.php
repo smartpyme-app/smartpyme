@@ -76,7 +76,24 @@ class Gasto extends Model {
 
     public function getDteAttribute($value)
     {
-        return is_string($value) ? json_decode($value, true) : $value;
+        $raw = $this->attributes['dte'] ?? null;
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+        if (! is_string($raw)) {
+            return $raw;
+        }
+        $trim = ltrim($raw);
+        if ($trim === '') {
+            return null;
+        }
+        if ($trim[0] === '{' || $trim[0] === '[') {
+            $decoded = json_decode($raw, true);
+
+            return is_array($decoded) ? $decoded : $raw;
+        }
+
+        return $raw;
     }
 
     public function setDteAttribute($value): void
@@ -92,7 +109,24 @@ class Gasto extends Model {
 
     public function getDteInvalidacionAttribute($value)
     {
-        return is_string($value) ? json_decode($value, true) : $value;
+        $raw = $this->attributes['dte_invalidacion'] ?? null;
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+        if (! is_string($raw)) {
+            return $raw;
+        }
+        $trim = ltrim($raw);
+        if ($trim === '') {
+            return null;
+        }
+        if ($trim[0] === '{' || $trim[0] === '[') {
+            $decoded = json_decode($raw, true);
+
+            return is_array($decoded) ? $decoded : $raw;
+        }
+
+        return $raw;
     }
 
     public function getNombreUsuarioAttribute()

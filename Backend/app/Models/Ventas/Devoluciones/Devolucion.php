@@ -51,14 +51,64 @@ class Devolucion extends Model {
         }
     }
 
-    public function getDteAttribute($value) 
+    public function getDteAttribute($value)
     {
-        return is_string($value) ? json_decode($value,true) : $value;
+        return $this->decodeStoredDte($this->attributes['dte'] ?? null);
     }
 
-    public function getDteInvalidacionAttribute($value) 
+    public function setDteAttribute($value): void
     {
-        return is_string($value) ? json_decode($value,true) : $value;
+        if ($value === null || $value === '') {
+            $this->attributes['dte'] = null;
+
+            return;
+        }
+        $this->attributes['dte'] = is_array($value)
+            ? json_encode($value, JSON_UNESCAPED_UNICODE)
+            : $value;
+    }
+
+    public function getDteInvalidacionAttribute($value)
+    {
+        return $this->decodeStoredDte($this->attributes['dte_invalidacion'] ?? null);
+    }
+
+    public function setDteInvalidacionAttribute($value): void
+    {
+        if ($value === null || $value === '') {
+            $this->attributes['dte_invalidacion'] = null;
+
+            return;
+        }
+        $this->attributes['dte_invalidacion'] = is_array($value)
+            ? json_encode($value, JSON_UNESCAPED_UNICODE)
+            : $value;
+    }
+
+    /**
+     * JSON (SV / legado CR) o XML string (FE Costa Rica).
+     *
+     * @return array|string|null
+     */
+    private function decodeStoredDte($raw)
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+        if (! is_string($raw)) {
+            return $raw;
+        }
+        $trim = ltrim($raw);
+        if ($trim === '') {
+            return null;
+        }
+        if ($trim[0] === '{' || $trim[0] === '[') {
+            $decoded = json_decode($raw, true);
+
+            return is_array($decoded) ? $decoded : $raw;
+        }
+
+        return $raw;
     }
 
     public function getNombreDocumentoAttribute(){

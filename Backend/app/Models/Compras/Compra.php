@@ -96,11 +96,6 @@ class Compra extends Model {
         'dte_invalidacion_migrated_at' => 'datetime',
     ];
 
-    public function getDteAttribute($value)
-    {
-        return is_string($value) ? json_decode($value,true) : $value;
-    }
-
     public function getSaldoAttribute(){
         $abonos = $this->abonos()->where('estado', 'Confirmado')->sum('total');
         $devoluciones = $this->devoluciones()->where('enable', 1)->sum('total');

@@ -125,8 +125,6 @@ class Venta extends Model {
         'dte_migrated_at' => 'datetime',
         'dte_invalidacion_migrated_at' => 'datetime',
         'descuento_puntos' => 'decimal:2',
-        'dte' => 'array',
-        'dte_invalidacion' => 'array',
         'fe_cr_exoneracion' => 'array',
     ];
 
