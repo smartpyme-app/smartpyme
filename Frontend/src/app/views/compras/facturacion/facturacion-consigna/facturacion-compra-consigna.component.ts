@@ -163,8 +163,8 @@ export class FacturacionCompraConsignaComponent implements OnInit {
 
     public sumTotal() {
         this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
-        this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0; 
-        this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0; 
+        this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0;
+        this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
 
         if(this.compra.cobrar_impuestos){
             this.compra.iva = ( this.compra.sub_total * 0.13 ).toFixed(2);

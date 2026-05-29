@@ -13,6 +13,7 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
 
     @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
+    @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
     modalRef!: BsModalRef;
 
     public paquetes:any = [];
@@ -79,8 +80,20 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
             radio.checked = false;
 
             this.loading = false;
+            this.notificarCuentaTercerosEnListadoPaquetes();
         }, error => {this.alertService.error(error); this.loading = false;});
 
+    }
+
+    private notificarCuentaTercerosEnListadoPaquetes(): void {
+        const data = this.paquetes?.data;
+        if (!data?.length) { return; }
+        const hay = data.some(
+            (p: any) => (parseFloat(String(p.cuenta_a_terceros ?? 0)) || 0) > 0.0001
+        );
+        if (hay) {
+            this.alMenosUnPaqueteConCuentaTerceros.emit();
+        }
     }
 
     public setOrden(columna: string) {
@@ -99,6 +112,7 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
         this.apiService.paginate(this.paquetes.path + '?page='+ event.page, this.filtros).subscribe(paquetes => { 
             this.paquetes = paquetes;
             this.loading = false;
+            this.notificarCuentaTercerosEnListadoPaquetes();
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
@@ -119,20 +133,20 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
         // precio: precio sin IVA (para guardar en BD)
         this.detalle.precio         = precioSinIva.toFixed(4);
         
-        // Actualizar precios para el selector
+        // Lista sin IVA (como configuración del producto)
         this.detalle.precios        = paquete.precios ? paquete.precios.map((p: any) => {
             const precioConIvaP = parseFloat(p.precio);
             const precioSinIvaP = iva > 0 ? precioConIvaP / (1 + iva / 100) : precioConIvaP;
             return {
                 ...p,
-                precio: precioConIvaP.toFixed(4),
-                precio_sin_iva: precioSinIvaP.toFixed(4)
+                precio: precioSinIvaP.toFixed(4),
+                precio_sin_iva: precioSinIvaP,
             };
         }) : [];
-        
+
         this.detalle.precios.unshift({
-                'precio' : this.detalle.precio_iva,
-                'precio_sin_iva': precioSinIva.toFixed(4)
+                'precio' : precioSinIva.toFixed(4),
+                'precio_sin_iva': precioSinIva
             });
         this.detalle.costo          = parseFloat(paquete.costo);
         paquete.inventarios        = paquete.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
@@ -144,6 +158,10 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
         this.detalle.descuento_porcentaje      = 0;
+        this.detalle.cuenta_a_terceros = parseFloat(String(paquete.cuenta_a_terceros ?? 0)) || 0;
+        if (this.detalle.cuenta_a_terceros > 0.0001) {
+            this.alMenosUnPaqueteConCuentaTerceros.emit();
+        }
         console.log(this.detalle);
         this.onSubmit();
     }
@@ -152,6 +170,9 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
         console.log(paquete);
         let radio = document.getElementById('paquete' + paquete.id) as HTMLInputElement;
         if(radio.checked){
+            if ((parseFloat(String(paquete.cuenta_a_terceros ?? 0)) || 0) > 0.0001) {
+                this.alMenosUnPaqueteConCuentaTerceros.emit();
+            }
             if(!this.venta.id_cliente && paquete.id_cliente){
                 this.venta.id_cliente = paquete.id_cliente;
             }

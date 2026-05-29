@@ -5,6 +5,7 @@ namespace App\Console;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class Kernel extends ConsoleKernel
 {
@@ -16,6 +17,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         'App\Console\Commands\Notificaciones',
         'App\Console\Commands\VerificarSuscripcion',
+        'App\Console\Commands\GenerarFacturasSuscripciones',
         'App\Console\Commands\cliente360\CalcularClientes360Command',
     ];
 
@@ -82,66 +84,77 @@ class Kernel extends ConsoleKernel
             ->at('01:00')
             ->appendOutputTo(storage_path('logs/verificar-suscripciones.log'));
 
+        $schedule->command('facturas:generar-suscripciones')
+            ->monthlyOn(1, '08:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/facturas-generar-suscripciones.log'));
+
+        $schedule->command('suscripciones:enviar-recordatorios-correo')
+            ->dailyAt('08:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/suscripciones-recordatorios-correo.log'));
+
+        $schedule->command('suscripciones:reportes-internos-equipo --solo=diario')
+            ->dailyAt('08:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/suscripciones-reportes-internos-equipo.log'));
+
+        $schedule->command('suscripciones:reportes-internos-equipo --solo=semanal')
+            ->weeklyOn(5, '08:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/suscripciones-reportes-internos-equipo.log'));
+
+        $schedule->command('suscripciones:reporte-flujo-caja-mensual')
+            ->monthlyOn(1, '08:15')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/suscripciones-reporte-flujo-caja-mensual.log'));
+
+        foreach ([7, 15, 22, 31] as $diaReporteCategoriaSucursal) {
+            $schedule->command('reporte:ventas-por-categoria-sucursal')
+                ->monthlyOn($diaReporteCategoriaSucursal, '08:00')
+                ->withoutOverlapping()
+                ->appendOutputTo(storage_path('logs/reporte-ventas-categoria-sucursal.log'));
+        }
+
+        $schedule->command('reporte:ventas-por-categoria-sucursal')
+            ->lastDayOfMonth('08:00')
+            ->when(function () {
+                $today = Carbon::today();
+
+                return $today->isLastOfMonth() && $today->day !== 31;
+            })
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/reporte-ventas-categoria-sucursal.log'));
+
         // ============================================
         // ACTUALIZACIÓN DE AGREGADOS CLIENTE360
         // ============================================
 
-        // Actualizar métricas RFM masivamente cada noche a las 1:00 AM
-        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=rfm')
-            ->dailyAt('01:00')
-            ->withoutOverlapping()
+        // Actualizar todos los agregados cada minuto (viable con pocas empresas con fidelización habilitada)
+        $schedule->command('cliente360:actualizar-agregados --masivo')
+            ->everyMinute()
+            ->withoutOverlapping(50)
             ->runInBackground()
-            ->appendOutputTo(storage_path('logs/cliente360-rfm.log'))
+            ->appendOutputTo(storage_path('logs/cliente360-agregados.log'))
             ->emailOutputOnFailure('joseespana94@gmail.com');
 
-        // Actualizar top productos masivamente cada noche a las 1:15 AM
-        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=productos')
-            ->dailyAt('01:15')
+        // ============================================
+        // FIDELIZACIÓN - EXPIRACIÓN DE PUNTOS
+        // ============================================
+        $schedule->command('fidelizacion:procesar-expiracion-puntos --sync')
+            ->dailyAt('02:00')
             ->withoutOverlapping()
             ->runInBackground()
-            ->appendOutputTo(storage_path('logs/cliente360-productos.log'))
-            ->emailOutputOnFailure('joseespana94@gmail.com');
+            ->appendOutputTo(storage_path('logs/fidelizacion-expiracion-puntos.log'))
+            ->emailOutputOnFailure('jose.e@smartpyme.sv');
 
-        // Actualizar categorías preferidas masivamente cada noche a las 1:30 AM
-        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=categorias')
-            ->dailyAt('01:30')
-            ->withoutOverlapping()
-            ->runInBackground()
-            ->appendOutputTo(storage_path('logs/cliente360-categorias.log'))
-            ->emailOutputOnFailure('joseespana94@gmail.com');
-
-        // Actualizar ventas mensuales masivamente el primer día de cada mes a las 1:45 AM
-        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=mensuales')
-            ->monthlyOn(1, '01:45')
-            ->withoutOverlapping()
-            ->runInBackground()
-            ->appendOutputTo(storage_path('logs/cliente360-mensuales.log'))
-            ->emailOutputOnFailure('joseespana94@gmail.com');
-
-        // Actualizar snapshot fidelización masivamente cada 6 horas
-        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=fidelizacion')
-            ->everySixHours()
-            ->withoutOverlapping()
-            ->runInBackground()
-            ->appendOutputTo(storage_path('logs/cliente360-fidelizacion.log'))
-            ->emailOutputOnFailure('joseespana94@gmail.com');
-
-        // Actualizar actividad reciente masivamente cada 4 horas
-        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=actividad')
-            ->cron('0 */4 * * *')
-            ->withoutOverlapping()
-            ->runInBackground()
-            ->appendOutputTo(storage_path('logs/cliente360-actividad.log'))
-            ->emailOutputOnFailure('joseespana94@gmail.com');
-
-        // Actualización completa masiva semanal con force (domingos a las 00:30 AM)
-        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=all --force')
-            ->weeklyOn(0, '00:30')
-            ->withoutOverlapping()
-            ->runInBackground()
-            ->appendOutputTo(storage_path('logs/cliente360-completo.log'))
-            ->emailOutputOnFailure('joseespana94@gmail.com');
-
+        if (config('dte.schedule_enabled')) {
+            $schedule->command('dte:migrate-to-s3')
+                ->dailyAt('02:45')
+                ->withoutOverlapping(120)
+                ->runInBackground()
+                ->appendOutputTo(storage_path('logs/dte-migrate-s3.log'));
+        }
 
         $schedule->call(function () {
             Log::info('Working');

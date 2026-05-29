@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 
 //Route::post('/webhook/woocommerce', [WooCommerceController::class, 'procesarVenta']);
 Route::post('/webhook/woocommerce/{token}', [WooCommerceController::class, 'procesarVenta']);
+Route::post('/webhook/woocommerce/{token}/producto', [WooCommerceController::class, 'procesarProductoWooCommerce']);
 //Route::post('/webhook/woocommerce', [WooCommerceController::class, 'saveCredentials']);
 
 

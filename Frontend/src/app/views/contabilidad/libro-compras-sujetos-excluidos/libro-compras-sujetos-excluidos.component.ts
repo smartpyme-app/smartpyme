@@ -19,6 +19,7 @@ export class LibroComprasSujetosExcluidosComponent implements OnInit {
     public downloading:boolean = false;
     public filtros:any = {};
     modalRef!: BsModalRef;
+    public tipoDescarga: string = '';
 
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
@@ -49,9 +50,10 @@ export class LibroComprasSujetosExcluidosComponent implements OnInit {
         this.loadAll();
     }
 
-    /** Solo para El Salvador: opciones de descarga ZIP y CSV (declaración MH) */
+    /** Solo para El Salvador: descarga CSV del anexo (clase AnexoSujetosExcluidosExport en backend). */
     get isElSalvador(): boolean {
-        return this.apiService.auth_user()?.empresa?.pais === 'El Salvador';
+        const p = (this.apiService.auth_user()?.empresa?.pais || '').toString().toLowerCase();
+        return p === 'el salvador' || p.includes('salvador');
     }
 
     public loadAll() {
@@ -75,6 +77,40 @@ export class LibroComprasSujetosExcluidosComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
+    }
+
+    public openDescargasModal(template: TemplateRef<any>): void {
+        this.tipoDescarga = '';
+        this.modalRef = this.modalService.show(template, {
+            class: 'modal-md',
+            backdrop: true,
+            ignoreBackdropClick: false,
+        });
+    }
+
+    public cerrarModalDescargas(): void {
+        this.modalRef?.hide();
+        this.tipoDescarga = '';
+    }
+
+    public ejecutarDescargaSeleccionada(): void {
+        if (!this.tipoDescarga) {
+            this.alertService.warning('Seleccione un tipo', 'Elija una opción en el listado.');
+            return;
+        }
+        switch (this.tipoDescarga) {
+            case 'libro_excel':
+                this.descargarLibro();
+                break;
+            case 'anexo_csv':
+                this.descargarAnexo();
+                break;
+            default:
+                this.alertService.warning('Opción no válida', 'Seleccione otra opción.');
+                return;
+        }
+        this.modalRef?.hide();
+        this.tipoDescarga = '';
     }
 
     private manejarErrorDescarga(error: any): void {

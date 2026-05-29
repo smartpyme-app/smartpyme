@@ -10,8 +10,10 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Maatwebsite\Excel\Validators\ValidationException as MaatwebsiteExcelValidationException;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 
@@ -68,6 +70,28 @@ class Handler extends ExceptionHandler
     {
 
         if ($request->wantsJson()) {
+
+            // Importación Excel (Maatwebsite): debe ir antes que ValidationException genérica (la extiende).
+            if ($exception instanceof MaatwebsiteExcelValidationException) {
+                $messages = [];
+                $failuresPayload = [];
+                foreach ($exception->failures() as $failure) {
+                    $failuresPayload[] = [
+                        'row' => $failure->row(),
+                        'attribute' => $failure->attribute(),
+                        'errors' => $failure->errors(),
+                    ];
+                    foreach ($failure->errors() as $msg) {
+                        $messages[] = sprintf('Fila %d (Excel): %s', $failure->row(), $msg);
+                    }
+                }
+
+                return response()->json([
+                    'error' => array_values(array_unique($messages)),
+                    'failures' => $failuresPayload,
+                    'code' => 422,
+                ], 422);
+            }
 
             if ($exception instanceof ValidationException) {
 

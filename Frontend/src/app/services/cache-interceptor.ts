@@ -10,6 +10,11 @@ export class CacheInterceptor implements HttpInterceptor {
   ){}
 
   intercept(req: HttpRequest<any>, next: HttpHandler) {
+    const saltarJWT = req.params.get('saltarJWT'); 
+    if (saltarJWT) {                                
+      return next.handle(req);                      
+    }                                               
+
     let token = this.apiService.auth_token();
     
     const httpRequest = req.clone({

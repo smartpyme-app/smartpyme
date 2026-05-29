@@ -59,6 +59,13 @@ class ProcesarPuntosVentasExistentes extends Command
                 $q->whereNull('puntos_ganados')
                   ->orWhere('puntos_ganados', 0);
             })
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->whereNull('puntos_canjeados')->orWhere('puntos_canjeados', '<=', 0);
+                })->where(function ($q2) {
+                    $q2->whereNull('descuento_puntos')->orWhere('descuento_puntos', '<=', 0);
+                });
+            })
             ->where('estado', 'Pagada')
             ->whereNotNull('id_cliente');
 
@@ -150,6 +157,11 @@ class ProcesarPuntosVentasExistentes extends Command
         // 3. Verificar que no se hayan generado puntos previamente
         if ($venta->tienePuntosGenerados()) {
             return ['success' => false, 'error' => 'Venta ya tiene puntos generados'];
+        }
+
+        // 3b. Ventas con canje de puntos no deben recibir acumulación en la misma operación
+        if ($venta->tieneCanjeDePuntosEnVenta()) {
+            return ['success' => true, 'puntos' => 0, 'message' => 'Venta con canje de puntos: no aplica acumulación'];
         }
 
         // 4. Obtener el cliente y su tipo efectivo

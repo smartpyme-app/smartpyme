@@ -80,9 +80,10 @@ class EmpresasController extends Controller
 
     public function list()
     {
-
-        $empresas = Empresa::orderby('nombre')
+        $empresas = DB::table('empresas')
+            ->select('id', 'nombre')
             ->where('activo', true)
+            ->orderBy('nombre')
             ->get();
 
         return Response()->json($empresas, 200);
@@ -101,6 +102,7 @@ class EmpresasController extends Controller
         $request->validate([
             'nombre' => 'required|max:255',
             'iva' => 'required|numeric',
+            'woocommerce_sync_mode' => 'nullable|in:bidirectional,wc_to_sp,sp_to_wc',
         ]);
 
         if ($request->id) {
@@ -137,6 +139,22 @@ class EmpresasController extends Controller
 
         $empresa->save();
 
+        if ($request->has('forma_pago')) {
+            $metodoValidado = $request->input('forma_pago');
+            if (!in_array($metodoValidado, [config('constants.METODO_PAGO_N1CO'), config('constants.METODO_PAGO_TRANSFERENCIA')])) {
+                $metodoValidado = config('constants.METODO_PAGO_TRANSFERENCIA');
+            }
+
+            $empresa->metodo_pago = $metodoValidado;
+            $empresa->save();
+            
+            $suscripcion = Suscripcion::where('empresa_id', $empresa->id)->first();
+            if ($suscripcion) {
+                $suscripcion->metodo_pago = $metodoValidado;
+                $suscripcion->save();
+            }
+        }
+
         return $empresa;
     }
 
@@ -155,6 +173,15 @@ class EmpresasController extends Controller
         }
 
         $empresa->save();
+
+        if ($request->has('forma_pago')) {
+            $metodoValidado = $request->input('forma_pago');
+            if (!in_array($metodoValidado, [config('constants.METODO_PAGO_N1CO'), config('constants.METODO_PAGO_TRANSFERENCIA')])) {
+                $metodoValidado = config('constants.METODO_PAGO_TRANSFERENCIA');
+            }
+            $empresa->metodo_pago = $metodoValidado;
+            $empresa->save();
+        }
 
         if (!isset($request->isRegister) || $request->isRegister !== false) {
             $this->createCompanySubscription($empresa, $request);
@@ -226,6 +253,11 @@ class EmpresasController extends Controller
     {
         $plan = $this->getPlan($empresa->plan, true, $empresa->plan);
 
+        $metodoValidado = $empresa->forma_pago;
+        if (!in_array($metodoValidado, [config('constants.METODO_PAGO_N1CO'), config('constants.METODO_PAGO_TRANSFERENCIA')])) {
+            $metodoValidado = config('constants.METODO_PAGO_TRANSFERENCIA');
+        }
+
         $this->createSuscripcion([
             'empresa_id' => $empresa->id,
             'plan_id' => $plan->id,
@@ -246,7 +278,8 @@ class EmpresasController extends Controller
             'direccion_factura' => $empresa->direccion,
             'intentos_cobro' => 0,
             'ultimo_intento_cobro' => null,
-            'historial_pagos' => null
+            'historial_pagos' => null,
+            'metodo_pago' => $metodoValidado
         ]);
     }
 
@@ -361,7 +394,7 @@ class EmpresasController extends Controller
             $diasPrueba = $plan->dias_periodo_prueba;
 
             $data = array_merge($data, [
-                'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'),
+                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
                 'estado_ultimo_pago' => null,
                 'fecha_ultimo_pago' => null,
                 'fecha_proximo_pago' => now()->addDays($diasPrueba),
@@ -773,13 +806,14 @@ class EmpresasController extends Controller
         $allowedConfigs = [
             'ticket_en_pdf',
             'componente_quimico_activo',
+            'dte_mostrar_descripcion_producto',
         ];
 
         foreach ($configuraciones as $config => $value) {
             // Solo permitir configuraciones válidas
             if (in_array($config, $allowedConfigs)) {
                 // Para configuraciones booleanas
-                if (in_array($config, ['ticket_en_pdf', 'componente_quimico_activo'])) {
+                if (in_array($config, ['ticket_en_pdf', 'componente_quimico_activo', 'dte_mostrar_descripcion_producto'])) {
                     $validatedConfig[$config] = (bool) $value;
                 } else {
                     $validatedConfig[$config] = $value;
@@ -800,7 +834,7 @@ class EmpresasController extends Controller
 
         $empresa = Auth::user()->empresa;
 
-        if ($request->input('section') === 'configuraciones' && in_array($request->input('key'), ['ticket_en_pdf', 'componente_quimico_activo'])) {
+        if ($request->input('section') === 'configuraciones' && in_array($request->input('key'), ['ticket_en_pdf', 'componente_quimico_activo', 'sku_correlativo_automatico', 'barcode_correlativo_automatico', 'ventas_puede_cambiar_vendedor_facturacion', 'dte_mostrar_descripcion_producto'])) {
             $request->validate([
                 'value' => 'boolean'
             ]);

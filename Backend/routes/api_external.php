@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\External\SalesController;
 use App\Http\Controllers\Api\External\InventoryController;
 use App\Http\Controllers\Api\External\SystemController;
 use App\Http\Controllers\Api\External\ReturnsController;
+use App\Http\Controllers\Api\External\PackagesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,5 +43,10 @@ Route::prefix('external/v1')->middleware(['external.api'])->group(function () {
         Route::get('/', [ReturnsController::class, 'index'])->name('external.returns.index');
         Route::get('/summary', [ReturnsController::class, 'summary'])->name('external.returns.summary');
         Route::get('/{id}', [ReturnsController::class, 'show'])->name('external.returns.show');
+    });
+
+    // Paquetes (importación masiva desde sistemas externos)
+    Route::prefix('packages')->group(function () {
+        Route::post('/import', [PackagesController::class, 'import'])->name('external.packages.import');
     });
 });

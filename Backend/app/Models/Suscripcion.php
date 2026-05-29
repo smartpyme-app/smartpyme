@@ -15,6 +15,7 @@ class Suscripcion extends Model
         'empresa_id',
         'plan_id',
         'usuario_id',
+        'id_cliente',
         'tipo_plan',
         'estado',
         'monto',
@@ -24,12 +25,16 @@ class Suscripcion extends Model
         'estado_ultimo_pago',
         'fecha_ultimo_pago',
         'fecha_proximo_pago',
+        'dia_pago',
+        'acceso_temporal_hasta',
         'fin_periodo_prueba',
         'fecha_cancelacion',
         'motivo_cancelacion',
+        'comentarios',
         'nit',
         'nombre_factura',
         'direccion_factura',
+        'tipo_factura',
         'intentos_cobro',
         'ultimo_intento_cobro',
         'historial_pagos'
@@ -38,12 +43,32 @@ class Suscripcion extends Model
     protected $dates = [
         'fecha_ultimo_pago',
         'fecha_proximo_pago',
+        'acceso_temporal_hasta',
         'fin_periodo_prueba',
         'fecha_cancelacion',
         'ultimo_intento_cobro',
         'created_at',
         'updated_at'
     ];
+
+    /**
+     * The "booted" method of the model.
+     * Synchronizes dia_pago with the day of fecha_proximo_pago.
+     *
+     * @return void
+     */
+    protected static function booted()
+    {
+        static::saving(function ($suscripcion) {
+            if ($suscripcion->isDirty('fecha_proximo_pago')) {
+                if ($suscripcion->fecha_proximo_pago) {
+                    $suscripcion->dia_pago = Carbon::parse($suscripcion->fecha_proximo_pago)->day;
+                } else {
+                    $suscripcion->dia_pago = null;
+                }
+            }
+        });
+    }
 
     // Relaciones
     public function empresa()
@@ -166,7 +191,16 @@ class Suscripcion extends Model
         $diasFaltantes = $this->calcularDiasFaltantesPrueba();
         return $diasFaltantes;
     }
-    
 
+    /**
+     * Acceso de excepción concedido por administración (vigente ahora).
+     */
+    public function accesoTemporalVigente(): bool
+    {
+        if (!$this->acceso_temporal_hasta) {
+            return false;
+        }
 
+        return Carbon::parse($this->acceso_temporal_hasta)->greaterThan(Carbon::now());
+    }
 }

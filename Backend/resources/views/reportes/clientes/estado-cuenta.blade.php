@@ -124,6 +124,18 @@
             font-weight: bold;
             border-top: 2px solid #000000 !important;
         }
+
+        .row-abono td {
+            font-size: 9px;
+            font-style: italic;
+            color: #333333 !important;
+            background-color: #fafafa;
+        }
+
+        .row-abono .col-documento {
+            text-align: left !important;
+            padding-left: 10px !important;
+        }
         
         .col-documento { width: 8%; }
         .col-fecha-doc { width: 8%; }
@@ -147,7 +159,7 @@
         $horaActualStr = $fechaActual->format('H:i:s');
         
         // Obtener la empresa y su moneda
-        $empresa = $cliente->empresa()->first();
+        $empresa = $cliente->empresa;
         $simboloMoneda = $empresa && $empresa->currency ? $empresa->currency->currency_symbol : '$';
         
         // Calcular antigüedad para cada venta
@@ -176,6 +188,9 @@
                 $diasMora = 0;
             }
             
+            // Antigüedad y saldos según saldo pendiente (abonos y devoluciones ya aplicados en el modelo)
+            $saldoPendiente = max(0, round((float) $venta->saldo, 2));
+            
             // Clasificar según antigüedad
             $sinVencer = 0;
             $dias30 = 0;
@@ -184,18 +199,20 @@
             $dias120 = 0;
             $mas120 = 0;
             
-            if ($diasMora == 0) {
-                $sinVencer = $venta->total;
-            } elseif ($diasMora <= 30) {
-                $dias30 = $venta->total;
-            } elseif ($diasMora <= 60) {
-                $dias60 = $venta->total;
-            } elseif ($diasMora <= 90) {
-                $dias90 = $venta->total;
-            } elseif ($diasMora <= 120) {
-                $dias120 = $venta->total;
-            } else {
-                $mas120 = $venta->total;
+            if ($saldoPendiente > 0) {
+                if ($diasMora == 0) {
+                    $sinVencer = $saldoPendiente;
+                } elseif ($diasMora <= 30) {
+                    $dias30 = $saldoPendiente;
+                } elseif ($diasMora <= 60) {
+                    $dias60 = $saldoPendiente;
+                } elseif ($diasMora <= 90) {
+                    $dias90 = $saldoPendiente;
+                } elseif ($diasMora <= 120) {
+                    $dias120 = $saldoPendiente;
+                } else {
+                    $mas120 = $saldoPendiente;
+                }
             }
             
             $ventasConAntiguedad[] = [
@@ -212,8 +229,8 @@
                 'mas_120' => $mas120
             ];
             
-            // Acumular totales
-            $totales['saldo'] += $venta->total;
+            // Acumular totales (solo saldo pendiente por documento)
+            $totales['saldo'] += $saldoPendiente;
             $totales['sin_vencer'] += $sinVencer;
             $totales['dias_30'] += $dias30;
             $totales['dias_60'] += $dias60;
@@ -260,13 +277,14 @@
         </thead>
         <tbody>
             @foreach($ventasConAntiguedad as $item)
+                @php $v = $item['venta']; $saldoDoc = max(0, round((float) $v->saldo, 2)); @endphp
                 <tr>
-                    <td>{{ $item['venta']->nombre_documento }} #{{ $item['venta']->correlativo }}</td>
+                    <td class="col-documento text-left">{{ $v->nombre_documento }} #{{ $v->correlativo }}</td>
                     <td>{{ $item['fecha_doc']->format('d/m/Y') }}</td>
-                    <td class="text-right">{{ $simboloMoneda }}{{ number_format($item['venta']->total, 2, '.', ',') }}</td>
+                    <td class="text-right">{{ $simboloMoneda }}{{ number_format($v->total, 2, '.', ',') }}</td>
                     <td>{{ $item['plazo_dias'] }}</td>
                     <td>{{ $item['fecha_vence']->format('d/m/Y') }}</td>
-                    <td class="text-right">{{ $simboloMoneda }}{{ number_format($item['venta']->total, 2, '.', ',') }}</td>
+                    <td class="text-right">{{ $simboloMoneda }}{{ number_format($saldoDoc, 2, '.', ',') }}</td>
                     <td>{{ $item['dias_mora'] }}</td>
                     <td class="text-right">{{ $item['sin_vencer'] > 0 ? $simboloMoneda . number_format($item['sin_vencer'], 2, '.', ',') : $simboloMoneda . '0.00' }}</td>
                     <td class="text-right">{{ $item['dias_30'] > 0 ? $simboloMoneda . number_format($item['dias_30'], 2, '.', ',') : $simboloMoneda . '0.00' }}</td>
@@ -275,6 +293,28 @@
                     <td class="text-right">{{ $item['dias_120'] > 0 ? $simboloMoneda . number_format($item['dias_120'], 2, '.', ',') : $simboloMoneda . '0.00' }}</td>
                     <td class="text-right">{{ $item['mas_120'] > 0 ? $simboloMoneda . number_format($item['mas_120'], 2, '.', ',') : $simboloMoneda . '0.00' }}</td>
                 </tr>
+                @foreach($v->abonos as $abono)
+                    @php
+                        $nomDocAbono = optional($abono->documento)->nombre ?? 'Abono';
+                        $corrAbono = $abono->correlativo ?? $abono->id;
+                        $fechaAbono = \Carbon\Carbon::parse($abono->fecha);
+                    @endphp
+                    <tr class="row-abono">
+                        <td class="col-documento">- {{ $nomDocAbono }} #{{ $corrAbono }}@if($abono->concepto)<br><span style="font-style:normal;font-size:8px;">{{ \Illuminate\Support\Str::limit($abono->concepto, 48) }}</span>@endif</td>
+                        <td>{{ $fechaAbono->format('d/m/Y') }}</td>
+                        <td class="text-right">{{ $simboloMoneda }}{{ number_format((float) $abono->total, 2, '.', ',') }}</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>—</td>
+                    </tr>
+                @endforeach
             @endforeach
             
             <!-- Total por cliente -->

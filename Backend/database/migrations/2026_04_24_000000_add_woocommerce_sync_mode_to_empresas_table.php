@@ -1,0 +1,28 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('empresas', function (Blueprint $table) {
+            if (!Schema::hasColumn('empresas', 'woocommerce_sync_mode')) {
+                $table->string('woocommerce_sync_mode', 32)
+                    ->default('bidirectional')
+                    ->after('woocommerce_canal_id');
+            }
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('empresas', function (Blueprint $table) {
+            if (Schema::hasColumn('empresas', 'woocommerce_sync_mode')) {
+                $table->dropColumn('woocommerce_sync_mode');
+            }
+        });
+    }
+};

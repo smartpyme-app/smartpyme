@@ -13,12 +13,15 @@ export class ProductosComponent implements OnInit {
     public productos: any = [];
     public loading: boolean = false;
     public downloading: boolean = false;
+    public downloadingReporteAnalisis: boolean = false;
     public filtros: any = {};
     public producto: any = {};
     public bodegas: any = [];
     public categorias: any = [];
     public proveedores: any = [];
     public marcas: any = [];
+    /** Suma de stock de todos los productos del resultado filtrado (si está habilitado en Mi cuenta). */
+    public stockTotalFiltrado: number | null = null;
     public ajuste: any = {};
     public inventario: any = {};
     public filtrosKardex: any = {
@@ -61,7 +64,7 @@ export class ProductosComponent implements OnInit {
                 this.filtros.id_bodega = usuario.id_bodega;
             }
 
-            this.filtrarProductos();
+            this.filtrarProductos(false);
         });
 
         this.apiService.getAll('categorias/list').subscribe(categorias => {
@@ -70,6 +73,10 @@ export class ProductosComponent implements OnInit {
 
         this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
+        }, error => { this.alertService.error(error); });
+
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+            this.proveedores = proveedores;
         }, error => { this.alertService.error(error); });
 
         this.apiService.getAll('productos/marca-productos').subscribe(marcas => {
@@ -105,10 +112,18 @@ export class ProductosComponent implements OnInit {
             this.filtros.id_bodega = bodegaActual || usuario?.id_bodega || '';
         }
 
-        this.filtrarProductos();
+        this.filtrarProductos(false);
     }
 
-    public filtrarProductos() {
+    /**
+     * @param resetPage Si es true (por defecto), vuelve a la página 1: búsqueda, filtros, orden, tamaño de página.
+     *                  Usar false al cambiar solo la página desde el paginador o al aplicar parámetros desde la URL.
+     */
+    public filtrarProductos(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
+
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: this.filtros,
@@ -131,6 +146,10 @@ export class ProductosComponent implements OnInit {
 
         this.apiService.getAll('productos', this.filtros).subscribe(productos => {
             this.productos = productos;
+            this.stockTotalFiltrado = this.apiService.isInventarioSumarStockBusquedas()
+                && productos?.stock_total_filtrado !== undefined && productos?.stock_total_filtrado !== null
+                ? Number(productos.stock_total_filtrado)
+                : null;
             this.loading = false;
             if (this.modalRef) {
                 this.modalRef.hide();
@@ -171,13 +190,13 @@ export class ProductosComponent implements OnInit {
             this.filtros.direccion = 'asc';
         }
 
-        this.filtrarProductos();
+        this.filtrarProductos(true);
     }
 
     public setPagination(event: any): void {
         this.loading = true;
         this.filtros.page = event.page;
-        this.filtrarProductos();
+        this.filtrarProductos(false);
     }
 
     public onSubmit() {
@@ -192,6 +211,27 @@ export class ProductosComponent implements OnInit {
 
     public openDescargar(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
+    }
+
+    public descargarReporteInventarioVentasMensual() {
+        this.downloadingReporteAnalisis = true;
+        const empresa = this.apiService.auth_user()?.empresa;
+        const params = {
+            id_empresa: empresa?.id,
+            fecha: this.apiService.date(),
+        };
+        this.apiService.export('inventarios/exportar-analisis-ventas-mensual', params).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'reporte-inventario-ventas.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloadingReporteAnalisis = false;
+        }, (error) => { this.alertService.error(error); this.downloadingReporteAnalisis = false; });
     }
 
     public descargar() {
@@ -243,7 +283,7 @@ export class ProductosComponent implements OnInit {
 
         this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
             // this.producto.inventarios[this.producto.inventarios.findIndex((item:any) => item.id_bodega == this.filtros.id_bodega)].stock = ajuste.stock_real;
-            this.filtrarProductos();
+            this.filtrarProductos(false);
             this.modalRef.hide();
             this.alertService.modal = false;
             this.loading = false;
@@ -450,6 +490,10 @@ export class ProductosComponent implements OnInit {
 
     public isLotesActivo(): boolean {
         return this.apiService.isLotesActivo();
+    }
+
+    public isInventarioSumarStockBusquedas(): boolean {
+        return this.apiService.isInventarioSumarStockBusquedas();
     }
 
 }

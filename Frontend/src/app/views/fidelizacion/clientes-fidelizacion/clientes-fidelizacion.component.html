@@ -24,7 +24,7 @@
         <div class="col-md-6 mb-3">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="pagination?.total">
                 Mostrando 
-                <select name="paginate" class="form-select w-auto" (change)="filtrarClientes()" [(ngModel)]="filtros.paginate">
+                <select name="paginate" class="form-select w-auto" (change)="onPaginateChange()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
                     <option value="50">50</option>
@@ -75,17 +75,17 @@
 
     <div class="row">
         <div class="table-responsive">
-            <table class="table table-borderless table-hover mb-0">
+            <table class="table table-borderless table-hover mb-0 clientes-fid-table">
                 <thead>
                     <tr>
-                        <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">
+                        <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click col-cliente">
                             Cliente
                             <i class="fa fa-sort fa-xs ms-1" *ngIf="filtros.orden !== 'nombre'"></i>
                         </th>
-                        <th>Contacto</th>
-                        <th class="d-none d-md-table-cell">Nivel</th>
-                        <th class="d-none d-lg-table-cell">Tipo</th>
-                        <th (click)="setOrden('puntos_disponibles')" [ngClass]="{'sorted-asc': filtros.orden == 'puntos_disponibles' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'puntos_disponibles' && filtros.direccion == 'desc'}" class="click d-none d-md-table-cell">
+                        <th class="col-correo d-none d-md-table-cell">Correo</th>
+                        <th class="col-telefono d-none d-md-table-cell">Teléfono</th>
+                        <th class="col-nivel d-none d-md-table-cell">Nivel</th>
+                        <th (click)="setOrden('puntos_disponibles')" [ngClass]="{'sorted-asc': filtros.orden == 'puntos_disponibles' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'puntos_disponibles' && filtros.direccion == 'desc'}" class="click d-none d-lg-table-cell">
                             Puntos Disponibles
                             <i class="fa fa-sort fa-xs ms-1" *ngIf="filtros.orden !== 'puntos_disponibles'"></i>
                         </th>
@@ -109,45 +109,37 @@
                         </td>
                     </tr>
                     <tr *ngFor="let cliente of clientes">
-                        <td>
-                            <div class="d-flex flex-column">
-                                <strong>{{ cliente.nombre | truncate:25 }}</strong>
-                                <small class="text-muted">{{ cliente.tipo }}</small>
+                        <td class="col-cliente">
+                            <div class="cliente-celda">
+                                <span class="cliente-nombre" [title]="cliente.nombre">{{ cliente.nombre | truncate:50 }}</span>
+                                <span *ngIf="cliente.tipo" class="cliente-tipo-sub">{{ cliente.tipo }}</span>
+                            </div>
+                            <div class="d-md-none mt-1 text-muted small" *ngIf="cliente.correo || cliente.telefono">
+                                <div *ngIf="cliente.correo">{{ cliente.correo }}</div>
+                                <div *ngIf="cliente.telefono">{{ cliente.telefono }}</div>
                             </div>
                         </td>
-                        <td>
-                            <div class="d-flex flex-column">
-                                <span>{{ cliente.correo }}</span>
-                                <small class="text-muted">{{ cliente.telefono }}</small>
-                            </div>
+                        <td class="col-correo d-none d-md-table-cell">
+                            <span [title]="cliente.correo">{{ cliente.correo || '—' }}</span>
                         </td>
-                        <td class="d-none d-md-table-cell">
-                            <div class="d-flex flex-column">
-                                <span class="badge py-2 mb-1" [ngClass]="getNivelClass(cliente.nivel_actual || 1)">
-                                    Nivel {{ cliente.nivel_actual || 1 }}
-                                </span>
-                                <small class="text-muted">{{ getNivelNombre(cliente.nivel_actual || 1) }}</small>
-                            </div>
+                        <td class="col-telefono d-none d-md-table-cell">
+                            <span>{{ cliente.telefono || '—' }}</span>
                         </td>
-                        <td class="d-none d-lg-table-cell">
-                            <span class="badge py-2" [ngClass]="getNivelClass(cliente.nivel_actual || 1)">
+                        <td class="col-nivel d-none d-md-table-cell">
+                            <span [ngClass]="getNivelBadgeClass(cliente.nivel_actual || 1)">
                                 {{ getNivelNombre(cliente.nivel_actual || 1) }}
                             </span>
                         </td>
-                        <td class="d-none d-md-table-cell">
+                        <td class="d-none d-lg-table-cell">
                             <div class="d-flex flex-column">
-                                <span class="fw-bold text-primary">{{ formatNumber(cliente.puntos_disponibles || 0) }}</span>
-                                <small class="text-muted">Disponibles</small>
+                                <span class="puntos-valor puntos-valor--disponibles">{{ formatNumber(cliente.puntos_disponibles || 0) }}</span>
                                 <small class="text-danger" *ngIf="(cliente.puntos_vencidos || 0) > 0">
                                     {{ formatNumber(cliente.puntos_vencidos || 0) }} vencidos
                                 </small>
                             </div>
                         </td>
                         <td class="d-none d-lg-table-cell">
-                            <div class="d-flex flex-column">
-                                <span class="fw-bold text-success">{{ formatNumber(cliente.puntos_acumulados || 0) }}</span>
-                                <small class="text-muted">Total ganado</small>
-                            </div>
+                            <span class="puntos-valor puntos-valor--acumulados">{{ formatNumber(cliente.puntos_acumulados || 0) }}</span>
                         </td>
                         <td class="d-none d-lg-table-cell">
                             <span class="badge py-2" [ngClass]="{'bg-success': cliente.enable, 'bg-danger': !cliente.enable}">
@@ -163,8 +155,11 @@
                                     <button type="button" (click)="viewClienteDetails(cliente)" class="btn text-start border-0">
                                         <i class="fa fa-fw fa-magnifying-glass me-2"></i> Ver detalles
                                     </button>
-                                    <button type="button" (click)="viewClienteLealtad(cliente)" class="btn text-start border-0">
-                                        <i class="fa fa-fw fa-star me-2"></i> Ver detalles lealtad
+                                    <button type="button" (click)="viewCliente360(cliente)" class="btn text-start border-0">
+                                        <i class="fa fa-fw fa-circle-notch me-2"></i> Vista Cliente 360°
+                                    </button>
+                                    <button type="button" (click)="agregarNotaCliente(cliente)" class="btn text-start border-0">
+                                        <i class="fa fa-fw fa-sticky-note me-2"></i> Agregar nota
                                     </button>
                                     <button type="button" (click)="openChangeTypeModal(cliente)" class="btn text-start border-0">
                                         <i class="fa fa-fw fa-exchange-alt me-2"></i> Cambiar tipo
@@ -240,9 +235,12 @@
             </div>
             
             <br><br>
-            <div class="d-grid">
-                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-outline-secondary" (click)="limpiarFiltrosAvanzados()">
+                    <i class="fa fa-times me-1"></i> Limpiar
+                </button>
+                <button type="submit" [disabled]="loading" class="btn btn-primary">
+                    <span *ngIf="!loading"><i class="fa fa-filter me-1"></i> Filtrar</span>
                     <span *ngIf="loading">Filtrando...</span>
                 </button>
             </div>
@@ -300,3 +298,5 @@
 
 <!-- Overlay para el modal -->
 <div class="modal-backdrop fade" [class.show]="showChangeTypeModal" *ngIf="showChangeTypeModal"></div>
+
+<app-cliente-nota-modal #clienteNotaModal></app-cliente-nota-modal>

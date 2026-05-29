@@ -77,6 +77,8 @@
                 <th>Otros Desc.</th>
                 <th>Total Desc.</th>
                 <th>Neto</th>
+                <th>Viáticos</th>
+                <th>Total a Pagar</th>
             </tr>
         </thead>
         <tbody>
@@ -98,6 +100,8 @@
                 <td class="moneda">{{ $simbolo }}{{ number_format($detalle->otros_descuentos, 2) }}</td>
                 <td class="moneda">{{ $simbolo }}{{ number_format($detalle->total_descuentos, 2) }}</td>
                 <td class="moneda">{{ $simbolo }}{{ number_format($detalle->sueldo_neto, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->viaticos ?? 0, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format(($detalle->sueldo_neto ?? 0) + ($detalle->viaticos ?? 0), 2) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -118,6 +122,8 @@
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('otros_descuentos'), 2) }}</strong></td>
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('total_descuentos'), 2) }}</strong></td>
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('sueldo_neto'), 2) }}</strong></td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum(fn($d) => $d->viaticos ?? 0), 2) }}</strong></td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum(fn($d) => ($d->sueldo_neto ?? 0) + ($d->viaticos ?? 0)), 2) }}</strong></td>
             </tr>
         </tfoot>
     </table>

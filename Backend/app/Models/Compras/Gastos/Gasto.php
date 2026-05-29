@@ -31,12 +31,14 @@ class Gasto extends Model
         'id_proveedor',
         'sub_total',
         'renta_retenida',
+        'iva_retenido',
         'iva',
         'iva_percibido',
         'otros_impuestos',
         'total',
         'nota',
         'area_empresa',
+        'id_area_empresa',
         'id_usuario',
         'id_proyecto',
         'id_empresa',
@@ -70,6 +72,17 @@ class Gasto extends Model
     public function getDteAttribute($value)
     {
         return is_string($value) ? json_decode($value, true) : $value;
+    }
+
+    public function setDteAttribute($value): void
+    {
+        if ($value === null || $value === '') {
+            $this->attributes['dte'] = null;
+            return;
+        }
+        $this->attributes['dte'] = is_array($value)
+            ? json_encode($value, JSON_UNESCAPED_UNICODE)
+            : $value;
     }
 
     public function getDteInvalidacionAttribute($value)

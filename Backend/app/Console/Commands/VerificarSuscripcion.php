@@ -7,7 +7,6 @@ use App\Models\Suscripcion;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use App\Notifications\SuscripcionNotification;
 
 class VerificarSuscripcion extends Command
 {
@@ -15,9 +14,6 @@ class VerificarSuscripcion extends Command
     protected $description = 'Verifica y actualiza el estado de las suscripciones, períodos de prueba y envía notificaciones';
 
     private const DIAS_PERIODO_PRUEBA = 3;
-    private const DIAS_PRIMERA_ALERTA = 3;
-    private const DIAS_ALERTA_CRITICA = 7;
-    private const DIAS_DESACTIVACION = 10;
 
     public function handle()
     {
@@ -28,6 +24,7 @@ class VerificarSuscripcion extends Command
             $this->verificarPeriodosPrueba();
             $this->verificarSuscripcionesVencidas();
             $this->procesarSuscripcionesCanceladas();
+            $this->verificarInactividad();
 
             $this->info('Verificación completada exitosamente');
             Log::channel('suscripciones')->info('Verificación completada exitosamente');
@@ -83,6 +80,95 @@ class VerificarSuscripcion extends Command
         Log::channel('suscripciones')->info('Procesamiento de suscripciones canceladas completado');
     }
 
+    private function verificarInactividad(): void
+    {
+        $this->info('Verificando inactividad general (> 45 días sin login)...');
+        Log::channel('suscripciones')->info('Iniciando verificación de inactividad general (> 45 días)');
+
+        $inactivo = config('constants.ESTADO_SUSCRIPCION_INACTIVO');
+        $cancelado = config('constants.ESTADO_SUSCRIPCION_CANCELADO');
+
+        $suscripciones = Suscripcion::with(['usuario.empresa', 'empresa'])
+            ->whereNotIn('estado', [$inactivo, $cancelado])
+            ->get();
+
+        $this->info('Suscripciones a evaluar por inactividad general: ' . $suscripciones->count());
+
+        foreach ($suscripciones as $suscripcion) {
+            $usuario = $suscripcion->usuario;
+            $empresa = $suscripcion->empresa ?? $usuario?->empresa;
+
+            if (!$empresa) {
+                $this->warn("Empresa no encontrada para suscripción ID: {$suscripcion->id}");
+                continue;
+            }
+
+            // Verificar si algún usuario de la empresa ha hecho login en los últimos 45 días
+            $limiteActividad = Carbon::now()->subDays(45);
+            $usuarioActivoReciente = $empresa->usuarios()
+                ->withoutGlobalScopes()
+                ->where('ultimo_login', '>=', $limiteActividad)
+                ->exists();
+
+            if ($usuarioActivoReciente) {
+                $this->warn("Empresa {$empresa->id} tiene usuarios con actividad reciente. Se omite desactivación.");
+                Log::channel('suscripciones')->warning('Empresa omitida por actividad reciente de usuarios', [
+                    'empresa_id' => $empresa->id,
+                    'suscripcion_omitida_id' => $suscripcion->id,
+                ]);
+                continue; // Saltar a la siguiente suscripción
+            }
+
+            if (!$this->empresaInactivaMasDe45Dias($empresa)) {
+                continue;
+            }
+
+            try {
+                $suscripcion->update([
+                    'estado' => $inactivo,
+                ]);
+
+                if ($usuario) {
+                    $usuario->update(['enable' => false]);
+                }
+
+                $this->reiniciarMontosFinancieros($suscripcion, $usuario, 'inactividad general (> 45 días)', true);
+
+                $this->info("Suscripción {$suscripcion->id} desactivada por inactividad general (> 45 días sin login)");
+                Log::channel('suscripciones')->info('Suscripción desactivada por inactividad general (> 45 días)', [
+                    'suscripcion_id' => $suscripcion->id,
+                    'usuario_id'     => $usuario?->id,
+                    'empresa_id'     => $empresa->id,
+                    'ultimo_login'   => $empresa->ultimo_login,
+                ]);
+            } catch (\Exception $e) {
+                $this->error("Error al desactivar suscripción {$suscripcion->id} por inactividad general: {$e->getMessage()}");
+                Log::channel('suscripciones')->error('Error al desactivar por inactividad general (> 45 días)', [
+                    'suscripcion_id' => $suscripcion->id,
+                    'error'          => $e->getMessage(),
+                ]);
+            }
+        }
+
+        Log::channel('suscripciones')->info('Verificación de inactividad general (> 45 días) completada');
+    }
+
+    private function empresaInactivaMasDe45Dias($empresa): bool
+    {
+        $limite = Carbon::now()->subDays(45);
+        $ultimoLogin = $empresa->ultimo_login;
+
+        if ($ultimoLogin) {
+            return Carbon::parse($ultimoLogin)->lt($limite);
+        }
+
+        if (!$empresa->created_at) {
+            return false;
+        }
+
+        return Carbon::parse($empresa->created_at)->lt($limite);
+    }
+
     private function procesarDesactivacionCancelada(Suscripcion $suscripcion)
     {
         try {
@@ -93,9 +179,9 @@ class VerificarSuscripcion extends Command
                 return;
             }
 
-            // Desactivar usuario
-            $usuario->enable = false;
-            $usuario->save();
+            $this->reiniciarMontosFinancieros($suscripcion, $usuario, 'cancelación');
+
+            $usuario->update(['enable' => false]);
 
             $this->info('Usuario desactivado por cancelación: ' . $usuario->email);
             Log::channel('suscripciones')->info('Usuario desactivado por suscripción cancelada', [
@@ -110,6 +196,7 @@ class VerificarSuscripcion extends Command
             Mail::send('mails.notificacion_desactivacion', [
                 'nombre' => $usuario->name,
                 'empresa' => $usuario->empresa->nombre ?? 'su empresa'
+     
             ], function ($m) use ($usuario) {
                 $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
                     ->to($usuario->email)
@@ -135,27 +222,49 @@ class VerificarSuscripcion extends Command
 
     private function manejarSuscripcionVencida(Suscripcion $suscripcion, int $diasVencidos)
     {
-        // Primera alerta (3 días)
-        if ($diasVencidos >= self::DIAS_PRIMERA_ALERTA && $diasVencidos < self::DIAS_ALERTA_CRITICA) {
-            $this->enviarNotificacionVencimiento($suscripcion, 'primera_alerta');
-            // $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')]);
+        $diasProrroga = max(1, (int) config('constants.DIAS_PRORROGA_SUSCRIPCION'));
+        $diasInactivacion = max($diasProrroga + 1, (int) config('constants.DIAS_INACTIVACION_EMPRESA_SUSCRIPCION', 30));
+        $inactivo = config('constants.ESTADO_SUSCRIPCION_INACTIVO');
+
+        if ($suscripcion->estado === $inactivo) {
+            return;
         }
 
-        // Alerta crítica (7 días)
-        elseif ($diasVencidos >= self::DIAS_ALERTA_CRITICA && $diasVencidos < self::DIAS_DESACTIVACION) {
-            $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
-            // $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')]);
-        }
-
-        // Cambio a PENDIENTE (9 días)
-        elseif ($diasVencidos >= 9 && $diasVencidos < self::DIAS_DESACTIVACION) {
-            $this->enviarNotificacionVencimiento($suscripcion, 'cancelado');
-            $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_CANCELADO')]);
-        }
-
-        // Desactivación (10 días)
-        elseif ($diasVencidos >= self::DIAS_DESACTIVACION) {
+        // Soft churn: la inactivación real se aplica al llegar al umbral configurado (ej. día 30).
+        if ($diasVencidos >= $diasInactivacion) {
             $this->desactivarCuenta($suscripcion);
+
+            return;
+        }
+
+        // Fuera de prórroga y antes de inactivación: mantener en limbo sin cambiar estado.
+        if ($diasVencidos > $diasProrroga) {
+            if ($diasVencidos === ($diasProrroga + 1)) {
+                $this->enviarNotificacionVencimiento($suscripcion, 'desactivacion');
+            }
+
+            return;
+        }
+
+        // Prórroga corta (≤3 días): alertas días 1..N; sin pasar a Cancelado a mitad de gracia.
+        if ($diasProrroga <= 3) {
+            if ($diasVencidos >= 1 && $diasVencidos < 2) {
+                $this->enviarNotificacionVencimiento($suscripcion, 'primera_alerta');
+            } elseif ($diasVencidos >= 2 && $diasVencidos < 3) {
+                $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
+            } elseif ($diasVencidos >= 3 && $diasVencidos <= $diasProrroga) {
+                $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
+            }
+
+            return;
+        }
+
+        $limitePrimera = max(1, (int) floor($diasProrroga / 3));
+
+        if ($diasVencidos >= 1 && $diasVencidos <= $limitePrimera) {
+            $this->enviarNotificacionVencimiento($suscripcion, 'primera_alerta');
+        } else {
+            $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
         }
     }
 
@@ -184,17 +293,17 @@ class VerificarSuscripcion extends Command
     private function desactivarCuenta(Suscripcion $suscripcion)
     {
         try {
-            // Actualizar suscripción
             $suscripcion->update([
-                'estado' => config('constants.ESTADO_SUSCRIPCION_INACTIVO')
+                'estado' => config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
             ]);
 
-            // Desactivar usuario
-            // if ($suscripcion->usuario) {
-            //     $suscripcion->usuario->update(['enable' => false]);
-            // }
+            $usuario = $suscripcion->usuario;
+            $this->reiniciarMontosFinancieros($suscripcion, $usuario, 'falta de pago', true);
 
-            // Enviar notificación de desactivación
+            if ($usuario) {
+                $usuario->update(['enable' => false]);
+            }
+
             $this->enviarNotificacionVencimiento($suscripcion, 'desactivacion');
 
             Log::channel('suscripciones')->info("Cuenta desactivada para suscripción {$suscripcion->id}");
@@ -205,16 +314,54 @@ class VerificarSuscripcion extends Command
         }
     }
 
+    private function reiniciarMontosFinancieros(
+        Suscripcion $suscripcion,
+        ?User $usuario,
+        string $motivo,
+        bool $desactivarEmpresa = false
+    ): void {
+        $suscripcion->update(['monto' => 0]);
+
+        Log::channel('suscripciones')->info("Monto de suscripción reiniciado a 0 por {$motivo}", [
+            'suscripcion_id' => $suscripcion->id,
+        ]);
+
+        if (!$usuario?->empresa) {
+            return;
+        }
+
+        $datosEmpresa = [
+            'monto_mensual' => 0,
+            'monto_anual' => 0,
+            'total' => 0,
+        ];
+
+        if ($desactivarEmpresa) {
+            $datosEmpresa['activo'] = false;
+        }
+
+        $usuario->empresa->update($datosEmpresa);
+
+        $mensajeEmpresa = $desactivarEmpresa
+            ? "Empresa desactivada y montos reiniciados a 0 por {$motivo}"
+            : "Montos de empresa reiniciados a 0 por {$motivo}";
+
+        Log::channel('suscripciones')->info($mensajeEmpresa, [
+            'empresa_id' => $usuario->empresa->id,
+            'suscripcion_id' => $suscripcion->id,
+        ]);
+    }
+
     private function enviarNotificacionVencimiento(Suscripcion $suscripcion, string $tipo)
     {
         $usuario = $suscripcion->usuario;
         if (!$usuario) return;
 
         $mensajes = [
-            'primera_alerta' => 'Tu suscripción ha vencido. Por favor, realiza el pago para mantener el servicio activo.',
-            'alerta_critica' => '¡IMPORTANTE! Tu cuenta será desactivada pronto por falta de pago.',
-            'desactivacion' => 'Tu cuenta ha sido desactivada por falta de pago. Contacta con soporte para reactivarla.',
-            'cancelado' => 'Tu cuenta ha sido cancelada por falta de pago. Contacta con soporte para reactivarla.'
+            'primera_alerta' => 'Tu suscripción requiere atención: hay saldos pendientes con el sistema. Regulariza tu situación para mantener el servicio activo.',
+            'alerta_critica' => 'Importante: si persisten saldos pendientes con el sistema, tu acceso podría verse limitado pronto.',
+            'desactivacion' => 'Tu cuenta está suspendida por saldos pendientes con el sistema. Contacta a soporte para regularizar tu situación.',
+            'cancelado' => 'Tu suscripción fue cancelada por saldos pendientes con el sistema. Contacta a soporte para revisar opciones.'
         ];
 
         Log::channel('suscripciones')->info("Enviando notificación de vencimiento para suscripción {$suscripcion->id}: {$mensajes[$tipo]}");

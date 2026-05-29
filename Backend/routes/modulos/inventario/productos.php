@@ -17,8 +17,13 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/productos',         		    [ProductosController::class, 'index']);
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
+    Route::get('/producto/{id}/preview-migracion-lotes', [ProductosController::class, 'previewMigracionLotes']);
+    Route::post('/producto/{id}/migrar-stock-lotes', [ProductosController::class, 'migrarStockLotes']);
     Route::get('/producto/buscar-by-code/{codigo}', [ProductosController::class, 'searchByCode']);
     Route::get('/productos/list',               [ProductosController::class, 'list']);
+    Route::get('/productos/siguiente-barcode-correlativo', [ProductosController::class, 'siguienteBarcodeCorrelativo']);
+    Route::get('/productos/siguiente-sku-correlativo', [ProductosController::class, 'siguienteBarcodeCorrelativo']);
+    Route::get('/productos/marca-productos',   [ProductosController::class, 'getMarcas']);
     Route::get('/productos/search',        [ProductosController::class, 'searchProductos']);
     Route::get('/productos/buscar/{txt}',       [ProductosController::class, 'search']);
     Route::get('/productos/buscar-by-query',    [ProductosController::class, 'searchByQuery']);
@@ -45,6 +50,8 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::post('/productos/buscar-por-codigo-proveedor', [ProductosController::class, 'buscarPorCodigoProveedor']);
     Route::post('/productos/buscar-por-nombre', [ProductosController::class, 'buscarPorNombre']);
     Route::post('/productos/buscar-sugerencias', [ProductosController::class, 'buscarSugerencias']);
+    Route::post('/productos/resolver-importacion-dte', [ProductosController::class, 'resolverProductosImportacionDte']);
+    Route::post('/productos/buscar-sugerencias-lote', [ProductosController::class, 'buscarSugerenciasLote']);
 
 // Composisiones
     Route::post('/producto/composicion',        [ComposicionesController::class, 'store']);
@@ -89,6 +96,7 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::get('/producto/ventas/{id}',          [ProductosController::class, 'ventas']);
 
     Route::post('/productos/importar',          [ProductosController::class, 'import']);
+    Route::get('/productos/plantilla-importacion', [ProductosController::class, 'plantillaImportacionProductos']);
     Route::get('/productos/exportar',          [ProductosController::class, 'export']);
     //exportar-plantilla
     Route::get('/productos/exportar-plantilla', [ProductosController::class, 'exportarPlantilla']);
@@ -106,15 +114,16 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::get('/productos/exportar/shopify',          [ProductosController::class, 'exportarShopifyTemplate']);
     //productos/importar-shopify
     Route::post('/producto/importar-shopify',          [ProductosController::class, 'importarShopify']);
-    //productos/exportar-traslado
+    //productos/exportar-traslado (GET: plantilla por IDs; POST: listado con stocks y cantidades desde la UI)
     Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
+    Route::post('/productos/exportar-traslado',         [ProductosController::class, 'exportarPlantillaTraslado']);
+    //productos/traslado-masivo/importar/vista-previa
+    Route::post('/productos/traslado-masivo/importar/vista-previa', [ProductosController::class, 'vistaPreviaImportarTrasladosMasivos']);
     //productos/traslado-masivo/importar
     Route::post('/productos/traslado-masivo/importar',          [ProductosController::class, 'importarTrasladosMasivos']);
     //productos/traslado-masivo post
     Route::post('/productos/traslado-masivo',          [ProductosController::class, 'trasladoMasivo']);
 
-    Route::get('productos/marca-productos', [ProductosController::class, 'getMarcas']);
-    
     // Rutas para sistema de cola de Shopify (compatible con Hostinger)
     Route::post('/productos/shopify/cola/iniciar', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'iniciarImportacion']);
     Route::post('/productos/shopify/cola/continuar', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'continuarImportacion']);

@@ -1,6 +1,6 @@
 <form autocomplete="off" class="buscador position-relative w-100">
   <div class="position-relative">
-    <input id="buscadorCliente" type="text" name="cliente.nombre" class="form-control pr-5" placeholder="Consumidor Final" (keyup)="cliente.nombre == '' ? clienteSelect(cliente) : ''" [(ngModel)]="cliente.nombre">
+    <input #searchInput [id]="inputId" type="text" name="cliente.nombre" class="form-control pr-5" [placeholder]="placeholder" (keyup)="cliente.nombre == '' ? clienteSelect(cliente) : ''" [(ngModel)]="cliente.nombre">
     
     <!-- Ícono de carga -->
     <span *ngIf="searching" class="position-absolute end-0 top-50 translate-middle-y pe-2">
@@ -17,7 +17,13 @@
 
   <ul class="list-group opciones" *ngIf="clientes?.length > 0">
     <a href="javascript:void(0);" class="list-group-item" (click)="clienteSelect(cliente)" *ngFor="let cliente of clientes">
-      {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }} <span *ngIf="cliente.dui || cliente.nrc">- </span> <small class="text-muted">{{ cliente.dui ?? cliente.nrc }}</small>
+      {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+      <small class="text-muted d-block" *ngIf="cliente.dui || cliente.nit || cliente.telefono || cliente.nrc">
+        <span *ngIf="cliente.dui">DUI: {{ cliente.dui }}</span>
+        <span *ngIf="cliente.nit"> · NIT: {{ cliente.nit }}</span>
+        <span *ngIf="cliente.nrc && !cliente.nit"> · NRC: {{ cliente.nrc }}</span>
+        <span *ngIf="cliente.telefono"> · Tel: {{ cliente.telefono }}</span>
+      </small>
     </a>
   </ul>
 </form>

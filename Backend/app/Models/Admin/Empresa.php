@@ -7,9 +7,11 @@ use App\Models\FidelizacionClientes\ConsumoPuntos;
 use App\Models\FidelizacionClientes\PuntosCliente;
 use App\Models\FidelizacionClientes\TipoClienteEmpresa;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
+use App\Models\Admin\Acceso;
 use App\Models\Planilla\CargoEmpresa;
 use App\Models\Planilla\DepartamentoEmpresa;
 use App\Models\Suscripcion;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
@@ -41,6 +43,7 @@ class Empresa extends Model
         'logo',
         'propina',
         'propina_porcentaje',
+        'monto_minimo_retencion_iva_gc',
         'valor_inventario',
         'vender_sin_stock',
         'user_limit',
@@ -77,8 +80,14 @@ class Empresa extends Model
         'wompi_id',
         'wompi_secret',
         'modulo_paquetes',
+        'webhook_paquete_venta_enabled',
+        'webhook_paquete_venta_url',
+        'webhook_paquete_venta_secret',
+        'webhook_paquete_venta_bearer_token',
         'modulo_citas',
         'modulo_proyectos',
+        'restringir_gastos_supervisor_limitado',
+        'restringir_compras_supervisor_limitado',
         'activo',
         'alerta_suscripcion',
         'cotizacion_compras_terminos',
@@ -116,6 +125,7 @@ class Empresa extends Model
         'woocommerce_last_sync',
         'woocommerce_error',
         'woocommerce_canal_id',
+        'woocommerce_sync_mode',
 
         //Personalización
         'custom_empresa',
@@ -147,23 +157,30 @@ class Empresa extends Model
     ];
 
     protected $casts = [
+        'monto_minimo_retencion_iva_gc' => 'decimal:2',
         'enviar_dte' => 'boolean',
         'facturacion_electronica' => 'boolean',
         'custom_empresa' => 'json',
         'importacion_productos_shopify' => 'boolean',
         'shopify_sync_bidirectional' => 'boolean',
+        'webhook_paquete_venta_enabled' => 'boolean',
+        'restringir_gastos_supervisor_limitado' => 'boolean',
+        'restringir_compras_supervisor_limitado' => 'boolean',
     ];
 
     protected $appends = [
+        'ultimo_login',
         'estado_plan',
         'woocommerce_api_url',
+        'woocommerce_product_webhook_url',
         'status_conexion_woocommerce',
         'is_current_user_connected_to_woocommerce',
         'currency_symbol',
         'acces_chatbot_whatsapp',
         'shopify_webhook_url',
         'status_conexion_shopify',
-        'is_current_user_connected_to_shopify'
+        'is_current_user_connected_to_shopify',
+        'frecuencia_pago_label',
     ];
 
     public function limiteUsuarios()
@@ -200,10 +217,58 @@ class Empresa extends Model
         return $this->pagos->count();
     }
 
+    /**
+     * Texto para UI: prioriza frecuencia_pago de la empresa y usa tipo_plan como respaldo.
+     */
+    public function getFrecuenciaPagoLabelAttribute(): string
+    {
+        $fp = trim((string) ($this->attributes['frecuencia_pago'] ?? ''));
+        if ($fp !== '') {
+            return $fp;
+        }
+        $tp = trim((string) ($this->attributes['tipo_plan'] ?? ''));
+
+        return $tp !== '' ? $tp : '';
+    }
+
+    public function getUltimoLoginAttribute()
+    {
+        return $this->accesos()->max('fecha');
+    }
+
+    /**
+     * Alinea total, monto_mensual o monto_anual con el cobro de la suscripción según tipo_plan.
+     */
+    public function sincronizarMontosDesdeSuscripcion($monto, ?string $tipoPlan): void
+    {
+        $monto = (float) $monto;
+        $this->total = $monto;
+        $tipo = mb_strtolower(trim((string) $tipoPlan));
+
+        if ($tipo === 'anual') {
+            $this->monto_anual = $monto;
+
+            return;
+        }
+
+        $this->monto_mensual = $monto;
+    }
 
     public function usuarios()
     {
         return $this->hasMany('App\Models\User', 'id_empresa');
+    }
+
+    public function accesos()
+    {
+        return $this->hasManyThrough(
+            Acceso::class,
+            User::class,
+            'id_empresa',
+            'id_usuario',
+            'id',
+            'id'
+        )->withoutGlobalScopes();
     }
 
     public function ventas()
@@ -488,6 +553,36 @@ class Empresa extends Model
         return $user;
     }
 
+    public const WOOCOMMERCE_SYNC_BIDIRECTIONAL = 'bidirectional';
+    public const WOOCOMMERCE_SYNC_WC_TO_SP = 'wc_to_sp';
+    public const WOOCOMMERCE_SYNC_SP_TO_WC = 'sp_to_wc';
+
+    /**
+     * SmartPyme envía producto/stock a WooCommerce (observers, exportación masiva).
+     */
+    public function woocommerceSyncPushesToRemote(): bool
+    {
+        $mode = $this->woocommerce_sync_mode ?: self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
+        if (!in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_WC_TO_SP, self::WOOCOMMERCE_SYNC_SP_TO_WC], true)) {
+            $mode = self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
+        }
+
+        return in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_SP_TO_WC], true);
+    }
+
+    /**
+     * Se permite importar catálogo desde CSV de WooCommerce hacia SmartPyme.
+     */
+    public function woocommerceSyncAcceptsCatalogFromWoo(): bool
+    {
+        $mode = $this->woocommerce_sync_mode ?: self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
+        if (!in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_WC_TO_SP, self::WOOCOMMERCE_SYNC_SP_TO_WC], true)) {
+            $mode = self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
+        }
+
+        return in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_WC_TO_SP], true);
+    }
+
     public function getWooCommerceApiUrlAttribute()
     {
         if (empty($this->woocommerce_api_key)) {
@@ -495,6 +590,18 @@ class Empresa extends Model
         }
 
         return url('/api/webhook/woocommerce/' . $this->woocommerce_api_key);
+    }
+
+    /**
+     * URL para webhooks de producto (crear/actualizar en Woo) distinta de la de pedidos.
+     */
+    public function getWooCommerceProductWebhookUrlAttribute()
+    {
+        if (empty($this->woocommerce_api_key)) {
+            return null;
+        }
+
+        return url('/api/webhook/woocommerce/' . $this->woocommerce_api_key . '/producto');
     }
     public function getStatusConexionWoocommerceAttribute()
     {
@@ -628,7 +735,10 @@ class Empresa extends Model
             ],
             'modulos' => [],
             'configuraciones' => [
-                'ticket_en_pdf' => false
+                'ticket_en_pdf' => false,
+                'bloquear_cotizaciones_vendedores' => false,
+                'dte_mostrar_descripcion_producto' => true,
+                'inventario_reporte_analisis_ventas_mensual' => false,
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados
@@ -693,11 +803,45 @@ class Empresa extends Model
     }
 
     /**
+     * Código de barras correlativo automático al crear productos (clave nueva: barcode_correlativo_automatico).
+     * Compatibilidad: si aún existe sku_correlativo_automatico de versiones anteriores, se considera activo.
+     */
+    public function isBarcodeCorrelativoAutomaticoHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'barcode_correlativo_automatico', false)
+            || (bool) $this->getCustomConfigValue('configuraciones', 'sku_correlativo_automatico', false);
+    }
+
+    /**
+     * Mostrar en el listado de inventario la suma de stock de todos los productos que coinciden con los filtros actuales.
+     */
+    public function isInventarioSumarStockBusquedasHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_sumar_stock_busquedas', false);
+    }
+
+    /**
+     * Reporte Excel de inventario vs ventas desde enero del año hasta el mes de la descarga.
+     */
+    public function isInventarioReporteAnalisisVentasMensualHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_reporte_analisis_ventas_mensual', false);
+    }
+
+    /**
      * Verificar si el módulo de bancos está activo para la empresa
      */
     public function isModuloBancos(): bool
     {
         return (bool) $this->getCustomConfigValue('configuraciones', 'modulo_bancos', false);
+    }
+
+    /**
+     * Categorías de gasto personalizadas, departamentos y áreas (selector en gastos y menú).
+     */
+    public function isGastosCategoriasPersonalizadasHabilitadas(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'gastos_categorias_personalizadas', false);
     }
 
     /**

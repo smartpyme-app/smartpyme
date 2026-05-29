@@ -58,11 +58,16 @@ export class AbonosComprasComponent implements OnInit {
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        
-        this.filtrarAbonos();
+        this.filtros.page = 1;
+
+        this.filtrarAbonos(false);
     }
 
-    public filtrarAbonos(){
+    /** @param resetPage true al buscar/filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll. */
+    public filtrarAbonos(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
         this.apiService.getAll('compras/abonos', this.filtros).subscribe(abonos => { 
             this.abonos = abonos;
@@ -94,38 +99,24 @@ export class AbonosComprasComponent implements OnInit {
     }
 
     public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.abonos.path + '?page='+ event.page, this.filtros).subscribe(abonos => { 
-            this.abonos = abonos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.filtros.page = event.page;
+        this.filtrarAbonos(false);
     }
 
-    public reemprimir(abono:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + abono.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+    public imprimir(abono:any){
+        window.open(this.apiService.baseUrl + '/api/compra/abono/imprimir/' + abono.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
     // Editar
 
     openModalEdit(template: TemplateRef<any>, abono:any) {
-        this.abono = abono;
-        
-        this.apiService.getAll('documentos').subscribe(documentos => {
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
-
+        this.abono = { ...abono };
         this.modalRef = this.modalService.show(template);
     }
 
-    public onSubmit() {
-        this.loading = true;            
-        this.apiService.store('compra/abono', this.abono).subscribe(abono => {
-            this.abono = {};
-            this.modalRef.hide();
-            this.loading = false;
-            this.alertService.success('Abono guardado', 'El abono fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.loading = false; });
-
+    public onAbonoSaved() {
+        this.modalRef.hide();
+        this.filtrarAbonos(false);
     }
 
     public openFilter(template: TemplateRef<any>) {

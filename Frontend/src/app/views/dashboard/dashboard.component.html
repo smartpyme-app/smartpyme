@@ -1,0 +1,59 @@
+<!-- Sección de navegación -->
+<div class="bg-white p-4 rounded mb-3">
+    <div class="dashboard-section-tabs" role="tablist">
+        <button 
+            *ngFor="let seccion of secciones" 
+            type="button"
+            class="btn rounded-3 px-3 px-sm-4 py-3 fw-medium text-center text-wrap"
+            [ngClass]="{ 'btn-primary': seccion.activo, 'btn-default': !seccion.activo }"
+            (click)="cambiarSeccion(seccion)">
+            {{ seccion.nombre }}
+        </button>
+    </div>
+</div> 
+
+<div class="dashboard-shell position-relative">
+    <div class="dashboard-container">
+        <ng-container [ngSwitch]="seccionActiva">
+            <app-resultados 
+                *ngSwitchCase="'Resultados'"
+                [datos]="datos"
+                (filtrosCambiados)="onFiltrosResultadosCambiados($event)">
+            </app-resultados>
+
+            <app-ventas 
+                *ngSwitchCase="'Ventas'"
+                [datos]="datos"
+                (filtrosCambiados)="onFiltrosVentasCambiados($event)">
+            </app-ventas>
+
+            <app-gastos 
+                *ngSwitchCase="'Gastos'"
+                [datos]="datos"
+                (filtrosCambiados)="onFiltrosGastosCambiados($event)">
+            </app-gastos>
+
+            <app-control-cuentas 
+                *ngSwitchCase="'Control de cuentas'"
+                [datos]="datos"
+                (filtrosCambiados)="onFiltrosControlCuentasCambiados($event)">
+            </app-control-cuentas>
+
+            <app-inventario 
+                *ngSwitchCase="'Inventario'"
+                [datos]="datos"
+                (filtrosCambiados)="onFiltrosInventarioCambiados($event)">
+            </app-inventario>
+        </ng-container>
+    </div>
+
+    <!-- Carga global desactivada: Ventas y secciones usan placeholders locales -->
+    <!--
+    <div class="dashboard-loading-overlay" *ngIf="loading" aria-busy="true" aria-live="polite">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+    -->
+</div>
+

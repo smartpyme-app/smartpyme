@@ -19,6 +19,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     public productosIsCollapsed:boolean = true;
     public ventasIsCollapsed:boolean = true;
     public comprasIsCollapsed:boolean = true;
+    public gastosIsCollapsed:boolean = true;
     public preferenciasIsCollapsed:boolean = true;
     public finanzasIsCollapsed:boolean = true;
     public paquetesIsCollapsed:boolean = true;
@@ -28,17 +29,27 @@ export class SidebarComponent implements OnInit, OnDestroy {
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
+    /** true cuando el dominio es abaco.smartpyme.site */
+    public isAbacoSite: boolean = false;
     public filtros: any = {};
     public items: any = [];
     public notificaciones: any = [];
     public authUser: any = {};
     public tieneFidelizacionHabilitada: boolean = false;
+    public tieneModuloRestaurante: boolean = false;
+    /** Menú Restaurante si la funcionalidad «Restaurantes y pedidos» está activa y la empresa lo eligió en preferencias */
+    public mostrarMenuRestaurante: boolean = false;
+    /** Menú Pedidos: mismas condiciones (no es el campo licencia del plan) */
+    public mostrarMenuPedidos: boolean = false;
+    public restauranteIsCollapsed: boolean = true;
+    public pedidosIsCollapsed: boolean = true;
 
     searchControl = new FormControl();
 
     constructor(public apiService: ApiService, public alertService: AlertService, private funcionalidadesService: FuncionalidadesService, private router: Router) {}
 
     ngOnInit() {
+        this.isAbacoSite = window.location.hostname === 'abaco.smartpyme.site';
         if (!localStorage.getItem('sidebarCollapsed')) {
             localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
         }else{
@@ -58,6 +69,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
             localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
         }else{
             this.comprasIsCollapsed = JSON.parse(localStorage.getItem('comprasIsCollapsed')!);
+        }
+        if (!localStorage.getItem('gastosIsCollapsed')) {
+            localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
+        } else {
+            this.gastosIsCollapsed = JSON.parse(localStorage.getItem('gastosIsCollapsed')!);
         }
         if (!localStorage.getItem('preferenciasIsCollapsed')) {
             localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
@@ -89,6 +105,16 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }else{
             this.licenciasIsCollapsed = JSON.parse(localStorage.getItem('licenciasIsCollapsed')!);
         }
+        if (!localStorage.getItem('restauranteIsCollapsed')) {
+            localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
+        } else {
+            this.restauranteIsCollapsed = JSON.parse(localStorage.getItem('restauranteIsCollapsed')!);
+        }
+        if (!localStorage.getItem('pedidosIsCollapsed')) {
+            localStorage.setItem('pedidosIsCollapsed', this.pedidosIsCollapsed.toString());
+        } else {
+            this.pedidosIsCollapsed = JSON.parse(localStorage.getItem('pedidosIsCollapsed')!);
+        }
         this.usuario = this.apiService.auth_user();
 
         this.searchControl.valueChanges
@@ -106,20 +132,29 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.loadNotificaciones();
         this.usuarioLogueado();
         this.verificarFidelizacionHabilitada();
+        this.verificarModuloRestauranteHabilitado();
         
         // Suscribirse a cambios de ruta para verificar funcionalidades cuando el usuario cambie
         this.router.events
             .pipe(rxFilter(event => event instanceof NavigationEnd))
             .subscribe(() => {
-                // Verificar si el usuario ha cambiado (nuevo login)
                 const currentUser = this.apiService.auth_user();
                 if (currentUser && (!this.authUser || this.authUser.id !== currentUser.id)) {
                     this.usuarioLogueado();
                     this.verificarFidelizacionHabilitada();
+                    this.verificarModuloRestauranteHabilitado();
+                } else {
+                    this.actualizarMenusRestaurantePedidos();
                 }
             });
     }
 
+
+    /** Ruta de Libros de IVA según país: El Salvador tiene vista completa; otros países vista general (ventas, compras, retenciones). */
+    get libroIvaRoute(): string[] {
+        const pais = this.apiService.auth_user()?.empresa?.pais ?? '';
+        return pais === 'El Salvador' ? ['/libro-iva/contribuyentes'] : ['/libro-iva/general'];
+    }
 
     toggleSidebar() {
         this.sidebarCollapsed = !this.sidebarCollapsed;
@@ -172,6 +207,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
         this.comprasIsCollapsed = !this.comprasIsCollapsed;
         localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
+    toggleGastos() {
+        if (this.gastosIsCollapsed) {
+            this.closeAll();
+        }
+        this.gastosIsCollapsed = !this.gastosIsCollapsed;
+        localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
         this.toggleSidebarMenu();
     }
 
@@ -230,6 +274,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.toggleSidebarMenu();
     }
 
+    toggleRestaurante() {
+        if (this.restauranteIsCollapsed) {
+            this.closeAll();
+        }
+        this.restauranteIsCollapsed = !this.restauranteIsCollapsed;
+        localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
 
     toggleSidebarMenu() {
         if (this.sidebarCollapsed) {
@@ -245,6 +298,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
         localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
         this.comprasIsCollapsed = true;
         localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
+        this.gastosIsCollapsed = true;
+        localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
         this.preferenciasIsCollapsed = true;
         localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
         this.finanzasIsCollapsed = true;
@@ -255,6 +310,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
         localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
         this.lealtadClientesIsCollapsed = true;
         localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        this.restauranteIsCollapsed = true;
+        localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
+        this.pedidosIsCollapsed = true;
+        localStorage.setItem('pedidosIsCollapsed', this.pedidosIsCollapsed.toString());
     }
 
     public onSubmit(){
@@ -287,6 +346,37 @@ export class SidebarComponent implements OnInit, OnDestroy {
                 this.tieneFidelizacionHabilitada = false;
             }
         });
+    }
+
+    private verificarModuloRestauranteHabilitado() {
+        this.funcionalidadesService.verificarAcceso('modulo-restaurante').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneModuloRestaurante = tieneAcceso;
+                this.actualizarMenusRestaurantePedidos();
+            },
+            error: (error) => {
+                console.error('Error al verificar acceso a módulo restaurante:', error);
+                this.tieneModuloRestaurante = false;
+                this.actualizarMenusRestaurantePedidos();
+            }
+        });
+    }
+
+    /** Funcionalidad activa en Super Admin + preferencia en empresa (custom_empresa) */
+    private actualizarMenusRestaurantePedidos(): void {
+        const vista = this.apiService.getVistaModuloRestaurantePedidos();
+        const tieneFuncionalidad = this.tieneModuloRestaurante;
+        this.mostrarMenuRestaurante = tieneFuncionalidad && (vista === 'restaurante' || vista === 'ambos');
+        this.mostrarMenuPedidos = tieneFuncionalidad && (vista === 'pedidos' || vista === 'ambos');
+    }
+
+    togglePedidos() {
+        if (this.pedidosIsCollapsed) {
+            this.closeAll();
+        }
+        this.pedidosIsCollapsed = !this.pedidosIsCollapsed;
+        localStorage.setItem('pedidosIsCollapsed', this.pedidosIsCollapsed.toString());
+        this.toggleSidebarMenu();
     }
 
     ngOnDestroy() {

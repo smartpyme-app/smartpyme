@@ -63,6 +63,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// Lealtad
 	require base_path('routes/modulos/fidelizacion.php');
 
+	// Restaurante
+	require base_path('routes/modulos/restaurante.php');
+
 	// Cliente 360
 	require base_path('routes/modulos/cliente-360/cliente-360.php');
 	require base_path('routes/modulos/cliente-360/cliente-notas.php');
@@ -125,7 +128,10 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/admin/licencias.php');
 	require base_path('routes/modulos/admin/suscripciones.php');
 	require base_path('routes/modulos/admin/MH.php');
+	require base_path('routes/modulos/admin/dte-mh-proxy.php');
     require base_path('routes/modulos/admin/reportes-automaticos.php');
+    require base_path('routes/modulos/reportes.php');
+
 
 
     // Super Admin
@@ -133,6 +139,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/planes.php');
 	require base_path('routes/modulos/super-admin/pagos.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
+	require base_path('routes/modulos/super-admin/clientes.php');
 
 	//Crequire base_path('rhatbot
 	require base_path('routes/modulos/chat/chat.php');
@@ -151,6 +158,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/planilla/configuraciones.php');
 	require base_path('routes/modulos/planilla/cargos.php');
 	require base_path('routes/modulos/planilla/departamentos-planilla.php');
+	require base_path('routes/modulos/planilla/areas-empresa.php');
 
 	require base_path('routes/modulos/planilla/historialcontratos.php');
 

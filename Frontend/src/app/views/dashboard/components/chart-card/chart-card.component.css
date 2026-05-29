@@ -1,0 +1,171 @@
+/* Estilos para las tarjetas según el diseño */
+.metric-card {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden; /* Evita que el contenido se salga */
+    min-width: 0; /* Permite shrinking correcto en flex */
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.metric-card .card-body {
+    min-width: 0; /* Permite shrinking correcto */
+    overflow: hidden; /* Evita overflow */
+}
+
+.value-text {
+    /* Tamaño responsive usando clamp: min, preferido, max */
+    /* Prioridad: mantener datos legibles siempre */
+    font-size: clamp(1.25rem, 4vw, 1.75rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    word-break: break-word; /* Rompe palabras largas si es necesario */
+    overflow-wrap: break-word; /* Alternativa para compatibilidad */
+    hyphens: auto; /* Agrega guiones automáticos */
+    min-width: 0; /* Permite shrinking */
+    flex-shrink: 0; /* El valor NO se encoge, tiene prioridad */
+}
+
+.label-text {
+    font-size: clamp(0.75rem, 2vw, 0.875rem);
+    font-weight: 400;
+    color: #6c757d;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+    word-break: break-word; /* Rompe palabras largas */
+    overflow-wrap: break-word;
+    hyphens: auto;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Máximo 2 líneas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.trend-indicator {
+    margin-top: 0.25rem;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.trend-indicator > span {
+    display: flex !important;
+    flex-wrap: wrap; /* Permite wrap en pantallas pequeñas */
+    gap: 0.25rem;
+    align-items: center;
+    min-width: 0;
+}
+
+.trend-indicator i {
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.trend-indicator .fw-medium {
+    font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.trend-indicator .text-muted {
+    font-size: clamp(0.65rem, 1.5vw, 0.75rem);
+    white-space: nowrap;
+}
+
+.mini-chart {
+    flex-shrink: 1; /* Permite que el gráfico se encoja si es necesario */
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-left: 0.5rem;
+    min-width: 0; /* Permite shrinking correcto */
+}
+
+.chart-svg {
+    width: 60px; /* Más pequeño por defecto para priorizar datos */
+    height: 30px;
+    max-width: 100%;
+    height: auto;
+    flex-shrink: 1;
+}
+
+/* Responsive breakpoints mejorados - Prioridad a los datos */
+@media (max-width: 1200px) {
+    .chart-svg {
+        width: 50px; /* Gráfico aún más pequeño */
+        height: 25px;
+    }
+}
+
+@media (max-width: 992px) {
+    .value-text {
+        font-size: clamp(1.125rem, 3.5vw, 1.5rem);
+    }
+
+    .chart-svg {
+        width: 40px; /* Gráfico muy pequeño */
+        height: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .value-text {
+        font-size: clamp(1rem, 3vw, 1.25rem);
+    }
+
+    .label-text {
+        font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+    }
+
+    /* Ocultar gráficos en tablets y móviles para priorizar datos */
+    .mini-chart {
+        display: none !important;
+    }
+
+    .metric-card .card-body {
+        padding: 0.75rem !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .value-text {
+        font-size: clamp(0.9rem, 5vw, 1.125rem);
+    }
+
+    .label-text {
+        font-size: clamp(0.65rem, 3vw, 0.75rem);
+        -webkit-line-clamp: 1; /* Solo 1 línea en móviles muy pequeños */
+    }
+
+    .trend-indicator .text-muted {
+        display: none; /* Oculta "comparativa anual" en móviles pequeños */
+    }
+}
+
+/* Mejoras para contenedores flex - Priorizar datos */
+.d-flex.flex-grow-1 {
+    min-width: 0; /* Importante para permitir shrinking correcto */
+    overflow: hidden;
+    flex-grow: 1 !important; /* Asegura que los datos tomen el máximo espacio */
+    flex-shrink: 0 !important; /* Los datos NO se encogen */
+}
+
+/* El contenedor de contenido debe tomar prioridad */
+.metric-card .d-flex {
+    gap: 0.5rem;
+}
+
+.metric-card .d-flex > div:first-child {
+    flex-grow: 1;
+    flex-shrink: 0; /* El área de datos NO se encoge */
+    min-width: 0;
+}
+

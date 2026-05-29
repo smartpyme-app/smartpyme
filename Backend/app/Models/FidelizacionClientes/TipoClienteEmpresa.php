@@ -61,17 +61,17 @@ class TipoClienteEmpresa extends Model
 
     public function getNombreEfectivoAttribute()
     {
-        return $this->nombre_personalizado ?: ($this->tipoBase->nombre ?? 'Sin Tipo');
+        return $this->nombre_personalizado ?: (optional($this->tipoBase)->nombre ?? 'Sin Tipo');
     }
 
     public function getDescripcionEfectivaAttribute()
     {
-        return $this->tipoBase->descripcion ?? 'Tipo personalizado';
+        return optional($this->tipoBase)->descripcion ?? 'Tipo personalizado';
     }
 
     public function getCodeEfectivoAttribute()
     {
-        return $this->tipoBase->code ?? 'CUSTOM';
+        return optional($this->tipoBase)->code ?? 'CUSTOM';
     }
 
     public function scopeActivos($query)

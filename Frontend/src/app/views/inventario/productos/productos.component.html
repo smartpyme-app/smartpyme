@@ -7,6 +7,11 @@
 </section>
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">
+    <div *ngIf="isInventarioSumarStockBusquedas() && !loading && stockTotalFiltrado !== null"
+        class="alert alert-light border py-2 px-3 mb-3 d-flex align-items-center gap-2 small">
+        <i class="fa fa-cubes text-primary" aria-hidden="true"></i>
+        <span>Total de stock del resultado filtrado: <strong>{{ stockTotalFiltrado | number:'1.2-2' }}</strong></span>
+    </div>
     <div class="row">
         <div class="col-md-6 mb-3">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="productos?.total">
@@ -25,6 +30,11 @@
         <div class="col-md-6 mb-3" tourAnchor="tour.toolbar" id="tour.toolbar">
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
+                <button *ngIf="apiService.isInventarioReporteAnalisisVentasMensual()"
+                    [disabled]="downloadingReporteAnalisis" tooltip="Descargar reporte inventario vs ventas (Excel)"
+                    (click)="descargarReporteInventarioVentasMensual()" class="btn btn-default">
+                    <i class="fa fa-line-chart text-primary" aria-hidden="true"></i>
+                </button>
                 <button [disabled]="downloading" tooltip="Descargar productos" (click)="openDescargar(mdescargar)"
                     class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
@@ -48,17 +58,24 @@
             <button class="tcla-F3 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()"
                 routerLink="/productos">Todos</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Ajustes</button>
+                    *ngIf="apiService.canAccederOperacionesInventario()">Ajustes</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Traslados</button>
+                    *ngIf="apiService.canAccederOperacionesInventario()">Traslados</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Consignas</button>
+                    *ngIf="apiService.canAccederOperacionesInventario()">Consignas</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Entradas</button>
+                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Entradas</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Salidas</button>
+                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Salidas</button>
         </div>
-        <div class="ms-auto d-flex gap-2">
+        <div class="ms-auto d-flex gap-2 flex-wrap justify-content-end">
+            <ng-select name="id_proveedor" (change)="filtrarProductos()" [(ngModel)]="filtros.id_proveedor"
+                class="form-select p-0 border-0 bg-default select-width">
+                <ng-option value="">Proveedor</ng-option>
+                <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                    {{ proveedor.nombre_empresa ?? proveedor.nombre_completo ?? proveedor.nombre }}
+                </ng-option>
+            </ng-select>
             <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" 
                 class="form-select p-0 border-0 bg-default select-width">
                 <ng-option value="">Categoria</ng-option>

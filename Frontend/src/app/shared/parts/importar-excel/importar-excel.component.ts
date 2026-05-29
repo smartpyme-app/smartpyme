@@ -1,5 +1,7 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
@@ -8,7 +10,7 @@ import { AlertService } from '@services/alert.service';
   selector: 'app-importar-excel',
   templateUrl: './importar-excel.component.html'
 })
-export class ImportarExcelComponent implements OnInit {
+export class ImportarExcelComponent implements OnInit, OnDestroy {
 
     @Input() tipo:string = 'button';
     @Input() nombre:string = '';
@@ -16,6 +18,12 @@ export class ImportarExcelComponent implements OnInit {
     public loading:boolean = false;
     public file:any = {};
     public plantillaUrl: string = '';
+    public importResult: any = null;
+    public showResults: boolean = false;
+    public validationErrors: string[] = [];
+    public businessErrors: string[] = [];
+
+    private readonly destroy$ = new Subject<void>();
 
     /** URL de la plantilla con parámetro de versión para evitar caché del navegador */
     get plantillaUrlConCache(): string {
@@ -24,13 +32,18 @@ export class ImportarExcelComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor( 
+    constructor(
         private apiService: ApiService, public alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
     ngOnInit() {
         this.calcularPlantillaUrl();
+    }
+
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 
     /**
@@ -40,32 +53,37 @@ export class ImportarExcelComponent implements OnInit {
      */
     calcularPlantillaUrl(): void {
         const nombreArchivo = this.nombre.toLowerCase();
-        
+
+        if (nombreArchivo === 'productos') {
+            this.plantillaUrl = '';
+            return;
+        }
+
         // Manejo especial para ventas
         if (nombreArchivo === 'ventas') {
             // Las ventas tienen múltiples plantillas, se manejan en el HTML
             this.plantillaUrl = '';
             return;
         }
-        
+
         // Para clientes-personas y clientes-empresas, verificar país
         if (nombreArchivo === 'clientes-personas' || nombreArchivo === 'clientes-empresas') {
             try {
                 const user = this.apiService.auth_user();
                 const empresa = user?.empresa;
-                
+
                 // Si no hay empresa, usar plantilla de El Salvador (retrocompatibilidad)
                 if (!empresa) {
                     this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
                     return;
                 }
-                
+
                 // Verificar si es El Salvador
                 const codPais = empresa?.cod_pais;
                 const pais = empresa?.pais?.trim() || '';
-                
+
                 let esElSalvador = false;
-                
+
                 // Si tiene código 'SV', es El Salvador
                 if (codPais === 'SV') {
                     esElSalvador = true;
@@ -88,7 +106,7 @@ export class ImportarExcelComponent implements OnInit {
                         esElSalvador = false;
                     }
                 }
-                
+
                 // Si es El Salvador, usar plantilla específica, sino usar general
                 const sufijo = esElSalvador ? '-format.xlsx' : '-format-general.xlsx';
                 this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}${sufijo}`;
@@ -117,7 +135,7 @@ export class ImportarExcelComponent implements OnInit {
     // onSubmit(event:any) {
 
     //     console.log(this.file);
-        
+
     //     let formData:FormData = new FormData();
     //     for (var key in this.file) {
     //         formData.append(key, this.file[key]);
@@ -138,40 +156,40 @@ export class ImportarExcelComponent implements OnInit {
 
     onSubmit(event:any) {
         console.log(this.file);
-        
+
         let formData:FormData = new FormData();
         for (var key in this.file) {
             formData.append(key, this.file[key]);
         }
-        
+
         console.log(formData);
         this.loading = true;
-        
+
         this.apiService.store(this.nombre.toLowerCase() + '/importar', formData).subscribe(
             (data: any) => {
                 this.loading = false;
-                
-                
+
+
                 if (this.nombre.toLowerCase() === 'ventas') {
-                   
+
                     if (data && typeof data === 'object' && data.message) {
                         this.alertService.success('Importación de ventas', data.message);
-                        
-                       
+
+
                         if (data.productos_faltantes && data.productos_faltantes.length > 0) {
                             setTimeout(() => {
                                 this.alertService.info(
-                                    'Productos no encontrados', 
-                                    'Estos productos deben ser creados en el sistema: ' + 
+                                    'Productos no encontrados',
+                                    'Estos productos deben ser creados en el sistema: ' +
                                     data.productos_faltantes.join(", ")
                                 );
                             }, 4000);
                         }
                     } else if (typeof data === 'number') {
-                       
+
                         this.alertService.success('Importación exitosa', data + ' ventas procesadas correctamente');
                     } else {
-                     
+
                         this.alertService.success('Importación exitosa', 'Las ventas fueron procesadas correctamente');
                     }
                 } else {
@@ -181,18 +199,18 @@ export class ImportarExcelComponent implements OnInit {
                             // Cerrar el modal primero para mostrar la alerta fuera
                             this.modalRef.hide();
                             this.alertService.modal = false;
-                            
+
                             // Mostrar mensaje con detalles de procesados y fallidos
                             let mensaje = data.message;
                             if (data.procesados !== undefined && data.fallidos !== undefined) {
                                 mensaje += `\n\n📊 Resumen: ${data.procesados} procesados, ${data.fallidos} fallidos`;
                             }
-                            
+
                             // Mostrar alerta después de cerrar el modal
                             setTimeout(() => {
                                 this.alertService.success('Importación de clientes', mensaje);
                             }, 300);
-                            
+
                         } else if (typeof data === 'number') {
                             this.alertService.success('Importación exitosa', data + ' ' + this.nombre.replace('-', ' ') + ' agregados');
                         } else {
@@ -203,7 +221,7 @@ export class ImportarExcelComponent implements OnInit {
                         this.alertService.success('Importación exitosa', data + ' ' + this.nombre.replace('-', ' ') + ' agregados');
                     }
                 }
-                
+
                 // Solo cerrar modal y recargar si no es importación de clientes con mensaje detallado
                 if (!(this.nombre.toLowerCase().includes('clientes') && data && typeof data === 'object' && data.message)) {
                     setTimeout(() => {
@@ -216,23 +234,77 @@ export class ImportarExcelComponent implements OnInit {
                     setTimeout(() => {
                         this.loadAll.emit();
                     }, 500);
-                } 
-            }, 
+                }
+            },
             error => {
                 this.loading = false;
-                
-               
+
+
                 if (this.nombre.toLowerCase() === 'ventas' && error.error && error.error.error) {
                     this.alertService.error(error.error.error);
                 } else {
                     this.alertService.error(error);
                 }
-                
-               
+
+
                 this.alertService.modal = true;
             }
         );
     }
 
+  private resetState() {
+    this.importResult = null;
+    this.showResults = false;
+    this.validationErrors = [];
+    this.businessErrors = [];
+  }
 
+    public closeModal() {
+        this.modalRef?.hide();
+        this.alertService.modal = false;
+        this.resetState();
+    }
+
+    public descargarPlantillaImportacionProductos(event: Event): void {
+        event.preventDefault();
+        this.apiService.download('productos/plantilla-importacion')
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (blob) => {
+                    this.apiService.downloadFile(blob, 'plantilla_importacion_productos.xlsx');
+                },
+                error: () => {
+                    this.alertService.error('Error al descargar la plantilla de productos');
+                },
+            });
+    }
+
+    public downloadTemplate() {
+        const url = `${this.nombre.toLowerCase()}/plantilla`;
+        this.apiService.download(url)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (response) => {
+                const blob = new Blob([response], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+                const urlDownload = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = urlDownload;
+                link.download = `plantilla_${this.nombre.toLowerCase()}.xlsx`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(urlDownload);
+            },
+            error: () => {
+                this.alertService.error('Error al descargar la plantilla');
+            }
+          });
+    }
+
+    public tryAgain() {
+        this.resetState();
+        this.showResults = false;
+    }
 }

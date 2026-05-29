@@ -17,14 +17,101 @@ use App\Exports\ClientesEmpresasExport;
 use App\Exports\ClientesExtranjerosExport;
 use App\Imports\ClientesExtranjeros;
 use App\Models\Ventas\Clientes\ContactoCliente;
+use App\Models\Admin\EmpresaFuncionalidad;
+use App\Services\FidelizacionCliente\LicenciaFidelizacionService;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use PgSql\Lob;
 
 class ClientesController extends Controller
 {
+    /** @var LicenciaFidelizacionService */
+    protected $licenciaFidelizacionService;
 
+    public function __construct(LicenciaFidelizacionService $licenciaFidelizacionService)
+    {
+        $this->licenciaFidelizacionService = $licenciaFidelizacionService;
+    }
+
+    /**
+     * Listado/búsqueda de clientes por empresa, sin global scope (solo superadmin).
+     * Requiere id_empresa en la query (p. ej. catálogo de la empresa SmartPyme u otra).
+     */
+    public function indexSuperAdmin(Request $request)
+    {
+        $request->validate([
+            'id_empresa' => 'required|integer|exists:empresas,id',
+        ]);
+
+        $idEmpresa = (int) $request->input('id_empresa');
+
+        $paginate = (int) $request->input('paginate', 50);
+        if ($paginate < 1) {
+            $paginate = 50;
+        }
+
+        $allowedOrden = ['id', 'nombre', 'apellido', 'nombre_empresa', 'created_at', 'updated_at', 'nit', 'correo'];
+        $orden = in_array($request->orden, $allowedOrden, true) ? $request->orden : 'id';
+        $direccion = strtolower((string) $request->direccion) === 'asc' ? 'asc' : 'desc';
+
+        $clientes = Cliente::withoutGlobalScope('empresa')
+            ->with('empresa')
+            ->select([
+                'id', 'nombre', 'apellido', 'nombre_empresa', 'tipo', 'tipo_contribuyente',
+                'nit', 'dui', 'ncr', 'giro', 'telefono', 'correo', 'direccion',
+                'red_social', 'enable', 'fecha_cumpleanos', 'created_at', 'updated_at', 'id_empresa',
+                'codigo_cliente',
+            ])
+            ->with(['contactos' => function ($query) {
+                $query->select('id', 'id_cliente', 'nombre', 'telefono', 'correo', 'estado');
+            }])
+            ->where('clientes.id_empresa', $idEmpresa)
+            ->where('id', '!=', 1)
+            ->when($request->filled('buscador'), function ($query) use ($request) {
+                $term = trim((string) $request->buscador);
+                if ($term === '') {
+                    return $query;
+                }
+                $searchTerm = '%' . $term . '%';
+                return $query->where(function ($q) use ($searchTerm) {
+                    $q->where('nombre', 'like', $searchTerm)
+                        ->orWhere('apellido', 'like', $searchTerm)
+                        ->orWhere('nombre_empresa', 'like', $searchTerm)
+                        ->orWhere('nit', 'like', $searchTerm)
+                        ->orWhere('correo', 'like', $searchTerm)
+                        ->orWhere('giro', 'like', $searchTerm)
+                        ->orWhere('telefono', 'like', $searchTerm)
+                        ->orWhere('red_social', 'like', $searchTerm)
+                        ->orWhere('ncr', 'like', $searchTerm)
+                        ->orWhere('dui', 'like', $searchTerm)
+                        ->orWhere('codigo_cliente', 'like', $searchTerm);
+                });
+            })
+            ->when($request->nombre, function ($q) use ($request) {
+                $q->where('nombre', $request->nombre);
+            })
+            ->when($request->apellido, function ($q) use ($request) {
+                $q->where('apellido', $request->apellido);
+            })
+            ->when($request->tipo, function ($q) use ($request) {
+                $q->where('tipo', $request->tipo);
+            })
+            ->when($request->fecha_cumpleanos, function ($q) use ($request) {
+                $q->where('fecha_cumpleanos', $request->fecha_cumpleanos);
+            })
+            ->when($request->tipo_contribuyente, function ($q) use ($request) {
+                $q->where('tipo_contribuyente', $request->tipo_contribuyente);
+            })
+            ->when($request->filled('estado'), function ($q) use ($request) {
+                $q->where('enable', filter_var($request->estado, FILTER_VALIDATE_BOOLEAN));
+            })
+            ->orderBy($orden, $direccion)
+            ->paginate($paginate);
+
+        return Response()->json($clientes, 200);
+    }
 
     public function index(Request $request)
     {
@@ -156,6 +243,146 @@ class ClientesController extends Controller
     }
 
     /**
+     * Lectura de cliente sin filtro por empresa (solo superadmin).
+     */
+    public function readSuperAdmin($id)
+    {
+        $cliente = Cliente::withoutGlobalScope('empresa')
+            ->with('contactos')
+            ->findOrFail($id);
+
+        return Response()->json($cliente, 200);
+    }
+
+    /**
+     * Alta de cliente para otra empresa desde panel superadmin (evita global scope al responder).
+     */
+    public function storeSuperAdmin(Request $request)
+    {
+        $request->validate(['id' => 'prohibited']);
+
+        $rules = [
+            'nombre'         => 'required_if:tipo,"Persona"',
+            'apellido'       => 'required_if:tipo,"Persona"',
+            'nombre_empresa' => 'required_if:tipo,"Empresa"',
+            'id_empresa'     => 'required|numeric|exists:empresas,id',
+            'id_usuario'     => 'required|numeric',
+        ];
+
+        if ($this->puedeEditarCreditoCliente() && !empty($request->habilita_credito)) {
+            $rules['dias_credito'] = 'required|in:3,8,10,15,30,45,60';
+        }
+
+        $request->validate($rules, [
+            'nombre.required_if' => 'El campo nombre es obligatorio.',
+            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
+            'dias_credito.required' => 'Los días de crédito son obligatorios cuando el cliente tiene crédito habilitado.',
+        ]);
+
+        $cliente = new Cliente;
+
+        $data = $request->except('contactos');
+
+        if (!$this->puedeEditarCreditoCliente()) {
+            unset($data['habilita_credito'], $data['dias_credito'], $data['limite_credito']);
+        }
+
+        $cliente->fill($data);
+        $cliente->save();
+
+        $this->crearPuntosClienteSiFidelizacion($cliente);
+
+        if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
+            foreach ($request->contactos as $contactoData) {
+                ContactoCliente::create([
+                    'id_cliente' => $cliente->id,
+                    'nombre' => $contactoData['nombre'] ?? $contactoData['name'] ?? null,
+                    'apellido' => $contactoData['apellido'] ?? $contactoData['lastname'] ?? null,
+                    'correo' => $contactoData['correo'] ?? $contactoData['email'] ?? null,
+                    'telefono' => $contactoData['telefono'] ?? null,
+                    'cargo' => $contactoData['cargo'] ?? null,
+                    'sexo' => $contactoData['sexo'] ?? null,
+                    'red_social' => $contactoData['red_social'] ?? null,
+                    'fecha_nacimiento' => $contactoData['fecha_nacimiento'] ?? null,
+                    'nota' => $contactoData['nota'] ?? null
+                ]);
+            }
+        }
+
+        $cliente = Cliente::withoutGlobalScope('empresa')
+            ->with('contactos')
+            ->findOrFail($cliente->id);
+
+        return Response()->json($cliente, 200);
+    }
+
+    /**
+     * Actualización de cliente sin filtro por empresa (solo superadmin).
+     */
+    public function updateSuperAdmin(Request $request)
+    {
+        $cliente = Cliente::withoutGlobalScope('empresa')->findOrFail($request->id);
+
+        $rules = [
+            'nombre'         => 'required_if:tipo,"Persona"',
+            'apellido'       => 'required_if:tipo,"Persona"',
+            'nombre_empresa' => 'required_if:tipo,"Empresa"',
+            'id_empresa'     => 'required|numeric|exists:empresas,id',
+        ];
+
+        if ($this->puedeEditarCreditoCliente() && !empty($request->habilita_credito)) {
+            $rules['dias_credito'] = 'required|in:3,8,10,15,30,45,60';
+        }
+
+        $request->validate($rules, [
+            'nombre.required_if' => 'El campo nombre es obligatorio.',
+            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
+            'id_empresa.required' => 'El campo empresa es obligatorio.',
+            'id_empresa.exists' => 'La empresa seleccionada no es válida.',
+            'dias_credito.required' => 'Los días de crédito son obligatorios cuando el cliente tiene crédito habilitado.',
+        ]);
+
+        $data = $request->except('contactos');
+
+        if (!$this->puedeEditarCreditoCliente()) {
+            unset($data['habilita_credito'], $data['dias_credito'], $data['limite_credito']);
+        }
+
+        $cliente->fill($data);
+        $cliente->save();
+
+        if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
+            ContactoCliente::where('id_cliente', $cliente->id)->delete();
+
+            foreach ($request->contactos as $contactoData) {
+                if (empty($contactoData['nombre']) && empty($contactoData['name']) &&
+                    empty($contactoData['correo']) && empty($contactoData['email'])) {
+                    continue;
+                }
+
+                ContactoCliente::create([
+                    'id_cliente' => $cliente->id,
+                    'nombre' => $contactoData['nombre'] ?? $contactoData['name'] ?? null,
+                    'apellido' => $contactoData['apellido'] ?? $contactoData['lastname'] ?? null,
+                    'correo' => $contactoData['correo'] ?? $contactoData['email'] ?? null,
+                    'telefono' => $contactoData['telefono'] ?? null,
+                    'cargo' => $contactoData['cargo'] ?? null,
+                    'sexo' => $contactoData['sexo'] ?? null,
+                    'red_social' => $contactoData['red_social'] ?? null,
+                    'fecha_nacimiento' => $contactoData['fecha_nacimiento'] ?? null,
+                    'nota' => $contactoData['nota'] ?? null
+                ]);
+            }
+        }
+
+        $cliente = Cliente::withoutGlobalScope('empresa')
+            ->with('contactos')
+            ->findOrFail($cliente->id);
+
+        return Response()->json($cliente, 200);
+    }
+
+    /**
      * Obtener el total de ventas de un cliente específico
      */
     public function totalVentas($id)
@@ -230,6 +457,9 @@ class ClientesController extends Controller
         $cliente->fill($data);
         $cliente->save();
 
+        if (!$request->id) {
+            $this->crearPuntosClienteSiFidelizacion($cliente);
+        }
 
         if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
             if ($request->id) {
@@ -426,9 +656,25 @@ class ClientesController extends Controller
     public function estadoCuenta($id)
     {
 
-        $cliente = Cliente::where('id', $id)->with('empresa')->firstOrFail();
-        $cliente->ventas = $cliente->ventas()->where('estado', 'Pendiente')->get();
-        // return $cliente;
+        $cliente = Cliente::where('id', $id)->with(['empresa.currency'])->firstOrFail();
+        // Misma base que saldoPendiente(): no incluir cotizaciones (no son CxC operativa hasta facturarse).
+        $cliente->ventas = $cliente->ventas()
+            ->where('estado', 'Pendiente')
+            ->where(function ($q) {
+                $q->where('cotizacion', 0)->orWhereNull('cotizacion');
+            })
+            ->with([
+                'documento',
+                'abonos' => function ($q) {
+                    $q->where('estado', 'Confirmado')
+                        ->with('documento')
+                        ->orderBy('fecha')
+                        ->orderBy('id');
+                },
+            ])
+            ->orderBy('fecha')
+            ->orderBy('id')
+            ->get();
         $reportes = app('dompdf.wrapper')->loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
         return $reportes->stream();
     }
@@ -469,12 +715,12 @@ class ClientesController extends Controller
     public function importPersonas(Request $request)
     {
         $request->validate([
-            'file' => 'required',
+            'file' => 'required|file',
         ]);
 
         try {
             $import = new ClientesPersonas();
-            Excel::import($import, $request->file);
+            Excel::import($import, $request->file('file'));
 
             $errores = $import->getErrores();
             $clientesProcesados = $import->getClientesProcesados();
@@ -512,6 +758,11 @@ class ClientesController extends Controller
                     'error' => 'No se pudo procesar ningún cliente. ' . implode("\n", $errores)
                 ], 400);
             }
+        } catch (ValidationException $e) {
+            return response()->json([
+                'error' => 'Los datos del archivo no son válidos.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error("Error en importación de clientes personas: " . $e->getMessage());
             return response()->json([
@@ -599,5 +850,34 @@ class ClientesController extends Controller
         }
         $tipo = Auth::user()->tipo ?? '';
         return in_array($tipo, ['Administrador', 'Supervisor', 'Supervisor Limitado'], true);
+    }
+
+    /**
+     * Crear PuntosCliente para el cliente si la empresa tiene fidelización habilitada.
+     */
+    private function crearPuntosClienteSiFidelizacion(Cliente $cliente): void
+    {
+        try {
+            $empresa = $cliente->empresa;
+            if (!$empresa) {
+                return;
+            }
+
+            $empresaEfectiva = $this->licenciaFidelizacionService->getEmpresaEfectiva($empresa);
+
+            $tieneFidelizacion = EmpresaFuncionalidad::where('id_empresa', $empresaEfectiva->id)
+                ->whereHas('funcionalidad', fn ($q) => $q->where('slug', 'fidelizacion-clientes'))
+                ->where('activo', true)
+                ->exists();
+
+            if ($tieneFidelizacion) {
+                $this->licenciaFidelizacionService->crearOActualizarPuntosCliente($cliente, $empresa);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo crear PuntosCliente al crear cliente', [
+                'cliente_id' => $cliente->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

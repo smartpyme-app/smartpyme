@@ -7,10 +7,10 @@
 
         *{
             margin: 0cm;
-            font-family: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"';
+            font-family: DejaVu Sans, sans-serif;
         }
         body {
-            font-family: serif;
+            font-family: DejaVu Sans, sans-serif;
             margin: 50px;
         }
         h1,h2,h3,h4,h5,h6{
@@ -122,11 +122,11 @@
                     $porcentaje_descuento = $subtotal_linea > 0 ? round(($detalle->descuento / $subtotal_linea) * 100, 2) : 0;
                 @endphp
                 <tr>
-                    <td class="@if ($detalle->descuento == 0) border-bottom @endif">   {{ $detalle->nombre_producto  }}</td>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif">@include('reportes.facturacion.partials.cotizacion-detalle-descripcion')</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{number_format($detalle->precio , 2) }}</td>
                     <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">  @if ($detalle->descuento > 0) {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->descuento, 2) }} <small style="font-size: 12px;">({{ $porcentaje_descuento }}%)</small> @endif</td>
-                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->total, 2) }}</th>
+                    <td class="@if ($detalle->descuento == 0) border-bottom @endif text-right">   {{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->total, 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>

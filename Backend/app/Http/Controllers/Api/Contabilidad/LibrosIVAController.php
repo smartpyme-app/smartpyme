@@ -10,22 +10,26 @@ use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
-use App\Exports\Contabilidad\LibroContribuyentesExport;
-use App\Exports\Contabilidad\AnexoContribuyentesExport;
-use App\Exports\Contabilidad\LibroConsumidoresExport;
-use App\Exports\Contabilidad\AnexoConsumidoresExport;
-use App\Exports\Contabilidad\LibroAnuladosExport;
-use App\Exports\Contabilidad\AnexoAnuladosExport;
-use App\Exports\Contabilidad\LibroSujetosExcluidosExport;
-use App\Exports\Contabilidad\AnexoSujetosExcluidosExport;
-use App\Exports\Contabilidad\LibroComprasExport;
-use App\Exports\Contabilidad\AnexoComprasExport;
-use App\Exports\Contabilidad\GlobalDttesExport;
-use App\Exports\Contabilidad\NotasCreditoDebitoExport;
-use App\Exports\Contabilidad\LibroRetencion1Export;
-use App\Exports\Contabilidad\AnexoRetencion1Export;
-use App\Exports\Contabilidad\LibroPercepcion1Export;
-use App\Exports\Contabilidad\AnexoPercepcion1Export;
+use App\Exports\Contabilidad\ElSalvador\LibroContribuyentesExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoContribuyentesExport;
+use App\Exports\Contabilidad\ElSalvador\LibroConsumidoresExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoConsumidoresExport;
+use App\Exports\Contabilidad\ElSalvador\LibroAnuladosExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoAnuladosExport;
+use App\Exports\Contabilidad\ElSalvador\LibroSujetosExcluidosExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoSujetosExcluidosExport;
+use App\Exports\Contabilidad\ElSalvador\SujetosExcluidosDteHelper;
+use App\Exports\Contabilidad\ElSalvador\LibroComprasExport;
+use App\Exports\Contabilidad\ElSalvador\AnexoComprasExport;
+use App\Exports\Contabilidad\ElSalvador\GlobalDttesExport;
+use App\Exports\Contabilidad\GlobalDttesPdfExport;
+use App\Exports\Contabilidad\ElSalvador\NotasCreditoDebitoExport;
+use App\Exports\Contabilidad\ElSalvador\LibroRetencion1Export;
+use App\Exports\Contabilidad\ElSalvador\AnexoRetencion1Export;
+use App\Exports\Contabilidad\ElSalvador\LibroPercepcion1Export;
+use App\Exports\Contabilidad\ElSalvador\AnexoPercepcion1Export;
+use App\Exports\Contabilidad\Honduras\LibroVentasExport as LibroVentasHondurasExport;
+use App\Exports\Contabilidad\Honduras\LibroComprasExport as LibroComprasHondurasExport;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
@@ -210,6 +214,31 @@ class LibrosIVAController extends Controller
 
     public function consumidores(Request $request)
     {
+        $pais = optional($this->obtenerEmpresa())->pais ?? '';
+
+        // Países distintos de ES: filas detalle SAR (mismo formato que libro-iva/general y Excel Honduras).
+        if ($pais !== 'El Salvador') {
+            $export = new LibroVentasHondurasExport();
+            $export->filter($request);
+            $libroventas = $export->rowsForApi();
+
+            $formato = $request->query('formato') ?? 'json';
+
+            if ($formato === 'pdf') {
+                $pdf = app('dompdf.wrapper')->loadView(
+                    'reportes.contabilidad.honduras.libro-ventas',
+                    [
+                        'libroventas' => $libroventas,
+                        'request' => $request,
+                    ]
+                );
+                $pdf->setPaper('Legal', 'landscape');
+
+                return $pdf->stream('libro-ventas.pdf');
+            }
+
+            return response()->json($libroventas, 200);
+        }
 
         $ventas = Venta::with(['cliente', 'documento'])
             ->where('estado', '!=', 'Anulada')
@@ -244,7 +273,7 @@ class LibrosIVAController extends Controller
                 $exportaciones = $ventasDia->sum(function ($venta) {
                     $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
                     return strtolower($documentoNombre) === 'factura de exportación'
-                        ? (float) $venta->total
+                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
                         : 0;
                 });
 
@@ -255,7 +284,9 @@ class LibrosIVAController extends Controller
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva == 0 ? (float) $venta->total : 0;
+                    return $venta->iva == 0
+                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
+                        : 0;
                 });
 
                 $ventasGravadas = $ventasDia->sum(function ($venta) {
@@ -264,7 +295,9 @@ class LibrosIVAController extends Controller
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva > 0 ? (float) $venta->total : 0;
+                    return $venta->iva > 0
+                    ? $this->montoVentaPropioSinCuentaTerceros($venta)
+                    : 0;
                 });
 
                 $ventasTerceros = $ventasDia->sum(function ($venta) {
@@ -272,7 +305,7 @@ class LibrosIVAController extends Controller
                 });
 
                 $totalDiario = $ventasDia->sum(function ($venta) {
-                    return (float) $venta->total;
+                    return $this->montoVentaPropioSinCuentaTerceros($venta);
                 });
 
                 $primeraVenta = $ventasOrdenadasPorCodigo->first();
@@ -317,7 +350,7 @@ class LibrosIVAController extends Controller
 
         if ($formato === 'pdf') {
             $pdf = app('dompdf.wrapper')->loadView(
-                'reportes.contabilidad.libro-consumidores',
+                'reportes.contabilidad.el_salvador.libro-consumidores',
                 [
                     'libroconsumidores' => $libroconsumidores,
                     'request' => $request,
@@ -334,6 +367,15 @@ class LibrosIVAController extends Controller
 
     public function consumidoresLibroExport(Request $request)
     {
+        $pais = optional($this->obtenerEmpresa())->pais ?? '';
+
+        if ($pais !== 'El Salvador') {
+            $consumidores = new LibroVentasHondurasExport();
+            $consumidores->filter($request);
+
+            return Excel::download($consumidores, 'Libro-ventas.xlsx');
+        }
+
         if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
             return $alerta;
         }
@@ -477,7 +519,7 @@ class LibrosIVAController extends Controller
 
         if ($formato === 'pdf') {
             $pdf = app('dompdf.wrapper')->loadView(
-                'reportes.contabilidad.libro-contribuyentes',
+                'reportes.contabilidad.el_salvador.libro-contribuyentes',
                 [
                     'librocontribuyentes' => $librocontribuyentes,
                     'request' => $request,
@@ -585,6 +627,30 @@ class LibrosIVAController extends Controller
 
     public function compras(Request $request)
     {
+        $pais = optional($this->obtenerEmpresa())->pais ?? '';
+
+        if ($pais !== 'El Salvador') {
+            $exportComprasHn = new LibroComprasHondurasExport();
+            $exportComprasHn->filter($request);
+            $librocompras = $exportComprasHn->rowsForApi();
+
+            $formato = $request->query('formato') ?? 'json';
+
+            if ($formato === 'pdf') {
+                $pdf = app('dompdf.wrapper')->loadView(
+                    'reportes.contabilidad.honduras.libro-compras',
+                    [
+                        'librocompras' => $librocompras,
+                        'request' => $request,
+                    ]
+                );
+                $pdf->setPaper('US Letter', 'landscape');
+
+                return $pdf->stream('libro-compras.pdf');
+            }
+
+            return response()->json($librocompras, 200);
+        }
 
         // Obtener las compras
         $compras = Compra::with(['proveedor'])
@@ -592,7 +658,6 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
             ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
@@ -650,7 +715,6 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
             ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
@@ -703,7 +767,6 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
             ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
@@ -764,7 +827,7 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
+            $pdf = app('dompdf.wrapper')->loadView('reportes.contabilidad.el_salvador.libro-compras', compact('librocompras', 'request'));
             $pdf->setPaper('US Letter', 'landscape');
 
             return $pdf->stream('libro-compras.pdf');
@@ -777,6 +840,15 @@ class LibrosIVAController extends Controller
 
     public function comprasLibroExport(Request $request)
     {
+        $pais = optional($this->obtenerEmpresa())->pais ?? '';
+
+        if ($pais !== 'El Salvador') {
+            $compras = new LibroComprasHondurasExport();
+            $compras->filter($request);
+
+            return Excel::download($compras, 'Libro-compras.xlsx');
+        }
+
         $compras = new LibroComprasExport();
         $compras->filter($request);
 
@@ -812,16 +884,24 @@ class LibrosIVAController extends Controller
 
         $comprasData = $compras->map(function ($compra) {
             $proveedor = optional($compra->proveedor()->first());
+            $sello = SujetosExcluidosDteHelper::selloRecepcion($compra);
+            $codGen = SujetosExcluidosDteHelper::codigoGeneracion($compra);
+            if ($codGen === '' && $compra->codigo_generacion) {
+                $codGen = strtoupper((string) $compra->codigo_generacion);
+            }
 
             $data = [
                 'tipo_documento' => $proveedor->nit ? 'NIT' : 'DUI',  // A - TIPO DE DOCUMENTO
                 'num_documento' => $proveedor->nit ? $proveedor->nit : $proveedor->dui,  // B - NUMERO DE NIT, DI-II, IJ OTRO DOCUMENTO
                 'proveedor' => $compra->nombre_proveedor,  // C - NOMBRE, RAZ N SOCIAL O DENOMINACI N
                 'fecha' => $compra->fecha,  // D - FECHA DE EMISI N DEL DOCUMENTO
-                'serie' => $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
+                'sello_mh' => $sello,
+                'codigo_generacion' => $codGen,
+                'serie' => $compra->num_serie,  // serie física o auxiliar
                 'referencia' => $compra->referencia,  // F - NUMERO DE DOCUMENTO
                 'total' => $compra->total,  // G - MONTO DE LA OPERACIÖN
                 'iva' => $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
+                'renta_retenida' => (float) ($compra->renta_retenida ?? 0),
                 'tipo_operacion' => $compra->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
                 'clasificacion' =>  'Costo' ,  // J - CLASIFICACI Costo gasto
                 'sector' => $compra->sector,  // K - SECTOR
@@ -850,16 +930,24 @@ class LibrosIVAController extends Controller
         // Transformar gastos
         $gastosData = $gastos->map(function ($gasto) {
             $proveedor = optional($gasto->proveedor()->first());
+            $sello = SujetosExcluidosDteHelper::selloRecepcion($gasto);
+            $codGen = SujetosExcluidosDteHelper::codigoGeneracion($gasto);
+            if ($codGen === '' && $gasto->codigo_generacion) {
+                $codGen = strtoupper((string) $gasto->codigo_generacion);
+            }
 
             $data = [
                 'tipo_documento' => $proveedor->nit ? 'NIT' : 'DUI',
                 'num_documento' => $proveedor->nit ? $proveedor->nit : $proveedor->dui,
                 'proveedor' => $gasto->nombre_proveedor,
                 'fecha' => $gasto->fecha,
+                'sello_mh' => $sello,
+                'codigo_generacion' => $codGen,
                 'serie' => '',
                 'referencia' => $gasto->referencia,
                 'total' => $gasto->total,
                 'iva' => $gasto->iva,
+                'renta_retenida' => (float) ($gasto->renta_retenida ?? 0),
                 'tipo_operacion' => $gasto->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
                 'clasificacion' => 'Gasto' ,  // J - CLASIFICACI Costo gasto
                 'sector' => $gasto->sector,  // K - SECTOR
@@ -951,6 +1039,57 @@ class LibrosIVAController extends Controller
         }
     }
 
+    /**
+     * ZIP con un PDF por DTE (mismos filtros que descargar-dttes JSON).
+     */
+    public function exportGlobalDttesPdf(Request $request)
+    {
+        try {
+            @set_time_limit(0);
+
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            $export = new GlobalDttesPdfExport();
+            $export->filter($request);
+            $result = $export->generateZip();
+
+            if (!$result['success']) {
+                Log::error('Error al generar ZIP PDF DTEs: ' . $result['message']);
+
+                return response($result['message'], 400)
+                    ->header('Content-Type', 'text/plain');
+            }
+
+            $filePath = storage_path('app/' . $result['path']);
+
+            if (!file_exists($filePath)) {
+                Log::error('Archivo ZIP PDF no encontrado: ' . $filePath);
+
+                return response('Archivo no encontrado', 404)
+                    ->header('Content-Type', 'text/plain');
+            }
+
+            $fileContent = file_get_contents($filePath);
+            @unlink($filePath);
+
+            return response($fileContent, 200)
+                ->header('Content-Type', 'application/zip')
+                ->header('Content-Disposition', 'attachment; filename="' . $result['filename'] . '"')
+                ->header('Content-Length', strlen($fileContent))
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
+        } catch (\Exception $e) {
+            Log::error('Excepción al exportar DTEs PDF: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
+                ->header('Content-Type', 'text/plain');
+        }
+    }
+
     // Descarga un ZIP con los JSON de notas de crédito y débito para declaración.
     public function notasCreditoDebitoExport(Request $request)
     {
@@ -991,6 +1130,110 @@ class LibrosIVAController extends Controller
             return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
                 ->header('Content-Type', 'text/plain');
         }
+    }
+
+    /**
+     * Listado JSON para pantalla Libros fiscales → Retenciones (libro-iva/general).
+     */
+    public function retencionesList(Request $request): JsonResponse
+    {
+        $empresa = $this->obtenerEmpresa();
+        $pais = optional($empresa)->pais ?? '';
+
+        if ($pais === 'Honduras') {
+            return response()->json($this->retencionesJsonHonduras($request));
+        }
+
+        return response()->json($this->retencionesJsonVentasIvaRetenido($request));
+    }
+
+    /**
+     * Honduras: ventas con IVA retenido + compras con percepción (misma base que LibroRetencionesExport).
+     */
+    private function retencionesJsonHonduras(Request $request): array
+    {
+        $ventas = Venta::with(['cliente'])
+            ->where('estado', '!=', 'Anulada')
+            ->where('iva_retenido', '>', 0)
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->orderBy('fecha')
+            ->orderBy('correlativo')
+            ->get()
+            ->map(fn ($v) => ['registro' => $v, 'origen' => 'venta']);
+
+        $compras = Compra::with(['proveedor'])
+            ->where('estado', '!=', 'Anulada')
+            ->where('percepcion', '>', 0)
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->orderBy('fecha')
+            ->get()
+            ->map(fn ($c) => ['registro' => $c, 'origen' => 'compra']);
+
+        $merged = $ventas->merge($compras)->sortBy(fn ($x) => $x['registro']->fecha)->values();
+
+        return $merged->map(function (array $item) {
+            $r = $item['registro'];
+            $esVenta = $item['origen'] === 'venta';
+
+            if ($esVenta) {
+                return [
+                    'fecha_comprobante' => $r->fecha,
+                    'numero_comprobante' => trim((string) ($r->numero_control ?? $r->correlativo ?? '')),
+                    'fecha_factura' => $r->fecha,
+                    'factura_relacionada' => trim((string) $r->correlativo),
+                    'nombre_agente_retenedor' => $r->nombre_cliente ?? '',
+                    'registro_tributario_nacional' => optional($r->cliente)->nit ?? optional($r->cliente)->ncr ?? '',
+                    'importe_base_retencion' => (float) $r->sub_total,
+                    'impuesto_retenido' => (float) $r->iva_retenido,
+                ];
+            }
+
+            return [
+                'fecha_comprobante' => $r->fecha,
+                'numero_comprobante' => $r->referencia ?? '',
+                'fecha_factura' => $r->fecha,
+                'factura_relacionada' => $r->referencia ?? '',
+                'nombre_agente_retenedor' => $r->nombre_proveedor ?? '',
+                'registro_tributario_nacional' => optional($r->proveedor)->nit ?? optional($r->proveedor)->ncr ?? '',
+                'importe_base_retencion' => (float) $r->sub_total,
+                'impuesto_retenido' => (float) $r->percepcion,
+            ];
+        })->all();
+    }
+
+    /**
+     * Resto de países: mismo criterio que LibroRetencion1Export (solo ventas con iva_retenido).
+     */
+    private function retencionesJsonVentasIvaRetenido(Request $request): array
+    {
+        $ventas = Venta::with(['cliente', 'documento'])
+            ->where('estado', '!=', 'Anulada')
+            ->where('iva_retenido', '>', 0)
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->where('cotizacion', 0)
+            ->orderByDesc('fecha')
+            ->orderByDesc('correlativo')
+            ->get();
+
+        return $ventas->map(function ($r) {
+            return [
+                'fecha_comprobante' => $r->fecha,
+                'numero_comprobante' => trim((string) ($r->numero_control ?? $r->correlativo ?? '')),
+                'fecha_factura' => $r->fecha,
+                'factura_relacionada' => trim((string) $r->correlativo),
+                'nombre_agente_retenedor' => $r->nombre_cliente ?? '',
+                'registro_tributario_nacional' => optional($r->cliente)->nit ?? optional($r->cliente)->ncr ?? '',
+                'importe_base_retencion' => (float) $r->sub_total,
+                'impuesto_retenido' => (float) $r->iva_retenido,
+            ];
+        })->values()->all();
     }
 
     public function libroRetencion1Export(Request $request)
@@ -1040,6 +1283,19 @@ class LibrosIVAController extends Controller
         $percepcion->filter($request);
 
         return Excel::download($percepcion, 'AnexoPercepcion1.csv', \Maatwebsite\Excel\Excel::CSV);
+    }
+
+     /**
+     * Total de operación propia: total del documento menos monto a cuenta de terceros.
+     * Evita doble conteo en exentas/gravadas frente a la columna «ventas a cuenta de terceros».
+     */
+    private function montoVentaPropioSinCuentaTerceros($venta): float
+    {
+        $total = (float) ($venta->total ?? 0);
+        $ct = (float) ($venta->cuenta_a_terceros ?? 0);
+        $neto = $total - $ct;
+
+        return $neto > 0 ? $neto : 0.0;
     }
 
 }

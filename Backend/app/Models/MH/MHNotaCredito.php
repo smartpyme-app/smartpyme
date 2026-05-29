@@ -21,7 +21,7 @@ class MHNotaCredito extends Model
     public function generarDTE($devolucion){
         $this->devolucion = $devolucion;
         $this->empresa = $this->devolucion->empresa()->first();
-        $this->sucursal = $this->devolucion->usuario()->first()->sucursal()->first();
+        $this->sucursal = $this->devolucion->sucursal()->first();
 
         $this->caja_codigo = $this->sucursal->codigo_punto_venta ?? 'P001';
         $this->devolucion->tipo_dte = '05';

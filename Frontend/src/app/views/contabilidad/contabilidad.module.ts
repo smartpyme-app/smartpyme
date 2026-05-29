@@ -19,6 +19,7 @@ import { ContribuyentesComponent } from '@views/contabilidad/libro-iva/contribuy
 import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-compras.component';
 import { LibroAnuladosComponent } from '@views/contabilidad/libro-anulados/libro-anulados.component';
 import { LibroComprasSujetosExcluidosComponent } from '@views/contabilidad/libro-compras-sujetos-excluidos/libro-compras-sujetos-excluidos.component';
+import { LibroIvaGeneralComponent } from '@views/contabilidad/libro-iva/libro-iva-general/libro-iva-general.component';
 import { CuentasComponent } from '@views/contabilidad/bancos/cuentas/cuentas.component';
 import { CuentaComponent } from '@views/contabilidad/bancos/cuentas/cuenta/cuenta.component';
 
@@ -45,6 +46,7 @@ import { CuentaComponent } from '@views/contabilidad/bancos/cuentas/cuenta/cuent
     LibroComprasComponent,
     LibroAnuladosComponent,
     LibroComprasSujetosExcluidosComponent,
+    LibroIvaGeneralComponent,
     CuentasComponent,
     CuentaComponent
   ],
@@ -56,7 +58,8 @@ import { CuentaComponent } from '@views/contabilidad/bancos/cuentas/cuenta/cuent
     ContribuyentesComponent,
     LibroComprasComponent,
     LibroAnuladosComponent,
-    LibroComprasSujetosExcluidosComponent
+    LibroComprasSujetosExcluidosComponent,
+    LibroIvaGeneralComponent
   ]
 })
 export class ContabilidadModule { }

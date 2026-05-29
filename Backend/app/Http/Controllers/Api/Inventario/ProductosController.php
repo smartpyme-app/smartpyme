@@ -31,7 +31,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
+use App\Exports\PlantillaProductosImportExport;
+use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
+use App\Services\Inventario\ProductoImportacionDteService;
+use App\Services\Inventario\MigrarStockALotesService;
 use App\Services\ShopifyTransformer;
 use App\Services\ImpuestosService;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -40,80 +44,149 @@ class ProductosController extends Controller
 {
     protected $shopifyTransformer;
 
-    public function __construct(ShopifyTransformer $shopifyTransformer)
-    {
+    /** @var ProductoImportacionDteService */
+    protected $productoImportacionDteService;
+
+    public function __construct(
+        ShopifyTransformer $shopifyTransformer,
+        ProductoImportacionDteService $productoImportacionDteService
+    ) {
         $this->shopifyTransformer = $shopifyTransformer;
+        $this->productoImportacionDteService = $productoImportacionDteService;
     }
 
     public function index(Request $request)
     {
-        // Obtener la empresa del usuario autenticado
         $user = Auth::user();
         $empresa = Empresa::find($user->id_empresa);
 
-        $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->with(['inventarios' => function ($q) use ($request) {
-            if ($request->id_bodega) {
-                $q->where('id_bodega', $request->id_bodega);
-            }
-        }, 'precios', 'lotes' => function ($q) use ($request) {
-            if ($request->id_bodega) {
-                $q->where('id_bodega', $request->id_bodega);
-            }
-        }])
-            ->when($request->id_categoria, function ($query) use ($request) {
-                return $query->where('id_categoria', $request->id_categoria);
-            })
-            ->when($request->buscador, function ($query) use ($request, $empresa) {
+        $query = $this->buildProductosListadoQuery($request, $empresa, true);
+
+        $stockTotalFiltrado = null;
+        if ($empresa && $empresa->isInventarioSumarStockBusquedasHabilitado()) {
+            $stockTotalFiltrado = $this->calcularStockTotalFiltradoProductos(
+                $this->buildProductosListadoQuery($request, $empresa, false),
+                $request
+            );
+        }
+
+        $productos = $query
+            ->orderBy('enable', 'desc')
+            ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
+            ->paginate($request->paginate);
+
+        $payload = $productos->toArray();
+        if ($stockTotalFiltrado !== null) {
+            $payload['stock_total_filtrado'] = round((float) $stockTotalFiltrado, 2);
+        }
+
+        return Response()->json($payload, 200);
+    }
+
+    /**
+     * Query base del listado de productos (inventario) con los mismos filtros que el index.
+     */
+    protected function buildProductosListadoQuery(Request $request, ?Empresa $empresa, bool $withRelations): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Producto::query()->whereIn('tipo', ['Producto', 'Compuesto']);
+
+        if ($withRelations) {
+            $query->with(['inventarios' => function ($q) use ($request) {
+                if ($request->id_bodega) {
+                    $q->where('id_bodega', $request->id_bodega);
+                }
+            }, 'precios', 'lotes' => function ($q) use ($request) {
+                if ($request->id_bodega) {
+                    $q->where('id_bodega', $request->id_bodega);
+                }
+            }]);
+        }
+
+        $query->when($request->id_categoria, function ($q) use ($request) {
+            return $q->where('id_categoria', $request->id_categoria);
+        })
+            ->when($request->buscador, function ($q) use ($request, $empresa) {
                 $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-                return $query->where(function ($q) use ($request, $incluirComponenteQuimico) {
-                    $q->where('nombre', 'like', '%' . $request->buscador . '%')
-                        ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
-                        ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
-                        ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
-                        ->orWhere('marca', 'like', "%" . $request->buscador . "%")
-                        ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
+                return $q->where(function ($sub) use ($request, $incluirComponenteQuimico) {
+                    $sub->where('nombre', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('codigo', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('barcode', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('etiquetas', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('marca', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('descripcion', 'like', '%' . $request->buscador . '%');
                     if ($incluirComponenteQuimico) {
-                        $q->orWhere('componente_quimico', 'like', '%' . $request->buscador . '%');
+                        $sub->orWhere('componente_quimico', 'like', '%' . $request->buscador . '%');
                     }
                 });
             })
-            ->when($request->sin_stock, function ($query) use ($request) {
-                return $query->whereHas('inventarios', function ($q) {
-                    $q->whereRaw('COALESCE(stock, 0) < COALESCE(stock_minimo, 0)');
+            ->when($request->sin_stock, function ($q) {
+                return $q->whereHas('inventarios', function ($sub) {
+                    $sub->whereRaw('COALESCE(stock, 0) < COALESCE(stock_minimo, 0)');
                 });
             })
             ->when($request->nombre, function ($q) use ($request) {
                 $q->where('nombre', $request->nombre);
             })
-            ->when($request->compuestos !== null, function ($q) use ($request) {
+            ->when($request->compuestos !== null, function ($q) {
                 $q->whereHas('composiciones');
             })
             ->when($request->id_proveedor, function ($q) use ($request) {
-                $q->whereHas('proveedores', function ($q) use ($request) {
-                    return $q->where("id_proveedor", $request->id_proveedor);
+                $q->whereHas('proveedores', function ($sub) use ($request) {
+                    return $sub->where('id_proveedor', $request->id_proveedor);
                 });
             })
             ->when($request->estado !== null, function ($q) use ($request) {
                 $q->where('enable', !!$request->estado);
             })
-
-            ->when($request->marca, function ($query) use ($request) {
-                return $query->where('marca', 'like', '%' . $request->marca . '%');
+            ->when($request->marca, function ($q) use ($request) {
+                return $q->where('marca', 'like', '%' . $request->marca . '%');
             })
-            // Si la empresa tiene Shopify configurado y se ha seleccionado una bodega/sucursal,
-            // filtrar solo productos que tengan inventario en esa bodega
-            ->when($empresa && $empresa->shopify_store_url && $request->id_bodega, function ($query) use ($request) {
-                return $query->whereHas('inventarios', function ($q) use ($request) {
-                    $q->where('id_bodega', $request->id_bodega);
+            ->when($empresa && $empresa->shopify_store_url && $request->id_bodega, function ($q) use ($request) {
+                return $q->whereHas('inventarios', function ($sub) use ($request) {
+                    $sub->where('id_bodega', $request->id_bodega);
                 });
-            })
-            ->whereIn('tipo', ['Producto', 'Compuesto'])
-            // ->whereNotIn('id_categoria', [1,2])
-            ->orderBy('enable', 'desc')
-            ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
-            ->paginate($request->paginate);
+            });
 
-        return Response()->json($productos, 200);
+        return $query;
+    }
+
+    /**
+     * Suma el stock visible en listado para el conjunto filtrado (inventario tradicional o lotes), respetando bodega.
+     */
+    protected function calcularStockTotalFiltradoProductos(\Illuminate\Database\Eloquent\Builder $productoQuery, Request $request): float
+    {
+        $nonLoteIds = (clone $productoQuery)
+            ->select('productos.id')
+            ->where(function ($q) {
+                $q->where('productos.inventario_por_lotes', false)
+                    ->orWhereNull('productos.inventario_por_lotes');
+            });
+
+        $sumInventario = (float) (DB::query()
+            ->fromSub($nonLoteIds, 'filtered_p')
+            ->join('inventario as inv', 'inv.id_producto', '=', 'filtered_p.id')
+            ->join('sucursal_bodegas as b', 'b.id', '=', 'inv.id_bodega')
+            ->where('b.activo', 1)
+            ->whereNull('inv.deleted_at')
+            ->when($request->id_bodega, function ($q) use ($request) {
+                $q->where('inv.id_bodega', $request->id_bodega);
+            })
+            ->sum('inv.stock') ?? 0);
+
+        $loteIds = (clone $productoQuery)
+            ->select('productos.id')
+            ->where('productos.inventario_por_lotes', true);
+
+        $sumLotes = (float) (DB::query()
+            ->fromSub($loteIds, 'filtered_p')
+            ->join('lotes as l', 'l.id_producto', '=', 'filtered_p.id')
+            ->whereNull('l.deleted_at')
+            ->when($request->id_bodega, function ($q) use ($request) {
+                $q->where('l.id_bodega', $request->id_bodega);
+            })
+            ->sum('l.stock') ?? 0);
+
+        return $sumInventario + $sumLotes;
     }
 
     public function list()
@@ -151,7 +224,7 @@ class ProductosController extends Controller
                 }
             })
             ->orderByRaw("
-                CASE 
+                CASE
                     WHEN nombre LIKE ? THEN 1
                     ELSE 2
                 END
@@ -184,7 +257,7 @@ class ProductosController extends Controller
                     $q->orWhere('componente_quimico', 'like', "%$txt%");
                 }
             })
-            ->take(15)
+            ->take(50)
             ->get();
 
         return Response()->json($productos, 200);
@@ -206,7 +279,7 @@ class ProductosController extends Controller
                     $q->orWhere('componente_quimico', 'like', "%$query%");
                 }
             })
-            ->take(15)
+            ->take(50)
             ->get();
 
         return Response()->json($productos, 200);
@@ -237,7 +310,7 @@ class ProductosController extends Controller
                         $q->orWhere('componente_quimico', 'like', "%$query%");
                     }
                 })
-                ->take(15)
+                ->take(50)
                 ->get();
         } else {
             $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
@@ -250,7 +323,7 @@ class ProductosController extends Controller
                         $q->orWhere('componente_quimico', 'like', "%$query%");
                     }
                 })
-                ->take(15)
+                ->take(50)
                 ->get();
         }
 
@@ -333,10 +406,12 @@ class ProductosController extends Controller
             // 'costo.required' => 'Agregue el costo.'
         ]);
 
+        $inventarioPorLotesAntes = false;
         if ($request->id) {
             $producto = Producto::findOrFail($request->id);
             $precioAnterior = $producto->precio;
             $costoAnterior = $producto->costo;
+            $inventarioPorLotesAntes = (bool) $producto->inventario_por_lotes;
         } else {
 
             $producto = new Producto;
@@ -345,6 +420,15 @@ class ProductosController extends Controller
 
         $producto->fill($request->all());
         $producto->save();
+
+        $migracionLotes = null;
+        if (
+            $producto->tipo != 'Servicio'
+            && !$inventarioPorLotesAntes
+            && $producto->inventario_por_lotes
+        ) {
+            $migracionLotes = app(MigrarStockALotesService::class)->migrar($producto);
+        }
 
 
         // Configurar inventarios para las bodegas (firstOrCreate evita duplicados producto+bodega)
@@ -382,7 +466,78 @@ class ProductosController extends Controller
 
 
 
-        return Response()->json($producto, 200);
+        $payload = $producto->toArray();
+        if ($migracionLotes !== null) {
+            $payload['migracion_lotes'] = $migracionLotes;
+        }
+
+        return Response()->json($payload, 200);
+    }
+
+    /**
+     * Vista previa de migración de stock a lotes al activar inventario por lotes.
+     */
+    public function previewMigracionLotes($id)
+    {
+        $producto = Producto::findOrFail($id);
+
+        if ($producto->tipo === 'Servicio') {
+            return response()->json([
+                'requiere_migracion' => false,
+                'mensaje' => 'Los servicios no manejan inventario por lotes.',
+            ], 200);
+        }
+
+        return response()->json(
+            app(MigrarStockALotesService::class)->preview($producto),
+            200
+        );
+    }
+
+    /**
+     * Migra stock de inventario tradicional a lotes STOCK-INICIAL (productos ya con lotes activos).
+     */
+    public function migrarStockLotes($id)
+    {
+        $producto = Producto::findOrFail($id);
+
+        if ($producto->tipo === 'Servicio') {
+            return response()->json(['error' => 'Los servicios no manejan inventario por lotes.'], 400);
+        }
+
+        if (!$producto->inventario_por_lotes) {
+            return response()->json([
+                'error' => 'El producto no tiene inventario por lotes habilitado.',
+            ], 400);
+        }
+
+        $migracionService = app(MigrarStockALotesService::class);
+        $preview = $migracionService->preview($producto);
+
+        if (!$preview['requiere_migracion']) {
+            return response()->json([
+                'success' => true,
+                'message' => 'No hay stock pendiente de migrar. Todas las bodegas con inventario ya tienen lotes con stock.',
+                'migracion_lotes' => [
+                    'lotes_creados' => 0,
+                    'lotes_actualizados' => 0,
+                    'unidades_migradas' => 0,
+                    'bodegas' => [],
+                ],
+            ], 200);
+        }
+
+        $migracion = $migracionService->migrar($producto);
+
+        return response()->json([
+            'success' => true,
+            'message' => sprintf(
+                'Stock migrado: %d lote(s) creado(s), %.2f unidades en total.',
+                $migracion['lotes_creados'] + $migracion['lotes_actualizados'],
+                $migracion['unidades_migradas']
+            ),
+            'migracion_lotes' => $migracion,
+        ], 200);
     }
 
     public function storeDesdeCompras(Request $request)
@@ -577,6 +732,17 @@ class ProductosController extends Controller
         return Response()->json($import->getRowCount(), 200);
     }
 
+    /**
+     * Plantilla Excel para importación de productos: columnas base + una columna de stock por bodega activa (nombre y sucursal visibles en el encabezado).
+     */
+    public function plantillaImportacionProductos()
+    {
+        return Excel::download(
+            new PlantillaProductosImportExport(),
+            'plantilla_importacion_productos.xlsx'
+        );
+    }
+
     public function importarWooCommerce(Request $request)
     {
         $request->validate([
@@ -585,6 +751,14 @@ class ProductosController extends Controller
             'file.required' => 'El archivo CSV de WooCommerce es obligatorio.',
             'file.mimes' => 'El archivo debe ser CSV, TXT, XLSX o XLS.',
         ]);
+
+        $empresa = Empresa::find(Auth::user()->id_empresa);
+        if ($empresa && !$empresa->woocommerceSyncAcceptsCatalogFromWoo()) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'En el modo de sincronización actual (SmartPyme → WooCommerce) el catálogo se gestiona en SmartPyme. No se puede importar el CSV de WooCommerce. Cambie el modo en Mi cuenta, WooCommerce, si desea importar desde la tienda.',
+            ], 422);
+        }
 
         try {
             $import = new WooCommerceProductosImport();
@@ -748,30 +922,83 @@ class ProductosController extends Controller
         ]);
 
         $productosActualizados = 0;
+        $lotesCreados = 0;
+        $lotesActualizados = 0;
+        $unidadesMigradas = 0;
+        $productosConMigracion = 0;
+
+        $migracionService = app(MigrarStockALotesService::class);
 
         // Obtener todos los productos de las categorías seleccionadas
         $productos = Producto::whereIn('id_categoria', $request->categorias)
             ->where('tipo', '!=', 'Servicio')
             ->get();
 
-        foreach ($productos as $producto) {
-            $producto->inventario_por_lotes = $request->habilitar;
-            $producto->save();
-            $productosActualizados++;
+        DB::beginTransaction();
+        try {
+            foreach ($productos as $producto) {
+                $producto->inventario_por_lotes = $request->habilitar;
+                $producto->save();
+                $productosActualizados++;
+
+                // Al habilitar: migrar stock pendiente (nuevos y los que ya tenían flag sin lotes)
+                if ($request->habilitar) {
+                    $resultado = $migracionService->migrar($producto);
+                    $creados = (int) ($resultado['lotes_creados'] ?? 0);
+                    $actualizados = (int) ($resultado['lotes_actualizados'] ?? 0);
+                    if ($creados > 0 || $actualizados > 0) {
+                        $productosConMigracion++;
+                    }
+                    $lotesCreados += $creados;
+                    $lotesActualizados += $actualizados;
+                    $unidadesMigradas += (float) ($resultado['unidades_migradas'] ?? 0);
+                }
+            }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Error al habilitar lotes masivamente: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        $message = $request->habilitar
+            ? 'Inventario por lotes habilitado masivamente'
+            : 'Inventario por lotes deshabilitado masivamente';
+
+        $lotesTrasladados = $lotesCreados + $lotesActualizados;
+        if ($request->habilitar && $lotesTrasladados > 0) {
+            $message .= sprintf(
+                '. Se trasladó stock a %d lote(s) %s (%.2f uds en %d producto(s)).',
+                $lotesTrasladados,
+                MigrarStockALotesService::NUMERO_LOTE_INICIAL,
+                $unidadesMigradas,
+                $productosConMigracion
+            );
         }
 
         return response()->json([
             'success' => true,
-            'message' => $request->habilitar 
-                ? 'Inventario por lotes habilitado masivamente' 
-                : 'Inventario por lotes deshabilitado masivamente',
-            'productos_actualizados' => $productosActualizados
+            'message' => $message,
+            'productos_actualizados' => $productosActualizados,
+            'lotes_creados' => $lotesCreados,
+            'lotes_actualizados' => $lotesActualizados,
+            'lotes_trasladados' => $lotesTrasladados,
+            'unidades_migradas' => round($unidadesMigradas, 2),
+            'productos_con_migracion' => $productosConMigracion,
         ]);
     }
     public function exportarWooCommerceTemplate(Request $request)
     {
         $user = Auth::user();
         $id_empresa = $user->id_empresa;
+
+        $empresa = Empresa::find($id_empresa);
+        if ($empresa && !$empresa->woocommerceSyncPushesToRemote()) {
+            return response()->json([
+                'error' => 'En el modo de sincronización actual (WooCommerce → SmartPyme) el catálogo se gestiona en la tienda. No se genera el CSV de exportación hacia WooCommerce. Cambie el modo en Mi cuenta, WooCommerce, si desea descargar productos para subirlos a la tienda.',
+            ], 422);
+        }
 
         $request->request->add(['id_empresa' => $id_empresa, 'user_id' => $user->id]);
 
@@ -812,14 +1039,43 @@ class ProductosController extends Controller
 
     public function exportarPlantillaTraslado(Request $request)
     {
-        $request->request->add(['productos_ids' => explode(',', $request->productos_ids)]);
-        $filtros = [
-            'id_bodega_origen' => $request->id_bodega_origen,
-            'id_bodega_destino' => $request->id_bodega_destino,
-            'productos_ids' => $request->productos_ids
-        ];
+        // Flujo nuevo: exportar líneas ya armadas en UI (POST JSON con «lineas»).
+        if ($request->isMethod('post')) {
+            $lineas = $request->input('lineas');
+            if (!is_array($lineas)) {
+                return response()->json(['error' => 'Se esperaba un arreglo «lineas» con el listado a exportar.'], 422);
+            }
+            if (count($lineas) === 0) {
+                return response()->json(['error' => 'No hay líneas para exportar.'], 422);
+            }
+            if (count($lineas) > 5000) {
+                return response()->json(['error' => 'El listado supera el máximo permitido para exportar (5000 líneas).'], 422);
+            }
 
-        Log::info($filtros);
+            return Excel::download(
+                new TrasladoLineasUiExport($lineas),
+                'traslado_inventario_' . date('Ymd_His') . '.xlsx'
+            );
+        }
+
+        // Flujo clásico (GET): plantilla según bodegas; productos_ids opcional (lista separada por comas o array).
+        // Compatibilidad con clientes que envían productos_ids como string "1,2,3" en query o body.
+        $raw = $request->input('productos_ids', $request->query('productos_ids'));
+        if ($raw === null || $raw === '') {
+            $productosIds = [];
+        } elseif (is_array($raw)) {
+            $productosIds = array_values(array_filter(array_map('intval', $raw)));
+        } else {
+            $productosIds = array_values(array_filter(array_map('intval', explode(',', (string) $raw))));
+        }
+
+        $filtros = [
+            'id_bodega_origen' => $request->input('id_bodega_origen', $request->query('id_bodega_origen')),
+            'id_bodega_destino' => $request->input('id_bodega_destino', $request->query('id_bodega_destino')),
+            'productos_ids' => $productosIds,
+            // Plantilla sin filas de producto (solo encabezados / columnas). GET ?plantilla_vacia=1
+            'plantilla_vacia' => $request->boolean('plantilla_vacia'),
+        ];
 
         return Excel::download(
             new PlantillaInventarioMasivoExport($filtros),
@@ -1008,6 +1264,43 @@ class ProductosController extends Controller
         }
     }
 
+    public function vistaPreviaImportarTrasladosMasivos(Request $request)
+    {
+        $request->validate([
+            'archivo' => 'required|file',
+            'concepto' => 'required|string',
+            'id_bodega_origen' => 'required|numeric',
+            'id_bodega_destino' => 'required|numeric|different:id_bodega_origen',
+        ]);
+
+        $importador = new TrasladosImport(
+            $request->concepto,
+            true,
+            $request->id_bodega_origen,
+            $request->id_bodega_destino
+        );
+        Excel::import($importador, $request->file('archivo'));
+
+        $filas = array_values(array_filter(
+            $importador->getFilasVistaPrevia(),
+            function ($f) {
+                return ($f['error'] ?? null) !== 'Fila vacía o sin datos.';
+            }
+        ));
+
+        $filasOk = count(array_filter($filas, function ($f) {
+            return !empty($f['ok']);
+        }));
+        $filasError = count($filas) - $filasOk;
+
+        return Response()->json([
+            'filas' => $filas,
+            'total_filas' => count($filas),
+            'filas_ok' => $filasOk,
+            'filas_error' => $filasError,
+        ], 200);
+    }
+
     public function importarTrasladosMasivos(Request $request)
     {
         $request->validate([
@@ -1017,7 +1310,12 @@ class ProductosController extends Controller
             'id_bodega_destino' => 'required|numeric|different:id_bodega_origen',
         ]);
 
-        $importador = new TrasladosImport($request->concepto);
+        $importador = new TrasladosImport(
+            $request->concepto,
+            false,
+            $request->id_bodega_origen,
+            $request->id_bodega_destino
+        );
         Excel::import($importador, $request->file('archivo'));
 
 
@@ -1107,6 +1405,51 @@ class ProductosController extends Controller
     }
 
     /**
+     * Resuelve en bloque productos del DTE (código proveedor + fallback por nombre).
+     * Una sola petición HTTP en lugar de N llamadas por ítem.
+     */
+    public function resolverProductosImportacionDte(Request $request)
+    {
+        $request->validate([
+            'id_empresa' => 'required|integer',
+            'items' => 'required|array|min:1|max:500',
+            'items.*.codigo' => 'nullable|string',
+            'items.*.descripcion' => 'nullable|string',
+            'items.*.numItem' => 'nullable',
+        ]);
+
+        $resultados = $this->productoImportacionDteService->resolverImportacionDte(
+            (int) $request->id_empresa,
+            $request->items
+        );
+
+        return response()->json(['resultados' => $resultados], 200);
+    }
+
+    /**
+     * Sugerencias para varias consultas en una sola petición (mismo orden que consultas).
+     */
+    public function buscarSugerenciasLote(Request $request)
+    {
+        $request->validate([
+            'id_empresa' => 'required|integer',
+            'consultas' => 'required|array|min:1|max:200',
+            'consultas.*.termino' => 'required|string|min:2',
+            'consultas.*.palabras' => 'nullable|array',
+            'limite' => 'nullable|integer|max:20',
+        ]);
+
+        $limite = $request->limite ?? 10;
+        $resultados = $this->productoImportacionDteService->sugerenciasLote(
+            (int) $request->id_empresa,
+            $request->consultas,
+            $limite
+        );
+
+        return response()->json(['resultados' => $resultados], 200);
+    }
+
+    /**
      * Búsqueda por código de proveedor
      */
     public function buscarPorCodigoProveedor(Request $request)
@@ -1140,23 +1483,11 @@ class ProductosController extends Controller
         ]);
 
         $limite = $request->limite ?? 5;
-
-        $empresa = Empresa::find($request->id_empresa);
-        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-
-        $productos = Producto::where('enable', true)
-            ->where('id_empresa', $request->id_empresa)
-            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->with(['inventarios', 'precios'])
-            ->where(function ($q) use ($request, $incluirComponenteQuimico) {
-                $q->where('nombre', 'like', "%{$request->nombre}%");
-                if ($incluirComponenteQuimico) {
-                    $q->orWhere('componente_quimico', 'like', "%{$request->nombre}%");
-                }
-            })
-            ->orderBy('nombre', 'asc')
-            ->take($limite)
-            ->get();
+        $productos = $this->productoImportacionDteService->productosPorNombreFuzzy(
+            (int) $request->id_empresa,
+            $request->nombre,
+            $limite
+        );
 
         return response()->json($productos, 200);
     }
@@ -1174,49 +1505,12 @@ class ProductosController extends Controller
         ]);
 
         $limite = $request->limite ?? 10;
-        $termino = $request->termino;
-        $palabras = $request->palabras ?? [];
-
-        $empresa = Empresa::find($request->id_empresa);
-        $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-
-        $query = Producto::where('enable', true)
-            ->where('id_empresa', $request->id_empresa)
-            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->with(['inventarios', 'lotes', 'precios']);
-
-        // Búsqueda principal por término completo
-        $query->where(function ($q) use ($termino, $incluirComponenteQuimico) {
-            $q->where('nombre', 'like', "%$termino%")
-                ->orWhere('codigo', 'like', "%$termino%")
-                ->orWhere('barcode', 'like', "%$termino%")
-                ->orWhere('etiquetas', 'like', "%$termino%")
-                ->orWhere('marca', 'like', "%$termino%")
-                ->orWhere('descripcion', 'like', "%$termino%");
-            if ($incluirComponenteQuimico) {
-                $q->orWhere('componente_quimico', 'like', "%$termino%");
-            }
-        });
-
-        // Si hay palabras específicas, buscar también por ellas
-        if (!empty($palabras)) {
-            $query->orWhere(function ($q) use ($palabras, $incluirComponenteQuimico) {
-                foreach ($palabras as $palabra) {
-                    if (strlen($palabra) > 2) {
-                        $q->orWhere('nombre', 'like', "%$palabra%")
-                            ->orWhere('descripcion', 'like', "%$palabra%")
-                            ->orWhere('etiquetas', 'like', "%$palabra%");
-                        if ($incluirComponenteQuimico) {
-                            $q->orWhere('componente_quimico', 'like', "%$palabra%");
-                        }
-                    }
-                }
-            });
-        }
-
-        $productos = $query->orderBy('nombre', 'asc')
-            ->take($limite)
-            ->get();
+        $productos = $this->productoImportacionDteService->productosSugerencias(
+            (int) $request->id_empresa,
+            $request->termino,
+            $request->palabras ?? [],
+            $limite
+        );
 
         return response()->json($productos, 200);
     }
@@ -2387,5 +2681,31 @@ class ProductosController extends Controller
                 'error' => $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Siguiente código de barras correlativo sugerido: máximo barcode solo numérico en la empresa + 1 (si la opción está activa).
+     * Ruta histórica siguiente-sku-correlativo delega aquí por compatibilidad.
+     */
+    public function siguienteBarcodeCorrelativo()
+    {
+        $user = Auth::user();
+        $empresa = $user->empresa;
+        if (!$empresa || !$empresa->isBarcodeCorrelativoAutomaticoHabilitado()) {
+            return response()->json(['habilitado' => false, 'barcode' => null, 'codigo' => null]);
+        }
+
+        $idEmpresa = (int) $user->id_empresa;
+        $max = DB::table('productos')
+            ->where('id_empresa', $idEmpresa)
+            ->whereNull('deleted_at')
+            ->whereNotNull('barcode')
+            ->where('barcode', '!=', '')
+            ->whereRaw('barcode REGEXP "^[0-9]+$"')
+            ->max(DB::raw('CAST(barcode AS UNSIGNED)'));
+
+        $barcode = (string) ((int) ($max ?? 0) + 1);
+
+        return response()->json(['habilitado' => true, 'barcode' => $barcode, 'codigo' => $barcode]);
     }
 }

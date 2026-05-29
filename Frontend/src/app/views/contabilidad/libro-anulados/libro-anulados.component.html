@@ -1,28 +1,13 @@
 
-<section class="bg-white p-4 rounded mb-3 d-flex justify-content-between">
+<section class="bg-white p-4 rounded mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
-        <h2>Libro de Anulados</h2>
+        <h2 class="mb-0">Libro de Anulados</h2>
     </div>
-    <div class="dropdown">
-        <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
-                data-bs-toggle="dropdown" aria-expanded="false" [disabled]="downloading">
-          Descargas 
-        </button>
-        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-          <li>
-            <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
-                Libro de anulados
-            </button>
-          </li>
-          <li *ngIf="isElSalvador">
-            <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
-                Anexo
-            </button>
-          </li>
-        </ul>
-      </div>
+    <button type="button" class="btn btn-default tcla-F6 d-inline-flex align-items-center" (click)="openDescargasModal(mdescargas)"
+            [disabled]="downloading" tooltip="Descargas (F6)">
+        <img src="/assets/icons/download.png" class="icon me-2" alt="">
+        Descargas
+    </button>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
@@ -148,4 +133,31 @@
         </div>
     </form>
   </div>
+</ng-template>
+
+<ng-template #mdescargas>
+    <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title">Descargas</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalDescargas()" aria-label="Cerrar"></button>
+    </div>
+    <div class="modal-body pt-2">
+        <p class="text-muted small mb-3">
+            Periodo actual: <strong>{{ filtros.inicio }}</strong> al <strong>{{ filtros.fin }}</strong>.
+            Para otro rango o sucursal use <strong>Filtrar</strong> (F3).
+        </p>
+        <label class="form-label" for="selTipoDescargaAnulados">Tipo de archivo</label>
+        <select id="selTipoDescargaAnulados" class="form-select" [(ngModel)]="tipoDescarga" name="tipoDescargaAnulados">
+            <option value="">Seleccione</option>
+            <option value="libro_excel">Libro de anulados (Excel)</option>
+            <option *ngIf="isElSalvador" value="anexo_csv">Anexo CSV</option>
+        </select>
+    </div>
+    <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-default" (click)="cerrarModalDescargas()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="ejecutarDescargaSeleccionada()"
+                [disabled]="downloading || !tipoDescarga">
+            <span *ngIf="!downloading">Descargar</span>
+            <span *ngIf="downloading">Generando…</span>
+        </button>
+    </div>
 </ng-template>

@@ -161,11 +161,14 @@ class ProveedoresController extends Controller
     public function importPersonas(Request $request){
         
         $request->validate([
-            'file'          => 'required',
+            'file' => 'required|file',
+        ], [
+            'file.required' => 'El documento es obligatorio.',
+            'file.file' => 'Debe enviar un archivo válido.',
         ]);
 
         $import = new ProveedoresPersonas();
-        Excel::import($import, $request->file);
+        Excel::import($import, $request->file('file'));
         
         return Response()->json($import->getRowCount(), 200);
 
@@ -174,11 +177,14 @@ class ProveedoresController extends Controller
     public function importEmpresas(Request $request){
         
         $request->validate([
-            'file'          => 'required',
+            'file' => 'required|file',
+        ], [
+            'file.required' => 'El documento es obligatorio.',
+            'file.file' => 'Debe enviar un archivo válido.',
         ]);
 
         $import = new ProveedoresEmpresas();
-        Excel::import($import, $request->file);
+        Excel::import($import, $request->file('file'));
         
         return Response()->json($import->getRowCount(), 200);
 

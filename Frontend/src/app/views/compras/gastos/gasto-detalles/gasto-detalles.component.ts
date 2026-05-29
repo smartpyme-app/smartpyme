@@ -13,11 +13,12 @@ import { ApiService } from '@services/api.service';
 export class GastoDetallesComponent implements OnInit {
 
     public gasto:any = {};
+    public abonoEdit:any = {};
     public loading = false;
     modalRef?: BsModalRef;
 
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
+	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
 	) { }
 
@@ -53,6 +54,18 @@ export class GastoDetallesComponent implements OnInit {
         this.apiService.store('gasto/abono', abono).subscribe(abono => {
             this.loadAll();
         }, error => {this.alertService.error(error); });
+    }
+
+    public openModalEditAbono(template: TemplateRef<any>, abono: any) {
+        this.abonoEdit = { ...abono };
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public onAbonoSaved() {
+        if (this.modalRef) {
+            this.modalRef.hide();
+        }
+        this.loadAll();
     }
 
 }

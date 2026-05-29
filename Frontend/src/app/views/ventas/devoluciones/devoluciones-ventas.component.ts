@@ -57,10 +57,15 @@ export class DevolucionesVentasComponent implements OnInit {
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        this.filtrarVentas();
+        this.filtros.page = 1;
+        this.filtrarVentas(false);
     }
 
-    public filtrarVentas() {
+    /** @param resetPage true al filtrar/ordenar/cambiar paginate; false al paginar o tras loadAll. */
+    public filtrarVentas(resetPage = true): void {
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         this.loading = true;
         if (this.filtros.id_cliente == null) {
             this.filtros.id_cliente = '';
@@ -126,11 +131,8 @@ export class DevolucionesVentasComponent implements OnInit {
     }
 
     public setPagination(event: any): void {
-        this.loading = true;
-        this.apiService.paginate(this.ventas.path + '?page=' + event.page, this.filtros).subscribe(ventas => {
-            this.ventas = ventas;
-            this.loading = false;
-        }, error => { this.alertService.error(error); this.loading = false; });
+        this.filtros.page = event.page;
+        this.filtrarVentas(false);
     }
 
     // Filtros
@@ -203,11 +205,13 @@ export class DevolucionesVentasComponent implements OnInit {
     }
 
     imprimirDTEPDF(venta: any) {
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/05/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte || '05';
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(venta: any) {
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/05/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte || '05';
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     emitirDTE() {
@@ -321,7 +325,7 @@ export class DevolucionesVentasComponent implements OnInit {
             this.modalRef?.hide()
             this.saving = false;
             
-            this.filtrarVentas();
+            this.filtrarVentas(false);
             
             setTimeout(() => {
                 this.devolucionEditar = {};

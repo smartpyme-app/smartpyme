@@ -1,0 +1,119 @@
+/* Alineado con admin-dash / template.min.css: btn-primary #005CBB, btn-default #D7E2FF */
+:host {
+    --filtro-fecha-accent: #005cbb;
+    --filtro-fecha-link: var(--filtro-fecha-accent);
+    --filtro-fecha-label: #1e293b;
+}
+
+/* Preset activo cuando el padre pasa accentColor (sustituye btn-primary) */
+.filtro-fecha-preset--active {
+    color: #fff;
+    background-color: var(--filtro-fecha-accent);
+    border-color: var(--filtro-fecha-accent);
+}
+
+.filtro-fecha-preset--active:hover,
+.filtro-fecha-preset--active:focus-visible {
+    color: #fff;
+    filter: brightness(0.92);
+}
+
+.filtro-fecha-root {
+    min-width: 0;
+}
+
+/* Modo simple */
+.filtro-fecha-simple {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.filtro-fecha-preset {
+    white-space: nowrap;
+}
+
+/* Enlaces (Rango personalizado / Filtros rápidos) */
+.filtro-fecha-link {
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--filtro-fecha-link);
+    text-decoration: underline;
+    cursor: pointer;
+    text-align: left;
+}
+
+.filtro-fecha-link:hover,
+.filtro-fecha-link:focus-visible {
+    filter: brightness(0.88);
+}
+
+.filtro-fecha-link--inline {
+    margin-left: 0.25rem;
+    align-self: flex-end;
+}
+
+/* Modo avanzado: label con icono + selects redondeados */
+.filtro-fecha-avanzado {
+    min-width: 0;
+}
+
+.filtro-fecha-field-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--filtro-fecha-label);
+    letter-spacing: 0.01em;
+}
+
+.filtro-fecha-field-label__icon {
+    font-size: 0.95rem;
+    color: inherit;
+    opacity: 0.95;
+}
+
+.filtro-fecha-field-label__text {
+    line-height: 1.2;
+}
+
+.filtro-fecha-select {
+    min-width: 7.5rem;
+    border-radius: 0.65rem;
+    border-color: #e2e8f0;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.filtro-fecha-select:focus {
+    border-color: var(--filtro-fecha-accent);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--filtro-fecha-accent) 22%, transparent);
+}
+
+/* Con acento de sección (ej. gastos #F19447): presets inactivos como outline del dashboard, no btn-default azul */
+:host.filtro-fecha--accent .filtro-fecha-preset.btn-default {
+    color: var(--filtro-fecha-accent) !important;
+    background-color: #fff !important;
+    border: 1px solid var(--filtro-fecha-accent) !important;
+}
+
+:host.filtro-fecha--accent .filtro-fecha-preset.btn-default:hover,
+:host.filtro-fecha--accent .filtro-fecha-preset.btn-default:focus-visible {
+    color: #fff !important;
+    background-color: var(--filtro-fecha-accent) !important;
+    border-color: var(--filtro-fecha-accent) !important;
+}
+
+:host.filtro-fecha--accent .filtro-fecha-select {
+    border-color: color-mix(in srgb, var(--filtro-fecha-accent) 32%, #e2e8f0);
+}
+
+:host.filtro-fecha--accent .filtro-fecha-select:hover:not(:focus) {
+    border-color: color-mix(in srgb, var(--filtro-fecha-accent) 48%, #e2e8f0);
+}

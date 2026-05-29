@@ -1,0 +1,412 @@
+<div class="resultados-section">
+    <ng-template #resultadosChartLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 220px;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando gráfico…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #resultadosMetricasLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 100px;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Cargando métricas…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #resultadosListLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 280px;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #resultadosCashflowBlockLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary my-4" style="min-height: 480px;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando flujo de efectivo…</span>
+            </div>
+        </div>
+    </ng-template>
+    <!-- Filtros específicos de Resultados -->
+    <div class="bg-white p-4 rounded mb-3">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <!-- Botón de sección activa -->
+            <button 
+                type="button"
+                class="btn btn-section-active px-4 py-3 fw-bold shadow-sm"
+                style="border-radius: 8px; background-color: #1e3a5f !important; color: white !important; border: none !important;">
+                Resultados
+            </button>
+
+            <!-- Contenedor de filtros (año y sucursal) alineados a la derecha -->
+            <div class="d-flex align-items-end gap-3 flex-wrap">
+                <!-- Selector de año -->
+                <div class="btn-group" role="group">
+                    <button
+                        *ngFor="let anio of anios; trackBy: trackByIndex"
+                        type="button"
+                        class="btn"
+                        [ngClass]="anioSeleccionado === anio ? 'btn-default' : 'btn-light border'"
+                        (click)="cambiarAnio(anio)">
+                        {{ anio }}
+                    </button>
+                </div>
+
+                <app-dropdown-multi-filtro
+                    label="Sucursales"
+                    pluralLabel="sucursales"
+                    [items]="sucursales"
+                    [disabled]="sucursalesMultiDisabled"
+                    [todasImplicitas]="sucursalesTodasImplicitas"
+                    [seleccionados]="sucursalesSeleccionadas"
+                    (selectionChange)="onSucursalesMultiFiltroChange($event)">
+                </app-dropdown-multi-filtro>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4" *ngIf="datos?.metrics; else resultadosMetricasLoader">
+        <div class="col-md-3 col-sm-6" *ngFor="let metric of datos.metrics; trackBy: trackByIndex">
+            <app-chart-card [data]="metric"></app-chart-card>
+        </div>
+    </div>
+
+    <!-- Gráfico de Ventas y Gastos por Mes -->
+    <div class="row mt-4">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Ventas y gastos totales por mes</h5>
+                    <app-bar-chart
+                        *ngIf="datos.ventasGastosConfig; else resultadosChartLoader"
+                        [config]="datos.ventasGastosConfig">
+                    </app-bar-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <ng-container *ngIf="datos.cuentasPorCobrar !== undefined && datos.cuentasPorPagar !== undefined; else resultadosListLoader">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <app-accounts-list 
+                            title="Cuentas por cobrar clientes"
+                            [accounts]="datos.cuentasPorCobrar || []"
+                            type="receivable">
+                        </app-accounts-list>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <app-accounts-list 
+                            title="Cuentas por pagar proveedores"
+                            [accounts]="datos.cuentasPorPagar || []"
+                            type="payable">
+                        </app-accounts-list>
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+    </div>
+
+    <!-- Sección Flujo de Efectivo -->
+    <div class="row mt-4">
+        <div class="col-12 mb-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <button 
+                    type="button"
+                    class="btn btn-section-active px-4 py-2 fw-bold"
+                    style="border-radius: 8px;">
+                    Flujo de efectivo
+                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <label for="mesFiltro" class="mb-0 fw-medium">Mes:</label>
+                    <select
+                        id="mesFiltro"
+                        name="mesFlujoEfectivo"
+                        class="form-select"
+                        style="width: auto; min-width: 160px;"
+                        [(ngModel)]="mesFlujoEfectivo"
+                        (ngModelChange)="onMesFlujoEfectivoChange()">
+                        <option [ngValue]="null">Todo el año</option>
+                        <option
+                            *ngFor="let m of opcionesMesFlujo; trackBy: trackByMesValor"
+                            [ngValue]="m.valor">
+                            {{ m.etiqueta }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen + tablas Flujo de Efectivo (bloque pesado) -->
+    <ng-container *ngIf="datos.cashflow !== undefined; else resultadosCashflowBlockLoader">
+        <div class="row mb-4" *ngIf="datos.cashflow as cf">
+            <div class="col-md-3 mb-3">
+                <div class="card" style="background-color: #e3f2fd; border: none;">
+                    <div class="card-body text-center">
+                        <div class="fw-bold text-dark" style="font-size: 1.5rem;">
+                            {{ formatCurrency(cf.ingresosTotales || 0) }}
+                        </div>
+                        <div class="text-muted small mt-1">Ingresos percibidos</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card" style="background-color: #fff3e0; border: none;">
+                    <div class="card-body text-center">
+                        <div class="fw-bold text-dark" style="font-size: 1.5rem;">
+                            {{ formatCurrency(cf.egresosTotales || 0) }}
+                        </div>
+                        <div class="text-muted small mt-1">Egresos realizados</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card" style="background-color: #e8f5e9; border: none;">
+                    <div class="card-body text-center">
+                        <div class="fw-bold text-dark" style="font-size: 1.5rem;">
+                            {{ formatCurrency((cf.ingresosTotales || 0) - (cf.egresosTotales || 0)) }}
+                        </div>
+                        <div class="text-muted small mt-1">Resultados (neto)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <div class="row" *ngIf="datos.cashflow">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <h6 class="card-title mb-0">Ventas del mes</h6>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="input-group" style="width: 250px;">
+                                <input 
+                                    type="text" 
+                                    class="form-control form-control-sm" 
+                                    placeholder="Buscar cliente, factura o monto..."
+                                    [(ngModel)]="busquedaVentas"
+                                    (input)="onBusquedaVentasChange()">
+                                <button 
+                                    class="btn btn-sm btn-outline-secondary" 
+                                    type="button"
+                                    (click)="exportarVentas()"
+                                    title="Exportar a CSV">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <revo-grid
+                        #ventasGrid
+                        class="cash-flow-grid ventas-grid"
+                        [columns]="ventasColumns"
+                        [source]="ventasRows"
+                        [plugins]="ventasPlugins"
+                        theme="material"
+                        [range]="true"
+                        [editable]="false"
+                        [resize]="true"
+                        [canFocus]="true"
+                        [sorting]="true"
+                        [filter]="true"
+                        [exporting]="true"
+                        style="height: 400px;">
+                    </revo-grid>
+                    <div class="p-3 table-footer-ventas">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-white">Total</span>
+                            <span class="fw-bold text-white">{{ formatCurrency(datos.cashflow?.ingresosTotales || 0) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <h6 class="card-title mb-0">Gastos del mes</h6>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="input-group" style="width: 250px;">
+                                <input 
+                                    type="text" 
+                                    class="form-control form-control-sm" 
+                                    placeholder="Buscar proveedor, factura o monto..."
+                                    [(ngModel)]="busquedaGastos"
+                                    (input)="onBusquedaGastosChange()">
+                                <button 
+                                    class="btn btn-sm btn-outline-secondary" 
+                                    type="button"
+                                    (click)="exportarGastos()"
+                                    title="Exportar a CSV">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <revo-grid
+                        #gastosGrid
+                        class="cash-flow-grid gastos-grid"
+                        [columns]="gastosColumns"
+                        [source]="gastosRows"
+                        [plugins]="gastosPlugins"
+                        theme="material"
+                        [range]="true"
+                        [editable]="false"
+                        [resize]="true"
+                        [canFocus]="true"
+                        [sorting]="true"
+                        [filter]="true"
+                        [exporting]="true"
+                        style="height: 400px;">
+                    </revo-grid>
+                    <div class="p-3 table-footer-gastos">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-white">Total</span>
+                            <span class="fw-bold text-white">{{ formatCurrency(datos.cashflow?.egresosTotales || 0) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </ng-container>
+
+    <!-- Tablas CXC / CXP próximos 30 días -->
+    <ng-container *ngIf="datos.cuentas30 !== undefined; else resultadosListLoader">
+    <div class="row" *ngIf="datos.cuentas30">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
+                        <h6 class="card-title mb-0 fw-bold">CXC próximos 30 días</h6>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="input-group" style="width: 200px;">
+                                <input 
+                                    type="text" 
+                                    class="form-control form-control-sm" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="busquedaCobrar30"
+                                    (input)="onBusquedaCobrar30Change()">
+                                <button 
+                                    class="btn btn-sm btn-outline-secondary" 
+                                    type="button"
+                                    (click)="exportarCobrar30()"
+                                    title="Exportar a CSV">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <revo-grid
+                        #cobrar30Grid
+                        class="cash-flow-grid ventas-grid"
+                        [columns]="cobrar30Columns"
+                        [source]="cobrar30Rows"
+                        [plugins]="cobrar30Plugins"
+                        theme="compact"
+                        [range]="true"
+                        [editable]="false"
+                        [resize]="true"
+                        [canFocus]="true"
+                        [sorting]="true"
+                        [filter]="true"
+                        [exporting]="true"
+                        style="height: 400px;">
+                    </revo-grid>
+                    <div class="p-3 table-footer-ventas">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-white">Total</span>
+                            <span class="fw-bold text-white">{{ formatCurrency(totalCobrar30) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
+                        <h6 class="card-title mb-0 fw-bold">CXP próximos 30 días</h6>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="input-group" style="width: 200px;">
+                                <input 
+                                    type="text" 
+                                    class="form-control form-control-sm" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="busquedaPagar30"
+                                    (input)="onBusquedaPagar30Change()">
+                                <button 
+                                    class="btn btn-sm btn-outline-secondary" 
+                                    type="button"
+                                    (click)="exportarPagar30()"
+                                    title="Exportar a CSV">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <revo-grid
+                        #pagar30Grid
+                        class="cash-flow-grid gastos-grid"
+                        [columns]="pagar30Columns"
+                        [source]="pagar30Rows"
+                        [plugins]="pagar30Plugins"
+                        theme="compact"
+                        [range]="true"
+                        [editable]="false"
+                        [resize]="true"
+                        [canFocus]="true"
+                        [sorting]="true"
+                        [filter]="true"
+                        [exporting]="true"
+                        style="height: 400px;">
+                    </revo-grid>
+                    <div class="p-3 table-footer-gastos">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-white">Total</span>
+                            <span class="fw-bold text-white">{{ formatCurrency(totalPagar30) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </ng-container>
+
+    <!-- Sección Resultados vs presupuesto -->
+    <div class="row mt-4" *ngIf="datos.budgetMetrics">
+        <div class="col-12 mb-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <button 
+                    type="button"
+                    class="btn btn-section-active px-4 py-2 fw-bold"
+                    style="border-radius: 8px;">
+                    Resultados vs presupuesto
+                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <label for="presupuesto" class="mb-0 fw-medium">Presupuesto:</label>
+                    <select 
+                        id="presupuesto"
+                        class="form-select"
+                        style="width: auto; min-width: 120px;"
+                        [(ngModel)]="presupuestoSeleccionado">
+                        <option *ngFor="let presupuesto of presupuestos; trackBy: trackById" [value]="presupuesto.id">
+                            {{ presupuesto.nombre }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4" *ngFor="let metric of datos.budgetMetrics; trackBy: trackByIndex">
+            <app-budget-card [data]="metric"></app-budget-card>
+        </div>
+    </div>
+</div>

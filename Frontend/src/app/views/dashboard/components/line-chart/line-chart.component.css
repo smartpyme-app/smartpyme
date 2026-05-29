@@ -1,0 +1,24 @@
+/* Altura del contenedor del gráfico - necesario para ECharts */
+.chart-container {
+    height: 300px;
+    min-height: 200px; /* Altura mínima para mantener legibilidad */
+}
+
+@media (max-width: 992px) {
+    .chart-container {
+        height: 280px; /* Ligeramente más pequeño en tablets */
+    }
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px; /* Más compacto en móviles */
+    }
+}
+
+@media (max-width: 576px) {
+    .chart-container {
+        height: 220px; /* Aún más compacto en móviles pequeños, priorizando datos */
+    }
+}
+

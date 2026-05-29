@@ -18,6 +18,7 @@ class Planilla extends Model
         'total_salarios',
         'total_deducciones',
         'total_neto',
+        'total_viaticos',
         'id_empresa',
         'id_sucursal',
         'anio',

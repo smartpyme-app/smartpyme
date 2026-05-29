@@ -14,6 +14,7 @@ export class VentaDetallesV2Component implements OnInit {
 
     @Input() venta: any = {};
     @Input() usuarios: any = {};
+    @Input() habilitarCuentaTerceros = false;
     public usuario:any = {};
     public detalle:any = {};
     public composicion:any = {};
@@ -21,6 +22,7 @@ export class VentaDetallesV2Component implements OnInit {
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
+    @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
     modalRef!: BsModalRef;
 
     @ViewChild('msupervisor')
@@ -39,6 +41,43 @@ export class VentaDetallesV2Component implements OnInit {
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
+    }
+
+    get mostrarCuentaTercerosEnLinea(): boolean {
+        return this.habilitarCuentaTerceros
+            && this.venta?.cotizacion != 1
+            && this.usuario?.tipo !== 'Ventas Limitado';
+    }
+
+    get cuentaTercerosLineaSoloLectura(): boolean {
+        return !!this.usuario?.empresa?.modulo_paquetes;
+    }
+
+    get colspanFilaVaciaDetalles(): number {
+        let n = 6;
+        if (this.usuario?.empresa?.vendedor_detalle_venta) { n += 1; }
+        if (this.usuario?.empresa?.cambiar_tipo_impuesto_venta) { n += 1; }
+        if (this.mostrarCuentaTercerosEnLinea) { n += 1; }
+        return n;
+    }
+
+    onAlMenosUnPaqueteCuentaTercerosEnListado(): void {
+        this.alMenosUnPaqueteConCuentaTerceros.emit();
+    }
+
+    onCuentaTercerosLineaChange(detalle: any): void {
+        if (this.cuentaTercerosLineaSoloLectura) {
+            return;
+        }
+        const v = detalle.cuenta_a_terceros;
+        if (v === '' || v == null) {
+            detalle.cuenta_a_terceros = 0;
+        } else {
+            const n = parseFloat(String(v));
+            detalle.cuenta_a_terceros = isNaN(n) ? 0 : Math.max(0, n);
+        }
+        this.update.emit(this.venta);
+        this.sumTotal.emit();
     }
 
     openModalEdit(template: TemplateRef<any>, detalle:any) {
@@ -122,24 +161,48 @@ export class VentaDetallesV2Component implements OnInit {
         this.sumTotal.emit();
     }
 
+    /** Tras activar o desactivar "Con IVA" en la cabecera, recalcula IVA y total_iva por línea. */
+    public sincronizarIvasDetalles(): void {
+        if (!this.venta?.detalles?.length) {
+            return;
+        }
+        for (const detalle of this.venta.detalles) {
+            this.aplicarTipoGravado(detalle);
+        }
+    }
+
     /**
      * Maneja el cambio de precio desde el selector dropdown
      */
     public onPrecioSelectChange(detalle:any){
-        // Buscar el precio seleccionado en la lista de precios para obtener precio_sin_iva
-        if (detalle.precios && detalle.precio_iva) {
-            const precioSeleccionado = detalle.precios.find((p: any) => parseFloat(p.precio) == parseFloat(detalle.precio_iva));
-            if (precioSeleccionado && precioSeleccionado.precio_sin_iva) {
-                detalle.precio = parseFloat(precioSeleccionado.precio_sin_iva).toFixed(4);
-            } else {
-                const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
-                if (pctDetalle > 0) {
-                    detalle.precio = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), pctDetalle).toFixed(4);
-                } else {
-                    detalle.precio = detalle.precio_iva;
-                }
-            }
+        /** Lista muestra valores sin IVA; `precio` en ngModel coincide con esa columna del catálogo. */
+        if (!detalle?.precios?.length) {
+            return;
         }
+        const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
+        const valSel = parseFloat(String(detalle.precio));
+        if (!Number.isFinite(valSel)) {
+            this.updateTotal(detalle);
+            return;
+        }
+        const eq = (a: number, b: number) => Math.abs(a - b) <= 5e-4;
+        const precioSeleccionado = detalle.precios.find((p: any) => eq(parseFloat(String(p.precio)), valSel));
+        const sinLista =
+            precioSeleccionado &&
+            precioSeleccionado.precio_sin_iva !== undefined &&
+            precioSeleccionado.precio_sin_iva !== null &&
+            precioSeleccionado.precio_sin_iva !== ''
+                ? Number(precioSeleccionado.precio_sin_iva)
+                : valSel;
+        if (!Number.isFinite(sinLista)) {
+            this.updateTotal(detalle);
+            return;
+        }
+        detalle.precio = sinLista.toFixed(4);
+        detalle.precio_iva =
+            pctDetalle > 0
+                ? (sinLista * (1 + pctDetalle / 100)).toFixed(4)
+                : sinLista.toFixed(4);
         this.updateTotal(detalle);
     }
 

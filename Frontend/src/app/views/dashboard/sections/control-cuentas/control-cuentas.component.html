@@ -1,0 +1,675 @@
+<div class="control-cuentas-section">
+    <ng-template #cuentasCxcChartLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 200px; color: #3366cc;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando gráfico…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxcMetricasLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 100px; color: #3366cc;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Cargando métricas…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxcListLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 280px; color: #3366cc;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxcTableLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 420px; color: #3366cc;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando tabla…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxpChartLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 200px; color: #F19447;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando gráfico…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxpListLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 280px; color: #F19447;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #cuentasCxpTableLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 420px; color: #F19447;" aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando tabla…</span>
+            </div>
+        </div>
+    </ng-template>
+
+    <!-- Filtros específicos de Control de Cuentas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="mb-3" style="color: #3366cc;">Cuentas por cobrar</h2>
+                    <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
+                        <app-filtro-fecha
+                            [(anio)]="anio"
+                            [(mes)]="mes"
+                            (filtroChange)="aplicarFiltros()"
+                            controlId="control-cuentas-cxc"
+                            accentColor="#3366cc">
+                        </app-filtro-fecha>
+                        
+                        <!-- Botones y controles a la derecha -->
+                        <div class="d-flex align-items-end gap-2">
+                            <button 
+                                type="button"
+                                class="btn btn-outline-primary"
+                                (click)="toggleFiltrosAdicionales()">
+                                <i class="fas fa-filter me-1"></i> Ver otros filtros
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-primary"
+                                tooltip="Aplicar otros filtros de cuentas por cobrar"
+                                *ngIf="mostrarBotonAplicarOtrosFiltrosCxc"
+                                (click)="confirmarOtrosFiltrosCxc()">
+                                <i class="fa fa-check"></i> Aplicar
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-outline-primary"
+                                tooltip="Limpiar filtros"
+                                (click)="limpiarFiltros()"
+                                *ngIf="puedeLimpiarFiltrosControlCuentas">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtros adicionales (colapsables), catálogos vía API como Gastos -->
+                    <div class="mt-3" *ngIf="mostrarFiltrosAdicionales">
+                        <p class="small text-muted mb-3 d-flex align-items-start gap-2" *ngIf="!mostrarBotonAplicarOtrosFiltrosCxc">
+                            <i class="fas fa-info-circle mt-1 flex-shrink-0 text-primary" aria-hidden="true"></i>
+                            <span>
+                                Los filtros muestran la última consulta aplicada. Cuando cambies sucursal, cliente o vigencia respecto a esa consulta, aparecerá <strong class="text-body">Aplicar</strong> para actualizar los datos.
+                            </span>
+                        </p>
+                        <p class="small text-primary mb-3 d-flex align-items-start gap-2" *ngIf="mostrarBotonAplicarOtrosFiltrosCxc">
+                            <i class="fas fa-info-circle mt-1 flex-shrink-0" aria-hidden="true"></i>
+                            <span>
+                                Hay cambios sin aplicar en cuentas por cobrar. Pulsa <strong>Aplicar</strong> para cargar el dashboard con esos criterios.
+                            </span>
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6 col-xl-4">
+                                <app-dropdown-multi-filtro
+                                    label="Sucursal"
+                                    pluralLabel="sucursales"
+                                    accentColor="#3366cc"
+                                    [items]="filtroCxcSucursalesItems"
+                                    [disabled]="filtroCxcSucursalDisabled"
+                                    [todasImplicitas]="filtroCxcSucTodasImplicitas"
+                                    [seleccionados]="filtroCxcSucSeleccionadas"
+                                    (selectionChange)="onFiltroCxcSucursalChange($event)">
+                                </app-dropdown-multi-filtro>
+                            </div>
+                            <div class="col-12 col-md-6 col-xl-4">
+                                <app-dropdown-multi-filtro
+                                    label="Cliente"
+                                    pluralLabel="clientes"
+                                    accentColor="#3366cc"
+                                    [items]="filtroCxcClientesItems"
+                                    [disabled]="false"
+                                    [mostrarBuscador]="true"
+                                    [limiteVistaInicial]="100"
+                                    buscadorPlaceholder="Buscar cliente"
+                                    [todasImplicitas]="filtroCxcCliTodasImplicitas"
+                                    [seleccionados]="filtroCxcCliSeleccionadas"
+                                    (selectionChange)="onFiltroCxcClienteChange($event)">
+                                </app-dropdown-multi-filtro>
+                            </div>
+                            <div class="col-12 col-md-6 col-xl-4">
+                                <app-dropdown-multi-filtro
+                                    label="Estado de vigencia"
+                                    pluralLabel="estados"
+                                    accentColor="#3366cc"
+                                    [items]="filtroCxcVigenciaItems"
+                                    [disabled]="filtroCxcVigenciaItems.length === 0"
+                                    [todasImplicitas]="filtroCxcVigTodasImplicitas"
+                                    [seleccionados]="filtroCxcVigSeleccionadas"
+                                    (selectionChange)="onFiltroCxcVigenciaChange($event)">
+                                </app-dropdown-multi-filtro>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de cards de métricas (CXC — bloque crítico) -->
+    <div class="row mb-4" *ngIf="datos?.metricasCuentas; else cuentasCxcMetricasLoader">
+        <div class="col-12">
+            <div class="row g-3">
+                <!-- Card: Cuentas por cobrar (Total) -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center position-relative">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorCobrarTotal || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Cuentas por cobrar
+                            </p>
+                            <span 
+                                *ngIf="datos.metricasCuentas?.tooltipCuentasPorCobrar"
+                                class="position-absolute top-0 start-0 m-2"
+                                [title]="datos.metricasCuentas?.tooltipCuentasPorCobrar"
+                                style="cursor: help;">
+                                <i class="fas fa-info-circle" style="color: #3366cc; opacity: 0.6;"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por cobrar a 30 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorCobrar30Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Cuentas por cobrar a 30 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por cobrar a 60 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorCobrar60Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Cuentas por cobrar a 60 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por cobrar a 90 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #e0e9f6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #3366cc; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorCobrar90Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #3366cc;">
+                                Cuentas por cobrar a 90 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos de análisis -->
+    <div class="row mb-4">
+        <!-- Gráfico de anillos: Cuentas por cobrar según vigencia -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="inv-ag-grid-toolbar">
+                        <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title">Cuentas por cobrar según vigencia</h5>
+                        <div class="inv-ag-grid-toolbar-actions">
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                tooltip="Filtrar">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                tooltip="Maximizar">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <app-pie-chart 
+                        *ngIf="datos.cuentasPorVigenciaConfig; else cuentasCxcChartLoader"
+                        [config]="datos.cuentasPorVigenciaConfig"
+                        (itemClick)="onVigenciaClick($event)">
+                    </app-pie-chart>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de cuentas por cobrar clientes -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="inv-ag-grid-toolbar">
+                        <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title">Cuentas por cobrar clientes</h5>
+                        <div class="inv-ag-grid-toolbar-actions">
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                tooltip="Filtrar">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                tooltip="Maximizar">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ng-container *ngIf="datos.cuentasPorCobrarClientes !== undefined; else cuentasCxcListLoader">
+                        <app-accounts-list 
+                            title=""
+                            [accounts]="datos.cuentasPorCobrarClientes || []"
+                            type="receivable"
+                            (itemClick)="onClienteCuentaClick($event)">
+                        </app-accounts-list>
+                    </ng-container>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de detalle de cuentas por cobrar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="inv-ag-grid-toolbar">
+                        <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title">Detalle de cuentas por cobrar</h5>
+                        <div class="inv-ag-grid-toolbar-actions" *ngIf="datos.detalleCuentasPorCobrar !== undefined">
+                            <div class="input-group inv-ag-grid-toolbar-search">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control border-start-0" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="quickFilterText"
+                                    (input)="onQuickFilterChange()">
+                            </div>
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="exportarCSV()"
+                                title="Exportar a CSV">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-success"
+                                (click)="exportarExcel()"
+                                title="Exportar a Excel">
+                                <i class="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="limpiarFiltrosGrid()"
+                                title="Limpiar filtros">
+                                <i class="fas fa-filter me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-3 py-0">
+                    <ng-container *ngIf="datos.detalleCuentasPorCobrar !== undefined; else cuentasCxcTableLoader">
+                        <ag-grid-angular
+                            #detalleCuentasGrid
+                            class="ag-theme-alpine detalle-cuentas-grid"
+                            [rowData]="detalleCuentasRows"
+                            [columnDefs]="detalleCuentasColumnDefs"
+                            [gridOptions]="detalleCuentasGridOptions"
+                            [defaultColDef]="{
+                                resizable: true,
+                                sortable: true,
+                                filter: true
+                            }"
+                            style="width: 100%; height: 450px;"
+                            [domLayout]="'normal'">
+                        </ag-grid-angular>
+                    </ng-container>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros adicionales de Control de Cuentas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="mb-3" style="color: #F19447;">Cuentas por pagar</h2>
+                    <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
+                        <app-filtro-fecha
+                            [(anio)]="anio"
+                            [(mes)]="mes"
+                            (filtroChange)="aplicarFiltros()"
+                            controlId="control-cuentas-cxp"
+                            labelClass="fw-medium small mb-1"
+                            labelColor="#F19447"
+                            accentColor="#F19447">
+                        </app-filtro-fecha>
+                        
+                        <!-- Botones y controles a la derecha -->
+                        <div class="d-flex align-items-end gap-2">
+                            <button 
+                                type="button"
+                                class="btn btn-custom-filtros"
+                                (click)="toggleFiltrosAdicionalesPagar()">
+                                <i class="fas fa-filter me-1"></i> Ver otros filtros
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn"
+                                style="background-color: #F19447; border-color: #F19447; color: white;"
+                                tooltip="Aplicar otros filtros de cuentas por pagar"
+                                *ngIf="mostrarBotonAplicarOtrosFiltrosCxp"
+                                (click)="confirmarOtrosFiltrosCxp()">
+                                <i class="fa fa-check"></i> Aplicar
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn"
+                                style="border-color: #F19447; color: #F19447;"
+                                tooltip="Limpiar filtros"
+                                (click)="limpiarFiltros()"
+                                *ngIf="puedeLimpiarFiltrosControlCuentas">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtros adicionales (colapsables), catálogos vía API como Gastos -->
+                    <div class="mt-3" *ngIf="mostrarFiltrosAdicionalesPagar">
+                        <p class="small text-muted mb-3 d-flex align-items-start gap-2" *ngIf="!mostrarBotonAplicarOtrosFiltrosCxp">
+                            <i class="fas fa-info-circle mt-1 flex-shrink-0" style="color: #F19447;" aria-hidden="true"></i>
+                            <span>
+                                Los filtros muestran la última consulta aplicada. Cuando cambies proveedor o vigencia respecto a esa consulta, aparecerá <strong class="text-body">Aplicar</strong> para actualizar los datos.
+                            </span>
+                        </p>
+                        <p class="small mb-3 d-flex align-items-start gap-2" style="color: #c45f15;" *ngIf="mostrarBotonAplicarOtrosFiltrosCxp">
+                            <i class="fas fa-info-circle mt-1 flex-shrink-0" aria-hidden="true"></i>
+                            <span>
+                                Hay cambios sin aplicar en cuentas por pagar. Pulsa <strong>Aplicar</strong> para cargar el dashboard con esos criterios.
+                            </span>
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6 col-xl-4">
+                                <app-dropdown-multi-filtro
+                                    label="Proveedor"
+                                    pluralLabel="proveedores"
+                                    accentColor="#F19447"
+                                    [items]="filtroCxpProveedoresItems"
+                                    [disabled]="false"
+                                    [mostrarBuscador]="true"
+                                    [limiteVistaInicial]="100"
+                                    buscadorPlaceholder="Buscar proveedor"
+                                    [todasImplicitas]="filtroCxpProvTodasImplicitas"
+                                    [seleccionados]="filtroCxpProvSeleccionadas"
+                                    (selectionChange)="onFiltroCxpProveedorChange($event)">
+                                </app-dropdown-multi-filtro>
+                            </div>
+                            <div class="col-12 col-md-6 col-xl-4">
+                                <app-dropdown-multi-filtro
+                                    label="Estado de vigencia"
+                                    pluralLabel="estados"
+                                    accentColor="#F19447"
+                                    [items]="filtroCxpVigenciaItems"
+                                    [disabled]="filtroCxpVigenciaItems.length === 0"
+                                    [todasImplicitas]="filtroCxpVigTodasImplicitas"
+                                    [seleccionados]="filtroCxpVigSeleccionadas"
+                                    (selectionChange)="onFiltroCxpVigenciaChange($event)">
+                                </app-dropdown-multi-filtro>
+                            </div>
+                            <!-- <div class="col-12 col-md-6 col-xl-4">
+                                <app-dropdown-multi-filtro
+                                    label="Categoría de gasto"
+                                    pluralLabel="categorías"
+                                    accentColor="#F19447"
+                                    [items]="filtroCxpCategoriasItems"
+                                    [disabled]="false"
+                                    [mostrarBuscador]="true"
+                                    [limiteVistaInicial]="100"
+                                    buscadorPlaceholder="Buscar categoría"
+                                    [todasImplicitas]="filtroCxpCatTodasImplicitas"
+                                    [seleccionados]="filtroCxpCatSeleccionadas"
+                                    (selectionChange)="onFiltroCxpCategoriaChange($event)">
+                                </app-dropdown-multi-filtro>
+                            </div> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de cards de métricas - Cuentas por pagar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="row g-3">
+                <!-- Card: Cuentas por pagar (Total) -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #fef0e6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center position-relative">
+                            <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorPagarTotal || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                Cuentas por pagar
+                            </p>
+                            <span 
+                                *ngIf="datos.metricasCuentas?.tooltipCuentasPorPagar"
+                                class="position-absolute top-0 start-0 m-2"
+                                [title]="datos.metricasCuentas?.tooltipCuentasPorPagar"
+                                style="cursor: help;">
+                                <i class="fas fa-info-circle" style="color: #F19447; opacity: 0.6;"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por pagar a 30 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #fef0e6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorPagar30Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                Cuentas por pagar a 30 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por pagar a 60 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #fef0e6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorPagar60Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                Cuentas por pagar a 60 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Cuentas por pagar a 90 días -->
+                <div class="col-md-3">
+                    <div class="card border-0 h-100 d-flex" style="background-color: #fef0e6; border-radius: 12px;">
+                        <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
+                            <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
+                                {{ formatCurrency(datos.metricasCuentas?.cuentasPorPagar90Dias || 0) }}
+                            </h3>
+                            <p class="mb-0 small fw-medium" style="color: #F19447;">
+                                Cuentas por pagar a 90 días
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos de análisis - Cuentas por pagar -->
+    <div class="row mb-4">
+        <!-- Gráfico de anillos: Cuentas por pagar según vigencia -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="inv-ag-grid-toolbar">
+                        <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title" style="color: #F19447;">Cuentas por pagar según vigencia</h5>
+                        <div class="inv-ag-grid-toolbar-actions">
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                tooltip="Filtrar">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                tooltip="Maximizar">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <app-pie-chart 
+                        *ngIf="datos.cuentasPorPagarVigenciaConfig !== undefined; else cuentasCxpChartLoader"
+                        [config]="datos.cuentasPorPagarVigenciaConfig"
+                        (itemClick)="onVigenciaPagarClick($event)">
+                    </app-pie-chart>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de cuentas por pagar proveedores -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="inv-ag-grid-toolbar">
+                        <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title" style="color: #F19447;">Cuentas por pagar proveedores</h5>
+                        <div class="inv-ag-grid-toolbar-actions">
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                tooltip="Filtrar">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                tooltip="Maximizar">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ng-container *ngIf="datos.cuentasPorPagarProveedores !== undefined; else cuentasCxpListLoader">
+                        <app-accounts-list 
+                            title=""
+                            [accounts]="datos.cuentasPorPagarProveedores || []"
+                            type="payable"
+                            (itemClick)="onProveedorCuentaClick($event)">
+                        </app-accounts-list>
+                    </ng-container>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de resumen de cuentas por pagar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="inv-ag-grid-toolbar">
+                        <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title" style="color: #F19447;">Resumen de cuentas por pagar</h5>
+                        <div class="inv-ag-grid-toolbar-actions" *ngIf="datos.resumenCuentasPorPagar !== undefined">
+                            <div class="input-group inv-ag-grid-toolbar-search">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control border-start-0" 
+                                    placeholder="Buscar..."
+                                    [(ngModel)]="quickFilterTextResumen"
+                                    (input)="onQuickFilterChangeResumen()">
+                            </div>
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                (click)="exportarCSVResumen()"
+                                title="Exportar a CSV">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-success"
+                                (click)="exportarExcelResumen()"
+                                title="Exportar a Excel">
+                                <i class="fas fa-file-excel me-1"></i> Excel
+                            </button>
+                            <button 
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                (click)="limpiarFiltrosGridResumen()"
+                                title="Limpiar filtros">
+                                <i class="fas fa-filter me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-3 py-0">
+                    <ng-container *ngIf="datos.resumenCuentasPorPagar !== undefined; else cuentasCxpTableLoader">
+                        <ag-grid-angular
+                            #resumenCuentasPagarGrid
+                            class="ag-theme-alpine resumen-cuentas-pagar-grid"
+                            [rowData]="resumenCuentasPagarRows"
+                            [columnDefs]="resumenCuentasPagarColumnDefs"
+                            [gridOptions]="resumenCuentasPagarGridOptions"
+                            [defaultColDef]="{
+                                resizable: true,
+                                sortable: true,
+                                filter: true
+                            }"
+                            style="width: 100%; height: 450px;"
+                            [domLayout]="'normal'">
+                        </ag-grid-angular>
+                    </ng-container>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

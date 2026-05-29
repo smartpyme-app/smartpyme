@@ -124,7 +124,7 @@
                         <th width="100">Cantidad</th>
                         <th width="100">Precio</th>
                         <th width="100">Descuento</th>
-                        <th *ngIf="usuario.empresa.cambiar_tipo_impuesto_venta" width="100">Tipo</th>
+                        <th width="100">Tipo</th>
                         <th width="100" class="text-end">Total</th>
                     </tr>
                 </thead>
@@ -192,6 +192,13 @@
                     <tr *ngIf="venta.cuenta_a_terceros > 0">
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"> <b>Cuenta a terceros</b> </td>
                         <td class="text-end"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                    </tr>
+                    <tr *ngIf="(venta?.descuento_puntos && +venta.descuento_puntos > 0) || (venta?.puntos_canjeados && +venta.puntos_canjeados > 0)">
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Descuento por puntos</b>
+                            <small class="text-muted d-block" *ngIf="venta?.puntos_canjeados">{{ venta.puntos_canjeados }} pts canjeados</small>
+                        </td>
+                        <td class="text-end text-success"><b>{{ venta?.descuento_puntos | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="venta.propina > 0">
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Propina:</b></td>
@@ -292,6 +299,16 @@
     </div>
 </ng-template>
 
+<ng-template #meditAbono>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">Editar abono</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-editar-abono [abono]="abonoEdit" endpoint="venta/abono" (saved)="onAbonoSaved()"></app-editar-abono>
+    </div>
+</ng-template>
+
 <div class="card" *ngIf="venta.abonos?.length > 0 || venta.estado == 'Pendiente'">
     <h5 class="card-title p-3">
         Recibos de pago
@@ -304,6 +321,7 @@
             <table class="table table-borderless">
                 <thead>
                     <tr>
+                        <th>N°</th>
                         <th>Fecha</th>
                         <th>Concepto</th>
                         <th>Forma de pago</th>
@@ -315,14 +333,15 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="venta.abonos?.length < 1 && !loading">
+                        <td colspan="9" class="text-center" *ngIf="venta.abonos?.length < 1 && !loading">
                             <span class="badge bg-primary">No tiene abonos agregados</span>
                         </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
+                        <td colspan="9" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
                     <tr *ngFor="let abono of venta.abonos; let i=index">
+                        <td>{{ abono.correlativo ?? abono.id }}</td>
                         <td>{{ abono.fecha | date:'dd/MM/yyyy' }}</td>
                         <td>{{ abono.concepto }}</td>
                         <td>{{ abono.forma_pago }} <small *ngIf="abono.detalle_banco" class="text-muted">({{ abono.detalle_banco }})</small></td>
@@ -335,6 +354,9 @@
                         <td>{{ abono.usuario?.name || 'Sin usuario' }}</td>
                         <td class="text-end">{{ abono.total | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
+                            <a *ngIf="apiService.canEdit()" (click)="openModalEditAbono(meditAbono, abono)" class="btn btn-light" tooltip="Editar">
+                                <i class="fa fa-fw fa-edit"></i>
+                            </a>
                             <a (click)="imprimirRecibo(abono)" class="btn btn-light">
                                 <i class="fa fa-fw fa-print"></i>
                             </a>

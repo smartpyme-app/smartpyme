@@ -1,0 +1,237 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h3 class="page-heading">Departamentos de empresa</h3>
+    <button *ngIf="apiService.canCreate()" (click)="openModal(mdepartamento)" tooltip="Crear departamento de empresa (F4)" class="btn btn-default tcla-F4">
+        <i class="fa fa-plus"></i> Añadir departamento
+    </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="departamentos?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarDepartamento()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ departamentos?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <!-- <button [disabled]="downloading" tooltip="Descargar departamentos" (click)="descargar()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button> -->
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarDepartamento()" autocomplete="off">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3">
+                    <img src="/assets/icons/filter.png" class="icon">
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary tcla-F5" tooltip="Filtrar (F5)" (click)="loadAll()">Todos</button>
+        </div>
+        <div class="col d-flex gap-2 justify-content-end">
+            <select name="estado" (change)="filtrarDepartamento()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th (click)="setOrden('created_at')" 
+                            [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" 
+                            class="click">Fecha creación</th>
+                        <th (click)="setOrden('nombre')" 
+                            [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" 
+                            class="click">Nombre</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th>Sucursal</th>
+                        <th>Áreas</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="7" class="text-center" *ngIf="departamentos?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene departamentos registrados</span>
+                        </td>
+                        <td colspan="7" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr class="animated fadeIn" *ngFor="let departamento of departamentos?.data">
+                        <td>{{ departamento.created_at | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ departamento.nombre }}</td>
+                        <td>{{ departamento.descripcion | truncate:50 }}</td>
+                        <td>
+                            <span class="badge py-2" 
+                                  [ngClass]="{'bg-success': departamento.estado == '1' || departamento.estado == 1, 'bg-danger': departamento.estado == '0' || departamento.estado == 0}">
+                                {{ departamento.estado == '1' || departamento.estado == 1 ? 'Activo' : 'Inactivo' }}
+                            </span>
+                        </td>
+                        <td>{{ departamento.sucursalNombre || 'N/A' }}</td>
+                        <td>
+                            <span *ngIf="departamento.areas_count == 1">
+                                <span class="badge bg-info text-dark">
+                                    {{ departamento.areas_count }} área
+                                </span>
+                            </span>
+                            <span class="badge bg-info text-dark" *ngIf="departamento.areas_count > 1">
+                                {{ departamento.areas_count }} áreas
+                            </span>
+                            <span class="text-muted" *ngIf="!departamento.areas_count || departamento.areas_count == 0">
+                                Sin áreas
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a *ngIf="departamento.estado == '1' || departamento.estado == 1" 
+                                       (click)="verAreas(departamento)" 
+                                       class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-eye"></i> Ver áreas
+                                    </a>
+                                    <a
+                                       (click)="editDepartamento(mdepartamento,departamento)" 
+                                       class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a
+                                       (click)="toggleEstado(departamento)" 
+                                       class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw" [ngClass]="{'fa-eye': departamento.estado == '0' || departamento.estado == 0, 'fa-eye-slash': departamento.estado == '1' || departamento.estado == 1}"></i>
+                                        {{ departamento.estado == '1' || departamento.estado == 1 ? 'Desactivar' : 'Activar' }}
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="departamentos?.last_page > 1">
+            <app-pagination [items]="departamentos" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+<!-- Modal para filtros -->
+<ng-template #mfilter>
+    <div class="modal-header">
+        <div class="modal-title text-center">
+            <h2 class="text-center no-margin">Filtros</h2>
+        </div>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <form autocomplete="off" (ngSubmit)="filtrarDepartamento()">
+            <div class="row">
+                <div class="form-group col-md-6">
+                    <label for="">Fecha desde:</label>
+                    <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="">Fecha hasta:</label>
+                    <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+                </div>
+
+                <div class="form-group col-lg-6">
+                    <label for="filtros.sucursal">Sucursal:</label>
+                    <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal" (change)="onFilterSucursalChange()">
+                        <option value="">Todas</option>
+                        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group col-lg-6">
+                    <label for="filtros.estado">Estado:</label>
+                    <select name="estado" [(ngModel)]="filtros.estado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="1">Activo</option>
+                        <option value="0">Inactivo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="d-grid mt-4">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+
+<!-- Modal para crear/editar departamento -->
+<ng-template #mdepartamento>
+    <div class="modal-header">
+        <div class="modal-title text-start">
+            <h4 class="text-center no-margin">{{ departamento.id ? 'Editar' : 'Nuevo' }} Departamento de Empresa</h4>
+        </div>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        <form autocomplete="off" (ngSubmit)="onSubmit()">
+            <div class="row">
+                <div class="form-group col-md-12">
+                    <label for="nombre">Nombre del departamento *</label>
+                    <input type="text" class="form-control" name="nombre" [(ngModel)]="departamento.nombre" required>
+                </div>
+
+                <div class="form-group col-md-12">
+                    <label for="descripcion">Descripción</label>
+                    <textarea class="form-control" name="descripcion" [(ngModel)]="departamento.descripcion" rows="3"></textarea>
+                </div>
+
+                <div class="form-group col-md-6">
+                    <label for="id_sucursal">Sucursal *</label>
+                    <select [(ngModel)]="departamento.id_sucursal" class="form-select" name="id_sucursal" (change)="onSucursalChange()" required>
+                        <option value="">Seleccione una sucursal</option>
+                        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group col-md-6" *ngIf="departamento.id">
+                    <label for="activo">Estado</label>
+                    <select [(ngModel)]="departamento.estado" class="form-select" name="activo">
+                        <option value="1">Activo</option>
+                        <option value="0">Inactivo</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-grid mt-4">
+                <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+                    <span *ngIf="!saving">{{ departamento.id ? 'Actualizar' : 'Guardar' }}</span>
+                    <span *ngIf="saving">{{ departamento.id ? 'Actualizando...' : 'Guardando...' }}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>

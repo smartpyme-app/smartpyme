@@ -46,7 +46,7 @@ class ConfiguracionFidelizacionSeeder extends Seeder
                 }
 
                 // Crear configuración
-                TipoClienteEmpresa::create([
+                TipoClienteEmpresa::updateOrCreate([
                     'id_empresa' => $empresa->id,
                     'id_tipo_base' => $tipoBase->id,
                     'nivel' => $tipoBase->orden,

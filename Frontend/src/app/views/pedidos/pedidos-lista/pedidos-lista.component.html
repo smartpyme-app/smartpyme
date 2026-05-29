@@ -1,0 +1,166 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Pedidos</h2>
+  <button *ngIf="apiService.canCreate()" type="button" class="btn btn-default" (click)="nuevo()">
+    <i class="fa fa-plus"></i> Nuevo pedido
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <p class="text-muted small mb-3">
+    Nuevo pedido queda en <strong>Borrador</strong>. Use <strong>Confirmar</strong> para pasarlo a pendiente de facturar (deja de ser editable).
+    En <strong>Pendiente de facturar</strong> use <strong>Facturar</strong> para abrir la pantalla de venta con los productos del pedido; al guardar la venta el pedido pasa a facturado.
+    También puede <strong>Imprimir ticket</strong>. <strong>Anular</strong> aplica a borrador o pendiente de facturar.
+  </p>
+
+  <div class="row mb-3">
+    <div class="col">
+      <span class="text-muted d-flex align-items-center gap-2" *ngIf="pedidos?.total">
+        Mostrando
+        <select name="paginate" class="form-select w-auto" (change)="filtrarPedidos()" [(ngModel)]="filtros.paginate">
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+        de {{ pedidos?.total + ' registros' }}
+      </span>
+    </div>
+    <div class="col">
+      <div class="d-flex gap-2 flex-wrap justify-content-end">
+        <form class="d-flex input-group" (ngSubmit)="filtrarPedidos()" autocomplete="off">
+          <input type="text" name="buscador" class="form-control" placeholder="Buscar"
+            [(ngModel)]="filtros.buscador" (input)="onBuscadorInput()">
+        </form>
+        <button type="button" tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default">
+          <img src="/assets/icons/filter.png" class="icon" alt="">
+        </button>
+        <button type="button" tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
+          <i class="fa fa-refresh"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <div class="ms-auto d-flex gap-2">
+      <select name="estado" (change)="filtrarPedidos()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+        <option value="">Estado</option>
+        <option value="borrador">Borrador</option>
+        <option value="pendiente_facturar">Pendiente de facturar</option>
+        <option value="facturado">Facturado</option>
+        <option value="anulado">Anulado</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th (click)="setOrden('id')" [ngClass]="{'sorted-asc': filtros.orden == 'id' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id' && filtros.direccion == 'desc'}" class="click">#</th>
+            <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+            <th>Cliente</th>
+            <th class="d-none d-md-table-cell">Canal</th>
+            <th class="d-none d-md-table-cell">Ref. ext.</th>
+            <th (click)="setOrden('estado')" [ngClass]="{'sorted-asc': filtros.orden == 'estado' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'estado' && filtros.direccion == 'desc'}" class="click">Estado</th>
+            <th (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-end">Total</th>
+            <th class="text-center"><i class="fa fa-cog"></i></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="8" class="text-center" *ngIf="pedidos?.total < 1 && !loading">
+              <span class="badge bg-primary">No hay pedidos con estos criterios</span>
+            </td>
+            <td colspan="8" class="text-center" *ngIf="loading">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+          <tr class="animated fadeIn" *ngFor="let p of pedidos?.data">
+            <td>{{ p.id }}</td>
+            <td>{{ p.fecha | date:'dd/MM/yyyy' }}</td>
+            <td>{{ nombreCliente(p) | truncate:32 }}</td>
+            <td class="d-none d-md-table-cell">{{ p.canal || '—' }}</td>
+            <td class="d-none d-md-table-cell"><small>{{ p.referencia_externa || '—' }}</small></td>
+            <td>
+              <span class="badge" [ngClass]="claseEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</span>
+            </td>
+            <td class="text-end">{{ p.total | number:'1.2-2' }}</td>
+            <td class="text-center">
+              <span class="btn" [popover]="accionesPedido" [outsideClick]="true" tooltip="Acciones">
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesPedido>
+                <div class="list-group border-0">
+                  <a class="list-group-item list-group-item-action border-0 click" (click)="imprimir(p)">
+                    <i class="fa fa-fw fa-print"></i> Imprimir ticket
+                  </a>
+                  <a *ngIf="p.estado === 'borrador' && apiService.canEdit()" class="list-group-item list-group-item-action border-0 click" (click)="editar(p)">
+                    <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
+                  <a *ngIf="p.estado === 'borrador' && apiService.canEdit()" class="list-group-item list-group-item-action border-0 click" (click)="confirmar(p)">
+                    <i class="fa fa-fw fa-check"></i> Confirmar pedido
+                  </a>
+                  <a *ngIf="p.estado === 'pendiente_facturar' && apiService.canEdit()" class="list-group-item list-group-item-action border-0 click" (click)="irAFacturar(p)">
+                    <i class="fa fa-fw fa-file-invoice-dollar"></i> Facturar
+                  </a>
+                  <a *ngIf="p.estado === 'borrador' && apiService.canEdit()" class="list-group-item list-group-item-action border-0 click" (click)="eliminar(p)">
+                    <i class="fa fa-fw fa-trash"></i> Eliminar
+                  </a>
+                  <a *ngIf="(p.estado === 'borrador' || p.estado === 'pendiente_facturar') && apiService.canEdit()" class="list-group-item list-group-item-action border-0 click" (click)="anular(p)">
+                    <i class="fa fa-fw fa-ban"></i> Anular
+                  </a>
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-12" *ngIf="pedidos?.last_page > 1">
+      <app-pagination [items]="pedidos" (setPagination)="setPagination($event)"></app-pagination>
+    </div>
+  </div>
+</section>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center w-100">
+      <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="filtrarPedidos()">
+      <div class="row">
+        <div class="form-group col-sm-6">
+          <label>Del:</label>
+          <input type="date" class="form-control" name="inicio" [(ngModel)]="filtros.inicio">
+        </div>
+        <div class="form-group col-sm-6">
+          <label>Al:</label>
+          <input type="date" class="form-control" name="fin" [(ngModel)]="filtros.fin">
+        </div>
+        <div class="form-group col-md-12">
+          <label>Canal (contiene):</label>
+          <input type="text" class="form-control" name="canal" [(ngModel)]="filtros.canal" placeholder="Ej. Pedidos Ya">
+        </div>
+        <div class="form-group col-md-12" *ngIf="apiService.auth_user().tipo === 'Administrador' || apiService.auth_user().tipo === 'Super Admin'">
+          <label>Sucursal:</label>
+          <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="id_sucursal">
+            <option [ngValue]="''">Todas</option>
+            <option *ngFor="let s of sucursales" [ngValue]="s.id">{{ s.nombre }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="d-grid mt-4">
+        <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+          <span *ngIf="!loading">Filtrar</span>
+          <span *ngIf="loading">Filtrando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

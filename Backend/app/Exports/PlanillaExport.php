@@ -40,7 +40,9 @@ class PlanillaExport implements FromCollection, WithHeadings, WithStyles, WithCo
                 'Anticipos' => $detalle->anticipos,
                 'Otros Descuentos' => $detalle->otros_descuentos,
                 'Total Descuentos' => $detalle->total_descuentos,
-                'Sueldo Neto' => $detalle->sueldo_neto
+                'Sueldo Neto' => $detalle->sueldo_neto,
+                'Viáticos' => $detalle->viaticos ?? 0,
+                'Total a Pagar' => ($detalle->sueldo_neto ?? 0) + ($detalle->viaticos ?? 0)
             ];
         }
         
@@ -67,7 +69,9 @@ class PlanillaExport implements FromCollection, WithHeadings, WithStyles, WithCo
             'Anticipos',
             'Otros Descuentos',
             'Total Descuentos',
-            'Sueldo Neto'
+            'Sueldo Neto',
+            'Viáticos',
+            'Total a Pagar'
         ];
     }
 
@@ -75,7 +79,7 @@ class PlanillaExport implements FromCollection, WithHeadings, WithStyles, WithCo
     {
         return [
             1 => ['font' => ['bold' => true]],
-            'A1:R1' => [
+            'A1:T1' => [
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                     'startColor' => ['rgb' => '4F81BD']
@@ -101,7 +105,9 @@ class PlanillaExport implements FromCollection, WithHeadings, WithStyles, WithCo
             'O' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
             'P' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
             'Q' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'R' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE
+            'R' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
+            'S' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
+            'T' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE
         ];
     }
 }

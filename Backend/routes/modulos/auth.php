@@ -19,6 +19,7 @@ Route::get('/me/{id}', [AuthJWTController::class, 'me']);
 
 // Códigos promocionales (público, sin autenticación)
 Route::post('/promocional/validar', [PromocionalesController::class, 'validar']);
+Route::get('/promocional/por-campania', [PromocionalesController::class, 'porCampania']);
 
 // Planes públicos para registro (sin autenticación)
 Route::get('/planes/publicos', [PlanesController::class, 'getPlanesPublicos']);

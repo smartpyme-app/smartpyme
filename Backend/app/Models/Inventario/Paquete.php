@@ -5,7 +5,7 @@ namespace App\Models\Inventario;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
 class Paquete extends Model {
 
@@ -44,12 +44,18 @@ class Paquete extends Model {
     {
         parent::boot();
 
-        if (Auth::check()) {
-            static::addGlobalScope('empresa', function (Builder $builder) {
-                $builder->where('id_empresa', Auth::user()->id_empresa);
-            });
-        }
-        
+        // JWT usa el guard `api`; Auth::check() sin guard usa `web` y queda en falso en la API,
+        // así que antes no se registraba el scope y se listaban paquetes de todas las empresas.
+        static::addGlobalScope('empresa', function (Builder $builder) {
+            foreach (['api', 'web'] as $guard) {
+                if (Auth::guard($guard)->check()) {
+                    $table = $builder->getModel()->getTable();
+                    $builder->where($table . '.id_empresa', Auth::guard($guard)->user()->id_empresa);
+
+                    return;
+                }
+            }
+        });
     }
 
      public function getNombreClienteAttribute()

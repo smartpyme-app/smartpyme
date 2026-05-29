@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
 import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
-import { Observable, throwError, from } from 'rxjs';
+import { Observable, throwError, from, of } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
 import { ChatService } from '@services/chat/chat.service';
@@ -21,6 +21,8 @@ export class ApiService {
     constructor(private http: HttpClient, private alertService: AlertService, private funcionalidadesService: FuncionalidadesService) { }
 
     getToUrl(url:string) {return this.http.get<any>(url).pipe(retry(0), catchError(this.handleError) )}
+
+    getAsText(url: string): Observable<string> {return this.http.get(this.apiUrl + url, { responseType: 'text' }).pipe(retry(0), catchError(this.handleError)); }
 
     getAll(url:string, filtros:any = {}) {return this.http.get<any>(this.apiUrl + url, { params: filtros }).pipe(retry(0), catchError(this.handleError) )}
 
@@ -42,6 +44,8 @@ export class ApiService {
 
     patch(url: string, id: number, model: any) {return this.http.patch<any>(`${this.apiUrl}${url}/${id}`, model).pipe(retry(0), catchError(this.handleError)); }
 
+    putToUrl(url: string, model: any) {return this.http.put<any>(this.apiUrl + url, model).pipe(retry(0), catchError(this.handleError)); }
+
     delete(url:string, id: number) {return this.http.delete<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
 
     paginate(url:string, filtros:any = {}) {return this.http.get<any>(url, { params: filtros }).pipe(retry(0), catchError(this.handleError) )}
@@ -50,8 +54,34 @@ export class ApiService {
     login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); this.funcionalidadesService.limpiarCache(); this.loadConstants(); } }) ); }
     register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data) {localStorage.setItem('SP_user_register', JSON.stringify(data)); } })); }
 
-    export(url:string, filtros: any): Observable<Blob> {
+    export(url:string, filtros: any, timeoutMs: number = 120000): Observable<Blob> {
         return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros }).pipe(
+            timeout(timeoutMs),
+            catchError((error) => {
+                if (error.error instanceof Blob && error.error.type?.includes('application/json')) {
+                    return from<string>(error.error.text()).pipe(
+                        switchMap((text: string) => {
+                            try {
+                                const errJson = JSON.parse(text);
+                                return throwError(() => ({
+                                    ...error,
+                                    status: error.status,
+                                    error: { message: errJson.error || errJson.message || text }
+                                }));
+                            } catch (_) {
+                                return throwError(() => ({ ...error, error: { message: text } }));
+                            }
+                        })
+                    );
+                }
+                return throwError(() => error);
+            })
+        );
+    }
+
+    /** Exportación Excel vía POST (cuerpo JSON), p. ej. listado con columnas calculadas en cliente. */
+    exportPost(url: string, body: any): Observable<Blob> {
+        return this.http.post(this.apiUrl + url, body, { responseType: 'blob' }).pipe(
             timeout(120000),
             catchError((error) => {
                 if (error.error instanceof Blob && error.error.type?.includes('application/json')) {
@@ -185,6 +215,18 @@ export class ApiService {
         return customConfig?.configuraciones?.modulo_bancos === true;
     }
 
+    /** Categorías de gasto personalizadas, departamentos y áreas (configuración de empresa). */
+    isGastosCategoriasPersonalizadasHabilitadas(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.gastos_categorias_personalizadas === true;
+    }
+
     /** Indica si mostrar estado de cuenta del cliente en facturación está habilitado */
     isEstadoCuentaEnFacturacionHabilitado(): boolean {
         const empresa = this.auth_user()?.empresa;
@@ -197,6 +239,73 @@ export class ApiService {
         return customConfig?.configuraciones?.estado_cuenta_en_facturacion === true;
     }
 
+    /**
+     * Vista del menú lateral cuando la funcionalidad "Restaurantes y pedidos" está activa:
+     * restaurante | pedidos | ambos (por defecto ambos = comportamiento anterior).
+     */
+    getVistaModuloRestaurantePedidos(): 'restaurante' | 'pedidos' | 'ambos' {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return 'ambos';
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        const v = customConfig?.configuraciones?.vista_modulo_restaurante_pedidos;
+        if (v === 'restaurante' || v === 'pedidos' || v === 'ambos') {
+            return v;
+        }
+        return 'ambos';
+    }
+
+    /** Código de barras correlativo automático (también si persiste sku_correlativo_automatico en datos antiguos). */
+    isBarcodeCorrelativoAutomatico(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        const c = customConfig?.configuraciones;
+        return c?.barcode_correlativo_automatico === true || c?.sku_correlativo_automatico === true;
+    }
+
+    /** Total de stock en listado de inventario según filtros (Mi cuenta → Inventario) */
+    isInventarioSumarStockBusquedas(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.inventario_sumar_stock_busquedas === true;
+    }
+
+    /** Reporte Excel inventario vs ventas (ene → mes de descarga, Mi cuenta → Preferencias → Inventario). */
+    isInventarioReporteAnalisisVentasMensual(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.inventario_reporte_analisis_ventas_mensual === true;
+    }
+
+    /** Ventas / Ventas limitado pueden elegir vendedor en facturación (Mi cuenta → Facturación). */
+    isVentasPuedeCambiarVendedorFacturacion(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.ventas_puede_cambiar_vendedor_facturacion === true;
+    }
 
     auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
 
@@ -303,6 +412,39 @@ export class ApiService {
         return false;
     }
 
+    /**
+     * Empresa donde las rutas y la navegación de ajustes/traslados/consignas/entradas-salidas
+     * quedan reservadas solo al rol Administrador.
+     */
+    private static readonly EMPRESA_ID_INVENTARIO_OPERACIONES_SOLO_ADMIN = 324;
+
+    esEmpresaInventarioOperacionesSoloAdministrador(): boolean {
+        const id = this.auth_user()?.id_empresa;
+        return Number(id) === ApiService.EMPRESA_ID_INVENTARIO_OPERACIONES_SOLO_ADMIN;
+    }
+
+    /**
+     * Pestañas y guard de rutas: para empresa 324 solo Administrador; en el resto de empresas sin restricción extra.
+     */
+    canAccederOperacionesInventario(): boolean {
+        if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+            return true;
+        }
+        return this.auth_user()?.tipo === 'Administrador';
+    }
+
+    /**
+     * Botones crear (ajuste, traslado, entrada/salida): empresa 324 solo Administrador;
+     * otras empresas conservan la regla anterior (canCreate y no Supervisor en 324).
+     */
+    puedeCrearOperacionesInventarioEnUi(): boolean {
+        const usuario = this.auth_user();
+        if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+            return this.canCreate();
+        }
+        return usuario?.tipo === 'Administrador';
+    }
+
     canEdit(){
         let usuario = this.auth_user();
         if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
@@ -350,6 +492,73 @@ export class ApiService {
         return false;
     }
 
+    /**
+     * Preferencia en empresa (Preferencias del sistema): impide gastos para Supervisor limitado.
+     * Por defecto en BD es false para no cambiar comportamiento tras la migración.
+     */
+    empresaRestringeGastosSupervisorLimitado(): boolean {
+        const e = this.auth_user()?.empresa;
+        if (!e) {
+            return false;
+        }
+        const v = (e as { restringir_gastos_supervisor_limitado?: boolean | number }).restringir_gastos_supervisor_limitado;
+        return v === true || v === 1;
+    }
+
+    /** Ocultar sección Gastos del menú cuando aplica restricción. */
+    mostrarMenuModuloGastos(): boolean {
+        if (!this.isSupervisorLimitado()) {
+            return true;
+        }
+        return !this.empresaRestringeGastosSupervisorLimitado();
+    }
+
+    /**
+     * Preferencia en empresa: restringe compras y órdenes de compra para Supervisor limitado.
+     * Por defecto en BD es false para no cambiar comportamiento tras la migración.
+     */
+    empresaRestringeComprasSupervisorLimitado(): boolean {
+        const e = this.auth_user()?.empresa;
+        if (!e) {
+            return false;
+        }
+        const v = (e as { restringir_compras_supervisor_limitado?: boolean | number }).restringir_compras_supervisor_limitado;
+        return v === true || v === 1;
+    }
+
+    /**
+     * Supervisor limitado con restricción activa en compras/órdenes de compra.
+     * Oculta montos, impresión, edición de estado y acciones del listado.
+     */
+    supervisorLimitadoRestringidoEnCompras(): boolean {
+        return this.isSupervisorLimitado() && this.empresaRestringeComprasSupervisorLimitado();
+    }
+
+    /**
+     * Actualiza `empresa` en `SP_auth_user` desde el API (p. ej. preferencia recién guardada).
+     * Evita usar `me/` que modifica ultimo_login en cada llamada.
+     */
+    refreshEmpresaEnSesion(): Observable<void> {
+        let u: any;
+        try {
+            u = this.auth_user();
+        } catch {
+            return of(undefined);
+        }
+        const idEmpresa = u?.id_empresa;
+        if (!idEmpresa) {
+            return of(undefined);
+        }
+        return this.read('empresa/', idEmpresa).pipe(
+            map((empresa: any) => {
+                u.empresa = empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(u));
+                return undefined;
+            }),
+            catchError(() => of(undefined))
+        );
+    }
+
     isVentasLimitado() {
         let usuario = this.auth_user();
         if (usuario.tipo == 'Ventas Limitado') return true;
@@ -360,6 +569,21 @@ export class ApiService {
         let usuario = this.auth_user();
         if (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado') return true;
         return false;
+    }
+
+    /** Empresa activó bloquear facturar/editar/gestionar cotizaciones para vendedores (Mi cuenta). */
+    empresaBloqueaCotizacionesVendedores(): boolean {
+        const u = this.auth_user();
+        const cfg = u?.empresa?.custom_empresa?.configuraciones as { bloquear_cotizaciones_vendedores?: boolean } | undefined;
+        return cfg?.bloquear_cotizaciones_vendedores === true;
+    }
+
+    /**
+     * Bloqueos de UI/API extra (facturar cotización desde menú, editar, detalles, cambiar estado): rol Ventas + opción empresa.
+     * El listado solo cotizaciones propias usa isVentas() y no depende de esta opción.
+     */
+    restriccionesCotizacionesVendedoresActivas(): boolean {
+        return this.isVentas() && this.empresaBloqueaCotizacionesVendedores();
     }
 
     private loadConstants() {

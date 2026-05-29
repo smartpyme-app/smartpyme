@@ -6,17 +6,17 @@
             <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre" placeholder="Escribe aquí" required>
         </div>
         <div class="form-group col-md-6 col-lg-3">
-            <label for="codigo">Código</label>
-            <div class="input-group">
-                <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Escribe aquí">
-                <span class="input-group-text" *ngIf="producto.codigo">
-                    <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
-                </span>
-            </div>
+            <label for="codigo">Código (SKU)</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Escribe aquí">
         </div>
         <div class="form-group col-md-6 col-lg-3">
             <label for="barcode">Código de barras</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
+            <div class="input-group">
+                <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" [placeholder]="!producto.id && apiService.isBarcodeCorrelativoAutomatico() ? 'Sugerido automáticamente' : 'Escribe aquí'" mask='0*'>
+                <span class="input-group-text" *ngIf="producto.barcode || producto.codigo">
+                    <a class="click" tooltip="Generar código de barras" (click)="barcode()"><i class="fa fa-barcode"></i></a>
+                </span>
+            </div>
         </div>
         <div class="form-group col-md-6 col-lg-2" *ngIf="producto.tipo != 'Servicio'">
             <label for="medida">U. de Medida</label>
@@ -154,8 +154,24 @@
         <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.tipo != 'Servicio' && isLotesActivo()">
             <div class="form-switch bg-light-info rounded">
                 <label>¿El inventario se maneja por lotes?</label>
-                <input class="form-check-input float-end" type="checkbox" role="switch" (change)=" producto.id ? onSubmit() : '' " [(ngModel)]="producto.inventario_por_lotes" name="inventario_por_lotes">
+                <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onInventarioPorLotesChange()" [(ngModel)]="producto.inventario_por_lotes" name="inventario_por_lotes">
             </div>
+        </div>
+
+        <div class="form-group col-md-6 col-lg-5 without-label">
+            <div class="form-switch bg-light-info rounded">
+                <label>Genera comanda</label>
+                <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="producto.genera_comanda" name="genera_comanda">
+            </div>
+        </div>
+
+        <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.genera_comanda">
+            <label class="small text-muted">Imprimir comanda en</label>
+            <select class="form-control form-select" [(ngModel)]="producto.destino_comanda" name="destino_comanda">
+                <option value="cocina">Cocina</option>
+                <option value="barra">Barra</option>
+                <option value="ambos">Cocina y barra</option>
+            </select>
         </div>
 
         <div class="form-group col-lg-12 mt-3">

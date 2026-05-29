@@ -338,6 +338,23 @@
                                 (change)="onSubmit()" [(ngModel)]="empresa.modulo_paquetes" name="modulo_paquetes">
                         </div>
                     </div>
+
+                    <div *ngIf="tieneAccesoModuloRestaurantePedidos" class="form-group col-12 col-md-8 col-xl-6 mt-2">
+                        <h4 class="mb-2 fw-bold">Restaurantes y pedidos</h4>
+                        <p class="text-muted small mb-2">
+                            Su empresa tiene activa la funcionalidad <strong>Restaurantes y pedidos</strong> (asignada en el administrador).
+                            Elija qué entradas mostrar en el menú lateral de la aplicación.
+                        </p>
+                        <label for="vista_modulo_rp_select" class="form-label">Mostrar en el menú</label>
+                        <select class="form-select" id="vista_modulo_rp_select" name="vista_modulo_rest_ped"
+                            [ngModel]="getVistaModuloRestaurantePedidos()"
+                            (ngModelChange)="setVistaModuloRestaurantePedidos($event)">
+                            <option value="restaurante">Solo Restaurante (mesas, cocina)</option>
+                            <option value="pedidos">Solo Pedidos</option>
+                            <option value="ambos">Restaurante y Pedidos</option>
+                        </select>
+                    </div>
+
                     <hr>
                     <div class="row">
                         <h4 class="mb-0 fw-bold">Mostrar columnas</h4>
@@ -367,6 +384,21 @@
                             </div>
                             <small class="text-muted">
                                 Los tickets se generarán en formato PDF.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="dte_mostrar_descripcion_producto" class="form-label">
+                                    <strong>Mostrar descripción del producto en PDF de DTE</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="dte_mostrar_descripcion_producto"
+                                    [checked]="isDteMostrarDescripcionProductoEnabled()"
+                                    (change)="toggleDteMostrarDescripcionProducto()"
+                                    name="dte_mostrar_descripcion_producto">
+                            </div>
+                            <small class="text-muted">
+                                Incluye bajo cada línea la descripción del catálogo en facturas y créditos fiscales (PDF). La descripción de la línea del DTE siempre se muestra.
                             </small>
                         </div>
                     </div>
@@ -399,6 +431,94 @@
                             </div>
                             <small class="text-muted">
                                 Los sello y firma se generarán en formato PDF.
+                            </small>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Cotizaciones</h4>
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="cotizacion_mostrar_descripcion" class="form-label">
+                                    <strong>Mostrar descripción en cotizaciones</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="cotizacion_mostrar_descripcion"
+                                    [checked]="isCotizacionMostrarDescripcionEnabled()"
+                                    (change)="toggleCotizacionMostrarDescripcion()"
+                                    name="cotizacion_mostrar_descripcion">
+                            </div>
+                            <small class="text-muted">
+                                Incluye la descripción de cada línea al imprimir o exportar la cotización.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="cotizacion_mostrar_imagenes_productos" class="form-label">
+                                    <strong>Mostrar imágenes de productos</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="cotizacion_mostrar_imagenes_productos"
+                                    [checked]="isCotizacionMostrarImagenesProductosEnabled()"
+                                    (change)="toggleCotizacionMostrarImagenesProductos()"
+                                    name="cotizacion_mostrar_imagenes_productos">
+                            </div>
+                            <small class="text-muted">
+                                Muestra la imagen del producto en la cotización cuando exista.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row" *ngIf="apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Super Admin'">
+                        <h4 class="mb-0 fw-bold">Cotizaciones y vendedores</h4>
+                        <div class="form-group col-md-12 col-xl-8 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="bloquear_cotizaciones_vendedores" class="form-label">
+                                    <strong>Bloquear a vendedores facturar y gestionar cotizaciones</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="bloquear_cotizaciones_vendedores"
+                                    [checked]="isBloquearCotizacionesVendedoresEnabled()"
+                                    (change)="toggleBloquearCotizacionesVendedores()"
+                                    name="bloquear_cotizaciones_vendedores">
+                            </div>
+                            <small class="text-muted d-block">
+                                Los usuarios Ventas o Ventas limitado siempre ven solo sus cotizaciones en el listado (como en ventas). Si activa esta opción, además no podrán facturar, editar, ver detalles ni cambiar el estado de las cotizaciones; solo imprimir.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row" *ngIf="apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Super Admin'">
+                        <h4 class="mb-0 fw-bold">Supervisor limitado</h4>
+                        <div class="form-group col-md-12 col-xl-8 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="restringir_gastos_supervisor_limitado" class="form-label">
+                                    <strong>Supervisor limitado no puede generar gastos</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="restringir_gastos_supervisor_limitado"
+                                    [(ngModel)]="empresa.restringir_gastos_supervisor_limitado"
+                                    (change)="onSubmit()"
+                                    name="restringir_gastos_supervisor_limitado">
+                            </div>
+                            <small class="text-muted d-block">
+                                Si está activa, ese rol no verá el menú de gastos y no podrá crear, editar ni eliminar gastos; el resto del módulo de compras no se oculta. Desactivada por defecto. Tras cambiar esta opción, los supervisores limitados pueden pulsar Gastos una vez para actualizar el menú, o cerrar sesión y volver a entrar.
+                            </small>
+                        </div>
+                        <div class="form-group col-md-12 col-xl-8 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="restringir_compras_supervisor_limitado" class="form-label">
+                                    <strong>Supervisor limitado con acceso restringido a compras y órdenes de compra</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="restringir_compras_supervisor_limitado"
+                                    [(ngModel)]="empresa.restringir_compras_supervisor_limitado"
+                                    (change)="onSubmit()"
+                                    name="restringir_compras_supervisor_limitado">
+                            </div>
+                            <small class="text-muted d-block">
+                                Si está activa, ese rol solo podrá ver detalles de compras y órdenes de compra: no podrá editar estados, imprimir, ver montos en la previsualización ni usar otras acciones del listado. Desactivada por defecto.
                             </small>
                         </div>
                     </div>
@@ -444,159 +564,223 @@
                     </div>
 
 
-                    <h4 class="mb-0 fw-bold">Facturación</h4>
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Calcular el IVA por defecto.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="cobrar_iva">Cobrar IVA</label>
-                            <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()"
-                                role="switch" (change)="onSubmit()" [checked]="empresa.cobra_iva == 'Si'">
+                    <hr>
+                    <div class="row g-3 w-100 align-items-stretch empresa-pref-facturacion">
+                        <div class="col-12">
+                            <h4 class="mb-0 fw-bold">Facturación</h4>
                         </div>
-                    </div>
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Vender sin stock sin autorización.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="vender_sin_stock">Vender sin stock</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                (change)="onSubmit()" [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Calcular el IVA por defecto.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="cobrar_iva">Cobrar IVA</label>
+                                    <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()"
+                                        role="switch" (change)="onSubmit()" [checked]="empresa.cobra_iva == 'Si'">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Permitir cambiar el precio en facturación.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="editar_precio_venta">Editar precio</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                (change)="onSubmit()" [(ngModel)]="empresa.editar_precio_venta"
-                                name="editar_precio_venta">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Vender sin stock sin autorización.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="vender_sin_stock">Vender sin stock</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        (change)="onSubmit()" [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Puedes agrupar todos los detalles en una sola descripción.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="agrupar_detalles_venta">Agrupar detalles</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                (change)="onSubmit()" [(ngModel)]="empresa.agrupar_detalles_venta"
-                                name="agrupar_detalles_venta">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Permitir cambiar el precio en facturación.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="editar_precio_venta">Editar precio</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        (change)="onSubmit()" [(ngModel)]="empresa.editar_precio_venta"
+                                        name="editar_precio_venta">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Editar las descripciones de los detalles de productos.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="editar_descripcion_venta">Editar descripciones</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                (change)="onSubmit()" [(ngModel)]="empresa.editar_descripcion_venta"
-                                name="editar_descripcion_venta">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Puedes agrupar todos los detalles en una sola descripción.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="agrupar_detalles_venta">Agrupar detalles</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        (change)="onSubmit()" [(ngModel)]="empresa.agrupar_detalles_venta"
+                                        name="agrupar_detalles_venta">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Versión de facturación.</p>
-                        <select class="form-select" 
-                            id="version_facturacion"
-                            [value]="getVersionFacturacion()"
-                            (change)="updateVersionFacturacion($any($event.target).value)"
-                            name="version_facturacion">
-                            <option value="original">Sin IVA (Los precios no incluyen IVA, se agrega al final.)</option>
-                            <option value="v2">Con IVA (Los precios ya incluyen IVA, se desglosa automáticamente.)</option>
-                        </select>
-                    </div>
-
-                    
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Mostrar campos contables (Tipo de operación y Tipo de ingreso) en ventas.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="mostrar_campos_contables">Mostrar campos contables</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                id="mostrar_campos_contables" [checked]="isCamposContablesEnabled()"
-                                (change)="toggleCamposContables()" name="mostrar_campos_contables">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Editar las descripciones de los detalles de productos.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="editar_descripcion_venta">Editar descripciones</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        (change)="onSubmit()" [(ngModel)]="empresa.editar_descripcion_venta"
+                                        name="editar_descripcion_venta">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Se imprimirá el documento al momento de procesar la venta.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="impresion_en_facturacion">Imprimir en facturación</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                (change)="onSubmit()" [(ngModel)]="empresa.impresion_en_facturacion"
-                                name="impresion_en_facturacion">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Versión de facturación.</p>
+                                <select class="form-select"
+                                    id="version_facturacion"
+                                    [value]="getVersionFacturacion()"
+                                    (change)="updateVersionFacturacion($any($event.target).value)"
+                                    name="version_facturacion">
+                                    <option value="original">Sin IVA (Los precios no incluyen IVA, se agrega al final.)</option>
+                                    <option value="v2">Con IVA (Los precios ya incluyen IVA, se desglosa automáticamente.)</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Permitir seleccionar un vendedor por cada detalle de venta.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="vendedor_detalle_venta">Vendedor por detalle</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                (change)="onSubmit()" [(ngModel)]="empresa.vendedor_detalle_venta"
-                                name="vendedor_detalle_venta">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Mostrar campos contables (Tipo de operación y Tipo de ingreso) en ventas.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="mostrar_campos_contables">Mostrar campos contables</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        id="mostrar_campos_contables" [checked]="isCamposContablesEnabled()"
+                                        (change)="toggleCamposContables()" name="mostrar_campos_contables">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Permitir cambiar el tipo de impuesto (Gravada, Exenta, No sujeta) por cada detalle de venta.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="cambiar_tipo_impuesto_venta">Cambiar tipo de impuesto en venta</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                (change)="onSubmit()" [(ngModel)]="empresa.cambiar_tipo_impuesto_venta"
-                                name="cambiar_tipo_impuesto_venta">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Se imprimirá el documento al momento de procesar la venta.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="impresion_en_facturacion">Imprimir en facturación</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        (change)="onSubmit()" [(ngModel)]="empresa.impresion_en_facturacion"
+                                        name="impresion_en_facturacion">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Habilitará el modulo para configurar Facturación Electrónica.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="facturacion_electronica">Facturación electrónica</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                (change)="onSubmit()" [(ngModel)]="empresa.facturacion_electronica"
-                                name="facturacion_electronica">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Permitir seleccionar un vendedor por cada detalle de venta.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="vendedor_detalle_venta">Vendedor por detalle</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        (change)="onSubmit()" [(ngModel)]="empresa.vendedor_detalle_venta"
+                                        name="vendedor_detalle_venta">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Los usuarios de tipo "Vendedor" podrán crear y editar productos.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="vendedor_inventario">Gestión de productos por vendedores</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                (change)="onSubmit()" [(ngModel)]="empresa.vendedor_inventario"
-                                name="vendedor_inventario">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Permite a usuarios <strong>Ventas</strong> y <strong>Ventas limitado</strong> elegir otro vendedor al crear la venta (misma lista que administrador).</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="ventas_puede_cambiar_vendedor_facturacion">Ventas pueden cambiar vendedor al facturar</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        id="ventas_puede_cambiar_vendedor_facturacion"
+                                        [checked]="isVentasPuedeCambiarVendedorFacturacion()"
+                                        (change)="toggleVentasPuedeCambiarVendedorFacturacion()"
+                                        name="ventas_puede_cambiar_vendedor_facturacion">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Tendrás la opción de hacer ventas a consigna.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="venta_consigna">Venta a consigna</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                (change)="onSubmit()" [(ngModel)]="empresa.venta_consigna" name="venta_consigna">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Permitir cambiar el tipo de impuesto (Gravada, Exenta, No sujeta) de productos.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="cambiar_tipo_impuesto_venta">Cambiar tipo de impuesto en venta</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        (change)="onSubmit()" [(ngModel)]="empresa.cambiar_tipo_impuesto_venta"
+                                        name="cambiar_tipo_impuesto_venta">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Permite gestionar cuentas bancarias de la empresa en la sección Finanzas.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="modulo_bancos">Habilitar módulo de bancos</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                id="modulo_bancos"
-                                [checked]="isModuloBancos()"
-                                (change)="toggleModuloBancos()"
-                                name="modulo_bancos">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Monto mínimo para retención IVA 1% (gran contribuyente).</p>
+                                <div class="mt-auto">
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ empresa.moneda || 'USD' }}</span>
+                                        <input type="number" class="form-control" [(ngModel)]="empresa.monto_minimo_retencion_iva_gc"
+                                            id="monto_minimo_retencion_iva_gc"
+                                            name="monto_minimo_retencion_iva_gc" min="0" step="0.01"
+                                            placeholder="100">
+                                    </div>
+                                    <small class="text-muted d-block mt-1">La retención automática solo aplica si el subtotal de la operación es <strong>mayor o igual</strong> a este monto (por defecto 100).</small>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Muestra el saldo pendiente del cliente al seleccionarlo en facturación.</p>
-                        <div class="form-switch bg-light-info rounded">
-                            <label for="estado_cuenta_en_facturacion">Habilitar estado de cuenta en facturación</label>
-                            <input class="form-check-input float-end" type="checkbox" role="switch"
-                                id="estado_cuenta_en_facturacion"
-                                [checked]="isEstadoCuentaEnFacturacionHabilitado()"
-                                (change)="toggleEstadoCuentaEnFacturacion()"
-                                name="estado_cuenta_en_facturacion">
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Habilitará el modulo para configurar Facturación Electrónica.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="facturacion_electronica">Facturación electrónica</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        (change)="onSubmit()" [(ngModel)]="empresa.facturacion_electronica"
+                                        name="facturacion_electronica">
+                                </div>
+                            </div>
                         </div>
-                        <small class="text-muted">
-                            Útil para consultar el saldo de cobro pendiente antes de facturar.
-                        </small>
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Los usuarios de tipo "Vendedor" podrán crear y editar productos.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="vendedor_inventario">Gestión de productos por vendedores</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        (change)="onSubmit()" [(ngModel)]="empresa.vendedor_inventario"
+                                        name="vendedor_inventario">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Tendrás la opción de hacer ventas a consigna.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="venta_consigna">Venta a consigna</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        (change)="onSubmit()" [(ngModel)]="empresa.venta_consigna" name="venta_consigna">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Permite gestionar cuentas bancarias de la empresa en la sección Finanzas.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="modulo_bancos">Habilitar módulo de bancos</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        id="modulo_bancos"
+                                        [checked]="isModuloBancos()"
+                                        (change)="toggleModuloBancos()"
+                                        name="modulo_bancos">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Activa categorías de gastos, departamentos y áreas en el formulario de gastos.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="gastos_categorias_personalizadas">Habilitar categorías de gastos personalizadas</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        id="gastos_categorias_personalizadas"
+                                        [checked]="isGastosCategoriasPersonalizadasHabilitadas()"
+                                        (change)="toggleGastosCategoriasPersonalizadas()"
+                                        name="gastos_categorias_personalizadas">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
+                                <div class="empresa-pref-desc small text-muted mb-0">
+                                    <p class="mb-1">Muestra el saldo pendiente del cliente al seleccionarlo en facturación.</p>
+                                    <span class="d-block text-muted" style="font-size: 0.92em;">Útil para consultar el saldo de cobro pendiente antes de facturar.</span>
+                                </div>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="estado_cuenta_en_facturacion">Habilitar estado de cuenta en facturación</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        id="estado_cuenta_en_facturacion"
+                                        [checked]="isEstadoCuentaEnFacturacionHabilitado()"
+                                        (change)="toggleEstadoCuentaEnFacturacion()"
+                                        name="estado_cuenta_en_facturacion">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <hr>
                     <div class="row">
@@ -675,6 +859,39 @@
 
                     <hr>
                     <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
+                    <div class="form-group col-md-12 col-xl-6">
+                        <p>Asignar automáticamente el <strong>código de barras</strong> como número correlativo al crear productos (solo dígitos, según el máximo numérico existente en la empresa).</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="barcode_correlativo_automatico">Código de barras correlativo automático</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="barcode_correlativo_automatico"
+                                [checked]="isBarcodeCorrelativoAutomatico()"
+                                (change)="toggleBarcodeCorrelativoAutomatico()"
+                                name="barcode_correlativo_automatico">
+                        </div>
+                    </div>
+                    <div class="form-group col-md-12 col-xl-6">
+                        <p>Mostrar la suma de stock de todos los productos que coinciden con la búsqueda y filtros en la vista de inventario.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="inventario_sumar_stock_busquedas">Mostrar total de stock en búsquedas y filtros</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="inventario_sumar_stock_busquedas"
+                                [checked]="isInventarioSumarStockBusquedas()"
+                                (change)="toggleInventarioSumarStockBusquedas()"
+                                name="inventario_sumar_stock_busquedas">
+                        </div>
+                    </div>
+                    <div class="form-group col-md-12 col-xl-6">
+                        <p>Habilitar reporte de proyeccción de inventario</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="inventario_reporte_analisis_ventas_mensual">Reporte Excel inventario vs ventas (año corrido hasta el mes actual)</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="inventario_reporte_analisis_ventas_mensual"
+                                [checked]="isInventarioReporteAnalisisVentasMensual()"
+                                (change)="toggleInventarioReporteAnalisisVentasMensual()"
+                                name="inventario_reporte_analisis_ventas_mensual">
+                        </div>
+                    </div>
                     <div class="form-group col-md-6">
                         <label for="valor_inventario">Valor de inventario:</label>
                         <select class="form-select" [(ngModel)]="empresa.valor_inventario" name="valor_inventario">
@@ -888,6 +1105,48 @@
                         </small>
                     </div>
                 </div>
+
+                <div class="col-12 mb-5" *ngIf="empresa.modulo_paquetes">
+                    <h5 class="mb-3">Notificación al facturar paquetes (webhook)</h5>
+                    <div class="row">
+                        <div class="form-group col-12 col-xl-8 without-label mb-3">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="webhook_paquete_enabled" class="form-label">
+                                    <strong>Activar envío al facturar paquete</strong>
+                                </label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="webhook_paquete_enabled"
+                                    [(ngModel)]="empresa.webhook_paquete_venta_enabled"
+                                    name="webhook_paquete_venta_enabled"
+                                    (change)="onSubmit()">
+                            </div>
+                            <small class="text-muted">
+                                Cuando un paquete pasa a estado Facturado por una venta, SmartPYME puede enviar un POST JSON a la URL que indique.
+                                Opcional: firma HMAC en la cabecera <code>X-SmartPyme-Signature</code> (prefijo <code>sha256=</code>) y/o token Bearer.
+                            </small>
+                        </div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="webhook_paquete_url">URL del endpoint (HTTPS recomendado)</label>
+                        <input type="url" class="form-control" id="webhook_paquete_url"
+                            [(ngModel)]="empresa.webhook_paquete_venta_url" name="webhook_paquete_venta_url"
+                            placeholder="https://ejemplo.com/webhooks/paquetes" (blur)="onSubmit()">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="webhook_paquete_secret">Secreto para firma HMAC (opcional)</label>
+                        <input type="password" class="form-control" id="webhook_paquete_secret"
+                            [(ngModel)]="empresa.webhook_paquete_venta_secret" name="webhook_paquete_venta_secret"
+                            placeholder="Compartido con el sistema receptor" autocomplete="off" (blur)="onSubmit()">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="webhook_paquete_bearer">Token Bearer (opcional)</label>
+                        <input type="password" class="form-control" id="webhook_paquete_bearer"
+                            [(ngModel)]="empresa.webhook_paquete_venta_bearer_token"
+                            name="webhook_paquete_venta_bearer_token" placeholder="Authorization: Bearer …"
+                            autocomplete="off" (blur)="onSubmit()">
+                    </div>
+                </div>
+
                 <div class="col-12 mb-5" *ngIf="apiService.auth_user().empresa.acces_chatbot_whatsapp">
                     <h5 class="mb-3">Codigo de empresa para whatsapp</h5>
                     <div class="form-group">
@@ -928,7 +1187,23 @@
                                 </button>
                             </div>
                             <small class="text-muted d-block mt-2">
-                                Configure esta URL en su tienda WooCommerce para sincronizar datos automáticamente
+                                Configure esta URL en WooCommerce (webhooks de <strong>pedido</strong>, p. ej. pedido creado) para registrar ventas en SmartPyme.
+                            </small>
+                        </div>
+
+                        <div class="col-12" *ngIf="empresa.woocommerce_product_webhook_url">
+                            <label class="form-label">URL Webhook de producto (Woo → SmartPyme):</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" [value]="empresa.woocommerce_product_webhook_url"
+                                    readonly>
+                                <button class="btn btn-secondary" type="button"
+                                    (click)="copyToClipboard(empresa.woocommerce_product_webhook_url)" tooltip="Copiar URL">
+                                    <i class="fa fa-copy"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                En WooCommerce → Ajustes → Avanzado → Webhooks, cree <strong>Producto creado</strong> y <strong>Producto actualizado</strong>
+                                con esta URL (y opcional <strong>Producto eliminado</strong>) para sincronizar catálogo a SmartPyme cuando el modo lo permita.
                             </small>
                         </div>
 
@@ -966,10 +1241,23 @@
                                 <option *ngFor="let canal of canales" [value]="canal.id">{{canal.nombre}}</option>
                             </select>
                             <small class="text-muted">
-                                Este canal se asignará automáticamente a todas las ventas realizadas desde WooCommerce.
+                                Este canal se asignará automáticamente a todas las ventas realizadas desde WooCommerce
+                                (p. ej. sitio web / ventas en línea), con independencia del modo de sincronización.
                             </small>
                         </div>
 
+                        <div class="col-12" *ngIf="empresa.status_conexion_woocommerce === 'connected' || empresa.woocommerce_store_url">
+                            <label for="woocommerce_sync_mode" class="form-label">Sincronización de catálogo e inventario</label>
+                            <select class="form-select" id="woocommerce_sync_mode" name="woocommerce_sync_mode"
+                                [(ngModel)]="empresa.woocommerce_sync_mode" (change)="onSubmit()">
+                                <option value="bidirectional">Bidireccional (ambos lados se pueden actualizar)</option>
+                                <option value="wc_to_sp">Solo de WooCommerce hacia SmartPyme (la tienda manda; no se envía a WooCommerce)</option>
+                                <option value="sp_to_wc">Solo de SmartPyme hacia WooCommerce (SmartPyme manda; no se importa CSV de la tienda)</option>
+                            </select>
+                            <small class="text-muted d-block mt-1">
+                                Los pedidos de la tienda en línea siempre se reciben en SmartPyme con el canal de arriba; esta opción solo define catálogo e inventario.
+                            </small>
+                        </div>
 
                         <div class="col-12">
                             <div *ngIf="empresa.woocommerce_store_url && empresa.woocommerce_consumer_key && empresa.woocommerce_consumer_secret"
@@ -985,23 +1273,23 @@
                             </div>
 
                             <div class="text-end mt-3">
-                                <button tooltip="importar productos a WooCommerce" (click)="exportarWooCommerce()"
+                                <button tooltip="Enviar los productos de SmartPyme a WooCommerce" (click)="exportarWooCommerce()"
                                     class="btn btn-light me-2"
-                                    *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                    *ngIf="empresa.status_conexion_woocommerce === 'connected' && woocommerceModoPuedeEnviarATienda()">
                                     <img src="/assets/icons/upload-cloud.png" class="icon me-2">
-                                    Importar productos
+                                    Exportar productos
                                 </button>
 
-                                <button tooltip="Descargar productos para importar en WooCommerce (F7)"
+                                <button tooltip="Descargar productos para importar en WooCommerce"
                                     (click)="descargarWooCommerce()" class="btn btn-light me-2"
-                                    *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                    *ngIf="empresa.status_conexion_woocommerce === 'connected' && woocommerceModoPuedeEnviarATienda()">
                                     <img src="/assets/icons/woocommerce.png" class="icon me-2">
                                     Descargar productos
                                 </button>
 
                                 <button tooltip="Importar productos desde CSV de WooCommerce"
                                     (click)="openImportarWooCommerceCsv(importarWooCommerceCsvModal)" class="btn btn-light me-2"
-                                    *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                    *ngIf="empresa.status_conexion_woocommerce === 'connected' && woocommerceModoPuedeImportarDesdeWoo()">
                                     <i class="fa fa-file-csv me-2"></i>
                                     Importar desde CSV
                                 </button>

@@ -44,6 +44,8 @@ class Producto extends Model
         'shopify_inventory_item_id',
         'syncing_from_shopify',
         'last_shopify_sync',
+        'genera_comanda',
+        'destino_comanda',
     );
 
     protected $appends = ['nombre_categoria', 'img', 'nombre_completo', 'stock_total_lotes', 'fecha_vencimiento_proxima'];
@@ -54,6 +56,8 @@ class Producto extends Model
         'last_woocommerce_sync' => 'datetime',
         'imported_from_woocommerce_csv' => 'boolean',
         'inventario_por_lotes' => 'boolean',
+        'genera_comanda' => 'boolean',
+        'destino_comanda' => 'string',
     ];
 
     protected static function boot()

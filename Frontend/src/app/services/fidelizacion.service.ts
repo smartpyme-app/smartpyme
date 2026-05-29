@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { 
@@ -295,42 +295,38 @@ export class FidelizacionService {
    * Obtener todos los clientes con información de fidelización
    */
   getClientesFidelizacion(params?: any): Observable<PaginatedResponse<ClienteFidelizacion>> {
-    let url = `${this.apiService.baseUrl}/api/fidelizacion/clientes`;
-    
+    const url = `${this.apiService.baseUrl}/api/fidelizacion/clientes`;
+    let httpParams = new HttpParams();
+
     if (params) {
-      const queryParams = new URLSearchParams();
       Object.keys(params).forEach(key => {
-        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
-          queryParams.append(key, params[key]);
+        const val = params[key];
+        if (val !== null && val !== undefined && val !== '') {
+          httpParams = httpParams.set(key, String(val));
         }
       });
-      if (queryParams.toString()) {
-        url += `?${queryParams.toString()}`;
-      }
     }
-    
-    return this.http.get<PaginatedResponse<ClienteFidelizacion>>(url);
+
+    return this.http.get<PaginatedResponse<ClienteFidelizacion>>(url, { params: httpParams });
   }
 
   /**
    * Obtener clientes por tipo específico
    */
   getClientesPorTipo(tipoId: number, params?: any): Observable<PaginatedResponse<ClienteFidelizacion>> {
-    let url = `${this.apiService.baseUrl}/api/fidelizacion/clientes/tipo/${tipoId}`;
-    
+    const url = `${this.apiService.baseUrl}/api/fidelizacion/clientes/tipo/${tipoId}`;
+    let httpParams = new HttpParams();
+
     if (params) {
-      const queryParams = new URLSearchParams();
       Object.keys(params).forEach(key => {
-        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
-          queryParams.append(key, params[key]);
+        const val = params[key];
+        if (val !== null && val !== undefined && val !== '') {
+          httpParams = httpParams.set(key, String(val));
         }
       });
-      if (queryParams.toString()) {
-        url += `?${queryParams.toString()}`;
-      }
     }
-    
-    return this.http.get<PaginatedResponse<ClienteFidelizacion>>(url);
+
+    return this.http.get<PaginatedResponse<ClienteFidelizacion>>(url, { params: httpParams });
   }
 
   /**

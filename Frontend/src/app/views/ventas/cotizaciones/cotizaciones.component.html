@@ -74,7 +74,7 @@
                         <td>{{venta.nombre_usuario | truncate:30 }}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a *ngIf="venta.id_cliente && venta.id_cliente != 1" class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>
-                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(venta)" [(ngModel)]="venta.estado" [ngClass]="{'bg-light-warning' : venta?.estado == 'Pendiente', 'bg-light-danger' : venta?.estado == 'Anulada', 'bg-light-success' : venta?.estado == 'Facturada'}">
+                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(venta)" [(ngModel)]="venta.estado" [disabled]="apiService.restriccionesCotizacionesVendedoresActivas()" [ngClass]="{'bg-light-warning' : venta?.estado == 'Pendiente', 'bg-light-danger' : venta?.estado == 'Anulada', 'bg-light-success' : venta?.estado == 'Facturada'}">
                                 <option value="Pendiente">Pendiente</option>
                                 <option value="Facturada">Facturada</option>
                                 <option value="Anulada">Anulada</option>
@@ -88,13 +88,13 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column align-items-start">
-                                    <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
+                                    <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit() && !apiService.restriccionesCotizacionesVendedoresActivas()" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a routerLink="/venta/{{venta.id}}" class="btn">
+                                    <a *ngIf="!apiService.restriccionesCotizacionesVendedoresActivas()" routerLink="/venta/{{venta.id}}" class="btn">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="venta.estado == 'Pendiente'" routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
+                                    <a *ngIf="venta.estado == 'Pendiente' && !apiService.restriccionesCotizacionesVendedoresActivas()" routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
                                         <i class="fa fa-fw fa-money-bill"></i> Facturar
                                     </a>
                                     <a (click)="imprimir(venta)" class="btn">
@@ -147,7 +147,7 @@
                     </ng-option>
                 </ng-select>
             </div>
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-6" *ngIf="!apiService.isVentas()">
                 <label for="filtros.id_usuario">Usuario:</label>
                 <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
                     <ng-option value="">Todos</ng-option>

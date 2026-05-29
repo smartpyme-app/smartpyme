@@ -13,6 +13,8 @@ import { PipesModule } from '@pipes/pipes.module';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
+import { NgxEchartsModule } from 'ngx-echarts';
+import * as echarts from 'echarts';
 import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
 import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
@@ -29,14 +31,18 @@ import { CrearCategoriaGastoComponent } from './modals/crear-categoria-gasto/cre
 import { CrearCargoEmpleadoComponent } from './modals/crear-cargo-empleado/crear-cargo-empleado.component';
 import { CrearProveedorComponent } from './modals/crear-proveedor/crear-proveedor.component';
 import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.component';
+import { ClienteNotaModalComponent } from './modals/cliente-nota-modal/cliente-nota-modal.component';
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
 import { CrearAjusteLoteComponent } from './modals/crear-ajuste-lote/crear-ajuste-lote.component';
 import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
 import { CrearAbonoGastoComponent } from './modals/crear-abono-gasto/crear-abono-gasto.component';
+import { EditarAbonoComponent } from './modals/editar-abono/editar-abono.component';
 import { CrearEventoComponent } from './modals/crear-evento/crear-evento.component';
 import { CrearProyectoComponent } from './modals/crear-proyecto/crear-proyecto.component';
 import { CrearImpuestoComponent } from './modals/crear-impuesto/crear-impuesto.component';
+import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
+import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
 
 import { PaginationComponent } from './parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from './parts/notificaciones/notificaciones-container.component';
@@ -66,6 +72,7 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     TagInputModule,
     NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
+    NgxEchartsModule.forRoot({ echarts }),
     TooltipModule.forRoot(),
     FocusModule.forRoot(),
     TypeaheadModule.forRoot(),
@@ -94,14 +101,18 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     CrearCargoEmpleadoComponent,
     CrearProveedorComponent,
     CrearClienteComponent,
+    ClienteNotaModalComponent,
     CrearAjusteComponent,
     CrearAjusteLoteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearAbonoGastoComponent,
+    EditarAbonoComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
     CrearImpuestoComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
     ThreedsModalComponent,
@@ -132,19 +143,24 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     CrearCargoEmpleadoComponent,
     CrearProveedorComponent,
     CrearClienteComponent,
+    ClienteNotaModalComponent,
     CrearAjusteComponent,
     CrearAjusteLoteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearAbonoGastoComponent,
+    EditarAbonoComponent,
     CrearEventoComponent,
     CrearImpuestoComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent,
     CrearProyectoComponent,
     ThreedsModalComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
     AlertsHaciendaComponent,
     SelectSearchComponent,
+    NgxEchartsModule,
     ActivarLotesMasivoComponent
   ],
   providers: [AlertService],

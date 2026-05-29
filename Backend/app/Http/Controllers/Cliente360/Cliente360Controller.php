@@ -7,6 +7,7 @@ use App\Models\Ventas\Clientes\Cliente;
 use App\Services\Cliente360\Cliente360Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -56,6 +57,40 @@ class Cliente360Controller extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener la lista de clientes'
+            ], 500);
+        }
+    }
+
+    /**
+     * Cliente con más puntos disponibles en la empresa del usuario autenticado.
+     */
+    public function topPuntos()
+    {
+        try {
+            $idEmpresa = (int) Auth::user()->id_empresa;
+            $clienteId = $this->cliente360Service->getClienteIdConMasPuntos($idEmpresa);
+
+            if (!$clienteId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró un cliente con puntos en la empresa'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id_cliente' => $clienteId
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error en Cliente360Controller@topPuntos: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener el cliente con más puntos'
             ], 500);
         }
     }

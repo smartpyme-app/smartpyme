@@ -24,8 +24,18 @@ class ServiciosController extends Controller
                                     return $query->where('id_categoria', $request->id_categoria);
                                 })
                                 ->when($request->id_sucursal, function($q) use ($request){
-                                    $q->whereHas('inventarios', function($q) use ($request){
-                                        return $q->where('id_sucursal', $request->id_sucursal);
+                                    // Los servicios no crean filas en inventario (store de producto los omite).
+                                    // Sin esto, el filtro por sucursal excluye todos los servicios importados/creados.
+                                    $q->where(function ($outer) use ($request) {
+                                        $outer->whereDoesntHave('inventarios')
+                                            ->orWhereHas('inventarios', function ($invQ) use ($request) {
+                                                $invQ->where(function ($sub) use ($request) {
+                                                    $sub->where('id_sucursal', $request->id_sucursal)
+                                                        ->orWhereHas('bodega', function ($b) use ($request) {
+                                                            $b->where('id_sucursal', $request->id_sucursal);
+                                                        });
+                                                });
+                                            });
                                     });
                                 })
                                 ->when($request->id_proveedor, function($q) use ($request){
@@ -204,13 +214,14 @@ class ServiciosController extends Controller
     public function import(Request $request){
         
         $request->validate([
-            'file'          => 'required',
-        ],[
-            'file.required' => 'El documento es obligatorio.'
+            'file' => 'required|file',
+        ], [
+            'file.required' => 'El documento es obligatorio.',
+            'file.file'     => 'Debe enviar un archivo válido.',
         ]);
 
         $import = new Servicios();
-        Excel::import($import, $request->file);
+        Excel::import($import, $request->file('file'));
         
         return Response()->json($import->getRowCount(), 200);
 

@@ -204,6 +204,44 @@ class Indicador extends Model
                         ->get();
     }
 
+    /**
+     * Detecta si el nombre de forma de pago corresponde a gift card (lista en config constants).
+     */
+    public static function esFormaPagoGiftCard(?string $nombre): bool
+    {
+        if ($nombre === null || $nombre === '') {
+            return false;
+        }
+
+        $normalizado = mb_strtolower(trim($nombre));
+        $sinonimos = config('constants.FORMAS_PAGO_GIFT_CARD', ['Gift Card', 'Tarjeta de regalo']);
+
+        foreach ($sinonimos as $sinonimo) {
+            if (mb_strtolower(trim((string) $sinonimo)) === $normalizado) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Monto del periodo pagado con gift card: detalle en pagos múltiples + ventas con una sola forma gift card.
+     */
+    public function getTotalPagadoConGiftCard(): float
+    {
+        $porDetalle = (float) $this->detalles_metodos_de_pago
+            ->filter(fn ($d) => self::esFormaPagoGiftCard($d->nombre))
+            ->sum('total');
+
+        $porFormaUnica = (float) $this->ventas_pagadas
+            ->filter(fn ($v) => ($v->forma_pago ?? '') !== 'Multiple')
+            ->filter(fn ($v) => self::esFormaPagoGiftCard($v->forma_pago))
+            ->sum('total');
+
+        return $porDetalle + $porFormaUnica;
+    }
+
     public function getTotalVentasPagadas(){
 
         return $this->ventas_pagadas->sum('total');
@@ -318,6 +356,14 @@ class Indicador extends Model
         return $this->getTotalVentasPagadas()
                 + $this->getTotalVentasPendientes();
                 // - $this->getTotalDevolucionesVenta();
+    }
+
+    /**
+     * Ventas totales (incl. propina) menos devoluciones — mismo criterio que el card de cierre de caja.
+     */
+    public function getTotalVentasSinDevoluciones()
+    {
+        return ($this->getTotalVentas() + $this->getTotalPropina()) - $this->getTotalDevolucionesVenta();
     }
 
     public function getCantidadGastos(){

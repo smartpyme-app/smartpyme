@@ -27,8 +27,11 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Inventario\Paquete;
+use App\Services\Webhooks\WebhookPaqueteVentaDispatcher;
 use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
+use App\Models\Restaurante\PedidoRestaurante;
+use App\Services\Restaurante\PedidoCanalInventarioService;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -54,7 +57,11 @@ class VentasController extends Controller
     public function index(Request $request)
     {
         $excludeFromList = ['dte_invalidacion'];
-        $columns = array_diff(Schema::getColumnListing('ventas'), $excludeFromList);
+        $columns = array_values(array_diff(Schema::getColumnListing('ventas'), $excludeFromList));
+        $dteIndex = array_search('dte', $columns, true);
+        if ($dteIndex !== false) {
+            $columns[$dteIndex] = DB::raw("IF(COALESCE(ventas.dte_s3_key,'') <> '', NULL, ventas.dte) as dte");
+        }
 
         $ventas = Venta::select($columns)
             ->when($request->inicio, function ($query) use ($request) {
@@ -88,10 +95,12 @@ class VentasController extends Controller
                     });
             })
             ->when($request->id_vendedor, function ($query) use ($request) {
-                return $query->where('id_vendedor', $request->id_vendedor)
-                    ->orwhereHas('detalles', function ($query) use ($request) {
-                        $query->where('id_vendedor', $request->id_vendedor);
-                    });
+                return $query->where(function ($q) use ($request) {
+                    $q->where('id_vendedor', $request->id_vendedor)
+                        ->orWhereHas('detalles', function ($sub) use ($request) {
+                            $sub->where('id_vendedor', $request->id_vendedor);
+                        });
+                });
             })
             ->when($request->id_canal, function ($query) use ($request) {
                 return $query->where('id_canal', $request->id_canal);
@@ -128,6 +137,9 @@ class VentasController extends Controller
             ->where('cotizacion', 0)
             ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscador($query, (string) $request->buscador))
             ->with(['cliente', 'usuario', 'vendedor', 'sucursal', 'canal', 'documento', 'proyecto'])
+            ->with(['devolucionesNcNd' => function ($query) {
+                $query->with('documento:id,nombre');
+            }])
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')
@@ -158,13 +170,31 @@ class VentasController extends Controller
         $matchClientes = count($palabras) > 1
             ? implode(' ', array_map(fn ($p) => '+' . preg_replace('/[+\-<>()~*"]/', '', $p), $palabras))
             : $termino;
+        $modoClientes = count($palabras) > 1 ? 'BOOLEAN' : 'NATURAL LANGUAGE';
+
         $clienteIds = Cliente::query()
             ->whereRaw(
-                'MATCH(clientes.nombre, clientes.apellido, clientes.nombre_empresa, clientes.nit, clientes.ncr) AGAINST(? IN ' . (count($palabras) > 1 ? 'BOOLEAN' : 'NATURAL LANGUAGE') . ' MODE)',
+                'MATCH(clientes.nombre, clientes.apellido, clientes.nombre_empresa, clientes.nit, clientes.ncr) AGAINST(? IN ' . $modoClientes . ' MODE)',
                 [$matchClientes]
             )
             ->limit(5000)
             ->pluck('id');
+
+        // FULLTEXT en BOOLEAN exige tokens que no coinciden con razones sociales (S.A, C.V, stopwords como DE).
+        if (count($palabras) > 1) {
+            $idsLike = Cliente::query()
+                ->where(function ($q) use ($buscador) {
+                    $q->where('nombre_empresa', 'like', $buscador)
+                        ->orWhere('nombre', 'like', $buscador)
+                        ->orWhere('apellido', 'like', $buscador)
+                        ->orWhere('nit', 'like', $buscador)
+                        ->orWhere('ncr', 'like', $buscador)
+                        ->orWhereRaw("CONCAT(TRIM(nombre), ' ', TRIM(apellido)) LIKE ?", [$buscador]);
+                })
+                ->limit(5000)
+                ->pluck('id');
+            $clienteIds = $clienteIds->merge($idsLike)->unique()->values()->take(5000);
+        }
 
         return $query->where(function ($q) use ($buscador, $clienteIds, $termino) {
             if ($clienteIds->isNotEmpty()) {
@@ -342,6 +372,8 @@ class VentasController extends Controller
             return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
         }
 
+        $webhookPaquetesFacturadosBulk = false;
+
         // Ajustar stocks
         foreach ($venta->detalles as $detalle) {
 
@@ -423,8 +455,17 @@ class VentasController extends Controller
                     $abono->estado = 'Confirmado';
                     $abono->save();
                 }
-                // Paquetes de la venta: cambiar estado a En bodega
+                // Paquetes de la venta: al revertir anulación quedan Facturados (update masivo no dispara observer)
                 Paquete::where('id_venta', $venta->id)->update(['estado' => 'Facturado']);
+                if (!$webhookPaquetesFacturadosBulk) {
+                    $webhookPaquetesFacturadosBulk = true;
+                    $idsPaquetes = Paquete::withoutGlobalScopes()
+                        ->where('id_venta', $venta->id)
+                        ->pluck('id');
+                    foreach ($idsPaquetes as $pid) {
+                        WebhookPaqueteVentaDispatcher::dispatch((int) $pid);
+                    }
+                }
             }
         }
 
@@ -539,6 +580,33 @@ class VentasController extends Controller
             $puedeVenderSinStock = $empresa->vender_sin_stock == 1;
             $lotesActivo = $empresa->isLotesActivo();
 
+            $saltarActualizarInventario = false;
+            if (!$request->id && $request->filled('id_pedido_canal')) {
+                $pedidoCanalFactura = PedidoRestaurante::where('id', $request->id_pedido_canal)
+                    ->where('id_empresa', Auth::user()->id_empresa)
+                    ->where('estado', 'pendiente_facturar')
+                    ->whereNull('id_venta')
+                    ->with('detalles')
+                    ->first();
+                if (!$pedidoCanalFactura) {
+                    DB::rollBack();
+                    return response()->json(['error' => 'Pedido de canal no válido para facturar o ya fue vinculado.'], 422);
+                }
+                if (!$pedidoCanalFactura->id_bodega) {
+                    DB::rollBack();
+                    return response()->json(['error' => 'El pedido no tiene bodega de inventario. Confirme el pedido con una bodega o anule y vuelva a crear.'], 422);
+                }
+                if ((int) $request->id_bodega !== (int) $pedidoCanalFactura->id_bodega) {
+                    DB::rollBack();
+                    return response()->json(['error' => 'La bodega de la factura debe coincidir con la bodega del pedido (el inventario ya se descontó al confirmar).'], 422);
+                }
+                if (!PedidoCanalInventarioService::ventaCoincideConPedido($pedidoCanalFactura, $request->detalles ?? [])) {
+                    DB::rollBack();
+                    return response()->json(['error' => 'Las cantidades por producto deben coincidir con el pedido de canal; el stock ya se comprometió al confirmar.'], 422);
+                }
+                $saltarActualizarInventario = true;
+            }
+
             if ($request->id)
                 $venta = Venta::findOrFail($request->id);
             else
@@ -610,7 +678,7 @@ class VentasController extends Controller
 
 
                 // Actualizar inventario
-                if ($request->cotizacion == 0) {
+                if ($request->cotizacion == 0 && !$saltarActualizarInventario) {
 
                     // Obtener el producto para verificar si es servicio
                     $producto = Producto::where('id', $det['id_producto'])->first();
@@ -1129,10 +1197,28 @@ class VentasController extends Controller
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
 
-        if ($documento->nombre == 'Ticket') {
+        if ($documento->nombre == 'Ticket' || $documento->nombre == 'Recibo') {
             $documento = Documento::findOrfail($venta->id_documento);
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+            if (
+                (isset($empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn']) &&
+                    $empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn'] == true)
+                || Auth::user()->id_empresa == 716
+            ) {
+                $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+                $venta->load('detalles.producto');
+                $formatter = new NumeroALetras();
+                $n = explode('.', number_format((float) $venta->total, 2, '.', ''));
+                $dolares = $formatter->toWords((float) $n[0]);
+                $centavosNum = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
+                $venta->pdf = false;
+                return view(
+                    'reportes.facturacion.formatos_empresas.Factura-Accesorios-HN-Ticket',
+                    compact('venta', 'empresa', 'documento', 'cliente', 'dolares', 'centavosNum')
+                );
+            }
 
             return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
         }
@@ -1141,6 +1227,33 @@ class VentasController extends Controller
             $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+            // Accesorios HN (716) o flag en custom_empresa
+            if (
+                (isset($empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn']) &&
+                    $empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn'] == true)
+                || Auth::user()->id_empresa == 716
+            ) {
+                $venta->load('detalles.producto');
+                $formatter = new NumeroALetras();
+                $n = explode('.', number_format((float) $venta->total, 2, '.', ''));
+                $dolares = $formatter->toWords((float) $n[0]);
+                $centavosNum = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
+                $venta->pdf = true;
+                $pdf = app('dompdf.wrapper')->loadView(
+                    'reportes.facturacion.formatos_empresas.Factura-Accesorios-HN-Ticket',
+                    compact('venta', 'empresa', 'documento', 'cliente', 'dolares', 'centavosNum')
+                );
+                $alto_base = 300;
+                $alto_por_producto = 24;
+                $total_lineas = max(1, $venta->detalles->count());
+                $notaExtra = $documento->nota ? min(45, (substr_count((string) $documento->nota, "\n") + 1) * 5) : 0;
+                $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto) + $notaExtra;
+                $alto_total_pt = $alto_total_mm * 2.83465;
+                $ancho_pt = 80 * 2.83465;
+                $pdf->setPaper([0, 0, $ancho_pt, $alto_total_pt]);
+                return $pdf->stream($empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
+            }
 
             $formatter = new NumeroALetras();
             $n = explode(".", number_format($venta->total, 2));
@@ -1469,7 +1582,10 @@ class VentasController extends Controller
         $ventas = new VentasExport();
         $ventas->filter($request);
 
-        return Excel::download($ventas, 'ventas.xlsx');
+        $anio = VentasExport::anioDesdeRequest($request);
+        $nombreArchivo = $anio !== null ? "ventas-{$anio}.xlsx" : 'ventas.xlsx';
+
+        return Excel::download($ventas, $nombreArchivo);
     }
 
     public function exportDetalles(Request $request)
@@ -1678,6 +1794,23 @@ class VentasController extends Controller
                     $configuracion,
                     $configuracion->sucursales ?? []
                 );
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-totales') {
+                $requestVentasTotales = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $empresa->id,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasExport($requestVentasTotales);
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-por-producto') {
+                $requestDetalleProducto = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $empresa->id,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasDetallesExport();
+                $export->filter($requestDetalleProducto);
             }
             $filename = "{$configuracion->tipo_reporte}-{$fechaInicio}.xlsx";
 
@@ -1743,6 +1876,8 @@ class VentasController extends Controller
                 'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
                 'cobros-por-vendedor' => 'Reporte de Cobros por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'ventas-compras-por-marca-proveedor' => 'Reporte de Ventas y Compras por Marca y Proveedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-totales' => 'Reporte de Detalle de Ventas Totales ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-por-producto' => 'Reporte de Detalle de Ventas por Producto ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -1827,6 +1962,34 @@ class VentasController extends Controller
                 $export = new CobrosPorVendedorExport();
                 $export->filter($request);
                 $filename = "cobros-por-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'ventas-compras-por-marca-proveedor') {
+                $export = new VentasComprasPorMarcaProveedorExport(
+                    $fechaInicio,
+                    $fechaFin,
+                    $configuracion->id_empresa,
+                    $configuracion,
+                    $configuracion->sucursales ?? []
+                );
+                $filename = "ventas-compras-por-marca-proveedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-totales') {
+                $requestVentasTotales = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $configuracion->id_empresa,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasExport($requestVentasTotales);
+                $filename = "detalle-ventas-totales-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-por-producto') {
+                $requestDetalleProducto = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $configuracion->id_empresa,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasDetallesExport();
+                $export->filter($requestDetalleProducto);
+                $filename = "detalle-ventas-por-producto-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             }
 
             $relativePath = "reportes/{$filename}";
@@ -1890,6 +2053,10 @@ class VentasController extends Controller
                 'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
                 'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
+                'cobros-por-vendedor' => 'Reporte de Cobros por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'ventas-compras-por-marca-proveedor' => 'Reporte de Ventas y Compras por Marca y Proveedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-totales' => 'Reporte de Detalle de Ventas Totales ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-por-producto' => 'Reporte de Detalle de Ventas por Producto ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -1994,6 +2161,25 @@ class VentasController extends Controller
                     $configuracion,
                     $configuracion->sucursales ?? []
                 );
+                break;
+            case 'detalle-ventas-totales':
+                $requestVentasTotales = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $configuracion->id_empresa,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasExport($requestVentasTotales);
+                break;
+            case 'detalle-ventas-por-producto':
+                $requestDetalleProducto = new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $configuracion->id_empresa,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasDetallesExport();
+                $export->filter($requestDetalleProducto);
                 break;
             default:
                 return response()->json(['error' => 'Tipo de reporte no implementado'], 422);

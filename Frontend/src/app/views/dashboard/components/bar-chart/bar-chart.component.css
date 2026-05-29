@@ -1,0 +1,13 @@
+/* Altura del contenedor del gráfico - necesario para ECharts */
+:host {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+.chart-container {
+    width: 100%;
+    height: clamp(220px, 42vw, 300px);
+    min-height: 200px;
+}
+

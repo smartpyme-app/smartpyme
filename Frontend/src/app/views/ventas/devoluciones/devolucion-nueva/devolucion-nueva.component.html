@@ -144,9 +144,10 @@
     <div class="card-body">
         <div class="row mt-4">
             <div class="col-md-12">
-                <button type="submit" class="btn btn-primary float-end" id="submit" [disabled]="saving">
-                    <span *ngIf="!saving">Guardar</span>
-                    <span *ngIf="saving">Guardando...</span>
+                <button type="submit" class="btn btn-primary float-end" id="submit" [disabled]="saving || emiting">
+                    <span *ngIf="!saving && !emiting">Guardar</span>
+                    <span *ngIf="saving && !emiting">Guardando...</span>
+                    <span *ngIf="emiting">Emitiendo DTE...</span>
                 </button>
             </div>
         </div>

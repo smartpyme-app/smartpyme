@@ -87,12 +87,23 @@
                 <td>Otros Descuentos</td>
                 <td>${{ number_format($detalle->otros_descuentos, 2) }}</td>
             </tr>
+            @if(($detalle->viaticos ?? 0) > 0)
+            <tr>
+                <td>Viáticos</td>
+                <td>${{ number_format($detalle->viaticos ?? 0, 2) }}</td>
+                <td colspan="2"></td>
+            </tr>
+            @endif
         </table>
 
         <div class="totals">
             <p><strong>Total Ingresos:</strong> ${{ number_format($detalle->total_ingresos, 2) }}</p>
             <p><strong>Total Deducciones:</strong> ${{ number_format($detalle->total_descuentos, 2) }}</p>
             <p><strong>Sueldo Neto:</strong> ${{ number_format($detalle->sueldo_neto, 2) }}</p>
+            @if(($detalle->viaticos ?? 0) > 0)
+            <p><strong>Viáticos:</strong> ${{ number_format($detalle->viaticos ?? 0, 2) }}</p>
+            @endif
+            <p><strong>Total a Pagar:</strong> ${{ number_format(($detalle->sueldo_neto ?? 0) + ($detalle->viaticos ?? 0), 2) }}</p>
         </div>
 
         <div class="signature-line">

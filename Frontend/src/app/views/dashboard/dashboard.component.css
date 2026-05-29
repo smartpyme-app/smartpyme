@@ -1,0 +1,153 @@
+/* Contenedor que envuelve el área de datos + overlay de carga (no desmontar hijos al cargar) */
+.dashboard-shell {
+    min-height: 12rem;
+}
+
+.dashboard-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248, 249, 250, 0.72);
+    z-index: 10;
+    border-radius: 8px;
+}
+
+/* Fondo general del dashboard */
+.dashboard-container {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.dashboard-container .card {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Pestañas de sección: reparten el ancho en la fila y envuelven si no caben */
+.dashboard-section-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.dashboard-section-tabs .btn {
+    /* Crece para llenar la fila; base mínima para decidir el salto de línea */
+    flex: 1 1 10rem;
+    min-width: min(10rem, 100%);
+    text-align: center;
+}
+
+/* Estilos para los botones de año */
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+/* Estilos para el selector de sucursal */
+.form-select {
+    min-width: 150px;
+}
+
+
+/* Estilos para ngx-datatable de flujo de efectivo */
+.cash-flow-datatable {
+    margin-bottom: 0;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-header {
+    background-color: transparent !important;
+    border: none !important;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-header-cell {
+    background-color: #5470c6 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 0.75rem 1rem !important;
+    border: none !important;
+    font-size: 0.9rem !important;
+}
+
+.gastos-table ::ng-deep .datatable-header-cell {
+    background-color: #ff9800 !important;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-body-row {
+    border: none !important;
+    transition: background-color 0.2s ease;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-body-row:hover {
+    background-color: #e3f2fd !important;
+}
+
+.gastos-table ::ng-deep .datatable-body-row:hover {
+    background-color: #fff3e0 !important;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-body-row:nth-child(even) {
+    background-color: #f8f9fa !important;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-body-row:nth-child(even):hover {
+    background-color: #e3f2fd !important;
+}
+
+.gastos-table ::ng-deep .datatable-body-row:nth-child(even):hover {
+    background-color: #fff3e0 !important;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-body-cell {
+    padding: 0.75rem 1rem !important;
+    border: none !important;
+    font-size: 0.9rem !important;
+    vertical-align: middle !important;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-body-row:nth-child(odd) {
+    background-color: white !important;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-scroll {
+    border: none !important;
+}
+
+.cash-flow-datatable ::ng-deep .empty-row {
+    border: none !important;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-body {
+    overflow-y: auto !important;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.cash-flow-datatable ::ng-deep .datatable-body::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

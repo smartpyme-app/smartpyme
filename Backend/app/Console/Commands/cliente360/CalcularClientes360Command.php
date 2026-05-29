@@ -4,6 +4,8 @@ namespace App\Console\Commands\cliente360;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class CalcularClientes360Command extends Command
@@ -41,6 +43,17 @@ class CalcularClientes360Command extends Command
 
         $tiempoTotal = microtime(true) - $tiempoInicio;
 
+        $logData = [
+            'tipo' => $tipo,
+            'masivo' => $masivo,
+            'tiempo_total_seg' => round($tiempoTotal, 2),
+            'tiempo_total_ms' => (int) round($tiempoTotal * 1000, 0),
+        ];
+        if (!empty($this->tiemposEjecucion)) {
+            $logData['por_proceso_ms'] = array_map(fn ($t) => (int) round($t * 1000, 0), $this->tiemposEjecucion);
+        }
+        Log::info('cliente360:actualizar-agregados completado', $logData);
+
         $this->mostrarResumen($tiempoTotal, $tipo);
 
         return 0;
@@ -52,42 +65,54 @@ class CalcularClientes360Command extends Command
             $inicio = microtime(true);
             $this->info('📊 Calculando métricas RFM masivas...');
             $this->calcularRFMMasivo();
-            $this->tiemposEjecucion['RFM'] = microtime(true) - $inicio;
+            $tiempo = microtime(true) - $inicio;
+            $this->tiemposEjecucion['RFM'] = $tiempo;
+            Log::info('cliente360 RFM masivo', ['tiempo_seg' => round($tiempo, 2), 'tiempo_ms' => round($tiempo * 1000, 0)]);
         }
 
         if ($tipo === 'all' || $tipo === 'productos') {
             $inicio = microtime(true);
             $this->info('📦 Calculando productos top masivos...');
             $this->calcularProductosTopMasivo();
-            $this->tiemposEjecucion['Productos'] = microtime(true) - $inicio;
+            $tiempo = microtime(true) - $inicio;
+            $this->tiemposEjecucion['Productos'] = $tiempo;
+            Log::info('cliente360 Productos masivo', ['tiempo_seg' => round($tiempo, 2), 'tiempo_ms' => round($tiempo * 1000, 0)]);
         }
 
         if ($tipo === 'all' || $tipo === 'mensuales') {
             $inicio = microtime(true);
             $this->info('📅 Calculando ventas mensuales masivas...');
             $this->calcularVentasMensualesMasivo();
-            $this->tiemposEjecucion['Ventas Mensuales'] = microtime(true) - $inicio;
+            $tiempo = microtime(true) - $inicio;
+            $this->tiemposEjecucion['Ventas Mensuales'] = $tiempo;
+            Log::info('cliente360 Ventas Mensuales masivo', ['tiempo_seg' => round($tiempo, 2), 'tiempo_ms' => round($tiempo * 1000, 0)]);
         }
 
         if ($tipo === 'all' || $tipo === 'fidelizacion') {
             $inicio = microtime(true);
             $this->info('⭐ Calculando fidelización masiva...');
             $this->calcularFidelizacionMasivo();
-            $this->tiemposEjecucion['Fidelización'] = microtime(true) - $inicio;
+            $tiempo = microtime(true) - $inicio;
+            $this->tiemposEjecucion['Fidelización'] = $tiempo;
+            Log::info('cliente360 Fidelización masivo', ['tiempo_seg' => round($tiempo, 2), 'tiempo_ms' => round($tiempo * 1000, 0)]);
         }
 
         if ($tipo === 'all' || $tipo === 'actividad') {
             $inicio = microtime(true);
             $this->info('🔄 Calculando actividad reciente masiva...');
             $this->calcularActividadMasivo();
-            $this->tiemposEjecucion['Actividad'] = microtime(true) - $inicio;
+            $tiempo = microtime(true) - $inicio;
+            $this->tiemposEjecucion['Actividad'] = $tiempo;
+            Log::info('cliente360 Actividad masivo', ['tiempo_seg' => round($tiempo, 2), 'tiempo_ms' => round($tiempo * 1000, 0)]);
         }
 
         if ($tipo === 'all' || $tipo === 'categorias') {
             $inicio = microtime(true);
             $this->info('🏷️ Calculando categorías preferidas masivas...');
             $this->calcularCategoriasPreferidas();
-            $this->tiemposEjecucion['Categorías Preferidas'] = microtime(true) - $inicio;
+            $tiempo = microtime(true) - $inicio;
+            $this->tiemposEjecucion['Categorías Preferidas'] = $tiempo;
+            Log::info('cliente360 Categorías Preferidas masivo', ['tiempo_seg' => round($tiempo, 2), 'tiempo_ms' => round($tiempo * 1000, 0)]);
         }
     }
 
@@ -482,23 +507,66 @@ class CalcularClientes360Command extends Command
             // Limpiar tabla
             DB::table('cliente_fidelizacion_snapshot')->truncate();
 
+            $hasIdEmpresa = Schema::hasColumn('cliente_fidelizacion_snapshot', 'id_empresa');
+
+            $columns = [
+                'id_cliente',
+                'puntos_disponibles',
+                'puntos_totales_ganados',
+                'puntos_totales_canjeados',
+                'valor_puntos_canjeados',
+                'transacciones_ultimos_30_dias',
+                'puntos_ganados_ultimos_30_dias',
+                'puntos_canjeados_ultimos_30_dias',
+                'fecha_ultima_ganancia',
+                'fecha_ultimo_canje',
+                'tasa_redencion',
+                'fecha_snapshot',
+                'created_at',
+                'updated_at'
+            ];
+            if ($hasIdEmpresa) {
+                array_splice($columns, 1, 0, ['id_empresa']);
+            }
+
+            $t30On = $hasIdEmpresa
+                ? 'pc.id_cliente = t30.id_cliente AND pc.id_empresa = t30.id_empresa'
+                : 'pc.id_cliente = t30.id_cliente';
+            $ugOn = $hasIdEmpresa
+                ? 'pc.id_cliente = ug.id_cliente AND pc.id_empresa = ug.id_empresa'
+                : 'pc.id_cliente = ug.id_cliente';
+            $ucOn = $hasIdEmpresa
+                ? 'pc.id_cliente = uc.id_cliente AND pc.id_empresa = uc.id_empresa'
+                : 'pc.id_cliente = uc.id_cliente';
+            $valOn = $hasIdEmpresa
+                ? 'pc.id_cliente = val.id_cliente AND pc.id_empresa = val.id_empresa'
+                : 'pc.id_cliente = val.id_cliente';
+
+            $t30Group = $hasIdEmpresa ? 'id_cliente, id_empresa' : 'id_cliente';
+            $ugGroup = $hasIdEmpresa ? 'id_cliente, id_empresa' : 'id_cliente';
+            $ucGroup = $hasIdEmpresa ? 'id_cliente, id_empresa' : 'id_cliente';
+            $valGroup = $hasIdEmpresa ? 'id_cliente, id_empresa' : 'id_cliente';
+
+            $t30Select = $hasIdEmpresa
+                ? 'id_cliente, id_empresa, COUNT(*) as total_transacciones, SUM(CASE WHEN tipo = \'ganancia\' THEN puntos ELSE 0 END) as puntos_ganados, SUM(CASE WHEN tipo = \'canje\' THEN ABS(puntos) ELSE 0 END) as puntos_canjeados'
+                : 'id_cliente, COUNT(*) as total_transacciones, SUM(CASE WHEN tipo = \'ganancia\' THEN puntos ELSE 0 END) as puntos_ganados, SUM(CASE WHEN tipo = \'canje\' THEN ABS(puntos) ELSE 0 END) as puntos_canjeados';
+            $ugSelect = $hasIdEmpresa ? 'id_cliente, id_empresa, MAX(created_at) as ultima_ganancia' : 'id_cliente, MAX(created_at) as ultima_ganancia';
+            $ucSelect = $hasIdEmpresa ? 'id_cliente, id_empresa, MAX(created_at) as ultimo_canje' : 'id_cliente, MAX(created_at) as ultimo_canje';
+            $valSelect = $hasIdEmpresa ? 'id_cliente, id_empresa, COALESCE(SUM(monto_asociado), 0) as valor_canjeado' : 'id_cliente, COALESCE(SUM(monto_asociado), 0) as valor_canjeado';
+
+
             DB::statement("
-                INSERT INTO cliente_fidelizacion_snapshot (
-                    id_cliente, puntos_disponibles, puntos_totales_ganados, puntos_totales_canjeados,
-                    valor_puntos_canjeados, transacciones_ultimos_30_dias, 
-                    puntos_ganados_ultimos_30_dias, puntos_canjeados_ultimos_30_dias,
-                    fecha_ultima_ganancia, fecha_ultimo_canje, tasa_redencion,
-                    fecha_snapshot, created_at, updated_at
-                )
+                INSERT INTO cliente_fidelizacion_snapshot (" . implode(', ', $columns) . ")
                 SELECT 
                     pc.id_cliente,
+                    " . ($hasIdEmpresa ? 'pc.id_empresa,' : '') . "
                     pc.puntos_disponibles,
                     pc.puntos_totales_ganados,
                     pc.puntos_totales_canjeados,
-                    pc.puntos_totales_canjeados * 0.1 as valor_puntos_canjeados,
-                    COALESCE(t30.total_transacciones, 0) as transacciones_30_dias,
-                    COALESCE(t30.puntos_ganados, 0) as puntos_ganados_30,
-                    COALESCE(t30.puntos_canjeados, 0) as puntos_canjeados_30,
+                    COALESCE(val.valor_canjeado, 0) as valor_puntos_canjeados,
+                    COALESCE(t30.total_transacciones, 0) as transacciones_ultimos_30_dias,
+                    COALESCE(t30.puntos_ganados, 0) as puntos_ganados_ultimos_30_dias,
+                    COALESCE(t30.puntos_canjeados, 0) as puntos_canjeados_ultimos_30_dias,
                     ug.ultima_ganancia,
                     uc.ultimo_canje,
                     CASE 
@@ -514,27 +582,29 @@ class CalcularClientes360Command extends Command
                 INNER JOIN empresa_funcionalidades ef ON pc.id_empresa = ef.id_empresa
                 INNER JOIN funcionalidades f ON ef.id_funcionalidad = f.id
                 LEFT JOIN (
-                    SELECT 
-                        id_cliente,
-                        COUNT(*) as total_transacciones,
-                        SUM(CASE WHEN tipo = 'ganancia' THEN puntos ELSE 0 END) as puntos_ganados,
-                        SUM(CASE WHEN tipo = 'canje' THEN puntos ELSE 0 END) as puntos_canjeados
+                    SELECT {$t30Select}
                     FROM transacciones_puntos
                     WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                    GROUP BY id_cliente
-                ) t30 ON pc.id_cliente = t30.id_cliente
+                    GROUP BY {$t30Group}
+                ) t30 ON {$t30On}
                 LEFT JOIN (
-                    SELECT id_cliente, MAX(created_at) as ultima_ganancia
+                    SELECT {$ugSelect}
                     FROM transacciones_puntos
                     WHERE tipo = 'ganancia'
-                    GROUP BY id_cliente
-                ) ug ON pc.id_cliente = ug.id_cliente
+                    GROUP BY {$ugGroup}
+                ) ug ON {$ugOn}
                 LEFT JOIN (
-                    SELECT id_cliente, MAX(created_at) as ultimo_canje
+                    SELECT {$ucSelect}
                     FROM transacciones_puntos
                     WHERE tipo = 'canje'
-                    GROUP BY id_cliente
-                ) uc ON pc.id_cliente = uc.id_cliente
+                    GROUP BY {$ucGroup}
+                ) uc ON {$ucOn}
+                LEFT JOIN (
+                    SELECT {$valSelect}
+                    FROM transacciones_puntos
+                    WHERE tipo = 'canje'
+                    GROUP BY {$valGroup}
+                ) val ON {$valOn}
                 WHERE f.slug = 'fidelizacion-clientes'
                   AND ef.activo = true
             ");
@@ -1045,51 +1115,69 @@ class CalcularClientes360Command extends Command
     // ============================================
     private function actualizarSnapshotFidelizacion($idCliente, $force)
     {
-        $puntosCliente = DB::table('puntos_cliente')
-            ->join('clientes', 'puntos_cliente.id_cliente', '=', 'clientes.id')
+        $puntosClientes = DB::table('puntos_cliente')
+            ->join('empresa_funcionalidades', 'puntos_cliente.id_empresa', '=', 'empresa_funcionalidades.id_empresa')
+            ->join('funcionalidades', 'empresa_funcionalidades.id_funcionalidad', '=', 'funcionalidades.id')
             ->where('puntos_cliente.id_cliente', $idCliente)
+            ->where('funcionalidades.slug', 'fidelizacion-clientes')
+            ->where('empresa_funcionalidades.activo', true)
             ->select('puntos_cliente.*')
-            ->first();
+            ->get();
 
-        if (!$puntosCliente) {
+        if ($puntosClientes->isEmpty()) {
             return;
         }
 
-        // Calcular métricas de últimos 30 días
+        $hasIdEmpresa = Schema::hasColumn('cliente_fidelizacion_snapshot', 'id_empresa');
         $hace30Dias = now()->subDays(30);
 
-        $transacciones30Dias = DB::table('transacciones_puntos')
-            ->where('id_cliente', $idCliente)
-            ->where('created_at', '>=', $hace30Dias)
-            ->get();
+        foreach ($puntosClientes as $pc) {
+            $idEmpresa = $pc->id_empresa;
 
-        $puntosGanados30 = $transacciones30Dias->where('tipo', 'ganancia')->sum('puntos');
-        $puntosCanjeados30 = $transacciones30Dias->where('tipo', 'canje')->sum('puntos');
+            $tx30 = DB::table('transacciones_puntos')
+                ->where('id_cliente', $idCliente)
+                ->where('id_empresa', $idEmpresa)
+                ->where('created_at', '>=', $hace30Dias)
+                ->get();
 
-        $ultimaGanancia = DB::table('transacciones_puntos')
-            ->where('id_cliente', $idCliente)
-            ->where('tipo', 'ganancia')
-            ->orderBy('created_at', 'desc')
-            ->value('created_at');
+            $puntosGanados30 = $tx30->where('tipo', 'ganancia')->sum('puntos');
+            $puntosCanjeados30 = $tx30->where('tipo', 'canje')->sum('puntos');
+            $puntosCanjeados30 = abs($puntosCanjeados30); // canje tiene puntos negativos
 
-        $ultimoCanje = DB::table('transacciones_puntos')
-            ->where('id_cliente', $idCliente)
-            ->where('tipo', 'canje')
-            ->orderBy('created_at', 'desc')
-            ->value('created_at');
+            $ultimaGanancia = DB::table('transacciones_puntos')
+                ->where('id_cliente', $idCliente)
+                ->where('id_empresa', $idEmpresa)
+                ->where('tipo', 'ganancia')
+                ->orderBy('created_at', 'desc')
+                ->value('created_at');
 
-        $tasaRedencion = $puntosCliente->puntos_totales_ganados > 0
-            ? ($puntosCliente->puntos_totales_canjeados / $puntosCliente->puntos_totales_ganados) * 100
-            : 0;
+            $ultimoCanje = DB::table('transacciones_puntos')
+                ->where('id_cliente', $idCliente)
+                ->where('id_empresa', $idEmpresa)
+                ->where('tipo', 'canje')
+                ->orderBy('created_at', 'desc')
+                ->value('created_at');
 
-        DB::table('cliente_fidelizacion_snapshot')->updateOrInsert(
-            ['id_cliente' => $idCliente],
-            [
-                'puntos_disponibles' => $puntosCliente->puntos_disponibles ?? 0,
-                'puntos_totales_ganados' => $puntosCliente->puntos_totales_ganados ?? 0,
-                'puntos_totales_canjeados' => $puntosCliente->puntos_totales_canjeados ?? 0,
-                'valor_puntos_canjeados' => ($puntosCliente->puntos_totales_canjeados ?? 0) * 0.1,
-                'transacciones_ultimos_30_dias' => $transacciones30Dias->count(),
+            $valorCanjeado = DB::table('transacciones_puntos')
+                ->where('id_cliente', $idCliente)
+                ->where('id_empresa', $idEmpresa)
+                ->where('tipo', 'canje')
+                ->sum('monto_asociado');
+
+            $tasaRedencion = $pc->puntos_totales_ganados > 0
+                ? ($pc->puntos_totales_canjeados / $pc->puntos_totales_ganados) * 100
+                : 0;
+
+            $uniqueKey = $hasIdEmpresa
+                ? ['id_cliente' => $idCliente, 'id_empresa' => $idEmpresa]
+                : ['id_cliente' => $idCliente];
+
+            $data = [
+                'puntos_disponibles' => $pc->puntos_disponibles ?? 0,
+                'puntos_totales_ganados' => $pc->puntos_totales_ganados ?? 0,
+                'puntos_totales_canjeados' => $pc->puntos_totales_canjeados ?? 0,
+                'valor_puntos_canjeados' => $valorCanjeado ?? 0,
+                'transacciones_ultimos_30_dias' => $tx30->count(),
                 'puntos_ganados_ultimos_30_dias' => $puntosGanados30,
                 'puntos_canjeados_ultimos_30_dias' => $puntosCanjeados30,
                 'fecha_ultima_ganancia' => $ultimaGanancia,
@@ -1097,8 +1185,14 @@ class CalcularClientes360Command extends Command
                 'tasa_redencion' => round($tasaRedencion, 2),
                 'fecha_snapshot' => now(),
                 'updated_at' => now()
-            ]
-        );
+            ];
+
+            if ($hasIdEmpresa) {
+                $data['id_empresa'] = $idEmpresa;
+            }
+
+            DB::table('cliente_fidelizacion_snapshot')->updateOrInsert($uniqueKey, $data);
+        }
     }
 
     // ============================================

@@ -1,0 +1,230 @@
+<div class="container-fluid py-4">
+  <div class="row mb-3">
+    <div class="col">
+      <h2 class="mb-0">Mapa de Mesas</h2>
+    </div>
+    <div class="col-auto">
+      <button type="button" class="btn btn-primary" (click)="openModalMesa(templateMesa)">
+        <img src="/assets/icons/plus-stroke.png" class="icon me-2" alt=""> Nueva mesa
+      </button>
+    </div>
+  </div>
+
+  <div class="row mb-3 align-items-center">
+    <div class="col-12 d-flex flex-wrap gap-3">
+      <span class="leyenda-item">
+        <span class="leyenda-color" style="background:#22c55e"></span>
+        <span>Libre</span>
+      </span>
+      <span class="leyenda-item">
+        <span class="leyenda-color" style="background:#eab308"></span>
+        <span>Ocupada</span>
+      </span>
+      <span class="leyenda-item">
+        <span class="leyenda-color" style="background:#ef4444"></span>
+        <span>Pendiente pago</span>
+      </span>
+      <span class="leyenda-item">
+        <span class="leyenda-color" style="background:#3b82f6"></span>
+        <span>Reservada</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+      <div *ngIf="loading" class="text-center py-5">
+        <span class="spinner-border spinner-border-sm me-2"></span> Cargando mesas...
+      </div>
+
+      <div *ngIf="!loading && mesas.length === 0" class="text-center py-5 text-muted">
+        <p class="mb-3">No hay mesas configuradas.</p>
+        <button type="button" class="btn btn-outline-primary" (click)="openModalMesa(templateMesa)">
+          Crear primera mesa
+        </button>
+      </div>
+
+      <div *ngIf="!loading && mesas.length > 0" class="mesa-grid">
+        <div
+          *ngFor="let mesa of mesas"
+          class="mesa-item"
+          [style.background-color]="colorMesa(mesa)"
+          [class.mesa-inactiva]="!mesa.activo"
+          (click)="mesa.activo && onClickMesa(mesa)"
+          [class.cursor-pointer]="mesa.activo && (mesa.estado === 'libre' || mesa.estado === 'ocupada' || mesa.estado === 'pendiente_pago' || mesa.estado === 'reservada')"
+        >
+          <button
+            type="button"
+            class="btn btn-sm btn-light mesa-edit-btn"
+            (click)="openModalMesa(templateMesa, mesa); $event.stopPropagation()"
+            tooltip="Editar mesa"
+            [adaptivePosition]="false"
+            placement="top"
+          >
+            <i class="fa fa-cog"></i>
+          </button>
+          <div class="mesa-numero">{{ mesa.numero }}</div>
+          <div class="mesa-info" *ngIf="mesa.capacidad">Cap. {{ mesa.capacidad }}</div>
+          <div class="mesa-tiempo" *ngIf="mesa.tiempo_abierta">{{ mesa.tiempo_abierta }}</div>
+          <div class="mesa-tiempo" *ngIf="mesa.estado === 'reservada' && mesa.reservas_activas?.[0]">
+            {{ mesa.reservas_activas[0].hora_reserva }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #templateMesa>
+  <div class="modal-header justify-content-between">
+    <h3 class="modal-title">{{ mesaSeleccionada ? 'Editar mesa' : 'Nueva mesa' }}</h3>
+    <button class="btn btn-light text-danger" (click)="cerrarModal()">Cancelar <i class="fa fa-close"></i></button>
+  </div>
+  <div class="modal-body p-3">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form (ngSubmit)="guardarMesa($event); $event.preventDefault()">
+      <div class="row">
+        <div class="form-group col-md-6 mb-3">
+          <label for="numero">Número</label>
+          <input type="text" class="form-control" id="numero" placeholder="Ej. 1, A1, Terraza-1" [(ngModel)]="mesaForm.numero" name="numero" required>
+        </div>
+        <div class="form-group col-md-6 mb-3">
+          <label for="capacidad">Capacidad</label>
+          <input type="number" class="form-control" id="capacidad" min="1" max="99" [(ngModel)]="mesaForm.capacidad" name="capacidad">
+        </div>
+        <div class="form-group col-md-6 mb-3">
+          <label for="zona">Zona</label>
+          <input type="text" class="form-control" id="zona" placeholder="Ej. Interior, Terraza" [(ngModel)]="mesaForm.zona" name="zona">
+        </div>
+        <div class="form-group col-md-6 mb-3">
+          <label for="orden">Orden en mapa</label>
+          <input type="number" class="form-control" id="orden" min="0" [(ngModel)]="mesaForm.orden" name="orden" placeholder="0 = primero">
+          <small class="text-muted">Define el orden de las mesas en el mapa (menor = primero)</small>
+        </div>
+        <div class="form-group col-12 mb-3">
+          <div class="form-switch bg-light-info rounded p-2">
+            <label for="activo">Mesa activa (visible en mapa)</label>
+            <input class="form-check-input float-end" type="checkbox" role="switch" id="activo" [(ngModel)]="mesaForm.activo" name="activo">
+          </div>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="button" [disabled]="guardando" class="btn btn-primary" (click)="guardarMesa()">
+          <span *ngIf="!guardando">Guardar</span>
+          <span *ngIf="guardando">Guardando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #templateAccionMesaLibre>
+  <div class="modal-header justify-content-between">
+    <h3 class="modal-title">Mesa {{ mesaSeleccionada?.numero }}</h3>
+    <button class="btn btn-light text-danger" (click)="cerrarModalAccionLibre()">Cerrar <i class="fa fa-close"></i></button>
+  </div>
+  <div class="modal-body p-4">
+    <p class="text-muted mb-3">¿Qué desea hacer?</p>
+    <div class="d-flex flex-column gap-2">
+      <button type="button" class="btn btn-primary" (click)="abrirMesaDesdeAccion()">
+        <i class="fa fa-utensils me-2"></i> Abrir mesa
+      </button>
+      <button type="button" class="btn btn-outline-primary" (click)="abrirReservarDesdeAccion()">
+        <i class="fa fa-calendar-check me-2"></i> Reservar
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #templateAbrirMesa>
+  <div class="modal-header justify-content-between">
+    <h3 class="modal-title">Abrir mesa {{ mesaSeleccionada?.numero }}</h3>
+    <button class="btn btn-light text-danger" (click)="cerrarModalAbrir()">Cancelar <i class="fa fa-close"></i></button>
+  </div>
+  <div class="modal-body p-3">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form (ngSubmit)="abrirMesa($event); $event.preventDefault()">
+      <div class="form-group mb-3">
+        <label for="num_comensales">Nº de comensales</label>
+        <input type="number" class="form-control" id="num_comensales" min="1" max="99" [(ngModel)]="abrirForm.num_comensales" name="num_comensales">
+      </div>
+      <div class="form-group mb-3">
+        <label for="observaciones">Observaciones</label>
+        <textarea class="form-control" id="observaciones" rows="2" placeholder="Opcional" [(ngModel)]="abrirForm.observaciones" name="observaciones"></textarea>
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalAbrir()">Cancelar</button>
+        <button type="button" [disabled]="guardando" class="btn btn-primary" (click)="abrirMesa()">
+          <span *ngIf="!guardando">Abrir mesa</span>
+          <span *ngIf="guardando">Abriendo...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #templateReservar>
+  <div class="modal-header justify-content-between">
+    <h3 class="modal-title">Reservar mesa {{ mesaSeleccionada?.numero }}</h3>
+    <button class="btn btn-light text-danger" (click)="cerrarModalReservar()">Cancelar <i class="fa fa-close"></i></button>
+  </div>
+  <div class="modal-body p-3">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form (ngSubmit)="crearReserva($event); $event.preventDefault()">
+      <div class="row">
+        <div class="form-group col-md-6 mb-3">
+          <label for="fecha_reserva">Fecha</label>
+          <input type="date" class="form-control" id="fecha_reserva" [(ngModel)]="reservaForm.fecha_reserva" name="fecha_reserva" required>
+        </div>
+        <div class="form-group col-md-6 mb-3">
+          <label for="hora_reserva">Hora</label>
+          <input type="time" class="form-control" id="hora_reserva" [(ngModel)]="reservaForm.hora_reserva" name="hora_reserva" required>
+        </div>
+        <div class="form-group col-12 mb-3">
+          <label for="cliente_nombre">Nombre del cliente</label>
+          <input type="text" class="form-control" id="cliente_nombre" placeholder="Opcional" [(ngModel)]="reservaForm.cliente_nombre" name="cliente_nombre">
+        </div>
+        <div class="form-group col-12 mb-3">
+          <label for="cliente_telefono">Teléfono</label>
+          <input type="text" class="form-control" id="cliente_telefono" placeholder="Opcional" [(ngModel)]="reservaForm.cliente_telefono" name="cliente_telefono">
+        </div>
+        <div class="form-group col-12 mb-3">
+          <label for="observaciones">Observaciones</label>
+          <textarea class="form-control" id="observaciones_reserva" rows="2" placeholder="Opcional" [(ngModel)]="reservaForm.observaciones" name="observaciones"></textarea>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalReservar()">Cancelar</button>
+        <button type="button" [disabled]="guardando" class="btn btn-primary" (click)="crearReserva()">
+          <span *ngIf="!guardando">Crear reserva</span>
+          <span *ngIf="guardando">Guardando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #templateMesaReservada>
+  <div class="modal-header justify-content-between">
+    <h3 class="modal-title">Mesa {{ mesaSeleccionada?.numero }} - Reservada</h3>
+    <button class="btn btn-light text-danger" (click)="cerrarModalMesaReservada()">Cerrar <i class="fa fa-close"></i></button>
+  </div>
+  <div class="modal-body p-3">
+    <app-notificaciones-container></app-notificaciones-container>
+    <div *ngIf="reservaSeleccionada" class="mb-4">
+      <p class="mb-1"><strong>Fecha:</strong> {{ reservaSeleccionada.fecha_reserva }} {{ reservaSeleccionada.hora_reserva }}</p>
+      <p class="mb-1" *ngIf="reservaSeleccionada.cliente_nombre"><strong>Cliente:</strong> {{ reservaSeleccionada.cliente_nombre }}</p>
+      <p class="mb-1" *ngIf="reservaSeleccionada.cliente_telefono"><strong>Teléfono:</strong> {{ reservaSeleccionada.cliente_telefono }}</p>
+      <p class="mb-0" *ngIf="reservaSeleccionada.observaciones"><strong>Observaciones:</strong> {{ reservaSeleccionada.observaciones }}</p>
+    </div>
+    <div class="d-flex flex-column gap-2">
+      <button type="button" class="btn btn-primary" [disabled]="guardando" (click)="convertirReservaEnSesion()">
+        <i class="fa fa-user-check me-2"></i> Llegó el cliente (abrir mesa)
+      </button>
+      <button type="button" class="btn btn-outline-danger" [disabled]="guardando" (click)="cancelarReserva()">
+        <i class="fa fa-times me-2"></i> Cancelar reserva
+      </button>
+    </div>
+  </div>
+</ng-template>

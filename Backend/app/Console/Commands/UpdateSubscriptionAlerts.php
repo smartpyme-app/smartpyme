@@ -22,7 +22,7 @@ class UpdateSubscriptionAlerts extends Command
      *
      * @var string
      */
-    protected $description = 'Actualiza las alertas de suscripción cuando faltan 3, 2 o 1 día para que expire';
+    protected $description = 'Actualiza alerta_suscripcion (banners: admin días 3 y 1; todos 0..-N; bloqueo -N-1)';
 
     /**
      * Execute the console command.
@@ -79,10 +79,9 @@ class UpdateSubscriptionAlerts extends Command
 
                 $debeActivarAlerta = false;
 
-                // Activar alerta si faltan 3, 2 o 1 día, o si ya venció (hasta 30 días)
-                if ($diasFaltantes >= -30 && $diasFaltantes <= 3) {
-                    $debeActivarAlerta = true;
-                }
+                // Tabla de banners: admin en dias_faltantes 3 y 1; cualquier día de vencimiento o mora (<=0); no banner en 2,4,5…
+                $debeActivarAlerta = \in_array($diasFaltantes, [3, 1], true)
+                    || $diasFaltantes <= 0;
 
                 // Debug: Mostrar información aunque no cambie el estado
                 $estadoActual = $empresa->alerta_suscripcion ? 'ACTIVADA' : 'DESACTIVADA';

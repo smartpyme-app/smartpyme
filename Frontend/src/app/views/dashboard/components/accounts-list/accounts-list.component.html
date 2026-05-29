@@ -1,0 +1,9 @@
+<div class="accounts-list-container">
+    <h6 class="list-title mb-3">{{ title }}</h6>
+    <div *ngIf="accounts && accounts.length > 0" class="chart-container" style="height: 400px;">
+        <div echarts [options]="chartOption" (chartInit)="onChartInit($event)" class="w-100 h-100"></div>
+    </div>
+    <div *ngIf="!accounts || accounts.length === 0" class="text-center p-4 text-muted">
+        <p class="mb-0">No hay datos disponibles para mostrar</p>
+    </div>
+</div>

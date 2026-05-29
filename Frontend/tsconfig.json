@@ -23,13 +23,15 @@
       "ES2022",
       "dom"
     ],
+    "skipLibCheck": true,
     "paths": {
       "@shared/*": ["src/app/shared/*"],
       "@layout/*": ["src/app/layout/*"],
       "@guards/*": ["src/app/guards/*"],
       "@services/*": ["src/app/services/*"],
       "@views/*": ["src/app/views/*"],
-      "@pipes/*": ["src/app/pipes/*"]
+      "@pipes/*": ["src/app/pipes/*"],
+      "@charts/*": ["src/app/views/dashboard/*"]
     }
   },
   "angularCompilerOptions": {
