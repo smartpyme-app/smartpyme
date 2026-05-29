@@ -9,6 +9,7 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +24,7 @@ final class CostaRicaFeCorreoService
 {
     public function __construct(
         private readonly CostaRicaFeComprobantePdfService $pdfService,
+        private readonly CostaRicaFeEmitService $emitService,
     ) {}
 
     public function enviarComprobante(EnviarDTERequest $request, Empresa $empresa, int $idEmpresaUsuario): JsonResponse
@@ -44,12 +46,12 @@ final class CostaRicaFeCorreoService
             return response()->json(['error' => $e->getMessage()], 404);
         }
 
-        $dte = $registroModelo->dte ?? null;
-        if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+        $dteRegistro = $this->dteRegistroParaCorreo($registroModelo, $tipoDte);
+        if (! CostaRicaFeDteDocumento::tieneComprobanteCr($dteRegistro)) {
             return response()->json(['error' => 'El registro no tiene comprobante electrónico Costa Rica.'], 404);
         }
 
-        [$xmlFirmado, $xmlRespuesta] = $this->extraerXmlsParaAdjuntos($dte, $tipoDte);
+        [$xmlFirmado, $xmlRespuesta] = $this->extraerXmlsParaAdjuntos($registroModelo, $tipoDte, $empresa, $dteRegistro);
 
         if (! is_string($xmlFirmado) || trim($xmlFirmado) === '') {
             return response()->json([
@@ -59,7 +61,7 @@ final class CostaRicaFeCorreoService
 
         if (! is_string($xmlRespuesta) || trim($xmlRespuesta) === '') {
             return response()->json([
-                'error' => 'No hay XML de respuesta de Hacienda guardado. Use «Consultar estado en Hacienda» en el sistema y vuelva a enviar el correo.',
+                'error' => 'No se pudo obtener el XML de respuesta de Hacienda. Verifique la clave del comprobante e intente de nuevo.',
             ], 422);
         }
 
@@ -71,7 +73,7 @@ final class CostaRicaFeCorreoService
 
         $pdfBin = $this->pdfService->pdfBinary($datosPdf);
 
-        $documento = is_array($dte['documento'] ?? null) ? $dte['documento'] : [];
+        $documento = $datosPdf['documento'] ?? [];
         $sum = is_array($documento['summary'] ?? null) ? $documento['summary'] : [];
         $total = isset($sum['total']) ? (float) $sum['total'] : (float) ($registroModelo->total ?? 0);
         $monedaCod = strtoupper((string) (($documento['currency']['currency_code'] ?? null) ?: 'CRC'));
@@ -97,10 +99,6 @@ final class CostaRicaFeCorreoService
         $emisorId = (string) (($documento['issuer']['identification_number'] ?? null) ?: ($empresa->nit ?? ''));
 
         $estadoTxt = 'Aceptado por el Ministerio de Hacienda';
-        $est = is_array($dte['cr']['estado_consulta'] ?? null) ? $dte['cr']['estado_consulta'] : [];
-        if (($est['success'] ?? null) === false) {
-            $estadoTxt = (string) (($est['messages'] ?? '') ?: 'Estado en Hacienda no disponible');
-        }
 
         $filas = [
             ['etiqueta' => 'Se ha generado un documento electrónico del tipo '.$tipoNombre.':', 'valor' => $consecutivo !== '' ? $consecutivo : '—'],
@@ -132,7 +130,22 @@ final class CostaRicaFeCorreoService
             return response()->json(['error' => 'No se pudo enviar el correo. Intente de nuevo o revise la configuración SMTP.'], 500);
         }
 
-        return response()->json(['message' => 'Correo enviado.', 'dte' => $dte], 200);
+        return response()->json(['message' => 'Correo enviado.'], 200);
+    }
+
+    private function dteRegistroParaCorreo(Venta|DevolucionVenta|Compra|Gasto $registro, string $tipoDte): mixed
+    {
+        if ($tipoDte === '02' && $registro instanceof Venta) {
+            $devNd = DevolucionVenta::query()
+                ->where('id_venta', $registro->id)
+                ->whereNotNull('codigo_generacion')
+                ->orderByDesc('id')
+                ->first();
+
+            return $devNd?->dte ?? $registro->dte;
+        }
+
+        return $registro->dte;
     }
 
     /**
@@ -204,27 +217,32 @@ final class CostaRicaFeCorreoService
     }
 
     /**
-     * @param  array<string, mixed>  $dte
      * @return array{0: ?string, 1: ?string}
      */
-    private function extraerXmlsParaAdjuntos(array $dte, string $tipoDte): array
-    {
-        $cr = is_array($dte['cr'] ?? null) ? $dte['cr'] : [];
-
-        if ($tipoDte === '02') {
-            $nd = is_array($cr['nota_debito'] ?? null) ? $cr['nota_debito'] : [];
-            $xmlFirm = isset($nd['xml_comprobante_firmado']) && is_string($nd['xml_comprobante_firmado']) ? $nd['xml_comprobante_firmado'] : null;
-            $est = is_array($nd['estado_consulta'] ?? null) ? $nd['estado_consulta'] : [];
-            $xmlResp = isset($est['response_xml']) && is_string($est['response_xml']) ? $est['response_xml'] : null;
-
-            return [$xmlFirm, $xmlResp];
+    private function extraerXmlsParaAdjuntos(
+        Venta|DevolucionVenta|Compra|Gasto $registro,
+        string $tipoDte,
+        Empresa $empresa,
+        mixed $dte
+    ): array {
+        $bloqueNd = null;
+        if ($tipoDte === '02' && $registro instanceof Venta && ! CostaRicaFeDteDocumento::tieneComprobanteCr($dte)) {
+            $ventaDte = $registro->dte;
+            $bloqueNd = is_array($ventaDte) ? ($ventaDte['cr']['nota_debito'] ?? null) : null;
         }
 
-        $xmlFirm = isset($cr['xml_comprobante_firmado']) && is_string($cr['xml_comprobante_firmado']) ? $cr['xml_comprobante_firmado'] : null;
-        $est = is_array($cr['estado_consulta'] ?? null) ? $cr['estado_consulta'] : [];
-        $xmlResp = isset($est['response_xml']) && is_string($est['response_xml']) ? $est['response_xml'] : null;
+        $xmlFirmado = CostaRicaFeDteDocumento::xmlComprobanteEmitido($dte, is_array($bloqueNd) ? $bloqueNd : null);
+        $clave = $tipoDte === '02' && $registro instanceof Venta
+            ? (string) (DevolucionVenta::query()->where('id_venta', $registro->id)->whereNotNull('codigo_generacion')->orderByDesc('id')->value('codigo_generacion') ?? '')
+            : (string) ($registro->codigo_generacion ?? '');
 
-        return [$xmlFirm, $xmlResp];
+        $xmlRespuesta = $this->emitService->obtenerRespuestaHaciendaXml(
+            $empresa,
+            $clave,
+            is_array($bloqueNd) ? ['pais' => 'CR', 'cr' => $bloqueNd] : $dte
+        );
+
+        return [$xmlFirmado, $xmlRespuesta];
     }
 
     private function etiquetaTipoDocumento(string $tipoDteCodigo, string $tituloPdf): string

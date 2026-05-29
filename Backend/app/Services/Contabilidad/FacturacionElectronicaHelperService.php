@@ -5,6 +5,7 @@ namespace App\Services\Contabilidad;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
+use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
@@ -139,24 +140,16 @@ class FacturacionElectronicaHelperService
         return ! empty($venta->sello_mh);
     }
 
-    /** FE CR: clave y sello_mh se guardan al emitir (como correlativo “sellado” en la práctica). */
+    /** FE CR: clave y XML del comprobante en dte. */
     private function ventaFeCrConClave(Venta $venta): bool
     {
-        $dte = $venta->dte;
-
-        return is_array($dte)
-            && ($dte['pais'] ?? null) === 'CR'
-            && trim((string) ($venta->codigo_generacion ?? '')) !== '';
+        return trim((string) ($venta->codigo_generacion ?? '')) !== ''
+            && CostaRicaFeDteDocumento::tieneComprobanteCr($venta->dte);
     }
 
     private function ventaFeCrAceptada(Venta $venta): bool
     {
-        $dte = $venta->dte;
-
-        return is_array($dte)
-            && ($dte['pais'] ?? null) === 'CR'
-            && ! empty($dte['cr']['aceptada'])
-            && ! empty($venta->codigo_generacion);
+        return $this->ventaFeCrConClave($venta);
     }
 
     /**

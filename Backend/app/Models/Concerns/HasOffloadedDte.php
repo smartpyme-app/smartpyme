@@ -18,13 +18,13 @@ trait HasOffloadedDte
     {
         $raw = $this->attributes['dte'] ?? null;
         if ($raw !== null && $raw !== '') {
-            return is_string($raw) ? json_decode($raw, true) : $raw;
+            return $this->decodeDteRaw($raw);
         }
 
         $s3Key = $this->attributes['dte_s3_key'] ?? null;
         if (!empty($s3Key)) {
             if ($this->resolvedDteMainCache === false) {
-                $this->resolvedDteMainCache = $this->fetchDteJsonFromS3($s3Key);
+                $this->resolvedDteMainCache = $this->fetchDteFromS3($s3Key);
             }
 
             return $this->resolvedDteMainCache;
@@ -54,7 +54,7 @@ trait HasOffloadedDte
         $s3Key = $this->attributes['dte_invalidacion_s3_key'] ?? null;
         if (!empty($s3Key)) {
             if ($this->resolvedDteInvalidacionCache === false) {
-                $this->resolvedDteInvalidacionCache = $this->fetchDteJsonFromS3($s3Key);
+                $this->resolvedDteInvalidacionCache = $this->fetchDteFromS3($s3Key);
             }
 
             return $this->resolvedDteInvalidacionCache;
@@ -123,7 +123,33 @@ trait HasOffloadedDte
         return parent::refresh();
     }
 
-    protected function fetchDteJsonFromS3(?string $key): ?array
+    /**
+     * @return array|string|null
+     */
+    protected function decodeDteRaw($raw)
+    {
+        if (! is_string($raw)) {
+            return $raw;
+        }
+
+        $trim = ltrim($raw);
+        if ($trim === '') {
+            return null;
+        }
+
+        if ($trim[0] === '{' || $trim[0] === '[') {
+            $decoded = json_decode($raw, true);
+
+            return is_array($decoded) ? $decoded : $raw;
+        }
+
+        return $raw;
+    }
+
+    /**
+     * @return array|string|null
+     */
+    protected function fetchDteFromS3(?string $key)
     {
         if ($key === null || $key === '') {
             return null;
@@ -136,9 +162,8 @@ trait HasOffloadedDte
                 return null;
             }
             $raw = Storage::disk($disk)->get($key);
-            $decoded = json_decode($raw, true);
 
-            return is_array($decoded) ? $decoded : null;
+            return $this->decodeDteRaw($raw);
         } catch (\Throwable $e) {
             Log::error('DTE S3: error al leer', ['key' => $key, 'message' => $e->getMessage()]);
 

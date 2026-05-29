@@ -8,6 +8,7 @@ use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use DazzaDev\DgtCr\Client;
 use DOMDocument;
@@ -200,21 +201,7 @@ final class CostaRicaFeEmitService
         $devolucion->codigo_generacion = $clave;
         $devolucion->tipo_dte = '03';
         $devolucion->sello_mh = $clave;
-        $devolucion->dte = [
-            'pais' => 'CR',
-            'tipo' => 'NotaCreditoElectronica',
-            'clave' => $clave,
-            'documento' => $data,
-            'identificacion' => [
-                'codigoGeneracion' => $clave,
-                'tipoDte' => '03',
-            ],
-            'cr' => array_merge([
-                'aceptada' => true,
-                'envio' => $envio,
-                'estado_consulta' => $estado,
-            ], $this->metadataXmlCr($client)),
-        ];
+        $devolucion->dte = $this->persistirDteCrAceptado($client, $estado);
         $devolucion->save();
 
         return [
@@ -246,8 +233,8 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('La devolución (nota de débito) ya tiene comprobante electrónico emitido (clave registrada).');
         }
 
-        $dtePrev = is_array($venta->dte) ? $venta->dte : [];
-        if (! empty(trim((string) (($dtePrev['cr']['nota_debito']['clave'] ?? ''))))) {
+        $devNdExistente = $this->queryDevolucionNotaDebitoPorVenta($venta);
+        if ($devNdExistente instanceof Devolucion && trim((string) ($devNdExistente->codigo_generacion ?? '')) !== '') {
             throw new RuntimeException('Esta venta ya tiene una nota de débito electrónica registrada.');
         }
         if ($montoLinea <= 0) {
@@ -370,35 +357,12 @@ final class CostaRicaFeEmitService
             );
         }
 
-        $dte = is_array($venta->dte) ? $venta->dte : [];
-        $dte['cr']['nota_debito'] = array_merge([
-            'clave' => $clave,
-            'aceptada' => true,
-            'documento' => $data,
-            'envio' => $envio,
-            'estado_consulta' => $estado,
-        ], $this->metadataXmlCr($client));
-        $venta->dte = $dte;
-        $venta->save();
+        $dteNd = $this->persistirDteCrAceptado($client, $estado);
 
         $devolucionNd->codigo_generacion = $clave;
         $devolucionNd->tipo_dte = '02';
         $devolucionNd->sello_mh = $clave;
-        $devolucionNd->dte = [
-            'pais' => 'CR',
-            'tipo' => 'NotaDebitoElectronica',
-            'clave' => $clave,
-            'documento' => $data,
-            'identificacion' => [
-                'codigoGeneracion' => $clave,
-                'tipoDte' => '02',
-            ],
-            'cr' => array_merge([
-                'aceptada' => true,
-                'envio' => $envio,
-                'estado_consulta' => $estado,
-            ], $this->metadataXmlCr($client)),
-        ];
+        $devolucionNd->dte = $dteNd;
         $devolucionNd->save();
 
         return [
@@ -609,22 +573,7 @@ final class CostaRicaFeEmitService
         $venta->tipo_dte = $tipoDte;
         /** Igual criterio práctico que FE SV: sello_mh informado para listados/UI; valor = clave DGT (50 caracteres). */
         $venta->sello_mh = $clave;
-        $venta->dte = [
-            'pais' => 'CR',
-            'tipo' => $tipoNombre,
-            'clave' => $clave,
-            /** Mismo criterio que El Salvador: JSON completo del comprobante (payload enviado a DGT). */
-            'documento' => $data,
-            'identificacion' => [
-                'codigoGeneracion' => $clave,
-                'tipoDte' => $tipoDte,
-            ],
-            'cr' => array_merge([
-                'aceptada' => true,
-                'envio' => $envio,
-                'estado_consulta' => $estado,
-            ], $this->metadataXmlCr($client)),
-        ];
+        $venta->dte = $this->persistirDteCrAceptado($client, $estado);
         $venta->save();
 
         return [
@@ -684,21 +633,7 @@ final class CostaRicaFeEmitService
         $compra->codigo_generacion = $clave;
         $compra->tipo_dte = $tipoDte;
         $compra->sello_mh = $clave;
-        $compra->dte = [
-            'pais' => 'CR',
-            'tipo' => $tipoNombre,
-            'clave' => $clave,
-            'documento' => $data,
-            'identificacion' => [
-                'codigoGeneracion' => $clave,
-                'tipoDte' => $tipoDte,
-            ],
-            'cr' => array_merge([
-                'aceptada' => true,
-                'envio' => $envio,
-                'estado_consulta' => $estado,
-            ], $this->metadataXmlCr($client)),
-        ];
+        $compra->dte = $this->persistirDteCrAceptado($client, $estado);
         $compra->save();
 
         return [
@@ -758,21 +693,7 @@ final class CostaRicaFeEmitService
         $gasto->codigo_generacion = $clave;
         $gasto->tipo_dte = $tipoDte;
         $gasto->sello_mh = $clave;
-        $gasto->dte = [
-            'pais' => 'CR',
-            'tipo' => $tipoNombre,
-            'clave' => $clave,
-            'documento' => $data,
-            'identificacion' => [
-                'codigoGeneracion' => $clave,
-                'tipoDte' => $tipoDte,
-            ],
-            'cr' => array_merge([
-                'aceptada' => true,
-                'envio' => $envio,
-                'estado_consulta' => $estado,
-            ], $this->metadataXmlCr($client)),
-        ];
+        $gasto->dte = $this->persistirDteCrAceptado($client, $estado);
         $gasto->save();
 
         return [
@@ -917,20 +838,20 @@ final class CostaRicaFeEmitService
 
     private function ventaFeCrAceptada(Venta $venta): bool
     {
-        $dte = $venta->dte;
+        if (! $this->ventaTieneClaveFeCr($venta)) {
+            return false;
+        }
 
-        return is_array($dte)
-            && ($dte['pais'] ?? null) === 'CR'
-            && ! empty($dte['cr']['aceptada']);
+        return CostaRicaFeDteDocumento::tieneComprobanteCr($venta->dte);
     }
 
     private function devolucionFeCrAceptada(Devolucion $devolucion): bool
     {
-        $dte = $devolucion->dte;
+        if (! $this->devolucionTieneClaveFeCr($devolucion)) {
+            return false;
+        }
 
-        return is_array($dte)
-            && ($dte['pais'] ?? null) === 'CR'
-            && ! empty($dte['cr']['aceptada']);
+        return CostaRicaFeDteDocumento::tieneComprobanteCr($devolucion->dte);
     }
 
     private function ventaTieneClaveFeCr(Venta $venta): bool
@@ -1015,22 +936,43 @@ final class CostaRicaFeEmitService
     }
 
     /**
-     * Para adjuntar en correo al cliente: XML firmado con la clave de Hacienda.
+     * Persiste en venta.dte solo el XML firmado del comprobante.
      *
-     * @return array<string, string>
+     * @param  array<string, mixed>  $estado
      */
-    private function metadataXmlCr(Client $client): array
+    private function persistirDteCrAceptado(Client $client, array $estado): string
     {
         [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
-        $out = [];
-        if (is_string($xmlFirm) && $xmlFirm !== '') {
-            $out['xml_comprobante_firmado'] = $xmlFirm;
-        }
-        if (is_string($xmlSin) && $xmlSin !== '') {
-            $out['xml_comprobante_sin_firma'] = $xmlSin;
+        $xmlDocumento = (is_string($xmlFirm) && $xmlFirm !== '') ? $xmlFirm : $xmlSin;
+        if (! is_string($xmlDocumento) || trim($xmlDocumento) === '') {
+            throw new RuntimeException('No se pudo obtener el XML del comprobante emitido.');
         }
 
-        return $out;
+        return $xmlDocumento;
+    }
+
+    /**
+     * Consulta Hacienda y devuelve el XML de respuesta (p. ej. correo o descarga cuando dte es solo XML).
+     */
+    public function obtenerRespuestaHaciendaXml($empresa, string $clave, mixed $dte = null): ?string
+    {
+        if ($dte !== null) {
+            $legacy = CostaRicaFeDteDocumento::respuestaHaciendaXml($dte);
+            if ($legacy !== null) {
+                return $legacy;
+            }
+        }
+
+        $clave = trim($clave);
+        if ($clave === '') {
+            return null;
+        }
+
+        $client = $this->factory->make($empresa);
+        $estado = $this->checkStatusConReintentosSinPersistirXml($client, $clave, 1, 0);
+        $xml = $estado['response_xml'] ?? null;
+
+        return is_string($xml) && trim($xml) !== '' ? $xml : null;
     }
 
     /**
@@ -1199,60 +1141,22 @@ final class CostaRicaFeEmitService
         $venta = $this->cargarVenta($ventaId);
         $this->assertEmpresaCr($venta->empresa);
 
-        $dte = is_array($venta->dte) ? $venta->dte : [];
-        $nd = is_array($dte['cr']['nota_debito'] ?? null) ? $dte['cr']['nota_debito'] : [];
-        $clave = trim((string) ($nd['clave'] ?? ''));
-        if ($clave === '') {
+        $devNd = $this->queryDevolucionNotaDebitoPorVenta($venta);
+        if (! $devNd instanceof Devolucion) {
             throw new RuntimeException('No hay nota de débito electrónica registrada para esta venta.');
         }
 
-        $client = $this->factory->make($venta->empresa);
-        $estado = $this->checkStatusConReintentosSinPersistirXml($client, $clave, 3, 2);
-        $aceptada = (bool) ($estado['success'] ?? false);
-        $status = strtolower(trim((string) ($estado['status'] ?? '')));
-
-        if ($status === 'rechazado') {
-            unset($dte['cr']['nota_debito']);
-            $venta->dte = $dte;
-            $venta->save();
-
-            $devNd = $this->queryDevolucionNotaDebitoPorVenta($venta);
-            if ($devNd instanceof Devolucion && trim((string) ($devNd->codigo_generacion ?? '')) !== '') {
-                $devNd->codigo_generacion = null;
-                $devNd->tipo_dte = null;
-                $devNd->sello_mh = null;
-                $devNd->dte = null;
-                $devNd->save();
-            }
-
-            return [
-                'venta' => $venta->fresh(),
-                'detalle_estado' => $estado,
-                'rechazado' => true,
-            ];
-        }
-
-        $nd['aceptada'] = $aceptada;
-        $nd['estado_consulta'] = $estado;
-        $dte['cr']['nota_debito'] = $nd;
-        $venta->dte = $dte;
-        $venta->save();
-
-        $devNd = $this->queryDevolucionNotaDebitoPorVenta($venta);
-        if ($devNd instanceof Devolucion && trim((string) ($devNd->codigo_generacion ?? '')) === $clave) {
-            $dteDev = is_array($devNd->dte) ? $devNd->dte : [];
-            if (! isset($dteDev['cr']) || ! is_array($dteDev['cr'])) {
-                $dteDev['cr'] = [];
-            }
-            $dteDev['cr']['aceptada'] = $aceptada;
-            $dteDev['cr']['estado_consulta'] = $estado;
-            $devNd->dte = $dteDev;
-            $devNd->save();
-        }
+        $resultado = $this->consultarEstadoFeCrModelo(
+            $devNd,
+            $venta->empresa,
+            'No hay nota de débito electrónica registrada para esta venta.',
+            'devolucion'
+        );
 
         return [
             'venta' => $venta->fresh(),
-            'detalle_estado' => $estado,
+            'detalle_estado' => $resultado['detalle_estado'],
+            'rechazado' => $resultado['rechazado'] ?? false,
         ];
     }
 
@@ -1288,16 +1192,6 @@ final class CostaRicaFeEmitService
         }
 
         $model->sello_mh = $clave;
-
-        $dte = is_array($model->dte) ? $model->dte : [];
-        if (($dte['pais'] ?? null) !== 'CR') {
-            $dte['pais'] = 'CR';
-        }
-        $cr = is_array($dte['cr'] ?? null) ? $dte['cr'] : [];
-        $cr['aceptada'] = $aceptada;
-        $cr['estado_consulta'] = $estado;
-        $dte['cr'] = $cr;
-        $model->dte = $dte;
         $model->save();
 
         return [
