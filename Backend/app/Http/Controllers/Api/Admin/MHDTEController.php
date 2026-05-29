@@ -24,6 +24,7 @@ use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeCorreoService;
 use App\Services\FacturacionElectronica\ElSalvador\ElSalvadorDteService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryGate;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -353,8 +354,8 @@ class MHDTEController extends Controller
     }
 
     /**
-     * Misma ruta que El Salvador (/reporte/dte-json/...): devuelve el JSON del comprobante guardado en BD.
-     * El payload enviado a DGT queda en dte.documento (venta / devolución) o en dte.cr.nota_debito.documento.
+     * Misma ruta que El Salvador (/reporte/dte-json/...): devuelve el JSON interno del comprobante guardado en BD.
+     * En ventas CR el XML emitido queda en dte.documento; el JSON DGT en dte.cr.payload_interno.
      */
     private function generarDteJsonCostaRica(int|string $id, string $tipo, GenerarDTEJSONRequest $request): JsonResponse
     {
@@ -367,7 +368,7 @@ class MHDTEController extends Controller
             if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
                 return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para este registro.'], 404);
             }
-            $payload = $dte['documento'] ?? $dte;
+            $payload = CostaRicaFeDteDocumento::payloadInternoJson($dte);
 
             return response()->json($payload, 200);
         }
@@ -383,7 +384,7 @@ class MHDTEController extends Controller
             if (! is_array($nd)) {
                 return response()->json(['error' => 'No hay nota de débito electrónica asociada.'], 404);
             }
-            $payload = $nd['documento'] ?? $nd;
+            $payload = CostaRicaFeDteDocumento::payloadInternoJson($dte, $nd);
 
             return response()->json($payload, 200);
         }
@@ -395,7 +396,7 @@ class MHDTEController extends Controller
             if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
                 return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para esta devolución.'], 404);
             }
-            $payload = $dte['documento'] ?? $dte;
+            $payload = CostaRicaFeDteDocumento::payloadInternoJson($dte);
 
             return response()->json($payload, 200);
         }

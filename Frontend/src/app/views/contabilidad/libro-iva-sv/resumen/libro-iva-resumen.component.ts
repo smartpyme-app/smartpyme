@@ -17,12 +17,13 @@ import {
   ventasPorImpuestoResumenLibroIva,
 } from '@views/contabilidad/libro-iva-shared/libro-iva-resumen.util';
 import * as moment from 'moment';
+import { LibroIvaResumenDescargasComponent } from '@views/contabilidad/libro-iva-shared/libro-iva-resumen-descargas.component';
 
 @Component({
   selector: 'app-libro-iva-resumen',
   templateUrl: './libro-iva-resumen.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TooltipModule],
+  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, LibroIvaResumenDescargasComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LibroIvaResumenComponent implements OnInit {

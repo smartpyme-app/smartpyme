@@ -12,11 +12,18 @@ import {
   crearAniosLibroIva,
   crearFiltrosLibroIvaIniciales,
 } from '@views/contabilidad/libro-iva-shared/libro-iva-filtros.util';
+import { LibroIvaResumenDescargasComponent } from '@views/contabilidad/libro-iva-shared/libro-iva-resumen-descargas.component';
 
 @Component({
   selector: 'app-libro-iva-general-resumen',
   standalone: true,
-  imports: [CommonModule, LibroIvaGeneralNavComponent, LibroIvaPeriodoFiltrosComponent, LibroIvaResumenPanelComponent],
+  imports: [
+    CommonModule,
+    LibroIvaGeneralNavComponent,
+    LibroIvaPeriodoFiltrosComponent,
+    LibroIvaResumenPanelComponent,
+    LibroIvaResumenDescargasComponent,
+  ],
   templateUrl: './libro-iva-general-resumen.component.html',
 })
 export class LibroIvaGeneralResumenComponent implements OnInit {

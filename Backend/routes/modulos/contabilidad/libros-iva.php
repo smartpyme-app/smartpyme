@@ -11,6 +11,7 @@ require base_path('routes/modulos/contabilidad/libros-iva-general.php');
 
 // Resumen fiscal (todos los países)
 Route::get('/libro-iva/resumen-fiscal', [LibrosIvaResumenController::class, 'resumenFiscal']);
+Route::get('/libro-iva/resumen-fiscal/descargar-excel', [LibrosIvaResumenController::class, 'resumenFiscalExport']);
 
 // Rutas compartidas legacy → despacho por país
 Route::get('/libro-iva/consumidores', [LibrosIvaLegacyController::class, 'consumidores']);
