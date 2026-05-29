@@ -18,6 +18,7 @@ export class CompraComponent implements OnInit {
     public loading = false;
 
     modalRef!: BsModalRef;
+    public abonoEdit:any = {};
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
@@ -48,6 +49,22 @@ export class CompraComponent implements OnInit {
     public openAbono(template: TemplateRef<any>, compra:any){
         this.compra = compra;
         this.modalRef = this.modalService.show(template);
+    }
+
+    public setEstado(abono:any){
+        this.apiService.store('compra/abono', abono).subscribe(() => {
+            this.loadAll();
+        }, error => {this.alertService.error(error); });
+    }
+
+    public openModalEditAbono(template: TemplateRef<any>, abono: any) {
+        this.abonoEdit = { ...abono };
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public onAbonoSaved() {
+        this.modalRef.hide();
+        this.loadAll();
     }
 
     public goBack() {

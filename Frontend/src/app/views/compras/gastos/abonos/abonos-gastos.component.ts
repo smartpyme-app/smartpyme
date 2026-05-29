@@ -104,6 +104,16 @@ export class AbonosGastosComponent implements OnInit {
         this.filtrarAbonos(false);
     }
 
+    openModalEdit(template: TemplateRef<any>, abono:any) {
+        this.abono = { ...abono };
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public onAbonoSaved() {
+        this.modalRef.hide();
+        this.filtrarAbonos(false);
+    }
+
     public openFilter(template: TemplateRef<any>) {
         this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
             this.formaPagos = formaPagos;
