@@ -1,10 +1,15 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 @Component({
   selector: 'app-editar-abono',
-  templateUrl: './editar-abono.component.html'
+  templateUrl: './editar-abono.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, NotificacionesContainerComponent],
 })
 export class EditarAbonoComponent implements OnInit {
 

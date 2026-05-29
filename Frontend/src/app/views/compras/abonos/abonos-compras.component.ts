@@ -139,12 +139,11 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
     }
 
     openModalEdit(template: TemplateRef<any>, abono:any) {
-        this.abono = { ...abono };
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template, abono);
     }
 
     public onAbonoSaved() {
-        this.modalRef.hide();
+        this.closeModal();
         this.filtrarAbonos(false);
     }
 
