@@ -49,26 +49,29 @@
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
+                        <th (click)="setOrden('correlativo')" [ngClass]="{'sorted-asc': filtros.orden == 'correlativo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'correlativo' && filtros.direccion == 'desc'}" class="click">N°</th>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>Proveedor</th>
                         <th class="d-none d-md-table-cell">Gasto</th>
                         <th class="d-none d-md-table-cell">Método de pago</th>
                         <th>Estado</th>
                         <th  (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
+                        <th class="text-center">Más</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="6" class="text-center" *ngIf="abonos?.total < 1 && !loading">
+                        <td colspan="8" class="text-center" *ngIf="abonos?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene abonos registrados</span>
                         </td>
-                        <td colspan="6" class="text-center" *ngIf="loading">
+                        <td colspan="8" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
 
                     <tr *ngFor=" let abono of abonos?.data">
                         
+                        <td>{{ abono.correlativo ?? abono.id }}</td>
                         <td>{{abono.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{abono.gasto?.nombre_proveedor }}</td>
                         <td>
@@ -83,6 +86,18 @@
                             </select>
                         </td>
                         <td class="text-right">{{abono.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a *ngIf="apiService.canEdit()" (click)="openModalEdit(meditAbono, abono)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
 
                     </tr>
                 </tbody>
@@ -146,3 +161,12 @@
   </div>
 </ng-template>
 
+<ng-template #meditAbono>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Editar abono</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-editar-abono [abono]="abono" endpoint="gasto/abono" (saved)="onAbonoSaved()"></app-editar-abono>
+  </div>
+</ng-template>

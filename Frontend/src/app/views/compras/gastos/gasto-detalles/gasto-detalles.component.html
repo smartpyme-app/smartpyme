@@ -150,23 +150,26 @@
             <table class="table table-borderless">
                 <thead>
                     <tr>
+                        <th>N°</th>
                         <th>Fecha</th>
                         <th>Concepto</th>
                         <th>Forma de pago</th>
                         <th>Estado</th>
                         <th class="text-end">Total</th>
+                        <th class="text-center">Mas</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="5" class="text-center" *ngIf="gasto.abonos?.length < 1 && !loading">
+                        <td colspan="7" class="text-center" *ngIf="gasto.abonos?.length < 1 && !loading">
                             <span class="badge bg-primary">No tiene abonos agregados</span>
                         </td>
-                        <td colspan="5" class="text-center" *ngIf="loading">
+                        <td colspan="7" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
                     <tr *ngFor="let abono of gasto.abonos; let i=index">
+                        <td>{{ abono.correlativo ?? abono.id }}</td>
                         <td>{{ abono.fecha | date:'dd/MM/yyyy' }}</td>
                         <td>{{ abono.concepto }}</td>
                         <td>{{ abono.forma_pago }} <small *ngIf="abono.detalle_banco" class="text-muted">({{ abono.detalle_banco }})</small></td>
@@ -177,6 +180,11 @@
                             </select>
                         </td>
                         <td class="text-end">{{ abono.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-center">
+                            <a *ngIf="apiService.canEdit()" (click)="openModalEditAbono(meditAbono, abono)" class="btn btn-light" tooltip="Editar">
+                                <i class="fa fa-fw fa-edit"></i>
+                            </a>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -190,6 +198,16 @@
     </div>
     <div class="modal-body">
         <app-crear-abono-gasto [gasto]="gasto" (update)="loadAll()"></app-crear-abono-gasto>
+    </div>
+</ng-template>
+
+<ng-template #meditAbono>
+    <div class="modal-header d-block text-center">
+        <h4 class="modal-title">Editar abono</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-editar-abono [abono]="abonoEdit" endpoint="gasto/abono" (saved)="onAbonoSaved()"></app-editar-abono>
     </div>
 </ng-template>
 
