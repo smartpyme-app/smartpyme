@@ -201,7 +201,7 @@
                         <!-- Cards de métricas a la derecha -->
                         <div class="row g-3 flex-grow-1" *ngIf="datos?.metricasGastos; else gastosMetricasLoader">
                             <div class="col">
-                                <div class="card border-0 h-100 d-flex" style="background-color: #ffe6d4; border-radius: 12px;">
+                                <div class="card border-0 h-100 d-flex mb-0" style="background-color: #ffe6d4; border-radius: 12px;">
                                     <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
                                         <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
                                             {{ formatCurrency(datos.metricasGastos?.gastosConIVA || 0) }}
@@ -213,7 +213,7 @@
                                 </div>
                             </div>
                             <div class="col">
-                                <div class="card border-0 h-100 d-flex" style="background-color: #ffe6d4; border-radius: 12px;">
+                                <div class="card border-0 h-100 d-flex mb-0" style="background-color: #ffe6d4; border-radius: 12px;">
                                     <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
                                         <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
                                             {{ formatCurrency(datos.metricasGastos?.gastosMesActual || 0) }}
@@ -225,7 +225,7 @@
                                 </div>
                             </div>
                             <div class="col">
-                                <div class="card border-0 h-100 d-flex" style="background-color: #ffe6d4; border-radius: 12px;">
+                                <div class="card border-0 h-100 d-flex mb-0" style="background-color: #ffe6d4; border-radius: 12px;">
                                     <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
                                         <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
                                             {{ formatCurrency(datos.metricasGastos?.gastosMesAnterior || 0) }}
@@ -237,7 +237,7 @@
                                 </div>
                             </div>
                             <div class="col">
-                                <div class="card border-0 h-100 d-flex" style="background-color: #ffe6d4; border-radius: 12px;">
+                                <div class="card border-0 h-100 d-flex mb-0" style="background-color: #ffe6d4; border-radius: 12px;">
                                     <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
                                         <h3 class="mb-2 fw-bold" style="color: #F19447; font-size: 1.5rem;">
                                             {{ formatCurrency(datos.metricasGastos?.variacionGastos || 0) }}
@@ -249,7 +249,7 @@
                                 </div>
                             </div>
                             <div class="col">
-                                <div class="card border-0 h-100 d-flex" style="background-color: #ffe6d4; border-radius: 12px;">
+                                <div class="card border-0 h-100 d-flex mb-0" style="background-color: #ffe6d4; border-radius: 12px;">
                                     <div class="card-body text-center py-3 d-flex flex-column justify-content-center align-items-center">
                                         <p class="mb-1 small fw-medium" style="color: #F19447;">
                                             Aumento de costos en

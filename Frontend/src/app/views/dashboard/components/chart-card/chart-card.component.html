@@ -3,7 +3,7 @@
         <div class="label-text-upper text-muted mb-1">
             {{ data.title }}
         </div>
-        <div class="value-text mb-1 text-dark">
+        <div class="value-text mb-1" [ngClass]="isNegativeValue() ? 'text-danger' : 'text-dark'">
             <span *ngIf="shouldShowCurrency()">$</span>{{ formatValue(data.value) }}
         </div>
         <div class="trend-indicator mb-0" *ngIf="data.trend">

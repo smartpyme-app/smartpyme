@@ -82,8 +82,7 @@
     <div class="card card-performance mb-2">
         <div class="card-body p-4">
             <div class="metrics-flex-row mb-4" *ngIf="datos?.metrics; else resultadosMetricasLoader">
-                <div class="metric-flex-col"
-                    *ngFor="let metric of datos.metrics; trackBy: trackByIndex">
+                <div class="metric-flex-col" *ngFor="let metric of datos.metrics; trackBy: trackByIndex">
                     <app-chart-card [data]="metric"></app-chart-card>
                 </div>
             </div>
@@ -128,54 +127,60 @@
         <div class="card-body p-4">
             <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
                 <div class="text-white fw-bold text-center py-2 px-5"
-                    style="background-color: #2e5cc5; font-size: 1.35rem; box-shadow: 0 5px 15px rgba(46, 92, 197, 0.25); border-radius: 0px; display: inline-block; min-width: 300px; max-width: 100%;">
+                    style="background-color: #2D52A8; font-size: 1.35rem; box-shadow: 0 5px 15px rgba(46, 92, 197, 0.25); border-radius: 0px; display: inline-block; min-width: 300px; max-width: 100%;">
                     Flujo de efectivo
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <label for="mesFiltro" class="mb-0 fw-medium">Mes:</label>
-                    <select id="mesFiltro" name="mesFlujoEfectivo" class="form-select"
-                        style="width: auto; min-width: 160px;" [(ngModel)]="mesFlujoEfectivo"
-                        (ngModelChange)="onMesFlujoEfectivoChange()">
-                        <option [ngValue]="null">Todo el año</option>
-                        <option *ngFor="let m of opcionesMesFlujo; trackBy: trackByMesValor" [ngValue]="m.valor">
-                            {{ m.etiqueta }}
-                        </option>
-                    </select>
+                <div class="d-flex align-items-end gap-3 flex-wrap">
+                    <!-- Selector de año -->
+                    <div class="d-flex flex-column dmf-select-outer">
+                        <span class="dmf-select-label fw-medium small mb-1">Año</span>
+                        <div class="dmf-select-wrap">
+                            <span class="dmf-select-icon" aria-hidden="true">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                            <select id="anioResultadosFlujo" name="anioResultadosFlujo" class="dmf-select"
+                                [ngModel]="anioSeleccionado" (ngModelChange)="cambiarAnio($event)">
+                                <option *ngFor="let anio of anios; trackBy: trackByIndex" [ngValue]="anio">
+                                    {{ anio }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Selector de mes -->
+                    <div class="d-flex flex-column dmf-select-outer" style="min-width: 160px;">
+                        <span class="dmf-select-label fw-medium small mb-1">Mes</span>
+                        <div class="dmf-select-wrap">
+                            <span class="dmf-select-icon" aria-hidden="true">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                            <select id="mesFiltro" name="mesFlujoEfectivo" class="dmf-select"
+                                [(ngModel)]="mesFlujoEfectivo" (ngModelChange)="onMesFlujoEfectivoChange()">
+                                <option [ngValue]="null">Todo el año</option>
+                                <option *ngFor="let m of opcionesMesFlujo; trackBy: trackByMesValor"
+                                    [ngValue]="m.valor">
+                                    {{ m.etiqueta }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Resumen + tablas Flujo de Efectivo (bloque pesado) -->
             <ng-container *ngIf="datos.cashflow !== undefined; else resultadosCashflowBlockLoader">
-                <div class="row mb-4" *ngIf="datos.cashflow as cf">
-                    <div class="col-md-3 mb-3">
-                        <div class="card" style="background-color: #e3f2fd; border: none;">
-                            <div class="card-body text-center">
-                                <div class="fw-bold text-dark" style="font-size: 1.5rem;">
-                                    {{ formatCurrency(cf.ingresosTotales || 0) }}
-                                </div>
-                                <div class="text-muted small mt-1">Ingresos percibidos</div>
-                            </div>
-                        </div>
+                <div class="metrics-flex-row mb-4" *ngIf="datos.cashflow as cf">
+                    <div class="metric-flex-col">
+                        <app-chart-card
+                            [data]="{ title: 'Ingresos percibidos', value: cf.ingresosTotales || 0, type: 'currency' }"></app-chart-card>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="card" style="background-color: #fff3e0; border: none;">
-                            <div class="card-body text-center">
-                                <div class="fw-bold text-dark" style="font-size: 1.5rem;">
-                                    {{ formatCurrency(cf.egresosTotales || 0) }}
-                                </div>
-                                <div class="text-muted small mt-1">Egresos realizados</div>
-                            </div>
-                        </div>
+                    <div class="metric-flex-col">
+                        <app-chart-card
+                            [data]="{ title: 'Egresos realizados', value: cf.egresosTotales || 0, type: 'currency' }"></app-chart-card>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="card" style="background-color: #e8f5e9; border: none;">
-                            <div class="card-body text-center">
-                                <div class="fw-bold text-dark" style="font-size: 1.5rem;">
-                                    {{ formatCurrency((cf.ingresosTotales || 0) - (cf.egresosTotales || 0)) }}
-                                </div>
-                                <div class="text-muted small mt-1">Resultados (neto)</div>
-                            </div>
-                        </div>
+                    <div class="metric-flex-col">
+                        <app-chart-card
+                            [data]="{ title: 'Resultados (neto)', value: (cf.ingresosTotales || 0) - (cf.egresosTotales || 0), type: 'currency' }"></app-chart-card>
                     </div>
                 </div>
                 <div class="row" *ngIf="datos.cashflow as cf">
@@ -194,10 +199,10 @@
                                                 placeholder="Buscar..." [(ngModel)]="quickFilterVentas"
                                                 (input)="onQuickFilterVentasChange()">
                                         </div>
-                                        <button class="btn btn-sm btn-outline-primary" (click)="exportarVentasCSV()"
+                                        <!-- <button class="btn btn-sm btn-outline-primary" (click)="exportarVentasCSV()"
                                             title="Exportar a CSV">
                                             <i class="fas fa-file-csv me-1"></i> CSV
-                                        </button>
+                                        </button> -->
                                         <button class="btn btn-sm btn-outline-success" (click)="exportarVentasExcel()"
                                             title="Exportar a Excel">
                                             <i class="fas fa-file-excel me-1"></i> Excel
@@ -216,7 +221,7 @@
                                         filter: true
                                     }" style="width: 100%; height: 400px;" [domLayout]="'normal'">
                                 </ag-grid-angular>
-                                <div class="p-3 table-footer-ventas">
+                                <div class="py-2 px-3 table-footer-ventas">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="fw-bold text-white">Total</span>
                                         <span class="fw-bold text-white">{{ formatCurrency(cf.ingresosTotales || 0)
@@ -241,10 +246,10 @@
                                                 placeholder="Buscar..." [(ngModel)]="quickFilterGastos"
                                                 (input)="onQuickFilterGastosChange()">
                                         </div>
-                                        <button class="btn btn-sm btn-outline-primary" (click)="exportarGastosCSV()"
+                                        <!-- <button class="btn btn-sm btn-outline-primary" (click)="exportarGastosCSV()"
                                             title="Exportar a CSV">
                                             <i class="fas fa-file-csv me-1"></i> CSV
-                                        </button>
+                                        </button> -->
                                         <button class="btn btn-sm btn-outline-success" (click)="exportarGastosExcel()"
                                             title="Exportar a Excel">
                                             <i class="fas fa-file-excel me-1"></i> Excel
@@ -263,7 +268,7 @@
                                         filter: true
                                     }" style="width: 100%; height: 400px;" [domLayout]="'normal'">
                                 </ag-grid-angular>
-                                <div class="p-3 table-footer-gastos">
+                                <div class="py-2 px-3 table-footer-gastos">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="fw-bold text-white">Total</span>
                                         <span class="fw-bold text-white">{{ formatCurrency(cf.egresosTotales || 0)
@@ -276,50 +281,46 @@
                 </div>
             </ng-container>
 
-            <!-- Tablas CXC / CXP próximos 30 días -->
-            <ng-container *ngIf="datos.cuentas30 !== undefined; else resultadosListLoader">
-                <div class="row" *ngIf="datos.cuentas30">
+            <!-- Tablas Abonos CxC / CxP -->
+            <ng-container *ngIf="datos.abonos !== undefined; else resultadosListLoader">
+                <div class="row" *ngIf="datos.abonos">
                     <div class="col-md-6 mb-4">
                         <div class="card">
                             <div class="card-body p-0">
                                 <div
                                     class="d-flex justify-content-between align-items-center p-3 border-bottom flex-wrap gap-2">
-                                    <h6 class="card-title mb-0 fw-bold">CXC próximos 30 días</h6>
+                                    <h6 class="card-title mb-0 fw-bold">Abonos recibidos CxC</h6>
                                     <div class="d-flex gap-2 align-items-center flex-wrap">
                                         <div class="input-group" style="width: 220px;">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="fas fa-search text-muted"></i>
                                             </span>
                                             <input type="text" class="form-control border-start-0"
-                                                placeholder="Buscar..." [(ngModel)]="quickFilterCobrar30"
-                                                (input)="onQuickFilterCobrar30Change()">
+                                                placeholder="Buscar..." [(ngModel)]="quickFilterAbonosCxc"
+                                                (input)="onQuickFilterAbonosCxcChange()">
                                         </div>
-                                        <button class="btn btn-sm btn-outline-primary" (click)="exportarCobrar30CSV()"
-                                            title="Exportar a CSV">
-                                            <i class="fas fa-file-csv me-1"></i> CSV
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-success" (click)="exportarCobrar30Excel()"
-                                            title="Exportar a Excel">
+                                        <button class="btn btn-sm btn-outline-success"
+                                            (click)="exportarAbonosCxcExcel()" title="Exportar a Excel">
                                             <i class="fas fa-file-excel me-1"></i> Excel
                                         </button>
                                         <button class="btn btn-sm btn-outline-secondary"
-                                            (click)="limpiarFiltrosCobrar30()" title="Limpiar filtros">
+                                            (click)="limpiarFiltrosAbonosCxc()" title="Limpiar filtros">
                                             <i class="fas fa-filter me-1"></i> Limpiar
                                         </button>
                                     </div>
                                 </div>
-                                <ag-grid-angular #cobrar30Grid class="ag-theme-alpine w-100" [rowData]="cobrar30Rows"
-                                    [columnDefs]="cobrar30ColumnDefs" [gridOptions]="cobrar30GridOptions"
-                                    [quickFilterText]="quickFilterCobrar30" [defaultColDef]="{
-                                        resizable: true,
-                                        sortable: true,
-                                        filter: true
-                                    }" style="width: 100%; height: 400px;" [domLayout]="'normal'">
+                                <ag-grid-angular #abonosCxcGrid class="ag-theme-alpine w-100" [rowData]="abonosCxcRows"
+                                    [columnDefs]="abonosCxcColumnDefs" [gridOptions]="abonosCxcGridOptions"
+                                    [quickFilterText]="quickFilterAbonosCxc" [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }" style="width: 100%; height: 400px;" [domLayout]="'normal'">
                                 </ag-grid-angular>
-                                <div class="p-3 table-footer-ventas">
+                                <div class="py-2 px-3 table-footer-ventas">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="fw-bold text-white">Total</span>
-                                        <span class="fw-bold text-white">{{ formatCurrency(totalCobrar30) }}</span>
+                                        <span class="fw-bold text-white">{{ formatCurrency(totalAbonosCxc) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -330,42 +331,38 @@
                             <div class="card-body p-0">
                                 <div
                                     class="d-flex justify-content-between align-items-center p-3 border-bottom flex-wrap gap-2">
-                                    <h6 class="card-title mb-0 fw-bold">CXP próximos 30 días</h6>
+                                    <h6 class="card-title mb-0 fw-bold">Abonos realizados CxP</h6>
                                     <div class="d-flex gap-2 align-items-center flex-wrap">
                                         <div class="input-group" style="width: 220px;">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="fas fa-search text-muted"></i>
                                             </span>
                                             <input type="text" class="form-control border-start-0"
-                                                placeholder="Buscar..." [(ngModel)]="quickFilterPagar30"
-                                                (input)="onQuickFilterPagar30Change()">
+                                                placeholder="Buscar..." [(ngModel)]="quickFilterAbonosCxp"
+                                                (input)="onQuickFilterAbonosCxpChange()">
                                         </div>
-                                        <button class="btn btn-sm btn-outline-primary" (click)="exportarPagar30CSV()"
-                                            title="Exportar a CSV">
-                                            <i class="fas fa-file-csv me-1"></i> CSV
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-success" (click)="exportarPagar30Excel()"
-                                            title="Exportar a Excel">
+                                        <button class="btn btn-sm btn-outline-success"
+                                            (click)="exportarAbonosCxpExcel()" title="Exportar a Excel">
                                             <i class="fas fa-file-excel me-1"></i> Excel
                                         </button>
                                         <button class="btn btn-sm btn-outline-secondary"
-                                            (click)="limpiarFiltrosPagar30()" title="Limpiar filtros">
+                                            (click)="limpiarFiltrosAbonosCxp()" title="Limpiar filtros">
                                             <i class="fas fa-filter me-1"></i> Limpiar
                                         </button>
                                     </div>
                                 </div>
-                                <ag-grid-angular #pagar30Grid class="ag-theme-alpine w-100" [rowData]="pagar30Rows"
-                                    [columnDefs]="pagar30ColumnDefs" [gridOptions]="pagar30GridOptions"
-                                    [quickFilterText]="quickFilterPagar30" [defaultColDef]="{
-                                        resizable: true,
-                                        sortable: true,
-                                        filter: true
-                                    }" style="width: 100%; height: 400px;" [domLayout]="'normal'">
+                                <ag-grid-angular #abonosCxpGrid class="ag-theme-alpine w-100" [rowData]="abonosCxpRows"
+                                    [columnDefs]="abonosCxpColumnDefs" [gridOptions]="abonosCxpGridOptions"
+                                    [quickFilterText]="quickFilterAbonosCxp" [defaultColDef]="{
+                            resizable: true,
+                            sortable: true,
+                            filter: true
+                        }" style="width: 100%; height: 400px;" [domLayout]="'normal'">
                                 </ag-grid-angular>
-                                <div class="p-3 table-footer-gastos">
+                                <div class="py-2 px-3 table-footer-gastos">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="fw-bold text-white">Total</span>
-                                        <span class="fw-bold text-white">{{ formatCurrency(totalPagar30) }}</span>
+                                        <span class="fw-bold text-white">{{ formatCurrency(totalAbonosCxp) }}</span>
                                     </div>
                                 </div>
                             </div>

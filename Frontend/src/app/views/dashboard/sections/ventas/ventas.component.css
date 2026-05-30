@@ -311,3 +311,8 @@
         opacity: 0.7;
     }
 }
+
+/* Reducción de espacios entre tarjetas */
+.ventas-dashboard .card {
+    margin-bottom: 0 !important;
+}

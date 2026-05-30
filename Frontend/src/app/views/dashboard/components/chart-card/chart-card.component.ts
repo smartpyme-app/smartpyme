@@ -70,6 +70,25 @@ export class ChartCardComponent implements OnInit {
     return this.data.type === 'currency';
   }
 
+  isNegativeValue(): boolean {
+    if (!this.data || this.data.value === undefined || this.data.value === null) {
+      return false;
+    }
+    const val = this.data.value;
+    if (typeof val === 'number') {
+      return val < 0;
+    }
+    if (typeof val === 'string') {
+      const cleaned = val.replace(/[^0-9.-]/g, '');
+      const parsed = parseFloat(cleaned);
+      if (!isNaN(parsed)) {
+        return parsed < 0;
+      }
+      return val.trim().startsWith('-');
+    }
+    return false;
+  }
+
   ngOnInit(): void {
   }
 }

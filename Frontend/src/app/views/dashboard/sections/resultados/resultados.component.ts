@@ -36,6 +36,12 @@ export class ResultadosComponent implements OnInit, OnChanges {
   private _pagar30RowsCache: any[] = [];
   private _totalCobrar30Cache: number = 0;
   private _totalPagar30Cache: number = 0;
+
+  private _abonosCxcRowsCache: any[] = [];
+  private _abonosCxpRowsCache: any[] = [];
+  private _totalAbonosCxcCache: number = 0;
+  private _totalAbonosCxpCache: number = 0;
+
   private _lastDatosHash: string = '';
 
   // AG Grid APIs y configuraciones
@@ -44,29 +50,37 @@ export class ResultadosComponent implements OnInit, OnChanges {
   private cobrar30GridApi!: GridApi;
   private pagar30GridApi!: GridApi;
 
+  // 👇 NUEVO: APIs para abonos
+  private abonosCxcGridApi!: GridApi;
+  private abonosCxpGridApi!: GridApi;
+
   ventasGridOptions: GridOptions = {};
   gastosGridOptions: GridOptions = {};
   cobrar30GridOptions: GridOptions = {};
   pagar30GridOptions: GridOptions = {};
 
+  // 👇 NUEVO: Grid options para abonos
+  abonosCxcGridOptions: GridOptions = {};
+  abonosCxpGridOptions: GridOptions = {};
+
   ventasColumnDefs: ColDef[] = [
-    { 
-      field: 'cliente', 
-      headerName: 'Cliente', 
+    {
+      field: 'cliente',
+      headerName: 'Cliente',
       flex: 2,
       sortable: true,
       filter: true
     },
-    { 
-      field: 'factura', 
-      headerName: '# factura', 
+    {
+      field: 'factura',
+      headerName: '# factura',
       width: 130,
       sortable: true,
       filter: true
     },
-    { 
-      field: 'monto', 
-      headerName: 'Monto', 
+    {
+      field: 'monto',
+      headerName: 'Monto',
       width: 160,
       sortable: true,
       filter: true,
@@ -79,23 +93,23 @@ export class ResultadosComponent implements OnInit, OnChanges {
   ];
 
   gastosColumnDefs: ColDef[] = [
-    { 
-      field: 'proveedor', 
-      headerName: 'Proveedor', 
+    {
+      field: 'proveedor',
+      headerName: 'Proveedor',
       flex: 2,
       sortable: true,
       filter: true
     },
-    { 
-      field: 'factura', 
-      headerName: '# factura', 
+    {
+      field: 'factura',
+      headerName: '# factura',
       width: 130,
       sortable: true,
       filter: true
     },
-    { 
-      field: 'monto', 
-      headerName: 'Monto', 
+    {
+      field: 'monto',
+      headerName: 'Monto',
       width: 160,
       sortable: true,
       filter: true,
@@ -108,9 +122,9 @@ export class ResultadosComponent implements OnInit, OnChanges {
   ];
 
   cobrar30ColumnDefs: ColDef[] = [
-    { field: 'factura',         headerName: '# Factura',   width: 120,  sortable: true, filter: true },
-    { field: 'cliente',         headerName: 'Cliente',     flex: 2,     sortable: true, filter: true },
-    { field: 'vence',           headerName: 'Vence',       width: 120,  sortable: true, filter: true },
+    { field: 'factura', headerName: '# Factura', width: 120, sortable: true, filter: true },
+    { field: 'cliente', headerName: 'Cliente', flex: 2, sortable: true, filter: true },
+    { field: 'vence', headerName: 'Vence', width: 120, sortable: true, filter: true },
     {
       field: 'diasVencimiento',
       headerName: 'Días venc.',
@@ -133,9 +147,60 @@ export class ResultadosComponent implements OnInit, OnChanges {
   ];
 
   pagar30ColumnDefs: ColDef[] = [
-    { field: 'factura',         headerName: '# Factura',   width: 120,  sortable: true, filter: true },
-    { field: 'proveedor',       headerName: 'Proveedor',   flex: 2,     sortable: true, filter: true },
-    { field: 'vence',           headerName: 'Vence',       width: 120,  sortable: true, filter: true },
+    { field: 'factura', headerName: '# Factura', width: 120, sortable: true, filter: true },
+    { field: 'proveedor', headerName: 'Proveedor', flex: 2, sortable: true, filter: true },
+    { field: 'vence', headerName: 'Vence', width: 120, sortable: true, filter: true },
+    {
+      field: 'diasVencimiento',
+      headerName: 'Días venc.',
+      width: 110,
+      sortable: true,
+      filter: true,
+      cellStyle: { textAlign: 'right' },
+      type: 'numericColumn'
+    },
+    {
+      field: 'monto',
+      headerName: 'Monto',
+      width: 150,
+      sortable: true,
+      filter: true,
+      valueFormatter: (params: any) => params.value ? this.formatCurrency(params.value) : '',
+      cellStyle: { textAlign: 'right' },
+      type: 'numericColumn'
+    }
+  ];
+
+  // 👇 NUEVO: Column definitions para abonos
+  abonosCxcColumnDefs: ColDef[] = [
+    { field: 'factura', headerName: '# Factura', width: 120, sortable: true, filter: true },
+    { field: 'cliente', headerName: 'Cliente', flex: 2, sortable: true, filter: true },
+    { field: 'vence', headerName: 'Vence', width: 120, sortable: true, filter: true },
+    {
+      field: 'diasVencimiento',
+      headerName: 'Días venc.',
+      width: 110,
+      sortable: true,
+      filter: true,
+      cellStyle: { textAlign: 'right' },
+      type: 'numericColumn'
+    },
+    {
+      field: 'monto',
+      headerName: 'Monto',
+      width: 150,
+      sortable: true,
+      filter: true,
+      valueFormatter: (params: any) => params.value ? this.formatCurrency(params.value) : '',
+      cellStyle: { textAlign: 'right' },
+      type: 'numericColumn'
+    }
+  ];
+
+  abonosCxpColumnDefs: ColDef[] = [
+    { field: 'factura', headerName: '# Factura', width: 120, sortable: true, filter: true },
+    { field: 'proveedor', headerName: 'Proveedor', flex: 2, sortable: true, filter: true },
+    { field: 'vence', headerName: 'Vence', width: 120, sortable: true, filter: true },
     {
       field: 'diasVencimiento',
       headerName: 'Días venc.',
@@ -159,14 +224,14 @@ export class ResultadosComponent implements OnInit, OnChanges {
 
   private inicializado: boolean = false;
 
-  @ViewChild('ventasPivot')   ventasPivotRef!:   WebdatarocksComponent;
-  @ViewChild('gastosPivot')   gastosPivotRef!:   WebdatarocksComponent;
+  @ViewChild('ventasPivot') ventasPivotRef!: WebdatarocksComponent;
+  @ViewChild('gastosPivot') gastosPivotRef!: WebdatarocksComponent;
   @ViewChild('cobrar30Pivot') cobrar30PivotRef!: WebdatarocksComponent;
-  @ViewChild('pagar30Pivot')  pagar30PivotRef!:  WebdatarocksComponent;
+  @ViewChild('pagar30Pivot') pagar30PivotRef!: WebdatarocksComponent;
 
   // Plugins para revo-grid legacy (CXC/CXP aún en uso si los hay)
   cobrar30Plugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
-  pagar30Plugins  = [SortingPlugin, FilterPlugin, ExportFilePlugin];
+  pagar30Plugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
 
   // ── WebDataRocks: Ventas del mes ──────────────────────────────────────────
   private _ventasPivotInstance: any = null;
@@ -211,6 +276,9 @@ export class ResultadosComponent implements OnInit, OnChanges {
   quickFilterGastos: string = '';
   quickFilterCobrar30: string = '';
   quickFilterPagar30: string = '';
+
+  quickFilterAbonosCxc: string = '';
+  quickFilterAbonosCxp: string = '';
 
   // Filtros
   anios = [2024, 2025, 2026];
@@ -350,6 +418,19 @@ export class ResultadosComponent implements OnInit, OnChanges {
       (acc, curr) => acc + (curr.monto || 0),
       0
     );
+
+    // 👇 NUEVO: Calcular cache de abonos
+    this._abonosCxcRowsCache = this.datos?.abonos?.cxc || [];
+    this._abonosCxpRowsCache = this.datos?.abonos?.cxp || [];
+
+    this._totalAbonosCxcCache = this._abonosCxcRowsCache.reduce(
+      (acc, curr) => acc + (curr.monto || 0),
+      0
+    );
+    this._totalAbonosCxpCache = this._abonosCxpRowsCache.reduce(
+      (acc, curr) => acc + (curr.monto || 0),
+      0
+    );
   }
 
   configurarAGGrid(): void {
@@ -359,12 +440,14 @@ export class ResultadosComponent implements OnInit, OnChanges {
       filter: true
     };
 
-    const sizeToFit = (api: any) => { try { api.sizeColumnsToFit(); } catch {} };
-    
+    const sizeToFit = (api: any) => { try { api.sizeColumnsToFit(); } catch { } };
+
     this.ventasGridOptions = {
       defaultColDef: defaultDefs,
       enableCellTextSelection: true,
       ensureDomOrder: true,
+      pagination: true,
+      paginationPageSize: 10,
       onGridReady: (params: any) => {
         this.ventasGridApi = params.api;
         sizeToFit(params.api);
@@ -377,6 +460,8 @@ export class ResultadosComponent implements OnInit, OnChanges {
       defaultColDef: defaultDefs,
       enableCellTextSelection: true,
       ensureDomOrder: true,
+      pagination: true,
+      paginationPageSize: 10,
       onGridReady: (params: any) => {
         this.gastosGridApi = params.api;
         sizeToFit(params.api);
@@ -389,6 +474,8 @@ export class ResultadosComponent implements OnInit, OnChanges {
       defaultColDef: defaultDefs,
       enableCellTextSelection: true,
       ensureDomOrder: true,
+      pagination: true,
+      paginationPageSize: 10,
       onGridReady: (params: any) => {
         this.cobrar30GridApi = params.api;
         sizeToFit(params.api);
@@ -401,8 +488,39 @@ export class ResultadosComponent implements OnInit, OnChanges {
       defaultColDef: defaultDefs,
       enableCellTextSelection: true,
       ensureDomOrder: true,
+      pagination: true,
+      paginationPageSize: 10,
       onGridReady: (params: any) => {
         this.pagar30GridApi = params.api;
+        sizeToFit(params.api);
+      },
+      onFirstDataRendered: (params: any) => sizeToFit(params.api),
+      onGridSizeChanged: (params: any) => sizeToFit(params.api)
+    };
+
+    // 👇 NUEVO: Configurar grids de abonos
+    this.abonosCxcGridOptions = {
+      defaultColDef: defaultDefs,
+      enableCellTextSelection: true,
+      ensureDomOrder: true,
+      pagination: true,
+      paginationPageSize: 10,
+      onGridReady: (params: any) => {
+        this.abonosCxcGridApi = params.api;
+        sizeToFit(params.api);
+      },
+      onFirstDataRendered: (params: any) => sizeToFit(params.api),
+      onGridSizeChanged: (params: any) => sizeToFit(params.api)
+    };
+
+    this.abonosCxpGridOptions = {
+      defaultColDef: defaultDefs,
+      enableCellTextSelection: true,
+      ensureDomOrder: true,
+      pagination: true,
+      paginationPageSize: 10,
+      onGridReady: (params: any) => {
+        this.abonosCxpGridApi = params.api;
         sizeToFit(params.api);
       },
       onFirstDataRendered: (params: any) => sizeToFit(params.api),
@@ -519,8 +637,8 @@ export class ResultadosComponent implements OnInit, OnChanges {
     const sel = this.sucursalesSeleccionadas;
     const sucursal =
       this.sucursalesTodasImplicitas
-      || sel.length === 0
-      || (allIds.length > 0 && sel.length === allIds.length && allIds.every(id => sel.includes(id)))
+        || sel.length === 0
+        || (allIds.length > 0 && sel.length === allIds.length && allIds.every(id => sel.includes(id)))
         ? 'todas'
         : [...sel];
 
@@ -539,23 +657,23 @@ export class ResultadosComponent implements OnInit, OnChanges {
   }
 
   ventasColumns = [
-    { 
-      prop: 'cliente', 
-      name: 'Cliente', 
+    {
+      prop: 'cliente',
+      name: 'Cliente',
       size: 200,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'factura', 
-      name: '# factura', 
+    {
+      prop: 'factura',
+      name: '# factura',
       size: 100,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'monto', 
-      name: 'Monto', 
+    {
+      prop: 'monto',
+      name: 'Monto',
       size: 150,
       sortable: true,
       filterable: true
@@ -563,23 +681,23 @@ export class ResultadosComponent implements OnInit, OnChanges {
   ];
 
   gastosColumns = [
-    { 
-      prop: 'proveedor', 
-      name: 'Proveedor', 
+    {
+      prop: 'proveedor',
+      name: 'Proveedor',
       size: 200,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'factura', 
-      name: '# factura', 
+    {
+      prop: 'factura',
+      name: '# factura',
       size: 100,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'monto', 
-      name: 'Monto', 
+    {
+      prop: 'monto',
+      name: 'Monto',
       size: 150,
       sortable: true,
       filterable: true
@@ -597,7 +715,7 @@ export class ResultadosComponent implements OnInit, OnChanges {
   filtrarVentas(rows: any[]): any[] {
     if (!this.busquedaVentas) return rows;
     const busqueda = this.busquedaVentas.toLowerCase();
-    return rows.filter(row => 
+    return rows.filter(row =>
       (row.cliente || '').toLowerCase().includes(busqueda) ||
       (row.factura || '').toLowerCase().includes(busqueda) ||
       (row.monto || '').toLowerCase().includes(busqueda)
@@ -607,7 +725,7 @@ export class ResultadosComponent implements OnInit, OnChanges {
   filtrarGastos(rows: any[]): any[] {
     if (!this.busquedaGastos) return rows;
     const busqueda = this.busquedaGastos.toLowerCase();
-    return rows.filter(row => 
+    return rows.filter(row =>
       (row.proveedor || '').toLowerCase().includes(busqueda) ||
       (row.factura || '').toLowerCase().includes(busqueda) ||
       (row.monto || '').toLowerCase().includes(busqueda)
@@ -632,6 +750,14 @@ export class ResultadosComponent implements OnInit, OnChanges {
   }
 
   onQuickFilterPagar30Change(): void {
+    // El binding [quickFilterText] en el template propaga el valor automáticamente
+  }
+
+  onQuickFilterAbonosCxcChange(): void {
+    // El binding [quickFilterText] en el template propaga el valor automáticamente
+  }
+
+  onQuickFilterAbonosCxpChange(): void {
     // El binding [quickFilterText] en el template propaga el valor automáticamente
   }
 
@@ -662,6 +788,20 @@ export class ResultadosComponent implements OnInit, OnChanges {
     this.quickFilterPagar30 = '';
     if (this.pagar30GridApi) {
       this.pagar30GridApi.setFilterModel(null);
+    }
+  }
+
+  limpiarFiltrosAbonosCxc(): void {
+    this.quickFilterAbonosCxc = '';
+    if (this.abonosCxcGridApi) {
+      this.abonosCxcGridApi.setFilterModel(null);
+    }
+  }
+
+  limpiarFiltrosAbonosCxp(): void {
+    this.quickFilterAbonosCxp = '';
+    if (this.abonosCxpGridApi) {
+      this.abonosCxpGridApi.setFilterModel(null);
     }
   }
 
@@ -735,6 +875,16 @@ export class ResultadosComponent implements OnInit, OnChanges {
     this.exportarComoExcel(this.pagar30GridApi, `cxp-30-dias-${fecha}.xlsx`);
   }
 
+  exportarAbonosCxcExcel(): void {
+    const fecha = new Date().toISOString().split('T')[0];
+    this.exportarComoExcel(this.abonosCxcGridApi, `abonos-cxc-${fecha}.xlsx`);
+  }
+
+  exportarAbonosCxpExcel(): void {
+    const fecha = new Date().toISOString().split('T')[0];
+    this.exportarComoExcel(this.abonosCxpGridApi, `abonos-cxp-${fecha}.xlsx`);
+  }
+
   // ── WebDataRocks: Ventas ─────────────────────────────────────────────────
 
   onVentasPivotReady(pivot: any): void {
@@ -749,17 +899,17 @@ export class ResultadosComponent implements OnInit, OnChanges {
     const filas: any[] = this._ventasRowsCache.map(v => ({
       Cliente: v.cliente || '',
       Factura: v.factura || '',
-      Monto:   typeof v.monto === 'number' ? v.monto : parseFloat(v.monto) || 0,
+      Monto: typeof v.monto === 'number' ? v.monto : parseFloat(v.monto) || 0,
     }));
     this._ventasPivotInstance.setReport({
       dataSource: { data: filas },
       slice: {
-        rows:     [{ uniqueName: 'Cliente' }, { uniqueName: 'Factura' }],
-        columns:  [{ uniqueName: '[Measures]' }],
+        rows: [{ uniqueName: 'Cliente' }, { uniqueName: 'Factura' }],
+        columns: [{ uniqueName: '[Measures]' }],
         measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
       },
       formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
-      options:  { grid: { showGrandTotals: 'on', showTotals: 'on' } }
+      options: { grid: { showGrandTotals: 'on', showTotals: 'on' } }
     });
   }
 
@@ -782,18 +932,18 @@ export class ResultadosComponent implements OnInit, OnChanges {
     if (!this._gastosPivotInstance) return;
     const filas: any[] = this._gastosRowsCache.map(g => ({
       Proveedor: g.proveedor || '',
-      Factura:   g.factura   || '',
-      Monto:     typeof g.monto === 'number' ? g.monto : parseFloat(g.monto) || 0,
+      Factura: g.factura || '',
+      Monto: typeof g.monto === 'number' ? g.monto : parseFloat(g.monto) || 0,
     }));
     this._gastosPivotInstance.setReport({
       dataSource: { data: filas },
       slice: {
-        rows:     [{ uniqueName: 'Proveedor' }, { uniqueName: 'Factura' }],
-        columns:  [{ uniqueName: '[Measures]' }],
+        rows: [{ uniqueName: 'Proveedor' }, { uniqueName: 'Factura' }],
+        columns: [{ uniqueName: '[Measures]' }],
         measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
       },
       formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
-      options:  { grid: { showGrandTotals: 'on', showTotals: 'on' } }
+      options: { grid: { showGrandTotals: 'on', showTotals: 'on' } }
     });
   }
 
@@ -815,21 +965,21 @@ export class ResultadosComponent implements OnInit, OnChanges {
   private actualizarCobrar30Pivot(): void {
     if (!this._cobrar30PivotInstance) return;
     const filas: any[] = this._cobrar30RowsCache.map(r => ({
-      Cliente:         r.cliente          || '',
-      Factura:         r.factura          || '',
-      Vence:           r.vence            || '',
-      DiasVenc:        typeof r.diasVencimiento === 'number' ? r.diasVencimiento : 0,
-      Monto:           typeof r.monto === 'number' ? r.monto : parseFloat(r.monto) || 0,
+      Cliente: r.cliente || '',
+      Factura: r.factura || '',
+      Vence: r.vence || '',
+      DiasVenc: typeof r.diasVencimiento === 'number' ? r.diasVencimiento : 0,
+      Monto: typeof r.monto === 'number' ? r.monto : parseFloat(r.monto) || 0,
     }));
     this._cobrar30PivotInstance.setReport({
       dataSource: { data: filas },
       slice: {
-        rows:     [{ uniqueName: 'Cliente' }, { uniqueName: 'Factura' }, { uniqueName: 'Vence' }, { uniqueName: 'DiasVenc', caption: 'Días venc.' }],
-        columns:  [{ uniqueName: '[Measures]' }],
+        rows: [{ uniqueName: 'Cliente' }, { uniqueName: 'Factura' }, { uniqueName: 'Vence' }, { uniqueName: 'DiasVenc', caption: 'Días venc.' }],
+        columns: [{ uniqueName: '[Measures]' }],
         measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
       },
       formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
-      options:  { grid: { showGrandTotals: 'on', showTotals: 'on' } }
+      options: { grid: { showGrandTotals: 'on', showTotals: 'on' } }
     });
   }
 
@@ -851,21 +1001,21 @@ export class ResultadosComponent implements OnInit, OnChanges {
   private actualizarPagar30Pivot(): void {
     if (!this._pagar30PivotInstance) return;
     const filas: any[] = this._pagar30RowsCache.map(r => ({
-      Proveedor:  r.proveedor        || '',
-      Factura:    r.factura          || '',
-      Vence:      r.vence            || '',
-      DiasVenc:   typeof r.diasVencimiento === 'number' ? r.diasVencimiento : 0,
-      Monto:      typeof r.monto === 'number' ? r.monto : parseFloat(r.monto) || 0,
+      Proveedor: r.proveedor || '',
+      Factura: r.factura || '',
+      Vence: r.vence || '',
+      DiasVenc: typeof r.diasVencimiento === 'number' ? r.diasVencimiento : 0,
+      Monto: typeof r.monto === 'number' ? r.monto : parseFloat(r.monto) || 0,
     }));
     this._pagar30PivotInstance.setReport({
       dataSource: { data: filas },
       slice: {
-        rows:     [{ uniqueName: 'Proveedor' }, { uniqueName: 'Factura' }, { uniqueName: 'Vence' }, { uniqueName: 'DiasVenc', caption: 'Días venc.' }],
-        columns:  [{ uniqueName: '[Measures]' }],
+        rows: [{ uniqueName: 'Proveedor' }, { uniqueName: 'Factura' }, { uniqueName: 'Vence' }, { uniqueName: 'DiasVenc', caption: 'Días venc.' }],
+        columns: [{ uniqueName: '[Measures]' }],
         measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
       },
       formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
-      options:  { grid: { showGrandTotals: 'on', showTotals: 'on' } }
+      options: { grid: { showGrandTotals: 'on', showTotals: 'on' } }
     });
   }
 
@@ -922,13 +1072,13 @@ export class ResultadosComponent implements OnInit, OnChanges {
         return stringValue;
       }).join(',');
     });
-    
+
     const BOM = '\uFEFF';
     const csvContent = BOM + [headers, ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    
+
     link.setAttribute('href', url);
     link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
@@ -940,30 +1090,30 @@ export class ResultadosComponent implements OnInit, OnChanges {
 
   // Columnas para cuentas por cobrar a 30 días
   cobrar30Columns = [
-    { 
-      prop: 'factura', 
-      name: '# factura', 
+    {
+      prop: 'factura',
+      name: '# factura',
       size: 100,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'cliente', 
-      name: 'Cliente', 
+    {
+      prop: 'cliente',
+      name: 'Cliente',
       size: 200,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'vence', 
-      name: 'Vence', 
+    {
+      prop: 'vence',
+      name: 'Vence',
       size: 120,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'diasVencimiento', 
-      name: 'Días vencimiento', 
+    {
+      prop: 'diasVencimiento',
+      name: 'Días vencimiento',
       size: 150,
       sortable: true,
       filterable: true
@@ -972,30 +1122,30 @@ export class ResultadosComponent implements OnInit, OnChanges {
 
   // Columnas para cuentas por pagar a 30 días
   pagar30Columns = [
-    { 
-      prop: 'factura', 
-      name: '# factura', 
+    {
+      prop: 'factura',
+      name: '# factura',
       size: 100,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'proveedor', 
-      name: 'Proveedor', 
+    {
+      prop: 'proveedor',
+      name: 'Proveedor',
       size: 200,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'vence', 
-      name: 'Vence', 
+    {
+      prop: 'vence',
+      name: 'Vence',
       size: 120,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'diasVencimiento', 
-      name: 'Días vencimiento', 
+    {
+      prop: 'diasVencimiento',
+      name: 'Días vencimiento',
       size: 150,
       sortable: true,
       filterable: true
@@ -1013,7 +1163,7 @@ export class ResultadosComponent implements OnInit, OnChanges {
   filtrarCobrar30(rows: any[]): any[] {
     if (!this.busquedaCobrar30) return rows;
     const busqueda = this.busquedaCobrar30.toLowerCase();
-    return rows.filter(row => 
+    return rows.filter(row =>
       (row.factura || '').toLowerCase().includes(busqueda) ||
       (row.cliente || '').toLowerCase().includes(busqueda) ||
       (row.vence || '').toLowerCase().includes(busqueda) ||
@@ -1024,7 +1174,7 @@ export class ResultadosComponent implements OnInit, OnChanges {
   filtrarPagar30(rows: any[]): any[] {
     if (!this.busquedaPagar30) return rows;
     const busqueda = this.busquedaPagar30.toLowerCase();
-    return rows.filter(row => 
+    return rows.filter(row =>
       (row.factura || '').toLowerCase().includes(busqueda) ||
       (row.proveedor || '').toLowerCase().includes(busqueda) ||
       (row.vence || '').toLowerCase().includes(busqueda) ||
@@ -1068,6 +1218,22 @@ export class ResultadosComponent implements OnInit, OnChanges {
 
   get totalPagar30(): number {
     return this._totalPagar30Cache;
+  }
+
+  get abonosCxcRows(): any[] {
+    return this._abonosCxcRowsCache;
+  }
+
+  get abonosCxpRows(): any[] {
+    return this._abonosCxpRowsCache;
+  }
+
+  get totalAbonosCxc(): number {
+    return this._totalAbonosCxcCache;
+  }
+
+  get totalAbonosCxp(): number {
+    return this._totalAbonosCxpCache;
   }
 
   /**

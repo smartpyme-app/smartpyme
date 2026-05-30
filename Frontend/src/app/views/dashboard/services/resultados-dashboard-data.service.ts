@@ -128,10 +128,10 @@ export class ResultadosDashboardDataService {
     cashflow: any;
     cashflowVentas: any;
     cashflowGastos: any;
-    cxc30: any;
-    cxp30: any;
+    abonosCxc: any;
+    abonosCxp: any;
   }): Record<string, unknown> {
-    const { cashflow, cashflowVentas, cashflowGastos, cxc30, cxp30 } = raw;
+    const { cashflow, cashflowVentas, cashflowGastos, abonosCxc, abonosCxp } = raw;
     return {
       cashflow: {
         ventas: cashflowVentas || [],
@@ -139,9 +139,9 @@ export class ResultadosDashboardDataService {
         ingresosTotales: cashflow?.ingresosPercibidos || 0,
         egresosTotales: cashflow?.egresosRealizados || 0,
       },
-      cuentas30: {
-        cobrar: cxc30 || [],
-        pagar: cxp30 || [],
+      abonos: {
+        cxc: abonosCxc || [],
+        cxp: abonosCxp || [],
       },
     };
   }
@@ -162,8 +162,8 @@ export class ResultadosDashboardDataService {
       cashflow: safe(`/api/resultados/cashflow?${p}`),
       cashflowVentas: safe(`/api/resultados/cashflow-ventas-detalle?${p}`),
       cashflowGastos: safe(`/api/resultados/cashflow-gastos-detalle?${p}`),
-      cxc30: safe(`/api/resultados/cxc-30dias?${p}`),
-      cxp30: safe(`/api/resultados/cxp-30dias?${p}`),
+      abonosCxc: safe(`/api/resultados/abonos-cxc?${p}`),
+      abonosCxp: safe(`/api/resultados/abonos-cxp?${p}`),
     }).pipe(map((r) => this.mapearResultadosPesado(r)));
 
     return critico$.pipe(
@@ -190,8 +190,8 @@ export class ResultadosDashboardDataService {
       cashflow: safe(`/api/resultados/cashflow?${p}`),
       cashflowVentas: safe(`/api/resultados/cashflow-ventas-detalle?${p}`),
       cashflowGastos: safe(`/api/resultados/cashflow-gastos-detalle?${p}`),
-      cxc30: safe(`/api/resultados/cxc-30dias?${pAnual}`),
-      cxp30: safe(`/api/resultados/cxp-30dias?${pAnual}`),
+      abonosCxc: safe(`/api/resultados/abonos-cxc?${p}`),
+      abonosCxp: safe(`/api/resultados/abonos-cxp?${p}`),
     }).pipe(
       map((all) => ({
         ...this.mapearResultadosCritico({
@@ -204,8 +204,8 @@ export class ResultadosDashboardDataService {
           cashflow: all.cashflow,
           cashflowVentas: all.cashflowVentas,
           cashflowGastos: all.cashflowGastos,
-          cxc30: all.cxc30,
-          cxp30: all.cxp30,
+          abonosCxc: all.abonosCxc,
+          abonosCxp: all.abonosCxp,
         }),
       })),
     );
