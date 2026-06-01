@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 | Gmail callback is in api.php, outside this group.
 */
 
-Route::group(['middleware' => ['jwt.auth'], 'prefix' => 'email-accounts'], function () {
+Route::group(['middleware' => ['jwt.auth', 'verificar.funcionalidad:descarga-automatizada-dtes'], 'prefix' => 'email-accounts'], function () {
     Route::get('/', [EmailAccountController::class, 'index']);
     Route::get('/gmail/redirect', [GmailAuthController::class, 'redirect']);
     Route::post('/imap/test', [EmailAccountController::class, 'testImap']);

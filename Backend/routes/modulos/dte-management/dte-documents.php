@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::group(['middleware' => ['jwt.auth'], 'prefix' => 'dtes'], function () {
+Route::group(['middleware' => ['jwt.auth', 'verificar.funcionalidad:descarga-automatizada-dtes'], 'prefix' => 'dtes'], function () {
     Route::get('/', [DteDocumentController::class, 'index']);
     Route::get('/{id}', [DteDocumentController::class, 'show']);
     Route::patch('/{id}', [DteDocumentController::class, 'update']);

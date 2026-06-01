@@ -34,7 +34,7 @@ class DteValidatorService
         }
 
         $raw = $dteData['raw'] ?? [];
-        $selloRecibido = $raw['selloRecibido'] ?? $raw['sello'] ?? null;
+        $selloRecibido = DteJsonHelper::extractSelloRecibido($raw);
         if (empty($selloRecibido)) {
             $errors[] = 'Falta sello de recepción del MH';
         }

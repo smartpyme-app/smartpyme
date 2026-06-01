@@ -56,6 +56,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Permite importar varias compras desde archivos JSON de DTE en el listado de compras',
                 'orden' => 7
             ],
+            [
+                'nombre' => 'Descarga automatizada de DTEs',
+                'slug' => 'descarga-automatizada-dtes',
+                'descripcion' => 'Conectar cuentas de correo (Gmail/IMAP) y descargar, validar y procesar DTEs recibidos',
+                'orden' => 8
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

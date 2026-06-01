@@ -2,6 +2,7 @@
 
 namespace App\Services\Dte;
 
+use App\Models\Admin\Documento;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Compras\Gastos\DetalleEgreso;
@@ -10,6 +11,9 @@ use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\DteManagement\DteDocument;
 use App\Models\DteManagement\DteTipoMapeo;
 use App\Models\DteManagement\UserEmailAccount;
+use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Producto;
+use App\Services\Inventario\ProductoImportacionDteService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -21,6 +25,16 @@ use Illuminate\Support\Facades\Storage;
 class DteToIvaService
 {
     protected DteProductSearchService $productSearch;
+
+    protected ProductoImportacionDteService $productoImportacionDteService;
+
+    public function __construct(
+        DteProductSearchService $productSearch,
+        ProductoImportacionDteService $productoImportacionDteService
+    ) {
+        $this->productSearch = $productSearch;
+        $this->productoImportacionDteService = $productoImportacionDteService;
+    }
 
     protected static array $tipoDteMap = [
         '01' => 'Factura',
@@ -43,11 +57,6 @@ class DteToIvaService
         '08' => 'Dinero electrónico',
         '99' => 'Otros',
     ];
-
-    public function __construct(DteProductSearchService $productSearch)
-    {
-        $this->productSearch = $productSearch;
-    }
 
     /**
      * Insert DTE into Compra or Gasto according to DteTipoMapeo.destino.
@@ -141,12 +150,37 @@ class DteToIvaService
         $resumen = $jsonData['resumen'] ?? [];
         $cuerpoDocumento = $jsonData['cuerpoDocumento'] ?? [];
 
-        $referencia = $identificacion['numeroControl'] ?? $document->dte_number ?? $document->dte_uuid;
+        $matchResult = $this->productSearch->resolveItems($cuerpoDocumento, $document->id_empresa);
+        if (!$matchResult['all_matched'] && count($cuerpoDocumento) > 0) {
+            $document->update(['processing_status' => 'pendiente_clasificacion']);
+
+            return ['success' => true, 'skipped' => 'pendiente_clasificacion'];
+        }
+
         $fecha = $identificacion['fecEmi'] ?? $document->emission_date?->format('Y-m-d') ?? now()->format('Y-m-d');
+        $codigoGeneracion = $identificacion['codigoGeneracion'] ?? $document->dte_uuid;
+        $numeroControl = $identificacion['numeroControl'] ?? $document->dte_number;
+        $tipoDte = $identificacion['tipoDte'] ?? $document->dte_type;
+
+        $referencia = $codigoGeneracion;
+        $observaciones = '';
+        $documentoRow = null;
+        if ($idSucursal) {
+            $documentoRow = Documento::withoutGlobalScopes()
+                ->where('nombre', $tipoDocumento)
+                ->where('id_sucursal', $idSucursal)
+                ->first();
+            if ($documentoRow && $documentoRow->correlativo !== null && trim((string) $documentoRow->correlativo) !== '') {
+                $referencia = $documentoRow->correlativo;
+                $observaciones = "Código generación MH: {$codigoGeneracion}";
+            }
+        }
 
         $total = (float) ($resumen['totalPagar'] ?? $resumen['montoTotalOperacion'] ?? $document->total_amount ?? 0);
-        $subTotal = (float) ($resumen['subTotal'] ?? $resumen['totalGravada'] ?? $total);
+        $subTotal = (float) ($resumen['subTotal'] ?? $resumen['subTotalVentas'] ?? $resumen['totalGravada'] ?? $total);
         $iva = $this->extractIvaFromResumen($resumen);
+        $percepcion = (float) ($resumen['ivaPerci1'] ?? 0);
+        $selloMh = DteJsonHelper::extractSelloRecibido($jsonData);
 
         $formaPago = 'Efectivo';
         if (!empty($resumen['pagos'][0]['codigo'])) {
@@ -176,62 +210,148 @@ class DteToIvaService
             $total,
             $subTotal,
             $iva,
+            $percepcion,
+            $selloMh,
             $formaPago,
             $estado,
-            $cuerpoDocumento
+            $cuerpoDocumento,
+            $matchResult,
+            $codigoGeneracion,
+            $numeroControl,
+            $tipoDte,
+            $observaciones,
+            $documentoRow
         ) {
             $compra = Compra::withoutGlobalScopes()->create([
                 'fecha' => $fecha,
+                'fecha_pago' => $fecha,
                 'estado' => $estado,
                 'forma_pago' => $formaPago,
                 'tipo_documento' => $tipoDocumento,
+                'tipo_dte' => $tipoDte,
                 'referencia' => $referencia,
                 'id_proveedor' => $proveedor->id,
                 'iva' => $iva,
                 'sub_total' => $subTotal,
                 'total' => $total,
+                'percepcion' => $percepcion > 0 ? $percepcion : 0,
                 'id_bodega' => $idBodega,
                 'id_sucursal' => $idSucursal,
                 'id_empresa' => $document->id_empresa,
                 'id_usuario' => $idUsuario,
-                'codigo_generacion' => $document->dte_uuid,
-                'numero_control' => $document->dte_number,
+                'codigo_generacion' => $codigoGeneracion,
+                'numero_control' => $numeroControl,
+                'sello_mh' => $selloMh,
                 'dte' => json_encode($jsonData),
                 'cotizacion' => 0,
+                'observaciones' => $observaciones,
             ]);
 
             foreach ($cuerpoDocumento as $index => $item) {
-                $descripcion = $item['descripcion'] ?? '';
-                $productId = $this->productSearch->findProductByDescription($descripcion, $document->id_empresa);
-
-                if (!$productId) {
+                $producto = $matchResult['resolved'][$index] ?? null;
+                if (!$producto) {
                     continue;
                 }
 
-                $cantidad = (float) ($item['cantidad'] ?? 0);
-                $precioUni = (float) ($item['precioUni'] ?? 0);
-                $ventaTotal = (float) ($item['ventaTotal'] ?? $cantidad * $precioUni);
+                $detalleData = $this->buildDetalleCompraFromItem($item, $producto);
 
-                $ivaItem = $this->extractIvaFromItem($item);
-                $subtotalItem = $ventaTotal - $ivaItem;
-
-                DetalleCompra::withoutGlobalScopes()->create([
+                $detalle = DetalleCompra::withoutGlobalScopes()->create([
                     'id_compra' => $compra->id,
-                    'id_producto' => $productId,
-                    'cantidad' => $cantidad,
-                    'costo' => $precioUni,
-                    'subtotal' => $subtotalItem,
-                    'total' => $ventaTotal,
-                    'iva' => $ivaItem,
-                    'no_sujeta' => 0,
-                    'exenta' => 0,
+                    'id_producto' => $producto->id,
+                    'cantidad' => $detalleData['cantidad'],
+                    'costo' => $detalleData['costo'],
+                    'subtotal' => $detalleData['subtotal'],
+                    'total' => $detalleData['total'],
+                    'iva' => $detalleData['iva'],
+                    'no_sujeta' => $detalleData['no_sujeta'],
+                    'exenta' => $detalleData['exenta'],
+                    'descuento' => $detalleData['descuento'],
                 ]);
+
+                if ($actualizarInventario && $idBodega) {
+                    $this->actualizarInventarioCompra($compra, $detalle, $producto);
+                }
+            }
+
+            if ($documentoRow) {
+                $documentoRow->increment('correlativo');
             }
 
             $document->update(['processing_status' => 'processed']);
 
             return ['success' => true, 'compra_id' => $compra->id];
         });
+    }
+
+    /**
+     * Calcula línea de detalle como en importación JSON de compras.
+     */
+    protected function buildDetalleCompraFromItem(array $item, Producto $producto): array
+    {
+        $ventaGravada = (float) ($item['ventaGravada'] ?? 0);
+        $ventaExenta = (float) ($item['ventaExenta'] ?? 0);
+        $ventaNoSuj = (float) ($item['ventaNoSuj'] ?? 0);
+        $totalCalculado = $ventaGravada + $ventaExenta + $ventaNoSuj;
+
+        $cantidad = (float) ($item['cantidad'] ?? 0);
+        $precioUni = (float) ($item['precioUni'] ?? 0);
+        $descuento = (float) ($item['montoDescu'] ?? 0);
+        $ventaTotal = (float) ($item['ventaTotal'] ?? 0);
+        $totalFinal = $totalCalculado > 0 ? $totalCalculado : ($ventaTotal > 0 ? $ventaTotal : ($cantidad * $precioUni - $descuento));
+
+        $ivaItem = $this->extractIvaFromItem($item);
+        if ($ivaItem <= 0 && $ventaGravada > 0 && $totalFinal > $ventaGravada) {
+            $ivaItem = $totalFinal - $ventaGravada - $ventaExenta - $ventaNoSuj;
+        }
+
+        return [
+            'cantidad' => $cantidad,
+            'costo' => $precioUni,
+            'subtotal' => max(0, $totalFinal - $ivaItem),
+            'total' => $totalFinal,
+            'iva' => max(0, $ivaItem),
+            'no_sujeta' => $ventaNoSuj,
+            'exenta' => $ventaExenta,
+            'descuento' => $descuento,
+        ];
+    }
+
+    protected function actualizarInventarioCompra(Compra $compra, DetalleCompra $detalle, Producto $producto): void
+    {
+        if ($producto->tipo === 'Servicio' || !$compra->id_bodega) {
+            return;
+        }
+
+        $producto = Producto::with('inventarios')->find($producto->id);
+        if (!$producto) {
+            return;
+        }
+
+        $stockAnterior = $producto->inventarios->sum('stock') ?? 0;
+        $stockActual = (float) $detalle->cantidad;
+        $stockTotal = $stockAnterior + $stockActual;
+
+        if ($stockTotal > 0) {
+            $costoPromedio = (($stockAnterior * $producto->costo) + ($stockActual * $detalle->costo)) / $stockTotal;
+        } else {
+            $costoPromedio = $detalle->costo;
+        }
+
+        $producto->costo_anterior = $producto->costo;
+        $producto->costo = $detalle->costo;
+        $producto->costo_promedio = $costoPromedio;
+        $producto->save();
+
+        $inventario = Inventario::firstOrCreate(
+            [
+                'id_producto' => $producto->id,
+                'id_bodega' => $compra->id_bodega,
+            ],
+            ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+        );
+        $inventario->stock += $detalle->cantidad;
+        $inventario->save();
+        $inventario->kardex($compra, $detalle->cantidad);
     }
 
     protected function createGasto(
@@ -271,6 +391,8 @@ class DteToIvaService
             return ['success' => true, 'skipped' => 'duplicate'];
         }
 
+        $selloMh = DteJsonHelper::extractSelloRecibido($jsonData);
+
         return DB::transaction(function () use (
             $document,
             $jsonData,
@@ -287,7 +409,9 @@ class DteToIvaService
             $estado,
             $concepto,
             $tipo,
-            $cuerpoDocumento
+            $cuerpoDocumento,
+            $identificacion,
+            $selloMh
         ) {
             $gasto = Gasto::withoutGlobalScopes()->create([
                 'fecha' => $fecha,
@@ -304,8 +428,9 @@ class DteToIvaService
                 'id_sucursal' => $idSucursal,
                 'id_empresa' => $document->id_empresa,
                 'id_usuario' => $idUsuario,
-                'codigo_generacion' => $document->dte_uuid,
-                'numero_control' => $document->dte_number,
+                'codigo_generacion' => $identificacion['codigoGeneracion'] ?? $document->dte_uuid,
+                'numero_control' => $identificacion['numeroControl'] ?? $document->dte_number,
+                'sello_mh' => $selloMh,
                 'dte' => json_encode($jsonData),
             ]);
 

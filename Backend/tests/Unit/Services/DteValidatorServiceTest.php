@@ -85,6 +85,19 @@ class DteValidatorServiceTest extends TestCase
         $this->assertTrue($result['valid']);
     }
 
+    public function testValidateAcceptsSelloInResponseMh(): void
+    {
+        $dteData = $this->validDteData();
+        $dteData['raw'] = [
+            'identificacion' => ['codigoGeneracion' => 'uuid-123'],
+            'responseMH' => ['selloRecibido' => '2026C5F32B054EDB48C5824992202CF4AA0F80ZZ'],
+        ];
+
+        $result = $this->validator->validate($dteData, '06149876543210');
+
+        $this->assertTrue($result['valid']);
+    }
+
     public function testValidateFailsWhenEmissionDateTooOld(): void
     {
         $dteData = $this->validDteData();

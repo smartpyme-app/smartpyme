@@ -9,6 +9,6 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::group(['middleware' => ['jwt.auth'], 'prefix' => 'sync-logs'], function () {
+Route::group(['middleware' => ['jwt.auth', 'verificar.funcionalidad:descarga-automatizada-dtes'], 'prefix' => 'sync-logs'], function () {
     Route::get('/', [SyncLogController::class, 'index']);
 });
