@@ -18,6 +18,8 @@ export interface DteDocument {
   processing_errors?: string;
   destino?: string;
   email_message_id?: string;
+  json_path?: string;
+  pdf_path?: string;
   user_email_account?: { id: number; email: string; provider: string };
 }
 
@@ -57,5 +59,28 @@ export class DteDocumentService {
 
   procesar(id: number): Observable<{ success: boolean; message?: string; document?: DteDocument; compra_id?: number; gasto_id?: number }> {
     return this.api.store(`dtes/${id}/procesar`, {});
+  }
+
+  anular(id: number): Observable<{ success: boolean; message: string; document: DteDocument }> {
+    return this.api.store(`dtes/${id}/anular`, {});
+  }
+
+  getPendingReviewAlert(): Observable<{ show_alert: boolean; pending_count: number }> {
+    return this.api.getAll('dtes/pending-review-alert');
+  }
+
+  /** Evita mostrar la alerta de revisión durante la sesión y el día actual. */
+  dismissReviewAlert(userId: number): void {
+    const today = new Date().toISOString().slice(0, 10);
+    sessionStorage.setItem(`dte_review_dismiss_session_${userId}`, '1');
+    localStorage.setItem(`dte_review_dismiss_day_${userId}`, today);
+  }
+
+  isReviewAlertDismissed(userId: number): boolean {
+    if (sessionStorage.getItem(`dte_review_dismiss_session_${userId}`)) {
+      return true;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    return localStorage.getItem(`dte_review_dismiss_day_${userId}`) === today;
   }
 }
