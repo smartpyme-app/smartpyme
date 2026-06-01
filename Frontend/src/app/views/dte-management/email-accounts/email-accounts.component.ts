@@ -14,7 +14,11 @@ export class EmailAccountsComponent implements OnInit {
   loading = false;
   saving = false;
   testing = false;
+  savingNotifications = false;
   modalRef!: BsModalRef;
+  notificationAccount: EmailAccount | null = null;
+  notificationUserId: number | null = null;
+  usuarios: any[] = [];
 
   imapConfig = {
     host: '',
@@ -43,6 +47,7 @@ export class EmailAccountsComponent implements OnInit {
     this.loadAccounts();
     this.loadSucursales();
     this.loadBodegas();
+    this.loadUsuarios();
     this.checkGmailCallbackParams();
   }
 
@@ -90,6 +95,13 @@ export class EmailAccountsComponent implements OnInit {
     });
   }
 
+  loadUsuarios(): void {
+    this.apiService.getAll('usuarios/list').subscribe({
+      next: (data) => this.usuarios = data,
+      error: (err) => this.alertService.error(err)
+    });
+  }
+
   connectGmail(): void {
     this.emailAccountService.getGmailAuthUrl().subscribe({
       next: (res) => { window.location.href = res.url; },
@@ -109,6 +121,32 @@ export class EmailAccountsComponent implements OnInit {
       actualizar_inventario: false
     };
     this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+  }
+
+  openNotificationModal(template: TemplateRef<any>, account: EmailAccount): void {
+    this.notificationAccount = account;
+    this.notificationUserId = account.notification_user_id ?? null;
+    this.modalRef = this.modalService.show(template, { class: 'modal-md' });
+  }
+
+  saveNotificationConfig(): void {
+    if (!this.notificationAccount) {
+      return;
+    }
+
+    this.savingNotifications = true;
+    this.emailAccountService.updateNotificaciones(this.notificationAccount.id, this.notificationUserId).subscribe({
+      next: () => {
+        this.savingNotifications = false;
+        this.modalRef?.hide();
+        this.alertService.success('Configuración guardada', 'Usuario de notificaciones actualizado.');
+        this.loadAccounts();
+      },
+      error: (err) => {
+        this.savingNotifications = false;
+        this.alertService.error(err);
+      }
+    });
   }
 
   testImapConnection(): void {
@@ -190,5 +228,9 @@ export class EmailAccountsComponent implements OnInit {
 
   providerLabel(provider: string): string {
     return provider === 'gmail' ? 'Gmail' : provider === 'imap' ? 'IMAP' : provider;
+  }
+
+  notificationUserLabel(account: EmailAccount): string {
+    return account.notification_user?.name ?? 'Sin configurar';
   }
 }

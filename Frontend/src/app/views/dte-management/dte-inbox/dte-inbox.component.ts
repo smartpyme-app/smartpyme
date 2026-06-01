@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { DteDocumentService, DteDocument, DteDocumentsResponse } from '@services/dte-management/dte-document.service';
 
@@ -11,12 +12,18 @@ export class DteInboxComponent implements OnInit {
   documents: DteDocumentsResponse | null = null;
   loading = false;
   filtros: any = {};
+  modalRef?: BsModalRef;
+  modalProcesarRef?: BsModalRef;
+  documentoProcesar: DteDocument | null = null;
+  destinoSeleccionado: 'compra' | 'gasto' = 'compra';
+  procesando = false;
 
   constructor(
     private dteService: DteDocumentService,
     private alertService: AlertService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private modalService: BsModalService
   ) {}
 
   ngOnInit(): void {
@@ -62,7 +69,84 @@ export class DteInboxComponent implements OnInit {
 
   filtrar(): void {
     this.filtros.page = 1;
+    this.modalRef?.hide();
     this.router.navigate([], { relativeTo: this.route, queryParams: this.filtros, queryParamsHandling: 'merge' });
+  }
+
+  openFilter(template: TemplateRef<any>): void {
+    this.modalRef = this.modalService.show(template, { class: 'modal-md' });
+  }
+
+  openProcesar(template: TemplateRef<any>, doc: DteDocument): void {
+    if (doc.validation_status !== 'valid' || doc.processing_status === 'processed') {
+      return;
+    }
+    this.documentoProcesar = doc;
+    this.destinoSeleccionado = (doc.destino || 'compra') as 'compra' | 'gasto';
+    this.procesando = false;
+    this.modalProcesarRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+  }
+
+  confirmarProcesar(): void {
+    if (!this.documentoProcesar) return;
+    this.procesando = true;
+    const doc = this.documentoProcesar;
+    const needUpdate = (doc.destino || 'compra') !== this.destinoSeleccionado;
+
+    const doProcesar = () => {
+      this.dteService.procesar(doc.id).subscribe({
+        next: (res) => {
+          this.alertService.success('Éxito', res.message || 'DTE procesado correctamente');
+          this.modalProcesarRef?.hide();
+          this.documentoProcesar = null;
+          this.procesando = false;
+          this.loadDocuments();
+        },
+        error: (err) => {
+          const msg = err?.error?.error || err?.error?.reason || 'Error al procesar';
+          this.alertService.error(typeof msg === 'string' ? { error: { message: msg } } : err);
+          this.procesando = false;
+        }
+      });
+    };
+
+    if (needUpdate) {
+      this.dteService.updateDestino(doc.id, this.destinoSeleccionado).subscribe({
+        next: () => doProcesar(),
+        error: (err) => {
+          this.alertService.error(err);
+          this.procesando = false;
+        }
+      });
+    } else {
+      doProcesar();
+    }
+  }
+
+  puedeProcesar(doc: DteDocument): boolean {
+    return doc.validation_status === 'valid'
+      && doc.processing_status !== 'processed'
+      && doc.processing_status !== 'anulado';
+  }
+
+  puedeAnular(doc: DteDocument): boolean {
+    return doc.processing_status !== 'processed' && doc.processing_status !== 'anulado';
+  }
+
+  anularDocumento(doc: DteDocument): void {
+    if (!this.puedeAnular(doc)) {
+      return;
+    }
+    if (!confirm(`¿Anular el DTE ${doc.dte_number || doc.dte_uuid}? No aparecerá en la bandeja de revisión.`)) {
+      return;
+    }
+    this.dteService.anular(doc.id).subscribe({
+      next: (res) => {
+        this.alertService.success('Éxito', res.message || 'DTE anulado');
+        this.loadDocuments();
+      },
+      error: (err) => this.alertService.error(err)
+    });
   }
 
   validationBadgeClass(status: string): string {
@@ -74,6 +158,7 @@ export class DteInboxComponent implements OnInit {
       case 'processed': return 'bg-success';
       case 'pending': return 'bg-primary';
       case 'pendiente_clasificacion': return 'bg-warning';
+      case 'anulado': return 'bg-secondary';
       case 'failed': return 'bg-danger';
       default: return 'bg-secondary';
     }
@@ -99,7 +184,8 @@ export class DteInboxComponent implements OnInit {
       pending: 'Pendiente',
       pendiente_clasificacion: 'Pendiente clasificación',
       processed: 'Procesado',
-      failed: 'Fallido'
+      failed: 'Fallido',
+      anulado: 'Anulado'
     };
     return map[status] || status;
   }

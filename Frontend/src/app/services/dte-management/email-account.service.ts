@@ -11,6 +11,8 @@ export interface EmailAccount {
   id_sucursal?: number;
   id_bodega?: number;
   actualizar_inventario?: boolean;
+  notification_user_id?: number | null;
+  notification_user?: { id: number; name: string } | null;
   sucursal?: { id: number; nombre: string };
   bodega?: { id: number; nombre: string };
 }
@@ -44,5 +46,9 @@ export class EmailAccountService {
 
   getGmailAuthUrl(): Observable<{ url: string }> {
     return this.api.getAll('email-accounts/gmail/redirect');
+  }
+
+  updateNotificaciones(id: number, notificationUserId: number | null): Observable<{ success: boolean; message: string; account: EmailAccount }> {
+    return this.api.store(`email-accounts/${id}/notificaciones`, { notification_user_id: notificationUserId });
   }
 }

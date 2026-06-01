@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { DteDocumentService, DteDocument } from '@services/dte-management/dte-document.service';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-dte-detail',
@@ -14,11 +16,18 @@ export class DteDetailComponent implements OnInit {
   procesando = false;
   destinoSeleccionado: 'compra' | 'gasto' = 'compra';
 
+  modalRef?: BsModalRef;
+  jsonPreview = '';
+  pdfPreviewUrl: SafeResourceUrl | null = null;
+  private pdfObjectUrl: string | null = null;
+
   constructor(
     private dteService: DteDocumentService,
     private alertService: AlertService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private modalService: BsModalService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -44,17 +53,16 @@ export class DteDetailComponent implements OnInit {
     });
   }
 
+  goBack(): void {
+    this.router.navigate(['/dte-management/dtes']);
+  }
+
   downloadJson(): void {
     if (!this.document) return;
     this.downloading = true;
     this.dteService.downloadJson(this.document.id).subscribe({
       next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${this.document!.dte_uuid}.json`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        this.triggerDownload(blob, `${this.document!.dte_uuid}.json`);
         this.downloading = false;
       },
       error: (err) => {
@@ -69,12 +77,7 @@ export class DteDetailComponent implements OnInit {
     this.downloading = true;
     this.dteService.downloadPdf(this.document.id).subscribe({
       next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${this.document!.dte_uuid}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        this.triggerDownload(blob, `${this.document!.dte_uuid}.pdf`);
         this.downloading = false;
       },
       error: (err) => {
@@ -82,6 +85,55 @@ export class DteDetailComponent implements OnInit {
         this.downloading = false;
       }
     });
+  }
+
+  openVerJson(template: TemplateRef<any>): void {
+    if (!this.document) return;
+    this.dteService.downloadJson(this.document.id).subscribe({
+      next: async (blob) => {
+        const text = await blob.text();
+        try {
+          this.jsonPreview = JSON.stringify(JSON.parse(text), null, 2);
+        } catch {
+          this.jsonPreview = text;
+        }
+        this.modalRef = this.modalService.show(template, { class: 'modal-xl' });
+      },
+      error: (err) => this.alertService.error(err)
+    });
+  }
+
+  openVerPdf(template: TemplateRef<any>): void {
+    if (!this.document) return;
+    this.dteService.downloadPdf(this.document.id).subscribe({
+      next: (blob) => {
+        if (this.pdfObjectUrl) {
+          URL.revokeObjectURL(this.pdfObjectUrl);
+        }
+        this.pdfObjectUrl = URL.createObjectURL(blob);
+        this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfObjectUrl);
+        this.modalRef = this.modalService.show(template, { class: 'modal-xl' });
+      },
+      error: (err) => this.alertService.error(err)
+    });
+  }
+
+  closeModal(): void {
+    this.modalRef?.hide();
+    if (this.pdfObjectUrl) {
+      URL.revokeObjectURL(this.pdfObjectUrl);
+      this.pdfObjectUrl = null;
+      this.pdfPreviewUrl = null;
+    }
+  }
+
+  private triggerDownload(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
   }
 
   dteTypeLabel(type: string): string {
@@ -97,7 +149,8 @@ export class DteDetailComponent implements OnInit {
       pending: 'Pendiente',
       pendiente_clasificacion: 'Pendiente clasificación',
       processed: 'Procesado',
-      failed: 'Fallido'
+      failed: 'Fallido',
+      anulado: 'Anulado'
     };
     return map[status] || status;
   }
