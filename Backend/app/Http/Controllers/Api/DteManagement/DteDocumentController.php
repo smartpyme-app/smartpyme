@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\DteManagement;
 
 use App\Http\Controllers\Controller;
 use App\Models\DteManagement\DteDocument;
+use App\Models\DteManagement\UserEmailAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -56,6 +57,39 @@ class DteDocumentController extends Controller
         $documents = $query->paginate($perPage);
 
         return response()->json($documents);
+    }
+
+    /**
+     * Resumen para alerta al ingresar: DTEs válidos pendientes de revisión/procesamiento.
+     */
+    public function pendingReviewAlert(): JsonResponse
+    {
+        $userId = auth()->id();
+        $idEmpresa = auth()->user()->id_empresa;
+
+        $isRecipient = UserEmailAccount::withoutGlobalScopes()
+            ->where('id_empresa', $idEmpresa)
+            ->where('is_active', true)
+            ->where('notification_user_id', $userId)
+            ->exists();
+
+        if (!$isRecipient) {
+            return response()->json([
+                'show_alert' => false,
+                'pending_count' => 0,
+            ]);
+        }
+
+        $pendingCount = DteDocument::withoutGlobalScopes()
+            ->where('id_empresa', $idEmpresa)
+            ->where('validation_status', 'valid')
+            ->whereIn('processing_status', ['pending', 'pendiente_clasificacion', 'failed'])
+            ->count();
+
+        return response()->json([
+            'show_alert' => $pendingCount > 0,
+            'pending_count' => $pendingCount,
+        ]);
     }
 
     /**

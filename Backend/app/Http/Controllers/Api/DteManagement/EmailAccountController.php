@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\DteManagement;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessEmailAccountJob;
 use App\Models\DteManagement\UserEmailAccount;
+use App\Models\User;
 use App\Services\Imap\ImapConnectionService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +25,11 @@ class EmailAccountController extends Controller
      */
     public function index(): JsonResponse
     {
-        $accounts = UserEmailAccount::with(['sucursal:id,nombre', 'bodega:id,nombre'])
+        $accounts = UserEmailAccount::with([
+                'sucursal:id,nombre',
+                'bodega:id,nombre',
+                'notificationUser:id,name',
+            ])
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($account) {
@@ -171,6 +176,48 @@ class EmailAccountController extends Controller
     }
 
     /**
+     * Guardar usuario que recibirá notificaciones de DTEs por revisar.
+     */
+    public function updateNotificaciones(Request $request, int $id): JsonResponse
+    {
+        $account = UserEmailAccount::find($id);
+
+        if (!$account) {
+            return response()->json(['error' => 'Cuenta no encontrada'], 404);
+        }
+
+        if ($account->id_empresa !== auth()->user()->id_empresa) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $request->validate([
+            'notification_user_id' => 'nullable|integer|exists:users,id',
+        ]);
+
+        $notificationUserId = $request->input('notification_user_id');
+
+        if ($notificationUserId) {
+            $belongsToEmpresa = User::where('id', $notificationUserId)
+                ->where('id_empresa', auth()->user()->id_empresa)
+                ->exists();
+
+            if (!$belongsToEmpresa) {
+                return response()->json(['error' => 'El usuario no pertenece a la empresa'], 422);
+            }
+        }
+
+        $account->update(['notification_user_id' => $notificationUserId]);
+
+        $account->load('notificationUser:id,name');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Configuración de notificaciones guardada',
+            'account' => $this->formatAccount($account),
+        ]);
+    }
+
+    /**
      * Format account for API response (hide sensitive fields).
      *
      * @param UserEmailAccount $account
@@ -187,6 +234,10 @@ class EmailAccountController extends Controller
             'id_sucursal' => $account->id_sucursal,
             'id_bodega' => $account->id_bodega,
             'actualizar_inventario' => $account->actualizar_inventario,
+            'notification_user_id' => $account->notification_user_id,
+            'notification_user' => $account->notificationUser
+                ? ['id' => $account->notificationUser->id, 'name' => $account->notificationUser->name]
+                : null,
             'sucursal' => $account->sucursal ? ['id' => $account->sucursal->id, 'nombre' => $account->sucursal->nombre] : null,
             'bodega' => $account->bodega ? ['id' => $account->bodega->id, 'nombre' => $account->bodega->nombre] : null,
         ];

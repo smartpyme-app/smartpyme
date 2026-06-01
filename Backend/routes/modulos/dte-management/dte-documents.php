@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => ['jwt.auth', 'verificar.funcionalidad:descarga-automatizada-dtes'], 'prefix' => 'dtes'], function () {
     Route::get('/', [DteDocumentController::class, 'index']);
+    Route::get('/pending-review-alert', [DteDocumentController::class, 'pendingReviewAlert']);
     Route::get('/{id}', [DteDocumentController::class, 'show']);
     Route::patch('/{id}', [DteDocumentController::class, 'update']);
     Route::post('/{id}/procesar', [DteDocumentController::class, 'procesar']);

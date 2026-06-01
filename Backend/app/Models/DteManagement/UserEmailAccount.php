@@ -17,6 +17,7 @@ class UserEmailAccount extends Model
     protected $fillable = [
         'id_empresa',
         'user_id',
+        'notification_user_id',
         'provider',
         'email',
         'access_token',
@@ -103,6 +104,11 @@ class UserEmailAccount extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function notificationUser()
+    {
+        return $this->belongsTo(User::class, 'notification_user_id');
     }
 
     public function empresa()

@@ -17,5 +17,6 @@ Route::group(['middleware' => ['jwt.auth', 'verificar.funcionalidad:descarga-aut
     Route::post('/imap/test', [EmailAccountController::class, 'testImap']);
     Route::post('/imap', [EmailAccountController::class, 'storeImap']);
     Route::post('/{id}/sync', [EmailAccountController::class, 'sync']);
+    Route::post('/{id}/notificaciones', [EmailAccountController::class, 'updateNotificaciones']);
     Route::delete('/{id}', [EmailAccountController::class, 'destroy']);
 });
