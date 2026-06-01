@@ -42,6 +42,8 @@ export class ApiService {
 
     update(url: string, id: number, model: any) {return this.http .put<any>(`${this.apiUrl}${url}/${id}`, model) .pipe(retry(0), catchError(this.handleError)); }
 
+    patch(url: string, id: number, model: any) {return this.http.patch<any>(`${this.apiUrl}${url}/${id}`, model).pipe(retry(0), catchError(this.handleError)); }
+
     putToUrl(url: string, model: any) {return this.http.put<any>(this.apiUrl + url, model).pipe(retry(0), catchError(this.handleError)); }
 
     delete(url:string, id: number) {return this.http.delete<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}

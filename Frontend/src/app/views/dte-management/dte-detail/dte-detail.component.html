@@ -1,0 +1,83 @@
+<section class="bg-white p-4 rounded mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <button class="btn btn-outline-secondary" routerLink="/dte-management/dtes">
+      <i class="fa fa-arrow-left me-2"></i>Volver
+    </button>
+    <div *ngIf="document" class="d-flex gap-2">
+      <button class="btn btn-outline-primary" (click)="downloadJson()" [disabled]="downloading || !document.json_path">
+        <i class="fa fa-file-code me-2"></i>Descargar JSON
+      </button>
+      <button class="btn btn-outline-primary" (click)="downloadPdf()" [disabled]="downloading || !document.pdf_path">
+        <i class="fa fa-file-pdf me-2"></i>Descargar PDF
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="text-center py-5">
+    <span class="badge bg-primary">Cargando...</span>
+  </div>
+
+  <div *ngIf="!loading && document" class="row">
+    <div class="col-md-6">
+      <h6 class="text-muted mb-2">Información del DTE</h6>
+      <table class="table table-sm">
+        <tr><th width="140">Tipo</th><td>{{ dteTypeLabel(document.dte_type) }}</td></tr>
+        <tr><th>Número / Control</th><td>{{ document.dte_number }}</td></tr>
+        <tr><th>UUID</th><td><small>{{ document.dte_uuid }}</small></td></tr>
+        <tr><th>Fecha emisión</th><td>{{ document.emission_date | date:'dd/MM/yyyy' }}</td></tr>
+        <tr><th>Total</th><td>{{ document.total_amount | currency:'USD':'symbol':'1.2' }}</td></tr>
+      </table>
+    </div>
+    <div class="col-md-6">
+      <h6 class="text-muted mb-2">Emisor / Receptor</h6>
+      <table class="table table-sm">
+        <tr><th width="140">Emisor NIT</th><td>{{ document.issuer_nit }}</td></tr>
+        <tr><th>Emisor</th><td>{{ document.issuer_name }}</td></tr>
+        <tr><th>Receptor NIT</th><td>{{ document.receiver_nit || '-' }}</td></tr>
+      </table>
+    </div>
+    <div class="col-12 mt-3">
+      <h6 class="text-muted mb-2">Estado</h6>
+      <p>
+        <span class="badge me-2" [ngClass]="document.validation_status === 'valid' ? 'bg-success' : 'bg-danger'">
+          {{ document.validation_status === 'valid' ? 'Válido' : 'Inválido' }}
+        </span>
+        <span class="badge" [ngClass]="{
+          'bg-success': document.processing_status === 'processed',
+          'bg-primary': document.processing_status === 'pending',
+          'bg-warning': document.processing_status === 'pendiente_clasificacion',
+          'bg-danger': document.processing_status === 'failed'
+        }">
+          {{ processingStatusLabel(document.processing_status) }}
+        </span>
+      </p>
+      <div *ngIf="document.processing_status === 'pendiente_clasificacion'" class="alert alert-warning py-2">
+        <strong>Pendiente clasificación:</strong> Algunos ítems del DTE no coinciden con productos del catálogo. Debe asignar cada ítem a un producto manualmente antes de que el DTE se procese en Compras. O puede cambiar el destino a &quot;Gasto&quot; si es un gasto (ej. gasolina, servicios) y procesar directamente.
+      </div>
+      <div *ngIf="document.validation_status === 'valid' && document.processing_status !== 'processed'" class="card mt-2">
+        <div class="card-body py-2">
+          <label class="form-label small mb-1"><strong>Destino:</strong> ¿Este DTE es Compra (inventario) o Gasto?</label>
+          <div class="d-flex gap-2 align-items-center flex-wrap">
+            <select class="form-select form-select-sm" style="max-width: 200px;" [(ngModel)]="destinoSeleccionado" (ngModelChange)="cambiarDestino()">
+              <option value="compra">Compra (inventario)</option>
+              <option value="gasto">Gasto (gasolina, servicios, etc.)</option>
+            </select>
+            <button class="btn btn-sm btn-primary" [disabled]="procesando" (click)="procesar()">
+              <span *ngIf="procesando">Procesando...</span>
+              <span *ngIf="!procesando">Procesar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="document.validation_errors?.length" class="alert alert-danger py-2">
+        <strong>Errores de validación:</strong>
+        <ul class="mb-0 mt-1">
+          <li *ngFor="let err of document.validation_errors">{{ err }}</li>
+        </ul>
+      </div>
+      <div *ngIf="document.processing_errors" class="alert alert-warning py-2">
+        <strong>Errores de procesamiento:</strong> {{ document.processing_errors }}
+      </div>
+    </div>
+  </div>
+</section>

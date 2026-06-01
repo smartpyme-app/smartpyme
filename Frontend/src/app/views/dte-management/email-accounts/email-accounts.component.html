@@ -1,0 +1,127 @@
+<section class="d-flex justify-content-between align-items-center bg-white p-4 rounded mb-3">
+  <h5 class="mb-0">Cuentas de correo</h5>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" (click)="connectGmail()">
+      <i class="fa fa-google me-2"></i>Conectar Gmail
+    </button>
+    <button class="btn btn-outline-primary" (click)="openImapModal(imapModal)">
+      <i class="fa fa-server me-2"></i>Conectar IMAP
+    </button>
+  </div>
+</section>
+
+<section class="bg-white p-4 rounded">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Correo</th>
+          <th>Proveedor</th>
+          <th>Estado</th>
+          <th>Última sincronización</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="5" class="text-center py-4">
+            <span class="badge bg-primary">Cargando...</span>
+          </td>
+        </tr>
+        <tr *ngIf="!loading && accounts.length === 0">
+          <td colspan="5" class="text-center py-4">
+            <span class="text-muted">No hay cuentas configuradas. Conecta Gmail o IMAP para descargar DTEs.</span>
+          </td>
+        </tr>
+        <tr *ngFor="let account of accounts">
+          <td>{{ account.email }}</td>
+          <td>{{ providerLabel(account.provider) }}</td>
+          <td>
+            <span class="badge" [ngClass]="account.is_active ? 'bg-success' : 'bg-secondary'">
+              {{ account.is_active ? 'Activa' : 'Inactiva' }}
+            </span>
+          </td>
+          <td>
+            {{ account.last_sync_at ? (account.last_sync_at | date:'dd/MM/yyyy HH:mm') : '-' }}
+          </td>
+          <td class="text-center">
+            <button *ngIf="account.is_active" class="btn btn-sm btn-outline-primary me-1" (click)="syncAccount(account)" [disabled]="saving" tooltip="Sincronizar ahora">
+              <i class="fa fa-sync-alt"></i>
+            </button>
+            <button *ngIf="account.is_active" class="btn btn-sm btn-outline-danger" (click)="disconnectAccount(account)" tooltip="Desconectar">
+              <i class="fa fa-unlink"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<ng-template #imapModal>
+  <div class="modal-header">
+    <h5 class="modal-title">Conectar cuenta IMAP</h5>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="saveImapAccount()">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Host</label>
+          <input type="text" class="form-control" [(ngModel)]="imapConfig.host" name="host" placeholder="imap.gmail.com" required>
+        </div>
+        <div class="col-md-3 mb-3">
+          <label class="form-label">Puerto</label>
+          <input type="number" class="form-control" [(ngModel)]="imapConfig.port" name="port" required>
+        </div>
+        <div class="col-md-3 mb-3">
+          <label class="form-label">Encriptación</label>
+          <select class="form-select" [(ngModel)]="imapConfig.encryption" name="encryption">
+            <option value="ssl">SSL</option>
+            <option value="tls">TLS</option>
+            <option value="starttls">STARTTLS</option>
+            <option value="none">Ninguna</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Usuario / Correo</label>
+          <input type="text" class="form-control" [(ngModel)]="imapConfig.user" name="user" required>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Contraseña</label>
+          <input type="password" class="form-control" [(ngModel)]="imapConfig.password" name="password" required>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Sucursal</label>
+          <ng-select [(ngModel)]="imapConfig.id_sucursal" name="id_sucursal" [clearable]="true" placeholder="Seleccione (opcional)">
+            <ng-option [value]="null">Ninguna</ng-option>
+            <ng-option *ngFor="let s of sucursales" [value]="s.id">{{ s.nombre }}</ng-option>
+          </ng-select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Bodega</label>
+          <ng-select [(ngModel)]="imapConfig.id_bodega" name="id_bodega" [clearable]="true" placeholder="Seleccione (opcional)">
+            <ng-option [value]="null">Ninguna</ng-option>
+            <ng-option *ngFor="let b of bodegas" [value]="b.id">{{ b.nombre }}</ng-option>
+          </ng-select>
+        </div>
+        <div class="col-12 mb-3">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" [(ngModel)]="imapConfig.actualizar_inventario" name="actualizar_inventario">
+            <label class="form-check-label">Actualizar inventario al procesar compras</label>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary" (click)="testImapConnection()" [disabled]="testing || !imapConfig.host || !imapConfig.user || !imapConfig.password">
+          <span *ngIf="!testing">Probar conexión</span>
+          <span *ngIf="testing">Probando...</span>
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving || !imapConfig.host || !imapConfig.user || !imapConfig.password">
+          <span *ngIf="!saving">Conectar</span>
+          <span *ngIf="saving">Conectando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
