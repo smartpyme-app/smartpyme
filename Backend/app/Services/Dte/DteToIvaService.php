@@ -83,6 +83,10 @@ class DteToIvaService
             ];
         }
 
+        if ($document->processing_status === 'anulado') {
+            return ['success' => false, 'skipped' => 'anulado'];
+        }
+
         $jsonContent = $document->json_path
             ? Storage::disk('dtes')->get($document->json_path)
             : null;

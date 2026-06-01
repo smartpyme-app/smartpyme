@@ -152,6 +152,10 @@ class DteDocumentController extends Controller
             return response()->json(['error' => 'El DTE ya fue procesado'], 422);
         }
 
+        if ($document->processing_status === 'anulado') {
+            return response()->json(['error' => 'El DTE está anulado'], 422);
+        }
+
         if ($request->filled('destino')) {
             $destino = $request->destino;
             if (!in_array($destino, ['compra', 'gasto'], true)) {
@@ -179,6 +183,10 @@ class DteDocumentController extends Controller
 
         if ($document->processing_status === 'processed') {
             return response()->json(['success' => true, 'message' => 'Ya procesado', 'document' => $document->fresh()]);
+        }
+
+        if ($document->processing_status === 'anulado') {
+            return response()->json(['error' => 'No se puede procesar un DTE anulado'], 422);
         }
 
         if ($document->validation_status !== 'valid') {
@@ -216,6 +224,38 @@ class DteDocumentController extends Controller
         }
 
         return response()->json(['error' => 'Error al procesar el DTE'], 500);
+    }
+
+    /**
+     * Marcar DTE como anulado (descartado de la bandeja de revisión).
+     */
+    public function anular(int $id): JsonResponse
+    {
+        $document = DteDocument::findOrFail($id);
+
+        if ($document->id_empresa !== auth()->user()->id_empresa) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        if ($document->processing_status === 'processed') {
+            return response()->json(['error' => 'No se puede anular un DTE ya procesado'], 422);
+        }
+
+        if ($document->processing_status === 'anulado') {
+            return response()->json([
+                'success' => true,
+                'message' => 'El DTE ya estaba anulado',
+                'document' => $document->fresh(),
+            ]);
+        }
+
+        $document->update(['processing_status' => 'anulado']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'DTE anulado correctamente',
+            'document' => $document->fresh(),
+        ]);
     }
 
     /**
