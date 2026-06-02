@@ -5,6 +5,7 @@ import { LayoutComponent } from '@layout/layout.component';
 
 import { ConsumidorFinalComponent } from '@views/contabilidad/libro-iva/consumidor-final/consumidor-final.component';
 import { ContribuyentesComponent } from '@views/contabilidad/libro-iva/contribuyentes/contribuyentes.component';
+import { LibroIvaGeneralComponent } from '@views/contabilidad/libro-iva/libro-iva-general/libro-iva-general.component';
 import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-compras.component';
 import { LibroAnuladosComponent } from '@views/contabilidad/libro-anulados/libro-anulados.component';
 import { LibroComprasSujetosExcluidosComponent } from '@views/contabilidad/libro-compras-sujetos-excluidos/libro-compras-sujetos-excluidos.component';
@@ -31,6 +32,8 @@ const routes: Routes = [
           title: 'Contribuyentes'},
         { path: 'libro-iva/consumidor-final', component: ConsumidorFinalComponent,
           title: 'Consumidor final'},
+        { path: 'libro-iva/general', component: LibroIvaGeneralComponent,
+          title: 'Libros fiscales'},
         { path: 'libro-compras', component: LibroComprasComponent, title: 'Libro de compras'},
         { path: 'libro-anulados', component: LibroAnuladosComponent, title: 'Libro de anulados'},
         { path: 'libro-compras-sujetos-excluidos', component: LibroComprasSujetosExcluidosComponent, title: 'Libro de compras sujetos excluidos'},

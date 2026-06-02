@@ -205,11 +205,13 @@ export class DevolucionesVentasComponent implements OnInit {
     }
 
     imprimirDTEPDF(venta: any) {
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/05/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte || '05';
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(venta: any) {
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/05/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte || '05';
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     emitirDTE() {

@@ -121,10 +121,10 @@
                                 (keyup)="updateTotal(detalle)" (wheel)="$event.preventDefault()" class="form-control"
                                 name="precio_iva">
                         </div>
-                        <select [(ngModel)]="detalle.precio_iva" (change)="onPrecioSelectChange(detalle)"
-                            class="form-select" name="precio_iva" *ngIf="detalle?.precios?.length > 1">
-                            <option [value]="precio.precio"
-                                *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
+                        <select [(ngModel)]="detalle.precio" (change)="onPrecioSelectChange(detalle)" 
+                        class="form-select" [name]="'precio_tarifa_'+i" *ngIf="detalle?.precios?.length > 1">
+                            <option [value]="precio.precio" 
+                            *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
                                 {{ precio.precio | currency:'USD':'symbol':'1.0-6'}}
                             </option>
                         </select>
@@ -172,7 +172,7 @@
                         </select>
                     </td>
                     <td style="width: 100px;" class="text-right">
-                        <div>{{ detalle.total_iva | currency:'USD':'symbol':'1.0-6'}}</div>
+                        <div>{{ detalle.total | currency:'USD':'symbol':'1.0-6'}}</div>
                     </td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">

@@ -2,12 +2,15 @@
 
 namespace App\Models\Ventas;
 
+use App\Models\Concerns\HasOffloadedDte;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 
 class Venta extends Model {
+
+    use HasOffloadedDte;
 
     protected $table = 'ventas';
     protected $fillable = array(
@@ -50,6 +53,7 @@ class Venta extends Model {
         'total',
         'propina',
         'observaciones',
+        'observaciones_shopify',
         'recurrente',
         'cotizacion',
         'descripcion_personalizada',
@@ -92,14 +96,35 @@ class Venta extends Model {
         'tipo_anulacion',
         'motivo_anulacion',
         'codigo_generacion_remplazo',
+        'dte_s3_key',
+        'dte_migrated_at',
+        'dte_invalidacion_s3_key',
+        'dte_invalidacion_migrated_at',
     );
 
-    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento', 'nombre_proyecto'];
+    protected $hidden = [
+        'dte_s3_key',
+        'dte_invalidacion_s3_key',
+    ];
+
+    protected $appends = [
+        'nombre_cliente',
+        'nombre_usuario',
+        'nombre_vendedor',
+        'nombre_sucursal',
+        'nombre_canal',
+        'nombre_documento',
+        'nombre_proyecto',
+        'dte_en_s3',
+        'dte_invalidacion_en_s3',
+    ];
     protected $casts = [
         'recurrente' => 'string',
         'puntos_ganados' => 'integer',
         'puntos_canjeados' => 'integer',
-        'descuento_puntos' => 'decimal:2'
+        'descuento_puntos' => 'decimal:2',
+        'dte_migrated_at' => 'datetime',
+        'dte_invalidacion_migrated_at' => 'datetime',
     ];
 
     protected static function boot()
@@ -119,16 +144,6 @@ class Venta extends Model {
             return $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre . ' ' . $cliente->apellido;
         }
         return 'Consumidor Final';
-    }
-
-    public function getDteAttribute($value)
-    {
-        return is_string($value) ? json_decode($value,true) : $value;
-    }
-
-    public function getDteInvalidacionAttribute($value)
-    {
-        return is_string($value) ? json_decode($value,true) : $value;
     }
 
     public function getNombreUsuarioAttribute()
@@ -237,6 +252,21 @@ class Venta extends Model {
 
     public function devoluciones(){
         return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'id_venta');
+    }
+
+    /**
+     * Devoluciones con documento Nota de crédito o Nota de débito (activas).
+     * Usado en listados para indicador y detalle sin cargar todas las devoluciones.
+     */
+    public function devolucionesNcNd()
+    {
+        return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'id_venta')
+            ->where('enable', 1)
+            ->whereHas('documento', function ($q) {
+                $q->whereIn('nombre', ['Nota de crédito', 'Nota de débito']);
+            })
+            ->orderBy('fecha')
+            ->orderBy('id');
     }
 
     public function proyecto()

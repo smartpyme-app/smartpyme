@@ -10,12 +10,18 @@
         table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
         thead th, tbody td { padding: 2px 4px; border: 1px solid #dee2e6; }
         thead th { font-weight: bold; background: #f1f3f5; }
+        tfoot td { font-weight: bold; background: #f8f9fa; border-top: 2px solid #adb5bd; }
         .text-center{text-align: center;}
         .text-right{text-align: right;}
     </style>
 </head>
 <body>
-    @php $empresa = Auth::user()->empresa()->with('currency')->first(); $simbolo = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : 'L'; @endphp
+    @php
+        $empresa = Auth::user()->empresa()->with('currency')->first();
+        $simbolo = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : 'L';
+        $filasPdf = collect($libroventas ?? []);
+        $totalesPdf = \App\Exports\Contabilidad\Honduras\LibroVentasExport::filaTotales($filasPdf);
+    @endphp
 
     <h1 class="text-center">LIBRO DE VENTAS</h1>
     <h2 class="text-center">{{ Auth::user()->empresa()->pluck('nombre')->first() }}</h2>
@@ -48,6 +54,16 @@
                 </tr>
             @endforeach
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" class="text-right">TOTALES</td>
+                <td class="text-right">{{ $simbolo }}{{ number_format($totalesPdf['importe_exenta'], 2) }}</td>
+                <td class="text-right">{{ $simbolo }}{{ number_format($totalesPdf['importe_gravada'], 2) }}</td>
+                <td class="text-right">{{ $simbolo }}{{ number_format($totalesPdf['importe_exonerada'], 2) }}</td>
+                <td class="text-right">{{ $simbolo }}{{ number_format($totalesPdf['impuesto_ventas'], 2) }}</td>
+                <td class="text-right">{{ $simbolo }}{{ number_format($totalesPdf['importe_exportacion'], 2) }}</td>
+            </tr>
+        </tfoot>
     </table>
 </body>
 </html>

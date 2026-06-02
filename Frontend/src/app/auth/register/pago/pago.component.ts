@@ -11,6 +11,7 @@ import { Estado } from '../../../models/estado.interface';
 @Component({
   selector: 'app-pago',
   templateUrl: './pago.component.html',
+  styleUrls: ['./pago-layout.css'],
 })
 export class PagoComponent implements OnInit {
   public user: any = {};
@@ -477,5 +478,34 @@ export class PagoComponent implements OnInit {
         this.billingInfo.zipCode = estadoSeleccionado.codigo_postal;
       }
     }
+  }
+
+  /** Nombre del plan para textos y tabla (p. ej. "Estándar"). */
+  getNombrePlanLabel(): string {
+    const plan = this.user?.empresa?.plan;
+    if (plan === undefined || plan === null || plan === '') {
+      return '';
+    }
+    const n = typeof plan === 'number' ? plan : parseInt(String(plan), 10);
+    if (!isNaN(n)) {
+      if (n === 1) return 'Emprendedor';
+      if (n === 2) return 'Estándar';
+      if (n === 3) return 'Avanzado';
+      if (n === 4) return 'Pro';
+    }
+    const s = String(plan).toLowerCase();
+    if (s.includes('estándar') || s.includes('estandar')) return 'Estándar';
+    if (s.includes('avanzado')) return 'Avanzado';
+    if (s.includes('pro')) return 'Pro';
+    if (s.includes('emprendedor')) return 'Emprendedor';
+    return String(plan);
+  }
+
+  /** Frecuencia / tipo de plan (p. ej. "Mensual"). */
+  getTipoPlanLabel(): string {
+    const e = this.user?.empresa;
+    if (!e) return 'Mensual';
+    const t = (e.tipo_plan || e.frecuencia_pago || 'Mensual').trim();
+    return t || 'Mensual';
   }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Exports\Contabilidad;
 
+use App\Exports\Contabilidad\ElSalvador\DteZipPorSucursalHelper;
 use App\Models\Ventas\Venta;
 use App\Services\DteVentaPdfService;
 use Illuminate\Http\Request;
@@ -38,8 +39,10 @@ class GlobalDttesPdfExport
             $nombreArchivo = $prefijoNombre . $fechaInicioFormateada . '_' . $fechaFinFormateada;
         }
 
-        $ventas = Venta::with(['cliente', 'documento', 'detalles.producto'])
-            ->whereRaw('dte IS NOT NULL')
+        $agruparPorSucursal = DteZipPorSucursalHelper::agruparPorSucursal($request);
+
+        $ventas = Venta::with(['cliente', 'documento', 'detalles.producto', 'sucursal'])
+            ->whereHasDtePayload()
             ->whereNotNull('sello_mh')
             ->when($estadoJson === 'anulados', function ($query) {
                 return $query->where('estado', 'Anulada');
@@ -119,7 +122,8 @@ class GlobalDttesPdfExport
             }
 
             $fileName = $codigoGeneracion . '.pdf';
-            if ($zip->addFromString($fileName, $binary)) {
+            $zipEntry = DteZipPorSucursalHelper::rutaEnZip($fileName, $venta, $agruparPorSucursal);
+            if ($zip->addFromString($zipEntry, $binary)) {
                 $countPdfs++;
             }
         }

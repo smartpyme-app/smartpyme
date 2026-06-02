@@ -103,31 +103,20 @@ export class AbonosComprasComponent implements OnInit {
         this.filtrarAbonos(false);
     }
 
-    public reemprimir(abono:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + abono.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+    public imprimir(abono:any){
+        window.open(this.apiService.baseUrl + '/api/compra/abono/imprimir/' + abono.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
     // Editar
 
     openModalEdit(template: TemplateRef<any>, abono:any) {
-        this.abono = abono;
-        
-        this.apiService.getAll('documentos').subscribe(documentos => {
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
-
+        this.abono = { ...abono };
         this.modalRef = this.modalService.show(template);
     }
 
-    public onSubmit() {
-        this.loading = true;            
-        this.apiService.store('compra/abono', this.abono).subscribe(abono => {
-            this.abono = {};
-            this.modalRef.hide();
-            this.loading = false;
-            this.alertService.success('Abono guardado', 'El abono fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.loading = false; });
-
+    public onAbonoSaved() {
+        this.modalRef.hide();
+        this.filtrarAbonos(false);
     }
 
     public openFilter(template: TemplateRef<any>) {

@@ -17,10 +17,24 @@ class AbonosController extends Controller
     
     public function index(Request $request) {
        
-        $abonos = Abono::with('venta')->when($request->buscador, function($query) use ($request){
-                        return $query->orwhere('id_venta', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('concepto', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('nombre_de', 'like', '%'.$request->buscador.'%');
+        $abonos = Abono::with(['venta', 'documento'])->when($request->buscador, function ($query) use ($request) {
+                            $buscador = '%' . $request->buscador . '%';
+                            return $query->where(function ($q) use ($buscador) {
+                                $q->where('correlativo', 'like', $buscador)
+                                    ->orWhere('id_venta', 'like', $buscador)
+                                    ->orWhere('concepto', 'like', $buscador)
+                                    ->orWhere('nombre_de', 'like', $buscador)
+                                    ->orWhere('referencia', 'like', $buscador)
+                                    ->orWhereHas('venta', function ($qv) use ($buscador) {
+                                        $qv->where('correlativo', 'like', $buscador)
+                                            ->orWhereHas('cliente', function ($qc) use ($buscador) {
+                                                $qc->where('nombre', 'like', $buscador)
+                                                    ->orWhere('apellido', 'like', $buscador)
+                                                    ->orWhere('nombre_empresa', 'like', $buscador)
+                                                    ->orWhereRaw("CONCAT(TRIM(nombre), ' ', TRIM(apellido)) LIKE ?", [$buscador]);
+                                            });
+                                    });
+                            });
                         })
                         ->when($request->inicio, function($query) use ($request){
                             return $query->where('fecha', '>=', $request->inicio);
@@ -100,23 +114,28 @@ class AbonosController extends Controller
          
         try {
 
+            $isNew = !$request->id;
+
             if($request->id)
                 $abono = Abono::findOrFail($request->id);
             else
                 $abono = new Abono;
 
-            // Obtener el documento y asignar correlativo
-            $documento = \App\Models\Admin\Documento::where('nombre', 'Abono de Venta')
-                            ->where('id_sucursal', $request->id_sucursal)
-                            ->lockForUpdate()
-                            ->first();
-
             $abono->fill($request->all());
-            if($documento){
-                $abono->id_documento = $documento->id;
-                $abono->correlativo = $documento->correlativo;
-                $documento->increment('correlativo');
+
+            if ($isNew) {
+                $documento = \App\Models\Admin\Documento::where('nombre', 'Abono de Venta')
+                                ->where('id_sucursal', $request->id_sucursal)
+                                ->lockForUpdate()
+                                ->first();
+
+                if($documento){
+                    $abono->id_documento = $documento->id;
+                    $abono->correlativo = $documento->correlativo;
+                    $documento->increment('correlativo');
+                }
             }
+
             $abono->save(); 
 
             if ($venta && $venta->saldo <= 0) {

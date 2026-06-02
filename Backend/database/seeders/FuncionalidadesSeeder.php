@@ -57,11 +57,18 @@ class FuncionalidadesSeeder extends Seeder
                 'orden' => 7
             ],
             [
+                'nombre' => 'Descarga automatizada de DTEs',
+                'slug' => 'descarga-automatizada-dtes',
+                'descripcion' => 'Conectar cuentas de correo (Gmail/IMAP) y descargar, validar y procesar DTEs recibidos',
+                'orden' => 8
+            ],
+            [
                 'nombre' => 'Módulo de Presentaciones',
                 'slug' => 'modulo-presentaciones-productos',
                 'descripcion' => 'Permite gestionar presentaciones de productos',
                 'orden' => 8
-            ]
+            ],
+            //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 
         $contador = 0;

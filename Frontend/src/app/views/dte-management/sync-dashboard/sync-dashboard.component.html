@@ -1,0 +1,79 @@
+<section class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-3">Historial de sincronizaciones</h5>
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <label class="form-label">Cuenta</label>
+      <ng-select [(ngModel)]="filtros.user_email_account_id" (ngModelChange)="filtrar()" [clearable]="true" placeholder="Todas">
+        <ng-option [value]="''">Todas</ng-option>
+        <ng-option *ngFor="let a of accounts" [value]="a.id">{{ a.email }}</ng-option>
+      </ng-select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Estado</label>
+      <select class="form-select" [(ngModel)]="filtros.status" (ngModelChange)="filtrar()">
+        <option value="">Todos</option>
+        <option value="completed">Completado</option>
+        <option value="failed">Fallido</option>
+        <option value="running">En proceso</option>
+      </select>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Cuenta</th>
+          <th>Inicio</th>
+          <th>Fin</th>
+          <th>Estado</th>
+          <th>Emails</th>
+          <th>DTEs encontrados</th>
+          <th>Procesados</th>
+          <th>Fallidos</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="8" class="text-center py-4"><span class="badge bg-primary">Cargando...</span></td>
+        </tr>
+        <tr *ngIf="!loading && !logs?.data?.length">
+          <td colspan="8" class="text-center py-4 text-muted">No hay sincronizaciones registradas</td>
+        </tr>
+        <ng-container *ngFor="let log of logs?.data">
+          <tr>
+            <td>{{ log.user_email_account?.email || '-' }}</td>
+            <td>{{ log.started_at | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ log.finished_at ? (log.finished_at | date:'dd/MM/yyyy HH:mm') : '-' }}</td>
+            <td><span class="badge" [ngClass]="statusBadgeClass(log.status)">{{ log.status }}</span></td>
+            <td>{{ log.emails_scanned }}</td>
+            <td>{{ log.dtes_found }}</td>
+            <td>{{ log.dtes_processed }}</td>
+            <td>
+              <span *ngIf="log.dtes_failed === 0">{{ log.dtes_failed }}</span>
+              <button *ngIf="log.dtes_failed > 0" type="button" class="btn btn-link btn-sm p-0 text-danger" (click)="toggleErrores(log.id)" [attr.aria-expanded]="logErroresAbierto === log.id">
+                {{ log.dtes_failed }} - Ver errores
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="logErroresAbierto === log.id" class="table-light">
+            <td colspan="8" class="py-3">
+              <div class="small">
+                <strong>Errores de esta sincronización:</strong>
+                <ul *ngIf="log.failure_details?.length || log.error_message" class="mb-0 mt-1">
+                  <li *ngFor="let f of log.failure_details">
+                    <span *ngIf="f.email_message_id">ID: {{ f.email_message_id }} — </span>{{ f.error }}
+                  </li>
+                  <li *ngIf="log.error_message && !log.failure_details?.length">{{ log.error_message }}</li>
+                </ul>
+                <p *ngIf="!log.failure_details?.length && !log.error_message" class="text-muted mb-0 mt-1">Detalles no disponibles para sincronizaciones anteriores. Revisa <code>storage/logs/laravel.log</code> o vuelve a sincronizar.</p>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+  <div class="col-12 mt-3" *ngIf="logs && logs.last_page > 1">
+    <app-pagination [items]="logs" (setPagination)="setPagination($event)"></app-pagination>
+  </div>
+</section>

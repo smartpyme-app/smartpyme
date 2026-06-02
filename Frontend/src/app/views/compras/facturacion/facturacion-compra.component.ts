@@ -361,16 +361,14 @@ export class FacturacionCompraComponent implements OnInit {
         const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
         const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
         const porcentajesImpuestos = (this.compra.impuestos || []).map((i: any) => Number(i.porcentaje));
+        const pctDetalleDe = (d: any) => (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+            ? Number(d.porcentaje_impuesto) : empresaIva;
 
         this.compra.impuestos.forEach((impuesto: any) => {
             if (this.compra.cobrar_impuestos) {
                 const pctImp = Number(impuesto.porcentaje);
                 const monto = this.compra.detalles
-                    .filter((d: any) => {
-                        const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-                            ? Number(d.porcentaje_impuesto) : empresaIva;
-                        return pctIgual(pctImp, pctDetalle);
-                    })
+                    .filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)))
                     .reduce((sum: number, d: any) => {
                         const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
                             ? parseFloat(d.iva) : parseFloat(d.total || 0) * (pctImp / 100);
@@ -385,14 +383,10 @@ export class FacturacionCompraComponent implements OnInit {
         // Detalles cuyo % no coincide con ningún impuesto: asignar su IVA al impuesto de la empresa o al primero
         if (this.compra.cobrar_impuestos && this.compra.detalles.length && this.compra.impuestos.length) {
             const ivaSinAsignar = this.compra.detalles
-                .filter((d: any) => {
-                    const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-                        ? Number(d.porcentaje_impuesto) : empresaIva;
-                    return !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalle));
-                })
+                .filter((d: any) => !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalleDe(d))))
                 .reduce((sum: number, d: any) => {
                     const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
-                        ? parseFloat(d.iva) : parseFloat(d.total || 0) * (((d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '') ? Number(d.porcentaje_impuesto) : empresaIva) / 100);
+                        ? parseFloat(d.iva) : parseFloat(d.total || 0) * (pctDetalleDe(d) / 100);
                     return sum + ivaLinea;
                 }, 0);
             if (ivaSinAsignar > 0) {
@@ -529,8 +523,22 @@ export class FacturacionCompraComponent implements OnInit {
             this.saving = true;
             if(this.duplicarcompra){
                 this.compra.recurrente = false;
-            }         
-            this.apiService.store('compra/facturacion', this.compra).subscribe(compra => {
+            }
+
+            const payload: any = { ...this.compra };
+            const codigoGen = this.compra.codigo_generacion;
+            if (codigoGen != null && String(codigoGen).trim() !== '') {
+                payload.codigo_generacion = String(codigoGen).trim();
+            }
+            const numeroCtrl = this.compra.numero_control;
+            if (numeroCtrl != null && String(numeroCtrl).trim() !== '') {
+                payload.numero_control = String(numeroCtrl).trim();
+            }
+            if (this.compra.tipo_dte) {
+                payload.tipo_dte = this.compra.tipo_dte;
+            }
+
+            this.apiService.store('compra/facturacion', payload).subscribe(compra => {
                 this.saving = false;
                 
                 if(this.compra.cotizacion == 1){
@@ -689,8 +697,20 @@ export class FacturacionCompraComponent implements OnInit {
         this.compra.id_bodega = this.apiService.auth_user().id_bodega;
 
         if (jsonData.identificacion.tipoDte) {
+            this.compra.tipo_dte = jsonData.identificacion.tipoDte;
             this.compra.tipo_documento =
                 this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
+        }
+
+        if (jsonData.identificacion.codigoGeneracion) {
+            this.compra.codigo_generacion = String(
+                jsonData.identificacion.codigoGeneracion
+            ).trim();
+        }
+        if (jsonData.identificacion.numeroControl) {
+            this.compra.numero_control = String(
+                jsonData.identificacion.numeroControl
+            ).trim();
         }
 
         const documentoRow = (this.documentos || []).find(
@@ -1246,7 +1266,7 @@ export class FacturacionCompraComponent implements OnInit {
             errores.push('Tipo');
         }
 
-        if (!this.apiService.isSupervisorLimitado()) {
+        if (!this.apiService.supervisorLimitadoRestringidoEnCompras()) {
             if (!this.nuevoProducto.costo || this.nuevoProducto.costo <= 0) {
                 errores.push('Costo');
             }
@@ -1265,7 +1285,7 @@ export class FacturacionCompraComponent implements OnInit {
         this.creandoProducto = true;
 
         const precioNum = parseFloat(this.nuevoProducto.precio) || 0;
-        const costoNum = this.apiService.isSupervisorLimitado()
+        const costoNum = this.apiService.supervisorLimitadoRestringidoEnCompras()
             ? precioNum
             : parseFloat(this.nuevoProducto.costo);
 

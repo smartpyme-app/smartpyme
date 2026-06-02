@@ -20,6 +20,8 @@ export class VentaComponent implements OnInit {
     public loading = false;
     public saving = false;
 
+    public abonoEdit:any = {};
+
     modalRef!: BsModalRef;
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
@@ -73,6 +75,16 @@ export class VentaComponent implements OnInit {
     public openAbono(template: TemplateRef<any>, venta:any){
         this.venta = venta;
         this.modalRef = this.modalService.show(template);
+    }
+
+    public openModalEditAbono(template: TemplateRef<any>, abono: any) {
+        this.abonoEdit = { ...abono };
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public onAbonoSaved() {
+        this.modalRef.hide();
+        this.loadAll();
     }
 
     public goBack() {

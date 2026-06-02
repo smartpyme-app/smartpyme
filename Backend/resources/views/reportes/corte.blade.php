@@ -120,13 +120,16 @@
             @endif
             <b style="margin-left: 100px;">Fecha: </b>{{\Carbon\Carbon::parse($indicadores->inicio)->format('d/m/Y')}}
         </p>
-        @php $simbolo_moneda = optional($indicadores->empresa->currency)->currency_symbol ?? '$'; @endphp
+        @php
+            $simbolo_moneda = optional($indicadores->empresa->currency)->currency_symbol ?? '$';
+            $total_gift_card_corte = $indicadores->getTotalPagadoConGiftCard();
+        @endphp
 
         <table class="table table-bordered table-hover border-primary mb-3">
             <tr>
                 <td width="16%">
                     <h3 class="text-center text-success">
-                        {{ $simbolo_moneda }}{{ $indicadores->getTotalVentas() }}
+                        {{ $simbolo_moneda }}{{ number_format(max(0, $indicadores->getTotalVentas() - $total_gift_card_corte), 2) }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
                 </td>
@@ -150,7 +153,7 @@
                 </td>
                 <td width="16%">
                     <h3 class="text-center text-success">
-                        {{ $simbolo_moneda }}{{ $indicadores->getTotalVentasSinDevoluciones() }}
+                        {{ $simbolo_moneda }}{{ number_format(max(0, $indicadores->getTotalVentasSinDevoluciones() - $total_gift_card_corte), 2) }}
                     </h3>
                     <p class="mb-0 text-center">VENTAS TOTALES <br> SIN DEVOLUCIONES</p>
                 </td>
@@ -179,7 +182,7 @@
             <tr>
                 <td>Ventas del día</td>
                 <td class="text-right">{{ $indicadores->getCantidadVentasPagadas() }}</td>
-                <td class="text-right">{{ $simbolo_moneda }}{{number_format($indicadores->getTotalVentasPagadas(), 2) }}</td>
+                <td class="text-right">{{ $simbolo_moneda }}{{ number_format(max(0, $indicadores->getTotalVentasPagadas() - $total_gift_card_corte), 2) }}</td>
             </tr>
             <tr>
                 <td>Ventas al crédito</td>

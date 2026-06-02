@@ -13,6 +13,27 @@ return [
     'TIPO_PAGO_TRANSFERENCIA' => 'Transferencia',
     'TIPO_PAGO_TARJETA' => 'Tarjeta de crédito/débito',
 
+    // Correos
+    'CORREOS_ABACO_NOTIFICACION' => [
+        'jennifer.d@smartpyme.sv',
+        'karla.b@smartpyme.sv',
+        'alejandro.a@smartpyme.sv',
+    ],
+
+    /**
+     * Nombres de forma de pago equivalentes a gift card (cierre de caja: no suman al total de ventas).
+     * Comparación sin distinguir mayúsculas; debe coincidir con el nombre en ventas o en venta_metodos_pago.
+     */
+    'FORMAS_PAGO_GIFT_CARD' => [
+        'Gift Card',
+        'Gif card',
+        'Giftcard',
+        'GIFTCARD',
+        'Tarjeta de regalo',
+        'Tarjeta regalo',
+        'Certificado de regalo',
+    ],
+
     'METODO_PAGO_N1CO' => 'n1co',
     'METODO_PAGO_TRANSFERENCIA' => 'Transferencia',
 
@@ -21,6 +42,7 @@ return [
 
     // Días tras el vencimiento con acceso (1..N); suspensión desde el día N+1 si siguen saldos pendientes (p. ej. N=3).
     'DIAS_PRORROGA_SUSCRIPCION' => 3,
+    'DIAS_INACTIVACION_EMPRESA_SUSCRIPCION' => 30,
 
     /** Días que suma la acción admin «Conceder acceso temporal» (sin mover fecha_proximo_pago). */
     'DIAS_ACCESO_TEMPORAL_ADMIN' => 2,
@@ -74,3 +96,5 @@ return [
     'FRECUENCIA_PAGO_TRIMESTRAL' => 'Trimestral',
     'FRECUENCIA_PAGO_ANUAL' => 'Anual',
 ];
+
+

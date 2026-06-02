@@ -40,6 +40,30 @@
                 <input type="text" class="form-control" name="sello_mh" [(ngModel)]="gasto.sello_mh" placeholder="Sello de recepción" />
             </div>
         </div>
+        <div class="row" *ngIf="gasto.codigo_generacion || gasto.numero_control">
+            <div class="form-group col-md-6 col-lg-5" *ngIf="gasto.codigo_generacion">
+                <label for="codigo_generacion">Código de generación</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="codigo_generacion"
+                    name="codigo_generacion"
+                    [ngModel]="gasto.codigo_generacion"
+                    disabled
+                    readonly>
+            </div>
+            <div class="form-group col-md-6 col-lg-5" *ngIf="gasto.numero_control">
+                <label for="numero_control">Número de control</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="numero_control"
+                    name="numero_control"
+                    [ngModel]="gasto.numero_control"
+                    disabled
+                    readonly>
+            </div>
+        </div>
      </div>
      <div class="bg-white rounded p-3 mb-3">
         <h6>Detalle de gasto</h6>
@@ -75,6 +99,7 @@
                         <option value="Gastos varios">Gastos varios</option>
                         <option value="Insumos">Insumos</option>
                         <option value="Impuestos">Impuestos</option>
+                        <option value="Activo Fijo">Activo Fijo</option>
                         <option value="Gastos Administrativos">Gastos Administrativos</option>
                         <option value="Mantenimiento">Mantenimiento</option>
                         <option value="Marketing">Marketing</option>
@@ -244,6 +269,10 @@
                             <input type="checkbox" class="form-check-input" [(ngModel)]="d.aplica_renta" (change)="recalcularDetalleLinea(i)" [name]="'det_aplica_renta_'+i" id="det_renta_{{i}}">
                             <label class="form-check-label" for="det_renta_{{i}}">Renta</label>
                         </div>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" [(ngModel)]="d.aplica_retencion_iva" (change)="recalcularDetalleLinea(i)" [name]="'det_aplica_retencion_iva_'+i" id="det_ret_iva_{{i}}">
+                            <label class="form-check-label" for="det_ret_iva_{{i}}">Ret. IVA</label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -252,6 +281,7 @@
                 <div class="text-end">
                     <span class="text-muted me-3">Sub total: <strong>{{ gasto.sub_total | number:'1.2-2' }}</strong></span>
                     <span class="text-muted me-3">IVA: <strong>{{ gasto.iva | number:'1.2-2' }}</strong></span>
+                    <span class="text-muted me-3" *ngIf="gasto.iva_retenido > 0">IVA retenido: <strong>{{ gasto.iva_retenido | number:'1.2-2' }}</strong></span>
                     <span class="fw-bold">Total: {{ gasto.total | number:'1.2-2' }}</span>
                 </div>
             </div>
@@ -263,7 +293,7 @@
                 <label for="">Concepto:</label>
                 <input type="text" class="form-control" name="concepto" [(ngModel)]="gasto.concepto" placeholder="Escriba aquí" />
             </div>
-            <div class="form-group col-md-4 col-lg-3">
+            <div class="form-group col-md-4 col-lg-2">
                 <label for="">Sub total:</label>
                 <input type='number' class="form-control" name="sub_total" (change)="setTotal()" [(ngModel)]="gasto.sub_total"/>
             </div>
@@ -272,14 +302,18 @@
                 <input type='number' disabled class="form-control" name="iva" [(ngModel)]="gasto.iva"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
-                <label for="">Percepción:</label>
+                <label for="">IVA percibido:</label>
                 <input type='number' disabled class="form-control" name="iva_percibido" [(ngModel)]="gasto.iva_percibido"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
                 <label for="">Renta:</label>
                 <input type='number' disabled class="form-control" name="renta_retenida" [(ngModel)]="gasto.renta_retenida"/>
             </div>
-            <div class="form-group col-md-4 col-lg-3">
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="">IVA retenido:</label>
+                <input type='number' disabled class="form-control" name="iva_retenido" [(ngModel)]="gasto.iva_retenido"/>
+            </div>
+            <div class="form-group col-md-4 col-lg-2">
                 <label for="" class="fw-medium">Total:</label>
                 <input type='number' class="form-control" name="total" (change)="setSubTotal()" [(ngModel)]="gasto.total"/>
             </div>
@@ -334,8 +368,14 @@
             </div>
             <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!varios_items">
                 <div class="form-switch bg-light-info rounded">
-                  <label for="percepcion">Percepción</label>
+                  <label for="percepcion">Percepción (1%)</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.percepcion" name="gasto.percepcion">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!varios_items">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="retencion">Retención (1%)</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.retencion" name="gasto.retencion">
                 </div>
             </div>
             <div class="form-group col-md-4 col-lg-3 without-label" *ngIf="!varios_items">

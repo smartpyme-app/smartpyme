@@ -33,7 +33,6 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
             ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
@@ -44,7 +43,6 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             });
 
         $gastos = Gasto::with('proveedor')
-            ->where('iva' , '>', 0)
             ->where('estado', '!=', 'Cancelado')
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {

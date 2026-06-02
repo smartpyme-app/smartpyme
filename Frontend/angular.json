@@ -26,7 +26,8 @@
               "moment",
               "echarts",
               "google-libphonenumber",
-              "pdfjs-dist"
+              "pdfjs-dist",
+              "@webdatarocks/webdatarocks"
             ],
             "assets": [
               "src/favicon.ico",

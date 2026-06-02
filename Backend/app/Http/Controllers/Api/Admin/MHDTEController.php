@@ -228,7 +228,11 @@ class MHDTEController extends Controller
 
     public function anularDTE(Request $request){
         $venta = Venta::where('id', $request->id)->firstOrFail();
-        $DTE = json_decode($venta->dte, true);
+
+        $DTE = $venta->dte;
+        if (!is_array($DTE)) {
+            return response()->json(['error' => ['El DTE no está disponible o no se pudo cargar desde almacenamiento.']], 422);
+        }
 
         $mh = new MH;
 
@@ -334,6 +338,13 @@ class MHDTEController extends Controller
     }
 
     public function generarDTEPDF($id, $tipo, Request $request){
+
+        if ($tipo === null || $tipo === '' || $tipo === 'null') {
+            $venta = Venta::find($id);
+            $tipo = $venta
+                ? ($venta->tipo_dte ?? data_get($venta->dte, 'identificacion.tipoDte') ?? '01')
+                : (data_get(DevolucionVenta::find($id), 'dte.identificacion.tipoDte') ?? '05');
+        }
 
         if ($tipo == '01' || $tipo == '03' || $tipo == '11') {
             $registro = Venta::findOrFail($id);

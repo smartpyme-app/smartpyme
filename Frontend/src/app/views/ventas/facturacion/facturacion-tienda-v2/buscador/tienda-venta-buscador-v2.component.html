@@ -2,30 +2,31 @@
     <div class="input-group">
         <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
         <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control"
-            [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar por nombre o código'">
+            [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar por nombre o código'"
+            [attr.title]="'Escriba al menos ' + minCaracteresBusqueda + ' caracteres para buscar.'">
     </div>
-    <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
+    
+    <ul *ngIf="puedeMostrarResultadosBusqueda" class="list-group opciones">
         <a href="javascript:void(0);" class="list-group-item d-flex align-items-center gap-2"
             (click)="selectProducto(producto)" *ngFor="let producto of productos">
 
-            <!-- Imagen (solo en respuesta clásica) -->
             <img *ngIf="producto.img" style="width:40px;height:40px;object-fit:cover;flex-shrink:0"
                 src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid">
 
-            <!-- Nombre y etiquetas -->
             <span class="flex-fill min-w-0 ps-1">
-                <!-- nombre_mostrar viene del endpoint aplanado; getNombreCompleto del clásico -->
                 <span class="fw-semibold">
                     {{ producto.nombre_mostrar || getNombreCompleto(producto) }}
                 </span>
-                <!-- Badge visual de empaque cuando viene con presentación -->
+                
                 <span *ngIf="producto.id_presentacion" class="badge bg-success text-dark ms-1" style="font-size:0.7rem">
                     <i class="fa-solid fa-box mr-1"></i>Presentación
                 </span>
                 <br>
+                
                 <small *ngIf="producto.codigo" class="text-muted">SKU: {{ producto.codigo }}</small>
                 <small *ngIf="isComponenteQuimicoHabilitado() && producto.componente_quimico"
                     class="text-muted d-block">Comp. químico: {{ producto.componente_quimico }}</small>
+                
                 <small>
                     <span *ngIf="producto.nombre_categoria" class="badge bg-light text-muted">
                         {{ producto.nombre_categoria }}
@@ -34,13 +35,10 @@
                 </small>
             </span>
 
-            <!-- Stock -->
             <span class="text-center text-muted small" style="min-width:70px">
-                <!-- Respuesta aplanada: stock ya calculado -->
                 <ng-container *ngIf="producto.stock_base_actual != null">
                     {{ producto.stock_base_actual }} <small>en stock</small>
                 </ng-container>
-                <!-- Respuesta clásica: inventarios/lotes -->
                 <ng-container *ngIf="producto.stock_base_actual == null && producto.tipo != 'Servicio'">
                     <span *ngIf="producto.inventario_por_lotes && producto.lotes?.length > 0">
                         {{ producto.lotes | filter:'id_bodega':venta.id_bodega | sum:'stock' }}
@@ -53,7 +51,6 @@
                 </ng-container>
             </span>
 
-            <!-- Precio -->
             <span class="text-end" style="min-width:70px">
                 <span class="badge bg-info p-1">
                     {{ getPrecioConIva(producto) | currency:'USD':'symbol':'1.2' }}

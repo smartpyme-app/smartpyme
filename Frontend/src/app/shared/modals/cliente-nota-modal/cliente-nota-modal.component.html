@@ -1,0 +1,152 @@
+<ng-template #notaModalTemplate>
+    <div class="modal-header">
+        <h4 class="modal-title">{{ isEditingNote ? '✏️ Editar Nota/Visita' : '📝 Agregar Nueva Nota/Visita' }}</h4>
+        <button type="button" class="btn-close" (click)="close()" aria-label="Close"></button>
+    </div>
+
+    <div class="modal-body">
+        <p class="text-muted mb-3" *ngIf="clienteNombre">
+            <strong>Cliente:</strong> {{ clienteNombre }}
+        </p>
+        <p class="text-muted mb-3">{{ isEditingNote ? 'Edita los detalles de la interacción' : 'Registra una interacción con el cliente' }}</p>
+
+        <div *ngIf="showModalErrors" class="alert alert-danger" role="alert">
+            <div *ngIf="modalErrors.general" class="mb-2">
+                {{ modalErrors.general }}
+            </div>
+            <ul *ngIf="!modalErrors.general" class="mb-0">
+                <li *ngFor="let field of getErrorFields()">
+                    <strong>{{ getFieldLabel(field) }}:</strong>
+                    <span *ngFor="let error of modalErrors[field]">{{ error }}</span>
+                </li>
+            </ul>
+        </div>
+
+        <form [formGroup]="noteForm" (ngSubmit)="saveNote()">
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">Tipo de Interacción</label>
+                    <select class="form-select" formControlName="tipo">
+                        <option value="">Seleccionar tipo...</option>
+                        <option value="visita">👤 Visita Presencial</option>
+                        <option value="llamada">📞 Llamada Telefónica</option>
+                        <option value="whatsapp">💬 WhatsApp</option>
+                        <option value="email">📧 Email</option>
+                        <option value="comentarios">📝 Nota Interna</option>
+                        <option value="preferencias">⭐ Preferencias</option>
+                        <option value="quejas">⚠️ Quejas</option>
+                    </select>
+                    <div *ngIf="noteForm.get('tipo')?.invalid && noteForm.get('tipo')?.touched" class="form-text text-danger">
+                        Tipo de interacción es requerido
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Fecha</label>
+                    <input type="date" class="form-control" formControlName="fecha">
+                    <div *ngIf="noteForm.get('fecha')?.invalid && noteForm.get('fecha')?.touched" class="form-text text-danger">
+                        Fecha es requerida
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Hora</label>
+                    <input type="time" class="form-control" formControlName="hora">
+                    <div *ngIf="noteForm.get('hora')?.invalid && noteForm.get('hora')?.touched" class="form-text text-danger">
+                        Hora es requerida
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">Título/Asunto</label>
+                    <input type="text" class="form-control" formControlName="titulo"
+                           placeholder="Ej: Reunión de seguimiento comercial">
+                    <div *ngIf="noteForm.get('titulo')?.invalid && noteForm.get('titulo')?.touched" class="form-text text-danger">
+                        <span *ngIf="noteForm.get('titulo')?.errors?.['required']">Título es requerido</span>
+                        <span *ngIf="noteForm.get('titulo')?.errors?.['minlength']">Título debe tener al menos 5 caracteres</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Responsable</label>
+                    <select class="form-select" formControlName="responsable">
+                        <option value="">Seleccionar...</option>
+                        <option *ngFor="let usuario of usuarios" [value]="usuario.name">
+                            {{ usuario.name }} {{ usuario.apellido ? usuario.apellido : '' }} ({{ usuario.tipo || 'Usuario' }})
+                        </option>
+                    </select>
+                    <div *ngIf="noteForm.get('responsable')?.invalid && noteForm.get('responsable')?.touched" class="form-text text-danger">
+                        Responsable es requerido
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Prioridad</label>
+                    <select class="form-select" formControlName="prioridad">
+                        <option value="low">Baja</option>
+                        <option value="medium">Media</option>
+                        <option value="high">Alta</option>
+                        <option value="urgent">Urgente</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Estado</label>
+                    <select class="form-select" formControlName="estado">
+                        <option value="activo">Activo</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en_proceso">En Proceso</option>
+                        <option value="resuelto">Resuelto</option>
+                        <option value="archivado">Archivado</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" formControlName="requiere_seguimiento" id="requiereSeguimiento">
+                        <label class="form-check-label" for="requiereSeguimiento">
+                            Requiere seguimiento
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">Notas/Comentarios</label>
+                    <textarea class="form-control" formControlName="notas" rows="4"
+                              placeholder="Describe los detalles de la interacción, objetivos, resultados, próximos pasos, etc."></textarea>
+                    <div *ngIf="noteForm.get('notas')?.invalid && noteForm.get('notas')?.touched" class="form-text text-danger">
+                        <span *ngIf="noteForm.get('notas')?.errors?.['required']">Notas son requeridas</span>
+                        <span *ngIf="noteForm.get('notas')?.errors?.['minlength']">Notas deben tener al menos 10 caracteres</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Fecha de Seguimiento (Opcional)</label>
+                    <input type="date" class="form-control" formControlName="seguimiento">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Resolución (Opcional)</label>
+                    <textarea class="form-control" formControlName="resolucion" rows="2"
+                              placeholder="Describe cómo se resolvió el asunto..."></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="close()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="saveNote()" [disabled]="noteForm.invalid || saving">
+            <i class="fa fa-spinner fa-spin me-2" *ngIf="saving"></i>
+            {{ isEditingNote ? 'Actualizar Nota' : 'Guardar Nota' }}
+        </button>
+    </div>
+</ng-template>

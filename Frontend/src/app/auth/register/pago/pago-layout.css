@@ -1,0 +1,270 @@
+/* Shell pago (referencia diseño Ábaco / imagen) */
+.pago-shell-page {
+  background-color: #f3f1fb;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pago-shell-hero {
+  overflow: hidden;
+  align-self: stretch;
+  min-height: 100%;
+  container-type: inline-size;
+  /* Misma base que login Ábaco `.login-abaco-hero-panel-static2` */
+  background-color: #141414;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0)),
+    url('/assets/img/static2-background-abaco.png');
+  background-repeat: no-repeat, no-repeat;
+  background-position: center, center;
+  background-size: cover, cover;
+}
+
+.pago-shell-hero__content {
+  position: relative;
+  z-index: 1;
+}
+
+.pago-shell-hero--video {
+  background-color: #f5f5f5;
+  background-image: none;
+}
+
+.pago-shell-hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.pago-shell-hero-logo {
+  display: block;
+  height: clamp(18px, 2vw + 14px, 30px);
+  width: auto;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  object-fit: contain;
+  object-position: center center;
+}
+
+@supports (font-size: 1cqi) {
+  .pago-shell-hero-logo {
+    height: clamp(18px, 6cqi + 8px, 30px);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .pago-shell-hero-logo {
+    height: clamp(16px, 1.2vw + 10px, 22px);
+  }
+}
+
+@supports (font-size: 1cqi) {
+  @media (min-width: 768px) and (max-width: 991.98px) {
+    .pago-shell-hero-logo {
+      height: clamp(16px, 4cqi + 5px, 22px);
+    }
+  }
+}
+
+.pago-shell-form-col {
+  container-type: inline-size;
+  min-width: 0;
+  align-self: stretch;
+  min-height: 100%;
+  background-color: #ffffff;
+  flex: 1 1 auto;
+}
+
+/* Área principal: centra la tarjeta en el espacio libre (encima del pie) */
+.pago-shell-form-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  min-height: 0;
+  width: 100%;
+  padding-top: clamp(0.75rem, 4vh, 2.5rem);
+  padding-bottom: clamp(0.5rem, 2vh, 1.25rem);
+}
+
+/* Formulario de tarjeta largo: alinear arriba y permitir scroll */
+.pago-shell-form-col--long-flow .pago-shell-form-main {
+  justify-content: flex-start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pago-shell-card {
+  width: 100%;
+  max-width: min(480px, 100%);
+  flex-shrink: 0;
+}
+
+.pago-shell-form-heading {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: #2d2d5f;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-size: clamp(1.5rem, 2vw + 0.85rem, 2.125rem);
+}
+
+.pago-shell-form-brand-icon {
+  display: block;
+  height: clamp(18px, 1.8vw + 10px, 24px);
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.pago-shell-lede {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #6c757d;
+}
+
+.pago-shell-table-wrap {
+  border: 1px solid #e0e0e8;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.pago-shell-table {
+  width: 100%;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+}
+
+.pago-shell-table thead th {
+  background-color: #fafafa;
+  color: #2d2d5f;
+  font-weight: 600;
+  border-bottom: 1px solid #e0e0e8;
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+
+.pago-shell-table thead th.pago-shell-table__total-head {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #5e5ce6;
+}
+
+.pago-shell-table tbody td {
+  padding: 14px;
+  border-bottom: none;
+  vertical-align: middle;
+  color: #2d2d5f;
+}
+
+/* Plan y tipo (Figma: Poppins Regular 18px, line-height 100%) */
+.pago-shell-table tbody td:not(.pago-shell-table__total-cell) {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 100%;
+  letter-spacing: 0;
+}
+
+.pago-shell-table tbody td.pago-shell-table__total-cell {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #5e5ce6;
+  text-align: right;
+}
+
+/* Precio original tachado: más discreto que el total Figma */
+.pago-shell-table tbody td.pago-shell-table__total-cell span.text-decoration-line-through {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 100%;
+}
+
+.pago-shell-trial-msg {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #1a1a1a;
+}
+
+.pago-shell-btn-primary {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  background-color: #5e5ce6;
+  border-color: #5e5ce6;
+  border-radius: 8px;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+.pago-shell-btn-primary:hover:not(:disabled),
+.pago-shell-btn-primary:focus-visible:not(:disabled) {
+  background-color: #4b49d4;
+  border-color: #4b49d4;
+  color: #fff;
+}
+
+.pago-shell-link-later {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: #2d2d5f;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.pago-shell-link-later:hover {
+  color: #5e5ce6;
+}
+
+.pago-shell-footer-attribution {
+  margin-top: auto;
+  flex-shrink: 0;
+  padding-top: 1rem;
+  padding-bottom: 2.5rem;
+}
+
+.pago-shell-footer-attribution__label {
+  font-size: clamp(0.625rem, 1.1vw + 0.5rem, 0.75rem);
+  color: #6c757d;
+}
+
+.pago-shell-footer-attribution__logo {
+  width: auto;
+  max-width: min(275px, 100%);
+  height: auto;
+  vertical-align: middle;
+}
+
+.pago-shell-payment-form .form-label {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+@media (max-height: 720px) {
+  .pago-shell-form-col {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}

@@ -44,8 +44,10 @@ class GlobalDttesExport
             $nombreArchivo = $prefijoNombre . $fechaInicioFormateada . '_' . $fechaFinFormateada;
         }
 
-        $ventas = Venta::with(['cliente', 'documento'])
-            ->whereRaw("dte IS NOT NULL")
+        $agruparPorSucursal = DteZipPorSucursalHelper::agruparPorSucursal($request);
+
+        $ventas = Venta::with(['cliente', 'documento', 'sucursal'])
+            ->whereHasDtePayload()
             ->whereNotNull('sello_mh')
             ->when($estadoJson === 'anulados', function ($query) {
                 return $query->where('estado', 'Anulada');
@@ -159,11 +161,11 @@ class GlobalDttesExport
             Log::info('Procesando DTE con codigoGeneracion: ' . $codigoGeneracion);
 
             $fileName = $codigoGeneracion . '.json';
+            $zipPath = DteZipPorSucursalHelper::rutaEnZip($fileName, $venta, $agruparPorSucursal);
             $filePath = $tempDir . '/' . $fileName;
-
             $fileContent = json_encode($dte, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
             
-            if ($zip->addFromString($fileName, $fileContent)) {
+            if ($zip->addFromString($zipPath, $fileContent)) {
                 $countDtes++;
                 $tempFiles[] = $filePath;
             } else {

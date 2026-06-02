@@ -87,7 +87,17 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
         return $compras->merge($gastos)->merge($devoluciones)->sortBy(fn($x) => $x->registro->fecha)->values();
     }
 
-    public function map($item): array
+    /**
+     * Filas para API libro-iva/general (mismas claves que espera el frontend).
+     */
+    public function rowsForApi(): array
+    {
+        return $this->collection()->map(function ($item) {
+            return $this->mapItemToAssoc($item);
+        })->values()->all();
+    }
+
+    private function mapItemToAssoc($item): array
     {
         $r = $item->registro;
         $m = $item->mult;
@@ -107,18 +117,38 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
         $importeImportacion = $esImportacion ? (float) $r->total * $m : 0;
 
         return [
-            Carbon::parse($fechaDoc)->format('d/m/Y'),
-            Carbon::parse($fechaContab)->format('d/m/Y'),
-            $esImportacion ? ($r->referencia ?? '') : '',
-            '', // Documento FYDUCA
-            $r->nombre_proveedor ?? '',
-            $rtn,
-            $tipo,
-            $r->referencia ?? '',
-            round($importeExenta, 2),
-            round($importeGravada, 2),
-            round($impuestoVentas, 2),
-            round($importeImportacion, 2),
+            'fecha_documento' => $fechaDoc,
+            'fecha_contabilizacion' => $fechaContab,
+            'documento_dua_importacion' => $esImportacion ? ($r->referencia ?? '') : '',
+            'documento_fyduca' => '',
+            'proveedor' => $r->nombre_proveedor ?? '',
+            'rtn_proveedor' => $rtn,
+            'descripcion_compra' => $tipo,
+            'no_factura_compra' => $r->referencia ?? '',
+            'importe_exenta' => round($importeExenta, 2),
+            'importe_gravada' => round($importeGravada, 2),
+            'impuesto_ventas' => round($impuestoVentas, 2),
+            'importe_importacion' => round($importeImportacion, 2),
+        ];
+    }
+
+    public function map($item): array
+    {
+        $row = $this->mapItemToAssoc($item);
+
+        return [
+            Carbon::parse($row['fecha_documento'])->format('d/m/Y'),
+            Carbon::parse($row['fecha_contabilizacion'])->format('d/m/Y'),
+            $row['documento_dua_importacion'],
+            $row['documento_fyduca'],
+            $row['proveedor'],
+            $row['rtn_proveedor'],
+            $row['descripcion_compra'],
+            $row['no_factura_compra'],
+            $row['importe_exenta'],
+            $row['importe_gravada'],
+            $row['impuesto_ventas'],
+            $row['importe_importacion'],
         ];
     }
 }

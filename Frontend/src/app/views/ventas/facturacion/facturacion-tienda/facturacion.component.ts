@@ -598,7 +598,17 @@ export class FacturacionComponent implements OnInit {
           detalle.descripcion = producto.nombre;
           detalle.id_producto = producto.id;
           detalle.precio = parseFloat(producto.precio);
-          detalle.costo = parseFloat(producto.costo);
+          detalle.precios = Array.isArray(producto.precios) ? [...producto.precios] : [];
+          detalle.precios.unshift({ precio: detalle.precio });
+          this.aplicarCoincidenciaListaPreciosOrdenV1(detalle, detalleCompra, producto);
+          if (
+            this.apiService.auth_user().empresa.valor_inventario == 'promedio' &&
+            producto.costo_promedio > 0
+          ) {
+            detalle.costo = parseFloat(producto.costo_promedio);
+          } else {
+            detalle.costo = parseFloat(producto.costo);
+          }
           detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
           detalle.descuento = 0;
           detalle.id_vendedor = this.venta.id_vendedor;
@@ -752,6 +762,50 @@ export class FacturacionComponent implements OnInit {
     console.log(this.venta);
   }
 
+  /** En la orden, `costo` es precio unitario **con IVA**. */
+  private precioConIvaReferenciaDesdeOrden(det: any): number | null {
+    const desdeCosto = Number(det?.costo);
+    return Number.isFinite(desdeCosto) && desdeCosto > 0 ? desdeCosto : null;
+  }
+
+  private igualdadPrecioMercadoV1(a: number, b: number): boolean {
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+    const diff = Math.abs(a - b);
+    return diff <= 0.015 || diff <= 1e-6 * Math.max(Math.abs(a), Math.abs(b), 1);
+  }
+
+  /** Lista guarda sin IVA: compara `costo` (con IVA) contra cada precio × (1+IVA). */
+  private aplicarCoincidenciaListaPreciosOrdenV1(
+    detalle: any,
+    detalleCompra: any,
+    producto: any,
+  ): void {
+    const refConIva = this.precioConIvaReferenciaDesdeOrden(detalleCompra);
+    const lista = detalle?.precios;
+    if (refConIva == null || !Array.isArray(lista) || lista.length === 0) return;
+
+    const pct =
+      producto?.porcentaje_impuesto != null && producto?.porcentaje_impuesto !== ''
+        ? Number(producto.porcentaje_impuesto)
+        : this.apiService.auth_user()?.empresa?.iva ?? 0;
+
+    let mejor: any = null;
+    let mejorErr = Infinity;
+    for (const p of lista) {
+      const sinLista = Number(p?.precio);
+      if (!Number.isFinite(sinLista)) continue;
+      const precioListaConIva = pct > 0 ? sinLista * (1 + Number(pct) / 100) : sinLista;
+      if (!this.igualdadPrecioMercadoV1(refConIva, precioListaConIva)) continue;
+      const err = Math.abs(refConIva - precioListaConIva);
+      if (err < mejorErr - 1e-9) {
+        mejorErr = err;
+        mejor = p;
+      }
+    }
+    if (mejor == null || mejorErr > 0.015) return;
+    detalle.precio = Number(mejor.precio);
+    detalle.precios[0] = { precio: detalle.precio };
+  }
   public sumTotal() {
     // Asegurar que detalles existe y es un array
     if (!this.venta.detalles || !Array.isArray(this.venta.detalles)) {
@@ -800,14 +854,13 @@ export class FacturacionComponent implements OnInit {
     const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
     const porcentajesImpuestos = (this.venta.impuestos || []).map((i: any) => Number(i.porcentaje));
     if (this.venta.cobrar_impuestos) {
+      const pctDetalleDe = (d: any) => (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
+        ? Number(d.porcentaje_impuesto) : empresaIva;
+
       this.venta.impuestos.forEach((impuesto: any) => {
         const pctImp = Number(impuesto.porcentaje);
         const monto = this.venta.detalles
-          .filter((d: any) => {
-            const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-              ? Number(d.porcentaje_impuesto) : empresaIva;
-            return pctIgual(pctImp, pctDetalle);
-          })
+          .filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)))
           .reduce((sum: number, d: any) => {
             const gravada = parseFloat(d.gravada || 0);
             const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
@@ -819,15 +872,10 @@ export class FacturacionComponent implements OnInit {
       // Detalles cuyo % no coincide con ningún impuesto: asignar su IVA al impuesto de la empresa o al primero
       if (this.venta.detalles.length && this.venta.impuestos.length) {
         const ivaSinAsignar = this.venta.detalles
-          .filter((d: any) => {
-            const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-              ? Number(d.porcentaje_impuesto) : empresaIva;
-            return !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalle));
-          })
+          .filter((d: any) => !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalleDe(d))))
           .reduce((sum: number, d: any) => {
             const gravada = parseFloat(d.gravada || 0);
-            const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-              ? Number(d.porcentaje_impuesto) : empresaIva;
+            const pct = pctDetalleDe(d);
             const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
               ? parseFloat(d.iva) : gravada * (pct / 100);
             return sum + ivaLinea;

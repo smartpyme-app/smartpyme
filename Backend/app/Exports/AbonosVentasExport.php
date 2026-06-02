@@ -42,11 +42,25 @@ class AbonosVentasExport implements FromCollection, WithHeadings, WithMapping
     {
         $request = $this->request;
 
-        return Abono::with('venta')->when($request->buscador, function($query) use ($request){
-                        return $query->orwhere('id_venta', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('concepto', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('nombre_de', 'like', '%'.$request->buscador.'%');
-                        })
+        return Abono::with(['venta', 'documento'])->when($request->buscador, function ($query) use ($request) {
+                        $buscador = '%' . $request->buscador . '%';
+                        return $query->where(function ($q) use ($buscador) {
+                            $q->where('correlativo', 'like', $buscador)
+                                ->orWhere('id_venta', 'like', $buscador)
+                                ->orWhere('concepto', 'like', $buscador)
+                                ->orWhere('nombre_de', 'like', $buscador)
+                                ->orWhere('referencia', 'like', $buscador)
+                                ->orWhereHas('venta', function ($qv) use ($buscador) {
+                                    $qv->where('correlativo', 'like', $buscador)
+                                        ->orWhereHas('cliente', function ($qc) use ($buscador) {
+                                            $qc->where('nombre', 'like', $buscador)
+                                                ->orWhere('apellido', 'like', $buscador)
+                                                ->orWhere('nombre_empresa', 'like', $buscador)
+                                                ->orWhereRaw("CONCAT(TRIM(nombre), ' ', TRIM(apellido)) LIKE ?", [$buscador]);
+                                        });
+                                });
+                        });
+                    })
                         ->when($request->inicio, function($query) use ($request){
                             return $query->where('fecha', '>=', $request->inicio);
                         })
@@ -83,7 +97,7 @@ class AbonosVentasExport implements FromCollection, WithHeadings, WithMapping
               $row->venta()->first() ? $row->venta()->first()->nombre_cliente : '',
               $row->venta()->first() ? $row->venta()->first()->cliente()->pluck('dui')->first() : '',
               $row->venta()->first() ? $row->venta()->first()->documento()->pluck('nombre')->first() : '',
-              $row->venta()->first() ? $row->venta()->pluck('correlativo')->first() : '',
+              $row->correlativo ?? $row->id,
               $row->concepto,
               $row->estado == 'Confirmado' ? 'Pagado' : $row->estado,
               $row->forma_pago,
