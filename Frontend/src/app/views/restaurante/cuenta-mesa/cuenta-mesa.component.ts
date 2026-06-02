@@ -548,6 +548,7 @@ export class CuentaMesaComponent implements OnInit {
           preCuentaData: {
             mesa_numero: data.mesa_numero,
             subtotal: data.subtotal,
+            impuesto: data.impuesto,
             propina_monto: data.propina_monto,
             propina_porcentaje_aplicado: data.propina_porcentaje_aplicado,
             total: data.total,
@@ -593,5 +594,25 @@ export class CuentaMesaComponent implements OnInit {
 
   propinaPorcentajeEmpresa(): number {
     return parseFloat(String(this.apiService.auth_user()?.empresa?.propina_porcentaje ?? '')) || 0;
+  }
+
+  ivaPorcentajeEmpresa(): number {
+    return parseFloat(String(this.apiService.auth_user()?.empresa?.iva ?? '')) || 0;
+  }
+
+  impuestoMontoOrdenAbierta(): number {
+    const pctBase = this.ivaPorcentajeEmpresa();
+    if (pctBase <= 0) {
+      return 0;
+    }
+    return Math.round(this.subtotal() * (pctBase / 100) * 100) / 100;
+  }
+
+  totalConImpuestoOrdenAbierta(): number {
+    return Math.round((this.subtotal() + this.impuestoMontoOrdenAbierta()) * 100) / 100;
+  }
+
+  totalGeneralOrdenAbierta(): number {
+    return Math.round((this.totalConImpuestoOrdenAbierta() + this.propinaMontoOrdenAbierta()) * 100) / 100;
   }
 }

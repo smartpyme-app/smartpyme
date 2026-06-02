@@ -21,6 +21,8 @@ class PedidoRestauranteDetalle extends Model
         'total',
         'notas',
         'meta_inventario',
+        'enviado_cocina',
+        'enviado_barra',
     ];
 
     protected $casts = [
@@ -30,6 +32,8 @@ class PedidoRestauranteDetalle extends Model
         'subtotal' => 'decimal:4',
         'total' => 'decimal:4',
         'meta_inventario' => 'array',
+        'enviado_cocina' => 'boolean',
+        'enviado_barra' => 'boolean',
     ];
 
     public function pedido(): BelongsTo

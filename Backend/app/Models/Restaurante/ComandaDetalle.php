@@ -11,6 +11,7 @@ class ComandaDetalle extends Model
     protected $fillable = [
         'comanda_id',
         'orden_detalle_id',
+        'pedido_detalle_id',
     ];
 
     public function comanda()
@@ -21,5 +22,10 @@ class ComandaDetalle extends Model
     public function ordenDetalle()
     {
         return $this->belongsTo(OrdenDetalle::class, 'orden_detalle_id');
+    }
+
+    public function pedidoDetalle()
+    {
+        return $this->belongsTo(PedidoRestauranteDetalle::class, 'pedido_detalle_id');
     }
 }

@@ -10,6 +10,7 @@ class Comanda extends Model
 
     protected $fillable = [
         'sesion_id',
+        'pedido_id',
         'numero_comanda',
         'estado',
         'destino',
@@ -27,6 +28,11 @@ class Comanda extends Model
     public function sesion()
     {
         return $this->belongsTo(SesionMesa::class, 'sesion_id');
+    }
+
+    public function pedido()
+    {
+        return $this->belongsTo(PedidoRestaurante::class, 'pedido_id');
     }
 
     public function detalles()

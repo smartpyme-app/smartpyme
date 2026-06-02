@@ -67,8 +67,12 @@
     @php
       $pctProp = (float) ($preCuenta->propina_porcentaje_aplicado ?? 0);
       $montoProp = (float) ($preCuenta->propina_monto ?? 0);
+      $montoIva = (float) ($preCuenta->impuesto ?? 0);
     @endphp
     <p>Subtotal consumo: {{ number_format($preCuenta->subtotal ?? 0, 2) }}</p>
+    @if($montoIva > 0)
+    <p>IVA: {{ number_format($montoIva, 2) }}</p>
+    @endif
     @if($pctProp > 0)
     <p>Propina ({{ number_format($pctProp, 2) }}%): {{ number_format($montoProp, 2) }}</p>
     @endif
