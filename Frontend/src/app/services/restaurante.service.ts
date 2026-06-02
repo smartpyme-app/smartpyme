@@ -8,13 +8,23 @@ export interface Mesa {
   id: number;
   numero: string;
   capacidad: number;
+  zona_id?: number | null;
   zona?: string;
+  zona_restaurante?: ZonaRestaurante;
   estado: 'libre' | 'ocupada' | 'pendiente_pago' | 'reservada';
   activo: boolean;
   orden: number;
   tiempo_abierta?: string;
   sesion_activa?: any;
   reservas_activas?: Reserva[];
+}
+
+export interface ZonaRestaurante {
+  id: number;
+  nombre: string;
+  orden: number;
+  activo: boolean;
+  id_sucursal?: number;
 }
 
 export interface SesionMesa {
@@ -46,6 +56,22 @@ export class RestauranteService {
 
   actualizarMesa(id: number, data: Partial<Mesa>): Observable<Mesa> {
     return this.api.update(BASE + 'mesas', id, data);
+  }
+
+  getZonas(params?: { activo?: boolean; id_sucursal?: number }): Observable<ZonaRestaurante[]> {
+    return this.api.getAll(BASE + 'zonas', params || {});
+  }
+
+  crearZona(data: Partial<ZonaRestaurante>): Observable<ZonaRestaurante> {
+    return this.api.store(BASE + 'zonas', data);
+  }
+
+  actualizarZona(id: number, data: Partial<ZonaRestaurante>): Observable<ZonaRestaurante> {
+    return this.api.update(BASE + 'zonas', id, data);
+  }
+
+  eliminarZona(id: number): Observable<{ ok: boolean }> {
+    return this.api.delete(BASE + 'zonas/', id);
   }
 
   abrirSesion(mesaId: number, data: { num_comensales?: number; observaciones?: string }): Observable<SesionMesa> {
@@ -150,6 +176,10 @@ export class RestauranteService {
 
   imprimirPedidoCanal(id: number): Observable<string> {
     return this.api.getAsText(BASE + `pedidos/${id}/imprimir`);
+  }
+
+  enviarComandaPedido(id: number): Observable<{ comandas?: any[]; primera?: any }> {
+    return this.api.store(BASE + `pedidos/${id}/comandas`, {});
   }
 
   confirmarPedidoCanal(id: number, body: Record<string, unknown> = {}): Observable<PedidoCanal> {

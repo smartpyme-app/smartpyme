@@ -52,6 +52,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public canales: any = [];
     public tieneAccesoPropina: boolean = false;
     public tieneAccesoModuloRestaurantePedidos: boolean = false;
+    public tieneAccesoModuloPresentacionesProductos: boolean = false;
 
     public customConfig: any = {
         columnas: {
@@ -74,6 +75,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.loadAll();
         this.verificarAccesoPropina();
         this.verificarAccesoModuloRestaurantePedidos();
+        this.verificarAccesoModuloPresentacionesProductos();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
@@ -1159,6 +1161,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 lotes_metodologia: 'FIFO', // Manual, FIFO, LIFO, FEFO
                 lotes_dias_anticipacion: 30, // Días para alerta de vencimiento
                 componente_quimico_activo: false, // Habilitar campo componente químico en productos
+                modulo_presentaciones: false, // Habilitar presentaciones alternativas en productos, ventas e inventario
                 modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
                 gastos_categorias_personalizadas: false, // Categorías de gasto BD, departamentos y áreas en gastos
                 estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
@@ -1654,6 +1657,34 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         });
     }
 
+    public isModuloPresentaciones(): boolean {
+        return this.getCustomConfig('configuraciones', 'modulo_presentaciones', false);
+    }
+
+    public toggleModuloPresentaciones() {
+        this.updateModuloPresentaciones(!this.isModuloPresentaciones());
+    }
+
+    public updateModuloPresentaciones(activo: boolean) {
+        if (!this.tieneAccesoModuloPresentacionesProductos) {
+            return;
+        }
+
+        this.addCustomConfig('configuraciones', 'modulo_presentaciones', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Módulo de presentaciones ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
     setCamposRenta() {
         this.onSubmit().then(() => {
             this.mhService.auth().subscribe(response => {
@@ -1845,6 +1876,17 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             },
             error: () => {
                 this.tieneAccesoModuloRestaurantePedidos = false;
+            }
+        });
+    }
+
+    public verificarAccesoModuloPresentacionesProductos() {
+        this.funcionalidadesService.verificarAcceso('modulo-presentaciones-productos').subscribe({
+            next: (acceso) => {
+                this.tieneAccesoModuloPresentacionesProductos = acceso;
+            },
+            error: () => {
+                this.tieneAccesoModuloPresentacionesProductos = false;
             }
         });
     }

@@ -1,0 +1,229 @@
+<div class="row" *ngIf="producto">
+    <h6 class="my-3 font-weight-bold">
+        Presentaciones
+        <span class="text-muted fw-normal fs-6 ms-1">· Unidad base: <strong>{{ nombreUnidadBase }}</strong></span>
+        <a class="btn btn-default float-end" (click)="abrirModal(mNuevaPresentacion)" tooltip="Nueva presentación">
+            <i class="fa fa-plus"></i> Nueva presentación
+        </a>
+    </h6>
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Nombre comercial</th>
+                    <th class="text-center">Equivalencia</th>
+                    <th class="text-center d-none d-md-table-cell">Unidad fiscal</th>
+                    <th class="text-right">Precio venta</th>
+                    <th class="text-center d-none d-lg-table-cell">Código barras</th>
+                    <th width="100" class="text-center"><i class="fa fa-cog"></i></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngIf="presentaciones.length === 0">
+                    <td colspan="6" class="text-center">
+                        <span class="text-muted">No hay presentaciones alternativas. La unidad base es
+                            <strong>{{ nombreUnidadBase }}</strong>.</span>
+                    </td>
+                </tr>
+                <tr *ngFor="let p of presentaciones">
+                    <td>{{ p.nombre_comercial }}</td>
+                    <td class="text-center text-muted">
+                        1 {{ p.nombre_comercial }} = {{ p.factor_conversion | number:'1.0-6' }} {{ nombreUnidadBase }}
+                    </td>
+                    <td class="text-center d-none d-md-table-cell">
+                        {{ p.unidad_medida?.nombre || p.id_unidad_medida }}
+                    </td>
+                    <td class="text-right">{{ p.precio_venta | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center d-none d-lg-table-cell">
+                        <span *ngIf="p.codigo_barras">{{ p.codigo_barras }}</span>
+                        <span *ngIf="!p.codigo_barras" class="text-muted">—</span>
+                    </td>
+                    <td class="text-center">
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a class="btn btn-light" (click)="abrirEditar(p, mNuevaPresentacion)" tooltip="Editar">
+                                <i class="fa fa-pencil-alt"></i>
+                            </a>
+                            <a class="btn btn-light" (click)="eliminar(p)" tooltip="Eliminar">
+                                <i class="fa fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── Modal: Nueva Presentación ──────────────────────────────────────────── -->
+<ng-template #mNuevaPresentacion>
+    <div class="modal-header">
+        <h5 class="modal-title">
+            <i class="fa fa-cube me-2 text-primary"></i>
+            {{ editandoId ? 'Editar Presentación' : 'Nueva Presentación' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Close"></button>
+    </div>
+
+    <div class="modal-body">
+        <form #fPresentacion="ngForm">
+
+            <!-- Nombre comercial -->
+            <div class="mb-3">
+                <label for="nombre_comercial" class="form-label fw-semibold">
+                    Nombre comercial <span class="text-danger">*</span>
+                </label>
+                <input type="text" id="nombre_comercial" name="nombre_comercial" class="form-control"
+                    placeholder="Ej: Caja de 40, Galón, Blíster de 12…" [(ngModel)]="form.nombre_comercial" required>
+                <div class="form-text">Nombre libre que verá el cliente en la venta.</div>
+            </div>
+
+            <!-- Unidad de medida fiscal -->
+            <div class="mb-3">
+                <label for="id_unidad_medida" class="form-label fw-semibold">
+                    Unidad de medida fiscal <span class="text-danger">*</span>
+                </label>
+                <select id="id_unidad_medida" name="id_unidad_medida" class="form-select"
+                    [(ngModel)]="form.id_unidad_medida" required>
+                    <option value="">— Seleccione —</option>
+                    <option [value]="u.id" *ngFor="let u of unidades">
+                        {{ u.nombre }} ({{ u.cod }})
+                    </option>
+                </select>
+            </div>
+
+            <!-- ── Equivalencia ───────────────────────────────────────────────── -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    Equivalencia <span class="text-danger">*</span>
+                </label>
+
+                <!-- Pregunta conversacional -->
+                <p class="text-muted small mb-2">
+                    ¿Cómo se relaciona <strong>{{ form.nombre_comercial || 'esta presentación' }}</strong>
+                    con la unidad base <strong>{{ nombreUnidadBase }}</strong>?
+                </p>
+
+                <!-- Selector de modo -->
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="border rounded p-2 text-center"
+                             [class.border-primary]="modoEquivalencia === 'multiplicador'"
+                             [class.bg-primary-subtle]="modoEquivalencia === 'multiplicador'"
+                             style="cursor:pointer"
+                             (click)="modoEquivalencia = 'multiplicador'; calcularFactor('multiplicador')">
+                            <div class="small fw-semibold">Agrupa varias unidades</div>
+                            <div class="text-muted" style="font-size:0.75rem">Ej: Caja, Galón, Blíster</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-2 text-center"
+                             [class.border-primary]="modoEquivalencia === 'divisor'"
+                             [class.bg-primary-subtle]="modoEquivalencia === 'divisor'"
+                             style="cursor:pointer"
+                             (click)="modoEquivalencia = 'divisor'; calcularFactor('divisor')">
+                            <div class="small fw-semibold">Es una fracción</div>
+                            <div class="text-muted" style="font-size:0.75rem">Ej: Unidad suelta, Dosis</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Transfer visual ─────────────────────────────────────────── -->
+                <div class="equiv-transfer">
+                    <div class="d-flex align-items-stretch">
+
+                        <div class="equiv-transfer__panel border-end">
+                            <span class="equiv-transfer__label">
+                                {{ modoEquivalencia === 'multiplicador' ? 'Presentación' : 'Presentaciones' }}
+                            </span>
+                            <div class="equiv-transfer__body">
+                                <ng-container *ngIf="modoEquivalencia === 'multiplicador'">
+                                    <span class="equiv-transfer__value">1</span>
+                                </ng-container>
+                                <ng-container *ngIf="modoEquivalencia === 'divisor'">
+                                    <input type="number" id="inputDivisor" name="inputDivisor"
+                                        class="form-control equiv-transfer__input text-primary"
+                                        [(ngModel)]="inputDivisor"
+                                        (input)="calcularFactor('divisor')"
+                                        (change)="calcularFactor('divisor')"
+                                        min="1" step="1" placeholder="100">
+                                </ng-container>
+                                <span class="equiv-transfer__name" [title]="form.nombre_comercial || ''">
+                                    {{ form.nombre_comercial || '(nombre)' }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="equiv-transfer__connector">
+                            <span class="equiv-transfer__icon">
+                                <i class="fa fa-equals" aria-hidden="true"></i>
+                            </span>
+                        </div>
+
+                        <div class="equiv-transfer__panel">
+                            <span class="equiv-transfer__label">Unidad base</span>
+                            <div class="equiv-transfer__body">
+                                <ng-container *ngIf="modoEquivalencia === 'multiplicador'">
+                                    <input type="number" id="inputMultiplicador" name="inputMultiplicador"
+                                        class="form-control equiv-transfer__input text-primary"
+                                        [(ngModel)]="inputMultiplicador"
+                                        (input)="calcularFactor('multiplicador')"
+                                        (change)="calcularFactor('multiplicador')"
+                                        min="1" step="1" placeholder="30">
+                                </ng-container>
+                                <ng-container *ngIf="modoEquivalencia === 'divisor'">
+                                    <span class="equiv-transfer__value">1</span>
+                                </ng-container>
+                                <span class="equiv-transfer__name text-primary" [title]="nombreUnidadBase">
+                                    {{ nombreUnidadBase }}
+                                </span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Factor resultante -->
+                <div class="text-center mt-2">
+                    <span class="equiv-factor text-muted">
+                        <i class="fa fa-check-circle text-success" aria-hidden="true"></i>
+                        Factor
+                        <strong class="text-success">{{ form.factor_conversion | number:'1.6-6' }}</strong>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Precio de venta -->
+            <div class="mb-3">
+                <label for="precio_venta" class="form-label fw-semibold">Precio de venta</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" id="precio_venta" name="precio_venta" class="form-control" placeholder="0.00"
+                        [(ngModel)]="form.precio_venta" min="0" step="0.01">
+                </div>
+            </div>
+
+            <!-- Código de barras -->
+            <div class="mb-1">
+                <label for="codigo_barras" class="form-label fw-semibold">
+                    Código de barras <span class="text-muted fw-normal">(opcional)</span>
+                </label>
+                <input type="text" id="codigo_barras" name="codigo_barras" class="form-control"
+                    placeholder="Ej: 7501234567890" [(ngModel)]="form.codigo_barras">
+            </div>
+
+        </form>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()" [disabled]="saving">
+            Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="guardar()" [disabled]="saving">
+            <span *ngIf="!saving">
+                <i class="fa fa-save me-1"></i>
+                {{ editandoId ? 'Actualizar' : 'Guardar presentación' }}
+            </span>
+            <span *ngIf="saving">Guardando…</span>
+        </button>
+    </div>
+</ng-template>

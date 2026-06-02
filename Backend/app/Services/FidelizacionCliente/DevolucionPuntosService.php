@@ -16,9 +16,11 @@ use Illuminate\Support\Facades\Log;
  */
 class DevolucionPuntosService
 {
-    public function __construct(
-        private ConsumoPuntosService $consumoPuntosService
-    ) {
+    private $consumoPuntosService;
+
+    public function __construct(ConsumoPuntosService $consumoPuntosService)
+    {
+        $this->consumoPuntosService = $consumoPuntosService;
     }
 
     /**

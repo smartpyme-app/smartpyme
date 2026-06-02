@@ -36,7 +36,7 @@
           </p>
 
           <div class="mb-4" *ngIf="puedeOperarOrden">
-            <label class="form-label">Agregar producto</label>
+            <label class="form-label">Agregar producto o servicio</label>
             <app-buscador-productos (selectProducto)="onProductoSelect($event)"></app-buscador-productos>
           </div>
 
@@ -109,13 +109,17 @@
             <span>Subtotal consumo</span>
             <strong>{{ subtotal() | currency }}</strong>
           </div>
+          <div class="d-flex justify-content-between mb-2 small" *ngIf="ivaPorcentajeEmpresa() > 0">
+            <span>IVA ({{ ivaPorcentajeEmpresa() | number:'1.0-2' }}%)</span>
+            <strong>{{ impuestoMontoOrdenAbierta() | currency }}</strong>
+          </div>
           <div class="d-flex justify-content-between mb-2 small" *ngIf="propinaPorcentajeEmpresa() > 0">
             <span>Propina ({{ propinaPorcentajeEmpresa() | number:'1.0-2' }}%)</span>
             <strong>{{ propinaMontoOrdenAbierta() | currency }}</strong>
           </div>
-          <div class="d-flex justify-content-between mb-2" *ngIf="propinaPorcentajeEmpresa() > 0">
-            <span>Total con propina</span>
-            <strong>{{ totalConPropinaOrdenAbierta() | currency }}</strong>
+          <div class="d-flex justify-content-between mb-2" *ngIf="ivaPorcentajeEmpresa() > 0 || propinaPorcentajeEmpresa() > 0">
+            <span>Total estimado</span>
+            <strong>{{ totalGeneralOrdenAbierta() | currency }}</strong>
           </div>
           <hr>
           <div class="d-grid gap-2" *ngIf="puedeOperarOrden">

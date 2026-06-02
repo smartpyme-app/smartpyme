@@ -294,10 +294,11 @@ export class AjustesComponent implements OnInit {
      * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
      */
     getNombreCompleto(producto: any): string {
+        let nombre = producto.nombre_mostrar || producto.nombre || '';
         if (this.tieneShopify && producto.nombre_variante) {
-            return `${producto.nombre} ${producto.nombre_variante}`;
+            return `${nombre} (${producto.nombre_variante})`;
         }
-        return producto.nombre;
+        return nombre;
     }
 
     public isLotesActivo(): boolean {
