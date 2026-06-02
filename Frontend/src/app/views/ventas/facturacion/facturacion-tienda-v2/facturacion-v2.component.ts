@@ -10,6 +10,11 @@ import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 
+import {
+  normalizarPorcentajeImpuestoDetalle,
+  resolverPorcentajeImpuestoVenta,
+} from '@utils/impuestos-venta.util';
+
 import * as moment from 'moment';
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
 
@@ -624,11 +629,12 @@ export class FacturacionV2Component implements OnInit {
           detalle.stock = this.resolveStockParaDetalle(producto);
 
           // En v2, lista sin IVA (como configuración del producto); columna Precio muestra ese valor cuando hay lista
-          const pctImpuesto =
-            producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== ''
-              ? Number(producto.porcentaje_impuesto)
-              : this.apiService.auth_user()?.empresa?.iva ?? 0;
-          detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+          const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
+          const pctImpuesto = resolverPorcentajeImpuestoVenta(producto.porcentaje_impuesto, ivaEmpresa);
+          detalle.porcentaje_impuesto = normalizarPorcentajeImpuestoDetalle(
+            producto.porcentaje_impuesto,
+            ivaEmpresa
+          );
 
           const precioSinIva = parseFloat(producto.precio);
           const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
@@ -852,11 +858,10 @@ export class FacturacionV2Component implements OnInit {
 
     let pctDetalle = 0;
     if (this.venta.cobrar_impuestos) {
-      pctDetalle =
-        detalle?.porcentaje_impuesto != null && detalle?.porcentaje_impuesto !== ''
-          ? Number(detalle.porcentaje_impuesto)
-          : this.apiService.auth_user()?.empresa?.iva ?? 0;
-      pctDetalle = Number(pctDetalle) || 0;
+      pctDetalle = resolverPorcentajeImpuestoVenta(
+        detalle?.porcentaje_impuesto,
+        this.apiService.auth_user()?.empresa?.iva
+      );
     }
 
     const totalNum = parseFloat(detalle.total) || 0;
@@ -1013,8 +1018,11 @@ export class FacturacionV2Component implements OnInit {
     const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
     const porcentajesImpuestos = (this.venta.impuestos || []).map((i: any) => Number(i.porcentaje));
     if (this.venta.cobrar_impuestos) {
-      const pctDetalleDe = (d: any) => (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-        ? Number(d.porcentaje_impuesto) : empresaIva;
+      const pctDetalleDe = (d: any) => resolverPorcentajeImpuestoVenta(
+        d.porcentaje_impuesto,
+        empresaIva,
+        true
+      );
 
       this.venta.impuestos.forEach((impuesto: any) => {
         const pctImp = Number(impuesto.porcentaje);
@@ -1045,9 +1053,20 @@ export class FacturacionV2Component implements OnInit {
           impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
         }
       }
-      this.venta.iva = parseFloat(
-        this.sumPipe.transform(this.venta.impuestos, 'monto')
-      ).toFixed(4);
+      if (this.venta.impuestos.length) {
+        this.venta.iva = parseFloat(
+          this.sumPipe.transform(this.venta.impuestos, 'monto')
+        ).toFixed(4);
+      } else {
+        const ivaDesdeLineas = this.venta.detalles.reduce((sum: number, d: any) => {
+          const gravada = parseFloat(d.gravada || 0);
+          const pct = pctDetalleDe(d);
+          const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
+            ? parseFloat(d.iva) : gravada * (pct / 100);
+          return sum + ivaLinea;
+        }, 0);
+        this.venta.iva = parseFloat(Number(ivaDesdeLineas).toFixed(4)).toFixed(4);
+      }
     } else {
       this.venta.iva = (0).toFixed(4);
       this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
@@ -1850,10 +1869,8 @@ export class FacturacionV2Component implements OnInit {
     const mapped = detalles.map((d: any) => {
       const cant = parseFloat(String(d.cantidad)) || 0;
       const descLine = parseFloat(String(d.descuento ?? 0)) || 0;
-      const pct = d.porcentaje_impuesto != null && d.porcentaje_impuesto !== ''
-        ? Number(d.porcentaje_impuesto)
-        : empresaIva;
-      const pctNum = Number(pct) || 0;
+      const pct = resolverPorcentajeImpuestoVenta(d.porcentaje_impuesto, empresaIva);
+      const pctNum = pct;
       let precioSinIva = parseFloat(String(d.precio)) || 0;
       let precioConIva = d.precio_con_iva != null && d.precio_con_iva !== ''
         ? parseFloat(String(d.precio_con_iva))
