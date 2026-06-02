@@ -211,7 +211,7 @@ export class TiendaVentaBuscadorComponent implements OnInit {
                 stockLotes = stockLotes / producto.factor_conversion;
             }
             this.detalle.stock = stockLotes;
-        } else if (producto.stock_base_actual !== undefined) {
+        } else if (producto.tipo !== 'Servicio' && producto.stock_base_actual !== undefined && producto.stock_base_actual !== null) {
             this.detalle.stock = parseFloat(producto.stock_base_actual);
         } else if(producto.tipo != 'Servicio' && producto.inventarios && producto.inventarios.length > 0){
             this.detalle.stock = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
