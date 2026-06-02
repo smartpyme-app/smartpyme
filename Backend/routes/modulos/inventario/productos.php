@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Inventario\ImagenesController;
 use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
+use App\Http\Controllers\Api\Inventario\PresentacionesController;
 //use Route;
 use App\Http\Controllers\Api\Webhook\WooCommerceController;
 use Illuminate\Support\Facades\Route;
@@ -90,6 +91,13 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
 // Imagenes
     Route::post('/producto/imagen',        [ImagenesController::class, 'store']);
     Route::delete('/producto/imagen/{id}', [ImagenesController::class, 'delete']);
+
+// Presentaciones (requiere funcionalidad asignada en Super Admin)
+    Route::middleware(['verificar.funcionalidad:modulo-presentaciones-productos'])->group(function () {
+        Route::post('/producto-presentaciones',        [PresentacionesController::class, 'store']);
+        Route::put('/producto-presentaciones/{id}',    [PresentacionesController::class, 'update']);
+        Route::delete('/producto-presentaciones/{id}', [PresentacionesController::class, 'delete']);
+    });
 
     Route::get('/producto/compras/{id}',          [ProductosController::class, 'compras']);
     Route::get('/producto/ajustes/{id}',          [ProductosController::class, 'ajustes']);
