@@ -659,6 +659,19 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Muestra la nota configurada en el documento (Factura, Ticket, etc.) al imprimir desde facturación.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="mostrar_nota_documento_impresion">Mostrar nota del documento al imprimir</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        id="mostrar_nota_documento_impresion"
+                                        [checked]="isMostrarNotaDocumentoImpresion()"
+                                        (change)="toggleMostrarNotaDocumentoImpresion()"
+                                        name="mostrar_nota_documento_impresion">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
                                 <p class="empresa-pref-desc small text-muted mb-0">Permitir seleccionar un vendedor por cada detalle de venta.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="vendedor_detalle_venta">Vendedor por detalle</label>

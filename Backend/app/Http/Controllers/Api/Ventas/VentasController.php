@@ -1326,8 +1326,8 @@ class VentasController extends Controller
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Smartpyme', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             } else {
-                // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
 
