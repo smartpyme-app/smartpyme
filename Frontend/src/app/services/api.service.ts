@@ -296,6 +296,24 @@ export class ApiService {
         return customConfig?.configuraciones?.inventario_sumar_stock_busquedas === true;
     }
 
+    /** Preferencia en Mi cuenta → Inventario (requiere funcionalidad asignada en Super Admin). */
+    isTransformacionProductosConfigActivo(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.transformacion_productos_activo === true;
+    }
+
+    /** Funcionalidad + preferencia activas (usa caché de FuncionalidadesService; llamar verificarAcceso antes). */
+    isTransformacionProductosActivo(): boolean {
+        return this.funcionalidadesService.tieneAccesoCacheado('transformacion-productos')
+            && this.isTransformacionProductosConfigActivo();
+    }
+
     /** Reporte Excel inventario vs ventas (ene → mes de descarga, Mi cuenta → Preferencias → Inventario). */
     isInventarioReporteAnalisisVentasMensual(): boolean {
         const empresa = this.auth_user()?.empresa;

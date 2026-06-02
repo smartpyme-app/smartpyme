@@ -45,6 +45,10 @@ export class FuncionalidadesService {
     this.cambiosSubject.next();
   }
 
+  tieneAccesoCacheado(slug: string): boolean {
+    return this.accesoCache[slug] === true;
+  }
+
 
   obtenerConfiguracion(slug: string): Observable<any> {
     return this.http.get<{ configuracion: any }>(`${environment.API_URL}/api/configuracion-funcionalidad/${slug}`).pipe(

@@ -909,6 +909,21 @@
                                 name="inventario_sumar_stock_busquedas">
                         </div>
                     </div>
+                    <div *ngIf="tieneAccesoTransformacionProductos" class="form-group col-md-12 col-xl-6">
+                        <p>
+                            Su empresa tiene activa la funcionalidad <strong>Transformación de productos</strong> (asignada en el administrador).
+                            Active esta opción para permitir convertir un producto en otros (entradas y salidas de stock) desde inventario.
+                        </p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="transformacion_productos_activo">Habilitar transformación de productos</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="transformacion_productos_activo"
+                                [checked]="isTransformacionProductosActivo()"
+                                (change)="toggleTransformacionProductosActivo()"
+                                name="transformacion_productos_activo">
+                        </div>
+                    </div>
+                    
                     <div class="form-group col-md-12 col-xl-6">
                         <p>Habilitar reporte de proyeccción de inventario</p>
                         <div class="form-switch bg-light-info rounded">
@@ -920,6 +935,7 @@
                                 name="inventario_reporte_analisis_ventas_mensual">
                         </div>
                     </div>
+                    
                     <div class="form-group col-md-6">
                         <label for="valor_inventario">Valor de inventario:</label>
                         <select class="form-select" [(ngModel)]="empresa.valor_inventario" name="valor_inventario">
@@ -928,7 +944,6 @@
                             <option value="ultimo">Costo última compra</option>
                         </select>
                     </div>
-
                     <!-- <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Habilitar términos y condiciones por defecto en las cotizaciones.</p>
                         <div class="form-switch bg-light-info rounded">

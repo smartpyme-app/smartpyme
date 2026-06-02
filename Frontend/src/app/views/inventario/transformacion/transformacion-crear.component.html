@@ -1,0 +1,214 @@
+<section class="bg-white p-2 p-md-4 rounded mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="page-heading mb-0">Conversión de Productos</h2>
+        <button class="btn btn-primary font-weight-bold" (click)="guardar()" [disabled]="saving">
+            <i class="fa fa-save me-2"></i>
+            <span *ngIf="!saving">Guardar Conversión</span>
+            <span *ngIf="saving">Guardando...</span>
+        </button>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-4 form-group">
+            <label class="fw-bold">Bodega <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="id_bodega" (change)="alCambiarBodega()">
+                <option value="" disabled selected>Seleccione una bodega</option>
+                <option *ngFor="let bodega of bodegas" [value]="bodega.id">{{ bodega.nombre }}</option>
+            </select>
+        </div>
+        <div class="col-md-8 form-group">
+            <label class="fw-bold">Observaciones</label>
+            <input type="text" class="form-control" [(ngModel)]="observacion" placeholder="Opcional">
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- ORIGEN -->
+        <div class="col-md-5 border-end">
+            <h4 class="mb-3 text-danger"><i class="fa fa-arrow-up me-2"></i>Producto Origen (Salida)</h4>
+
+            <div class="form-group mb-3" *ngIf="id_bodega">
+                <label>Buscar producto a descontar:</label>
+                <app-buscador-productos [id_bodega]="id_bodega"
+                    (selectProducto)="seleccionarOrigen($event)"></app-buscador-productos>
+            </div>
+
+            <div class="alert alert-warning" *ngIf="!id_bodega">
+                Primero selecciona una bodega para buscar un producto.
+            </div>
+
+            <div class="card bg-light mt-3" *ngIf="productoOrigen">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h5 class="card-title text-primary">{{ productoOrigen.nombre }}</h5>
+                        <button class="btn btn-sm btn-link text-danger" (click)="quitarOrigen()"><i
+                                class="fa fa-times"></i></button>
+                    </div>
+                    <p class="mb-1 text-muted">Stock actual: <strong>{{ productoOrigen.stock || 0 }}</strong></p>
+
+                    <div class="form-group mt-3">
+                        <label>Cantidad a sacar:</label>
+                        <input type="number" class="form-control"
+                            [ngClass]="{'border-danger': cantidadOrigen > (productoOrigen.stock || 0)}"
+                            [(ngModel)]="cantidadOrigen" (ngModelChange)="onCantidadOrigenChange()"
+                            min="0.01" step="0.01" placeholder="Ej. 1">
+                        <small class="text-muted">Unidades del producto origen que se descontarán.</small>
+                        <small class="text-danger" *ngIf="cantidadOrigen > (productoOrigen.stock || 0)">La cantidad
+                            supera el stock disponible.</small>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-secondary mt-3" *ngIf="!productoOrigen">
+                Seleccione un producto de origen.
+            </div>
+        </div>
+
+        <!-- DESTINO -->
+        <div class="col-md-7">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-success m-0"><i class="fa fa-arrow-down me-2"></i>Productos Resultantes (Entrada)</h4>
+                <button class="btn btn-sm btn-outline-success font-weight-bold" (click)="abrirModal(modalProducto)">
+                    <i class="fa fa-plus me-1"></i> Nuevo Producto
+                </button>
+            </div>
+
+            <div class="form-group mb-3" *ngIf="id_bodega">
+                <label>Buscar producto a ingresar:</label>
+                <app-buscador-productos [id_bodega]="id_bodega"
+                    (selectProducto)="agregarDestino($event)"></app-buscador-productos>
+            </div>
+
+            <div class="alert alert-warning" *ngIf="!id_bodega">
+                Primero selecciona una bodega para buscar un producto.
+            </div>
+
+            <p class="text-muted small mb-2" *ngIf="productoOrigen && cantidadOrigen > 0">
+                <strong>Factor de conversión:</strong> unidades de destino por cada 1 unidad de origen.
+                Ej.: sacar 1 barra de 10 m con factor 10 → ingresan 10 barras de 1 m.
+            </p>
+
+            <table class="table table-bordered mt-3">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Producto</th>
+                        <th style="width: 130px;">Factor</th>
+                        <th style="width: 130px;">Cant. a ingresar</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngIf="productosDestino.length === 0">
+                        <td colspan="4" class="text-center text-muted">No hay productos de destino agregados.</td>
+                    </tr>
+                    <tr *ngFor="let prod of productosDestino; let i = index">
+                        <td class="align-middle">{{ prod.nombre }}</td>
+                        <td>
+                            <input type="number" class="form-control" [(ngModel)]="prod.factor_conversion"
+                                (ngModelChange)="onFactorChange(prod)" min="0.01" step="0.01" placeholder="Ej. 10"
+                                [disabled]="!productoOrigen || cantidadOrigen <= 0">
+                            <small class="text-muted" *ngIf="productoOrigen && cantidadOrigen > 0">
+                                por cada 1 u. origen
+                            </small>
+                        </td>
+                        <td class="align-middle">
+                            <strong class="text-success">{{ prod.cantidad_ingreso || 0 }}</strong>
+                            <small class="text-muted d-block" *ngIf="productoOrigen && cantidadOrigen > 0 && prod.factor_conversion">
+                                {{ cantidadOrigen }} × {{ prod.factor_conversion }}
+                            </small>
+                        </td>
+                        <td class="text-center align-middle">
+                            <button class="btn btn-sm btn-danger" (click)="eliminarDestino(i)" tooltip="Eliminar">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<ng-template #modalProducto>
+    <div class="modal-header">
+        <div class="modal-title text-center w-100">
+            <h2 class="text-start m-0">Nuevo Producto</h2>
+        </div>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modalRef?.hide()"></button>
+    </div>
+    <div class="modal-body">
+        <form autocomplete="off" (ngSubmit)="crearProductoRapido()">
+            <div class="row">
+                <div class="form-group col-sm-12">
+                    <label>Nombre <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" [(ngModel)]="nuevoProducto.nombre" name="nombre"
+                        placeholder="Escribe aquí" required>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label>Código (SKU)</label>
+                    <input type="text" class="form-control" [(ngModel)]="nuevoProducto.codigo" name="codigo"
+                        placeholder="Escribe aquí">
+                </div>
+                <div class="form-group col-sm-6">
+                    <label>U. de Medida <span class="text-danger">*</span></label>
+                    <ng-select [(ngModel)]="nuevoProducto.medida" name="medida" class="form-select p-0"
+                        placeholder="Selecciona">
+                        <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
+                            {{ medida.nombre }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-sm-12">
+                    <label>Categoría <span class="text-danger">*</span></label>
+                    <ng-select name="id_categoria" [(ngModel)]="nuevoProducto.id_categoria" class="form-select p-0"
+                        [items]="categorias" bindLabel="nombre" bindValue="id" placeholder="Seleccione una categoría">
+                    </ng-select>
+                </div>
+
+                <h6 class="font-weight-bold mt-3 mb-2 w-100">Precios y Costos</h6>
+
+                <div class="form-group col-sm-6">
+                    <label>Costo <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ usuario?.empresa?.currency?.currency_symbol || '$' }}</span>
+                        <input type="number" class="form-control" [(ngModel)]="nuevoProducto.costo" name="costo"
+                            placeholder="0.00" required>
+                    </div>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label>Impuesto</label>
+                    <ng-select class="form-select p-0" [(ngModel)]="nuevoProducto.porcentaje_impuesto" name="impuesto"
+                        (change)="calPrecioFinal()" placeholder="0%">
+                        <ng-option [value]="0">Sin impuesto (0%)</ng-option>
+                        <ng-option *ngFor="let impuesto of impuestos" [value]="impuesto.porcentaje">
+                            {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label>{{ usuario?.empresa?.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto'
+                        }}</label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ usuario?.empresa?.currency?.currency_symbol || '$' }}</span>
+                        <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()"
+                            [(ngModel)]="nuevoProducto.precio" name="precio" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label>{{ usuario?.empresa?.pais == 'El Salvador' ? 'Precio con IVA' : 'Precio con Impuesto'
+                        }}</label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ usuario?.empresa?.currency?.currency_symbol || '$' }}</span>
+                        <input type="number" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()"
+                            [(ngModel)]="nuevoProducto.precio_final" name="precio_final" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid mt-4">
+                <button type="submit" [disabled]="saving" class="btn btn-primary">
+                    <span *ngIf="!saving">Guardar y Agregar</span>
+                    <span *ngIf="saving">Guardando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>

@@ -57,6 +57,13 @@ class FuncionalidadesSeeder extends Seeder
                 'orden' => 7
             ],
             [
+
+                'nombre' => 'Transformación de productos',
+                'slug' => 'transformacion-productos',
+                'descripcion' => 'Permite convertir un producto en otros (entradas y salidas de stock) desde el módulo de inventario',
+                'orden' => 9
+            ],
+            [
                 'nombre' => 'Descarga automatizada de DTEs',
                 'slug' => 'descarga-automatizada-dtes',
                 'descripcion' => 'Conectar cuentas de correo (Gmail/IMAP) y descargar, validar y procesar DTEs recibidos',

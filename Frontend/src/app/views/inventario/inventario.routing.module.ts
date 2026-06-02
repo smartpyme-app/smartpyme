@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '@layout/layout.component';
 import { CitasGuard } from '@guards/citas.guard';
 import { InventarioOperacionesAdminGuard } from '@guards/inventario-operaciones-admin.guard';
+import { TransformacionProductosGuard } from '@guards/transformacion-productos.guard';
 
 import { ProductosComponent } from '@views/inventario/productos/productos.component';
 import { DetalleProductoComponent } from '@views/inventario/productos/detalle-producto/detalle-producto.component';
@@ -35,6 +36,7 @@ import { InventarioSalidaComponent } from '@views/inventario/salidas/salida/inve
 import { EntradaDetalleComponent } from '@views/inventario/entradas/entrada-detalle/entrada-detalle.component';
 import { SalidaDetalleComponent } from '@views/inventario/salidas/salida-detalle/salida-detalle.component';
 import { LotesComponent } from '@views/inventario/lotes/lotes.component';
+import { TransformacionCrearComponent } from '@views/inventario/transformacion/transformacion-crear.component';
 import { ProductoPresentacionesComponent } from '@views/inventario/productos/producto/presentaciones/producto-presentaciones.component';
 
 const routes: Routes = [
@@ -89,7 +91,8 @@ const routes: Routes = [
         { path: 'salidas', canActivate: [InventarioOperacionesAdminGuard], component: InventarioSalidasComponent, title: 'Salidas de Inventario' },
         { path: 'salida/:id', canActivate: [InventarioOperacionesAdminGuard], component: InventarioSalidaComponent, title: 'Salida de Inventario' },
         { path: 'salida/detalle/:id', canActivate: [InventarioOperacionesAdminGuard], component: SalidaDetalleComponent, title: 'Detalle de salida' },
-
+        
+        { path: 'transformacion', canActivate: [InventarioOperacionesAdminGuard, TransformacionProductosGuard], component: TransformacionCrearComponent, title: 'Conversión de Productos' },
 
     ]
   }
