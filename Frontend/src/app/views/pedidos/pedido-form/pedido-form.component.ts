@@ -144,7 +144,7 @@ export class PedidoFormComponent implements OnInit {
     );
     this.lineas.push({
       producto_id: producto.id,
-      nombre: producto.nombre || producto.descripcion || 'Producto',
+      nombre: producto.nombre_mostrar || producto.nombre || producto.descripcion || 'Producto',
       cantidad: 1,
       precio: precio,
       descuento: 0,

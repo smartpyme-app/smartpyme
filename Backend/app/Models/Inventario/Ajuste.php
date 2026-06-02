@@ -12,6 +12,7 @@ class Ajuste extends Model {
     protected $fillable = array(
         'concepto',
         'id_producto',
+        'id_presentacion',
         'id_bodega',
         'lote_id',
         'stock_actual',

@@ -803,6 +803,42 @@ class Empresa extends Model
     }
 
     /**
+     * Verificar si el módulo de Inventario Fraccionado (presentaciones de empaque) está activo.
+     * Permite que el buscador expanda las presentaciones en el punto de venta.
+     * @deprecated Use isModuloPresentaciones()
+     */
+    public function isInventarioFraccionadoActivo(): bool
+    {
+        return $this->isModuloPresentaciones();
+    }
+
+    /**
+     * Verificar si la empresa tiene asignada la funcionalidad de presentaciones (Super Admin).
+     */
+    public function tieneFuncionalidadModuloPresentaciones(): bool
+    {
+        return $this->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
+            ->whereHas('funcionalidad', function ($query) {
+                $query->where('slug', 'modulo-presentaciones-productos');
+            })
+            ->where('activo', true)
+            ->exists();
+    }
+
+    /**
+     * Verificar si el módulo de presentaciones de producto está activo (funcionalidad + preferencia en custom_empresa).
+     */
+    public function isModuloPresentaciones(): bool
+    {
+        if (!$this->tieneFuncionalidadModuloPresentaciones()) {
+            return false;
+        }
+
+        return (bool) $this->getCustomConfigValue('configuraciones', 'modulo_presentaciones', false)
+            || (bool) $this->getCustomConfigValue('configuraciones', 'inventario_fraccionado', false);
+    }
+
+    /**
      * Código de barras correlativo automático al crear productos (clave nueva: barcode_correlativo_automatico).
      * Compatibilidad: si aún existe sku_correlativo_automatico de versiones anteriores, se considera activo.
      */

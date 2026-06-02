@@ -210,42 +210,108 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
             this.detalle.costo          = parseFloat(producto.costo);
         }
 
-        // Verificar que los compuestos tengan stock
-            if(producto.tipo == 'Compuesto'){
+        // ── Soporte para respuesta "aplanada" con presentaciones ─────────────────────
+        // La API puede devolver: { id_producto, id_presentacion, nombre_mostrar,
+        //                          precio, stock_base_actual, factor_conversion }
+        // O el objeto producto clásico (id, nombre, precio, inventarios…)
+        const esPlanoBuscador = producto.nombre_mostrar != null;
 
-                producto.composiciones.forEach((composicion:any) => {
-                    composicion.compuesto.inventarios = composicion.compuesto.inventarios.filter((item:any) => item.id_bodega == this.venta.id_bodega);
-                    let stock          = parseFloat(this.sumPipe.transform(composicion.compuesto.inventarios, 'stock'));
-                    if(stock < composicion.cantidad){
-                        producto.inventarios = [];
-                        console.log("No tiene stock suficiente:" + composicion.nombre_compuesto);
-                    }
-                });
+        if (esPlanoBuscador) {
+            // Objeto aplanado: el buscador devuelve ya la lógica de presentación resuelta
+            this.detalle.id_producto      = producto.id_producto;
+            this.detalle.id_presentacion  = producto.id_presentacion ?? null;
+            this.detalle.factor_conversion = producto.factor_conversion ?? 1;
+            this.detalle.descripcion      = producto.nombre_mostrar;
+            this.detalle.stock            = producto.stock_base_actual ?? null;
 
+            const precioConIva = parseFloat(producto.precio) || 0;
+            const pctImpuesto  = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '')
+                ? Number(producto.porcentaje_impuesto)
+                : (this.apiService.auth_user()?.empresa?.iva ?? 0);
+            this.detalle.porcentaje_impuesto = pctImpuesto;
+
+            // En v2 el precio ya viene con IVA desde el nuevo endpoint
+            this.detalle.precio_iva  = precioConIva.toFixed(4);
+            const precioSinIva       = pctImpuesto > 0
+                ? precioConIva / (1 + pctImpuesto / 100)
+                : precioConIva;
+            this.detalle.precio      = precioSinIva.toFixed(4);
+            this.detalle.precio_base = precioSinIva;
+            this.detalle.precios     = [{ precio: precioConIva.toFixed(4), precio_sin_iva: precioSinIva }];
+
+            if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
+                this.detalle.costo = parseFloat(producto.costo_promedio);
+            } else {
+                this.detalle.costo = parseFloat(producto.costo ?? 0);
+            }
+        } else {
+            // Objeto clásico (sin presentaciones aplanadas)
+            this.detalle.id_producto     = producto.id;
+            this.detalle.id_presentacion = null;
+            this.detalle.factor_conversion = 1;
+            this.detalle.descripcion     = this.getNombreCompleto(producto);
+            this.detalle.img             = producto.img;
+
+            const pctImpuesto = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '')
+                ? Number(producto.porcentaje_impuesto)
+                : (this.apiService.auth_user()?.empresa?.iva ?? 0);
+            this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+
+            const precioSinIva = parseFloat(producto.precio);
+            const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
+            this.detalle.precio_iva  = precioConIva.toFixed(4);
+            this.detalle.precio      = precioSinIva.toFixed(4);
+            this.detalle.precio_base = precioSinIva;
+            this.detalle.precios     = producto.precios ? producto.precios.map((p: any) => ({
+                ...p,
+                precio: (parseFloat(p.precio) * (1 + pctImpuesto / 100)).toFixed(4),
+                precio_sin_iva: parseFloat(p.precio)
+            })) : [];
+            this.detalle.precios.unshift({ precio: precioConIva.toFixed(4), precio_sin_iva: precioSinIva });
+
+            if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
+                this.detalle.costo = parseFloat(producto.costo_promedio);
+            } else {
+                this.detalle.costo = parseFloat(producto.costo);
             }
 
-        producto.inventarios        = producto.inventarios?.filter((item:any) => item.id_bodega == this.venta.id_bodega) || [];
-        // Si el producto tiene inventario por lotes, usar stock de lotes (como en v1)
-        if (producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0) {
-            const lotesBodega = this.venta.id_bodega
-                ? producto.lotes.filter((l: any) => l.id_bodega == this.venta.id_bodega)
-                : producto.lotes;
-            const stockLotes = lotesBodega.reduce((sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0);
-            this.detalle.stock = stockLotes;
-            this.detalle.inventario_por_lotes = true;
-            this.detalle.lote_id = null;
-        } else if (producto.tipo != 'Servicio' && producto.inventarios.length > 0) {
-            this.detalle.stock = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
-            this.detalle.inventario_por_lotes = false;
-            this.detalle.lote_id = null;
-        } else {
-            this.detalle.stock = null;
-            this.detalle.inventario_por_lotes = false;
-            this.detalle.lote_id = null;
+            // Verificar stock de compuestos
+            if(producto.tipo == 'Compuesto'){
+                producto.composiciones.forEach((composicion:any) => {
+                    composicion.compuesto.inventarios = composicion.compuesto.inventarios.filter(
+                        (item:any) => item.id_bodega == this.venta.id_bodega
+                    );
+                    let stock = parseFloat(this.sumPipe.transform(composicion.compuesto.inventarios, 'stock'));
+                    if(stock < composicion.cantidad){ producto.inventarios = []; }
+                });
+            }
+
+            producto.inventarios = producto.inventarios?.filter((item:any) => item.id_bodega == this.venta.id_bodega) || [];
+
+            if (producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0) {
+                const lotesBodega = this.venta.id_bodega
+                    ? producto.lotes.filter((l: any) => l.id_bodega == this.venta.id_bodega)
+                    : producto.lotes;
+                const stockLotes = lotesBodega.reduce(
+                    (sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0
+                );
+                this.detalle.stock                = stockLotes;
+                this.detalle.inventario_por_lotes = true;
+                this.detalle.lote_id              = null;
+            } else if (producto.tipo != 'Servicio' && producto.inventarios.length > 0) {
+                this.detalle.stock                = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+                this.detalle.inventario_por_lotes = false;
+                this.detalle.lote_id              = null;
+            } else {
+                this.detalle.stock                = null;
+                this.detalle.inventario_por_lotes = false;
+                this.detalle.lote_id              = null;
+            }
         }
-        this.detalle.cantidad       = 1;
-        this.detalle.descuento      = 0;
-        this.detalle.descuento_porcentaje      = 0;
+
+        this.detalle.cantidad            = 1;
+        this.detalle.descuento           = 0;
+        this.detalle.descuento_porcentaje = 0;
         console.log(this.detalle);
         this.onSubmit();
     }
@@ -297,9 +363,9 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
      */
     getNombreCompleto(producto: any): string {
         if (this.tieneShopify && producto.nombre_variante) {
-            return `${producto.nombre} ${producto.nombre_variante}`;
+            return `${producto.nombre_mostrar || producto.nombre} ${producto.nombre_variante}`;
         }
-        return producto.nombre;
+        return producto.nombre_mostrar || producto.nombre;
     }
 
 }

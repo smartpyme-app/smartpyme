@@ -52,15 +52,53 @@ export class CompraProductoComponent implements OnInit {
         this.searchControl.valueChanges
               .pipe(
                 debounceTime(500),
-                filter((query: string) => query.trim().length > 0),
-                switchMap((query: any) => this.apiService.read('productos/buscar/', query))
+                filter((query: string) => query?.trim().length > 0),
+                switchMap((query: any) => {
+                    const q = this.normalizeBusqueda(query);
+                    const params: any = { query: q };
+                    if (this.compra?.id_bodega) params.id_bodega = this.compra.id_bodega;
+                    if (this.compra?.id_sucursal) params.id_sucursal = this.compra.id_sucursal;
+                    return this.apiService.getAll('productos/buscar-by-query', params).pipe(
+                        catchError(error => {
+                            console.error('Error en la búsqueda:', error);
+                            this.productos = [];
+                            this.loading = false;
+                            return of([]);
+                        })
+                    );
+                })
               )
-              .subscribe((results: any[]) => {
-                this.productos = Array.isArray(results) ? results : [];
-                this.loading = false;
+              .subscribe({
+                next: (results: any[]) => {
+                    this.productos = Array.isArray(results) ? results : [];
+                    this.loading = false;
 
-                if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) { 
-                    this.selectProducto(results[0]);
+                    const busqueda = this.normalizeBusqueda(this.searchControl.value);
+                    if (!busqueda || !this.productos.length) {
+                        return;
+                    }
+
+                    const porCodigoExacto = this.productos.filter((p: any) => {
+                        const cod = this.normalizeBusqueda(p?.codigo);
+                        const bar = this.normalizeBusqueda(p?.barcode);
+                        return cod === busqueda || bar === busqueda;
+                    });
+
+                    if (porCodigoExacto.length === 1) {
+                        this.selectProducto(porCodigoExacto[0]);
+                        return;
+                    }
+
+                    if (
+                        this.productos.length === 1 &&
+                        (this.normalizeBusqueda(this.productos[0].codigo) === busqueda ||
+                        this.normalizeBusqueda(this.productos[0].barcode) === busqueda)
+                    ) {
+                        this.selectProducto(this.productos[0]);
+                    }
+                },
+                error: (err) => {
+                    console.error('Error no controlado:', err);
                 }
               });
     }
@@ -167,20 +205,46 @@ export class CompraProductoComponent implements OnInit {
 
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
-        this.detalle.id_producto    = producto.id;
         
-        // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
-        this.detalle.nombre_producto = this.getNombreCompleto(producto);
-        this.detalle.img            = producto.img;
-        this.detalle.precio         = parseFloat(producto.precio);
-        this.detalle.costo          = parseFloat(producto.costo);
-        producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.compra.id_sucursal);
-        this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
-        this.detalle.cantidad       = 1;
-        this.detalle.descuento      = 0;
-        this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
-        this.detalle.lote_id = null;
-        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+        const esPlanoBuscador = producto.nombre_mostrar != null;
+
+        if (esPlanoBuscador) {
+            this.detalle.id_producto      = producto.id_producto;
+            this.detalle.id_presentacion  = producto.id_presentacion ?? null;
+            this.detalle.factor_conversion = producto.factor_conversion ?? 1;
+            this.detalle.nombre_producto  = producto.nombre_mostrar;
+            this.detalle.img              = producto.img; // la imagen del producto base viene en producto.img
+            this.detalle.precio           = parseFloat(producto.precio ?? 0);
+            
+            // Para compras, si elegimos una presentación, el costo mostrado debe ser el del empaque
+            const costoBase = parseFloat(producto.costo ?? 0);
+            this.detalle.costo            = costoBase * this.detalle.factor_conversion;
+            
+            this.detalle.stock            = producto.stock_base_actual ?? null;
+            this.detalle.cantidad         = 1;
+            this.detalle.descuento        = 0;
+            this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
+            this.detalle.lote_id          = null;
+            this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+        } else {
+            this.detalle.id_producto      = producto.id;
+            this.detalle.id_presentacion  = null;
+            this.detalle.factor_conversion = 1;
+            
+            // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
+            this.detalle.nombre_producto  = this.getNombreCompleto(producto);
+            this.detalle.img              = producto.img;
+            this.detalle.precio           = parseFloat(producto.precio);
+            this.detalle.costo            = parseFloat(producto.costo);
+            producto.inventarios          = producto.inventarios.filter((item:any) => item.id_sucursal == this.compra.id_sucursal);
+            this.detalle.stock            = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+            this.detalle.cantidad         = 1;
+            this.detalle.descuento        = 0;
+            this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
+            this.detalle.lote_id          = null;
+            this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+        }
+        
         this.onSubmit();
     }
 
@@ -215,6 +279,13 @@ export class CompraProductoComponent implements OnInit {
         if(this.modalRef){
             this.modalRef.hide();
         }
+    }
+
+    private normalizeBusqueda(val: any): string {
+        return String(val ?? '')
+            .trim()
+            .replace(/[\r\n\u0000]+/g, '')
+            .replace(/~+$/g, '');
     }
 
     /**

@@ -26,6 +26,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Auth;
 use App\Services\ShopifyStockService;
+use App\Services\Inventario\ConversionInventarioService;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
@@ -188,15 +189,29 @@ class ComprasController extends Controller
             // Ajustar stocks
             foreach ($compra->detalles as $detalle) {
 
+                // ── Factor de conversión por presentación ─────────────────────────
+                $factorPres = 1;
+                if (!empty($detalle->id_presentacion)) {
+                    $pres = \App\Models\Inventario\ProductoPresentacion::find($detalle->id_presentacion);
+                    if ($pres) {
+                        $factorPres = (float) $pres->factor_conversion;
+                    }
+                }
+                // Unidades base que se revirtieron/aplicaron originalmente
+                $cantidadBase = ConversionInventarioService::calcularCantidadBase(
+                    $detalle->cantidad,
+                    $factorPres
+                );
+
                 $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
-                
+
                 // Anular compra y regresar stock
                 if(($compra->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
 
                     if ($inventario) {
-                        $inventario->stock -= $detalle->cantidad;
+                        $inventario->stock -= $cantidadBase;
                         $inventario->save();
-                        $inventario->kardex($compra, $detalle->cantidad * -1);
+                        $inventario->kardex($compra, $cantidadBase * -1);
                     }
 
                     // Abonos
@@ -210,9 +225,9 @@ class ComprasController extends Controller
                 if(($compra->estado == 'Anulada') && ($request['estado'] != 'Anulada')){
                     // Aplicar stock
                     if ($inventario) {
-                        $inventario->stock += $detalle->cantidad;
+                        $inventario->stock += $cantidadBase;
                         $inventario->save();
-                        $inventario->kardex($compra, $detalle->cantidad);
+                        $inventario->kardex($compra, $cantidadBase);
                     }
 
                     // Abonos
@@ -299,7 +314,13 @@ class ComprasController extends Controller
                     $detalle = Detalle::findOrFail($det['id']);
                 else
                     $detalle = new Detalle;
+                
                 $det['id_compra'] = $compra->id;
+                
+                // Aseguramos la asignación del id_presentacion
+                if (array_key_exists('id_presentacion', $det)) {
+                    $det['id_presentacion'] = $det['id_presentacion'] ?: null;
+                }
                 
                 $detalle->fill($det);
                 $detalle->save();
@@ -307,21 +328,46 @@ class ComprasController extends Controller
                 if (!$request->id) {
                     $producto = $detalle->producto()->with('inventarios')->first();
                     if ($producto) {
-                        $stock_anterior = ($producto->inventarios->sum('stock') ?? 0);
-                        $stock_actual = $det['cantidad']; // Cantidad comprada
-                        $stock_total = $stock_anterior + $stock_actual; // Nuevo stock total
-
-                        // Evitar división por cero
-                        if ($stock_total > 0) {
-                            $costo_promedio = (($stock_anterior * $producto->costo) + ($stock_actual * $det['costo'])) / $stock_total;
-                        } else {
-                            $costo_promedio = $det['costo'];
+                        // ── Resolución del factor (presentación de compra si aplica) ─────────────
+                        $factorDet = 1;
+                        if (!empty($det['id_presentacion'])) {
+                            $presDet = \App\Models\Inventario\ProductoPresentacion::find($det['id_presentacion']);
+                            if ($presDet) {
+                                $factorDet = (float) $presDet->factor_conversion;
+                            }
                         }
 
-                        $producto->costo_anterior   = $producto->costo;
-                        $producto->costo            = $det['costo'];
-                        $producto->costo_promedio   = $costo_promedio;
+                        // Cuántas unidades base ingresan al inventario
+                        $cantidadBaseIngresada = ConversionInventarioService::calcularCantidadBase(
+                            $det['cantidad'],
+                            $factorDet
+                        );
+
+                        // Costo real por unidad base (subtotal fila / unidades base)
+                        $subtotalFila = $det['cantidad'] * $det['costo'];
+                        $costoUnitarioBase = ConversionInventarioService::calcularCostoUnitarioBase(
+                            $subtotalFila,
+                            $cantidadBaseIngresada
+                        );
+
+                        $stock_anterior = ($producto->inventarios->sum('stock') ?? 0);
+                        $stock_total    = $stock_anterior + $cantidadBaseIngresada;
+
+                        // Costo promedio ponderado en unidades base
+                        if ($stock_total > 0) {
+                            $costo_promedio = (($stock_anterior * $producto->costo) + ($cantidadBaseIngresada * $costoUnitarioBase)) / $stock_total;
+                        } else {
+                            $costo_promedio = $costoUnitarioBase;
+                        }
+
+                        $producto->costo_anterior = $producto->costo;
+                        $producto->costo          = $costoUnitarioBase;   // costo de la última compra por unidad base
+                        $producto->costo_promedio  = $costo_promedio;
                         $producto->save();
+
+                        // Guardar las variables calculadas para reutilizarlas en el bloque de inventario
+                        $det['_cantidad_base'] = $cantidadBaseIngresada;
+                        $det['_costo_base']    = $costoUnitarioBase;
                     }
 
                 }
@@ -329,10 +375,27 @@ class ComprasController extends Controller
                 if ($request->cotizacion == 0) {
                     // Verificar si el producto tiene inventario por lotes
                     $producto = Producto::find($det['id_producto']);
-                    
+
                     $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
                     $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
-                    
+
+                    // Reutilizar cantidadBase calculada antes; si el bloque !$request->id no corrió
+                    // (es una edición), resolverla de nuevo.
+                    if (!isset($det['_cantidad_base'])) {
+                        $factorDet2 = 1;
+                        if (!empty($det['id_presentacion'])) {
+                            $presDet2 = \App\Models\Inventario\ProductoPresentacion::find($det['id_presentacion']);
+                            if ($presDet2) {
+                                $factorDet2 = (float) $presDet2->factor_conversion;
+                            }
+                        }
+                        $det['_cantidad_base'] = ConversionInventarioService::calcularCantidadBase(
+                            $det['cantidad'],
+                            $factorDet2
+                        );
+                    }
+                    $cantidadBaseInv = $det['_cantidad_base'];
+
                     if ($producto && $producto->inventario_por_lotes && $lotesActivo) {
                         // Validar que se haya especificado un lote
                         if (!isset($det['lote_id']) || !$det['lote_id']) {
@@ -342,7 +405,7 @@ class ComprasController extends Controller
                                 'code' => 400
                             ], 400);
                         }
-                        
+
                         // Si tiene lotes y se especificó un lote, actualizar el stock del lote
                         $lote = \App\Models\Inventario\Lote::find($det['lote_id']);
                         if (!$lote) {
@@ -352,7 +415,7 @@ class ComprasController extends Controller
                                 'code' => 400
                             ], 400);
                         }
-                        
+
                         // Verificar que el lote pertenezca al producto y bodega correctos
                         if ($lote->id_producto != $det['id_producto'] || $lote->id_bodega != $compra->id_bodega) {
                             DB::rollBack();
@@ -361,11 +424,11 @@ class ComprasController extends Controller
                                 'code' => 400
                             ], 400);
                         }
-                        
-                        // Actualizar stock del lote
-                        $lote->stock += $det['cantidad'];
+
+                        // Actualizar stock del lote en unidades base
+                        $lote->stock += $cantidadBaseInv;
                         $lote->save();
-                        
+
                         // Crear inventario si no existe; actualizar el tradicional para mantener consistencia
                         $inventario = Inventario::firstOrCreate(
                             [
@@ -374,9 +437,9 @@ class ComprasController extends Controller
                             ],
                             ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
                         );
-                        $inventario->stock += $det['cantidad'];
+                        $inventario->stock += $cantidadBaseInv;
                         $inventario->save();
-                        $inventario->kardex($compra, $det['cantidad']);
+                        $inventario->kardex($compra, $cantidadBaseInv);
                     } else {
                         // Crear inventario si no existe; actualizar inventario tradicional (sin lotes)
                         $inventario = Inventario::firstOrCreate(
@@ -386,9 +449,9 @@ class ComprasController extends Controller
                             ],
                             ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
                         );
-                        $inventario->stock += $det['cantidad'];
+                        $inventario->stock += $cantidadBaseInv;
                         $inventario->save();
-                        $inventario->kardex($compra, $det['cantidad']);
+                        $inventario->kardex($compra, $cantidadBaseInv);
                     }
 
                 }
