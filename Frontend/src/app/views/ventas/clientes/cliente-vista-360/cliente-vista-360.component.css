@@ -6,11 +6,10 @@ body {
     line-height: 1.5;
 }
 
-.container {
+.vista360-content {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 24px;
-    min-height: 100vh;
+    padding: 0;
 }
 
 .breadcrumb {
@@ -31,23 +30,204 @@ body {
     text-decoration: underline;
 }
 
-/* Header personalizado */
-.header-container {
-    color: black !important;
-    padding: 32px !important;
-    border-radius: 16px !important;
-    margin-bottom: 24px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    border: none !important;
-    box-shadow: none !important;
+/* Encabezado unificado (estilo SmartPyme) */
+.vista360-header {
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
-.header-left {
+.vista360-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: #D7E2FF;
+    color: #1e3a5f;
     display: flex;
     align-items: center;
-    gap: 24px;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.vista360-meta-row {
+    row-gap: 0.35rem;
+}
+
+.vista360-meta {
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.vista360-header-top {
+    overflow: visible;
+}
+
+.vista360-header-buscador {
+    flex: 0 1 320px;
+    width: 100%;
+    max-width: 360px;
+    min-width: 240px;
+    margin-left: auto;
+    overflow: visible;
+}
+
+.vista360-empty {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(30, 58, 95, 0.08);
+    background: #fff;
+}
+
+.vista360-empty-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e8eef5;
+    background: #fff;
+}
+
+.vista360-empty-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #1e3a5f;
+    background: linear-gradient(135deg, #d7e2ff 0%, #b8cff9 100%);
+    border-radius: 6px;
+}
+
+.vista360-empty-hero {
+    position: relative;
+    padding: 2.5rem 1.5rem 2rem;
+    overflow: hidden;
+}
+
+
+.vista360-empty-hero-content {
+    position: relative;
+    max-width: 560px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.vista360-empty-icon-wrap {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 1.25rem;
+    border-radius: 20px;
+    background: linear-gradient(145deg, #3b82f6 0%, #1d4ed8 100%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+}
+
+.vista360-empty-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.vista360-empty-subtitle {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.55;
+    margin-bottom: 1.75rem;
+}
+
+.vista360-empty-subtitle strong {
+    color: #334155;
+    font-weight: 600;
+}
+
+.vista360-empty-search-card {
+    text-align: left;
+    background: #fff;
+    border: 2px solid #c7d9f5;
+    border-radius: 14px;
+    padding: 1.25rem 1.35rem 1.1rem;
+    box-shadow: 0 6px 20px rgba(30, 64, 175, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.vista360-empty-search-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1e40af;
+    margin-bottom: 0.75rem;
+}
+
+.vista360-empty-buscador {
+    width: 100%;
+}
+
+.vista360-empty-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem 1rem;
+}
+
+.vista360-empty-features li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #475569;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem;
+}
+
+.vista360-empty-features li i {
+    color: #3b82f6;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 575.98px) {
+    .vista360-empty-hero {
+        padding: 2rem 1rem 1.5rem;
+    }
+
+    .vista360-empty-title {
+        font-size: 1.25rem;
+    }
+
+    .vista360-empty-features {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .vista360-header-buscador {
+        flex: 1 1 100%;
+        max-width: 100%;
+        margin-left: 0;
+        order: 3;
+    }
+
+    .vista360-header-info {
+        order: 1;
+        flex: 1 1 100%;
+    }
+
+    .vista360-header-actions {
+        order: 2;
+        margin-left: auto;
+    }
 }
 
 .customer-avatar {
@@ -128,7 +308,7 @@ body {
 /* Main Grid */
 .main-grid {
     display: grid;
-    grid-template-columns: 350px 1fr;
+    grid-template-columns: minmax(0, 350px) minmax(0, 1fr);
     gap: 24px;
     margin-bottom: 24px;
 }
@@ -137,6 +317,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-width: 0;
 }
 
 /* Cards personalizadas */
@@ -175,6 +356,7 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 16px;
     margin-bottom: 20px;
+    min-width: 0;
 }
 
 .metric-item {
@@ -183,19 +365,30 @@ body {
     background: #f8fafc;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
+    min-width: 0;
+    overflow: hidden;
+    container-type: inline-size;
 }
 
 .metric-value {
-    font-size: 1.6rem;
+    font-size: clamp(0.65rem, 14cqi, 1.6rem);
     font-weight: 700;
     color: #1e293b;
     margin-bottom: 4px;
+    line-height: 1.15;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .metric-label {
-    font-size: 0.85rem;
+    font-size: clamp(0.7rem, 4.5cqi, 0.85rem);
     color: #64748b;
     font-weight: 500;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .health-score {
@@ -209,14 +402,31 @@ body {
     margin-bottom: 20px;
 }
 
-.score-info h3 {
+.score-title {
     font-size: 1.2rem;
     margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.score-details {
-    font-size: 0.9rem;
-    opacity: 0.9;
+.score-help {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.95rem;
+    opacity: 0.85;
+    cursor: help;
+}
+
+.score-help:hover {
+    opacity: 1;
+}
+
+.score-rfm {
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0.95;
+    letter-spacing: 0.02em;
 }
 
 .score-number {
@@ -377,6 +587,7 @@ body {
     padding: 32px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border: 1px solid #e2e8f0;
+    min-width: 0;
 }
 
 /* Tabs */
@@ -416,6 +627,7 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 32px;
     margin-bottom: 32px;
+    min-width: 0;
 }
 
 /* Chart Section */
@@ -424,12 +636,15 @@ body {
     border-radius: 16px;
     padding: 24px;
     border: 1px solid #e2e8f0;
+    min-width: 0;
 }
 
 .chart-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
     margin-bottom: 20px;
 }
 
@@ -448,40 +663,51 @@ body {
     border: 1px solid #e2e8f0;
 }
 
-.chart-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    height: 120px;
-    margin-bottom: 16px;
-    padding: 0 8px;
+.content-grid--chart-full {
+    grid-template-columns: 1fr;
 }
 
-.chart-bar {
-    flex: 1;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    border-radius: 4px 4px 0 0;
-    min-height: 12px;
-    opacity: 0.7;
+.chart-section--full {
+    width: 100%;
+}
+
+.chart-period-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chart-period-btn {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    background: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
     transition: all 0.2s;
 }
 
-.chart-bar:hover {
-    opacity: 1;
-    transform: translateY(-2px);
+.chart-period-btn:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
 }
 
-.chart-bar.high {
-    opacity: 1;
+.chart-period-btn.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
 }
 
-.chart-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    color: #64748b;
-    font-weight: 500;
-    padding: 0 8px;
+.vista360-sales-chart {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+.vista360-sales-chart ::ng-deep .chart-container {
+    width: 100%;
 }
 
 /* Stats Grid */
@@ -1025,22 +1251,9 @@ body {
 
 /* Responsividad para laptops pequeñas (1024px) */
 @media (max-width: 1024px) {
-    .container {
+    .vista360-content {
         padding: 16px;
         max-width: 100%;
-    }
-    
-    .header-container {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-        padding: 20px !important;
-    }
-    
-    .header-left {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
     }
     
     .header-actions {
@@ -1080,7 +1293,7 @@ body {
         align-items: flex-start;
         gap: 12px;
     }
-    
+
     .contact-item {
         flex-direction: column;
         align-items: flex-start;
@@ -1268,7 +1481,7 @@ body {
 
 /* Responsividad para tablets (768px) */
 @media (max-width: 768px) {
-    .container {
+    .vista360-content {
         padding: 12px;
     }
     
@@ -1302,13 +1515,14 @@ body {
         padding: 12px;
     }
     
-    .metric-value {
-        font-size: 1.5rem;
-    }
-    
     .health-score {
         padding: 16px;
         text-align: center;
+        align-items: center;
+    }
+
+    .score-info {
+        width: 100%;
     }
     
     .score-number {
@@ -1344,10 +1558,6 @@ body {
     
     .chart-section {
         min-height: 150px;
-    }
-    
-    .chart-bars {
-        height: 100px;
     }
     
     .stats-grid {
@@ -1428,7 +1638,7 @@ body {
 
 /* Responsividad para móviles (480px) */
 @media (max-width: 480px) {
-    .container {
+    .vista360-content {
         padding: 8px;
     }
     
@@ -1457,10 +1667,6 @@ body {
         padding: 8px 12px;
     }
     
-    .metric-value {
-        font-size: 1.3rem;
-    }
-    
     .score-number {
         font-size: 1.8rem;
     }
@@ -1478,10 +1684,6 @@ body {
     
     .chart-section {
         min-height: 120px;
-    }
-    
-    .chart-bars {
-        height: 80px;
     }
     
     .stat-value {

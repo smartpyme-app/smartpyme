@@ -16,6 +16,7 @@ import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask'
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 import { AdminRoutingModule } from './admin.routing.module';
+import { ReportesModule } from '@views/reportes/reportes.module';
 
 import { EmpresaComponent } from './empresa/empresa.component';
 import { EliminarDatosComponent } from './empresa/eliminar-datos/eliminar-datos.component';
@@ -28,8 +29,8 @@ import { UsuariosComponent } from './usuarios/usuarios.component';
 import { UsuarioComponent } from './usuarios/usuario/usuario.component';
 
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
-import { ReportesComponent } from './reportes/reportes.component';
 import { DocsComponent } from './docs/docs.component';
+import { AdminReportesComponent } from '@views/admin/reportes/reportes.component';
 // import { ThreedsModalComponent } from '../../auth/register/pago/modal/threeds-modal.component';
 import { WhatsAppComponent } from './whatsapp/whatsapp.component';
 import { WhatsAppEstadisticasComponent } from './whatsapp/estadisticas/whatsapp-estadisticas.component';
@@ -45,6 +46,7 @@ import { NgxIntlTelInputModule } from 'ngx-intl-tel-input';
     TagInputModule,
     NgSelectModule,
     AdminRoutingModule,
+    ReportesModule,
     NgxMaskDirective, NgxMaskPipe,
     FocusModule.forRoot(),
     PopoverModule.forRoot(),
@@ -61,9 +63,9 @@ import { NgxIntlTelInputModule } from 'ngx-intl-tel-input';
     SucursalComponent,
     UsuariosComponent,
     UsuarioComponent,
-    ReportesComponent,
     NotificacionesComponent,
     DocsComponent,
+    AdminReportesComponent,
     WhatsAppComponent,
     WhatsAppEstadisticasComponent
   ],
@@ -74,9 +76,9 @@ import { NgxIntlTelInputModule } from 'ngx-intl-tel-input';
     SucursalComponent,
     UsuariosComponent,
     UsuarioComponent,
-    ReportesComponent,
     NotificacionesComponent,
     DocsComponent,
+    AdminReportesComponent,
     WhatsAppComponent,
     WhatsAppEstadisticasComponent
   ]

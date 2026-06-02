@@ -1037,11 +1037,13 @@ export class VentasComponent implements OnInit, OnDestroy {
   }
 
   imprimirDTEPDF(venta: any) {
-    window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte;
+    window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
   }
 
   imprimirDTEJSON(venta: any) {
-    window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte;
+    window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
   }
 
   emitirDTE() {

@@ -1,6 +1,8 @@
-import { Component, OnInit, OnChanges, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, TemplateRef, Input } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+
+import Swal from 'sweetalert2';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -12,11 +14,14 @@ import { ApiService } from '@services/api.service';
 export class ProductoLotesComponent implements OnInit, OnChanges {
 
     @Input() producto: any = {};
+    @Input() refreshKey = 0;
     public lotes: any[] = [];
     public bodegas: any[] = [];
     public lote: any = {};
     public loading: boolean = false;
     public guardar: boolean = false;
+    public migrandoStock: boolean = false;
+    public migracionPreview: any = null;
     public filtros: any = {
         id_bodega: null,
         numero_lote: '',
@@ -40,13 +45,99 @@ export class ProductoLotesComponent implements OnInit, OnChanges {
         this.loadBodegas();
         if (this.producto.id) {
             this.loadLotes();
+            this.loadMigracionPreview();
         }
     }
 
-    ngOnChanges() {
-        if (this.producto.id) {
-            this.loadLotes();
+    ngOnChanges(changes: SimpleChanges) {
+        if (!this.producto?.id) {
+            return;
         }
+        if (changes['refreshKey'] && !changes['refreshKey'].firstChange) {
+            this.loadLotes();
+            this.loadMigracionPreview();
+            return;
+        }
+        if (changes['producto'] && !changes['producto'].firstChange) {
+            this.loadLotes();
+            this.loadMigracionPreview();
+        }
+    }
+
+    get puedeMigrarStock(): boolean {
+        return !!this.migracionPreview?.requiere_migracion;
+    }
+
+    loadMigracionPreview() {
+        if (!this.producto?.id || !this.producto.inventario_por_lotes) {
+            this.migracionPreview = null;
+            return;
+        }
+        this.apiService.getAll(`producto/${this.producto.id}/preview-migracion-lotes`).subscribe(
+            (preview) => { this.migracionPreview = preview; },
+            () => { this.migracionPreview = null; }
+        );
+    }
+
+    migrarStockExistente() {
+        if (!this.producto?.id || !this.puedeMigrarStock) {
+            return;
+        }
+
+        const preview = this.migracionPreview;
+        const listaHtml = (preview.bodegas || [])
+            .map((b: any) => `<li>${b.nombre_bodega}: <strong>${b.stock_inventario}</strong> uds</li>`)
+            .join('');
+
+        Swal.fire({
+            title: 'Trasladar stock al lote inicial',
+            html: `
+                <p class="text-start mb-2">
+                    Hay stock registrado en inventario que aún no está en lotes.
+                    Se trasladará a un <strong>lote inicial</strong> (<em>${preview.numero_lote || 'STOCK-INICIAL'}</em>)
+                    por bodega, para que pueda seguir vendiendo y controlando existencias por lote.
+                </p>
+                <p class="text-start mb-2">
+                    Luego puede editar cada lote y definir su <strong>código</strong> y
+                    <strong>fecha de vencimiento</strong>.
+                </p>
+                <p class="text-start mb-1"><strong>Stock a trasladar</strong> (${preview.total_bodegas} bodega(s), ${preview.total_unidades} uds):</p>
+                <ul class="text-start mb-0">${listaHtml}</ul>
+            `,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Trasladar stock',
+            cancelButtonText: 'Cancelar',
+        }).then((result) => {
+            if (!result.isConfirmed) {
+                return;
+            }
+            this.ejecutarMigracionStock();
+        });
+    }
+
+    private ejecutarMigracionStock() {
+        this.migrandoStock = true;
+        this.apiService.store(`producto/${this.producto.id}/migrar-stock-lotes`, {}).subscribe(
+            (res: any) => {
+                this.migrandoStock = false;
+                const m = res.migracion_lotes;
+                if (m && (m.lotes_creados > 0 || m.lotes_actualizados > 0)) {
+                    this.alertService.success(
+                        res.message || 'Stock migrado',
+                        `Se importaron ${m.unidades_migradas} unidad(es) en ${m.lotes_creados + (m.lotes_actualizados || 0)} bodega(s).`
+                    );
+                } else {
+                    this.alertService.success(res.message || 'Sin cambios', 'No había stock pendiente de migrar.');
+                }
+                this.loadLotes();
+                this.loadMigracionPreview();
+            },
+            (error) => {
+                this.migrandoStock = false;
+                this.alertService.error(error);
+            }
+        );
     }
 
     loadBodegas() {

@@ -1,0 +1,288 @@
+<div id="register-abaco-box" class="register-abaco-page min-vh-100 w-100 overflow-x-hidden">
+    <div class="container-fluid px-0 min-vh-100 d-flex flex-column">
+        <div class="row g-0 flex-grow-1 mx-0 min-vh-100 align-items-stretch">
+
+            <div class="col-12 col-md-6 d-none d-md-flex flex-column position-relative register-abaco-hero register-abaco-hero--video">
+                <video
+                    class="register-abaco-hero-video"
+                    appHeroVideoAutoplay
+                    autoplay
+                    muted
+                    loop
+                    playsinline
+                    preload="auto"
+                    aria-hidden="true">
+                    <source src="assets/img/abaco-background.mp4" type="video/mp4">
+                </video>
+
+                <div class="m-auto text-center px-4 register-abaco-hero__content">
+                    <div class="mb-auto">
+                        <img
+                            src="assets/img/logo-abaco.png"
+                            alt="Ábaco Business Suite"
+                            class="register-abaco-hero-logo"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 d-flex flex-column position-relative register-abaco-form-col">
+                <div class="card border-0 shadow-none mx-auto mt-0 mb-0 w-100 register-abaco-card">
+                    <div class="card-body px-3 px-lg-4">
+                        <app-notificaciones-container></app-notificaciones-container>
+
+                        <div class="mb-3">
+                            <img
+                                src="assets/img/Abaco.png"
+                                alt=""
+                                class="register-abaco-form-brand-icon"
+                            />
+                        </div>
+
+                        <h2 class="mb-3 register-abaco-form-heading">Registro</h2>
+
+                        <div
+                            class="register-abaco-notice mb-4"
+                            *ngIf="tieneCodigoPromocionalAbacoAplicado()"
+                        >
+                            <strong class="register-abaco-notice__title">Aviso</strong>
+                            <p class="register-abaco-notice__text mb-0">
+                                Los datos de tu usuario no son los mismos que dentro de la plataforma de Ábaco. Debes crear un nuevo registro en Business Suite si aún no cuentas con uno.
+                            </p>
+                        </div>
+
+                        <div
+                            class="register-abaco-notice mb-4"
+                            *ngIf="codigoPromocionalAbaco && !tieneCodigoPromocionalAbacoAplicado()"
+                        >
+                            <strong class="register-abaco-notice__title">Aviso</strong>
+                            <p class="register-abaco-notice__text mb-0">
+                                Utiliza el código <strong>{{ codigoPromocionalAbaco.codigo }}</strong> para {{ getTextoDescuentoPromocional() }} en {{ getTextoPlanesPermitidos() }}.
+                            </p>
+                        </div>
+
+                        <form class="register-abaco-form" name="form" (ngSubmit)="f.form.valid && submit()" #f="ngForm" novalidate>
+                            <div class="mb-3">
+                                <label class="text-muted mb-2 register-abaco-field-label">Nombre de la empresa</label>
+                                <input
+                                    type="text"
+                                    class="form-control register-abaco-control"
+                                    name="empresa"
+                                    [(ngModel)]="user.empresa.nombre"
+                                    #empresa="ngModel"
+                                    placeholder="Escribe el nombre"
+                                    required
+                                />
+                            </div>
+
+                            <div class="row g-3 mb-1">
+                                <div class="col-md-6">
+                                    <label class="text-muted mb-2 register-abaco-field-label">Nombre y apellido</label>
+                                    <input
+                                        type="text"
+                                        class="form-control register-abaco-control"
+                                        name="name"
+                                        [(ngModel)]="user.name"
+                                        #name="ngModel"
+                                        placeholder="Escribe el nombre"
+                                        required
+                                        focus="true"
+                                    />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="text-muted mb-2 register-abaco-field-label">Tipo de negocio</label>
+                                    <select
+                                        class="form-select register-abaco-control"
+                                        name="industria"
+                                        [(ngModel)]="user.empresa.industria"
+                                    >
+                                        <option value="">Elige</option>
+                                        <option value="Comercio">Comercio</option>
+                                        <option value="Servicio">Servicio</option>
+                                        <option value="Ambos">Ambos</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-1">
+                                <div class="col-md-6">
+                                    <label class="text-muted mb-2 register-abaco-field-label">Tipo de plan</label>
+                                    <select
+                                        class="form-select register-abaco-control"
+                                        name="frecuencia_pago"
+                                        [(ngModel)]="user.empresa.frecuencia_pago"
+                                        (change)="onFrecuenciaPagoChange()"
+                                    >
+                                        <option value="">Selecciona aquí</option>
+                                        <option
+                                            *ngFor="let frecuencia of frecuenciasPagoDisponibles"
+                                            [value]="frecuencia"
+                                        >
+                                            {{ frecuencia }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="text-muted mb-2 register-abaco-field-label w-100">
+                                        <span class="d-inline-flex flex-wrap align-items-baseline justify-content-between gap-2 w-100">
+                                            <span>Plan</span>
+                                            <span
+                                                *ngIf="user.empresa.plan && user.empresa.plan !== '' && (user.empresa.total > 0 || totalOriginal > 0)"
+                                                class="small fw-normal text-end"
+                                            >
+                                                <span *ngIf="tieneDescuento" class="text-decoration-line-through text-danger me-2">
+                                                    {{ totalOriginal | currency:'USD':'symbol':'1.2'}}
+                                                </span>
+                                                Precio: {{ user.empresa.total | currency:'USD':'symbol':'1.2'}}
+                                            </span>
+                                        </span>
+                                    </label>
+                                    <select
+                                        class="form-select register-abaco-control"
+                                        name="plan"
+                                        [(ngModel)]="user.empresa.plan"
+                                        (change)="setPlan()"
+                                    >
+                                        <option value="">Selecciona aquí</option>
+                                        <option value="2">Estándar</option>
+                                        <option value="3">Avanzado</option>
+                                        <option value="4">Pro</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3" *ngIf="user.empresa.total > 0">
+                                <label class="register-abaco-field-label text-muted mb-0 d-block">
+                                    Total {{ getFrecuenciaPago() }}: {{ getTotalAPagar() | currency:'USD':'symbol':'1.2'}}
+                                    <span class="text-success ms-2" *ngIf="esPlanAnual()">
+                                        <i class="fa fa-check-circle"></i> ¡Obtienes un 20% de descuento en tu suscripción anual!
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="text-muted mb-2 register-abaco-field-label">Correo</label>
+                                    <input
+                                        type="email"
+                                        class="form-control register-abaco-control"
+                                        name="correo"
+                                        [(ngModel)]="user.email"
+                                        #email="ngModel"
+                                        placeholder="Escribe tu correo"
+                                        required
+                                    />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="text-muted mb-2 register-abaco-field-label">Teléfono</label>
+                                    <div class="input-group">
+                                        <select
+                                            class="form-select register-abaco-control register-abaco-phone-prefix"
+                                            name="pais"
+                                            (change)="setModeda()"
+                                            [(ngModel)]="user.empresa.pais"
+                                        >
+                                            <option value="Belice">+501</option>
+                                            <option value="Guatemala">+502</option>
+                                            <option value="El Salvador">+503</option>
+                                            <option value="Honduras">+504</option>
+                                            <option value="Nicaragua">+505</option>
+                                            <option value="Costa Rica">+506</option>
+                                            <option value="Panamá">+507</option>
+                                        </select>
+                                        <input
+                                            type="tel"
+                                            class="form-control register-abaco-control"
+                                            name="telefono"
+                                            [(ngModel)]="user.telefono"
+                                            #telefono="ngModel"
+                                            placeholder="0000-0000"
+                                            required
+                                            [dropSpecialCharacters]="false"
+                                            mask="0000-0000"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="text-muted mb-2 register-abaco-field-label">Contraseña</label>
+                                <div class="input-group">
+                                    <input
+                                        [type]="showpassword ? 'text' : 'password'"
+                                        class="form-control register-abaco-control border-end-0"
+                                        name="password"
+                                        [(ngModel)]="user.password"
+                                        placeholder="Escribe tu contraseña"
+                                        #password="ngModel"
+                                        id="password"
+                                        required
+                                    />
+                                    <button
+                                        class="btn border border-start-0 bg-white text-muted register-abaco-eye-btn"
+                                        type="button"
+                                        (click)="mostrarPassword()"
+                                    >
+                                        <i class="fa" [ngClass]="{ 'fa-eye-slash': !showpassword, 'fa-eye': showpassword }"></i>
+                                    </button>
+                                </div>
+                                <p class="register-abaco-password-hint mb-0 mt-2">
+                                    Entre 8 y 16 caracteres, con dígito, símbolo, minúscula y mayúscula.
+                                </p>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="text-muted mb-2 register-abaco-field-label">
+                                    Código promocional
+                                    <span class="text-success ms-1" *ngIf="codigoPromocionalValido && codigoPromocionalValidado">
+                                        ({{ getEtiquetaDescuentoCodigo() }})
+                                    </span>
+                                </label>
+                                <input
+                                    type="text"
+                                    class="form-control register-abaco-control"
+                                    name="codigo_promocional"
+                                    [(ngModel)]="user.empresa.codigo_promocional"
+                                    (input)="aplicarDescuento()"
+                                    placeholder="{{ codigoPromocionalAbaco?.codigo || 'Código promocional' }}"
+                                    #codigo_promocional="ngModel"
+                                    [class.is-valid]="codigoPromocionalValido"
+                                    [class.is-invalid]="mensajeErrorCodigo && !codigoPromocionalValido"
+                                />
+                                <small class="text-success d-block mt-1" *ngIf="codigoPromocionalValido && user.empresa.codigo_promocional">
+                                    <i class="fa fa-check-circle"></i> Código promocional aplicado
+                                </small>
+                            </div>
+
+                            <div class="d-grid gap-2 mb-3">
+                                <button type="submit" [disabled]="loading" class="btn text-white py-2 register-abaco-submit-btn">
+                                    <span *ngIf="!loading">Registrarme</span>
+                                    <span *ngIf="loading">Registrando...</span>
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="text-center">
+                            <p class="mb-0 register-abaco-login-hint">
+                                ¿Ya tienes cuenta?
+                                <a routerLink="/login" class="register-abaco-login-hint__link text-decoration-none">Inicia sesión.</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-100 text-center register-abaco-footer-attribution">
+                    <p class="mb-1 text-muted register-abaco-footer-attribution__label">Powered by </p>
+                    <a href="https://www.smartpyme.app" target="_blank" rel="noopener noreferrer">
+                        <img
+                            src="assets/img/smartpyme.png"
+                            class="register-abaco-footer-attribution__logo"
+                            alt="SmartPyme"
+                        />
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

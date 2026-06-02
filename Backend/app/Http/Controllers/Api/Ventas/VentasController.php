@@ -95,10 +95,12 @@ class VentasController extends Controller
                     });
             })
             ->when($request->id_vendedor, function ($query) use ($request) {
-                return $query->where('id_vendedor', $request->id_vendedor)
-                    ->orwhereHas('detalles', function ($query) use ($request) {
-                        $query->where('id_vendedor', $request->id_vendedor);
-                    });
+                return $query->where(function ($q) use ($request) {
+                    $q->where('id_vendedor', $request->id_vendedor)
+                        ->orWhereHas('detalles', function ($sub) use ($request) {
+                            $sub->where('id_vendedor', $request->id_vendedor);
+                        });
+                });
             })
             ->when($request->id_canal, function ($query) use ($request) {
                 return $query->where('id_canal', $request->id_canal);

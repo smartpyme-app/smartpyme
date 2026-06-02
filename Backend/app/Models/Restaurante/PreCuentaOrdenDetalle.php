@@ -14,6 +14,11 @@ class PreCuentaOrdenDetalle extends Model
     protected $fillable = [
         'pre_cuenta_id',
         'orden_detalle_id',
+        'cantidad',
+    ];
+
+    protected $casts = [
+        'cantidad' => 'decimal:4',
     ];
 
     public function preCuenta()

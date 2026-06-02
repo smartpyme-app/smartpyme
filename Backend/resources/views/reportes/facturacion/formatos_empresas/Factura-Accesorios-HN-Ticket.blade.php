@@ -151,6 +151,7 @@
             '868' => '000-004-01-',
             '897' => '000-002-01-',
             '898' => '000-003-01-',
+            '950' => '000-005-01-',
         ];
         $prefPorSucursalJson = data_get($empresa->custom_empresa, 'configuraciones.prefijo_factura_accesorios_por_sucursal', []);
         $prefPorSucursal = (is_array($prefPorSucursalJson) ? $prefPorSucursalJson : []) + $prefijosSucursalPorDefectoAccesorios;

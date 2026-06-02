@@ -7,9 +7,11 @@ use App\Models\FidelizacionClientes\ConsumoPuntos;
 use App\Models\FidelizacionClientes\PuntosCliente;
 use App\Models\FidelizacionClientes\TipoClienteEmpresa;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
+use App\Models\Admin\Acceso;
 use App\Models\Planilla\CargoEmpresa;
 use App\Models\Planilla\DepartamentoEmpresa;
 use App\Models\Suscripcion;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
@@ -85,6 +87,7 @@ class Empresa extends Model
         'modulo_citas',
         'modulo_proyectos',
         'restringir_gastos_supervisor_limitado',
+        'restringir_compras_supervisor_limitado',
         'activo',
         'alerta_suscripcion',
         'cotizacion_compras_terminos',
@@ -162,9 +165,11 @@ class Empresa extends Model
         'shopify_sync_bidirectional' => 'boolean',
         'webhook_paquete_venta_enabled' => 'boolean',
         'restringir_gastos_supervisor_limitado' => 'boolean',
+        'restringir_compras_supervisor_limitado' => 'boolean',
     ];
 
     protected $appends = [
+        'ultimo_login',
         'estado_plan',
         'woocommerce_api_url',
         'woocommerce_product_webhook_url',
@@ -174,7 +179,8 @@ class Empresa extends Model
         'acces_chatbot_whatsapp',
         'shopify_webhook_url',
         'status_conexion_shopify',
-        'is_current_user_connected_to_shopify'
+        'is_current_user_connected_to_shopify',
+        'frecuencia_pago_label',
     ];
 
     public function limiteUsuarios()
@@ -211,10 +217,58 @@ class Empresa extends Model
         return $this->pagos->count();
     }
 
+    /**
+     * Texto para UI: prioriza frecuencia_pago de la empresa y usa tipo_plan como respaldo.
+     */
+    public function getFrecuenciaPagoLabelAttribute(): string
+    {
+        $fp = trim((string) ($this->attributes['frecuencia_pago'] ?? ''));
+        if ($fp !== '') {
+            return $fp;
+        }
+        $tp = trim((string) ($this->attributes['tipo_plan'] ?? ''));
+
+        return $tp !== '' ? $tp : '';
+    }
+
+    public function getUltimoLoginAttribute()
+    {
+        return $this->accesos()->max('fecha');
+    }
+
+    /**
+     * Alinea total, monto_mensual o monto_anual con el cobro de la suscripción según tipo_plan.
+     */
+    public function sincronizarMontosDesdeSuscripcion($monto, ?string $tipoPlan): void
+    {
+        $monto = (float) $monto;
+        $this->total = $monto;
+        $tipo = mb_strtolower(trim((string) $tipoPlan));
+
+        if ($tipo === 'anual') {
+            $this->monto_anual = $monto;
+
+            return;
+        }
+
+        $this->monto_mensual = $monto;
+    }
 
     public function usuarios()
     {
         return $this->hasMany('App\Models\User', 'id_empresa');
+    }
+
+    public function accesos()
+    {
+        return $this->hasManyThrough(
+            Acceso::class,
+            User::class,
+            'id_empresa',
+            'id_usuario',
+            'id',
+            'id'
+        )->withoutGlobalScopes();
     }
 
     public function ventas()
@@ -684,6 +738,7 @@ class Empresa extends Model
                 'ticket_en_pdf' => false,
                 'bloquear_cotizaciones_vendedores' => false,
                 'dte_mostrar_descripcion_producto' => true,
+                'inventario_reporte_analisis_ventas_mensual' => false,
             ],
             'campos_personalizados' => []
             // Para futuros campos personalizados
@@ -788,6 +843,14 @@ class Empresa extends Model
         }
 
         return (bool) $this->getCustomConfigValue('configuraciones', 'transformacion_productos_activo', false);
+    }
+
+    /**
+     * Reporte Excel de inventario vs ventas desde enero del año hasta el mes de la descarga.
+     */
+    public function isInventarioReporteAnalisisVentasMensualHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_reporte_analisis_ventas_mensual', false);
     }
 
     /**

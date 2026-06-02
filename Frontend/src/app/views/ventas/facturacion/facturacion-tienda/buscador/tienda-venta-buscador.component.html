@@ -1,9 +1,9 @@
 <form class="w-100 d-flex input-group buscador" name="form" autocomplete="off">
     <div class="input-group">
         <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
-        <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar por nombre o código'">
+        <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar por nombre o código'" [attr.title]="'Escriba al menos ' + minCaracteresBusqueda + ' caracteres para buscar.'">
     </div>
-    <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
+    <ul *ngIf="puedeMostrarResultadosBusqueda" class="list-group opciones">
       <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
         <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1"> 
         <span id="producto_nombre" class="col-7 ps-1">

@@ -2,7 +2,7 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
-import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
+import { debounceTime, switchMap, filter, catchError, tap } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
@@ -30,6 +30,8 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
     public loading:boolean = false;
     private tieneShopify: boolean = false;
 
+    readonly minCaracteresBusqueda = 2;
+
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe
@@ -43,7 +45,12 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
         this.searchControl.valueChanges
           .pipe(
             debounceTime(500),
-            filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
+            tap((query: string | null) => {
+              if (String(query ?? '').trim().length < this.minCaracteresBusqueda) {
+                this.productos = [];
+              }
+            }),
+            filter((query: string | null) => String(query ?? '').trim().length >= this.minCaracteresBusqueda),
             switchMap((query: any) => {
               const q = this.normalizeBusqueda(query);
               const params: any = { query: q };
@@ -182,15 +189,18 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
         // Guardar también el precio base para referencia
         this.detalle.precio_base    = precioSinIva;
         
-        // Actualizar precios con IVA incluido para el selector (con % del producto)
-        this.detalle.precios        = producto.precios ? producto.precios.map((p: any) => ({
+        // Lista de tarifas mostrada como precio sin IVA; `precio_iva` se deriva para la columna Total.
+        this.detalle.precios        = producto.precios ? producto.precios.map((p: any) => {
+          const sinIvaLista = parseFloat(p.precio);
+          return {
             ...p,
-            precio: (parseFloat(p.precio) * (1 + pctImpuesto / 100)).toFixed(4),
-            precio_sin_iva: parseFloat(p.precio)
-        })) : [];
-        
+            precio: sinIvaLista.toFixed(4),
+            precio_sin_iva: sinIvaLista,
+          };
+        }) : [];
+
         this.detalle.precios.unshift({
-                'precio' : this.detalle.precio_iva,
+                'precio' : precioSinIva.toFixed(4),
                 'precio_sin_iva': precioSinIva
             });
             
@@ -269,6 +279,10 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
             .trim()
             .replace(/[\r\n\u0000]+/g, '')
             .replace(/~+$/g, '');
+    }
+
+    get puedeMostrarResultadosBusqueda(): boolean {
+        return String(this.searchControl.value ?? '').trim().length >= this.minCaracteresBusqueda;
     }
 
     /**

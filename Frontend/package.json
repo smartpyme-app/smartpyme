@@ -31,6 +31,7 @@
     "@ng-select/ng-select": "^10.0.0",
     "@revolist/angular-datagrid": "^4.20.2",
     "@sweetalert2/ngx-sweetalert2": "^12.2.0",
+    "@webdatarocks/ngx-webdatarocks": "^1.4.23",
     "ag-grid-angular": "^29.3.5",
     "ag-grid-community": "^29.3.5",
     "angular-notifier": "^13.0.0",

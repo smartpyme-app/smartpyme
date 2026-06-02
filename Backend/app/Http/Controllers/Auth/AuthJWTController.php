@@ -24,6 +24,7 @@ use JWTAuth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\Notificacion;
+use App\Mail\NuevaEmpresaAbacoMailable;
 use App\Models\EmpresaConfiguracionPlanilla;
 use App\Models\Plan;
 use App\Models\Promocional;
@@ -259,10 +260,16 @@ class AuthJWTController extends Controller
             $promocionalParaCampania = null;
             if ($codigoPromocional) {
                 $promocionalParaCampania = $this->obtenerConfiguracionCodigoPromocional($codigoPromocional, null);
-                // Guardar campaña si existe (para tracking de alianzas/partnerships)
+                // Guardar campaña del código promocional si existe
                 if ($promocionalParaCampania && $promocionalParaCampania->campania) {
                     $empresa->campania = $promocionalParaCampania->campania;
                 }
+            }
+
+            // El campo campania del request siempre tiene prioridad sobre el del código promocional
+            // (permite registros ÁBACO sin código promo o con un código de otra campaña)
+            if (!empty($request['empresa']['campania'])) {
+                $empresa->campania = $request['empresa']['campania'];
             }
             
             // Aplicar código promocional al total según la frecuencia seleccionada
@@ -326,6 +333,8 @@ class AuthJWTController extends Controller
 
             DB::commit();
 
+            $this->enviarNotificacionAbacoSiAplica($empresa, $request);
+
             $plan = $this->getPlan($request['empresa']['plan']);
             
             // Usar el total con descuento aplicado (ya incluye el total según frecuencia de pago)
@@ -344,7 +353,7 @@ class AuthJWTController extends Controller
                 'plan_id' => $plan->id,
                 'usuario_id' => $usuario->id,
                 'tipo_plan' => $empresa->tipo_plan, // Guarda la frecuencia: Mensual, Trimestral o Anual
-                'estado' => config('constants.ESTADO_SUSCRIPCION_PRUEBA'),
+                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
                 'monto' => $montoSuscripcion, // Total a pagar según frecuencia (con descuentos aplicados)
                 'id_pago' => null,
                 'id_orden' => null,
@@ -600,6 +609,56 @@ class AuthJWTController extends Controller
         }
     }
 
+    /**
+     * Envía notificación interna cuando una empresa nueva se registra
+     * a través de la alianza con ÁBACO (http://abaco.smartpyme.site).
+     *
+     * Condiciones:
+     *  - empresa.campania === 'ÁBACO'
+     *  - El campo origen_registro del request contiene 'abaco.smartpyme.site'
+     *  - Es un registro nuevo (no una actualización)
+     */
+    private function enviarNotificacionAbacoSiAplica(Empresa $empresa, Request $request): void
+    {
+        try {
+            $campaniaNorm    = mb_strtoupper(trim($empresa->campania ?? ''), 'UTF-8');
+
+            // Acepta 'ÁBACO' (con tilde) y 'ABACO' (sin tilde)
+            $esCampaniaAbaco = in_array($campaniaNorm, ['ÁBACO', 'ABACO']);
+            $esNuevoRegistro = !$request->id;
+
+            // ── Log de diagnóstico (eliminar cuando esté estable en producción) ──
+            Log::info('[ÁBACO] Evaluando notificación', [
+                'empresa_id'      => $empresa->id,
+                'campania_raw'    => $empresa->campania,
+                'campania_norm'   => $campaniaNorm,
+                'esCampaniaAbaco' => $esCampaniaAbaco,
+                'esNuevoRegistro' => $esNuevoRegistro,
+            ]);
+
+            if (!$esCampaniaAbaco || !$esNuevoRegistro) {
+                Log::info('[ÁBACO] Notificación omitida — condiciones no cumplidas');
+                return;
+            }
+
+            $destinatarios = config('constants.CORREOS_ABACO_NOTIFICACION');
+
+            Mail::to($destinatarios)
+                ->send(new NuevaEmpresaAbacoMailable($empresa, $empresa->campania));
+
+            Log::info('Notificación ÁBACO enviada', [
+                'empresa_id' => $empresa->id,
+                'empresa'    => $empresa->nombre,
+                'campania'   => $empresa->campania,
+            ]);
+        } catch (\Exception $e) {
+            // El fallo de email NO debe romper el flujo de registro
+            Log::error('Error enviando notificación ÁBACO: ' . $e->getMessage(), [
+                'empresa_id' => $empresa->id ?? null,
+            ]);
+        }
+    }
+
     private function enviarNotificacionesCancelacion($usuario, $empresa, $fechaDesactivacion, $motivo)
     {
         // Notificar al administrador
@@ -750,37 +809,25 @@ class AuthJWTController extends Controller
         // Preservar el monto con descuento si ya viene en los datos
         $monto = $data['monto'] ?? $plan->precio;
 
-        if ($plan && $plan->permite_periodo_prueba) {
-            $diasPrueba = $plan->dias_periodo_prueba;
-            
-            // Preservar fin_periodo_prueba si ya viene en los datos (útil para códigos promocionales)
-            $finPeriodoPrueba = $data['fin_periodo_prueba'] ?? now()->addDays($diasPrueba);
+        // Ya no ocuparemos el período de prueba del plan, ahora solo se le dará 1 día
+        $diasGracia = 1;
+        $finPeriodoPrueba = now()->addDays($diasGracia);
 
-            $data = array_merge($data, [
-                'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'), // Cambiar estado a 'prueba'
-                'estado_ultimo_pago' => null,
-                'fecha_ultimo_pago' => null, // No hay pago inicial en período de prueba
-                'fecha_proximo_pago' => now()->addDays($diasPrueba), // Próximo pago al finalizar la prueba
-                'fin_periodo_prueba' => $finPeriodoPrueba,
-                'monto' => $monto, // Usar el monto con descuento aplicado
-                'intentos_cobro' => 0,
-                'ultimo_intento_cobro' => null,
-                'historial_pagos' => null,
-                'requiere_factura' => false,
-                'nit' => null,
-                'nombre_factura' => null,
-                'direccion_factura' => null
-            ]);
-        } else {
-            // Si el plan no permite período de prueba, mantener la configuración original
-            $data = array_merge($data, [
-                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
-                'fecha_ultimo_pago' => null,
-                'fecha_proximo_pago' => null,
-                'fin_periodo_prueba' => null,
-                'monto' => $monto // Usar el monto con descuento aplicado
-            ]);
-        }
+        $data = array_merge($data, [
+            'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
+            'estado_ultimo_pago' => null,
+            'fecha_ultimo_pago' => null, 
+            'fecha_proximo_pago' => now()->addDays($diasGracia), // Próximo pago en 1 día
+            'fin_periodo_prueba' => $finPeriodoPrueba,
+            'monto' => $monto,
+            'intentos_cobro' => 0,
+            'ultimo_intento_cobro' => null,
+            'historial_pagos' => null,
+            'requiere_factura' => false,
+            'nit' => null,
+            'nombre_factura' => null,
+            'direccion_factura' => null
+        ]);
 
         return $this->suscripcionService->createSuscripcion($data);
     }

@@ -5,6 +5,7 @@ namespace App\Console;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class Kernel extends ConsoleKernel
 {
@@ -16,6 +17,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         'App\Console\Commands\Notificaciones',
         'App\Console\Commands\VerificarSuscripcion',
+        'App\Console\Commands\GenerarFacturasSuscripciones',
         'App\Console\Commands\cliente360\CalcularClientes360Command',
     ];
 
@@ -82,6 +84,11 @@ class Kernel extends ConsoleKernel
             ->at('01:00')
             ->appendOutputTo(storage_path('logs/verificar-suscripciones.log'));
 
+        $schedule->command('facturas:generar-suscripciones')
+            ->monthlyOn(1, '08:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/facturas-generar-suscripciones.log'));
+
         $schedule->command('suscripciones:enviar-recordatorios-correo')
             ->dailyAt('08:00')
             ->withoutOverlapping()
@@ -101,6 +108,23 @@ class Kernel extends ConsoleKernel
             ->monthlyOn(1, '08:15')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/suscripciones-reporte-flujo-caja-mensual.log'));
+
+        foreach ([7, 15, 22, 31] as $diaReporteCategoriaSucursal) {
+            $schedule->command('reporte:ventas-por-categoria-sucursal')
+                ->monthlyOn($diaReporteCategoriaSucursal, '08:00')
+                ->withoutOverlapping()
+                ->appendOutputTo(storage_path('logs/reporte-ventas-categoria-sucursal.log'));
+        }
+
+        $schedule->command('reporte:ventas-por-categoria-sucursal')
+            ->lastDayOfMonth('08:00')
+            ->when(function () {
+                $today = Carbon::today();
+
+                return $today->isLastOfMonth() && $today->day !== 31;
+            })
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/reporte-ventas-categoria-sucursal.log'));
 
         // ============================================
         // ACTUALIZACIÓN DE AGREGADOS CLIENTE360
@@ -135,6 +159,12 @@ class Kernel extends ConsoleKernel
         $schedule->call(function () {
             Log::info('Working');
         })->daily();
+
+        // Sync DTE email accounts every hour (download DTEs from connected mailboxes)
+        $schedule->command('dte:sync-accounts --dias=30')
+            ->hourly()
+            ->withoutOverlapping(30)
+            ->appendOutputTo(storage_path('logs/dte-sync.log'));
     }
 
     /**

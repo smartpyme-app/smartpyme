@@ -33,6 +33,17 @@ trait HasOffloadedDte
         return null;
     }
 
+    public function setDteAttribute($value): void
+    {
+        if ($value === null || $value === '') {
+            $this->attributes['dte'] = null;
+            return;
+        }
+        $this->attributes['dte'] = is_array($value)
+            ? json_encode($value, JSON_UNESCAPED_UNICODE)
+            : $value;
+    }
+
     public function getDteInvalidacionAttribute($value)
     {
         $raw = $this->attributes['dte_invalidacion'] ?? null;

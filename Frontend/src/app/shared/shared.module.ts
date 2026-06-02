@@ -31,11 +31,13 @@ import { CrearCategoriaGastoComponent } from './modals/crear-categoria-gasto/cre
 import { CrearCargoEmpleadoComponent } from './modals/crear-cargo-empleado/crear-cargo-empleado.component';
 import { CrearProveedorComponent } from './modals/crear-proveedor/crear-proveedor.component';
 import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.component';
+import { ClienteNotaModalComponent } from './modals/cliente-nota-modal/cliente-nota-modal.component';
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
 import { CrearAjusteLoteComponent } from './modals/crear-ajuste-lote/crear-ajuste-lote.component';
 import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
 import { CrearAbonoGastoComponent } from './modals/crear-abono-gasto/crear-abono-gasto.component';
+import { EditarAbonoComponent } from './modals/editar-abono/editar-abono.component';
 import { CrearEventoComponent } from './modals/crear-evento/crear-evento.component';
 import { CrearProyectoComponent } from './modals/crear-proyecto/crear-proyecto.component';
 import { CrearImpuestoComponent } from './modals/crear-impuesto/crear-impuesto.component';
@@ -99,11 +101,13 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     CrearCargoEmpleadoComponent,
     CrearProveedorComponent,
     CrearClienteComponent,
+    ClienteNotaModalComponent,
     CrearAjusteComponent,
     CrearAjusteLoteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearAbonoGastoComponent,
+    EditarAbonoComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
     CrearImpuestoComponent,
@@ -139,11 +143,13 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     CrearCargoEmpleadoComponent,
     CrearProveedorComponent,
     CrearClienteComponent,
+    ClienteNotaModalComponent,
     CrearAjusteComponent,
     CrearAjusteLoteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearAbonoGastoComponent,
+    EditarAbonoComponent,
     CrearEventoComponent,
     CrearImpuestoComponent,
     CrearDepartamentoComponent,

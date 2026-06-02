@@ -211,8 +211,13 @@ class GastosController extends Controller
                 $gasto = new Gasto();
             }
 
-            $headerData = $request->except(['detalles', 'varios_items', 'concepto', 'sub_total', 'iva', 'renta_retenida', 'iva_percibido', 'total', 'tipo', 'impuesto', 'renta', 'percepcion']);
+            $headerData = $request->except([
+                'detalles', 'varios_items', 'concepto', 'sub_total', 'iva', 'renta_retenida',
+                'iva_retenido', 'iva_percibido', 'total', 'tipo', 'impuesto', 'renta', 'percepcion',
+                'retencion', 'dte',
+            ]);
             $gasto->fill($headerData);
+            $this->aplicarIdentificadoresDteImportado($gasto, $request);
 
             if ($tieneMultiplesItems) {
                 $this->guardarConDetalles($gasto, $request->detalles, $request->input('tipo'));
@@ -220,6 +225,7 @@ class GastosController extends Controller
                 $gasto->sub_total = $request->sub_total ?? 0;
                 $gasto->iva = $request->iva ?? 0;
                 $gasto->renta_retenida = $request->renta_retenida ?? 0;
+                $gasto->iva_retenido = $request->iva_retenido ?? 0;
                 $gasto->iva_percibido = $request->iva_percibido ?? 0;
                 $gasto->total = $request->total ?? 0;
                 $gasto->concepto = $request->concepto;
@@ -250,6 +256,7 @@ class GastosController extends Controller
         $subTotal = 0;
         $iva = 0;
         $rentaRetenida = 0;
+        $ivaRetenido = 0;
         $ivaPercibido = 0;
         $total = 0;
 
@@ -257,11 +264,13 @@ class GastosController extends Controller
             $sub = (float) ($d['sub_total'] ?? 0);
             $iv = (float) ($d['iva'] ?? 0);
             $renta = (float) ($d['renta_retenida'] ?? 0);
+            $ivaRet = (float) ($d['iva_retenido'] ?? 0);
             $perc = (float) ($d['iva_percibido'] ?? 0);
-            $tot = (float) ($d['total'] ?? $sub + $iv - $renta + $perc);
+            $tot = (float) ($d['total'] ?? $sub + $iv - $renta - $ivaRet + $perc);
             $subTotal += $sub;
             $iva += $iv;
             $rentaRetenida += $renta;
+            $ivaRetenido += $ivaRet;
             $ivaPercibido += $perc;
             $total += $tot;
         }
@@ -269,6 +278,7 @@ class GastosController extends Controller
         $gasto->sub_total = round($subTotal, 2);
         $gasto->iva = round($iva, 2);
         $gasto->renta_retenida = round($rentaRetenida, 2);
+        $gasto->iva_retenido = round($ivaRetenido, 2);
         $gasto->iva_percibido = round($ivaPercibido, 2);
         $gasto->total = round($total, 2);
         $gasto->save();
@@ -279,8 +289,9 @@ class GastosController extends Controller
             $sub = (float) ($d['sub_total'] ?? 0);
             $iv = (float) ($d['iva'] ?? 0);
             $renta = (float) ($d['renta_retenida'] ?? 0);
+            $ivaRet = (float) ($d['iva_retenido'] ?? 0);
             $perc = (float) ($d['iva_percibido'] ?? 0);
-            $tot = (float) ($d['total'] ?? $sub + $iv - $renta + $perc);
+            $tot = (float) ($d['total'] ?? $sub + $iv - $renta - $ivaRet + $perc);
 
             $idCategoriaLinea = $d['id_categoria'] ?? null;
             if ($idCategoriaLinea === '' || $idCategoriaLinea === false) {
@@ -301,11 +312,13 @@ class GastosController extends Controller
                 'sub_total' => $sub,
                 'iva' => $iv,
                 'renta_retenida' => $renta,
+                'iva_retenido' => $ivaRet,
                 'iva_percibido' => $perc,
                 'total' => $tot,
                 'aplica_iva' => ($d['tipo_gravado'] ?? '') === 'gravada',
                 'aplica_renta' => !empty($d['aplica_renta']),
                 'aplica_percepcion' => !empty($d['aplica_percepcion']),
+                'aplica_retencion_iva' => !empty($d['aplica_retencion_iva']),
                 'area_empresa' => $d['area_empresa'] ?? null,
                 'id_proyecto' => $d['id_proyecto'] ?? null,
             ]);
@@ -344,11 +357,13 @@ class GastosController extends Controller
             'sub_total' => $gasto->sub_total ?? 0,
             'iva' => $gasto->iva ?? 0,
             'renta_retenida' => $gasto->renta_retenida ?? 0,
+            'iva_retenido' => $gasto->iva_retenido ?? 0,
             'iva_percibido' => $gasto->iva_percibido ?? 0,
             'total' => $gasto->total ?? 0,
             'aplica_iva' => !empty($request->impuesto),
             'aplica_renta' => !empty($request->renta),
             'aplica_percepcion' => !empty($request->percepcion),
+            'aplica_retencion_iva' => !empty($request->retencion),
             'area_empresa' => $request->area_empresa ?? null,
             'id_proyecto' => $request->id_proyecto ?? null,
         ]);
@@ -520,6 +535,11 @@ class GastosController extends Controller
                     $gasto->renta_retenida = $resumen['reteRenta'];
                 }
 
+                // IVA retenido (1 % — compras a gran contribuyente, etc.)
+                if (isset($resumen['ivaRete1']) && (float) $resumen['ivaRete1'] > 0) {
+                    $gasto->iva_retenido = (float) $resumen['ivaRete1'];
+                }
+
                 // Percepción
                 if (isset($resumen['ivaPerci1']) && $resumen['ivaPerci1'] > 0) {
                     $gasto->iva_percibido = $resumen['ivaPerci1'];
@@ -671,6 +691,38 @@ class GastosController extends Controller
 
         // Categoría predeterminada
         return 'Gastos varios';
+    }
+
+    /**
+     * Persiste código de generación, número de control y DTE importado desde el frontend.
+     */
+    private function aplicarIdentificadoresDteImportado(Gasto $gasto, Request $request): void
+    {
+        if ($request->has('codigo_generacion')) {
+            $codigo = trim((string) $request->input('codigo_generacion', ''));
+            $gasto->codigo_generacion = $codigo !== '' ? $codigo : null;
+        }
+
+        if ($request->has('numero_control')) {
+            $numero = trim((string) $request->input('numero_control', ''));
+            $gasto->numero_control = $numero !== '' ? $numero : null;
+        }
+
+        if ($request->filled('tipo_dte')) {
+            $gasto->tipo_dte = $request->input('tipo_dte');
+        }
+
+        if ($request->has('dte')) {
+            $dte = $request->input('dte');
+            if (is_array($dte) && !empty($dte)) {
+                $gasto->dte = $dte;
+            } elseif (is_string($dte) && $dte !== '') {
+                $decoded = json_decode($dte, true);
+                $gasto->dte = is_array($decoded) ? $decoded : null;
+            } else {
+                $gasto->dte = null;
+            }
+        }
     }
 
     public function getNumerosIdentificacion(){

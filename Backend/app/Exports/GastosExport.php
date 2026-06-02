@@ -40,6 +40,7 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
             'Registro',
             'Subtotal',
             'IVA',
+            'IVA retenido',
             'Total',
             'Observaciones',
         ];
@@ -103,6 +104,7 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
               $row->proveedor()->pluck('ncr')->first(),
               number_format($row->sub_total,2),
               number_format($row->iva,2),
+              number_format($row->iva_retenido ?? 0, 2),
               number_format($row->total,2),
               $row->nota,
          ];

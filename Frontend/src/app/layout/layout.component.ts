@@ -1,21 +1,25 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { SpeedDialComponent } from '../shared/speed-dial/speed-dial.component';
 import { Router } from '@angular/router';
 import { AppConstants } from '../constants/app.constants';
+import { DteDocumentService } from '@services/dte-management/dte-document.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
+import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
 
 @Component({
   selector: 'app-layout',
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.css'],
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
   public usuario: any = {};
   public elem: any;
   public isfullscreen: boolean = false;
   public isVisible: boolean = false;
   public visibleAlertMessage: boolean = false;
+  public showDteReviewModal = false;
+  public dtePendingReviewCount = 0;
 
   readonly ESTADOS_SUSCRIPCION = AppConstants.ESTADOS_SUSCRIPCION;
   readonly DIAS_PRORROGA_SUSCRIPCION = AppConstants.DIAS_PRORROGA_SUSCRIPCION;
@@ -25,7 +29,9 @@ export class LayoutComponent {
   constructor(
     public apiService: ApiService,
     public alertService: AlertService,
-    private router: Router
+    private router: Router,
+    private dteDocumentService: DteDocumentService,
+    private funcionalidadesService: FuncionalidadesService
   ) {}
 
   ngOnInit() {
@@ -33,6 +39,43 @@ export class LayoutComponent {
     this.mostrarAlertaSuscripcion();
 
     this.getAlertSuscription();
+    this.checkDtePendingReviewAlert();
+  }
+
+  private checkDtePendingReviewAlert(): void {
+    const userId = this.usuario?.id;
+    if (!userId || this.dteDocumentService.isReviewAlertDismissed(userId)) {
+      return;
+    }
+
+    this.funcionalidadesService.verificarAcceso(SLUG_DESCARGA_AUTOMATIZADA_DTES).subscribe({
+      next: (tieneAcceso) => {
+        if (!tieneAcceso) {
+          return;
+        }
+        this.dteDocumentService.getPendingReviewAlert().subscribe({
+          next: (res) => {
+            if (res.show_alert && res.pending_count > 0) {
+              this.dtePendingReviewCount = res.pending_count;
+              this.showDteReviewModal = true;
+            }
+          },
+          error: () => {}
+        });
+      }
+    });
+  }
+
+  dismissDteReviewAlert(): void {
+    if (this.usuario?.id) {
+      this.dteDocumentService.dismissReviewAlert(this.usuario.id);
+    }
+    this.showDteReviewModal = false;
+  }
+
+  goToDteReview(): void {
+    this.dismissDteReviewAlert();
+    this.router.navigate(['/dte-management/dtes']);
   }
 
   RedirectSuscripcion() {

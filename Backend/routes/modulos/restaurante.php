@@ -23,10 +23,13 @@ Route::prefix('restaurante')
         Route::get('/sesiones-mesa/{id}', [SesionMesaController::class, 'show']);
         Route::put('/sesiones-mesa/{id}', [SesionMesaController::class, 'update']);
         Route::put('/sesiones-mesa/{id}/cerrar', [SesionMesaController::class, 'cerrar']);
+        Route::put('/sesiones-mesa/{id}/reactivar-consumo', [SesionMesaController::class, 'reactivarConsumo']);
+        Route::post('/sesiones-mesa/{id}/trasladar-items', [SesionMesaController::class, 'trasladarItems']);
 
         // Órdenes (items por sesión)
         Route::post('/sesiones-mesa/{id}/items', [OrdenDetalleController::class, 'store']);
         Route::put('/sesiones-mesa/{sesionId}/items/{itemId}', [OrdenDetalleController::class, 'update']);
+        Route::post('/sesiones-mesa/{sesionId}/items/{itemId}/eliminar', [OrdenDetalleController::class, 'eliminar']);
         Route::delete('/sesiones-mesa/{sesionId}/items/{itemId}', [OrdenDetalleController::class, 'destroy']);
 
         // Comandas

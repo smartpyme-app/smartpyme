@@ -47,7 +47,7 @@ export class GastoComponent implements OnInit {
 
   readonly TIPOS_CATEGORIA = [
     'Alquiler', 'Combustible', 'Costo de venta', 'Gastos varios', 'Insumos',
-    'Impuestos', 'Gastos Administrativos', 'Mantenimiento', 'Marketing',
+    'Impuestos', 'Activo Fijo', 'Gastos Administrativos', 'Mantenimiento', 'Marketing',
     'Materia Prima', 'Servicios', 'Pago comisión', 'Planilla', 'Préstamos', 'Publicidad'
   ];
 
@@ -175,6 +175,8 @@ export class GastoComponent implements OnInit {
 
           if (this.gasto.iva_percibido > 0) this.gasto.percepcion = true;
 
+          if (parseFloat(this.gasto.iva_retenido) > 0) this.gasto.retencion = true;
+
           if (this.gasto.renta_retenida > 0)
             this.gasto.renta = true;
 
@@ -264,10 +266,14 @@ export class GastoComponent implements OnInit {
       this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
       this.gasto.id_sucursal = this.apiService.auth_user().id_sucursal;
       this.gasto.id_usuario = this.apiService.auth_user().id;
+      this.gasto.impuesto =
+        this.apiService.auth_user().empresa?.cobra_iva == 'Si';
       this.gasto.otros_impuestos = []; 
       this.gasto.impuestos_valores = [];
       this.gasto.area_empresa = '';
       this.gasto.id_area_empresa = null;
+      this.gasto.iva_retenido = 0;
+      this.gasto.retencion = false;
       this.varios_items = false;
       this.detalles = [];
 
@@ -506,6 +512,13 @@ export class GastoComponent implements OnInit {
         this.gasto.renta_retenida = 0;
     }
 
+    if(this.gasto.retencion) {
+        this.gasto.iva_retenido = (subtotal * 0.01).toFixed(2);
+        total -= parseFloat(this.gasto.iva_retenido);
+    } else {
+        this.gasto.iva_retenido = 0;
+    }
+
     if(this.gasto.percepcion) {
         this.gasto.iva_percibido = (subtotal * 0.01).toFixed(2);
         total += parseFloat(this.gasto.iva_percibido);
@@ -562,10 +575,12 @@ export class GastoComponent implements OnInit {
       sub_total: 0,
       iva: 0,
       renta_retenida: 0,
+      iva_retenido: 0,
       iva_percibido: 0,
       total: 0,
       aplica_iva: true,
       aplica_renta: false,
+      aplica_retencion_iva: false,
       aplica_percepcion: false,
       area_empresa: null,
       id_proyecto: this.gasto.id_proyecto || null,
@@ -597,6 +612,12 @@ export class GastoComponent implements OnInit {
     } else {
       d.renta_retenida = 0;
     }
+    if (d.aplica_retencion_iva) {
+      d.iva_retenido = parseFloat((sub * 0.01).toFixed(2));
+      total -= d.iva_retenido;
+    } else {
+      d.iva_retenido = 0;
+    }
     if (d.aplica_percepcion) {
       d.iva_percibido = parseFloat((sub * 0.01).toFixed(2));
       total += d.iva_percibido;
@@ -623,17 +644,19 @@ export class GastoComponent implements OnInit {
   }
 
   public recalcularTotalesDetalles() {
-    let st = 0, iv = 0, rr = 0, ip = 0, tot = 0;
+    let st = 0, iv = 0, rr = 0, ir = 0, ip = 0, tot = 0;
     this.detalles.forEach(d => {
       st += parseFloat(d.sub_total) || 0;
       iv += parseFloat(d.iva) || 0;
       rr += parseFloat(d.renta_retenida) || 0;
+      ir += parseFloat(d.iva_retenido) || 0;
       ip += parseFloat(d.iva_percibido) || 0;
       tot += parseFloat(d.total) || 0;
     });
     this.gasto.sub_total = parseFloat(st.toFixed(2));
     this.gasto.iva = parseFloat(iv.toFixed(2));
     this.gasto.renta_retenida = parseFloat(rr.toFixed(2));
+    this.gasto.iva_retenido = parseFloat(ir.toFixed(2));
     this.gasto.iva_percibido = parseFloat(ip.toFixed(2));
     this.gasto.total = parseFloat(tot.toFixed(2));
   }
@@ -691,10 +714,12 @@ export class GastoComponent implements OnInit {
           sub_total: parseFloat(d.sub_total) || 0,
           iva: parseFloat(d.iva) || 0,
           renta_retenida: parseFloat(d.renta_retenida) || 0,
+          iva_retenido: parseFloat(d.iva_retenido) || 0,
           iva_percibido: parseFloat(d.iva_percibido) || 0,
           total: parseFloat(d.total) || 0,
           aplica_iva: tg === 'gravada',
           aplica_renta: !!d.aplica_renta,
+          aplica_retencion_iva: !!d.aplica_retencion_iva,
           aplica_percepcion: !!d.aplica_percepcion,
           area_empresa: d.area_empresa || null,
           id_proyecto: d.id_proyecto || null,
@@ -707,6 +732,18 @@ export class GastoComponent implements OnInit {
       });
     } else {
       payload.varios_items = false;
+    }
+
+    const codigoGen = this.gasto.codigo_generacion;
+    if (codigoGen != null && String(codigoGen).trim() !== '') {
+      payload.codigo_generacion = String(codigoGen).trim();
+    }
+    const numeroCtrl = this.gasto.numero_control;
+    if (numeroCtrl != null && String(numeroCtrl).trim() !== '') {
+      payload.numero_control = String(numeroCtrl).trim();
+    }
+    if (this.gasto.tipo_dte) {
+      payload.tipo_dte = this.gasto.tipo_dte;
     }
 
     this.apiService.store('gasto', payload).subscribe(
@@ -883,7 +920,7 @@ export class GastoComponent implements OnInit {
         this.gasto.estado = 'Confirmado';
         this.gasto.tipo_documento = 'Factura';
         this.gasto.detalle_banco = '';
-        this.gasto.tipo = 'Gastos varios'; // Categoría predeterminada
+        this.gasto.tipo = '';
         this.gasto.id_categoria = null;
         this.gasto.id_proveedor = '';
         this.gasto.fecha = this.apiService.date();
@@ -906,6 +943,7 @@ export class GastoComponent implements OnInit {
 
         // Tipo de documento
         if (jsonData.identificacion.tipoDte) {
+          this.gasto.tipo_dte = jsonData.identificacion.tipoDte;
           const tiposDte: { [key: string]: string } = {
             '01': 'Factura',
             '03': 'Crédito fiscal',
@@ -920,10 +958,17 @@ export class GastoComponent implements OnInit {
             tiposDte[jsonData.identificacion.tipoDte] || 'Factura';
         }
 
-        // Valores para DTE
-        this.gasto.codigo_generacion =
-          jsonData.identificacion.codigoGeneracion || '';
-        this.gasto.numero_control = jsonData.identificacion.numeroControl || '';
+        // Identificadores MH (se muestran en inputs de solo lectura)
+        if (jsonData.identificacion.codigoGeneracion) {
+          this.gasto.codigo_generacion = String(
+            jsonData.identificacion.codigoGeneracion
+          ).trim();
+        }
+        if (jsonData.identificacion.numeroControl) {
+          this.gasto.numero_control = String(
+            jsonData.identificacion.numeroControl
+          ).trim();
+        }
       }
 
       // Mapear datos del proveedor
@@ -968,17 +1013,19 @@ export class GastoComponent implements OnInit {
 
             return {
               concepto: item.descripcion || '',
-              tipo: 'Gastos varios',
+              tipo: '',
               tipo_gravado: esGravada ? 'gravada' : 'no_sujeta',
               cantidad: cant,
               precio_unitario: precio,
               sub_total: parseFloat(sub.toFixed(2)),
               iva: parseFloat(iva.toFixed(2)),
               renta_retenida: 0,
+              iva_retenido: 0,
               iva_percibido: 0,
               total: parseFloat(total.toFixed(2)),
               aplica_iva: esGravada,
               aplica_renta: false,
+              aplica_retencion_iva: false,
               aplica_percepcion: false,
               area_empresa: null,
               id_proyecto: this.gasto.id_proyecto || null,
@@ -987,11 +1034,11 @@ export class GastoComponent implements OnInit {
 
           this.recalcularTotalesDetalles();
           this.gasto.concepto = items[0].descripcion;
-          this.gasto.tipo = this.determinarCategoria(items);
+          this.aplicarTipoGastoDesdeImportacion(items);
         } else {
           this.varios_items = false;
           this.detalles = [];
-          this.gasto.tipo = this.determinarCategoria(jsonData.cuerpoDocumento);
+          this.aplicarTipoGastoDesdeImportacion(jsonData.cuerpoDocumento);
         }
       }
 
@@ -1022,6 +1069,25 @@ export class GastoComponent implements OnInit {
         ) {
           this.gasto.renta_retenida = parseFloat(jsonData.resumen.reteRenta);
           this.gasto.renta = true;
+        }
+
+        // IVA retenido (resumen DTE: ivaRete1)
+        if (
+          jsonData.resumen.ivaRete1 != null &&
+          parseFloat(jsonData.resumen.ivaRete1) > 0
+        ) {
+          this.gasto.retencion = true;
+          if (this.varios_items && this.detalles.length) {
+            this.detalles.forEach((det: any) => {
+              const grav = det.tipo_gravado === 'gravada' || det.aplica_iva;
+              det.aplica_retencion_iva = grav;
+            });
+            this.detalles.forEach((_: any, idx: number) =>
+              this.recalcularDetalleLinea(idx)
+            );
+          } else {
+            this.gasto.iva_retenido = parseFloat(jsonData.resumen.ivaRete1);
+          }
         }
 
         // Percepción
@@ -1179,10 +1245,26 @@ export class GastoComponent implements OnInit {
     }
   }
 
+  /** Asigna tipo de gasto solo si se infiere por descripción del DTE; si no, queda vacío. */
+  private aplicarTipoGastoDesdeImportacion(items: any[]): void {
+    const categoria = this.determinarCategoria(items);
+    this.gasto.tipo = categoria || '';
+    if (categoria && this.varios_items && this.detalles.length) {
+      this.detalles.forEach((d: any) => {
+        d.tipo = categoria;
+      });
+    }
+  }
+
   /**
-   * Intenta determinar la categoría del gasto basándose en las descripciones de los ítems
+   * Intenta determinar la categoría del gasto basándose en las descripciones de los ítems.
+   * Devuelve null si no hay coincidencia (no se preselecciona tipo).
    */
-  private determinarCategoria(items: any[]) {
+  private determinarCategoria(items: any[]): string | null {
+    if (!items?.length) {
+      return null;
+    }
+
     // Palabras clave para cada categoría
     const categoriasKeywords: { [key: string]: string[] } = {
       Alquiler: ['alquiler', 'renta', 'arrendamiento', 'local'],
@@ -1206,20 +1288,26 @@ export class GastoComponent implements OnInit {
       Préstamos: ['préstamo', 'crédito', 'financiamiento'],
     };
 
-    // Concatenar todas las descripciones
     const descripcionCompleta = items
-      .map((item) => item.descripcion.toLowerCase())
+      .map((item) => String(item?.descripcion || '').toLowerCase())
       .join(' ');
 
-    // Buscar coincidencias con palabras clave
+    if (!descripcionCompleta.trim()) {
+      return null;
+    }
+
     for (const [categoria, keywords] of Object.entries(categoriasKeywords)) {
+      if (!this.TIPOS_CATEGORIA.includes(categoria)) {
+        continue;
+      }
       for (const keyword of keywords) {
         if (descripcionCompleta.includes(keyword.toLowerCase())) {
-          this.gasto.tipo = categoria;
-          return;
+          return categoria;
         }
       }
     }
+
+    return null;
   }
 
   public onImpuestoValorChange() {
@@ -1246,6 +1334,13 @@ export class GastoComponent implements OnInit {
       total -= parseFloat(this.gasto.renta_retenida);
     } else {
       this.gasto.renta_retenida = 0;
+    }
+
+    if (this.gasto.retencion) {
+      this.gasto.iva_retenido = (subtotal * 0.01).toFixed(2);
+      total -= parseFloat(this.gasto.iva_retenido);
+    } else {
+      this.gasto.iva_retenido = 0;
     }
   
     // Percepción

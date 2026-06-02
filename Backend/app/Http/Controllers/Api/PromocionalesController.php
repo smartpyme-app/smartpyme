@@ -7,6 +7,7 @@ use App\Models\Promocional;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 
 class PromocionalesController extends Controller
 {
@@ -131,6 +132,77 @@ class PromocionalesController extends Controller
             ->values();
 
         return response()->json($promocionales, 200);
+    }
+
+    /**
+     * Primer código promocional activo y vigente de una campaña (público, registro Ábaco).
+     */
+    public function porCampania(Request $request): JsonResponse
+    {
+        $request->validate([
+            'campania' => 'required|string',
+        ]);
+
+        $campaniaBusqueda = $this->normalizarCampania($request->campania);
+
+        $promocional = Promocional::where('activo', true)
+            ->orderBy('id')
+            ->get()
+            ->first(function (Promocional $item) use ($campaniaBusqueda) {
+                return $this->normalizarCampania($item->campania ?? '') === $campaniaBusqueda
+                    && $this->esPromocionalVigente($item);
+            });
+
+        if (!$promocional) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontró un código promocional activo para la campaña indicada',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->formatearPromocional($promocional),
+        ], 200);
+    }
+
+    private function normalizarCampania(?string $campania): string
+    {
+        return strtoupper(Str::ascii(trim((string) $campania)));
+    }
+
+    private function esPromocionalVigente(Promocional $promocional): bool
+    {
+        $opciones = $promocional->opciones ?? [];
+
+        if (isset($opciones['fecha_expiracion'])) {
+            $fechaExpiracion = Carbon::parse($opciones['fecha_expiracion']);
+            if (now()->gt($fechaExpiracion)) {
+                return false;
+            }
+        }
+
+        if (isset($opciones['fecha_inicio'])) {
+            $fechaInicio = Carbon::parse($opciones['fecha_inicio']);
+            if (now()->lt($fechaInicio)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function formatearPromocional(Promocional $promocional): array
+    {
+        return [
+            'codigo' => $promocional->codigo,
+            'descuento' => $promocional->descuento,
+            'tipo' => $promocional->tipo,
+            'campania' => $promocional->campania,
+            'descripcion' => $promocional->descripcion,
+            'planes_permitidos' => $promocional->planes_permitidos,
+            'opciones' => $promocional->opciones ?? [],
+        ];
     }
 
     /**

@@ -2,7 +2,7 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
-import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
+import { debounceTime, switchMap, filter, catchError, tap } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
@@ -31,6 +31,9 @@ export class TiendaVentaBuscadorComponent implements OnInit {
     public tieneShopify: boolean = false;
     public descripcionesExpandidas: { [key: number]: boolean } = {};
 
+    /** Mínimo de caracteres antes de llamar a la API (facturación). */
+    readonly minCaracteresBusqueda = 2;
+
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe
@@ -44,7 +47,12 @@ export class TiendaVentaBuscadorComponent implements OnInit {
         this.searchControl.valueChanges
           .pipe(
             debounceTime(500),
-            filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
+            tap((query: string | null) => {
+              if (String(query ?? '').trim().length < this.minCaracteresBusqueda) {
+                this.productos = [];
+              }
+            }),
+            filter((query: string | null) => String(query ?? '').trim().length >= this.minCaracteresBusqueda),
             switchMap((query: any) => {
               const q = this.normalizeBusqueda(query);
               const params: any = { query: q };
@@ -239,6 +247,10 @@ export class TiendaVentaBuscadorComponent implements OnInit {
             .trim()
             .replace(/[\r\n\u0000]+/g, '')
             .replace(/~+$/g, '');
+    }
+
+    get puedeMostrarResultadosBusqueda(): boolean {
+        return String(this.searchControl.value ?? '').trim().length >= this.minCaracteresBusqueda;
     }
 
     /**

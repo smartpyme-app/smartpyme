@@ -127,6 +127,22 @@ return [
             'level' => 'error',
             'days' => 30,
         ],
+        'facturacion' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/facturacion/facturacion.log'),
+            'level' => 'info',
+            'days' => 14,
+            'permission' => 0664,
+            'rotate' => true
+        ],
+        'shopify' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/shopify/shopify.log'),
+            'level' => 'info',
+            'days' => 14,
+            'permission' => 0664,
+            'rotate' => true
+        ],
     ],
 
 ];

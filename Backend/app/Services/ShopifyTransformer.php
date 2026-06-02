@@ -36,19 +36,6 @@ class ShopifyTransformer
         // Construir dirección completa
         $direccionCompleta = trim(($primaryAddress['address1'] ?? '') . ' ' . ($primaryAddress['address2'] ?? ''));
 
-        Log::info('=== TRANSFORMANDO CLIENTE DESDE SHOPIFY (PEDIDO) ===', [
-            'shopify_customer_id' => $customer['id'] ?? 'N/A',
-            'customer_email' => $customer['email'] ?? 'N/A',
-            'customer_name' => ($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? ''),
-            'billing_address' => $billingAddress,
-            'shipping_address' => $shippingAddress,
-            'default_address' => $defaultAddress,
-            'primary_address_used' => $primaryAddress,
-            'address_source' => $this->determinarFuenteDireccion($billingAddress, $shippingAddress, $defaultAddress),
-            'direccion_completa' => $direccionCompleta,
-            'shopify_order_id' => $shopifyData['id'] ?? 'N/A'
-        ]);
-
         $clienteData = [
             'nombre' => $customer['first_name'] ?? '',
             'apellido' => $customer['last_name'] ?? '',
@@ -70,12 +57,6 @@ class ShopifyTransformer
             'id_empresa' => $shopifyData['id_empresa'],
             'id_usuario' => $shopifyData['id_usuario'],
         ];
-
-        Log::info('=== DATOS DEL CLIENTE TRANSFORMADOS (PEDIDO) ===', [
-            'cliente_data' => $clienteData,
-            'shopify_customer_id' => $customer['id'] ?? 'N/A',
-            'shopify_order_id' => $shopifyData['id'] ?? 'N/A'
-        ]);
 
         return $clienteData;
     }
@@ -103,15 +84,6 @@ class ShopifyTransformer
         // Construir dirección completa
         $direccionCompleta = trim(($defaultAddress['address1'] ?? '') . ' ' . ($defaultAddress['address2'] ?? ''));
 
-        Log::info('=== TRANSFORMANDO CLIENTE DESDE WEBHOOK SHOPIFY ===', [
-            'shopify_customer_id' => $customer['id'] ?? 'N/A',
-            'customer_email' => $customer['email'] ?? 'N/A',
-            'customer_name' => ($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? ''),
-            'default_address' => $defaultAddress,
-            'direccion_completa' => $direccionCompleta,
-            'webhook_type' => 'customers/create o customers/update'
-        ]);
-
         $clienteData = [
             'nombre' => $customer['first_name'] ?? '',
             'apellido' => $customer['last_name'] ?? '',
@@ -134,11 +106,6 @@ class ShopifyTransformer
             'id_usuario' => $shopifyData['id_usuario'],
         ];
 
-        Log::info('=== DATOS DEL CLIENTE TRANSFORMADOS (WEBHOOK) ===', [
-            'cliente_data' => $clienteData,
-            'shopify_customer_id' => $customer['id'] ?? 'N/A'
-        ]);
-
         return $clienteData;
     }
 
@@ -158,20 +125,24 @@ class ShopifyTransformer
             $totalAPagar       = floatval($shopifyData['current_total_price'] ?? $shopifyData['total_price'] ?? 0);
             $totalIVA          = floatval($shopifyData['current_total_tax'] ?? $shopifyData['total_tax'] ?? 0);
             $totalEnvio        = floatval(Arr::get($shopifyData, 'total_shipping_price_set.shop_money.amount', 0));
-            $subtotalProductos = floatval($shopifyData['current_subtotal_price'] ?? $shopifyData['subtotal_price'] ?? ($totalAPagar - $totalEnvio));
 
-            $totalGravada = round($subtotalProductos - $totalIVA, 2); // 233.63
-            $totalExenta  = $totalEnvio;                               // 3.00
+            $envioTieneIva = false;
+            foreach ($shippingLines as $shipping) {
+                if (!empty($shipping['tax_lines'])) {
+                    $envioTieneIva = true;
+                    break;
+                }
+            }
 
-            Log::info("Totales venta (taxes_included=true, desde Shopify)", [
-                'current_total_price'    => $totalAPagar,
-                'current_total_tax'      => $totalIVA,
-                'current_subtotal_price' => $subtotalProductos,
-                'total_envio'            => $totalEnvio,
-                'gravada'                => $totalGravada,
-                'exenta'                 => $totalExenta,
-                'empresa_id'             => $empresaId,
-            ]);
+            if ($envioTieneIva) {
+                $totalGravada = round($totalAPagar - $totalIVA, 2);
+                $totalExenta  = 0.00;
+            } else {
+                $subtotalProductos = floatval($shopifyData['current_subtotal_price'] ?? $shopifyData['subtotal_price'] ?? ($totalAPagar - $totalEnvio));
+                $totalGravada = round($subtotalProductos - $totalIVA, 2);
+                $totalExenta  = $totalEnvio;
+            }
+
         } else {
             // Precios sin IVA: calcular línea por línea
             $totalGravada = 0.0;
@@ -211,19 +182,13 @@ class ShopifyTransformer
 
             $totalExenta = 0;
 
-            Log::info("Totales venta (taxes_included=false, suma de líneas)", [
-                'total_gravada' => $totalGravada,
-                'total_iva' => $totalIVA,
-                'total_a_pagar' => $totalAPagar,
-                'empresa_id' => $empresaId,
-            ]);
         }
 
         return [
             'codigo_generacion' => null,
             'estado' => $estado,
             'forma_pago' => $this->mapearFormaPago($shopifyData),
-            'observaciones' => $shopifyData['note'] ?? '',
+            'observaciones_shopify' => $shopifyData['note'] ?? '',
             'fecha' => date('Y-m-d', strtotime($shopifyData['created_at'])),
             'fecha_pago' => date('Y-m-d', strtotime($shopifyData['processed_at'] ?? $shopifyData['created_at'])),
             'total_costo' => 0,
@@ -320,16 +285,6 @@ class ShopifyTransformer
 
         $precioSinImpuesto = $cantidad > 0 ? round($subtotalLinea / $cantidad, 4) : 0;
 
-        Log::info("Procesando línea de item (reglas Hacienda)", [
-            'line_item_title' => $lineItem['title'] ?? 'N/A',
-            'taxes_included' => $taxesIncluded,
-            'total_con_iva' => $totalConIva,
-            'subtotal_linea' => $subtotalLinea,
-            'iva_linea' => $ivaLinea,
-            'total_recalculado' => $totalLinea,
-            'verificacion' => $subtotalLinea + $ivaLinea,
-        ]);
-
         return [
             'cantidad' => $lineItem['quantity'],
             'costo' => 0,
@@ -407,11 +362,6 @@ class ShopifyTransformer
 
         $estado = $mapeo[$shopifyStatus] ?? 'Pendiente';
 
-        // Log::info('Mapeando estado de pago', [
-        //     'shopify_status' => $shopifyStatus,
-        //     'estado_mapeado' => $estado
-        // ]);
-
         return $estado;
     }
 
@@ -480,26 +430,11 @@ class ShopifyTransformer
         $productoActivo = ($status === 'active') ? 1 : 0;
         
         if ($status !== 'active' && $status !== 'draft') {
-            Log::info("Producto omitido por status", [
-                'product_id' => $shopifyData['id'],
-                'status' => $status,
-                'titulo' => $shopifyData['title'] ?? 'Sin título'
-            ]);
             return [];
-        }
-        
-        if ($status === 'draft') {
-            Log::info("Producto draft incluido como inactivo", [
-                'product_id' => $shopifyData['id'],
-                'status' => $status,
-                'titulo' => $shopifyData['title'] ?? 'Sin título',
-                'sera_activo' => false
-            ]);
         }
 
         // Verificar que existan variants
         if (empty($shopifyData['variants']) || !is_array($shopifyData['variants'])) {
-            Log::warning("Producto sin variants válidos", ['product_id' => $shopifyData['id']]);
             return [];
         }
 
@@ -507,7 +442,6 @@ class ShopifyTransformer
         foreach ($shopifyData['variants'] as $variant) {
             // Verificar que el variant tenga los datos mínimos necesarios
             if (empty($variant['id'])) {
-                Log::warning("Variant sin ID válido", ['variant' => $variant]);
                 continue;
             }
 
@@ -516,18 +450,6 @@ class ShopifyTransformer
             
             // Obtener costo del variant, si no existe usar 0
             $costo = floatval($variant['cost'] ?? 0);
-            
-            Log::info("Procesando variant para producto", [
-                'product_id' => $shopifyData['id'],
-                'variant_id' => $variant['id'],
-                'nombre_base' => $nombreBase,
-                'nombre_variante' => $nombreVariante,
-                'precio' => $this->impuestosService->calcularPrecioSinImpuesto($variant['price'] ?? 0, $id_empresa),
-                'costo_original' => $variant['cost'] ?? 'no_existe',
-                'costo_asignado' => $costo,
-                'status_shopify' => $status,
-                'sera_activo' => $productoActivo == 1
-            ]);
 
             $precioConIva = floatval($variant['price'] ?? 0);
             $precioSinIva = $this->impuestosService->calcularPrecioSinImpuesto($precioConIva, $id_empresa);
@@ -620,23 +542,9 @@ class ShopifyTransformer
         // Si hay opciones reales, devolverlas como string
         if (!empty($opciones)) {
             $nombreVariante = implode(' - ', $opciones);
-            
-            Log::info("Nombre de variante construido", [
-                'opciones' => $opciones,
-                'nombre_variante' => $nombreVariante,
-                'variant_id' => $variant['id'] ?? 'N/A'
-            ]);
 
             return $nombreVariante;
         }
-
-        // Si no hay opciones reales, devolver null
-        Log::info("Variante sin opciones específicas", [
-            'variant_id' => $variant['id'] ?? 'N/A',
-            'option1' => $variant['option1'] ?? 'N/A',
-            'option2' => $variant['option2'] ?? 'N/A',
-            'option3' => $variant['option3'] ?? 'N/A'
-        ]);
 
         return null;
     }
@@ -717,13 +625,6 @@ class ShopifyTransformer
             }
         }
 
-        Log::info("Subtotal sin impuesto calculado (suma de subtotales de línea redondeados)", [
-            'subtotal_sin_impuesto' => $subtotalSinImpuesto,
-            'line_items_count' => count($lineItems),
-            'shipping_lines_count' => count($shippingLines),
-            'empresa_id' => $empresaId,
-        ]);
-
         return round($subtotalSinImpuesto, 2);
     }
 
@@ -747,12 +648,6 @@ class ShopifyTransformer
 
         // Redondear a 2 decimales para evitar problemas de precisión
         $precioSinImpuesto = round($precioSinImpuesto, 2);
-
-        Log::warning("Usando cálculo de impuesto hardcodeado (13%) - considera pasar empresaId", [
-            'precio_con_impuesto' => $precioConImpuesto,
-            'precio_sin_impuesto' => $precioSinImpuesto,
-            'impuesto_calculado' => $precioConImpuesto - $precioSinImpuesto
-        ]);
 
         return $precioSinImpuesto;
     }
@@ -826,11 +721,6 @@ class ShopifyTransformer
         if ($codigoMapeado !== null) {
             return $codigoMapeado;
         }
-
-        Log::warning('Código de departamento de Shopify no encontrado en el mapeo', [
-            'province_code' => $provinceCode,
-            'province_code_upper' => strtoupper(trim($provinceCode))
-        ]);
 
         return substr($provinceCode, 0, 10);
     }

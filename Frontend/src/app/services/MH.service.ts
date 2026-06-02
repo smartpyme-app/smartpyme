@@ -324,6 +324,7 @@ export class MHService {
                             venta.dte.sello = dte.selloRecibido;
                             venta.dte.selloRecibido = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
+                            venta.tipo_dte = venta.dte?.identificacion?.tipoDte;
                             this.apiService.store('venta', venta).subscribe(data => {
                                 resolve(data);
                             },error => {this.alertService.error(error); });

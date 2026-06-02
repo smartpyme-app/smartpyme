@@ -12,11 +12,16 @@ class Comanda extends Model
         'sesion_id',
         'numero_comanda',
         'estado',
+        'destino',
+        'eliminacion_item_enviado',
+        'motivo_eliminacion_codigo',
+        'motivo_eliminacion_detalle',
         'enviado_at',
     ];
 
     protected $casts = [
         'enviado_at' => 'datetime',
+        'eliminacion_item_enviado' => 'boolean',
     ];
 
     public function sesion()

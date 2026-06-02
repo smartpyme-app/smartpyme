@@ -181,6 +181,10 @@ class ComprasController extends Controller
 
         $compra = Compra::where('id', $request->id)->with('detalles')->firstOrFail();
 
+        if ($bloqueado = $this->respuestaComprasRestringidasSupervisorLimitado(auth()->user(), $compra->estado, $request->estado)) {
+            return $bloqueado;
+        }
+
             // Ajustar stocks
             foreach ($compra->detalles as $detalle) {
 
@@ -220,7 +224,8 @@ class ComprasController extends Controller
                 }
             }
         
-        $compra->fill($request->all());
+        $compra->fill($request->except(['detalles', 'dte']));
+        $this->aplicarIdentificadoresDteImportado($compra, $request);
         $compra->save();
 
         return Response()->json($compra, 200);
@@ -282,7 +287,8 @@ class ComprasController extends Controller
             else
                 $compra = new Compra;
 
-            $compra->fill($request->all());
+            $compra->fill($request->except(['detalles', 'dte']));
+            $this->aplicarIdentificadoresDteImportado($compra, $request);
             $compra->save();
 
 
@@ -897,6 +903,38 @@ class ComprasController extends Controller
     }
 
     /**
+     * Persiste código de generación, número de control y DTE importado desde el frontend.
+     */
+    private function aplicarIdentificadoresDteImportado(Compra $compra, Request $request): void
+    {
+        if ($request->has('codigo_generacion')) {
+            $codigo = trim((string) $request->input('codigo_generacion', ''));
+            $compra->codigo_generacion = $codigo !== '' ? $codigo : null;
+        }
+
+        if ($request->has('numero_control')) {
+            $numero = trim((string) $request->input('numero_control', ''));
+            $compra->numero_control = $numero !== '' ? $numero : null;
+        }
+
+        if ($request->filled('tipo_dte')) {
+            $compra->tipo_dte = $request->input('tipo_dte');
+        }
+
+        if ($request->has('dte')) {
+            $dte = $request->input('dte');
+            if (is_array($dte) && !empty($dte)) {
+                $compra->dte = $dte;
+            } elseif (is_string($dte) && $dte !== '') {
+                $decoded = json_decode($dte, true);
+                $compra->dte = is_array($decoded) ? $decoded : null;
+            } else {
+                $compra->dte = null;
+            }
+        }
+    }
+
+    /**
      * Slug en `funcionalidades` / super admin → empresas (FuncionalidadesSeeder).
      */
     private function empresaTieneImportacionMasivaComprasJson(?int $idEmpresa): bool
@@ -912,6 +950,29 @@ class ComprasController extends Controller
             ->where('id_funcionalidad', $funcionalidad->id)
             ->where('activo', 1)
             ->exists();
+    }
+
+    /**
+     * Empresa configurada para impedir que Supervisor limitado altere el estado de compras.
+     */
+    private function respuestaComprasRestringidasSupervisorLimitado($user, ?string $estadoActual, ?string $estadoNuevo): ?\Illuminate\Http\JsonResponse
+    {
+        if (!$user || ($user->tipo ?? null) !== 'Supervisor Limitado') {
+            return null;
+        }
+
+        $empresa = $user->empresa ?? null;
+        if (!$empresa || !($empresa->restringir_compras_supervisor_limitado ?? false)) {
+            return null;
+        }
+
+        if ($estadoActual !== $estadoNuevo) {
+            return Response()->json([
+                'error' => 'La empresa tiene activa la opción de restringir compras para usuarios Supervisor limitado.',
+            ], 403);
+        }
+
+        return null;
     }
 
 

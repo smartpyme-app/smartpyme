@@ -20,6 +20,10 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class
         ],
+        \App\Events\DteValidated::class => [
+            \App\Listeners\InsertDteIntoIvaModule::class,
+            \App\Listeners\NotifyAccountingModule::class,
+        ],
     ];
 
     protected $subscribe = [

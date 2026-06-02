@@ -15,6 +15,7 @@ export class ProductoComponent implements OnInit {
 	public producto: any = {};
 	public categorias:any[] = [];
   public loading = false;
+  public lotesRefreshKey = 0;
 
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
@@ -54,6 +55,13 @@ export class ProductoComponent implements OnInit {
 
 	}
 
-	
+	onProductoGuardado(producto: any) {
+		if (producto?.id) {
+			Object.assign(this.producto, producto);
+		}
+		if (this.producto.inventario_por_lotes || producto?.migracion_lotes) {
+			this.lotesRefreshKey++;
+		}
+	}
 
 }

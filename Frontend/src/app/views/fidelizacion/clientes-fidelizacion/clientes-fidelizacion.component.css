@@ -1,0 +1,111 @@
+.clientes-fid-table .col-cliente {
+    min-width: 220px;
+    max-width: 320px;
+}
+
+.clientes-fid-table .col-correo {
+    min-width: 160px;
+    max-width: 240px;
+    word-break: break-word;
+}
+
+.clientes-fid-table .col-telefono {
+    min-width: 110px;
+    white-space: nowrap;
+}
+
+.clientes-fid-table .col-nivel {
+    min-width: 100px;
+    white-space: nowrap;
+}
+
+.clientes-fid-table .cliente-celda {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.clientes-fid-table .cliente-nombre {
+    font-weight: 400;
+    color: #1e293b;
+    line-height: 1.3;
+}
+
+.clientes-fid-table .cliente-tipo-sub {
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.2;
+    color: #64748b;
+}
+
+.clientes-fid-badge {
+    display: inline-block;
+    padding: 0.35em 0.75em;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    line-height: 1.3;
+}
+
+.badge-fid-nivel-1 {
+    background-color: #f1f5f9;
+    color: #475569;
+    border-color: #e2e8f0;
+}
+
+.badge-fid-nivel-2 {
+    background-color: #fef9c3;
+    color: #a16207;
+    border-color: #fde68a;
+}
+
+.badge-fid-nivel-3 {
+    background-color: #ede9fe;
+    color: #6d28d9;
+    border-color: #ddd6fe;
+}
+
+.badge-fid-nivel-default {
+    background-color: #ecfeff;
+    color: #0e7490;
+    border-color: #a5f3fc;
+}
+
+.badge-fid-empresa {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.badge-fid-persona {
+    background-color: #d1fae5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.badge-fid-extranjero {
+    background-color: #ffedd5;
+    color: #c2410c;
+    border-color: #fed7aa;
+}
+
+.badge-fid-tipo-default {
+    background-color: #f8fafc;
+    color: #64748b;
+    border-color: #e2e8f0;
+}
+
+.clientes-fid-table .puntos-valor {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.clientes-fid-table .puntos-valor--disponibles {
+    color: #2563eb;
+}
+
+.clientes-fid-table .puntos-valor--acumulados {
+    color: #059669;
+}
