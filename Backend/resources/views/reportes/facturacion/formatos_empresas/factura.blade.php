@@ -127,6 +127,7 @@
                 <p id="total"> <b>$ {{ number_format($venta->total, 2) }}</b></p>
             @endif
         </div>
+        @include('reportes.facturacion.partials.documento-nota')
     </section>
 
 </body>

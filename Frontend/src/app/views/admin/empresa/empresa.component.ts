@@ -1165,6 +1165,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
                 gastos_categorias_personalizadas: false, // Categorías de gasto BD, departamentos y áreas en gastos
                 estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
+                mostrar_nota_documento_impresion: false, // Mostrar nota del documento al imprimir en facturación
                 vista_modulo_restaurante_pedidos: 'ambos' as 'restaurante' | 'pedidos' | 'ambos', // Menú lateral: restaurante, pedidos o ambos
                 sku_correlativo_automatico: false, // obsoleto: migrar a barcode_correlativo_automatico; se lee por compatibilidad
                 barcode_correlativo_automatico: false, // Código de barras correlativo automático al crear productos
@@ -1502,6 +1503,31 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 activo
                     ? 'Categorías de gastos personalizadas habilitadas.'
                     : 'Categorías de gastos personalizadas deshabilitadas.'
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    // Nota del documento en impresión de facturación
+    public isMostrarNotaDocumentoImpresion(): boolean {
+        return this.getCustomConfig('configuraciones', 'mostrar_nota_documento_impresion', false);
+    }
+
+    public toggleMostrarNotaDocumentoImpresion() {
+        this.updateMostrarNotaDocumentoImpresion(!this.isMostrarNotaDocumentoImpresion());
+    }
+
+    public updateMostrarNotaDocumentoImpresion(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'mostrar_nota_documento_impresion', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Nota en impresión ${activo ? 'habilitada' : 'deshabilitada'} correctamente`
             );
             const authUser = this.apiService.auth_user();
             if (authUser?.empresa?.id === this.empresa?.id) {

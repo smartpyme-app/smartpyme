@@ -795,6 +795,14 @@ class Empresa extends Model
     }
 
     /**
+     * Mostrar la nota configurada en el documento (Factura, Ticket, etc.) al imprimir.
+     */
+    public function mostrarNotaDocumentoImpresion(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'mostrar_nota_documento_impresion', false);
+    }
+
+    /**
      * Verificar si el campo componente químico está habilitado para la empresa
      */
     public function isComponenteQuimicoHabilitado(): bool
