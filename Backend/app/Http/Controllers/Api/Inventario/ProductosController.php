@@ -304,9 +304,11 @@ class ProductosController extends Controller
         foreach ($productos as $producto) {
 
             // Stock base en la bodega solicitada (o total global si no se filtra)
-            $stockBase = $id_bodega
-                ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
-                : (float) $producto->inventarios->sum('stock');
+            $stockBase = $producto->tipo === 'Servicio'
+                ? null
+                : ($id_bodega
+                    ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
+                    : (float) $producto->inventarios->sum('stock'));
 
             // Fila del producto base
             $resultado[] = array_merge($producto->toArray(), [
@@ -325,7 +327,9 @@ class ProductosController extends Controller
 
                     $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
 
-                    $stockEmpaque = $factor > 0 ? round($stockBase / $factor, 4) : $stockBase;
+                    $stockEmpaque = $stockBase === null
+                        ? null
+                        : ($factor > 0 ? round($stockBase / $factor, 4) : $stockBase);
 
                     $resultado[] = array_merge($producto->toArray(), [
                         'id_producto'      => $producto->id,
@@ -410,9 +414,11 @@ class ProductosController extends Controller
         foreach ($productos as $producto) {
 
             // Stock base en la bodega solicitada (o total global si no se filtra)
-            $stockBase = $id_bodega
-                ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
-                : (float) $producto->inventarios->sum('stock');
+            $stockBase = $producto->tipo === 'Servicio'
+                ? null
+                : ($id_bodega
+                    ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
+                    : (float) $producto->inventarios->sum('stock'));
 
             // Fila del producto base
             $resultado[] = array_merge($producto->toArray(), [
@@ -431,7 +437,9 @@ class ProductosController extends Controller
 
                     $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
 
-                    $stockEmpaque = $factor > 0 ? round($stockBase / $factor, 4) : $stockBase;
+                    $stockEmpaque = $stockBase === null
+                        ? null
+                        : ($factor > 0 ? round($stockBase / $factor, 4) : $stockBase);
 
                     $resultado[] = array_merge($producto->toArray(), [
                         'id_producto'      => $producto->id,

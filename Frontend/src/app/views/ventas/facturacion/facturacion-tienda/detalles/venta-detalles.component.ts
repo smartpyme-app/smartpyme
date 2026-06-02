@@ -168,8 +168,13 @@ export class VentaDetallesComponent implements OnInit {
     // Agregar detalle
         productoSelect(producto:any):void{
 
+            if (producto.tipo === 'Servicio') {
+                this.addDetalle(producto);
+                return;
+            }
+
             // Validar stock solo para productos (no servicios)
-            if (producto.tipo != 'Servicio' && producto.stock !== null && producto.stock !== undefined) {
+            if (producto.stock !== null && producto.stock !== undefined) {
                 // Verificar si hay suficiente stock para la cantidad solicitada
                 const stockDisponible = parseFloat(producto.stock) || 0;
                 const cantidadRequerida = parseFloat(producto.cantidad) || 1;
