@@ -7,7 +7,31 @@ import { DashboardAnalyticsApiService } from './dashboard-analytics-api.service'
   providedIn: 'root',
 })
 export class VentasDashboardDataService {
-  constructor(private analytics: DashboardAnalyticsApiService) {}
+  constructor(private analytics: DashboardAnalyticsApiService) { }
+
+  private obtenerNombreMes(val: any): string {
+    if (!val) return '';
+    const meses = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    const valStr = String(val);
+    if (valStr.includes('-')) {
+      const parts = valStr.split('-');
+      const mesNum = parseInt(parts[1], 10);
+      if (mesNum >= 1 && mesNum <= 12) {
+        return meses[mesNum - 1];
+      }
+    }
+
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num >= 1 && num <= 12) {
+      return meses[num - 1];
+    }
+
+    return valStr;
+  }
 
   private mapearVentasCritico(raw: {
     cards: any;
@@ -25,20 +49,43 @@ export class VentasDashboardDataService {
       },
       ventasPorMesConfig: {
         type: 'line',
-        labels: (porMes ?? []).map((f: any) => f.anioMes),
+        showArea: false,
+        smooth: false,
+        showYAxisLabels: false,
+        showXAxisLine: false,
+        labels: (porMes ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
         data: (porMes ?? []).map((f: any) => f.ventas),
+        colors: ['#7CABFF'],
       },
       ventasVsPresupuestoConfig: {
         type: 'bar',
-        labels: (vsPresupuesto ?? []).map((f: any) => f.anioMes),
-        data: (vsPresupuesto ?? []).map((f: any) => f.ventas),
-        dataExtra: (vsPresupuesto ?? []).map((f: any) => f.presupuesto),
+        labels: (vsPresupuesto ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
+        data: [
+          {
+            name: 'Ventas',
+            data: (vsPresupuesto ?? []).map((f: any) => f.ventas || 0),
+          },
+          {
+            name: 'Presupuesto',
+            data: (vsPresupuesto ?? []).map((f: any) => f.presupuesto || 0),
+          }
+        ],
+        colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'],
       },
       ventasVsAnioAnteriorConfig: {
         type: 'bar',
-        labels: (vsAnioAnterior ?? []).map((f: any) => f.anioMes),
-        data: (vsAnioAnterior ?? []).map((f: any) => f.anioActual),
-        dataExtra: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior),
+        labels: (vsAnioAnterior ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
+        data: [
+          {
+            name: 'Año actual',
+            data: (vsAnioAnterior ?? []).map((f: any) => f.anioActual || 0),
+          },
+          {
+            name: 'Año anterior',
+            data: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior || 0),
+          }
+        ],
+        colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'],
       },
     };
   }
@@ -66,19 +113,27 @@ export class VentasDashboardDataService {
         name: i.name,
         amount: i.amount,
       })),
+      ventasPorVendedor: (porVendedor ?? []).map((i: any) => ({
+        name: i.name,
+        amount: i.amount,
+      })),
       ventasPorVendedorChartConfig: {
         type: 'bar',
+        highlightMaxBar: true,
+        colors: ['#7CABFF'],
         labels: (porVendedor ?? []).map((i: any) => i.name),
         data: (porVendedor ?? []).map((i: any) => i.amount),
       },
       ventasPorFormaPagoConfig: {
-        type: 'doughnut',
+        type: 'treemap',
+        colors: ['#012B67', '#96BCFF', '#5E80BF'],
         labels: (porFormaPago ?? []).map(
           (i: any) => i.formaPago ?? i.name ?? ''
         ),
-        data: (porFormaPago ?? []).map((i: any) =>
-          Number(i.ventas ?? i.amount ?? 0)
-        ),
+        data: (porFormaPago ?? []).map((i: any) => ({
+          name: i.formaPago ?? i.name ?? '',
+          value: Number(i.ventas ?? i.amount ?? 0),
+        })),
         porcentajes: (porFormaPago ?? []).map((i: any) => {
           const p = i.porcentaje;
           if (p == null || p === '') return Number.NaN;

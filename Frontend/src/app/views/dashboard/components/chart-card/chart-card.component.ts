@@ -49,6 +49,14 @@ export class ChartCardComponent implements OnInit {
         return `${sign}${Math.abs(pct).toFixed(2)}%`;
       }
 
+      if (this.data.type === 'number') {
+        // Formatear números enteros (sin decimales)
+        return new Intl.NumberFormat('es-GT', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(value);
+      }
+
       // Formatear números de moneda con 2 decimales (nunca redondear)
       return new Intl.NumberFormat('es-GT', {
         minimumFractionDigits: 2,

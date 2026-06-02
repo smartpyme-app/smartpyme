@@ -23,6 +23,14 @@ export class BarChartComponent implements OnInit, OnChanges {
     }
   }
 
+  private hexToRgba(hex: string, alpha: number): string {
+    if (!hex || !hex.startsWith('#')) return hex;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   initChart(): void {
     if (!this.config) {
       return;
@@ -43,10 +51,12 @@ export class BarChartComponent implements OnInit, OnChanges {
 
     let series: any[] = [];
     const showBarLabels = this.config.showBarLabels !== false;
+    const barLabelPosition = this.config.barLabelPosition || 'top';
+    const isInsidePosition = barLabelPosition.startsWith('inside');
 
     const barValueLabel = showBarLabels ? {
       show: true,
-      position: 'top',
+      position: barLabelPosition,
       rotate: 0,
       formatter: (params: any) => {
         const value = params.value;
@@ -63,10 +73,10 @@ export class BarChartComponent implements OnInit, OnChanges {
 
         return value < 0 ? `(${formatted})` : formatted;
       },
-      color: '#333',
+      color: isInsidePosition ? '#fff' : '#000',
       fontSize: 12,
       fontWeight: 'medium',
-      offset: [0, -5],
+      offset: isInsidePosition ? [0, 0] : [0, -5],
       align: 'center',
       verticalAlign: 'middle',
       padding: [4, 6, 4, 6]
@@ -113,10 +123,17 @@ export class BarChartComponent implements OnInit, OnChanges {
             return originalValue >= 0 ? '#4caf50' : '#f44336';
           },
           borderRadius: [4, 4, 0, 0]
+        } : (this.config.highlightMaxBar ? {
+          color: (params: any) => {
+            const baseColor = this.config.colors?.[0] || '#5470c6';
+            const maxVal = Math.max(...data);
+            return params.value === maxVal ? baseColor : this.hexToRgba(baseColor, 0.4);
+          },
+          borderRadius: [4, 4, 0, 0]
         } : {
           color: this.config.colors?.[0] || '#5470c6',
           borderRadius: [4, 4, 0, 0]
-        },
+        }),
         label: barValueLabel,
         barMaxWidth: 60,
         emphasis: {
@@ -247,13 +264,17 @@ export class BarChartComponent implements OnInit, OnChanges {
       series: series.map(s => {
         if ((this.config as any).horizontal) {
           // Para barras horizontales, ajustar el label position y rotación
+          const finalPosition = this.config.barLabelPosition || 'right';
+          const isInside = finalPosition.startsWith('inside');
           return {
             ...s,
             label: {
               ...s.label,
-              position: 'right',
+              position: finalPosition,
               rotate: 0,
-              align: 'left'
+              align: isInside ? 'center' : 'left',
+              color: isInside ? '#fff' : '#000',
+              offset: isInside ? [0, 0] : [5, 0]
             }
           };
         }

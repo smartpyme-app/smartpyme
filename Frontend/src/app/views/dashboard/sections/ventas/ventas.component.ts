@@ -12,6 +12,7 @@ import {
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
+import { MetricCard } from '../../models/chart-config.model';
 
 @Component({
   selector: 'app-ventas',
@@ -22,6 +23,32 @@ import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 export class VentasComponent implements OnInit, OnChanges {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<FiltrosConsultaVentasDashboard>();
+
+  get metricasCards(): MetricCard[] {
+    const m = this.datos?.metricasVentas || {};
+    return [
+      {
+        title: 'Ventas totales con IVA',
+        value: m.ventasConIVA || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Ventas totales sin IVA',
+        value: m.ventasSinIVA || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Transacciones',
+        value: m.transacciones || 0,
+        type: 'number'
+      },
+      {
+        title: 'Ticket promedio',
+        value: m.ticketPromedio || 0,
+        type: 'currency'
+      }
+    ];
+  }
 
   @ViewChild('ventasDetalladasGrid') ventasDetalladasGrid!: RevoGrid;
   @ViewChild('ventasPorProductoGrid') ventasPorProductoGrid: any;
@@ -1637,7 +1664,7 @@ export class VentasComponent implements OnInit, OnChanges {
     this.aplicarFiltrosInteractivos();
   }
 
-  onVendedorClick(event: { name: string; value: any; index: number }): void {
+  onVendedorClick(event: any): void {
     if (this.filtrosInteractivos.vendedor === event.name) {
       delete this.filtrosInteractivos.vendedor;
     } else {
@@ -1825,6 +1852,7 @@ export class VentasComponent implements OnInit, OnChanges {
   private ordenarArraysIniciales(): void {
     const arraysParaOrdenar = [
       'ventasPorCanal',
+      'ventasPorVendedor',
       'ventasPorCategoria',
       'topProductosVendidos',
       'topClientes'
@@ -1863,8 +1891,14 @@ export class VentasComponent implements OnInit, OnChanges {
       ventasPorVendedor[vendedor] = (ventasPorVendedor[vendedor] || 0) + (v.monto || 0);
     });
 
-    const labels = Object.keys(ventasPorVendedor);
-    const data = labels.map(v => ventasPorVendedor[v]);
+    const list = Object.entries(ventasPorVendedor)
+      .map(([name, amount]) => ({ name, amount: amount as number }))
+      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+
+    this.datosFiltrados.ventasPorVendedor = list;
+
+    const labels = list.map(x => x.name);
+    const data = list.map(x => x.amount);
 
     if (this.datosFiltrados.ventasPorVendedorChartConfig) {
       this.datosFiltrados.ventasPorVendedorChartConfig = {
@@ -1884,11 +1918,15 @@ export class VentasComponent implements OnInit, OnChanges {
     });
 
     const labels = Object.keys(ventasPorFormaPago);
-    const data = labels.map(fp => ventasPorFormaPago[fp]);
-    const total = data.reduce((s, x) => s + x, 0);
-    const porcentajes = data.map((v) =>
+    const numericData = labels.map(fp => ventasPorFormaPago[fp]);
+    const total = numericData.reduce((s, x) => s + x, 0);
+    const porcentajes = numericData.map((v) =>
       total > 0 ? (v / total) * 100 : 0
     );
+
+    const data = Object.entries(ventasPorFormaPago)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
 
     if (this.datosFiltrados.ventasPorFormaPagoConfig) {
       this.datosFiltrados.ventasPorFormaPagoConfig = {

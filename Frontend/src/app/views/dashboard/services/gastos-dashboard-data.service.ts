@@ -7,7 +7,31 @@ import { DashboardAnalyticsApiService } from './dashboard-analytics-api.service'
   providedIn: 'root',
 })
 export class GastosDashboardDataService {
-  constructor(private analytics: DashboardAnalyticsApiService) {}
+  constructor(private analytics: DashboardAnalyticsApiService) { }
+
+  private obtenerNombreMes(val: any): string {
+    if (!val) return '';
+    const meses = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    const valStr = String(val);
+    if (valStr.includes('-')) {
+      const parts = valStr.split('-');
+      const mesNum = parseInt(parts[1], 10);
+      if (mesNum >= 1 && mesNum <= 12) {
+        return meses[mesNum - 1];
+      }
+    }
+
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num >= 1 && num <= 12) {
+      return meses[num - 1];
+    }
+
+    return valStr;
+  }
 
   private filtrosExtraQuery(filtros: any): string {
     const pTipo = filtros?.tipoGasto ? `&tipo_gasto=${filtros.tipoGasto}` : '';
@@ -35,10 +59,10 @@ export class GastosDashboardDataService {
         ),
         gastosMesActual: Number(
           c.gastosMesActual ??
-            c.gastos_mes_actual ??
-            c.gastosSinIva ??
-            c.gastos_sin_iva ??
-            0,
+          c.gastos_mes_actual ??
+          c.gastosSinIva ??
+          c.gastos_sin_iva ??
+          0,
         ),
         gastosMesAnterior: Number(
           c.gastosMesAnterior ?? c.gastos_mes_anterior ?? 0,
@@ -50,18 +74,18 @@ export class GastosDashboardDataService {
       },
       gastosPorMesConfig: {
         type: 'line',
-        labels: (porMes ?? []).map((f: any) => f.anioMes),
+        labels: (porMes ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
         data: (porMes ?? []).map((f: any) => f.gastosConIva),
       },
       gastosVsPresupuestoConfig: {
         type: 'bar',
-        labels: (vsPresupuesto ?? []).map((f: any) => f.anioMes),
+        labels: (vsPresupuesto ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
         data: (vsPresupuesto ?? []).map((f: any) => f.gastosConIva),
         dataExtra: (vsPresupuesto ?? []).map((f: any) => f.presupuesto),
       },
       gastosVsAnioAnteriorConfig: {
         type: 'bar',
-        labels: (vsAnioAnterior ?? []).map((f: any) => f.anioMes),
+        labels: (vsAnioAnterior ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
         data: (vsAnioAnterior ?? []).map((f: any) => f.anioActual),
         dataExtra: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior),
       },

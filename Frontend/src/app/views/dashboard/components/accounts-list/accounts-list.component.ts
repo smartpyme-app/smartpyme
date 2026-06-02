@@ -42,7 +42,7 @@ export class AccountsListComponent implements OnInit, OnChanges {
   }
 
   initChart(): void {
-    if (!this.accounts || !Array.isArray(this.accounts) || this.accounts.length === 0) { 
+    if (!this.accounts || !Array.isArray(this.accounts) || this.accounts.length === 0) {
       return;
     }
 
@@ -60,9 +60,9 @@ export class AccountsListComponent implements OnInit, OnChanges {
         formatter: (params: any) => {
           if (Array.isArray(params) && params.length > 0) {
             const value = params[0].value;
-            const formattedValue = value.toLocaleString('es-GT', { 
-              minimumFractionDigits: 2, 
-              maximumFractionDigits: 2 
+            const formattedValue = value.toLocaleString('es-GT', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
             });
             return `${params[0].name}<br/>$${formattedValue}`;
           }
@@ -122,9 +122,9 @@ export class AccountsListComponent implements OnInit, OnChanges {
             }
             return `$${value.toLocaleString('es-GT')}`;
           },
-          color: '#333',
+          color: '#000',
           fontSize: 11,
-          fontWeight: 'bold'
+          fontWeight: 'normal'
         }
       }]
     };

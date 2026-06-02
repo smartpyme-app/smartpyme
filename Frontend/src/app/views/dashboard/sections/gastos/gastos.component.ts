@@ -36,13 +36,13 @@ export class GastosComponent implements OnInit, OnChanges {
   private filtrosListosParaEmitir = false;
 
   @ViewChild('detalleGastosGrid') detalleGastosGrid!: AgGridAngular;
-  
+
   // AG Grid API
   private detalleGastosGridApi!: GridApi;
-  
+
   // Quick filter text
   quickFilterTextGastos: string = '';
-  
+
   // AG Grid options
   detalleGastosGridOptions: GridOptions = {};
 
@@ -96,44 +96,44 @@ export class GastosComponent implements OnInit, OnChanges {
 
   // Columnas para la tabla de detalle de gastos (AG Grid)
   detalleGastosColumnDefs: ColDef[] = [
-    { 
-      field: 'fecha', 
-      headerName: 'Fecha', 
+    {
+      field: 'fecha',
+      headerName: 'Fecha',
       width: 120,
       sortable: true,
       filter: true
     },
-    { 
-      field: 'proveedor', 
-      headerName: 'Proveedor', 
+    {
+      field: 'proveedor',
+      headerName: 'Proveedor',
       width: 180,
       sortable: true,
       filter: true
     },
-    { 
-      field: 'concepto', 
-      headerName: 'Concepto', 
+    {
+      field: 'concepto',
+      headerName: 'Concepto',
       width: 220,
       sortable: true,
       filter: true
     },
-    { 
-      field: 'documento', 
-      headerName: 'Doc.', 
+    {
+      field: 'documento',
+      headerName: 'Doc.',
       width: 100,
       sortable: true,
       filter: true
     },
-    { 
-      field: 'correlativo', 
-      headerName: 'Corr.', 
+    {
+      field: 'correlativo',
+      headerName: 'Corr.',
       width: 100,
       sortable: true,
       filter: true
     },
-    { 
-      field: 'gastosConIVA', 
-      headerName: 'Gastos con IVA', 
+    {
+      field: 'gastosConIVA',
+      headerName: 'Gastos con IVA',
       width: 150,
       sortable: true,
       filter: true,
@@ -149,7 +149,7 @@ export class GastosComponent implements OnInit, OnChanges {
     private cdr: ChangeDetectorRef,
     private apiService: ApiService,
     private filtrosCatalogo: DashboardFiltrosCatalogoService,
-  ) {}
+  ) { }
 
   /**
    * Método eficiente de clonación profunda
@@ -591,7 +591,7 @@ export class GastosComponent implements OnInit, OnChanges {
       this.datos = this.datosFiltrados;
       this.inicializado = true;
       this.recalcularRowsCache();
-      
+
       // Recalcular todos los gráficos con los datos iniciales
       if (this.datosFiltrados.detalleGastos) {
         this.recalcularMetricas();
@@ -723,7 +723,7 @@ export class GastosComponent implements OnInit, OnChanges {
     // Restaurar datos originales
     if (Object.keys(this.datosOriginales).length > 0) {
       this.datosFiltrados = this.clonarDatos(this.datosOriginales);
-      
+
       // Recalcular todos los gráficos con datos originales
       this.recalcularMetricas();
       this.recalcularGastosPorMes();
@@ -731,7 +731,7 @@ export class GastosComponent implements OnInit, OnChanges {
       this.recalcularGastosPorConcepto();
       this.recalcularGastosPorProveedor();
       this.recalcularGastosPorFormaPago();
-      
+
       // Actualizar referencia - crear nuevo objeto para forzar detección de cambios
       this.datos = { ...this.datosFiltrados };
       this.recalcularRowsCache();
@@ -805,26 +805,26 @@ export class GastosComponent implements OnInit, OnChanges {
 
     // Restaurar datos originales
     this.datosFiltrados = this.clonarDatos(this.datosOriginales);
-    
+
     // Filtrar detalle de gastos
     let gastosFiltrados = [...this.datosOriginales.detalleGastos];
 
     // Aplicar filtros
     if (this.filtrosInteractivos.proveedor) {
-      gastosFiltrados = gastosFiltrados.filter((g: any) => 
+      gastosFiltrados = gastosFiltrados.filter((g: any) =>
         g.proveedor === this.filtrosInteractivos.proveedor
       );
     }
 
     if (this.filtrosInteractivos.categoria) {
-      gastosFiltrados = gastosFiltrados.filter((g: any) => 
+      gastosFiltrados = gastosFiltrados.filter((g: any) =>
         g.concepto?.toLowerCase().includes(this.filtrosInteractivos.categoria?.toLowerCase() || '')
       );
     }
 
     if (this.filtrosInteractivos.mes) {
-      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
       const mesIndex = meses.indexOf(this.filtrosInteractivos.mes);
       if (mesIndex !== -1) {
         gastosFiltrados = gastosFiltrados.filter((g: any) => {
@@ -941,15 +941,15 @@ export class GastosComponent implements OnInit, OnChanges {
   recalcularGastosPorMes(): void {
     if (!this.datosFiltrados.detalleGastos) return;
 
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const gastosPorMes: { [key: string]: number } = {};
-    
+
     // Inicializar todos los meses en 0
     meses.forEach(mes => {
       gastosPorMes[mes] = 0;
     });
-    
+
     this.datosFiltrados.detalleGastos.forEach((g: any) => {
       if (g.fecha) {
         try {
@@ -997,24 +997,24 @@ export class GastosComponent implements OnInit, OnChanges {
     };
 
     const gastosPorCategoria: { [key: string]: number } = {};
-    
+
     // Inicializar todas las categorías en 0
     const categorias = ['Compras', 'G. operativos', 'G. administrativos', 'G. financieros', 'G. comerciales', 'Costo de ventas'];
     categorias.forEach(cat => {
       gastosPorCategoria[cat] = 0;
     });
-    
+
     this.datosFiltrados.detalleGastos.forEach((g: any) => {
       const concepto = (g.concepto || '').toLowerCase();
       let categoria = 'Gastos varios';
-      
+
       for (const [key, value] of Object.entries(categoriaMap)) {
         if (concepto.includes(key)) {
           categoria = value;
           break;
         }
       }
-      
+
       // Solo agregar si la categoría está en la lista
       if (categorias.includes(categoria)) {
         gastosPorCategoria[categoria] = (gastosPorCategoria[categoria] || 0) + (g.gastosConIVA || 0);
@@ -1039,7 +1039,7 @@ export class GastosComponent implements OnInit, OnChanges {
     if (!this.datosFiltrados.detalleGastos) return;
 
     const gastosPorConcepto: { [key: string]: number } = {};
-    
+
     this.datosFiltrados.detalleGastos.forEach((g: any) => {
       const concepto = g.concepto || 'Sin concepto';
       gastosPorConcepto[concepto] = (gastosPorConcepto[concepto] || 0) + (g.gastosConIVA || 0);
@@ -1068,7 +1068,7 @@ export class GastosComponent implements OnInit, OnChanges {
     if (!this.datosFiltrados.detalleGastos) return;
 
     const gastosPorProveedor: { [key: string]: number } = {};
-    
+
     this.datosFiltrados.detalleGastos.forEach((g: any) => {
       const proveedor = g.proveedor || 'Sin proveedor';
       gastosPorProveedor[proveedor] = (gastosPorProveedor[proveedor] || 0) + (g.gastosConIVA || 0);
@@ -1091,10 +1091,10 @@ export class GastosComponent implements OnInit, OnChanges {
   recalcularGastosVsPresupuesto(): void {
     if (!this.datosFiltrados.detalleGastos) return;
 
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const gastosPorMes: { [key: string]: number } = {};
-    
+
     // Calcular gastos reales por mes
     this.datosFiltrados.detalleGastos.forEach((g: any) => {
       if (g.fecha) {
@@ -1113,7 +1113,7 @@ export class GastosComponent implements OnInit, OnChanges {
 
     // Obtener presupuestos (si existen en datos originales, sino usar valores por defecto)
     const presupuestos = this.datosOriginales.gastosPresupuesto || meses.map(() => 5000); // Valor por defecto
-    
+
     // Si hay filtros activos, usar los datos filtrados, sino usar los originales para el presupuesto
     const presupuestosData = this.datosOriginales.gastosPresupuesto || presupuestos;
 
@@ -1143,10 +1143,10 @@ export class GastosComponent implements OnInit, OnChanges {
   recalcularGastosVsAnioAnterior(): void {
     if (!this.datosFiltrados.detalleGastos) return;
 
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const gastosPorMes: { [key: string]: number } = {};
-    
+
     // Calcular gastos del año actual por mes
     this.datosFiltrados.detalleGastos.forEach((g: any) => {
       if (g.fecha) {
