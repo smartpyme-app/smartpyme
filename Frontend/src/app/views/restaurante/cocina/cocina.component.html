@@ -37,11 +37,14 @@
               </span>
             </div>
             <div class="card-body py-2">
-              <p class="mb-2"><strong>Mesa {{ comanda.sesion?.mesa?.numero }}</strong></p>
+              <p class="mb-2">
+                <strong *ngIf="comanda.sesion?.mesa">Mesa {{ comanda.sesion?.mesa?.numero }}</strong>
+                <strong *ngIf="comanda.pedido_id">Pedido #{{ comanda.pedido_id }}</strong>
+              </p>
               <ul class="list-unstyled mb-0 small">
                 <li *ngFor="let det of comanda.detalles">
-                  {{ det.orden_detalle?.cantidad }}x {{ det.orden_detalle?.producto?.nombre }}
-                  <small class="text-muted" *ngIf="det.orden_detalle?.notas"> — {{ det.orden_detalle.notas }}</small>
+                  {{ (det.orden_detalle || det.pedido_detalle)?.cantidad }}x {{ (det.orden_detalle || det.pedido_detalle)?.producto?.nombre }}
+                  <small class="text-muted" *ngIf="(det.orden_detalle || det.pedido_detalle)?.notas"> — {{ (det.orden_detalle || det.pedido_detalle).notas }}</small>
                 </li>
               </ul>
             </div>
@@ -67,7 +70,9 @@
       <div class="list-group">
         <div *ngFor="let comanda of getComandasListas()" class="list-group-item d-flex justify-content-between align-items-center">
           <span>
-            <strong>{{ comanda.numero_comanda }}</strong> — Mesa {{ comanda.sesion?.mesa?.numero }}
+            <strong>{{ comanda.numero_comanda }}</strong> —
+            <span *ngIf="comanda.sesion?.mesa">Mesa {{ comanda.sesion?.mesa?.numero }}</span>
+            <span *ngIf="comanda.pedido_id">Pedido #{{ comanda.pedido_id }}</span>
             <span class="badge bg-secondary ms-1" *ngIf="comanda.destino === 'cocina'">Cocina</span>
             <span class="badge bg-info text-dark ms-1" *ngIf="comanda.destino === 'barra'">Barra</span>
             <span class="badge bg-danger ms-1" *ngIf="comanda.destino === 'eliminacion'">Eliminado</span>

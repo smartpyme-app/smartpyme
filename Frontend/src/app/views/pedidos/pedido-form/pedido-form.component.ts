@@ -30,6 +30,7 @@ export class PedidoFormComponent implements OnInit {
   pedidoId: number | null = null;
   guardando = false;
   cargando = false;
+  enviandoComanda = false;
 
   fecha = '';
   canal = '';
@@ -139,7 +140,7 @@ export class PedidoFormComponent implements OnInit {
 
   onProductoSelect(producto: any): void {
     const precio = parseFloat(
-      producto.precio_publico ?? producto.precio ?? producto.precio_venta ?? 0
+      producto.precio ?? producto.precio_publico ?? producto.precio_venta ?? 0
     );
     this.lineas.push({
       producto_id: producto.id,
@@ -169,6 +170,40 @@ export class PedidoFormComponent implements OnInit {
 
   volver(): void {
     this.router.navigate(['/pedidos']);
+  }
+
+  enviarComanda(): void {
+    if (!this.pedidoId) {
+      this.alertService.warning('Guarde primero', 'Debe guardar el pedido antes de enviar comanda.');
+      return;
+    }
+    this.enviandoComanda = true;
+    this.restauranteService.enviarComandaPedido(this.pedidoId).subscribe({
+      next: (res: any) => {
+        this.enviandoComanda = false;
+        this.alertService.success('Comanda enviada', '');
+        const ids = (res?.comandas || []).map((c: any) => c?.id).filter(Boolean);
+        ids.forEach((id: number, index: number) => {
+          setTimeout(() => {
+            this.restauranteService.imprimirComanda(id).subscribe({
+              next: (html) => {
+                const w = window.open('', '_blank', 'width=400,height=600');
+                if (w) {
+                  w.document.write(html);
+                  w.document.close();
+                  w.focus();
+                }
+              },
+              error: (err) => this.alertService.error(err)
+            });
+          }, index * 400);
+        });
+      },
+      error: (err) => {
+        this.alertService.error(err);
+        this.enviandoComanda = false;
+      }
+    });
   }
 
   guardar(): void {
