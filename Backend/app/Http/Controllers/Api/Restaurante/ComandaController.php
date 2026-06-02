@@ -96,11 +96,16 @@ class ComandaController extends Controller
             return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
         }
 
-        $comandas = Comanda::whereHas('sesion', fn ($q) => $q->where('id_empresa', $user->id_empresa))
+        $comandas = Comanda::where(function ($q) use ($user) {
+            $q->whereHas('sesion', fn ($sq) => $sq->where('id_empresa', $user->id_empresa))
+                ->orWhereHas('pedido', fn ($pq) => $pq->where('id_empresa', $user->id_empresa));
+        })
             ->whereIn('estado', ['pendiente', 'preparando', 'listo'])
             ->with([
                 'sesion.mesa',
+                'pedido',
                 'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with('producto'),
+                'detalles.pedidoDetalle.producto',
             ])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -175,8 +180,10 @@ class ComandaController extends Controller
     public function actualizarEstado(Request $request, int $id): JsonResponse
     {
         $user = auth()->user();
-        $comanda = Comanda::whereHas('sesion', fn ($q) => $q->where('id_empresa', $user->id_empresa))
-            ->findOrFail($id);
+        $comanda = Comanda::where(function ($q) use ($user) {
+            $q->whereHas('sesion', fn ($sq) => $sq->where('id_empresa', $user->id_empresa))
+                ->orWhereHas('pedido', fn ($pq) => $pq->where('id_empresa', $user->id_empresa));
+        })->findOrFail($id);
 
         $validated = $request->validate([
             'estado' => 'required|in:pendiente,preparando,listo',
@@ -189,8 +196,17 @@ class ComandaController extends Controller
     public function imprimir(int $id)
     {
         $user = auth()->user();
-        $comanda = Comanda::whereHas('sesion', fn ($q) => $q->where('id_empresa', $user->id_empresa))
-            ->with(['sesion.mesa', 'sesion.mesero', 'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with('producto')])
+        $comanda = Comanda::where(function ($q) use ($user) {
+            $q->whereHas('sesion', fn ($sq) => $sq->where('id_empresa', $user->id_empresa))
+                ->orWhereHas('pedido', fn ($pq) => $pq->where('id_empresa', $user->id_empresa));
+        })
+            ->with([
+                'sesion.mesa',
+                'sesion.mesero',
+                'pedido',
+                'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with('producto'),
+                'detalles.pedidoDetalle.producto',
+            ])
             ->findOrFail($id);
 
         $empresa = Empresa::find($user->id_empresa);

@@ -152,9 +152,16 @@
                 <app-buscador-productos (selectProducto)="productoSelect($event)"></app-buscador-productos>
                 <div *ngIf="producto?.id" class="mt-2">
                     <span class="badge bg-info">{{ getNombreCompleto(producto) }}</span>
+                    <span *ngIf="producto?.id_presentacion" class="badge bg-success text-dark ms-1">
+                        <i class="fa fa-box mr-1"></i>Presentación
+                    </span>
                     <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProducto()">
                         <i class="fa fa-times"></i> Limpiar
                     </button>
+                    <div *ngIf="producto?.id_presentacion" class="alert alert-info mt-2 mb-0 py-2" style="font-size: 0.85rem;">
+                        <i class="fa fa-info-circle me-1"></i> 
+                        <strong>Atención:</strong> El stock mostrado en las bodegas corresponde a las <strong>unidades base</strong> ({{ producto.nombre }}). Cada {{ producto.nombre_presentacion || producto.nombre_mostrar }} contiene {{ traslado.factor_conversion }} unidades.
+                    </div>
                 </div>
             </div>
             <div class="form-group col-md-6">
@@ -163,7 +170,7 @@
                     <ng-option value="" selected>Seleccionar bodega</ng-option>
                     <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
                         {{inventario.nombre_bodega}}
-                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
+                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock <span *ngIf="producto?.id_presentacion">base</span></span>
                     </ng-option>
                 </ng-select>
             </div>
@@ -173,7 +180,7 @@
                     <ng-option value="" selected>Seleccionar bodega</ng-option>
                     <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
                         {{inventario.nombre_bodega}}
-                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
+                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock <span *ngIf="producto?.id_presentacion">base</span></span>
                     </ng-option>
                 </ng-select>
             </div>
@@ -182,7 +189,7 @@
                 <ng-select name="lote_id" [(ngModel)]="traslado.lote_id" (change)="setLoteOrigen()" class="form-select p-0" [disabled]="loadingLotes" (open)="cargarLotes()" required>
                     <ng-option value="">Seleccionar lote</ng-option>
                     <ng-option *ngFor="let lote of lotes" [value]="lote.id">
-                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }} <span *ngIf="producto?.id_presentacion">base</span>
                         <span *ngIf="lote.fecha_vencimiento" class="text-muted">
                             (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
                         </span>
@@ -195,7 +202,7 @@
                 <ng-select name="lote_id_destino" [(ngModel)]="traslado.lote_id_destino" class="form-select p-0" [disabled]="loadingLotesDestino" (open)="cargarLotesDestino()">
                     <ng-option value="">Crear nuevo lote</ng-option>
                     <ng-option *ngFor="let lote of lotesDestino" [value]="lote.id">
-                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }} <span *ngIf="producto?.id_presentacion">base</span>
                         <span *ngIf="lote.fecha_vencimiento" class="text-muted">
                             (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
                         </span>
@@ -207,6 +214,9 @@
             <div class="form-group col-md-6">
                 <label for="stock_real">Cantidad a trasladar:</label>
                 <input type="number" [disabled]="!traslado.id_bodega_de || !traslado.id_bodega || (producto?.inventario_por_lotes && isLotesActivo() && !traslado.lote_id)" class="form-control text-center" [(ngModel)]="traslado.cantidad" (change)="validarStockLote()" name="cantidad">
+                <small *ngIf="producto?.id_presentacion && traslado.cantidad" class="text-info d-block mt-1">
+                    Equivale a {{ (traslado.cantidad * traslado.factor_conversion) | number:'1.2' }} unidades base.
+                </small>
                 <small class="text-danger" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.lote_id && traslado.cantidad && !stockLoteSuficiente()">
                     Stock insuficiente en el lote seleccionado
                 </small>

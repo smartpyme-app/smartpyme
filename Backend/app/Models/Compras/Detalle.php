@@ -9,6 +9,7 @@ class Detalle extends Model {
     protected $table = 'detalles_compra';
     protected $fillable = array(
         'id_producto',
+        'id_presentacion',
         'lote_id',
         'cantidad',
         'costo',

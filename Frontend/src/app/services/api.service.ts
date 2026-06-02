@@ -215,6 +215,19 @@ export class ApiService {
         return customConfig?.configuraciones?.modulo_bancos === true;
     }
 
+    /** Indica si el módulo de presentaciones de producto está activo para la empresa del usuario actual */
+    isModuloPresentaciones(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        const cfg = customConfig?.configuraciones;
+        return cfg?.modulo_presentaciones === true || cfg?.inventario_fraccionado === true;
+    }
+
     /** Categorías de gasto personalizadas, departamentos y áreas (configuración de empresa). */
     isGastosCategoriasPersonalizadasHabilitadas(): boolean {
         const empresa = this.auth_user()?.empresa;

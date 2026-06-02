@@ -359,10 +359,18 @@ export class VentaDetallesV2Component implements OnInit {
             this.detalle = Object.assign({}, producto);
             this.detalle.id = null;
             
-            // Verifica si el producto ya fue ingresado
+            // ── Guardar campos de presentación para el backend ───────────────────────
+            this.detalle.id_presentacion   = producto.id_presentacion  ?? null;
+            this.detalle.factor_conversion = producto.factor_conversion ?? 1;
+
+            // ── Regla de agrupación: AMBOS id_producto + id_presentacion deben coincidir
+            // Una "Caja" y una "Unidad suelta" del mismo producto son filas separadas.
             let detalle = null;
             if(this.apiService.auth_user().empresa.agrupar_detalles_venta){
-                detalle = this.venta.detalles.find((x:any) => x.id_producto == this.detalle.id_producto)
+                detalle = this.venta.detalles.find((x:any) =>
+                    x.id_producto === this.detalle.id_producto &&
+                    (x.id_presentacion ?? null) === (this.detalle.id_presentacion ?? null)
+                );
             }
                 
             if(detalle) {

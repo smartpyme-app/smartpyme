@@ -795,11 +795,55 @@ class Empresa extends Model
     }
 
     /**
+     * Mostrar la nota configurada en el documento (Factura, Ticket, etc.) al imprimir.
+     */
+    public function mostrarNotaDocumentoImpresion(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'mostrar_nota_documento_impresion', false);
+    }
+
+    /**
      * Verificar si el campo componente químico está habilitado para la empresa
      */
     public function isComponenteQuimicoHabilitado(): bool
     {
         return (bool) $this->getCustomConfigValue('configuraciones', 'componente_quimico_activo', false);
+    }
+
+    /**
+     * Verificar si el módulo de Inventario Fraccionado (presentaciones de empaque) está activo.
+     * Permite que el buscador expanda las presentaciones en el punto de venta.
+     * @deprecated Use isModuloPresentaciones()
+     */
+    public function isInventarioFraccionadoActivo(): bool
+    {
+        return $this->isModuloPresentaciones();
+    }
+
+    /**
+     * Verificar si la empresa tiene asignada la funcionalidad de presentaciones (Super Admin).
+     */
+    public function tieneFuncionalidadModuloPresentaciones(): bool
+    {
+        return $this->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
+            ->whereHas('funcionalidad', function ($query) {
+                $query->where('slug', 'modulo-presentaciones-productos');
+            })
+            ->where('activo', true)
+            ->exists();
+    }
+
+    /**
+     * Verificar si el módulo de presentaciones de producto está activo (funcionalidad + preferencia en custom_empresa).
+     */
+    public function isModuloPresentaciones(): bool
+    {
+        if (!$this->tieneFuncionalidadModuloPresentaciones()) {
+            return false;
+        }
+
+        return (bool) $this->getCustomConfigValue('configuraciones', 'modulo_presentaciones', false)
+            || (bool) $this->getCustomConfigValue('configuraciones', 'inventario_fraccionado', false);
     }
 
     /**

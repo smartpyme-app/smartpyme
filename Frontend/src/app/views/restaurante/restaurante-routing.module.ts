@@ -4,6 +4,7 @@ import { LayoutComponent } from '../../layout/layout.component';
 import { RestauranteComponent } from './restaurante.component';
 import { CuentaMesaComponent } from './cuenta-mesa/cuenta-mesa.component';
 import { CocinaComponent } from './cocina/cocina.component';
+import { ZonasRestauranteComponent } from './zonas/zonas-restaurante.component';
 
 const routes: Routes = [
   {
@@ -30,6 +31,11 @@ const routes: Routes = [
         path: 'restaurante/cocina',
         component: CocinaComponent,
         title: 'Pantalla Cocina'
+      },
+      {
+        path: 'restaurante/zonas',
+        component: ZonasRestauranteComponent,
+        title: 'Zonas'
       }
     ]
   }

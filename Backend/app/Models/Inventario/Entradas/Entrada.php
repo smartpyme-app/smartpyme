@@ -9,6 +9,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Admin\Empresa;
+use App\Services\ConversionInventarioService;
 
 class Entrada extends Model {
 
@@ -90,6 +91,16 @@ class Entrada extends Model {
         $empresa = Empresa::find($this->id_empresa);
         $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
         
+        $factor = 1;
+        if ($detalle->id_presentacion) {
+            $presentacion = \App\Models\Inventario\ProductoPresentacion::find($detalle->id_presentacion);
+            if ($presentacion) {
+                $factor = $presentacion->factor_conversion ?: 1;
+            }
+        }
+        
+        $cantidadBase = ConversionInventarioService::calcularCantidadBase($detalle->cantidad, $factor);
+        
         if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
             // Actualizar stock del lote
             $lote = Lote::find($detalle->lote_id);
@@ -100,7 +111,7 @@ class Entrada extends Model {
                 }
                 
                 // Sumar stock al lote
-                $lote->stock += $detalle->cantidad;
+                $lote->stock += $cantidadBase;
                 $lote->save();
             }
         }
@@ -112,11 +123,13 @@ class Entrada extends Model {
 
         if ($inventario) {
             // Sumar stock (siempre actualizar inventario tradicional para consistencia)
-            $inventario->stock += $detalle->cantidad;
+            $inventario->stock += $cantidadBase;
             $inventario->save();
 
             // Registrar en kardex
-            $inventario->kardex($this, $detalle->cantidad, null, $detalle->costo);
+            // El costo es unitario de la presentación facturada. Se puede mantener para registro contable
+            // o se puede calcular costo base. Usualmente se guarda el facturado y la cant facturada, pero aquí pasamos $cantidadBase
+            $inventario->kardex($this, $cantidadBase, null, $detalle->costo);
         }
     }
 
@@ -160,11 +173,21 @@ class Entrada extends Model {
         $empresa = Empresa::find($this->id_empresa);
         $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
         
+        $factor = 1;
+        if ($detalle->id_presentacion) {
+            $presentacion = \App\Models\Inventario\ProductoPresentacion::find($detalle->id_presentacion);
+            if ($presentacion) {
+                $factor = $presentacion->factor_conversion ?: 1;
+            }
+        }
+        
+        $cantidadBase = ConversionInventarioService::calcularCantidadBase($detalle->cantidad, $factor);
+        
         if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
             // Revertir stock del lote
             $lote = Lote::find($detalle->lote_id);
             if ($lote) {
-                $lote->stock -= $detalle->cantidad;
+                $lote->stock -= $cantidadBase;
                 
                 // Validar que no quede stock negativo
                 if ($lote->stock < 0) {
@@ -180,7 +203,7 @@ class Entrada extends Model {
                                 ->first();
 
         if ($inventario) {
-            $inventario->stock -= $detalle->cantidad;
+            $inventario->stock -= $cantidadBase;
             
             // Validar que no quede stock negativo
             if ($inventario->stock < 0) {
@@ -188,7 +211,7 @@ class Entrada extends Model {
             }
             
             $inventario->save();
-            $inventario->kardex($this, $detalle->cantidad * -1, null, $detalle->costo);
+            $inventario->kardex($this, $cantidadBase * -1, null, $detalle->costo);
         }
     }
 

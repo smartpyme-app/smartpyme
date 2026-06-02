@@ -68,6 +68,7 @@ import { EntradaDetalleComponent } from './entradas/entrada-detalle/entrada-deta
 import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.component';
 import { LotesComponent } from './lotes/lotes.component';
 import { TransformacionCrearComponent } from './transformacion/transformacion-crear.component';
+import { ProductoPresentacionesComponent } from './productos/producto/presentaciones/producto-presentaciones.component';
 
 @NgModule({
   imports: [
@@ -131,7 +132,8 @@ import { TransformacionCrearComponent } from './transformacion/transformacion-cr
     EntradaDetalleComponent,
     SalidaDetalleComponent,
     LotesComponent,
-    TransformacionCrearComponent
+    TransformacionCrearComponent,
+    ProductoPresentacionesComponent
   ],
   exports: [
   	ProductosComponent,
@@ -175,7 +177,8 @@ import { TransformacionCrearComponent } from './transformacion/transformacion-cr
     EntradaDetalleComponent,
     SalidaDetalleComponent,
     LotesComponent,
-    TransformacionCrearComponent
+    TransformacionCrearComponent,
+    ProductoPresentacionesComponent
   ]
 })
 export class InventarioModule { }

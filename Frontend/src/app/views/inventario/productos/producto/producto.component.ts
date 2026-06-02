@@ -5,6 +5,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 @Component({
   selector: 'app-producto',
@@ -14,16 +15,26 @@ export class ProductoComponent implements OnInit {
 
 	public producto: any = {};
 	public categorias:any[] = [];
-  public loading = false;
-  public lotesRefreshKey = 0;
+  	public loading = false;
+	public mostrarModuloPresentaciones = false;
+	public lotesRefreshKey = 0;
 
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
+      private funcionalidadesService: FuncionalidadesService,
 	) {	}
 
 	ngOnInit() {
-	    
+      this.funcionalidadesService.verificarAcceso('modulo-presentaciones-productos').subscribe({
+        next: (acceso) => {
+          this.mostrarModuloPresentaciones = acceso && this.apiService.isModuloPresentaciones();
+        },
+        error: () => {
+          this.mostrarModuloPresentaciones = false;
+        }
+      });
+
 		this.route.params.subscribe((params:any) => {
 	      	if (params.id) {
 		        this.loading = true;
