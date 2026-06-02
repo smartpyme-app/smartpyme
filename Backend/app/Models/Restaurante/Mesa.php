@@ -14,6 +14,7 @@ class Mesa extends Model
         'id_sucursal',
         'numero',
         'capacidad',
+        'zona_id',
         'zona',
         'estado',
         'activo',
@@ -27,6 +28,11 @@ class Mesa extends Model
     public function empresa()
     {
         return $this->belongsTo(Empresa::class, 'id_empresa');
+    }
+
+    public function zonaRestaurante()
+    {
+        return $this->belongsTo(ZonaRestaurante::class, 'zona_id');
     }
 
     public function sesiones()

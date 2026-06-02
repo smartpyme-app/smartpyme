@@ -270,6 +270,7 @@ class ProductosController extends Controller
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
 
         $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
             ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                 $q->where('nombre', 'like', "%$query%")
                     ->orWhere('barcode', 'like', "%$query%")
@@ -298,8 +299,11 @@ class ProductosController extends Controller
                     $q->where('id_bodega', $id_bodega);
                 }, 'lotes'])
                 ->with('composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios')
-                ->whereHas('inventarios', function ($q) use ($id_bodega) {
-                    $q->where('id_bodega', $id_bodega);
+                ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
+                ->where(function ($q) use ($id_bodega) {
+                    $q->whereHas('inventarios', function ($iq) use ($id_bodega) {
+                        $iq->where('id_bodega', $id_bodega);
+                    })->orWhere('tipo', 'Servicio');
                 })
                 ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
@@ -314,6 +318,7 @@ class ProductosController extends Controller
                 ->get();
         } else {
             $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+                ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
                 ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
                         ->orWhere('barcode', 'like', "%$query%")
