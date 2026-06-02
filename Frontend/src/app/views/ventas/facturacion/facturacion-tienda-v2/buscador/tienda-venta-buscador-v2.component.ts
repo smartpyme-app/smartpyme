@@ -7,6 +7,10 @@ import { debounceTime, switchMap, filter, catchError, tap } from 'rxjs/operators
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import {
+    normalizarPorcentajeImpuestoDetalle,
+    resolverPorcentajeImpuestoVenta,
+} from '@utils/impuestos-venta.util';
 
 @Component({
   selector: 'app-tienda-venta-buscador-v2',
@@ -163,120 +167,82 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
     public getPrecioConIva(producto: any): number {
         if (!producto) return 0;
         const precio = parseFloat(producto.precio) || 0;
-        const pct = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '')
-            ? Number(producto.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
+        const pct = resolverPorcentajeImpuestoVenta(
+            producto.porcentaje_impuesto,
+            this.apiService.auth_user()?.empresa?.iva
+        );
         return precio * (1 + pct / 100);
+    }
+
+    private ivaEmpresa(): number {
+        return Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    }
+
+    /** Precio sin IVA + % resuelto (producto o empresa) para armar el detalle de venta v2. */
+    private armarPreciosDetalleV2(producto: any): {
+        pctImpuesto: number;
+        porcentajeImpuesto: number | null;
+        precioSinIva: number;
+        precioConIva: number;
+    } {
+        const ivaEmpresa = this.ivaEmpresa();
+        const pctImpuesto = resolverPorcentajeImpuestoVenta(producto.porcentaje_impuesto, ivaEmpresa);
+        const porcentajeImpuesto = normalizarPorcentajeImpuestoDetalle(producto.porcentaje_impuesto, ivaEmpresa);
+        const precioSinIva = parseFloat(producto.precio) || 0;
+        const precioConIva = pctImpuesto > 0
+            ? precioSinIva * (1 + pctImpuesto / 100)
+            : precioSinIva;
+        return { pctImpuesto, porcentajeImpuesto, precioSinIva, precioConIva };
     }
 
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
-        this.detalle.id_producto    = producto.id;
         this.detalle.descripcion    = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
-        
-        // En v2, el precio se muestra con IVA pero se guarda sin IVA. Usar % del producto si tiene.
-        const pctImpuesto = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '')
-            ? Number(producto.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
-        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-        const precioSinIva = parseFloat(producto.precio);
-        const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
-        
-        // precio_iva: precio con IVA (para cálculos y visualización)
-        this.detalle.precio_iva     = precioConIva.toFixed(4);
-        // precio: precio sin IVA (para guardar en BD)
-        this.detalle.precio         = precioSinIva.toFixed(4);
-        
-        // Guardar también el precio base para referencia
-        this.detalle.precio_base    = precioSinIva;
-        
-        // Lista de tarifas mostrada como precio sin IVA; `precio_iva` se deriva para la columna Total.
-        this.detalle.precios        = producto.precios ? producto.precios.map((p: any) => {
-          const sinIvaLista = parseFloat(p.precio);
-          return {
-            ...p,
-            precio: sinIvaLista.toFixed(4),
-            precio_sin_iva: sinIvaLista,
-          };
-        }) : [];
 
-        this.detalle.precios.unshift({
-                'precio' : precioSinIva.toFixed(4),
-                'precio_sin_iva': precioSinIva
-            });
-            
+        const esPlanoBuscador = producto.nombre_mostrar != null;
+        const { porcentajeImpuesto, precioSinIva, precioConIva } =
+            this.armarPreciosDetalleV2(producto);
+
+        this.detalle.porcentaje_impuesto = porcentajeImpuesto;
+        this.detalle.precio_iva          = precioConIva.toFixed(4);
+        this.detalle.precio              = precioSinIva.toFixed(4);
+        this.detalle.precio_base         = precioSinIva;
+
         if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
-            this.detalle.costo          = parseFloat(producto.costo_promedio);
+            this.detalle.costo = parseFloat(producto.costo_promedio);
         }else{
-            this.detalle.costo          = parseFloat(producto.costo);
+            this.detalle.costo = parseFloat(producto.costo ?? 0);
         }
 
-        // ── Soporte para respuesta "aplanada" con presentaciones ─────────────────────
-        // La API puede devolver: { id_producto, id_presentacion, nombre_mostrar,
-        //                          precio, stock_base_actual, factor_conversion }
-        // O el objeto producto clásico (id, nombre, precio, inventarios…)
-        const esPlanoBuscador = producto.nombre_mostrar != null;
-
         if (esPlanoBuscador) {
-            // Objeto aplanado: el buscador devuelve ya la lógica de presentación resuelta
-            this.detalle.id_producto      = producto.id_producto;
-            this.detalle.id_presentacion  = producto.id_presentacion ?? null;
+            this.detalle.id_producto       = producto.id_producto;
+            this.detalle.id_presentacion   = producto.id_presentacion ?? null;
             this.detalle.factor_conversion = producto.factor_conversion ?? 1;
-            this.detalle.descripcion      = producto.nombre_mostrar;
-            this.detalle.stock            = producto.stock_base_actual ?? null;
-
-            const precioConIva = parseFloat(producto.precio) || 0;
-            const pctImpuesto  = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '')
-                ? Number(producto.porcentaje_impuesto)
-                : (this.apiService.auth_user()?.empresa?.iva ?? 0);
-            this.detalle.porcentaje_impuesto = pctImpuesto;
-
-            // En v2 el precio ya viene con IVA desde el nuevo endpoint
-            this.detalle.precio_iva  = precioConIva.toFixed(4);
-            const precioSinIva       = pctImpuesto > 0
-                ? precioConIva / (1 + pctImpuesto / 100)
-                : precioConIva;
-            this.detalle.precio      = precioSinIva.toFixed(4);
-            this.detalle.precio_base = precioSinIva;
-            this.detalle.precios     = [{ precio: precioConIva.toFixed(4), precio_sin_iva: precioSinIva }];
-
-            if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
-                this.detalle.costo = parseFloat(producto.costo_promedio);
-            } else {
-                this.detalle.costo = parseFloat(producto.costo ?? 0);
-            }
+            this.detalle.descripcion       = producto.nombre_mostrar;
+            this.detalle.stock             = producto.stock_base_actual ?? null;
+            this.detalle.precios           = [{
+                precio: precioSinIva.toFixed(4),
+                precio_sin_iva: precioSinIva,
+            }];
         } else {
-            // Objeto clásico (sin presentaciones aplanadas)
-            this.detalle.id_producto     = producto.id;
-            this.detalle.id_presentacion = null;
+            this.detalle.id_producto       = producto.id;
+            this.detalle.id_presentacion   = null;
             this.detalle.factor_conversion = 1;
-            this.detalle.descripcion     = this.getNombreCompleto(producto);
-            this.detalle.img             = producto.img;
+            this.detalle.precios           = producto.precios ? producto.precios.map((p: any) => {
+                const sinIvaLista = parseFloat(p.precio);
+                return {
+                    ...p,
+                    precio: sinIvaLista.toFixed(4),
+                    precio_sin_iva: sinIvaLista,
+                };
+            }) : [];
+            this.detalle.precios.unshift({
+                precio: precioSinIva.toFixed(4),
+                precio_sin_iva: precioSinIva,
+            });
 
-            const pctImpuesto = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '')
-                ? Number(producto.porcentaje_impuesto)
-                : (this.apiService.auth_user()?.empresa?.iva ?? 0);
-            this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-
-            const precioSinIva = parseFloat(producto.precio);
-            const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
-            this.detalle.precio_iva  = precioConIva.toFixed(4);
-            this.detalle.precio      = precioSinIva.toFixed(4);
-            this.detalle.precio_base = precioSinIva;
-            this.detalle.precios     = producto.precios ? producto.precios.map((p: any) => ({
-                ...p,
-                precio: (parseFloat(p.precio) * (1 + pctImpuesto / 100)).toFixed(4),
-                precio_sin_iva: parseFloat(p.precio)
-            })) : [];
-            this.detalle.precios.unshift({ precio: precioConIva.toFixed(4), precio_sin_iva: precioSinIva });
-
-            if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
-                this.detalle.costo = parseFloat(producto.costo_promedio);
-            } else {
-                this.detalle.costo = parseFloat(producto.costo);
-            }
-
-            // Verificar stock de compuestos
-            if(producto.tipo == 'Compuesto'){
+            if (producto.tipo == 'Compuesto') {
                 producto.composiciones.forEach((composicion:any) => {
                     composicion.compuesto.inventarios = composicion.compuesto.inventarios.filter(
                         (item:any) => item.id_bodega == this.venta.id_bodega
@@ -302,7 +268,7 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
                 this.detalle.stock                = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
                 this.detalle.inventario_por_lotes = false;
                 this.detalle.lote_id              = null;
-            } else {
+            } else if (!esPlanoBuscador) {
                 this.detalle.stock                = null;
                 this.detalle.inventario_por_lotes = false;
                 this.detalle.lote_id              = null;

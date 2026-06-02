@@ -31,6 +31,7 @@
       "@services/*": ["src/app/services/*"],
       "@views/*": ["src/app/views/*"],
       "@pipes/*": ["src/app/pipes/*"],
+      "@utils/*": ["src/app/utils/*"],
       "@charts/*": ["src/app/views/dashboard/*"]
     }
   },
