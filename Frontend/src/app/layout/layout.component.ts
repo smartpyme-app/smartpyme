@@ -17,6 +17,9 @@ import { NotificacionesContainerComponent } from '../shared/parts/notificaciones
 import { Router } from '@angular/router';
 import { AppConstants } from '../constants/app.constants';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { DteDocumentService } from '@services/dte-management/dte-document.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
+import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
 
 @Component({
     selector: 'app-layout',
@@ -45,6 +48,8 @@ export class LayoutComponent implements OnInit {
   public isfullscreen: boolean = false;
   public isVisible: boolean = false;
   public visibleAlertMessage: boolean = false;
+  public showDteReviewModal = false;
+  public dtePendingReviewCount = 0;
 
   readonly ESTADOS_SUSCRIPCION = AppConstants.ESTADOS_SUSCRIPCION;
   readonly DIAS_PRORROGA_SUSCRIPCION = AppConstants.DIAS_PRORROGA_SUSCRIPCION;
@@ -57,7 +62,9 @@ export class LayoutComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     public alertService: AlertService,
-    private router: Router
+    private router: Router,
+    private dteDocumentService: DteDocumentService,
+    private funcionalidadesService: FuncionalidadesService
   ) {}
 
   ngOnInit() {
@@ -65,6 +72,43 @@ export class LayoutComponent implements OnInit {
     this.mostrarAlertaSuscripcion();
 
     this.getAlertSuscription();
+    this.checkDtePendingReviewAlert();
+  }
+
+  private checkDtePendingReviewAlert(): void {
+    const userId = this.usuario?.id;
+    if (!userId || this.dteDocumentService.isReviewAlertDismissed(userId)) {
+      return;
+    }
+
+    this.funcionalidadesService.verificarAcceso(SLUG_DESCARGA_AUTOMATIZADA_DTES).subscribe({
+      next: (tieneAcceso) => {
+        if (!tieneAcceso) {
+          return;
+        }
+        this.dteDocumentService.getPendingReviewAlert().subscribe({
+          next: (res) => {
+            if (res.show_alert && res.pending_count > 0) {
+              this.dtePendingReviewCount = res.pending_count;
+              this.showDteReviewModal = true;
+            }
+          },
+          error: () => {}
+        });
+      }
+    });
+  }
+
+  dismissDteReviewAlert(): void {
+    if (this.usuario?.id) {
+      this.dteDocumentService.dismissReviewAlert(this.usuario.id);
+    }
+    this.showDteReviewModal = false;
+  }
+
+  goToDteReview(): void {
+    this.dismissDteReviewAlert();
+    this.router.navigate(['/dte-management/dtes']);
   }
 
   RedirectSuscripcion() {

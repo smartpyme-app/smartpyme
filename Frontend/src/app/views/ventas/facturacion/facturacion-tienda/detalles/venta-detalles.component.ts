@@ -330,10 +330,17 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     this.detalle = Object.assign({}, producto);
     this.detalle.id = null;
 
-    // Verifica si el producto ya fue ingresado
+    // Campos de presentación para el backend (main / producción)
+    this.detalle.id_presentacion = producto.id_presentacion ?? null;
+    this.detalle.factor_conversion = producto.factor_conversion ?? 1;
+
+    // Agrupar solo si coinciden producto y presentación (caja vs unidad = líneas distintas)
     let detalle = null;
     if (this.apiService.auth_user().empresa.agrupar_detalles_venta) {
-      detalle = this.venta.detalles.find((x: any) => x.id_producto == this.detalle.id_producto)
+      detalle = this.venta.detalles.find((x: any) =>
+        x.id_producto === this.detalle.id_producto &&
+        (x.id_presentacion ?? null) === (this.detalle.id_presentacion ?? null)
+      );
     }
 
     if (detalle) {
@@ -360,7 +367,17 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
       this.detalle.cuenta_a_terceros = 0;
     }
 
-            this.detalle.sub_total = Number((parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.precio)).toFixed(4));
+            if (!this.detalle.precio_iva) {
+                const pctDet = this.obtenerPorcentajeIvaDetalle(this.detalle);
+                if (pctDet > 0) {
+                    this.detalle.precio_iva = (parseFloat(this.detalle.precio) * (1 + pctDet / 100)).toFixed(4);
+                } else {
+                    this.detalle.precio_iva = this.detalle.precio;
+                }
+            }
+
+            const precioSinIva = parseFloat(this.detalle.precio || 0);
+            this.detalle.sub_total = Number((parseFloat(this.detalle.cantidad) * precioSinIva).toFixed(4));
             if(!this.detalle.total || detalle){
                 this.detalle.total = (parseFloat(this.detalle.sub_total) - parseFloat(this.detalle.descuento || 0)).toFixed(4);
             }
@@ -371,8 +388,8 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
                 this.detalle.id_vendedor = this.venta.id_vendedor;
             }
 
-            // Si el producto tiene inventario por lotes, verificar si necesita selección manual
-            if (producto.inventario_por_lotes) {
+            // Si el producto tiene inventario por lotes (y la empresa tiene lotes activos)
+            if (producto.inventario_por_lotes && this.apiService.isLotesActivo()) {
                 const metodologia = this.getLotesMetodologia();
                 if (metodologia === 'Manual') {
                     // Si es manual, abrir modal para seleccionar lote

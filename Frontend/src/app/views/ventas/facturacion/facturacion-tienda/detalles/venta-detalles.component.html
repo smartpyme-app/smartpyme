@@ -59,7 +59,11 @@
                             </div>
                             <div>
                                 {{ detalle.descripcion }} <br>
-                                <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
+                                <small class="text-muted text-tiny">{{ detalle?.tipo }}
+                                  @if (detalle.id_presentacion) {
+                                    <span class="badge bg-success ms-1" style="font-size: 10px; cursor: help;" tooltip="Presentación">P</span>
+                                  }
+                                </small>
                                 @if (esFeCostaRicaActivo && detalleTieneExoneracionCr(detalle)) {
                                   <br><span class="badge bg-info mt-1">Exoneración IVA</span>
                                 }
@@ -92,7 +96,11 @@
                         @if (usuario.empresa.editar_descripcion_venta) {
                           <div>
                             <input class="form-control" type="text" [(ngModel)]="detalle.descripcion" name="descripcion">
-                            <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
+                            <small class="text-muted text-tiny">{{ detalle?.tipo }}
+                              @if (detalle.id_presentacion) {
+                                <span class="badge bg-success ms-1" style="font-size: 10px; cursor: help;" tooltip="Presentación">P</span>
+                              }
+                            </small>
                             <div style="font-size: 14px;" >
                                 <ul>
                                   @for (composicion of detalle?.composiciones; track composicion.id || composicion.nombre_compuesto) {

@@ -14,6 +14,7 @@ import { AuthGuard } from '@guards/auth.guard';
 import { AdminGuard } from '@guards/admin.guard';
 import { CitasGuard } from '@guards/citas.guard';
 import { SuperAdminGuard } from '@guards/super-admin.guard';
+import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
 import { SubscriptionGuard } from '@guards/SuscriptionGuard.guard';
 import { UsuariosGuard } from '@guards/usuarios.guard';
 
@@ -59,10 +60,15 @@ import { ServiceWorkerModule } from '@angular/service-worker';
             registrationStrategy: 'registerWhenStable:30000'
         })], 
   exports: [],
-  providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-        { provide: HTTP_INTERCEPTORS, useClass: AuthorizationInterceptor, multi: true },
-        AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, RoleGuard, PermissionGuard, UsuariosGuard, 
-        AlertService, ApiService, HttpService, AuthService, PermissionService, UtilityService,
-        ConstantsService, MHService, SumPipe, CurrencyPipe, DatePipe, provideEnvironmentNgxMask(), provideHttpClient(withInterceptorsFromDi())] })
+  providers: [
+    { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: AuthorizationInterceptor, multi: true },
+    AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, FuncionalidadGuard,
+    RoleGuard, PermissionGuard, UsuariosGuard,
+    AlertService, ApiService, HttpService, AuthService, PermissionService, UtilityService,
+    ConstantsService, MHService, SumPipe, CurrencyPipe, DatePipe,
+    provideEnvironmentNgxMask(), provideHttpClient(withInterceptorsFromDi())
+  ]
+})
 
 export class AppModule { }

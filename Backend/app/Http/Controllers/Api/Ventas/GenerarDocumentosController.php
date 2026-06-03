@@ -28,6 +28,7 @@ class GenerarDocumentosController extends Controller
 
             if ($empresa->facturacion_electronica && $empresa->fe_ambiente == '01') {
                 $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
+                $documento = Documento::findOrFail($venta->id_documento);
 
                 $DTE = $venta->dte;
 
@@ -41,15 +42,16 @@ class GenerarDocumentosController extends Controller
                         $empresa->custom_empresa['configuraciones']['ticket_en_pdf'] == true
                     ) {
                         $venta->pdf = true;
-
-                        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Ticket', compact('venta', 'DTE'));
+                        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Ticket', compact('venta', 'DTE', 'documento', 'empresa'));
 
                         // Estimar altura:
                            $alto_base = 220; // mm (encabezado, totales, etc.)
                            $alto_por_producto = 30; // mm por línea estimado
 
                            $total_lineas = $venta->detalles()->count();
-                           $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto);
+                           $notaExtra = ($empresa->mostrarNotaDocumentoImpresion() && $documento->nota)
+                               ? min(45, (substr_count((string) $documento->nota, "\n") + 1) * 5) : 0;
+                           $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto) + $notaExtra;
 
                            // Convertir mm a puntos (1mm ≈ 2.83465 pt)
                            $alto_total_pt = $alto_total_mm * 2.83465;
@@ -61,7 +63,7 @@ class GenerarDocumentosController extends Controller
 
                     }else{
                         $venta->pdf = false;
-                        return view('reportes.facturacion.DTE-Ticket', compact('venta', 'DTE'));
+                        return view('reportes.facturacion.DTE-Ticket', compact('venta', 'DTE', 'documento', 'empresa'));
                     }
 
                 }else{
@@ -133,7 +135,9 @@ class GenerarDocumentosController extends Controller
                    $alto_por_producto = 7; // mm por línea estimado
 
                    $total_lineas = $venta->detalles()->count();
-                   $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto);
+                   $notaExtra = ($empresa->mostrarNotaDocumentoImpresion() && $documento->nota)
+                       ? min(45, (substr_count((string) $documento->nota, "\n") + 1) * 5) : 0;
+                   $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto) + $notaExtra;
 
                    // Convertir mm a puntos (1mm ≈ 2.83465 pt)
                    $alto_total_pt = $alto_total_mm * 2.83465;
@@ -344,8 +348,8 @@ class GenerarDocumentosController extends Controller
                 $pdf->setPaper('US Letter', 'portrait');
             }
             else{
-                // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
 

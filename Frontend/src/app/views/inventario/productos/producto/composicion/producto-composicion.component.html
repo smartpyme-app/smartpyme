@@ -1,9 +1,4 @@
-<div class="row" *ngIf="producto.tipo == 'Compuesto'">
-    @if (!producto.id) {
-    <div class="alert alert-info mb-3">
-      Guarde el producto con el botón <strong>Guardar</strong> para poder agregar productos a la composición.
-    </div>
-    }
+<div class="row">
     <h6 class="my-3 font-weight-bold">
         Composiciones
 
@@ -19,45 +14,39 @@
                     <th>Producto</th>
                     <th>Categoria</th>
                     <th class="text-end">Precio</th>
-                    <th class="text-end">Costo</th>
                     <th class="text-end">Cantidad</th>
                     <th class="text-end">Opciones</th>
                     <th width="100" class="text-center"><i class="fa fa-cog"></i> </th>
                 </tr>
             </thead>
             <tbody>
-                @if (loading) {
                 <tr>
-                    <td colspan="8" class="text-center">
+                    <td colspan="8" class="text-center" *ngIf="loading">
                         <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
                     </td>
                 </tr>
-                }
-                @if (!loading && (producto?.composiciones?.length ?? 0) === 0) {
                 <tr>
-                    <td colspan="8" class="text-center">
+                    <td colspan="5" class="text-center" *ngIf="!loading && producto?.composiciones.length == 0">
                         <span class="text-muted">No tiene productos agregados</span>
                     </td>
                 </tr>
-                }
 
-                @for (composicion of producto?.composiciones; track composicion.id) {
-                <tr>
-                    <td>{{ composicion?.nombre_producto }}</td>
-                    <td>{{ composicion?.nombre_categoria }}</td>
-                    <td class="text-end">{{ composicion.precio | currency }}</td>
-                    <td class="text-end">{{ composicion.costo | currency }}</td>
+                <tr *ngFor=" let composicion of producto?.composiciones">
+                    <td>{{ composicion?.nombre_compuesto }}</td>
+                    <td>{{ composicion?.compuesto?.nombre_categoria }}</td>
+                    <td class="text-end">{{ composicion?.compuesto?.precio | currency }}</td>
                     <td class="text-end">{{ composicion.cantidad | number:'1.1' }}</td>
                     <td class="text-end">{{ composicion?.opciones?.length }}</td>
                     <td class="text-center">
                         <div class="d-flex gap-2 justify-content-center">
                             <a (click)="delete(composicion)" class="btn btn-light"><i class="fa fa-trash"></i></a>
-                            <a (click)="openModal(mComposicion, composicion)" class="btn btn-light"><i class="fa fa-pencil-alt"></i></a>
-                            <a (click)="openModalOpciones(mopciones, composicion)" class="btn btn-light" tooltip="Opciones"><i class="fa fa-list-alt"></i></a>
+                            <a (click)="openModal(mComposicion, composicion)" class="btn btn-light"><i
+                                    class="fa fa-pencil-alt"></i></a>
+                            <a (click)="openModalOpciones(mopciones, composicion)" class="btn btn-light"
+                                tooltip="Opciones"><i class="fa fa-list-alt"></i></a>
                         </div>
                     </td>
                 </tr>
-                }
             </tbody>
         </table>
     </div>
@@ -71,88 +60,78 @@
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
         <form autocomplete="off" (ngSubmit)="onSubmit()">
-        <div class="row">
-            <div class="form-group col-md-12 mb-3">
-                <label>Producto:</label>
-                <ng-select name="id_compuesto" [(ngModel)]="composicion.id_compuesto" class="form-select p-0">
-                    <ng-option value="">Seleccionar producto</ng-option>
-                    @for (producto of productos; track producto.id) {
-                    <ng-option [value]="producto.id">
-                        {{producto.nombre}}
-                    </ng-option>
-                    }
-                </ng-select>
+            <div class="row">
+                <div class="form-group col-md-12 mb-3">
+                    <label>Producto:</label>
+                    <app-buscador-productos (selectProducto)="productoSelect($event)"></app-buscador-productos>
+                    <div *ngIf="productoSeleccionado" class="mt-2">
+                        <span class="badge bg-info">{{ productoSeleccionado.nombre_mostrar ||
+                            productoSeleccionado.nombre }}</span>
+                        <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProducto()">
+                            <i class="fa fa-times"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group col-md-12">
+                    <label>Cantidad:</label>
+                    <input id="cantidad" type="number" class="form-control" [(ngModel)]="composicion.cantidad"
+                        name="cantidad" placeholder="Cantidad" step="0.01" min="0">
+                </div>
             </div>
-            <div class="form-group col-md-12">
-                <label>Cantidad:</label>
-                <input id="cantidad" type="number" class="form-control" [(ngModel)]="composicion.cantidad" name="cantidad" placeholder="Cantidad" step="0.01" min="0">
+            <br><br>
+            <div class="d-grid">
+                <button type="submit" [disabled]="saving || !composicion.id_compuesto || !composicion.cantidad"
+                    class="btn btn-primary btn-block">
+                    <span *ngIf="!saving">Agregar</span>
+                    <span *ngIf="saving">Agregando...</span>
+                </button>
             </div>
-        </div>
-        <br><br>
-        <div class="d-grid">
-            <button type="submit" [disabled]="saving || !composicion.id_compuesto" class="btn btn-primary btn-block">
-                @if (!saving) {
-                <span>Agregar</span>
-                }
-                @if (saving) {
-                <span>Agregando...</span>
-                }
-            </button>
-        </div>
         </form>
-  </div>
+    </div>
 </ng-template>
 
 <ng-template #mopciones>
     <div class="modal-header">
-    <h4 class="modal-title pull-left">Opciones</h4>
+        <h4 class="modal-title pull-left">Opciones</h4>
         <button class="btn btn-light text-danger" (click)="modalRef.hide()"><i class="fa fa-close"></i></button>
     </div>
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
-    <div class="row">
-        <div class="form-group col-md-12 mb-3">
-            <label for="">Seleccione un producto para agregarlo como opción:</label>
-            <ng-select name="id_producto" (change)="agregarOpcion()" [(ngModel)]="opcion.id_producto" class="form-select p-0">
-                <ng-option value="" selected>Seleccionar producto</ng-option>
-                @for (producto of productos; track producto.id) {
-                <ng-option [value]="producto.id">
-                    {{producto.nombre}}
-                </ng-option>
-                }
-            </ng-select>
-        </div>
+        <div class="row">
+            <div class="form-group col-md-12 mb-3">
+                <label for="">Seleccione un producto para agregarlo como opción:</label>
+                <app-buscador-productos (selectProducto)="productoSelectOpcion($event)"></app-buscador-productos>
+                <div *ngIf="productoSeleccionado" class="mt-2">
+                    <span class="badge bg-info">{{ productoSeleccionado.nombre }}</span>
+                    <button type="button" class="btn btn-sm btn-link text-danger ms-2"
+                        (click)="limpiarProductoOpcion()">
+                        <i class="fa fa-times"></i> Limpiar
+                    </button>
+                </div>
+            </div>
 
-        <label><b>Opciones:</b></label>
+            <label><b>Opciones:</b></label>
 
-        <div class="form-group col-md-12">
-            <table class="table table-bordered">
-                <tbody>
-                    @if (composicion?.length < 1) {
-                    <tr>
-                        <td colspan="2" class="text-center">
-                            <span class="badge bg-primary">No tiene opciones registradas</span>
-                        </td>
-                    </tr>
-                    }
-                    @if (loading) {
-                    <tr>
-                        <td colspan="2" class="text-center">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    }
-                    @for (opcion of composicion; track opcion.id) {
-                    <tr>
-                        <td>{{ opcion.nombre_producto }}</td>
-                        <td class="text-center">
-                            <a (click)="deleteOpcion(opcion)" class="btn btn-danger">Eliminar</a>
-                        </td>
-                    </tr>
-                    }
-                </tbody>
-            </table>
+            <div class="form-group col-md-12">
+                <table class="table table-bordered">
+                    <tbody>
+                        <tr>
+                            <td colspan="2" class="text-center" *ngIf="composicion?.opciones?.length < 1">
+                                <span class="badge bg-primary">No tiene opciones registradas</span>
+                            </td>
+                            <td colspan="2" class="text-center" *ngIf="loading">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                        <tr *ngFor="let opcion of composicion.opciones">
+                            <td>{{ opcion.nombre_producto }}</td>
+                            <td class="text-center">
+                                <a (click)="deleteOpcion(opcion)" class="btn btn-danger">Eliminar</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-  </div>
 </ng-template>

@@ -76,6 +76,7 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
     productoSelect(producto: any) {
         this.productoSeleccionado = producto;
         this.composicion.id_compuesto = producto.id;
+        this.composicion.id_presentacion = producto.id_presentacion || null;
     }
 
     limpiarProducto() {

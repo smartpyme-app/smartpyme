@@ -10,13 +10,21 @@ class Composicion extends Model {
     protected $fillable = array(
         'id_producto',
         'id_compuesto',
-        'cantidad'
+        'cantidad',
+        'id_presentacion'
     );
 
     protected $appends = ['nombre_producto', 'nombre_compuesto', 'precio', 'costo'];
 
     public function getNombreCompuestoAttribute(){
-        return $this->compuesto()->pluck('nombre')->first();
+        $nombre = $this->compuesto()->pluck('nombre')->first();
+        if ($this->id_presentacion) {
+            $presentacion = $this->presentacion()->first();
+            if ($presentacion && $presentacion->nombre_comercial) {
+                $nombre = $nombre . ' (' . $presentacion->nombre_comercial . ')';
+            }
+        }
+        return $nombre;
     }
 
     public function getNombreProductoAttribute(){
@@ -41,6 +49,10 @@ class Composicion extends Model {
 
     public function opciones(){
         return $this->hasMany('App\Models\Inventario\Composiciones\Opcion','id_composicion');
+    }
+
+    public function presentacion(){
+        return $this->belongsTo('App\Models\Inventario\ProductoPresentacion','id_presentacion');
     }
 
 

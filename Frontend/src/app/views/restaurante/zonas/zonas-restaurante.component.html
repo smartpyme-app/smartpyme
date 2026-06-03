@@ -1,0 +1,114 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <div>
+    <h2 class="page-heading mb-0">Zonas del restaurante</h2>
+    <p class="text-muted small mb-0 mt-1">Organice mesas por áreas (interior, terraza, barra, etc.)</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-default" (click)="openModal(mzona, {})">
+      <i class="fa fa-plus"></i> Añadir zona
+    </button>
+  </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row mb-3">
+    <div class="col">
+      <span class="text-muted" *ngIf="zonas?.length && !loading">
+        Mostrando {{ zonas.length + ' registros' }}
+      </span>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th class="text-center">Orden</th>
+          <th>Estado</th>
+          <th class="text-center"><i class="fa fa-cog"></i></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="4" class="text-center" *ngIf="!zonas.length && !loading">
+            <span class="badge bg-primary">No hay zonas registradas</span>
+          </td>
+          <td colspan="4" class="text-center" *ngIf="loading">
+            <span class="badge bg-primary">Cargando...</span>
+          </td>
+        </tr>
+        <tr class="animated fadeIn" *ngFor="let z of zonas">
+          <td>{{ z.nombre }}</td>
+          <td class="text-center">{{ z.orden }}</td>
+          <td>
+            <select name="activo_{{ z.id }}" class="form-select w-auto border-0"
+              (change)="setEstado(z)" [(ngModel)]="z.activo"
+              [ngClass]="{'bg-light-danger': !z.activo, 'bg-light-success': z.activo}">
+              <option [ngValue]="true">Activo</option>
+              <option [ngValue]="false">Inactivo</option>
+            </select>
+          </td>
+          <td class="text-center">
+            <span class="btn" [popover]="accionesZona" [outsideClick]="true" tooltip="Acciones">
+              <i class="fa fa-ellipsis-vertical fa-fw"></i>
+            </span>
+            <ng-template #accionesZona>
+              <div class="list-group border-0">
+                <a class="list-group-item list-group-item-action border-0 click" (click)="openModal(mzona, z)">
+                  <i class="fa fa-fw fa-edit"></i> Editar
+                </a>
+                <a class="list-group-item list-group-item-action border-0 click" (click)="eliminar(z)">
+                  <i class="fa fa-fw fa-trash"></i> Eliminar
+                </a>
+              </div>
+            </ng-template>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<ng-template #mzona>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+      <h2 class="text-center no-margin">
+        <span *ngIf="zona.id">Editar </span>
+        <span *ngIf="!zona.id">Crear </span>
+        zona
+      </h2>
+    </div>
+    <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+      <app-notificaciones-container></app-notificaciones-container>
+      <div class="row mb-3">
+        <div class="form-group col-12">
+          <label for="zona_nombre">Nombre</label>
+          <input id="zona_nombre" type="text" class="form-control" [(ngModel)]="zona.nombre" name="zona.nombre"
+            placeholder="Ej. Terraza, Salón principal" focus="true">
+        </div>
+        <div class="form-group col-12">
+          <label for="zona_orden">Orden</label>
+          <input id="zona_orden" type="number" class="form-control" min="0" [(ngModel)]="zona.orden" name="zona.orden">
+          <small class="text-muted">Menor número aparece primero en el mapa</small>
+        </div>
+        <div class="form-group col-12">
+          <div class="form-switch bg-light-info rounded">
+            <label for="zona_activo">Activa</label>
+            <input id="zona_activo" class="form-check-input float-end" type="checkbox" role="switch"
+              [(ngModel)]="zona.activo" name="zona.activo">
+          </div>
+        </div>
+      </div>
+      <div class="d-grid">
+        <button type="submit" [disabled]="guardando" class="btn btn-primary btn-block">
+          <span *ngIf="!guardando">Guardar</span>
+          <span *ngIf="guardando">Guardando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

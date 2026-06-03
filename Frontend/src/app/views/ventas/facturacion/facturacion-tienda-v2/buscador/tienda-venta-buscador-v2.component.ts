@@ -1,24 +1,20 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { CurrencyPipe } from '@pipes/currency-format.pipe';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter, catchError, tap } from 'rxjs/operators';
 
-import { SumPipe } from '@pipes/sum.pipe';
-import { inventariosParaStockVenta } from '@shared/utils/inventario-venta.util';
-import { FilterPipe } from '@pipes/filter.pipe';
+import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import {
+    normalizarPorcentajeImpuestoDetalle,
+    resolverPorcentajeImpuestoVenta,
+} from '@utils/impuestos-venta.util';
 
 @Component({
   selector: 'app-tienda-venta-buscador-v2',
-  templateUrl: './tienda-venta-buscador-v2.component.html',
-  standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, CurrencyPipe, FilterPipe, SumPipe],
-  providers: [SumPipe],
+  templateUrl: './tienda-venta-buscador-v2.component.html'
 })
 export class TiendaVentaBuscadorV2Component implements OnInit {
 
@@ -41,7 +37,7 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
     readonly minCaracteresBusqueda = 2;
 
     constructor( 
-        public apiService: ApiService, private alertService: AlertService,
+        private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe
     ) { }
 
@@ -171,89 +167,120 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
     public getPrecioConIva(producto: any): number {
         if (!producto) return 0;
         const precio = parseFloat(producto.precio) || 0;
-        const pct = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '')
-            ? Number(producto.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
+        const pct = resolverPorcentajeImpuestoVenta(
+            producto.porcentaje_impuesto,
+            this.apiService.auth_user()?.empresa?.iva
+        );
         return precio * (1 + pct / 100);
+    }
+
+    private ivaEmpresa(): number {
+        return Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    }
+
+    /** Precio sin IVA + % resuelto (producto o empresa) para armar el detalle de venta v2. */
+    private armarPreciosDetalleV2(producto: any): {
+        pctImpuesto: number;
+        porcentajeImpuesto: number | null;
+        precioSinIva: number;
+        precioConIva: number;
+    } {
+        const ivaEmpresa = this.ivaEmpresa();
+        const pctImpuesto = resolverPorcentajeImpuestoVenta(producto.porcentaje_impuesto, ivaEmpresa);
+        const porcentajeImpuesto = normalizarPorcentajeImpuestoDetalle(producto.porcentaje_impuesto, ivaEmpresa);
+        const precioSinIva = parseFloat(producto.precio) || 0;
+        const precioConIva = pctImpuesto > 0
+            ? precioSinIva * (1 + pctImpuesto / 100)
+            : precioSinIva;
+        return { pctImpuesto, porcentajeImpuesto, precioSinIva, precioConIva };
     }
 
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
-        this.detalle.id_producto    = producto.id;
         this.detalle.descripcion    = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
-        
-        // En v2, el precio se muestra con IVA pero se guarda sin IVA. Usar % del producto si tiene.
-        const pctImpuesto = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '')
-            ? Number(producto.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
-        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-        const precioSinIva = parseFloat(producto.precio);
-        const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
-        
-        // precio_iva: precio con IVA (para cálculos y visualización)
-        this.detalle.precio_iva     = precioConIva.toFixed(4);
-        // precio: precio sin IVA (para guardar en BD)
-        this.detalle.precio         = precioSinIva.toFixed(4);
-        
-        // Guardar también el precio base para referencia
-        this.detalle.precio_base    = precioSinIva;
-        
-        // Lista de tarifas mostrada como precio sin IVA; `precio_iva` se deriva para la columna Total.
-        this.detalle.precios        = producto.precios ? producto.precios.map((p: any) => {
-          const sinIvaLista = parseFloat(p.precio);
-          return {
-            ...p,
-            precio: sinIvaLista.toFixed(4),
-            precio_sin_iva: sinIvaLista,
-          };
-        }) : [];
 
-        this.detalle.precios.unshift({
-                'precio' : precioSinIva.toFixed(4),
-                'precio_sin_iva': precioSinIva
-            });
-            
+        const esPlanoBuscador = producto.nombre_mostrar != null;
+        const { porcentajeImpuesto, precioSinIva, precioConIva } =
+            this.armarPreciosDetalleV2(producto);
+
+        this.detalle.porcentaje_impuesto = porcentajeImpuesto;
+        this.detalle.precio_iva          = precioConIva.toFixed(4);
+        this.detalle.precio              = precioSinIva.toFixed(4);
+        this.detalle.precio_base         = precioSinIva;
+
         if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
-            this.detalle.costo          = parseFloat(producto.costo_promedio);
+            this.detalle.costo = parseFloat(producto.costo_promedio);
         }else{
-            this.detalle.costo          = parseFloat(producto.costo);
+            this.detalle.costo = parseFloat(producto.costo ?? 0);
         }
 
-        // Verificar que los compuestos tengan stock
-            if(producto.tipo == 'Compuesto'){
+        if (esPlanoBuscador) {
+            this.detalle.id_producto       = producto.id_producto;
+            this.detalle.id_presentacion   = producto.id_presentacion ?? null;
+            this.detalle.factor_conversion = producto.factor_conversion ?? 1;
+            this.detalle.descripcion       = producto.nombre_mostrar;
+            this.detalle.tipo              = producto.tipo;
+            this.detalle.stock             = producto.tipo === 'Servicio'
+                ? null
+                : (producto.stock_base_actual ?? null);
+            this.detalle.precios           = [{
+                precio: precioSinIva.toFixed(4),
+                precio_sin_iva: precioSinIva,
+            }];
+        } else {
+            this.detalle.id_producto       = producto.id;
+            this.detalle.id_presentacion   = null;
+            this.detalle.factor_conversion = 1;
+            this.detalle.precios           = producto.precios ? producto.precios.map((p: any) => {
+                const sinIvaLista = parseFloat(p.precio);
+                return {
+                    ...p,
+                    precio: sinIvaLista.toFixed(4),
+                    precio_sin_iva: sinIvaLista,
+                };
+            }) : [];
+            this.detalle.precios.unshift({
+                precio: precioSinIva.toFixed(4),
+                precio_sin_iva: precioSinIva,
+            });
 
+            if (producto.tipo == 'Compuesto') {
                 producto.composiciones.forEach((composicion:any) => {
-                    composicion.compuesto.inventarios = inventariosParaStockVenta(composicion.compuesto.inventarios, this.venta);
-                    let stock          = parseFloat(this.sumPipe.transform(composicion.compuesto.inventarios, 'stock'));
-                    if(stock < composicion.cantidad){
-                        producto.inventarios = [];
-                        console.log("No tiene stock suficiente:" + composicion.nombre_compuesto);
-                    }
+                    composicion.compuesto.inventarios = composicion.compuesto.inventarios.filter(
+                        (item:any) => item.id_bodega == this.venta.id_bodega
+                    );
+                    let stock = parseFloat(this.sumPipe.transform(composicion.compuesto.inventarios, 'stock'));
+                    if(stock < composicion.cantidad){ producto.inventarios = []; }
                 });
-
             }
 
-        producto.inventarios = inventariosParaStockVenta(producto.inventarios, this.venta);
-        // Si el producto tiene inventario por lotes, usar stock de lotes (como en v1)
-        if (producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0) {
-            const lotesBodega = this.venta.id_bodega
-                ? producto.lotes.filter((l: any) => l.id_bodega == this.venta.id_bodega)
-                : producto.lotes;
-            const stockLotes = lotesBodega.reduce((sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0);
-            this.detalle.stock = stockLotes;
-            this.detalle.inventario_por_lotes = true;
-            this.detalle.lote_id = null;
-        } else if (producto.tipo != 'Servicio' && producto.inventarios.length > 0) {
-            this.detalle.stock = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
-            this.detalle.inventario_por_lotes = false;
-            this.detalle.lote_id = null;
-        } else {
-            this.detalle.stock = null;
-            this.detalle.inventario_por_lotes = false;
-            this.detalle.lote_id = null;
+            producto.inventarios = producto.inventarios?.filter((item:any) => item.id_bodega == this.venta.id_bodega) || [];
+
+            if (producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0) {
+                const lotesBodega = this.venta.id_bodega
+                    ? producto.lotes.filter((l: any) => l.id_bodega == this.venta.id_bodega)
+                    : producto.lotes;
+                const stockLotes = lotesBodega.reduce(
+                    (sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0
+                );
+                this.detalle.stock                = stockLotes;
+                this.detalle.inventario_por_lotes = true;
+                this.detalle.lote_id              = null;
+            } else if (producto.tipo != 'Servicio' && producto.inventarios.length > 0) {
+                this.detalle.stock                = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+                this.detalle.inventario_por_lotes = false;
+                this.detalle.lote_id              = null;
+            } else if (!esPlanoBuscador) {
+                this.detalle.stock                = null;
+                this.detalle.inventario_por_lotes = false;
+                this.detalle.lote_id              = null;
+            }
         }
-        this.detalle.cantidad       = 1;
-        this.detalle.descuento      = 0;
-        this.detalle.descuento_porcentaje      = 0;
+
+        this.detalle.cantidad            = 1;
+        this.detalle.descuento           = 0;
+        this.detalle.descuento_porcentaje = 0;
         console.log(this.detalle);
         this.onSubmit();
     }
@@ -305,27 +332,9 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
      */
     getNombreCompleto(producto: any): string {
         if (this.tieneShopify && producto.nombre_variante) {
-            return `${producto.nombre} ${producto.nombre_variante}`;
+            return `${producto.nombre_mostrar || producto.nombre} ${producto.nombre_variante}`;
         }
-        return producto.nombre;
-    }
-
-    /**
-     * Obtiene el stock del producto filtrado por bodega
-     */
-    getStock(producto: any): number {
-        if (!producto.inventarios || !Array.isArray(producto.inventarios) || producto.inventarios.length === 0) {
-            return 0;
-        }
-
-        if (!this.venta || !this.venta.id_bodega) {
-            // Si no hay bodega seleccionada, sumar todo el stock
-            return parseFloat(this.sumPipe.transform(producto.inventarios, 'stock')) || 0;
-        }
-
-        // Filtrar inventarios por bodega y sumar el stock
-        const inventariosFiltrados = producto.inventarios.filter((inv: any) => inv.id_bodega == this.venta.id_bodega);
-        return parseFloat(this.sumPipe.transform(inventariosFiltrados, 'stock')) || 0;
+        return producto.nombre_mostrar || producto.nombre;
     }
 
 }

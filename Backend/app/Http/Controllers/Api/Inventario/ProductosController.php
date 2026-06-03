@@ -325,16 +325,32 @@ class ProductosController extends Controller
 
     public function searchByQuery(Request $request)
     {
-        $query = $request->query('query');
-        $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
+        $query     = $request->query('query');
+        $id_bodega = $request->query('id_bodega');
+        $empresa   = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+        $incluirPresentaciones = $empresa && $empresa->isModuloPresentaciones();
 
-        $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+        // ── 1. Buscar productos base ──────────────────────────────────────────────
+        $with = [
+            'inventarios',
+            'lotes',
+            'composiciones.opciones',
+            'composiciones.compuesto.inventarios',
+            'precios',
+        ];
+        if ($incluirPresentaciones) {
+            $with[] = 'presentaciones';
+        }
+
+        $productos = Producto::where('enable', true)
+            ->with($with)
+            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
             ->where(function ($q) use ($query, $incluirComponenteQuimico) {
-                $q->where('nombre', 'like', "%$query%")
-                    ->orWhere('barcode', 'like', "%$query%")
-                    ->orWhere('codigo', 'like', "%$query%")
-                    ->orWhere('etiquetas', 'like', "%$query%");
+                $q->where('nombre',    'like', "%$query%")
+                  ->orWhere('barcode', 'like', "%$query%")
+                  ->orWhere('codigo',  'like', "%$query%")
+                  ->orWhere('etiquetas', 'like', "%$query%");
                 if ($incluirComponenteQuimico) {
                     $q->orWhere('componente_quimico', 'like', "%$query%");
                 }
@@ -342,7 +358,54 @@ class ProductosController extends Controller
             ->take(50)
             ->get();
 
-        return Response()->json($productos, 200);
+        // ── 2. Construir lista aplanada ────────────────────────────────────────────
+        $resultado = [];
+
+        foreach ($productos as $producto) {
+
+            // Stock base en la bodega solicitada (o total global si no se filtra)
+            $stockBase = $producto->tipo === 'Servicio'
+                ? null
+                : ($id_bodega
+                    ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
+                    : (float) $producto->inventarios->sum('stock'));
+
+            // Fila del producto base
+            $resultado[] = array_merge($producto->toArray(), [
+                'id_producto'      => $producto->id,
+                'id_presentacion'  => null,
+                'nombre_mostrar'   => $producto->nombre,
+                'precio'           => $producto->precio,
+                'stock_base_actual'=> $stockBase,
+                'factor_conversion'=> 1,
+                'presentaciones'   => [],   // no repetir el array en cada fila
+            ]);
+
+            if ($incluirPresentaciones) {
+                foreach ($producto->presentaciones as $pres) {
+                    $factor = (float) $pres->factor_conversion ?: 1;
+
+                    $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
+
+                    $stockEmpaque = $stockBase === null
+                        ? null
+                        : ($factor > 0 ? round($stockBase / $factor, 4) : $stockBase);
+
+                    $resultado[] = array_merge($producto->toArray(), [
+                        'id_producto'      => $producto->id,
+                        'id_presentacion'  => $pres->id,
+                        'nombre_mostrar'   => $nombreMostrar,
+                        'precio'           => $pres->precio_venta,
+                        'stock_base_actual'=> $stockEmpaque,
+                        'factor_conversion'=> $factor,
+                        'codigo_barras'    => $pres->codigo_barras,
+                        'presentaciones'   => [],
+                    ]);
+                }
+            }
+        }
+
+        return Response()->json($resultado, 200);
     }
 
     public function searchByQueryWithBodega(Request $request)
@@ -351,15 +414,27 @@ class ProductosController extends Controller
         $id_bodega = $request->query('id_bodega');
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+        $incluirPresentaciones = $empresa && $empresa->isModuloPresentaciones();
 
         if ($id_bodega) {
+            $withBodega = [
+                'inventarios' => function ($q) use ($id_bodega) {
+                    $q->where('id_bodega', $id_bodega);
+                },
+                'lotes',
+            ];
+            if ($incluirPresentaciones) {
+                $withBodega[] = 'presentaciones';
+            }
+
             $productos = Producto::where('enable', true)
-                ->with(['inventarios' => function ($q) use ($id_bodega) {
-                    $q->where('id_bodega', $id_bodega);
-                }, 'lotes'])
+                ->with($withBodega)
                 ->with('composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios')
-                ->whereHas('inventarios', function ($q) use ($id_bodega) {
-                    $q->where('id_bodega', $id_bodega);
+                ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
+                ->where(function ($q) use ($id_bodega) {
+                    $q->whereHas('inventarios', function ($iq) use ($id_bodega) {
+                        $iq->where('id_bodega', $id_bodega);
+                    })->orWhere('tipo', 'Servicio');
                 })
                 ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
@@ -373,7 +448,13 @@ class ProductosController extends Controller
                 ->take(50)
                 ->get();
         } else {
-            $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+            $withGlobal = ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios'];
+            if ($incluirPresentaciones) {
+                $withGlobal[] = 'presentaciones';
+            }
+
+            $productos = Producto::where('enable', true)->with($withGlobal)->with('precios')
+                ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
                 ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
                         ->orWhere('barcode', 'like', "%$query%")
@@ -387,7 +468,54 @@ class ProductosController extends Controller
                 ->get();
         }
 
-        return Response()->json($productos, 200);
+        // ── 2. Construir lista aplanada ────────────────────────────────────────────
+        $resultado = [];
+
+        foreach ($productos as $producto) {
+
+            // Stock base en la bodega solicitada (o total global si no se filtra)
+            $stockBase = $producto->tipo === 'Servicio'
+                ? null
+                : ($id_bodega
+                    ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
+                    : (float) $producto->inventarios->sum('stock'));
+
+            // Fila del producto base
+            $resultado[] = array_merge($producto->toArray(), [
+                'id_producto'      => $producto->id,
+                'id_presentacion'  => null,
+                'nombre_mostrar'   => $producto->nombre,
+                'precio'           => $producto->precio,
+                'stock_base_actual'=> $stockBase,
+                'factor_conversion'=> 1,
+                'presentaciones'   => [],   // no repetir el array en cada fila
+            ]);
+
+            if ($incluirPresentaciones) {
+                foreach ($producto->presentaciones as $pres) {
+                    $factor = (float) $pres->factor_conversion ?: 1;
+
+                    $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
+
+                    $stockEmpaque = $stockBase === null
+                        ? null
+                        : ($factor > 0 ? round($stockBase / $factor, 4) : $stockBase);
+
+                    $resultado[] = array_merge($producto->toArray(), [
+                        'id_producto'      => $producto->id,
+                        'id_presentacion'  => $pres->id,
+                        'nombre_mostrar'   => $nombreMostrar,
+                        'precio'           => $pres->precio_venta,
+                        'stock_base_actual'=> $stockEmpaque,
+                        'factor_conversion'=> $factor,
+                        'codigo_barras'    => $pres->codigo_barras,
+                        'presentaciones'   => [],
+                    ]);
+                }
+            }
+        }
+
+        return Response()->json($resultado, 200);
     }
 
 
@@ -414,7 +542,9 @@ class ProductosController extends Controller
                 'composiciones.opciones',
                 'precios.usuarios',
                 'imagenes',
-                'proveedores.proveedor'
+                'proveedores.proveedor',
+                'unidad',
+                'presentaciones.unidadMedida'
             )
             ->firstOrFail();
 

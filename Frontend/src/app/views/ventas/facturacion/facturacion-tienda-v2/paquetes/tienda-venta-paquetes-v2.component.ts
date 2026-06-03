@@ -7,6 +7,7 @@ import { SumPipe }     from '@pipes/sum.pipe';
 import { inventariosParaStockVenta } from '@shared/utils/inventario-venta.util';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { normalizarPorcentajeImpuestoDetalle } from '@utils/impuestos-venta.util';
 
 @Component({
   selector: 'app-tienda-venta-paquetes-v2',
@@ -130,6 +131,10 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
         
         // En v2, el precio del paquete ya incluye IVA, pero debemos guardarlo sin IVA
         const iva = this.apiService.auth_user()?.empresa?.iva || 0;
+        this.detalle.porcentaje_impuesto = normalizarPorcentajeImpuestoDetalle(
+            paquete.porcentaje_impuesto,
+            iva
+        );
         const precioConIva = parseFloat(paquete.precio);
         const precioSinIva = iva > 0 ? precioConIva / (1 + iva / 100) : precioConIva;
         
@@ -189,6 +194,10 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
             
             // En v2, el precio del paquete ya incluye IVA, pero debemos guardarlo sin IVA
             const iva = this.apiService.auth_user()?.empresa?.iva || 0;
+            this.detalle.porcentaje_impuesto = normalizarPorcentajeImpuestoDetalle(
+                this.servicio?.porcentaje_impuesto,
+                iva
+            );
             const precioConIva = parseFloat(paquete.precio) + parseFloat(paquete.otros);
             const precioSinIva = iva > 0 ? precioConIva / (1 + iva / 100) : precioConIva;
             

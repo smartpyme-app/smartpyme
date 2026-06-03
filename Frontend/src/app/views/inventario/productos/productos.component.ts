@@ -1,37 +1,21 @@
-import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { PipesModule } from '@pipes/pipes.module';
-import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { PopoverModule } from 'ngx-bootstrap/popover';
-import { TooltipModule } from 'ngx-bootstrap/tooltip';
-import { NgSelectModule } from '@ng-select/ng-select';
-import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
-import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
-import { DescargarInventarioComponent } from '@shared/parts/descargar-inventario/descargar-inventario.component';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { ModalManagerService } from '@services/modal-manager.service';
-import { SumPipe } from '@pipes/sum.pipe';
-import { BaseCrudComponent } from '@shared/base/base-crud.component';
-import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 @Component({
     selector: 'app-productos',
     templateUrl: './productos.component.html',
-    standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, NotificacionesContainerComponent, DescargarInventarioComponent, SumPipe, PopoverModule, TooltipModule, LazyImageDirective],
-    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProductosComponent extends BaseCrudComponent<any> implements OnInit {
+export class ProductosComponent implements OnInit {
 
     public productos: any = [];
-    public override loading: boolean = false;
+    public loading: boolean = false;
     public downloading: boolean = false;
-    public override filtros: any = {};
     public downloadingReporteAnalisis: boolean = false;
+    public filtros: any = {};
     public producto: any = {};
     public bodegas: any = [];
     public categorias: any = [];
@@ -39,6 +23,7 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
     public marcas: any = [];
     /** Suma de stock de todos los productos del resultado filtrado (si está habilitado en Mi cuenta). */
     public stockTotalFiltrado: number | null = null;
+    public mostrarTransformacionProductos = false;
     public ajuste: any = {};
     public inventario: any = {};
     public filtrosKardex: any = {
@@ -47,48 +32,25 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
     };
     public emailKardex: string = '';
 
-    constructor(
-        apiService: ApiService,
-        alertService: AlertService,
-        modalManager: ModalManagerService,
-        private router: Router,
-        private route: ActivatedRoute,
-        private cdr: ChangeDetectorRef
-    ) {
-        super(apiService, alertService, modalManager, {
-            endpoint: 'producto',
-            itemsProperty: 'productos',
-            itemProperty: 'producto',
-            reloadAfterSave: false,
-            reloadAfterDelete: false,
-            messages: {
-                created: 'El producto fue guardado exitosamente.',
-                updated: 'El producto fue guardado exitosamente.',
-                deleted: 'Producto eliminado exitosamente.',
-                createTitle: 'Producto guardado',
-                updateTitle: 'Producto guardado',
-                deleteTitle: 'Producto eliminado',
-                deleteConfirm: '¿Desea eliminar el Registro?'
-            },
-            afterSave: () => {
-                this.producto = {};
-            }
-        });
-    }
+    modalRef!: BsModalRef;
 
-    protected aplicarFiltros(): void {
-        this.filtrarProductos();
-    }
+    constructor(public apiService: ApiService, private alertService: AlertService,
+        private modalService: BsModalService, private router: Router, private route: ActivatedRoute,
+        private funcionalidadesService: FuncionalidadesService
+    ) { }
 
     ngOnInit() {
+        this.funcionalidadesService.verificarAcceso('transformacion-productos').subscribe((tieneFuncionalidad) => {
+            this.mostrarTransformacionProductos = tieneFuncionalidad
+                && this.apiService.isTransformacionProductosConfigActivo();
+        });
+
         // Verificar si Shopify está activo y obtener la bodega del usuario
         const empresa = this.apiService.auth_user()?.empresa;
         const usuario = this.apiService.auth_user();
         const shopifyActivo = !!(empresa?.shopify_store_url);
 
-        this.route.queryParams
-            .pipe(this.untilDestroyed())
-            .subscribe(params => {
+        this.route.queryParams.subscribe(params => {
             this.filtros = {
                 buscador: params['buscador'] || '',
                 id_bodega: +params['id_bodega'] || '',
@@ -113,14 +75,9 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             this.filtrarProductos(false);
         });
 
-        if(this.route.snapshot.routeConfig?.path == 'producto-combos') this.verCombos();
-
-        this.apiService.getAll('categorias/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(categorias => {
-                this.categorias = categorias;
-                this.cdr.markForCheck();
-            }, error => { this.alertService.error(error); });
+        this.apiService.getAll('categorias/list').subscribe(categorias => {
+            this.categorias = categorias;
+        }, error => { this.alertService.error(error); });
 
         this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
@@ -130,21 +87,13 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             this.proveedores = proveedores;
         }, error => { this.alertService.error(error); });
 
-        this.apiService.getAll('productos/marca-productos')
-            .pipe(this.untilDestroyed())
-            .subscribe(marcas => {
-                this.marcas = marcas;
-                this.cdr.markForCheck();
-            }, error => { this.alertService.error(error); });
+        this.apiService.getAll('productos/marca-productos').subscribe(marcas => {
+            this.marcas = marcas;
+        }, error => { this.alertService.error(error); });
 
     }
 
-    verCombos(){
-        this.filtros.tipo = 'Compuesto';
-        this.filtrarProductos();
-    }
-
-    public override loadAll() {
+    public loadAll() {
         // Verificar si Shopify está activo para mantener el filtro de bodega
         const empresa = this.apiService.auth_user()?.empresa;
         const usuario = this.apiService.auth_user();
@@ -165,7 +114,6 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
         this.filtros.sin_stock = '';
         this.filtros.paginate = 10;
         this.filtros.page = 1;
-        this.filtros.tipo = '';
 
         // Si Shopify está activo, restaurar la bodega del usuario
         if (shopifyActivo) {
@@ -191,7 +139,6 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
         });
 
         this.loading = true;
-        this.cdr.markForCheck();
 
         if (!this.filtros.sin_stock) {
             this.filtros.sin_stock = '';
@@ -205,27 +152,17 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             this.filtros.marca = '';
         }
 
-        this.apiService.getAll('productos', this.filtros)
-            .pipe(this.untilDestroyed())
-            .subscribe({
-            next: (productos) => {
-                this.productos = productos;
-                this.stockTotalFiltrado = this.apiService.isInventarioSumarStockBusquedas()
-                    && productos?.stock_total_filtrado !== undefined && productos?.stock_total_filtrado !== null
-                    ? Number(productos.stock_total_filtrado)
-                    : null;
-                this.loading = false;
-                if (this.modalRef) {
-                    this.modalRef.hide();
-                }
-                this.cdr.markForCheck();
-            },
-            error: (error) => {
-                this.alertService.error(error);
-                this.loading = false;
-                this.cdr.markForCheck();
-            },
-        });
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
+            this.productos = productos;
+            this.stockTotalFiltrado = this.apiService.isInventarioSumarStockBusquedas()
+                && productos?.stock_total_filtrado !== undefined && productos?.stock_total_filtrado !== null
+                ? Number(productos.stock_total_filtrado)
+                : null;
+            this.loading = false;
+            if (this.modalRef) {
+                this.modalRef.hide();
+            }
+        }, error => { this.alertService.error(error); this.loading = false; });
     }
 
     public getPorcentajeProducto(producto: any): number {
@@ -235,10 +172,12 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
     }
 
     public setEstado(producto: any) {
-        this.onSubmit(producto, true);
+        this.apiService.store('producto', producto).subscribe(producto => {
+            this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
+        }, error => { this.alertService.error(error); });
     }
 
-    public override delete(id: number) {
+    public delete(id: number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('producto/', id).subscribe(data => {
                 for (let i = 0; i < this.productos['data'].length; i++) {
@@ -262,19 +201,24 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
         this.filtrarProductos(true);
     }
 
-    public override async onSubmit(item?: any, isStatusChange: boolean = false) {
-        await super.onSubmit(item, isStatusChange);
-        this.filtrarProductos();
+    public setPagination(event: any): void {
+        this.loading = true;
+        this.filtros.page = event.page;
+        this.filtrarProductos(false);
     }
 
-  public override setPagination(event: any): void {
-    this.loading = true;
-    this.filtros.page = event.page;
-    this.filtrarProductos(false);
-  }
+    public onSubmit() {
+        this.loading = true;
+        this.apiService.store('producto', this.producto).subscribe(producto => {
+            this.producto = {};
+            this.alertService.success('Producto guardado', 'El producto fue guardado exitosamente.');
+            this.loading = false;
+            this.modalRef.hide();
+        }, error => { this.alertService.error(error); this.loading = false; });
+    }
 
     public openDescargar(template: TemplateRef<any>) {
-        this.openModal(template);
+        this.modalRef = this.modalService.show(template);
     }
 
     public descargarReporteInventarioVentasMensual() {
@@ -300,9 +244,7 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
 
     public descargar() {
         this.downloading = true;
-        this.apiService.export('productos/exportar', this.filtros)
-            .pipe(this.untilDestroyed())
-            .subscribe((data: Blob) => {
+        this.apiService.export('productos/exportar', this.filtros).subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -313,30 +255,27 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-            this.cdr.markForCheck();
-        }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
+        }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('proveedores/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(proveedores => {
-                this.proveedores = proveedores;
-                this.cdr.markForCheck();
-            }, error => { this.alertService.error(error); });
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+            this.proveedores = proveedores;
+        }, error => { this.alertService.error(error); });
 
-        this.openModal(template, { class: 'modal-md', backdrop: 'static' });
+        this.modalRef = this.modalService.show(template);
     }
 
     public openModalAjuste(template: TemplateRef<any>, producto: any) {
         this.ajuste = {};
         this.producto = producto;
         this.inventario = this.producto.inventarios.find((item: any) => item.id_bodega == this.filtros.id_bodega);
-        //console.log(this.filtros);
-        //console.log(this.producto);
+        console.log(this.filtros);
+        console.log(this.producto);
         this.ajuste.stock_actual = this.inventario.stock;
-        super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
     }
 
     public calAjuste() {
@@ -356,47 +295,56 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             this.modalRef.hide();
             this.alertService.modal = false;
             this.loading = false;
-            this.cdr.markForCheck();
-        }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
+        }, error => { this.alertService.error(error); this.loading = false; });
 
     }
 
     public descargarKardex() {
         this.loading = true;
 
+        // Debug: verificar estructura de datos
+        console.log('Estructura completa de productos:', this.productos);
+        console.log('Productos.data:', this.productos.data);
+        console.log('Tipo de productos.data:', typeof this.productos.data);
+        console.log('Es array:', Array.isArray(this.productos.data));
+
         // Usar directamente los productos de la página actual
         const productoIds = this.productos.data.map((p: any) => p.id);
+        console.log('Productos en página actual:', this.productos.data.length);
+        console.log('IDs de productos a enviar:', productoIds);
+        console.log('Tipo de productoIds:', typeof productoIds);
+        console.log('Es array productoIds:', Array.isArray(productoIds));
+
         const filtrosConProductos = {
             producto_ids: productoIds.join(','), // Enviar como string separado por comas
             inicio: undefined, // Sin filtro de fecha
             fin: undefined // Sin filtro de fecha
         };
 
-        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos)
-            .pipe(this.untilDestroyed())
-            .subscribe((data:Blob) => {
-                const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'kardex-filtrado.xlsx';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-                this.loading = false;
-                this.cdr.markForCheck();
-            }, (error) => {
-                this.alertService.error(error);
-                this.loading = false;
-                this.cdr.markForCheck();
-            });
+        // console.log('Filtros con productos:', filtrosConProductos);
+        // console.log('Tipo de filtrosConProductos.producto_ids:', typeof filtrosConProductos.producto_ids);
+
+        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kardex-filtrado.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.loading = false;
+        }, (error) => {
+            this.alertService.error(error);
+            this.loading = false;
+        });
     }
 
     public openDescargarKardex(template: TemplateRef<any>) {
         // Cerrar el modal actual (modal de descarga)
         if (this.modalRef) {
-            this.closeModal();
+            this.modalRef.hide();
         }
 
         // Resetear filtros de kardex
@@ -406,7 +354,7 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
         };
 
         // Abrir el modal de kardex
-        this.openModal(template);
+        this.modalRef = this.modalService.show(template);
     }
 
     public descargarKardexConFiltros() {
@@ -420,6 +368,8 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
 
         // Usar directamente los productos de la página actual
         const productoIds = this.productos.data.map((p: any) => p.id);
+        console.log('Productos en página actual:', this.productos.data.length);
+        console.log('IDs de productos a enviar:', productoIds);
 
         const filtrosConProductos = {
             producto_ids: productoIds.join(','), // Enviar como string separado por comas
@@ -427,37 +377,37 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             fin: this.filtrosKardex.fecha_fin
         };
 
-        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos)
-            .pipe(this.untilDestroyed())
-            .subscribe((data:Blob) => {
-                const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'kardex-filtrado.xlsx';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-                this.loading = false;
-                this.closeModal();
-            }, (error) => {
-                this.alertService.error(error);
-                this.loading = false;
-            });
+        console.log('Filtros con productos:', filtrosConProductos);
+
+        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kardex-filtrado.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.loading = false;
+            this.modalRef.hide();
+        }, (error) => {
+            this.alertService.error(error);
+            this.loading = false;
+        });
     }
 
     public openDescargarKardexMasivo(template: TemplateRef<any>) {
         // Cerrar el modal actual (modal de descarga)
         if (this.modalRef) {
-            this.closeModal();
+            this.modalRef.hide();
         }
 
         // Resetear email
         this.emailKardex = '';
 
         // Abrir el modal de kardex masivo
-        this.openModal(template);
+        this.modalRef = this.modalService.show(template);
     }
 
     public solicitarKardexMasivo() {
@@ -474,17 +424,13 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             id_empresa: this.apiService.auth_user().id_empresa
         };
 
-        this.apiService.store('productos/kardex/solicitar-masivo', datosSolicitud)
-            .pipe(this.untilDestroyed())
-            .subscribe((response: any) => {
+        this.apiService.store('productos/kardex/solicitar-masivo', datosSolicitud).subscribe((response: any) => {
             this.alertService.success('Solicitud registrada', 'Su solicitud ha sido registrada en la cola de procesamiento. Recibirá un correo electrónico cuando el kardex esté listo.');
             this.loading = false;
-            this.closeModal();
-            this.cdr.markForCheck();
+            this.modalRef.hide();
         }, (error) => {
             this.alertService.error(error);
             this.loading = false;
-            this.cdr.markForCheck();
         });
     }
 
@@ -513,11 +459,11 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
      */
     public getDiasVencimiento(fechaVencimiento: string): string {
         if (!fechaVencimiento) return '';
-
+        
         const hoy = new Date();
         const vencimiento = new Date(fechaVencimiento);
         const diasRestantes = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
-
+        
         if (diasRestantes < 0) {
             return `Vencido hace ${Math.abs(diasRestantes)} día(s)`;
         } else if (diasRestantes === 0) {
@@ -534,11 +480,11 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
      */
     public getClaseVencimiento(fechaVencimiento: string): string {
         if (!fechaVencimiento) return '';
-
+        
         const hoy = new Date();
         const vencimiento = new Date(fechaVencimiento);
         const diasRestantes = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
-
+        
         if (diasRestantes < 0) {
             return 'text-danger';
         } else if (diasRestantes === 0) {

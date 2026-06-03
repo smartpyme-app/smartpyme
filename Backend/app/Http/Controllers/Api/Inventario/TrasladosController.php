@@ -10,6 +10,8 @@ use App\Models\Inventario\Traslado;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Admin\Empresa;
+use App\Models\Inventario\ProductoPresentacion;
+use App\Services\Inventario\ConversionInventarioService;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -101,6 +103,17 @@ class TrasladosController extends Controller
             throw new \Exception('Has seleccionado la misma sucursal.');
         }
 
+        $traslado->id_presentacion = $request->id_presentacion ?: null;
+        $factor = 1;
+        if ($traslado->id_presentacion) {
+            $presentacion = ProductoPresentacion::find($traslado->id_presentacion);
+            if ($presentacion) {
+                $factor = (float) $presentacion->factor_conversion;
+            }
+        }
+        $cantidadOriginal = (float) $request->cantidad;
+        $cantidadBase = ConversionInventarioService::calcularCantidadBase($cantidadOriginal, $factor);
+
         $producto = Producto::where('id', $request->id_producto)->with('composiciones')->firstOrFail();
 
         if ($producto->inventario_por_lotes && !$request->lote_id) {
@@ -118,8 +131,8 @@ class TrasladosController extends Controller
             }
 
             $stockDisponible = (float) $loteOrigen->stock;
-            $cantidadRequerida = (float) $request->cantidad;
-
+            $cantidadRequerida = $cantidadBase;
+            
             if ($stockDisponible < $cantidadRequerida) {
                 throw new \Exception('El lote no tiene stock suficiente. Stock disponible: ' . number_format($stockDisponible, 2) . ', Cantidad requerida: ' . number_format($cantidadRequerida, 2));
             }
@@ -140,8 +153,8 @@ class TrasladosController extends Controller
                 if ($loteDestino->id_producto != $producto->id) {
                     throw new \Exception('El lote de destino no corresponde al producto.');
                 }
-
-                $loteDestino->stock += $request->cantidad;
+                
+                $loteDestino->stock += $cantidadBase;
                 $loteDestino->save();
             } else {
                 // Si no se especificó lote destino, buscar o crear uno con el mismo número
@@ -151,7 +164,7 @@ class TrasladosController extends Controller
                     ->first();
 
                 if ($loteDestino) {
-                    $loteDestino->stock += $request->cantidad;
+                    $loteDestino->stock += $cantidadBase;
                     $loteDestino->save();
                 } else {
                     // Crear nuevo lote en destino con el mismo número
@@ -161,8 +174,8 @@ class TrasladosController extends Controller
                         'numero_lote' => $loteOrigen->numero_lote,
                         'fecha_vencimiento' => $loteOrigen->fecha_vencimiento,
                         'fecha_fabricacion' => $loteOrigen->fecha_fabricacion,
-                        'stock' => $request->cantidad,
-                        'stock_inicial' => $request->cantidad,
+                        'stock' => $cantidadBase,
+                        'stock_inicial' => $cantidadBase,
                         'id_empresa' => Auth::user()->id_empresa,
                     ]);
                 }
@@ -172,21 +185,21 @@ class TrasladosController extends Controller
         $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega_de)->first();
         $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega)->first();
 
-        if ($origen->stock < $request->cantidad) {
+        if ($origen->stock < $cantidadBase) {
             throw new \Exception('La sucursal no tiene el stock suficiente.');
         }
 
 
         if ($origen && $destino) {
             $traslado->save();
-
-            $origen->stock -= $traslado->cantidad;
+            
+            $origen->stock -= $cantidadBase;
             $origen->save();
-            $origen->kardex($traslado, $traslado->cantidad * -1);
+            $origen->kardex($traslado, $cantidadBase * -1);
 
-            $destino->stock += $traslado->cantidad;
+            $destino->stock += $cantidadBase;
             $destino->save();
-            $destino->kardex($traslado, $traslado->cantidad);
+            $destino->kardex($traslado, $cantidadBase);
 
         }else{
             throw new \Exception('Una de las sucursales no tiene inventario.');
@@ -198,13 +211,13 @@ class TrasladosController extends Controller
             $origen = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $request->id_bodega_de)->first();
             $destino = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $request->id_bodega)->first();
 
-            if ($origen->stock < $request->cantidad) {
-                return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
+            if ($origen->stock < ($cantidadBase * $comp->cantidad)) {
+                return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente para componentes.', 'code' => 400], 400);
             }
 
 
             if ($origen && $destino) {
-                $cantidad = $traslado->cantidad * $comp->cantidad;
+                $cantidad = $cantidadBase * $comp->cantidad;
 
                 $origen->stock -= $cantidad;
                 $origen->save();
@@ -215,7 +228,7 @@ class TrasladosController extends Controller
                 $destino->kardex($traslado, $cantidad);
 
             }else{
-                throw new \Exception('Una de las sucursales no tiene inventario.');
+                throw new \Exception('Una de las sucursales no tiene inventario de los componentes.');
             }
         }
 
@@ -263,6 +276,17 @@ class TrasladosController extends Controller
         try {
             foreach ($request->detalles as $detalleData) {
                 $producto = Producto::where('id', $detalleData['producto_id'])->with('composiciones')->firstOrFail();
+                
+                $idPresentacion = $detalleData['id_presentacion'] ?? null;
+                $factor = 1;
+                if ($idPresentacion) {
+                    $presentacion = ProductoPresentacion::find($idPresentacion);
+                    if ($presentacion) {
+                        $factor = (float) $presentacion->factor_conversion;
+                    }
+                }
+                $cantidadOriginal = (float) $detalleData['cantidad'];
+                $cantidadBase = ConversionInventarioService::calcularCantidadBase($cantidadOriginal, $factor);
 
                 // Si el producto tiene inventario por lotes, el lote_id es requerido
                 if ($producto->inventario_por_lotes && (!isset($detalleData['lote_id']) || !$detalleData['lote_id'])) {
@@ -281,8 +305,8 @@ class TrasladosController extends Controller
 
                     // Convertir a float para comparación más precisa
                     $stockDisponible = (float) $loteOrigen->stock;
-                    $cantidadRequerida = (float) $detalleData['cantidad'];
-
+                    $cantidadRequerida = $cantidadBase;
+                    
                     if ($stockDisponible < $cantidadRequerida) {
                         throw new \Exception("El lote no tiene stock suficiente para el producto {$producto->nombre}. Stock disponible: " . number_format($stockDisponible, 2) . ", Cantidad requerida: " . number_format($cantidadRequerida, 2));
                     }
@@ -303,8 +327,8 @@ class TrasladosController extends Controller
                         if ($loteDestino->id_producto != $producto->id) {
                             throw new \Exception("El lote de destino no corresponde al producto.");
                         }
-
-                        $loteDestino->stock += $detalleData['cantidad'];
+                        
+                        $loteDestino->stock += $cantidadBase;
                         $loteDestino->save();
                     } else {
                         // Si no se especificó lote destino, buscar o crear uno con el mismo número
@@ -314,7 +338,7 @@ class TrasladosController extends Controller
                             ->first();
 
                         if ($loteDestino) {
-                            $loteDestino->stock += $detalleData['cantidad'];
+                            $loteDestino->stock += $cantidadBase;
                             $loteDestino->save();
                         } else {
                             // Crear nuevo lote en destino con el mismo número
@@ -324,8 +348,8 @@ class TrasladosController extends Controller
                                 'numero_lote' => $loteOrigen->numero_lote,
                                 'fecha_vencimiento' => $loteOrigen->fecha_vencimiento,
                                 'fecha_fabricacion' => $loteOrigen->fecha_fabricacion,
-                                'stock' => $detalleData['cantidad'],
-                                'stock_inicial' => $detalleData['cantidad'],
+                                'stock' => $cantidadBase,
+                                'stock_inicial' => $cantidadBase,
                                 'id_empresa' => Auth::user()->id_empresa,
                             ]);
                         }
@@ -339,17 +363,18 @@ class TrasladosController extends Controller
                 $destino = Inventario::where('id_producto', $producto->id)
                     ->where('id_bodega', $request->destino_id)
                     ->first();
-
-                if (!$origen || $origen->stock < $detalleData['cantidad']) {
+                
+                if (!$origen || $origen->stock < $cantidadBase) {
                     throw new \Exception("La bodega origen no tiene stock suficiente para el producto {$producto->nombre}.");
                 }
 
                 // Crear registro de traslado
                 $traslado = new Traslado();
                 $traslado->id_producto = $producto->id;
+                $traslado->id_presentacion = $idPresentacion;
                 $traslado->id_bodega_de = $request->origen_id;
                 $traslado->id_bodega = $request->destino_id;
-                $traslado->cantidad = $detalleData['cantidad'];
+                $traslado->cantidad = $cantidadOriginal;
                 $traslado->concepto = $request->nota ?? ($request->concepto ?? 'Traslado');
                 $traslado->estado = $request->estado;
                 $traslado->id_usuario = Auth::id();
@@ -363,21 +388,21 @@ class TrasladosController extends Controller
                 $traslado->save();
 
                 // Actualizar inventarios
-                $origen->stock -= $detalleData['cantidad'];
+                $origen->stock -= $cantidadBase;
                 $origen->save();
-                $origen->kardex($traslado, $detalleData['cantidad'] * -1);
-
+                $origen->kardex($traslado, $cantidadBase * -1);
+                
                 if ($destino) {
-                    $destino->stock += $detalleData['cantidad'];
+                    $destino->stock += $cantidadBase;
                     $destino->save();
-                    $destino->kardex($traslado, $detalleData['cantidad']);
+                    $destino->kardex($traslado, $cantidadBase);
                 } else {
                     $destino = new Inventario();
                     $destino->id_producto = $producto->id;
                     $destino->id_bodega = $request->destino_id;
-                    $destino->stock = $detalleData['cantidad'];
+                    $destino->stock = $cantidadBase;
                     $destino->save();
-                    $destino->kardex($traslado, $detalleData['cantidad']);
+                    $destino->kardex($traslado, $cantidadBase);
                 }
             }
 
@@ -400,13 +425,22 @@ class TrasladosController extends Controller
         $traslado->estado = 'Cancelado';
         $traslado->save();
 
+        $factor = 1;
+        if ($traslado->id_presentacion) {
+            $presentacion = ProductoPresentacion::find($traslado->id_presentacion);
+            if ($presentacion) {
+                $factor = (float) $presentacion->factor_conversion;
+            }
+        }
+        $cantidadBase = ConversionInventarioService::calcularCantidadBase((float) $traslado->cantidad, $factor);
+
         $producto = Producto::where('id', $traslado->id_producto)->with('composiciones')->firstOrFail();
 
         // Si el traslado tiene lote_id, revertir el movimiento en los lotes
         if ($traslado->lote_id) {
             $loteOrigen = Lote::find($traslado->lote_id);
             if ($loteOrigen) {
-                $loteOrigen->stock += $traslado->cantidad;
+                $loteOrigen->stock += $cantidadBase;
                 $loteOrigen->save();
 
                 // Usar lote_id_destino si se guardó; si no, buscar por numero_lote
@@ -420,7 +454,7 @@ class TrasladosController extends Controller
                 }
 
                 if ($loteDestino) {
-                    $loteDestino->stock -= $traslado->cantidad;
+                    $loteDestino->stock -= $cantidadBase;
                     if ($loteDestino->stock < 0) {
                         $loteDestino->stock = 0;
                     }
@@ -432,21 +466,17 @@ class TrasladosController extends Controller
         $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega_de)->first();
         $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega)->first();
 
-        // if ($origen->stock < $traslado->cantidad) {
-        //     return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
-        // }
-
-
+        
         if ($origen && $destino) {
             $traslado->save();
-
-            $origen->stock += $traslado->cantidad;
+            
+            $origen->stock += $cantidadBase;
             $origen->save();
-            $origen->kardex($traslado, $traslado->cantidad * -1);
+            $origen->kardex($traslado, $cantidadBase * -1);
 
-            $destino->stock -= $traslado->cantidad;
+            $destino->stock -= $cantidadBase;
             $destino->save();
-            $destino->kardex($traslado, $traslado->cantidad);
+            $destino->kardex($traslado, $cantidadBase);
 
         }else{
             throw new \Exception('Una de las sucursales no tiene inventario.');
@@ -458,13 +488,9 @@ class TrasladosController extends Controller
             $origen = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $traslado->id_bodega_de)->first();
             $destino = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $traslado->id_bodega)->first();
 
-            // if ($origen->stock < $traslado->cantidad) {
-            //     return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
-            // }
-
-
+            
             if ($origen && $destino) {
-                $cantidad = $traslado->cantidad * $comp->cantidad;
+                $cantidad = $cantidadBase * $comp->cantidad;
 
                 $origen->stock += $cantidad;
                 $origen->save();
@@ -514,6 +540,15 @@ class TrasladosController extends Controller
 
         DB::beginTransaction();
         try {
+            $factor = 1;
+            if ($traslado->id_presentacion) {
+                $presentacion = ProductoPresentacion::find($traslado->id_presentacion);
+                if ($presentacion) {
+                    $factor = (float) $presentacion->factor_conversion;
+                }
+            }
+            $cantidadBase = ConversionInventarioService::calcularCantidadBase((float) $traslado->cantidad, $factor);
+
             $producto = Producto::where('id', $traslado->id_producto)->with('composiciones')->firstOrFail();
 
             if ($traslado->lote_id && $producto->inventario_por_lotes) {
@@ -525,7 +560,7 @@ class TrasladosController extends Controller
                 }
 
                 $stockDisponible = (float) $loteOrigen->stock;
-                $cantidadRequerida = (float) $traslado->cantidad;
+                $cantidadRequerida = $cantidadBase;
                 if ($stockDisponible < $cantidadRequerida) {
                     throw new \Exception('El lote no tiene stock suficiente. Stock disponible: ' . number_format($stockDisponible, 2) . ', Cantidad requerida: ' . number_format($cantidadRequerida, 2));
                 }
@@ -535,7 +570,7 @@ class TrasladosController extends Controller
 
                 if ($traslado->lote_id_destino) {
                     $loteDestino = Lote::findOrFail($traslado->lote_id_destino);
-                    $loteDestino->stock += $traslado->cantidad;
+                    $loteDestino->stock += $cantidadBase;
                     $loteDestino->save();
                 } else {
                     $loteDestino = Lote::where('id_producto', $producto->id)
@@ -543,7 +578,7 @@ class TrasladosController extends Controller
                         ->where('numero_lote', $loteOrigen->numero_lote)
                         ->first();
                     if ($loteDestino) {
-                        $loteDestino->stock += $traslado->cantidad;
+                        $loteDestino->stock += $cantidadBase;
                         $loteDestino->save();
                     } else {
                         Lote::create([
@@ -552,8 +587,8 @@ class TrasladosController extends Controller
                             'numero_lote' => $loteOrigen->numero_lote,
                             'fecha_vencimiento' => $loteOrigen->fecha_vencimiento,
                             'fecha_fabricacion' => $loteOrigen->fecha_fabricacion,
-                            'stock' => $traslado->cantidad,
-                            'stock_inicial' => $traslado->cantidad,
+                            'stock' => $cantidadBase,
+                            'stock_inicial' => $cantidadBase,
                             'id_empresa' => Auth::user()->id_empresa,
                         ]);
                     }
@@ -563,24 +598,24 @@ class TrasladosController extends Controller
             $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega_de)->first();
             $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega)->first();
 
-            if (!$origen || $origen->stock < $traslado->cantidad) {
+            if (!$origen || $origen->stock < $cantidadBase) {
                 throw new \Exception('La sucursal origen no tiene el stock suficiente.');
             }
 
-            $origen->stock -= $traslado->cantidad;
+            $origen->stock -= $cantidadBase;
             $origen->save();
-            $origen->kardex($traslado, $traslado->cantidad * -1);
+            $origen->kardex($traslado, $cantidadBase * -1);
 
-            $destino->stock += $traslado->cantidad;
+            $destino->stock += $cantidadBase;
             $destino->save();
-            $destino->kardex($traslado, $traslado->cantidad);
+            $destino->kardex($traslado, $cantidadBase);
 
             foreach ($producto->composiciones as $comp) {
                 $prodComp = Producto::where('id', $comp->id_compuesto)->with('composiciones')->firstOrFail();
                 $origenComp = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $traslado->id_bodega_de)->first();
                 $destinoComp = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $traslado->id_bodega)->first();
-                if ($origenComp && $destinoComp && $origenComp->stock >= $traslado->cantidad * $comp->cantidad) {
-                    $cantidad = $traslado->cantidad * $comp->cantidad;
+                if ($origenComp && $destinoComp && $origenComp->stock >= $cantidadBase * $comp->cantidad) {
+                    $cantidad = $cantidadBase * $comp->cantidad;
                     $origenComp->stock -= $cantidad;
                     $origenComp->save();
                     $origenComp->kardex($traslado, $cantidad * -1);

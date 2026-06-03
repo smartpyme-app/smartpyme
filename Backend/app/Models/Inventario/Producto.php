@@ -248,4 +248,18 @@ class Producto extends Model
     {
         return $this->hasMany('App\Models\Inventario\Lote', 'id_producto');
     }
+
+    /**
+     * Unidad de medida base del producto (catálogo fiscal MH).
+     * La FK en productos se llama 'medida'.
+     */
+    public function unidad()
+    {
+        return $this->belongsTo('App\Models\MH\Unidad', 'medida');
+    }
+
+    public function presentaciones()
+    {
+        return $this->hasMany('App\Models\Inventario\ProductoPresentacion', 'id_producto');
+    }
 }

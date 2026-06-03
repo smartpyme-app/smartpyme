@@ -309,6 +309,34 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
     });
   }
 
+  enviarComanda(p: PedidoCanal): void {
+    if (!['borrador', 'pendiente_facturar'].includes(p.estado)) {
+      return;
+    }
+    this.restauranteService.enviarComandaPedido(p.id).subscribe({
+      next: (res: any) => {
+        this.alertService.success('Comanda enviada', 'Se generó la comanda para cocina/barra.');
+        const ids = (res?.comandas || []).map((c: any) => c?.id).filter(Boolean);
+        ids.forEach((id: number, index: number) => {
+          setTimeout(() => {
+            this.restauranteService.imprimirComanda(id).subscribe({
+              next: (html) => {
+                const w = window.open('', '_blank', 'width=400,height=600');
+                if (w) {
+                  w.document.write(html);
+                  w.document.close();
+                  w.focus();
+                }
+              },
+              error: (err) => this.alertService.error(err)
+            });
+          }, index * 400);
+        });
+      },
+      error: (err) => this.alertService.error(err)
+    });
+  }
+
   /** Abre facturación con líneas del pedido (misma idea que pre-cuenta mesa). */
   irAFacturar(p: PedidoCanal): void {
     if (p.estado !== 'pendiente_facturar') {

@@ -275,3 +275,24 @@
 <app-footer></app-footer>
 <app-chat-drawer></app-chat-drawer>
 <app-speed-dial></app-speed-dial>
+
+<div *ngIf="showDteReviewModal" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
+  style="background-color: rgba(0, 0, 0, 0.5);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">DTEs pendientes de revisión</h5>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">
+          Hay <strong>{{ dtePendingReviewCount }}</strong>
+          {{ dtePendingReviewCount === 1 ? 'DTE' : 'DTEs' }} válido(s) pendiente(s) de revisión o procesamiento.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" (click)="dismissDteReviewAlert()">Revisar más tarde</button>
+        <button type="button" class="btn btn-primary" (click)="goToDteReview()">Ir a revisión</button>
+      </div>
+    </div>
+  </div>
+</div>

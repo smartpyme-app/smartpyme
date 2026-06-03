@@ -1,16 +1,18 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { LibroIvaPaisService } from '@views/contabilidad/libro-iva-shared/libro-iva-pais.service';
+import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
 
 import { FormControl } from '@angular/forms';
-import { debounceTime, switchMap, filter  } from 'rxjs/operators';
+import { debounceTime, switchMap, filter, filter as rxFilter } from 'rxjs/operators';
+import { Subject, takeUntil } from 'rxjs';
 import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
@@ -21,7 +23,7 @@ import { BaseComponent } from '@shared/base/base.component';
 
 })
 
-export class SidebarAdminComponent extends BaseComponent implements OnInit {
+export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDestroy {
     public sidebarCollapsed:boolean = false;
 
     public productosIsCollapsed:boolean = true;
@@ -32,6 +34,9 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
     public finanzasIsCollapsed:boolean = true;
     public paquetesIsCollapsed:boolean = true;
     public planillaIsCollapsed:boolean = true;
+    public lealtadClientesIsCollapsed:boolean = true;
+    public restauranteIsCollapsed:boolean = true;
+    public pedidosIsCollapsed:boolean = true;
     public adminIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
@@ -41,6 +46,13 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
     public notificaciones: any = [];
     public modules: any[] = [];
     public contabilidadHabilitada: boolean = false;
+    public tieneFidelizacionHabilitada = false;
+    public tieneModuloRestaurante = false;
+    public mostrarMenuRestaurante = false;
+    public mostrarMenuPedidos = false;
+    public tieneDescargaDtesHabilitada = false;
+
+    private destroy$ = new Subject<void>();
 
     searchControl = new FormControl();
 
@@ -48,7 +60,8 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
         public apiService: ApiService,
         public alertService: AlertService,
         private funcionalidadesService: FuncionalidadesService,
-        private libroIvaPais: LibroIvaPaisService
+        private libroIvaPais: LibroIvaPaisService,
+        private router: Router
     ) {
         super();
     }
@@ -104,6 +117,21 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
         }else{
             this.planillaIsCollapsed = JSON.parse(localStorage.getItem('planillaIsCollapsed')!);
         }
+        if (!localStorage.getItem('lealtadClientesIsCollapsed')) {
+            localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        } else {
+            this.lealtadClientesIsCollapsed = JSON.parse(localStorage.getItem('lealtadClientesIsCollapsed')!);
+        }
+        if (!localStorage.getItem('restauranteIsCollapsed')) {
+            localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
+        } else {
+            this.restauranteIsCollapsed = JSON.parse(localStorage.getItem('restauranteIsCollapsed')!);
+        }
+        if (!localStorage.getItem('pedidosIsCollapsed')) {
+            localStorage.setItem('pedidosIsCollapsed', this.pedidosIsCollapsed.toString());
+        } else {
+            this.pedidosIsCollapsed = JSON.parse(localStorage.getItem('pedidosIsCollapsed')!);
+        }
         if (!localStorage.getItem('adminIsCollapsed')) {
             localStorage.setItem('adminIsCollapsed', this.adminIsCollapsed.toString());
         }else{
@@ -127,6 +155,69 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
         this.loadNotificaciones();
         this.loadModules();
         this.verificarAccesoContabilidad();
+        this.verificarFidelizacionHabilitada();
+        this.verificarModuloRestauranteHabilitado();
+        this.verificarDescargaDtesHabilitada();
+
+        this.funcionalidadesService.onCambios()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(() => {
+                this.verificarFidelizacionHabilitada();
+                this.verificarModuloRestauranteHabilitado();
+                this.verificarDescargaDtesHabilitada();
+            });
+
+        this.router.events
+            .pipe(
+                rxFilter(event => event instanceof NavigationEnd),
+                takeUntil(this.destroy$)
+            )
+            .subscribe(() => {
+                this.verificarFidelizacionHabilitada();
+                this.verificarModuloRestauranteHabilitado();
+                this.verificarDescargaDtesHabilitada();
+                this.actualizarMenusRestaurantePedidos();
+            });
+    }
+
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
+
+    private verificarFidelizacionHabilitada(): void {
+        this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
+            next: (tieneAcceso) => { this.tieneFidelizacionHabilitada = tieneAcceso; },
+            error: () => { this.tieneFidelizacionHabilitada = false; }
+        });
+    }
+
+    private verificarModuloRestauranteHabilitado(): void {
+        this.funcionalidadesService.verificarAcceso('modulo-restaurante').subscribe({
+            next: (tieneAcceso) => {
+                this.tieneModuloRestaurante = tieneAcceso;
+                this.actualizarMenusRestaurantePedidos();
+            },
+            error: () => {
+                this.tieneModuloRestaurante = false;
+                this.actualizarMenusRestaurantePedidos();
+            }
+        });
+    }
+
+    private verificarDescargaDtesHabilitada(): void {
+        this.funcionalidadesService.verificarAcceso(SLUG_DESCARGA_AUTOMATIZADA_DTES).subscribe({
+            next: (tieneAcceso) => { this.tieneDescargaDtesHabilitada = tieneAcceso; },
+            error: () => { this.tieneDescargaDtesHabilitada = false; }
+        });
+    }
+
+    /** Funcionalidad activa en Super Admin + preferencia en empresa (custom_empresa) */
+    private actualizarMenusRestaurantePedidos(): void {
+        const vista = this.apiService.getVistaModuloRestaurantePedidos();
+        const tieneFuncionalidad = this.tieneModuloRestaurante;
+        this.mostrarMenuRestaurante = tieneFuncionalidad && (vista === 'restaurante' || vista === 'ambos');
+        this.mostrarMenuPedidos = tieneFuncionalidad && (vista === 'pedidos' || vista === 'ambos');
     }
 
     verificarAccesoContabilidad(): void {
@@ -243,6 +334,33 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
         this.toggleSidebarMenu();
     }
 
+    toggleLealtadClientes() {
+        if (this.lealtadClientesIsCollapsed) {
+            this.closeAll();
+        }
+        this.lealtadClientesIsCollapsed = !this.lealtadClientesIsCollapsed;
+        localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
+    toggleRestaurante() {
+        if (this.restauranteIsCollapsed) {
+            this.closeAll();
+        }
+        this.restauranteIsCollapsed = !this.restauranteIsCollapsed;
+        localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
+    togglePedidos() {
+        if (this.pedidosIsCollapsed) {
+            this.closeAll();
+        }
+        this.pedidosIsCollapsed = !this.pedidosIsCollapsed;
+        localStorage.setItem('pedidosIsCollapsed', this.pedidosIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
     togglePaquetes() {
         if(this.paquetesIsCollapsed){
             this.closeAll();
@@ -275,6 +393,12 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit {
         localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
         this.planillaIsCollapsed = true;
         localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
+        this.lealtadClientesIsCollapsed = true;
+        localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        this.restauranteIsCollapsed = true;
+        localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
+        this.pedidosIsCollapsed = true;
+        localStorage.setItem('pedidosIsCollapsed', this.pedidosIsCollapsed.toString());
         this.paquetesIsCollapsed = true;
         localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
         this.adminIsCollapsed = true;

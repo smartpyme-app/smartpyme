@@ -122,6 +122,12 @@ export const routes: Routes = [
           path: '',
           loadChildren: () => import('./views/fidelizacion/fidelizacion.module').then(m => m.FidelizacionModule),
         },
+        // DTE Management
+        {
+          path: '',
+          canActivate: [AdminGuard],
+          loadChildren: () => import('./views/dte-management/dte-management.module').then(m => m.DteManagementModule),
+        },
         // Restaurante
         {
           path: '',

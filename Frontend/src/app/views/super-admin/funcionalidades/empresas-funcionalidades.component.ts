@@ -5,6 +5,8 @@ import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { AlertService } from '@services/alert.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
+import { ApiService } from '@services/api.service';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
@@ -56,7 +58,9 @@ export class EmpresasFuncionalidadesComponent implements OnInit {
 
   constructor(
     private http: HttpClient,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private funcionalidadesService: FuncionalidadesService,
+    private apiService: ApiService
   ) { }
 
   ngOnInit(): void {
@@ -167,6 +171,8 @@ export class EmpresasFuncionalidadesComponent implements OnInit {
           // Actualizar estado
           funcionalidad.estado = funcionalidad.asignada ? 'activado' : 'desactivado';
           
+          this.invalidarCacheSiEmpresaActual();
+
           // Auto-ocultar mensaje de éxito después de 3 segundos
           setTimeout(() => {
             this.mensajeExito = '';
@@ -207,6 +213,8 @@ export class EmpresasFuncionalidadesComponent implements OnInit {
           this.funcionalidades.forEach(f => {
             f.estado = f.asignada ? 'activado' : 'desactivado';
           });
+
+          this.invalidarCacheSiEmpresaActual();
           
           // Auto-ocultar mensaje de éxito después de 3 segundos
           setTimeout(() => {
@@ -232,5 +240,13 @@ export class EmpresasFuncionalidadesComponent implements OnInit {
   // Método para verificar si hay cambios pendientes
   hayCambiosPendientes(): boolean {
     return this.contarCambiosPendientes() > 0;
+  }
+
+  /** Si se editó la empresa del usuario logueado, refrescar menús sin relogin. */
+  private invalidarCacheSiEmpresaActual(): void {
+    const idEmpresaUsuario = this.apiService.auth_user()?.id_empresa;
+    if (idEmpresaUsuario && this.empresaSeleccionada === idEmpresaUsuario) {
+      this.funcionalidadesService.limpiarCache();
+    }
   }
 }

@@ -2,7 +2,7 @@ import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
-import { RestauranteService, Mesa, Reserva } from '@services/restaurante.service';
+import { RestauranteService, Mesa, Reserva, ZonaRestaurante } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
 
 @Component({
@@ -13,6 +13,7 @@ import { AlertService } from '@services/alert.service';
 })
 export class RestauranteComponent implements OnInit {
   mesas: Mesa[] = [];
+  zonas: ZonaRestaurante[] = [];
   loading = false;
   modalRef?: BsModalRef;
   modalAbrirRef?: BsModalRef;
@@ -43,6 +44,27 @@ export class RestauranteComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarMesas();
+    this.cargarZonas();
+  }
+
+  cargarZonas(): void {
+    this.restauranteService.getZonas({ activo: true }).subscribe({
+      next: (z) => { this.zonas = z || []; },
+      error: () => { this.zonas = []; }
+    });
+  }
+
+  get mesasPorZona(): { nombre: string; orden: number; mesas: Mesa[] }[] {
+    const grupos = new Map<string, { nombre: string; orden: number; mesas: Mesa[] }>();
+    for (const mesa of this.mesas) {
+      const zona = mesa.zona_restaurante?.nombre || mesa.zona || 'Sin zona';
+      const orden = mesa.zona_restaurante?.orden ?? 9999;
+      if (!grupos.has(zona)) {
+        grupos.set(zona, { nombre: zona, orden, mesas: [] });
+      }
+      grupos.get(zona)!.mesas.push(mesa);
+    }
+    return Array.from(grupos.values()).sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre));
   }
 
   cargarMesas(): void {
@@ -206,7 +228,10 @@ export class RestauranteComponent implements OnInit {
 
   openModalMesa(template: TemplateRef<any>, mesa?: Mesa): void {
     this.mesaSeleccionada = mesa || null;
-    this.mesaForm = mesa ? { ...mesa } : { numero: '', capacidad: 4, zona: '', orden: 0, activo: true };
+    this.mesaForm = mesa
+      ? { ...mesa, zona_id: mesa.zona_id ?? mesa.zona_restaurante?.id ?? null }
+      : { numero: '', capacidad: 4, zona_id: null, orden: 0, activo: true };
+    this.cargarZonas();
     this.alertService.modal = true;
     this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
   }

@@ -25,6 +25,10 @@ import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from
 import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
+import {
+  normalizarPorcentajeImpuestoDetalle,
+  resolverPorcentajeImpuestoVenta,
+} from '@utils/impuestos-venta.util';
 import * as moment from 'moment';
 
 @Component({
@@ -419,29 +423,8 @@ export class FacturacionV2Component implements OnInit {
       this.sesionId = navState?.sesionId ?? (qp.get('sesion') ? +qp.get('sesion')! : null);
       const detalles = navState?.preCuentaData?.detalles ?? [];
       if (detalles.length) {
-        const iva = this.apiService.auth_user()?.empresa?.iva ?? 0;
         this.venta.observaciones = ((this.venta.observaciones || '') + ' Mesa ' + (navState.preCuentaData.mesa_numero || '')).trim();
-        this.venta.detalles = detalles.map((d: any) => {
-        const sub = (d.cantidad || 0) * (parseFloat(d.precio) || 0);
-        return {
-          id_producto: d.id_producto,
-          cantidad: d.cantidad,
-          precio: parseFloat(d.precio).toFixed(4),
-          descripcion: d.descripcion || '',
-          costo: 0,
-          descuento: 0,
-          descuento_porcentaje: 0,
-          sub_total: sub.toFixed(4),
-          total: sub.toFixed(4),
-          tipo_gravado: 'gravada',
-          porcentaje_impuesto: iva,
-          gravada: 0,
-          exenta: 0,
-          no_sujeta: 0,
-          iva: 0,
-        };
-      });
-        this.normalizarDetallesTipoGravado(this.venta);
+        this.venta.detalles = this.mapearDetallesConsumoExterno(detalles);
         this.sumTotal();
         const pctPropinaEmpresa = parseFloat(String(this.apiService.auth_user()?.empresa?.propina_porcentaje ?? '')) || 0;
         if (pctPropinaEmpresa > 0) {
@@ -712,11 +695,12 @@ export class FacturacionV2Component implements OnInit {
           detalle.stock = this.resolveStockParaDetalle(producto);
 
           // En v2, lista sin IVA (como configuración del producto); columna Precio muestra ese valor cuando hay lista
-          const pctImpuesto =
-            producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== ''
-              ? Number(producto.porcentaje_impuesto)
-              : this.apiService.auth_user()?.empresa?.iva ?? 0;
-          detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+          const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
+          const pctImpuesto = resolverPorcentajeImpuestoVenta(producto.porcentaje_impuesto, ivaEmpresa);
+          detalle.porcentaje_impuesto = normalizarPorcentajeImpuestoDetalle(
+            producto.porcentaje_impuesto,
+            ivaEmpresa
+          );
 
           const precioSinIva = parseFloat(producto.precio);
           const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
@@ -964,11 +948,10 @@ export class FacturacionV2Component implements OnInit {
 
     let pctDetalle = 0;
     if (this.venta.cobrar_impuestos) {
-      pctDetalle =
-        detalle?.porcentaje_impuesto != null && detalle?.porcentaje_impuesto !== ''
-          ? Number(detalle.porcentaje_impuesto)
-          : this.apiService.auth_user()?.empresa?.iva ?? 0;
-      pctDetalle = Number(pctDetalle) || 0;
+      pctDetalle = resolverPorcentajeImpuestoVenta(
+        detalle?.porcentaje_impuesto,
+        this.apiService.auth_user()?.empresa?.iva
+      );
     }
 
     const totalNum = parseFloat(detalle.total) || 0;
@@ -1133,8 +1116,11 @@ export class FacturacionV2Component implements OnInit {
     const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
     const porcentajesImpuestos = (this.venta.impuestos || []).map((i: any) => Number(i.porcentaje));
     if (this.venta.cobrar_impuestos) {
-      const pctDetalleDe = (d: any) => (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-        ? Number(d.porcentaje_impuesto) : empresaIva;
+      const pctDetalleDe = (d: any) => resolverPorcentajeImpuestoVenta(
+        d.porcentaje_impuesto,
+        empresaIva,
+        true
+      );
 
       this.venta.impuestos.forEach((impuesto: any) => {
         const pctImp = Number(impuesto.porcentaje);
@@ -1714,31 +1700,7 @@ export class FacturacionV2Component implements OnInit {
 
     const detalles = data.detalles || [];
     if (detalles.length) {
-      const iva = this.apiService.auth_user()?.empresa?.iva ?? 0;
-      this.venta.detalles = detalles.map((d: any) => {
-        const precio = parseFloat(String(d.precio)) || 0;
-        const cant = parseFloat(String(d.cantidad)) || 0;
-        const descLine = parseFloat(String(d.descuento ?? 0)) || 0;
-        const sub = Math.max(0, cant * precio - descLine);
-        return {
-          id_producto: d.id_producto,
-          cantidad: cant,
-          precio: precio.toFixed(4),
-          descripcion: d.descripcion || '',
-          costo: 0,
-          descuento: descLine.toFixed(4),
-          descuento_porcentaje: 0,
-          sub_total: sub.toFixed(4),
-          total: sub.toFixed(4),
-          tipo_gravado: 'gravada',
-          porcentaje_impuesto: iva,
-          gravada: 0,
-          exenta: 0,
-          no_sujeta: 0,
-          iva: 0,
-        };
-      });
-      this.normalizarDetallesTipoGravado(this.venta);
+      this.venta.detalles = this.mapearDetallesConsumoExterno(detalles);
       this.sumTotal();
     }
 
@@ -2054,6 +2016,42 @@ export class FacturacionV2Component implements OnInit {
     return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
   }
 
+  /** Detalles desde pre-cuenta restaurante o pedido canal: precios sin IVA, IVA desglosado en línea (v2). */
+  private mapearDetallesConsumoExterno(detalles: any[]): any[] {
+    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    return detalles.map((d: any) => {
+      const cant = parseFloat(String(d.cantidad)) || 0;
+      const descLine = parseFloat(String(d.descuento ?? 0)) || 0;
+      const pctNum = resolverPorcentajeImpuestoVenta(d.porcentaje_impuesto, empresaIva);
+      let precioSinIva = parseFloat(String(d.precio)) || 0;
+      let precioConIva = d.precio_con_iva != null && d.precio_con_iva !== ''
+        ? parseFloat(String(d.precio_con_iva))
+        : (pctNum > 0 ? precioSinIva * (1 + pctNum / 100) : precioSinIva);
+
+      if (d.precios_sin_iva === false && pctNum > 0) {
+        precioConIva = precioSinIva;
+        precioSinIva = this.calcularPrecioSinIva(precioConIva, pctNum);
+      }
+
+      const detalle: any = {
+        id_producto: d.id_producto,
+        cantidad: cant,
+        precio: precioSinIva.toFixed(4),
+        precio_iva: precioConIva.toFixed(4),
+        descripcion: d.descripcion || '',
+        costo: 0,
+        descuento: descLine.toFixed(4),
+        descuento_porcentaje: 0,
+        tipo_gravado: 'gravada',
+        porcentaje_impuesto: pctNum,
+        exenta: 0,
+        no_sujeta: 0,
+        cuenta_a_terceros: 0,
+      };
+      this.aplicarLineaGravadaDesdePrecio(detalle);
+      return detalle;
+    });
+  }
 
   /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura gravada/exenta/no_sujeta para que el IVA cuadre. */
   private normalizarDetallesTipoGravado(venta: any) {

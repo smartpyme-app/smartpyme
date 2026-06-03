@@ -100,8 +100,10 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
 
     productoSelect(producto:any){
     	this.producto = producto;
-        this.detalle.id_producto = this.producto.id;
-        this.detalle.nombre_producto = this.producto.nombre;
+        this.detalle.id_producto = this.producto.id_producto || this.producto.id;
+        this.detalle.id_presentacion = this.producto.id_presentacion || null;
+        this.detalle.factor_conversion = this.producto.factor_conversion || 1;
+        this.detalle.nombre_producto = this.producto.nombre_mostrar || this.producto.nombre;
         this.detalle.medida = this.producto.medida;
         this.detalle.costo = this.producto.costo;
         this.detalle.categoria_nombre = this.producto.categoria_nombre;
@@ -263,8 +265,9 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
 	        	}, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 			}else{
 				for (var i = 0; i < this.entrada.detalles.length; ++i) {
-					if (this.entrada.detalles[i].id_producto === detalle.id_producto ){
+					if (this.entrada.detalles[i].id_producto === detalle.id_producto && (this.entrada.detalles[i].id_presentacion || null) === (detalle.id_presentacion || null)){
 						this.entrada.detalles.splice(i, 1);
+						break;
 					}
 				}
 	        	this.alertService.success("Eliminado", "El registro fue eliminado exitosamente.");

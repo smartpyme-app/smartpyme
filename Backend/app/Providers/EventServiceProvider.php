@@ -30,6 +30,10 @@ class EventServiceProvider extends ServiceProvider
         'App\Events\AuthorizationApproved' => [
             'App\Listeners\Authorization\AuthorizationApprovedListener',
         ],
+        \App\Events\DteValidated::class => [
+            \App\Listeners\InsertDteIntoIvaModule::class,
+            \App\Listeners\NotifyAccountingModule::class,
+        ],
     ];
 
     protected $subscribe = [

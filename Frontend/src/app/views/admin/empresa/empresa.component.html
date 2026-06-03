@@ -755,6 +755,19 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Muestra la nota configurada en el documento (Factura, Ticket, etc.) al imprimir desde facturación.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="mostrar_nota_documento_impresion">Mostrar nota del documento al imprimir</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        id="mostrar_nota_documento_impresion"
+                                        [checked]="isMostrarNotaDocumentoImpresion()"
+                                        (change)="toggleMostrarNotaDocumentoImpresion()"
+                                        name="mostrar_nota_documento_impresion">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
                                 <p class="empresa-pref-desc small text-muted mb-0">Permitir seleccionar un vendedor por cada detalle de venta.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="vendedor_detalle_venta">Vendedor por detalle</label>
@@ -951,10 +964,25 @@
                                 Muestra el campo componente químico en productos y lo incluye en las búsquedas.
                             </small>
                         </div>
+
                     </div>
 
                     <hr>
                     <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
+                    <div class="form-group col-md-12 col-xl-6" *ngIf="tieneAccesoModuloPresentacionesProductos">
+                        <p class="text-muted small mb-2">
+                            Su empresa tiene activa la funcionalidad <strong>Módulo de Presentaciones</strong> (asignada en el administrador).
+                        </p>
+                        <p class="mb-2">Permite definir presentaciones alternativas (caja, blister, etc.) en productos y usarlas en ventas e inventario.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="modulo_presentaciones">Módulo de presentaciones</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="modulo_presentaciones"
+                                [checked]="isModuloPresentaciones()"
+                                (change)="toggleModuloPresentaciones()"
+                                name="modulo_presentaciones">
+                        </div>
+                    </div>
                     <div class="form-group col-md-12 col-xl-6">
                         <p>Asignar automáticamente el <strong>código de barras</strong> como número correlativo al crear productos (solo dígitos, según el máximo numérico existente en la empresa).</p>
                         <div class="form-switch bg-light-info rounded">
@@ -977,6 +1005,21 @@
                                 name="inventario_sumar_stock_busquedas">
                         </div>
                     </div>
+                    <div *ngIf="tieneAccesoTransformacionProductos" class="form-group col-md-12 col-xl-6">
+                        <p>
+                            Su empresa tiene activa la funcionalidad <strong>Transformación de productos</strong> (asignada en el administrador).
+                            Active esta opción para permitir convertir un producto en otros (entradas y salidas de stock) desde inventario.
+                        </p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="transformacion_productos_activo">Habilitar transformación de productos</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="transformacion_productos_activo"
+                                [checked]="isTransformacionProductosActivo()"
+                                (change)="toggleTransformacionProductosActivo()"
+                                name="transformacion_productos_activo">
+                        </div>
+                    </div>
+                    
                     <div class="form-group col-md-12 col-xl-6">
                         <p>Habilitar reporte de proyeccción de inventario</p>
                         <div class="form-switch bg-light-info rounded">
@@ -988,6 +1031,7 @@
                                 name="inventario_reporte_analisis_ventas_mensual">
                         </div>
                     </div>
+                    
                     <div class="form-group col-md-6">
                         <label for="valor_inventario">Valor de inventario:</label>
                         <select class="form-select" [(ngModel)]="empresa.valor_inventario" name="valor_inventario">
@@ -996,7 +1040,6 @@
                             <option value="ultimo">Costo última compra</option>
                         </select>
                     </div>
-
                     <!-- <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Habilitar términos y condiciones por defecto en las cotizaciones.</p>
                         <div class="form-switch bg-light-info rounded">

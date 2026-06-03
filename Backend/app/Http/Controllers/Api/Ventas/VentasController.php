@@ -55,6 +55,7 @@ use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
 use App\Models\Restaurante\PedidoRestaurante;
 use App\Services\Restaurante\PedidoCanalInventarioService;
+use App\Services\Inventario\ConversionInventarioService;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\Schema;
 use App\Exports\VentasExport;
@@ -443,6 +444,20 @@ class VentasController extends Controller
         // Ajustar stocks
         foreach ($venta->detalles as $detalle) {
 
+            // ── Resolución del factor de conversión (presentaciones) ──────────
+            $factorPresentacion = 1;
+            if (!empty($detalle->id_presentacion)) {
+                $presentacion = \App\Models\Inventario\ProductoPresentacion::find($detalle->id_presentacion);
+                if ($presentacion) {
+                    $factorPresentacion = (float) $presentacion->factor_conversion;
+                }
+            }
+            // Cantidad en unidades base que se mueve en inventario/Kardex
+            $cantidadBase = ConversionInventarioService::calcularCantidadBase(
+                $detalle->cantidad,
+                $factorPresentacion
+            );
+
             $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
 
             // Anular venta y regresar stock
@@ -452,27 +467,30 @@ class VentasController extends Controller
                 if ($detalle->lote_id) {
                     $lote = Lote::find($detalle->lote_id);
                     if ($lote) {
-                        $lote->stock += $detalle->cantidad;
+                        $lote->stock += $cantidadBase;
                         $lote->save();
                     }
                 }
 
                 if ($inventario) {
-                    $inventario->stock += $detalle->cantidad;
+                    $inventario->stock += $cantidadBase;
                     $inventario->save();
-                    $inventario->kardex($venta, $detalle->cantidad * -1);
+                    $inventario->kardex($venta, $cantidadBase * -1);
                 }
 
-                // Inventario compuestos
+                // Inventario compuestos (los compuestos no usan presentaciones: su factor es siempre 1)
                 foreach ($detalle->composiciones()->get() as $comp) {
-
                     $inventario = Inventario::where('id_producto', $comp->id_producto)
                         ->where('id_bodega', $venta->id_bodega)->first();
 
                     if ($inventario) {
-                        $inventario->stock += $detalle->cantidad * $comp->cantidad;
+                        $cantidadCompBase = ConversionInventarioService::calcularCantidadBase(
+                            $detalle->cantidad * $comp->cantidad,
+                            1
+                        );
+                        $inventario->stock += $cantidadCompBase;
                         $inventario->save();
-                        $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
+                        $inventario->kardex($venta, $cantidadCompBase * -1);
                     }
                 }
 
@@ -490,29 +508,32 @@ class VentasController extends Controller
                 // Si el detalle tiene lote_id, descontar del lote
                 if ($detalle->lote_id) {
                     $lote = Lote::find($detalle->lote_id);
-                    if ($lote && $lote->stock >= $detalle->cantidad) {
-                        $lote->stock -= $detalle->cantidad;
+                    if ($lote && $lote->stock >= $cantidadBase) {
+                        $lote->stock -= $cantidadBase;
                         $lote->save();
                     }
                 }
 
                 // Aplicar stock
                 if ($inventario) {
-                    $inventario->stock -= $detalle->cantidad;
+                    $inventario->stock -= $cantidadBase;
                     $inventario->save();
-                    $inventario->kardex($venta, $detalle->cantidad);
+                    $inventario->kardex($venta, $cantidadBase);
                 }
 
                 // Inventario compuestos
                 foreach ($detalle->composiciones()->get() as $comp) {
-
                     $inventario = Inventario::where('id_producto', $comp->id_producto)
                         ->where('id_bodega', $venta->id_bodega)->first();
 
                     if ($inventario) {
-                        $inventario->stock -= $detalle->cantidad * $comp->cantidad;
+                        $cantidadCompBase = ConversionInventarioService::calcularCantidadBase(
+                            $detalle->cantidad * $comp->cantidad,
+                            1
+                        );
+                        $inventario->stock -= $cantidadCompBase;
                         $inventario->save();
-                        $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad));
+                        $inventario->kardex($venta, $cantidadCompBase);
                     }
                 }
 
@@ -697,6 +718,23 @@ class VentasController extends Controller
                     $detalle = new Detalle;
                 $det['id_venta'] = $venta->id;
 
+                // ── Cálculos de Costos con Presentaciones ──
+                $factorDet = 1;
+                if (!empty($det['id_presentacion'])) {
+                    $presentacionDet = \App\Models\Inventario\ProductoPresentacion::find($det['id_presentacion']);
+                    if ($presentacionDet) {
+                        $factorDet = (float) $presentacionDet->factor_conversion;
+                    }
+                }
+
+                if (isset($det['costo'])) {
+                    // $det['costo'] trae el costo del producto base
+                    $costoProporcional = round((float) $det['costo'] * $factorDet, 6);
+                    $det['costo'] = $costoProporcional;
+                    
+                    // Aseguramos que total_costo sea exacto
+                    $det['total_costo'] = round($costoProporcional * (float) $det['cantidad'], 6);
+                }
 
                 $detalle->fill($det);
                 $detalle->save();
@@ -732,9 +770,17 @@ class VentasController extends Controller
                         if (!isset($item['id_compuesto']) || empty($item['id_compuesto'])) {
                             continue; // Saltar esta composición si no tiene id_compuesto
                         }
+                        $factorComp = 1;
+                        if (isset($item['id_presentacion']) && $item['id_presentacion']) {
+                            $presentacionComp = \App\Models\Inventario\ProductoPresentacion::find($item['id_presentacion']);
+                            if ($presentacionComp) {
+                                $factorComp = $presentacionComp->factor_conversion;
+                            }
+                        }
+
                         $cd = new DetalleCompuesto;
                         $cd->id_producto = $item['id_compuesto'];
-                        $cd->cantidad   = $item['cantidad'];
+                        $cd->cantidad   = $item['cantidad'] * $factorComp;
                         $cd->id_detalle = $detalle->id;
                         $cd->save();
                     }
@@ -747,6 +793,20 @@ class VentasController extends Controller
                     // Obtener el producto para verificar si es servicio
                     $producto = Producto::where('id', $det['id_producto'])->first();
 
+                    // ── Resolución del factor de conversión (presentaciones) ──────────────
+                    $factorDet = 1;
+                    if (!empty($det['id_presentacion'])) {
+                        $presentacionDet = \App\Models\Inventario\ProductoPresentacion::find($det['id_presentacion']);
+                        if ($presentacionDet) {
+                            $factorDet = (float) $presentacionDet->factor_conversion;
+                        }
+                    }
+                    // Cantidad en unidades base que se descuenta del inventario y del Kardex
+                    $cantidadBaseDet = ConversionInventarioService::calcularCantidadBase(
+                        $det['cantidad'],
+                        $factorDet
+                    );
+                    
                     // Validar stock solo si no es servicio y si la empresa no permite vender sin stock
                     if ($producto && $producto->tipo != 'Servicio') {
                         $inventario = Inventario::where('id_producto', $det['id_producto'])
@@ -755,8 +815,8 @@ class VentasController extends Controller
                         // Validar stock disponible
                         if ($inventario) {
                             $stockDisponible = $inventario->stock;
-                            $cantidadRequerida = $det['cantidad'];
-
+                            $cantidadRequerida = $cantidadBaseDet;
+                            
                             // Si no se permite vender sin stock y no hay suficiente stock
                             if (!$puedeVenderSinStock && $stockDisponible < $cantidadRequerida) {
                                 DB::rollback();
@@ -821,17 +881,17 @@ class VentasController extends Controller
 
                         if ($loteSeleccionado) {
                             // Validar stock del lote
-                            if ($loteSeleccionado->stock < $det['cantidad']) {
+                            if ($loteSeleccionado->stock < $cantidadBaseDet) {
                                 if (!$puedeVenderSinStock) {
                                     DB::rollback();
                                     return response()->json([
-                                        'error' => "No hay suficiente stock en el lote {$loteSeleccionado->numero_lote}. Stock disponible: {$loteSeleccionado->stock}, Cantidad requerida: {$det['cantidad']}"
+                                        'error' => "No hay suficiente stock en el lote {$loteSeleccionado->numero_lote}. Stock disponible: {$loteSeleccionado->stock}, Cantidad requerida: {$cantidadBaseDet}"
                                     ], 400);
                                 }
                             }
 
                             // Descontar del lote
-                            $loteSeleccionado->stock -= $det['cantidad'];
+                            $loteSeleccionado->stock -= $cantidadBaseDet;
                             $loteSeleccionado->save();
 
                             // Guardar lote_id en el detalle
@@ -842,9 +902,9 @@ class VentasController extends Controller
                             $inventario = Inventario::where('id_producto', $det['id_producto'])
                                 ->where('id_bodega', $venta->id_bodega)->first();
                             if ($inventario) {
-                                $inventario->stock -= $det['cantidad'];
+                                $inventario->stock -= $cantidadBaseDet;
                                 $inventario->save();
-                                $inventario->kardex($venta, $det['cantidad'], $det['precio']);
+                                $inventario->kardex($venta, $cantidadBaseDet, $det['precio']);
                             }
                         } else {
                             // No hay lotes disponibles o no se seleccionó (metodología Manual sin lote_id)
@@ -865,9 +925,9 @@ class VentasController extends Controller
                         $inventario = Inventario::where('id_producto', $det['id_producto'])
                             ->where('id_bodega', $venta->id_bodega)->first();
                         if ($inventario) {
-                            $inventario->stock -= $det['cantidad'];
+                            $inventario->stock -= $cantidadBaseDet;
                             $inventario->save();
-                            $inventario->kardex($venta, $det['cantidad'], $det['precio']);
+                            $inventario->kardex($venta, $cantidadBaseDet, $det['precio']);
                         }
                     }
 
@@ -883,8 +943,15 @@ class VentasController extends Controller
 
                             // Validar stock de productos compuestos solo si no es servicio
                             if ($productoCompuesto && $productoCompuesto->tipo != 'Servicio') {
-                                $cantidadCompRequerida = $det['cantidad'] * $comp['cantidad'];
-
+                                $factorComp = 1;
+                                if (isset($comp['id_presentacion']) && $comp['id_presentacion']) {
+                                    $presentacionComp = \App\Models\Inventario\ProductoPresentacion::find($comp['id_presentacion']);
+                                    if ($presentacionComp) {
+                                        $factorComp = $presentacionComp->factor_conversion;
+                                    }
+                                }
+                                $cantidadCompRequerida = $det['cantidad'] * $comp['cantidad'] * $factorComp;
+                                
                                 // Verificar si el producto compuesto tiene lotes activos
                                 if ($productoCompuesto->inventario_por_lotes && $lotesActivo) {
                                     $metodologia = $empresa->getLotesMetodologia();
@@ -1400,8 +1467,8 @@ class VentasController extends Controller
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Smartpyme', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             } else {
-                // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
 

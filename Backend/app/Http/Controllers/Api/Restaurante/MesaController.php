@@ -4,11 +4,22 @@ namespace App\Http\Controllers\Api\Restaurante;
 
 use App\Http\Controllers\Controller;
 use App\Models\Restaurante\Mesa;
+use App\Models\Restaurante\ZonaRestaurante;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class MesaController extends Controller
 {
+    private function sincronizarZonaTexto(array &$data, int $idEmpresa): void
+    {
+        if (! empty($data['zona_id'])) {
+            $zona = ZonaRestaurante::where('id_empresa', $idEmpresa)->find($data['zona_id']);
+            $data['zona'] = $zona?->nombre;
+        } elseif (array_key_exists('zona_id', $data) && empty($data['zona_id'])) {
+            $data['zona'] = null;
+        }
+    }
+
     public function index(Request $request): JsonResponse
     {
         $user = auth()->user();
@@ -20,7 +31,10 @@ class MesaController extends Controller
             ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
             ->when($request->activo !== null, fn ($q) => $q->where('activo', $request->boolean('activo')));
 
-        $mesas = $query->with(['sesionActiva', 'reservasActivas'])->orderBy('orden')->orderBy('numero')->get();
+        $mesas = $query->with(['sesionActiva', 'reservasActivas', 'zonaRestaurante'])
+            ->orderBy('orden')
+            ->orderBy('numero')
+            ->get();
 
         $mesas->each(function ($mesa) {
             $sesion = $mesa->sesionActiva;
@@ -50,6 +64,7 @@ class MesaController extends Controller
         $validated = $request->validate([
             'numero' => 'required|string|max:20',
             'capacidad' => 'nullable|integer|min:1|max:99',
+            'zona_id' => 'nullable|integer|exists:restaurante_zonas,id',
             'zona' => 'nullable|string|max:50',
             'id_sucursal' => 'nullable|integer|exists:empresa_sucursales,id',
             'orden' => 'nullable|integer|min:0',
@@ -58,8 +73,10 @@ class MesaController extends Controller
         $validated['id_empresa'] = $user->id_empresa;
         $validated['capacidad'] = $validated['capacidad'] ?? 4;
         $validated['orden'] = $validated['orden'] ?? 0;
+        $this->sincronizarZonaTexto($validated, $user->id_empresa);
 
         $mesa = Mesa::create($validated);
+        $mesa->load('zonaRestaurante');
         return response()->json($mesa, 201);
     }
 
@@ -78,12 +95,15 @@ class MesaController extends Controller
         $validated = $request->validate([
             'numero' => 'sometimes|string|max:20',
             'capacidad' => 'nullable|integer|min:1|max:99',
+            'zona_id' => 'nullable|integer|exists:restaurante_zonas,id',
             'zona' => 'nullable|string|max:50',
             'activo' => 'sometimes|boolean',
             'orden' => 'nullable|integer|min:0',
         ]);
 
+        $this->sincronizarZonaTexto($validated, $user->id_empresa);
         $mesa->update($validated);
+        $mesa->load('zonaRestaurante');
         return response()->json($mesa);
     }
 }

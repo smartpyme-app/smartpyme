@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
 use App\Http\Controllers\ComboProductoController;
 use App\Http\Controllers\Api\Inventario\AtributoController;
+use App\Http\Controllers\Api\Inventario\PresentacionesController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Webhook\WooCommerceController;
 
@@ -99,6 +100,13 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
 // Imagenes
     Route::post('/producto/imagen',        [ImagenesController::class, 'store']);
     Route::delete('/producto/imagen/{id}', [ImagenesController::class, 'delete']);
+
+// Presentaciones (requiere funcionalidad asignada en Super Admin)
+    Route::middleware(['verificar.funcionalidad:modulo-presentaciones-productos'])->group(function () {
+        Route::post('/producto-presentaciones',        [PresentacionesController::class, 'store']);
+        Route::put('/producto-presentaciones/{id}',    [PresentacionesController::class, 'update']);
+        Route::delete('/producto-presentaciones/{id}', [PresentacionesController::class, 'delete']);
+    });
 
     Route::get('/producto/compras/{id}',          [ProductosController::class, 'compras']);
     Route::get('/producto/ajustes/{id}',          [ProductosController::class, 'ajustes']);

@@ -1,65 +1,51 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal';
-import { ProductoInformacionComponent } from './informacion/producto-informacion.component';
-import { ProductoComposicionComponent } from './composicion/producto-composicion.component';
-import { ProductoInventariosComponent } from './inventario/producto-inventarios.component';
-import { ProductoPreciosComponent } from './precios/producto-precios.component';
-import { ProductoProveedoresComponent } from './proveedores/producto-proveedores.component';
-import { ProductoImagenesComponent } from './imagenes/producto-imagenes.component';
+import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 @Component({
-    selector: 'app-producto',
-    templateUrl: './producto.component.html',
-    standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ProductoInformacionComponent, ProductoComposicionComponent, ProductoInventariosComponent, ProductoPreciosComponent, ProductoProveedoresComponent, ProductoImagenesComponent],
-    changeDetection: ChangeDetectionStrategy.OnPush
+  selector: 'app-producto',
+  templateUrl: './producto.component.html'
 })
 export class ProductoComponent implements OnInit {
 
 	public producto: any = {};
 	public categorias:any[] = [];
-  public loading = false;
-  public lotesRefreshKey = 0;
+  	public loading = false;
+	public mostrarModuloPresentaciones = false;
+	public lotesRefreshKey = 0;
 
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
-
-	constructor(
+	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
-	    private cdr: ChangeDetectorRef
+      private funcionalidadesService: FuncionalidadesService,
 	) {	}
 
 	ngOnInit() {
+      this.funcionalidadesService.verificarAcceso('modulo-presentaciones-productos').subscribe({
+        next: (acceso) => {
+          this.mostrarModuloPresentaciones = acceso && this.apiService.isModuloPresentaciones();
+        },
+        error: () => {
+          this.mostrarModuloPresentaciones = false;
+        }
+      });
 
-		this.route.params
-		  .pipe(this.untilDestroyed())
-		  .subscribe((params:any) => {
+		this.route.params.subscribe((params:any) => {
 	      	if (params.id) {
 		        this.loading = true;
 		        this.apiService.read('producto/', params.id).subscribe(producto => {
 		            this.producto = producto;
-                if (!Array.isArray(this.producto.imagenes)) {
-                  this.producto.imagenes = [];
-                }
-                if (this.producto.tipo === 'Compuesto' && !Array.isArray(this.producto.composiciones)) {
-                  this.producto.composiciones = [];
-                }
                 const pct = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '') ? Number(producto.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
                 this.producto.impuesto = Number(pct) / 100;
                 this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
-                this.loading = false;
-                this.cdr.markForCheck();
-		    },error => {this.alertService.error(error);this.loading = false; this.cdr.markForCheck();});
+
+	              this.loading = false;
+		        },error => {this.alertService.error(error);this.loading = false;});
 	      	} else {
 				this.producto = {};
 				this.producto.tipo = 'Producto';
@@ -71,7 +57,6 @@ export class ProductoComponent implements OnInit {
 				    this.producto.tipo = this.route.snapshot.queryParamMap.get('tipo')!;
 				    this.producto.precio = 0;
 				}
-				this.cdr.markForCheck();
 
 	      	}
 	    });
@@ -81,8 +66,13 @@ export class ProductoComponent implements OnInit {
 
 	}
 
-  /** Para OnPush: el hijo muta `producto` (misma referencia), p. ej. al activar producto compuesto. */
-  trackProductoMutado(): void {
-    this.cdr.markForCheck();
-  }
+	onProductoGuardado(producto: any) {
+		if (producto?.id) {
+			Object.assign(this.producto, producto);
+		}
+		if (this.producto.inventario_por_lotes || producto?.migracion_lotes) {
+			this.lotesRefreshKey++;
+		}
+	}
+
 }

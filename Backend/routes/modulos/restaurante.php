@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Restaurante\ComandaController;
 use App\Http\Controllers\Api\Restaurante\PreCuentaController;
 use App\Http\Controllers\Api\Restaurante\ReservaController;
 use App\Http\Controllers\Api\Restaurante\PedidoRestauranteController;
+use App\Http\Controllers\Api\Restaurante\ZonaRestauranteController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('restaurante')
@@ -17,6 +18,13 @@ Route::prefix('restaurante')
         Route::post('/mesas', [MesaController::class, 'store']);
         Route::get('/mesas/{id}', [MesaController::class, 'show']);
         Route::put('/mesas/{id}', [MesaController::class, 'update']);
+
+        // Zonas
+        Route::get('/zonas', [ZonaRestauranteController::class, 'index']);
+        Route::post('/zonas', [ZonaRestauranteController::class, 'store']);
+        Route::get('/zonas/{id}', [ZonaRestauranteController::class, 'show']);
+        Route::put('/zonas/{id}', [ZonaRestauranteController::class, 'update']);
+        Route::delete('/zonas/{id}', [ZonaRestauranteController::class, 'destroy']);
 
         // Sesiones
         Route::post('/sesiones-mesa', [SesionMesaController::class, 'store']);
@@ -58,6 +66,7 @@ Route::prefix('restaurante')
         Route::get('/pedidos', [PedidoRestauranteController::class, 'index']);
         Route::post('/pedidos', [PedidoRestauranteController::class, 'store']);
         Route::get('/pedidos/{id}/imprimir', [PedidoRestauranteController::class, 'imprimir']);
+        Route::post('/pedidos/{id}/comandas', [PedidoRestauranteController::class, 'enviarComanda']);
         Route::post('/pedidos/{id}/preparar-factura', [PedidoRestauranteController::class, 'prepararFactura']);
         Route::put('/pedidos/{id}/marcar-facturado', [PedidoRestauranteController::class, 'marcarFacturado']);
         Route::put('/pedidos/{id}/confirmar', [PedidoRestauranteController::class, 'confirmar']);

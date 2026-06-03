@@ -84,6 +84,11 @@ return [
             'timeout' => 30,
         ],
 
+        'dtes' => [
+            'driver' => env('DTE_STORAGE_DRIVER', 'local'),
+            'root' => storage_path('app/dtes'),
+        ],
+
     ],
 
     /*

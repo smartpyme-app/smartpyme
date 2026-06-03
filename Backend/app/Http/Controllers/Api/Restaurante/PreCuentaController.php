@@ -19,22 +19,58 @@ use Illuminate\Validation\ValidationException;
 class PreCuentaController extends Controller
 {
     /**
-     * Propina según porcentaje de empresa (sin override por mesa). Base: subtotal de consumo.
+     * Propina según porcentaje de empresa (sin override por mesa). Base: subtotal de consumo (sin IVA).
+     * IVA se calcula por línea según porcentaje del producto o de la empresa.
      *
-     * @return array{subtotal: float, propina_monto: float, propina_porcentaje_aplicado: float, total: float}
+     * @return array{subtotal: float, impuesto: float, propina_monto: float, propina_porcentaje_aplicado: float, total: float}
      */
-    private function totalesPreCuentaConPropina(float $subtotalConsumo, ?Empresa $empresa): array
+    private function totalesPreCuentaConPropina(float $subtotalConsumo, float $impuesto, ?Empresa $empresa): array
     {
         $sub = round($subtotalConsumo, 2);
+        $imp = round($impuesto, 2);
         $pct = $empresa ? max(0, (float) ($empresa->propina_porcentaje ?? 0)) : 0;
         $propina = round($sub * ($pct / 100), 2);
 
         return [
             'subtotal' => $sub,
+            'impuesto' => $imp,
             'propina_monto' => $propina,
             'propina_porcentaje_aplicado' => $pct,
-            'total' => round($sub + $propina, 2),
+            'total' => round($sub + $imp + $propina, 2),
         ];
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection|iterable  $items  OrdenDetalle con producto cargado
+     */
+    private function calcularImpuestoItems(iterable $items, ?Empresa $empresa): float
+    {
+        $ivaEmpresa = $empresa ? max(0, (float) ($empresa->iva ?? 0)) : 0;
+        $impuesto = 0.0;
+
+        foreach ($items as $item) {
+            if (method_exists($item, 'loadMissing')) {
+                $item->loadMissing('producto');
+            }
+            $pct = $item->producto->porcentaje_impuesto ?? $ivaEmpresa;
+            $pct = max(0, (float) $pct);
+            if ($pct <= 0) {
+                continue;
+            }
+            $cant = $this->cantidadLineaParaPreCuenta($item);
+            $base = $cant * (float) $item->precio_unitario;
+            $impuesto += $base * ($pct / 100);
+        }
+
+        return round($impuesto, 2);
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection|iterable  $items
+     */
+    private function calcularSubtotalItems(iterable $items): float
+    {
+        return round(collect($items)->sum(fn ($i) => $this->cantidadLineaParaPreCuenta($i) * (float) $i->precio_unitario), 2);
     }
 
     /**
@@ -168,16 +204,25 @@ class PreCuentaController extends Controller
         ]);
 
         if ($validated['tipo'] === 'equitativa') {
+            $subtotalTotal = $this->calcularSubtotalItems($items);
+            $impuestoTotal = $this->calcularImpuestoItems($items, $empresa);
             $montoPorPersona = round($total / $n, 2);
+            $impuestoAcum = 0.0;
             for ($i = 0; $i < $n; $i++) {
                 $sub = $i === $n - 1 ? round($total - ($montoPorPersona * ($n - 1)), 2) : $montoPorPersona;
-                $t = $this->totalesPreCuentaConPropina((float) $sub, $empresa);
+                if ($i === $n - 1) {
+                    $imp = round($impuestoTotal - $impuestoAcum, 2);
+                } else {
+                    $imp = $subtotalTotal > 0 ? round($impuestoTotal * ($sub / $subtotalTotal), 2) : 0;
+                    $impuestoAcum += $imp;
+                }
+                $t = $this->totalesPreCuentaConPropina((float) $sub, (float) $imp, $empresa);
                 PreCuenta::create([
                     'sesion_id' => $sesion->id,
                     'division_cuenta_id' => $division->id,
                     'subtotal' => $t['subtotal'],
                     'descuento' => 0,
-                    'impuesto' => 0,
+                    'impuesto' => $t['impuesto'],
                     'propina_monto' => $t['propina_monto'],
                     'propina_porcentaje_aplicado' => $t['propina_porcentaje_aplicado'],
                     'total' => $t['total'],
@@ -300,9 +345,12 @@ class PreCuentaController extends Controller
             }
 
             foreach ($preCuentasCreadas as $i => $pc) {
-                $t = $this->totalesPreCuentaConPropina((float) $totales[$i], $empresa);
+                $pc->load('ordenDetalles.producto');
+                $imp = $this->calcularImpuestoItems($pc->ordenDetalles, $empresa);
+                $t = $this->totalesPreCuentaConPropina((float) $totales[$i], (float) $imp, $empresa);
                 $pc->update([
                     'subtotal' => $t['subtotal'],
+                    'impuesto' => $t['impuesto'],
                     'propina_monto' => $t['propina_monto'],
                     'propina_porcentaje_aplicado' => $t['propina_porcentaje_aplicado'],
                     'total' => $t['total'],
@@ -348,15 +396,16 @@ class PreCuentaController extends Controller
                 return response()->json($preCuentas, 201);
             }
 
-            $subtotal = (float) $items->sum(fn ($i) => (float) $i->cantidad * (float) $i->precio_unitario);
-            $t = $this->totalesPreCuentaConPropina($subtotal, $empresa);
+            $subtotal = $this->calcularSubtotalItems($items);
+            $impuesto = $this->calcularImpuestoItems($items, $empresa);
+            $t = $this->totalesPreCuentaConPropina($subtotal, $impuesto, $empresa);
             $numero = PreCuenta::where('sesion_id', $sesion->id)->count() + 1;
 
             $preCuenta = PreCuenta::create([
                 'sesion_id' => $sesion->id,
                 'subtotal' => $t['subtotal'],
                 'descuento' => 0,
-                'impuesto' => 0,
+                'impuesto' => $t['impuesto'],
                 'propina_monto' => $t['propina_monto'],
                 'propina_porcentaje_aplicado' => $t['propina_porcentaje_aplicado'],
                 'total' => $t['total'],
@@ -429,21 +478,34 @@ class PreCuentaController extends Controller
             : $preCuenta->sesion->ordenDetalle;
 
         $agrupadas = $this->lineasAgrupadasParaVista($items);
-        $detalles = collect($agrupadas)->map(fn ($i) => [
-            'id_producto' => $i->producto_id,
-            'cantidad' => $i->cantidad,
-            'precio' => $i->precio_unitario,
-            'descripcion' => $i->producto->nombre ?? '',
-        ])->values()->toArray();
+        $empresa = Empresa::find(auth()->user()->id_empresa);
+        $ivaEmpresa = $empresa ? max(0, (float) ($empresa->iva ?? 0)) : 0;
+        $detalles = collect($agrupadas)->map(function ($i) use ($ivaEmpresa) {
+            $pct = $i->producto->porcentaje_impuesto ?? $ivaEmpresa;
+            $pct = max(0, (float) $pct);
+            $precioSinIva = (float) $i->precio_unitario;
+            $precioConIva = $pct > 0 ? round($precioSinIva * (1 + $pct / 100), 4) : $precioSinIva;
+
+            return [
+                'id_producto' => $i->producto_id,
+                'cantidad' => $i->cantidad,
+                'precio' => $precioSinIva,
+                'precio_con_iva' => $precioConIva,
+                'porcentaje_impuesto' => $pct,
+                'descripcion' => $i->producto->nombre ?? '',
+            ];
+        })->values()->toArray();
 
         return response()->json([
             'pre_cuenta_id' => $preCuenta->id,
             'sesion_id' => $preCuenta->sesion_id,
             'mesa_numero' => $preCuenta->sesion->mesa->numero,
             'subtotal' => $preCuenta->subtotal,
+            'impuesto' => (float) ($preCuenta->impuesto ?? 0),
             'propina_monto' => (float) ($preCuenta->propina_monto ?? 0),
             'propina_porcentaje_aplicado' => (float) ($preCuenta->propina_porcentaje_aplicado ?? 0),
             'total' => $preCuenta->total,
+            'precios_sin_iva' => true,
             'detalles' => $detalles,
         ]);
     }

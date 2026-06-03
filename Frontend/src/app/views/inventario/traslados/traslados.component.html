@@ -1,41 +1,41 @@
 
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-  <h2 class="page-heading">Inventario</h2>
-  <div class="d-flex gap-2">
-    <!-- <button *ngIf="apiService.canCreate()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button> -->
-    @if (apiService.puedeCrearOperacionesInventarioEnUi() && apiService.canCreateTest('productos.traslados.crear')) {
-        <button [routerLink]="['/traslado/nuevo']" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
-    }
-    @if (apiService.puedeCrearOperacionesInventarioEnUi() && apiService.canCreateTest('productos.traslados.crear')) {
-        <button routerLink="/traslado-masivo/crear" tooltip="Traslado masivo" class="btn btn-primary tcla-F4"><i class="fa fa-list"></i> Traslado masivo</button>
-    }
-  </div>
+<!-- <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Inventario</h2>
+    <button *ngIf="apiService.canCreate()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
+</section> -->
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+        <h2 class="page-heading mb-0">Inventario</h2>
+        <div class="d-flex flex-column flex-sm-row gap-2">
+            <button *ngIf="apiService.puedeCrearOperacionesInventarioEnUi()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
+            <button *ngIf="apiService.puedeCrearOperacionesInventarioEnUi()" routerLink="/traslado-masivo/crear" tooltip="Traslado masivo" class="btn btn-primary tcla-F4"><i class="fa fa-list"></i> Traslado masivo</button>
+        </div>
+    </div>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            @if (traslados?.total) {
-                <span class="text-muted d-flex align-items-center gap-2">
-                    Mostrando
-                    <select name="paginate" class="form-select w-auto" (change)="filtrarTraslados()" [(ngModel)]="filtros.paginate">
-                        <option value="10">10</option>
-                        <option value="25">25</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                    </select>
-                     de {{ traslados?.total + ' registros' }}
-                </span>
-            }
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="traslados?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarTraslados()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ traslados?.total + ' registros' }}
+            </span>
         </div>
 
         <div class="col">
             <div class="d-flex gap-2">
                 <button [disabled]="downloading" tooltip="Descargar traslados PDF" (click)="descargarPdfFiltrados()" class="btn btn-default">
-                  <img appLazyImage="/assets/icons/download.png" class="icon">
+                    <img src="/assets/icons/download.png" class="icon">
                 </button>
                 <button [disabled]="downloading" tooltip="Descargar traslados Excel" (click)="descargar()" class="btn btn-default tcla-F6">
-                  <img appLazyImage="/assets/icons/download.png" class="icon">
+                    <img src="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarTraslados()" autocomplete="off">
                     <div class="input-group">
@@ -45,20 +45,23 @@
                         <input type="search" name="search" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.search">
                     </div>
                 </form>
-                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)"  class="btn btn-default tcla-F3"><img appLazyImage="/assets/icons/filter.png" class="icon"></button>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)"  class="btn btn-default tcla-F3"><img src="/assets/icons/filter.png" class="icon"></button>
             </div>
         </div>
     </div>
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="d-flex gap-2 flex-wrap">
             <button class="btn " routerLinkActive="btn-primary" routerLink="/productos">Todos</button>
-            @if (apiService.canAccederOperacionesInventario()) {
-                <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
-                <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/traslados">Traslados</button>
-                <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas">Consignas</button>
-                <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
-                <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
-            }
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
+                    *ngIf="apiService.canAccederOperacionesInventario()">Ajustes</button>
+            <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/traslados"
+                    *ngIf="apiService.canAccederOperacionesInventario()">Traslados</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
+                    *ngIf="apiService.canAccederOperacionesInventario()">Consignas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
+                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Entradas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
+                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Salidas</button>
         </div>
         <div class="ms-auto d-flex gap-2">
             <select name="estado" (change)="filtrarTraslados()" [(ngModel)]="filtros.estado" class="form-select bg-default select-width">
@@ -68,9 +71,7 @@
             </select>
             <select name="id_bodega_de" (change)="filtrarTraslados()" [(ngModel)]="filtros.id_bodega_de" class="form-select bg-default select-width">
                 <option value="">Sucursal</option>
-                @for (sucursal of sucursales; track sucursal.id) {
-                    <option [value]="sucursal.id">{{ sucursal.nombre }}</option>
-                }
+                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
             </select>
         </div>
     </div>
@@ -90,22 +91,15 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (traslados?.total < 1 && !loading) {
-                        <tr>
-                            <td colspan="10" class="text-center">
-                                <span class="badge bg-primary">No tiene traslados registrados</span>
-                            </td>
-                        </tr>
-                    }
-                    @if (loading) {
-                        <tr>
-                            <td colspan="10" class="text-center">
-                                <span class="badge bg-primary">Cargando...</span>
-                            </td>
-                        </tr>
-                    }
-                    @for (traslado of traslados?.data; track traslado.id) {
-                        <tr>
+                    <tr>
+                        <td colspan="10" class="text-center" *ngIf="traslados?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene traslados registrados</span>
+                        </td>
+                        <td colspan="10" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let traslado of traslados?.data">
                         <td>{{ traslado.created_at  | date:'dd/MM/yyyy' }}</td>
                         <td>{{ traslado.nombre_producto }}<a class="float-end d-none"  tooltip="Ver información del producto" routerLink="/producto/{{traslado.id_producto}}"><i class="fa fa-edit"></i></a></td>
                         <td class="d-none d-lg-table-cell"><span tooltip="{{ traslado.concepto}}">{{ traslado.concepto | truncate:20 }}</span></td>
@@ -124,32 +118,23 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a routerLink="/traslado/{{traslado.id}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
-                                    </a>
                                     <a (click)="imprimir(traslado)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
                                     <a [routerLink]="['/traslado/detalle', traslado.id]" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-eye"></i> Ver detalles
                                     </a>
-                                    <a (click)="generarPartidaContable(traslado)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-edit"></i> Generar partida contable
-                                    </a>
                                 </div>
                             </ng-template>
                         </td>
                     </tr>
-                    }
                 </tbody>
             </table>
         </div>
 
-        @if (traslados?.last_page > 1) {
-            <div class="col-12">
-                <app-pagination [items]="traslados" (setPagination)="setPagination($event)"></app-pagination>
-            </div>
-        }
+        <div class="col-12" *ngIf="traslados?.last_page > 1">
+            <app-pagination [items]="traslados" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
     </div>
 </section>
 
@@ -164,37 +149,39 @@
         <div class="row">
             <div class="form-group col-md-12">
                 <label for="">Producto</label>
-                <ng-select name="id_producto" (change)="setProducto()" [(ngModel)]="traslado.id_producto" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar producto</ng-option>
-                    @for (producto of productos; track producto.id) {
-                        <ng-option [value]="producto.id">
-                          {{getNombreCompleto(producto)}}
-                        </ng-option>
-                    }
-                </ng-select>
+                <app-buscador-productos (selectProducto)="productoSelect($event)"></app-buscador-productos>
+                <div *ngIf="producto?.id" class="mt-2">
+                    <span class="badge bg-info">{{ getNombreCompleto(producto) }}</span>
+                    <span *ngIf="producto?.id_presentacion" class="badge bg-success text-dark ms-1">
+                        <i class="fa fa-box mr-1"></i>Presentación
+                    </span>
+                    <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProducto()">
+                        <i class="fa fa-times"></i> Limpiar
+                    </button>
+                    <div *ngIf="producto?.id_presentacion" class="alert alert-info mt-2 mb-0 py-2" style="font-size: 0.85rem;">
+                        <i class="fa fa-info-circle me-1"></i> 
+                        <strong>Atención:</strong> El stock mostrado en las bodegas corresponde a las <strong>unidades base</strong> ({{ producto.nombre }}). Cada {{ producto.nombre_presentacion || producto.nombre_mostrar }} contiene {{ traslado.factor_conversion }} unidades.
+                    </div>
+                </div>
             </div>
             <div class="form-group col-md-6">
                 <label for="">De</label>
                 <ng-select [disabled]="!producto?.id" name="id_bodega_de" (change)="setSucursalDe()" [(ngModel)]="traslado.id_bodega_de" class="form-select p-0">
                     <ng-option value="" selected>Seleccionar bodega</ng-option>
-                    @for (inventario of producto?.inventarios; track inventario.id ?? (inventario.id_bodega + '_' + inventario.id_producto)) {
-                        <ng-option [value]="inventario.id_bodega">
-                            {{inventario.nombre_bodega}}
-                            <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
-                        </ng-option>
-                    }
+                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
+                        {{inventario.nombre_bodega}}
+                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock <span *ngIf="producto?.id_presentacion">base</span></span>
+                    </ng-option>
                 </ng-select>
             </div>
             <div class="form-group col-md-6">
                 <label for="">Para</label>
                 <ng-select [disabled]="!producto?.id" name="id_bodega" (change)="setSucursalPara()" [(ngModel)]="traslado.id_bodega" class="form-select p-0">
                     <ng-option value="" selected>Seleccionar bodega</ng-option>
-                    @for (inventario of producto?.inventarios; track inventario.id ?? (inventario.id_bodega + '_' + inventario.id_producto)) {
-                        <ng-option [value]="inventario.id_bodega">
-                            {{inventario.nombre_bodega}}
-                            <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
-                        </ng-option>
-                    }
+                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
+                        {{inventario.nombre_bodega}}
+                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock <span *ngIf="producto?.id_presentacion">base</span></span>
+                    </ng-option>
                 </ng-select>
             </div>
             <div class="form-group col-md-6" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.id_bodega_de">
@@ -202,7 +189,7 @@
                 <ng-select name="lote_id" [(ngModel)]="traslado.lote_id" (change)="setLoteOrigen()" class="form-select p-0" [disabled]="loadingLotes" (open)="cargarLotes()" required>
                     <ng-option value="">Seleccionar lote</ng-option>
                     <ng-option *ngFor="let lote of lotes" [value]="lote.id">
-                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }} <span *ngIf="producto?.id_presentacion">base</span>
                         <span *ngIf="lote.fecha_vencimiento" class="text-muted">
                             (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
                         </span>
@@ -215,7 +202,7 @@
                 <ng-select name="lote_id_destino" [(ngModel)]="traslado.lote_id_destino" class="form-select p-0" [disabled]="loadingLotesDestino" (open)="cargarLotesDestino()">
                     <ng-option value="">Crear nuevo lote</ng-option>
                     <ng-option *ngFor="let lote of lotesDestino" [value]="lote.id">
-                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }}
+                        {{ lote.numero_lote || 'Sin número' }} - Stock: {{ lote.stock | number:'1.2' }} <span *ngIf="producto?.id_presentacion">base</span>
                         <span *ngIf="lote.fecha_vencimiento" class="text-muted">
                             (Vence: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }})
                         </span>
@@ -227,6 +214,9 @@
             <div class="form-group col-md-6">
                 <label for="stock_real">Cantidad a trasladar:</label>
                 <input type="number" [disabled]="!traslado.id_bodega_de || !traslado.id_bodega || (producto?.inventario_por_lotes && isLotesActivo() && !traslado.lote_id)" class="form-control text-center" [(ngModel)]="traslado.cantidad" (change)="validarStockLote()" name="cantidad">
+                <small *ngIf="producto?.id_presentacion && traslado.cantidad" class="text-info d-block mt-1">
+                    Equivale a {{ (traslado.cantidad * traslado.factor_conversion) | number:'1.2' }} unidades base.
+                </small>
                 <small class="text-danger" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.lote_id && traslado.cantidad && !stockLoteSuficiente()">
                     Stock insuficiente en el lote seleccionado
                 </small>
@@ -236,12 +226,12 @@
                 <label for="costo">Costo:</label>
                 <input type="text" class="form-control" [(ngModel)]="traslado.costo" name="costo">
             </div>
-
+            
             <div class="form-group col-md-6" *ngIf="traslado.id_bodega_de">
                 <label for="traslado">Stock luego del traslado:</label>
                 <p>{{ getStockOrigenDespues() | number:'1.2' }}</p>
             </div>
-
+            
             <div class="form-group col-md-6" *ngIf="traslado.id_bodega">
                 <label for="traslado">Stock luego del traslado:</label>
                 <p>{{ getStockDestinoDespues() | number:'1.2' }}</p>
@@ -255,12 +245,8 @@
         </div>
         <div class="d-grid mt-3">
             <button type="submit" class="btn btn-primary btn-block" [disabled]="saving">
-                @if (!saving) {
-                    <span>Guardar</span>
-                }
-                @if (saving) {
-                    <span>Guardando...</span>
-                }
+                <span *ngIf="!saving">Guardar</span>
+                <span *ngIf="saving">Guardando...</span>
             </button>
         </div>
 
@@ -288,14 +274,13 @@
             </div>
             <div class="form-group col-md-12">
                 <label for="">Producto</label>
-                <ng-select name="id_producto" [(ngModel)]="filtros.id_producto" class="form-select p-0">
-                    <ng-option value="" selected>Todos</ng-option>
-                    @for (producto of productos; track producto.id) {
-                        <ng-option [value]="producto.id">
-                          {{getNombreCompleto(producto)}}
-                        </ng-option>
-                    }
-                </ng-select>
+                <app-buscador-productos (selectProducto)="productoFiltroSelect($event)"></app-buscador-productos>
+                <div *ngIf="productoFiltro?.id" class="mt-2">
+                    <span class="badge bg-info">{{ getNombreCompleto(productoFiltro) }}</span>
+                    <button type="button" class="btn btn-sm btn-link text-danger ms-2" (click)="limpiarProductoFiltro()">
+                        <i class="fa fa-times"></i> Limpiar
+                    </button>
+                </div>
             </div>
             <div class="form-group col-md-12">
                 <label for="">Estado:</label>
@@ -309,42 +294,34 @@
                 <label for="">Sucursal de:</label>
                 <select [(ngModel)]="filtros.id_bodega_de" class="form-select" name="filtros.id_bodega_de">
                     <option value="">Todos</option>
-                    @for (sucursal of sucursales; track sucursal.id) {
-                        <option [value]="sucursal.id">
-                            {{ sucursal.nombre }}
-                        </option>
-                    }
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
                 </select>
             </div>
             <div class="form-group col-lg-6">
                 <label for="">Sucursal para:</label>
                 <select [(ngModel)]="filtros.id_bodega_para" class="form-select" name="filtros.id_bodega_para">
                     <option value="">Todos</option>
-                    @for (sucursal of sucursales; track sucursal.id) {
-                        <option [value]="sucursal.id">
-                            {{ sucursal.nombre }}
-                        </option>
-                    }
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
                 </select>
             </div>
-          <div class="form-group col-md-12">
-            <label for="">Concepto:</label>
-            <select [(ngModel)]="filtros.concepto" class="form-select" name="filtros.concepto">
-              <option value="">Todos</option>
-              <option *ngFor="let concepto of conceptos" [value]="concepto">
-                {{ concepto }}
-              </option>
-            </select>
-          </div>
+            <div class="form-group col-md-12">
+                <label for="">Concepto:</label>
+                <select [(ngModel)]="filtros.concepto" class="form-select" name="filtros.concepto">
+                    <option value="">Todos</option>
+                    <option *ngFor="let concepto of conceptos" [value]="concepto">
+                        {{ concepto }}
+                    </option>
+                </select>
+            </div>
         </div>
         <div class="d-grid">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                @if (!loading) {
-                    <span>Filtrar</span>
-                }
-                @if (loading) {
-                    <span>Filtrando...</span>
-                }
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
             </button>
         </div>
     </form>
