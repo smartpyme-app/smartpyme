@@ -259,7 +259,8 @@
                                     <h5 class="mb-0 fw-bold">Ventas totales por forma de pago</h5>
                                 </div>
                                 <div class="card-body">
-                                    <app-treemap-chart *ngIf="datos.ventasPorFormaPagoConfig; else ventasChartPlaceholder"
+                                    <app-treemap-chart
+                                        *ngIf="datos.ventasPorFormaPagoConfig; else ventasChartPlaceholder"
                                         [config]="datos.ventasPorFormaPagoConfig"
                                         (itemClick)="onFormaPagoClick($event)">
                                     </app-treemap-chart>
@@ -272,157 +273,239 @@
         </div>
     </div>
 
-    <!-- Sección de filtros de Productos -->
-    <div class="row mb-2">
-        <div class="col-12">
-            <div class="card filter-bar-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
-                        <!-- Botón Productos a la izquierda -->
-                        <button type="button" class="btn px-4 py-3 fw-bold text-white"
-                            style="background-color: #38528f; border-radius: 8px; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                            Productos
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Gráficos de categorías y productos más vendidos -->
-    <div class="row mb-2">
-        <!-- Ventas totales por categoría -->
-        <div class="col-md-6 mb-2">
-            <div class="card card-performance h-100">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0 fw-bold">Ventas totales por categoría</h5>
-                </div>
-                <div class="card-body">
-                    <ng-container *ngIf="datos.ventasPorCategoria !== undefined; else ventasListPlaceholder">
-                        <app-accounts-list title="" [accounts]="datos.ventasPorCategoria || []" type="receivable"
-                            (itemClick)="onCategoriaClick($event)">
-                        </app-accounts-list>
-                    </ng-container>
-                </div>
-            </div>
-        </div>
-
-        <!-- Top 15 productos más vendidos -->
-        <div class="col-md-6 mb-2">
-            <div class="card card-performance h-100">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0 fw-bold">Top 15 productos más vendidos</h5>
-                </div>
-                <div class="card-body">
-                    <ng-container *ngIf="datos.topProductosVendidos !== undefined; else ventasListPlaceholder">
-                        <app-accounts-list title="" [accounts]="datos.topProductosVendidos || []" type="receivable"
-                            (itemClick)="onProductoClick($event)">
-                        </app-accounts-list>
-                    </ng-container>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tabla de detalle de ventas por producto -->
+    <!-- Sección de Productos en una sola tarjeta blanca (card-performance) -->
     <div class="row mb-2">
         <div class="col-12">
             <div class="card card-performance">
-                <div class="card-header bg-white border-0 py-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 fw-bold">Detalle de ventas por producto</h5>
-                        <div class="d-flex gap-2 align-items-center">
-                            <!-- Buscador global -->
-                            <div class="input-group" style="width: 250px;">
-                                <span class="input-group-text bg-white border-end-0">
-                                    <i class="fas fa-search text-muted"></i>
-                                </span>
-                                <input type="text" class="form-control border-start-0" placeholder="Buscar..."
-                                    [(ngModel)]="quickFilterText" (input)="onQuickFilterChange()">
+                <div class="card-body p-4">
+                    <!-- Cabecera de la sección de Productos con Filtros en la misma línea -->
+                    <div class="d-flex align-items-end justify-content-between flex-wrap gap-3 mb-4">
+                        <!-- Botón/Indicador Productos -->
+                        <div class="d-flex align-items-center">
+                            <button type="button" class="btn px-4 py-2 fw-bold text-white"
+                                style="background-color: #38528f; border-radius: 8px; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); pointer-events: none;">
+                                Productos
+                            </button>
+                        </div>
+
+                        <!-- Filtros específicos para la sección de Productos -->
+                        <div class="d-flex align-items-end gap-2 flex-wrap flex-grow-1 justify-content-end">
+                            <div style="min-width: 140px; max-width: 200px;" class="flex-grow-1">
+                                <app-dropdown-multi-filtro label="Sucursal" pluralLabel="sucursales"
+                                    [items]="filtroAdSucursalesItems" [disabled]="filtroAdSucursalMultiDisabled"
+                                    [todasImplicitas]="filtroAdSucursalTodasImplicitas"
+                                    [seleccionados]="filtroAdSucursalSeleccionadas"
+                                    (selectionChange)="onFiltroAdSucursalChange($event)">
+                                </app-dropdown-multi-filtro>
                             </div>
-                            <!-- Botones de exportación -->
-                            <button class="btn btn-sm btn-outline-primary" (click)="exportarCSV()"
-                                title="Exportar a CSV">
-                                <i class="fas fa-file-csv me-1"></i> CSV
-                            </button>
-                            <button class="btn btn-sm btn-outline-success" (click)="exportarExcel()"
-                                title="Exportar a Excel">
-                                <i class="fas fa-file-excel me-1"></i> Excel
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary" (click)="limpiarFiltrosGrid()"
-                                title="Limpiar filtros">
-                                <i class="fas fa-filter me-1"></i> Limpiar
-                            </button>
+                            <div style="min-width: 140px; max-width: 200px;" class="flex-grow-1">
+                                <app-dropdown-multi-filtro label="Vendedor" pluralLabel="vendedores"
+                                    [items]="filtroAdVendedoresItems" [disabled]="false"
+                                    [todasImplicitas]="filtroAdVendedorTodasImplicitas"
+                                    [seleccionados]="filtroAdVendedorSeleccionadas"
+                                    (selectionChange)="onFiltroAdVendedorChange($event)">
+                                </app-dropdown-multi-filtro>
+                            </div>
+                            <div style="min-width: 140px; max-width: 200px;" class="flex-grow-1">
+                                <app-dropdown-multi-filtro label="Categoría" pluralLabel="categorías"
+                                    [items]="filtroAdCategoriasItems" [todasImplicitas]="filtroCatTodasImplicitas"
+                                    [seleccionados]="filtroCatSeleccionadas"
+                                    (selectionChange)="onFiltroCatProductoChange($event)">
+                                </app-dropdown-multi-filtro>
+                            </div>
+                            <div style="min-width: 140px; max-width: 200px;" class="flex-grow-1">
+                                <app-dropdown-multi-filtro label="Producto" pluralLabel="productos"
+                                    [items]="filtroAdProductosItems" [mostrarBuscador]="true" [limiteVistaInicial]="100"
+                                    buscadorPlaceholder="Buscar producto" [todasImplicitas]="filtroProdTodasImplicitas"
+                                    [seleccionados]="filtroProdSeleccionadas"
+                                    (selectionChange)="onFiltroProdListaChange($event)">
+                                </app-dropdown-multi-filtro>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-primary px-3" tooltip="Aplicar filtros"
+                                    *ngIf="tieneCambiosOtrosFiltros" (click)="confirmarOtrosFiltrosVentas()">
+                                    <i class="fa fa-check me-1"></i> Aplicar
+                                </button>
+                                <button type="button" class="btn btn-outline-primary px-3" tooltip="Limpiar filtros"
+                                    (click)="limpiarFiltros()" *ngIf="puedeLimpiarFiltrosVentas">
+                                    <i class="fas fa-times me-1"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos de categorías y productos más vendidos -->
+                    <div class="row mb-3">
+                        <!-- Ventas totales por categoría -->
+                        <div class="col-md-6 mb-2">
+                            <div class="card h-100">
+                                <div class="card-header bg-white border-0 py-3">
+                                    <h5 class="mb-0 fw-bold">Ventas totales por categoría</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ng-container
+                                        *ngIf="datos.ventasPorCategoria !== undefined; else ventasListPlaceholder">
+                                        <app-accounts-list title="" [accounts]="datos.ventasPorCategoria || []"
+                                            type="receivable" (itemClick)="onCategoriaClick($event)">
+                                        </app-accounts-list>
+                                    </ng-container>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Top 15 productos más vendidos -->
+                        <div class="col-md-6 mb-2">
+                            <div class="card h-100">
+                                <div class="card-header bg-white border-0 py-3">
+                                    <h5 class="mb-0 fw-bold">Top 15 productos más vendidos</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ng-container
+                                        *ngIf="datos.topProductosVendidos !== undefined; else ventasListPlaceholder">
+                                        <app-accounts-list title="" [accounts]="datos.topProductosVendidos || []"
+                                            type="receivable" (itemClick)="onProductoClick($event)">
+                                        </app-accounts-list>
+                                    </ng-container>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de detalle de ventas por producto -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header bg-white border-0 py-3">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                        <h5 class="mb-0 fw-bold text-center text-md-start">Detalle de ventas por producto</h5>
+                                        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center justify-content-md-end">
+                                            <!-- Buscador global -->
+                                            <div class="input-group" style="width: 250px;">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="fas fa-search text-muted"></i>
+                                                </span>
+                                                <input type="text" class="form-control border-start-0"
+                                                    placeholder="Buscar..." [(ngModel)]="quickFilterText"
+                                                    (input)="onQuickFilterChange()">
+                                            </div>
+                                            <!-- Botones de exportación -->
+                                            <button class="btn btn-sm btn-outline-primary" (click)="exportarCSV()"
+                                                title="Exportar a CSV">
+                                                <i class="fas fa-file-csv me-1"></i> CSV
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success" (click)="exportarExcel()"
+                                                title="Exportar a Excel">
+                                                <i class="fas fa-file-excel me-1"></i> Excel
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary"
+                                                (click)="limpiarFiltrosGrid()" title="Limpiar filtros">
+                                                <i class="fas fa-filter me-1"></i> Limpiar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body px-3 py-0">
+                                    <ng-container
+                                        *ngIf="datos.ventasPorProducto !== undefined; else ventasListPlaceholder">
+                                        <ag-grid-angular #ventasPorProductoGrid
+                                            class="ag-theme-alpine ventas-producto-grid"
+                                            [rowData]="ventasPorProductoRows" [columnDefs]="ventasPorProductoColumnDefs"
+                                            [gridOptions]="ventasPorProductoGridOptions" [defaultColDef]="{
+                                                resizable: true,
+                                                sortable: true,
+                                                filter: true
+                                            }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
+                                        </ag-grid-angular>
+                                    </ng-container>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="card-body px-3 py-0">
-                    <ng-container *ngIf="datos.ventasPorProducto !== undefined; else ventasListPlaceholder">
-                        <ag-grid-angular #ventasPorProductoGrid class="ag-theme-alpine ventas-producto-grid"
-                            [rowData]="ventasPorProductoRows" [columnDefs]="ventasPorProductoColumnDefs"
-                            [gridOptions]="ventasPorProductoGridOptions" [defaultColDef]="{
-                                resizable: true,
-                                sortable: true,
-                                filter: true
-                            }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
-                        </ag-grid-angular>
-                    </ng-container>
-                </div>
             </div>
         </div>
     </div>
 
+    <!-- Sección de Clientes en una sola tarjeta blanca (card-performance) -->
     <div class="row mb-2">
         <div class="col-12">
-            <div class="card filter-bar-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
-                        <!-- Botón Clientes a la izquierda -->
-                        <button type="button" class="btn px-4 py-3 fw-bold text-white"
-                            style="background-color: #38528f; border-radius: 8px; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div class="card card-performance">
+                <div class="card-body p-4">
+                    <!-- Botón/Indicador Clientes -->
+                    <div class="d-flex align-items-center mb-3">
+                        <button type="button" class="btn px-4 py-2 fw-bold text-white"
+                            style="background-color: #38528f; border-radius: 8px; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); pointer-events: none;">
                             Clientes
                         </button>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Top 25 clientes y Detalle de ventas por cliente -->
-    <div class="row mb-2">
-        <!-- Top 25 clientes -->
-        <div class="col-md-6 mb-2">
-            <div class="card card-performance h-100">
-                <div class="card-header bg-primary text-white border-0 py-2">
-                    <h5 class="mb-0 fw-bold text-center">Top 25 clientes</h5>
-                </div>
-                <div class="card-body">
-                    <ng-container *ngIf="datos.topClientes !== undefined; else ventasListPlaceholder">
-                        <app-accounts-list title="" [accounts]="datos.topClientes || []" type="receivable"
-                            (itemClick)="onClienteClick($event)">
-                        </app-accounts-list>
-                    </ng-container>
-                </div>
-            </div>
-        </div>
+                    <!-- Top 25 clientes y Detalle de ventas por cliente -->
+                    <div class="row">
+                        <!-- Top 25 clientes -->
+                        <div class="col-md-6 mb-2">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white border-0 py-2">
+                                    <h5 class="mb-0 fw-bold text-center">Top 25 clientes</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ng-container *ngIf="datos.topClientes !== undefined; else ventasListPlaceholder">
+                                        <app-accounts-list title="" [accounts]="datos.topClientes || []"
+                                            type="receivable" (itemClick)="onClienteClick($event)">
+                                        </app-accounts-list>
+                                    </ng-container>
+                                </div>
+                            </div>
+                        </div>
 
-        <!-- Detalle de ventas por cliente -->
-        <div class="col-md-6 mb-2">
-            <div class="card card-performance h-100">
-                <div class="card-header bg-primary text-white border-0 py-2">
-                    <h5 class="mb-0 fw-bold text-center">Detalle de ventas por cliente</h5>
-                </div>
-                <div class="card-body p-0" style="height: 450px; overflow: hidden;">
-                    <ng-container *ngIf="datos.ventasPorCliente !== undefined; else ventasListPlaceholder">
-                        <ag-grid-angular #ventasPorClienteGrid class="ag-theme-alpine ventas-cliente-grid"
-                            [rowData]="ventasPorClienteRows" [columnDefs]="ventasPorClienteColumnDefs"
-                            [gridOptions]="ventasPorClienteGridOptions" [defaultColDef]="{
-                                resizable: true,
-                                sortable: true,
-                                filter: true
-                            }" style="width: 100%; height: 100%;" [domLayout]="'normal'">
-                        </ag-grid-angular>
-                    </ng-container>
+                        <!-- Detalle de ventas por cliente -->
+                        <div class="col-md-6 mb-2">
+                            <div class="card h-100">
+                                <div class="card-header bg-white border-0 py-3">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                        <h5 class="mb-0 fw-bold text-center text-md-start">Detalle de ventas por cliente</h5>
+                                        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center justify-content-md-end">
+                                            <!-- Buscador global -->
+                                            <div class="input-group" style="width: 250px;">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="fas fa-search text-muted"></i>
+                                                </span>
+                                                <input type="text" class="form-control border-start-0"
+                                                    placeholder="Buscar..." [(ngModel)]="quickFilterTextCliente"
+                                                    (input)="onQuickFilterClienteChange()">
+                                            </div>
+                                            <!-- Botones de exportación -->
+                                            <button class="btn btn-sm btn-outline-primary" (click)="exportarClientesCSV()"
+                                                title="Exportar a CSV">
+                                                <i class="fas fa-file-csv me-1"></i> CSV
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success" (click)="exportarClientesExcel()"
+                                                title="Exportar a Excel">
+                                                <i class="fas fa-file-excel me-1"></i> Excel
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary"
+                                                (click)="limpiarFiltrosClienteGrid()" title="Limpiar filtros">
+                                                <i class="fas fa-filter me-1"></i> Limpiar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body px-3 py-0">
+                                    <ng-container
+                                        *ngIf="datos.ventasPorCliente !== undefined; else ventasListPlaceholder">
+                                        <ag-grid-angular #ventasPorClienteGrid
+                                            class="ag-theme-alpine ventas-cliente-grid" [rowData]="ventasPorClienteRows"
+                                            [columnDefs]="ventasPorClienteColumnDefs"
+                                            [gridOptions]="ventasPorClienteGridOptions" [defaultColDef]="{
+                                                resizable: true,
+                                                sortable: true,
+                                                filter: true
+                                            }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
+                                        </ag-grid-angular>
+                                    </ng-container>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

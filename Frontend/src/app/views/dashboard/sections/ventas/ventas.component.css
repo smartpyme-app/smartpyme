@@ -262,7 +262,6 @@
 
 /* Asegurar que el viewport tenga altura y scroll */
 ::ng-deep .ventas-cliente-grid .ag-body-viewport {
-    height: auto !important;
     overflow-y: auto !important;
     overflow-x: auto !important;
 }

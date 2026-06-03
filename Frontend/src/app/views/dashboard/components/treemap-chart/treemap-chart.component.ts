@@ -58,18 +58,7 @@ export class TreemapChartComponent implements OnInit, OnChanges {
           }
         };
 
-        // Si no tiene children, creamos un dummy child para poder usar upperLabel y label en esquinas distintas
-        if (originalChildren.length === 0) {
-          result.children = [
-            {
-              name: name,
-              value: value,
-              itemStyle: {
-                color: itemColor
-              }
-            }
-          ];
-        } else {
+        if (originalChildren.length > 0) {
           result.children = originalChildren.map((child: any, childIndex: number) => {
             const childVal = child.value !== undefined ? child.value : (child.amount !== undefined ? child.amount : 0);
             return {
@@ -118,56 +107,32 @@ export class TreemapChartComponent implements OnInit, OnChanges {
           breadcrumb: {
             show: false
           },
-          levels: [
-            {
-              // Level 0 (root)
-            },
-            {
-              // Level 1: Parent nodes (e.g. "Transferencia")
-              itemStyle: {
-                borderColor: '#fff',
-                borderWidth: 2,
-                gapWidth: 2
-              },
-              upperLabel: {
-                show: true,
-                position: 'insideTopLeft',
-                color: '#000',
-                fontSize: 14,
-                fontWeight: 'normal',
-                offset: [10, 10],
-                formatter: '{b}',
-                backgroundColor: 'transparent'
-              },
-              label: {
-                show: false
+          label: {
+            show: true,
+            formatter: (params: any) => {
+              const name = params.name || '';
+              const value = params.value || params.data?.value || 0;
+              const formattedValue = new Intl.NumberFormat('es-GT', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              }).format(value);
+              
+              if (name.length > 15) {
+                return name.substring(0, 15) + '...\n' + formattedValue;
               }
+              return name + '\n' + formattedValue;
             },
-            {
-              // Level 2: Child nodes (holding the actual value)
-              itemStyle: {
-                borderWidth: 0,
-                gapWidth: 0
-              },
-              label: {
-                show: true,
-                position: 'insideBottomLeft',
-                color: '#fff',
-                fontSize: 12,
-                fontWeight: 'normal',
-                offset: [10, -10],
-                formatter: (params: any) => {
-                  const val = params.value || params.data?.value || 0;
-                  return new Intl.NumberFormat('es-GT', {
-                    style: 'currency',
-                    currency: 'USD',
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  }).format(val);
-                }
-              }
-            }
-          ],
+            fontSize: 12,
+            fontWeight: 'bold',
+            color: '#fff'
+          },
+          itemStyle: {
+            borderColor: '#fff',
+            borderWidth: 2,
+            gapWidth: 2
+          },
           emphasis: {
             itemStyle: {
               shadowBlur: 10,

@@ -67,12 +67,13 @@ export class VentasComponent implements OnInit, OnChanges {
   private clienteGridApi!: GridApi;
   private clienteGridColumnApi!: ColumnApi;
   quickFilterText: string = '';
+  quickFilterTextCliente: string = '';
   busquedaVentasDetalladas: string = '';
 
   // Filtro por año (obligatorio en API) y mes (opcional; vacío = año completo)
   anio: string = new Date().getFullYear().toString();
   mes: string = '';
-  
+
   // Filtros adicionales
   mostrarFiltrosAdicionales: boolean = false;
 
@@ -135,52 +136,52 @@ export class VentasComponent implements OnInit, OnChanges {
     cliente?: string;
     mes?: string;
   } = {};
-  
+
   // Datos originales (sin filtrar)
   datosOriginales: any = {};
-  
+
   // Datos filtrados (se muestran en la vista)
   datosFiltrados: any = {};
 
   ventasDetalladasColumns = [
-    { 
-      prop: 'fecha', 
-      name: 'Fecha', 
+    {
+      prop: 'fecha',
+      name: 'Fecha',
       size: 120,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'cliente', 
-      name: 'Cliente', 
+    {
+      prop: 'cliente',
+      name: 'Cliente',
       size: 200,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'factura', 
-      name: '# factura', 
+    {
+      prop: 'factura',
+      name: '# factura',
       size: 100,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'productos', 
-      name: 'Productos', 
+    {
+      prop: 'productos',
+      name: 'Productos',
       size: 100,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'monto', 
-      name: 'Monto', 
+    {
+      prop: 'monto',
+      name: 'Monto',
       size: 150,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'estado', 
-      name: 'Estado', 
+    {
+      prop: 'estado',
+      name: 'Estado',
       size: 120,
       sortable: true,
       filterable: true
@@ -194,65 +195,65 @@ export class VentasComponent implements OnInit, OnChanges {
   private _lastDatosHash: string = '';
 
   ventasPorProductoColumns = [
-    { 
-      prop: 'categoria', 
-      name: 'Categoría', 
+    {
+      prop: 'categoria',
+      name: 'Categoría',
       size: 150,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'producto', 
-      name: 'Producto', 
+    {
+      prop: 'producto',
+      name: 'Producto',
       size: 400,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'formaPago', 
-      name: 'Forma de pago', 
+    {
+      prop: 'formaPago',
+      name: 'Forma de pago',
       size: 150,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'cantidad', 
-      name: 'Cantidad', 
+    {
+      prop: 'cantidad',
+      name: 'Cantidad',
       size: 100,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'precioUnitario', 
-      name: 'Precio unitario', 
+    {
+      prop: 'precioUnitario',
+      name: 'Precio unitario',
       size: 130,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'descuento', 
-      name: 'Descuento', 
+    {
+      prop: 'descuento',
+      name: 'Descuento',
       size: 120,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'ventasSinIVA', 
-      name: 'Ventas totales sin IVA', 
+    {
+      prop: 'ventasSinIVA',
+      name: 'Ventas totales sin IVA',
       size: 180,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'costoTotal', 
-      name: 'Costo total', 
+    {
+      prop: 'costoTotal',
+      name: 'Costo total',
       size: 130,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'utilidad', 
-      name: 'Utilidad', 
+    {
+      prop: 'utilidad',
+      name: 'Utilidad',
       size: 120,
       sortable: true,
       filterable: true
@@ -447,8 +448,8 @@ export class VentasComponent implements OnInit, OnChanges {
 
   configurarAGGridClientes(): void {
     this.ventasPorClienteColumnDefs = [
-      { 
-        field: 'cliente', 
+      {
+        field: 'cliente',
         headerName: 'Cliente',
         width: 250,
         sortable: true,
@@ -460,8 +461,8 @@ export class VentasComponent implements OnInit, OnChanges {
           return { textAlign: 'left' } as any;
         }
       },
-      { 
-        field: 'ultimaVenta', 
+      {
+        field: 'ultimaVenta',
         headerName: 'Última venta',
         width: 120,
         sortable: true,
@@ -473,8 +474,8 @@ export class VentasComponent implements OnInit, OnChanges {
           return { textAlign: 'center' } as any;
         }
       },
-      { 
-        field: 'dias', 
+      {
+        field: 'dias',
         headerName: 'Días',
         width: 100,
         sortable: true,
@@ -492,8 +493,8 @@ export class VentasComponent implements OnInit, OnChanges {
           return params.value ? params.value.toLocaleString('es-GT') : '';
         }
       },
-      { 
-        field: 'transacciones', 
+      {
+        field: 'transacciones',
         headerName: 'Transacciones',
         width: 120,
         sortable: true,
@@ -511,9 +512,22 @@ export class VentasComponent implements OnInit, OnChanges {
           return params.value ? params.value.toLocaleString('es-GT') : '';
         }
       },
-      { 
-        field: 'ventas', 
-        headerName: 'Ventas',
+      {
+        field: 'ventasSinIva',
+        headerName: 'Ventas Sin IVA',
+        width: 150,
+        sortable: true,
+        filter: true,
+        cellStyle: (params: any): any => {
+          if (params.data?.isTotal) {
+            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
+          }
+          return { textAlign: 'right' } as any;
+        }
+      },
+      {
+        field: 'ventasConIva',
+        headerName: 'Ventas Con IVA',
         width: 150,
         sortable: true,
         filter: true,
@@ -527,6 +541,10 @@ export class VentasComponent implements OnInit, OnChanges {
     ];
 
     this.ventasPorClienteGridOptions = {
+      pagination: true,
+      paginationPageSize: 20,
+      suppressMenuHide: true,
+      quickFilterText: '',
       defaultColDef: {
         resizable: true,
         sortable: true,
@@ -575,7 +593,7 @@ export class VentasComponent implements OnInit, OnChanges {
       const headers = this.ventasPorClienteColumnDefs
         .map(col => col.headerName || col.field)
         .join('\t');
-      
+
       const rows = selectedRows
         .filter((row: any) => !row.isTotal)
         .map((row: any) => {
@@ -586,7 +604,7 @@ export class VentasComponent implements OnInit, OnChanges {
             })
             .join('\t');
         });
-      
+
       const texto = [headers, ...rows].join('\n');
       this.copiarAlPortapapeles(texto);
     } else {
@@ -594,7 +612,7 @@ export class VentasComponent implements OnInit, OnChanges {
       const headers = this.ventasPorClienteColumnDefs
         .map(col => col.headerName || col.field)
         .join('\t');
-      
+
       this.clienteGridApi.forEachNodeAfterFilterAndSort((node: any) => {
         if (!node.data?.isTotal) {
           const row = this.ventasPorClienteColumnDefs
@@ -606,7 +624,7 @@ export class VentasComponent implements OnInit, OnChanges {
           allRows.push(row);
         }
       });
-      
+
       const texto = [headers, ...allRows].join('\n');
       this.copiarAlPortapapeles(texto);
     }
@@ -1249,7 +1267,7 @@ export class VentasComponent implements OnInit, OnChanges {
   filtrarVentasDetalladasPorBusqueda(rows: any[]): any[] {
     if (!this.busquedaVentasDetalladas) return rows;
     const busqueda = this.busquedaVentasDetalladas.toLowerCase();
-    return rows.filter(row => 
+    return rows.filter(row =>
       (row.cliente || '').toLowerCase().includes(busqueda) ||
       (row.factura || '').toLowerCase().includes(busqueda) ||
       (row.monto || '').toLowerCase().includes(busqueda) ||
@@ -1328,13 +1346,16 @@ export class VentasComponent implements OnInit, OnChanges {
 
   private calcularVentasPorClienteRows(): any[] {
     if (!this.datos.ventasPorCliente) return [];
+
     const rows = this.datos.ventasPorCliente.map((item: any) => ({
       cliente: item.cliente || '-',
       ultimaVenta: item.ultimaVenta || '-',
       dias: item.dias || 0,
       transacciones: item.transacciones || 0,
-      ventas: this.formatCurrency(item.ventas || 0),
-      ventasOriginal: item.ventas || 0,
+      ventasSinIva: this.formatCurrency(item.ventasSinIva || 0),
+      ventasSinIvaOriginal: item.ventasSinIva || 0,
+      ventasConIva: this.formatCurrency(item.ventasConIva || 0),
+      ventasConIvaOriginal: item.ventasConIva || 0,
       isTotal: false
     }));
 
@@ -1346,8 +1367,10 @@ export class VentasComponent implements OnInit, OnChanges {
         ultimaVenta: totales.ultimaVenta || '-',
         dias: totales.dias || 0,
         transacciones: totales.transacciones,
-        ventas: this.formatCurrency(totales.ventas),
-        ventasOriginal: totales.ventas,
+        ventasSinIva: this.formatCurrency(totales.ventasSinIva),
+        ventasSinIvaOriginal: totales.ventasSinIva,
+        ventasConIva: this.formatCurrency(totales.ventasConIva),
+        ventasConIvaOriginal: totales.ventasConIva,
         isTotal: true
       });
     }
@@ -1361,20 +1384,22 @@ export class VentasComponent implements OnInit, OnChanges {
 
   get totalVentasPorCliente(): any {
     if (!this.datos.ventasPorCliente || this.datos.ventasPorCliente.length === 0) {
-      return { transacciones: 0, ventas: 0, dias: 0, ultimaVenta: '' };
+      return { transacciones: 0, ventasSinIva: 0, ventasConIva: 0, ventas: 0, dias: 0, ultimaVenta: '' };
     }
     const totales = this.datos.ventasPorCliente.reduce((totals: any, item: any) => ({
       transacciones: totals.transacciones + (item.transacciones || 0),
+      ventasSinIva: totals.ventasSinIva + (item.ventasSinIva || 0),
+      ventasConIva: totals.ventasConIva + (item.ventasConIva || 0),
       ventas: totals.ventas + (item.ventas || 0),
       dias: Math.max(totals.dias || 0, item.dias || 0),
       ultimaVenta: item.ultimaVenta || totals.ultimaVenta || ''
-    }), { transacciones: 0, ventas: 0, dias: 0, ultimaVenta: '' });
-    
+    }), { transacciones: 0, ventasSinIva: 0, ventasConIva: 0, ventas: 0, dias: 0, ultimaVenta: '' });
+
     // Obtener la fecha más reciente
     const fechas = this.datos.ventasPorCliente
       .map((item: any) => item.ultimaVenta)
       .filter((fecha: string) => fecha && fecha !== '-');
-    
+
     if (fechas.length > 0) {
       // Ordenar fechas y tomar la más reciente
       fechas.sort((a: string, b: string) => {
@@ -1384,7 +1409,7 @@ export class VentasComponent implements OnInit, OnChanges {
       });
       totales.ultimaVenta = fechas[0];
     }
-    
+
     return totales;
   }
 
@@ -1405,13 +1430,13 @@ export class VentasComponent implements OnInit, OnChanges {
         return stringValue;
       }).join(',');
     });
-    
+
     const BOM = '\uFEFF';
     const csvContent = BOM + [headers, ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    
+
     link.setAttribute('href', url);
     link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
@@ -1464,6 +1489,44 @@ export class VentasComponent implements OnInit, OnChanges {
     }
   }
 
+  onQuickFilterClienteChange(): void {
+    if (this.clienteGridApi) {
+      this.clienteGridApi.setQuickFilter(this.quickFilterTextCliente);
+    }
+  }
+
+  exportarClientesCSV(): void {
+    if (this.clienteGridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.clienteGridApi.exportDataAsCsv({
+        fileName: `ventas-por-cliente-${fecha}.csv`,
+        processCellCallback: (params: any) => {
+          return params.value || '';
+        }
+      });
+    }
+  }
+
+  exportarClientesExcel(): void {
+    if (this.clienteGridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.clienteGridApi.exportDataAsCsv({
+        fileName: `ventas-por-cliente-${fecha}.csv`,
+        processCellCallback: (params: any) => {
+          return params.value || '';
+        }
+      });
+    }
+  }
+
+  limpiarFiltrosClienteGrid(): void {
+    if (this.clienteGridApi) {
+      this.clienteGridApi.setFilterModel(null);
+      this.quickFilterTextCliente = '';
+      this.clienteGridApi.setQuickFilter('');
+    }
+  }
+
   // Operaciones básicas de celda
   onCellClicked(params: any): void {
     // Al hacer clic en una celda, se puede seleccionar
@@ -1480,13 +1543,13 @@ export class VentasComponent implements OnInit, OnChanges {
 
   onCellKeyDown(params: any): void {
     const event = params.event;
-    
+
     // Ctrl+C o Cmd+C: Copiar selección al portapapeles
     if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
       event.preventDefault();
       this.copiarSeleccionAlPortapapeles();
     }
-    
+
     // Ctrl+A o Cmd+A: Seleccionar todas las filas visibles
     if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
       event.preventDefault();
@@ -1494,7 +1557,7 @@ export class VentasComponent implements OnInit, OnChanges {
         this.gridApi.selectAll();
       }
     }
-    
+
     // Delete o Backspace: Limpiar filtro de columna si está en el header
     if ((event.key === 'Delete' || event.key === 'Backspace') && params.node.rowPinned === 'top') {
       if (params.column) {
@@ -1505,7 +1568,7 @@ export class VentasComponent implements OnInit, OnChanges {
         }
       }
     }
-    
+
     // F2: Editar celda (si fuera editable)
     if (event.key === 'F2') {
       // AG Grid Community no tiene edición inline por defecto
@@ -1552,12 +1615,12 @@ export class VentasComponent implements OnInit, OnChanges {
     if (!this.gridApi) return;
 
     const selectedRanges = this.gridApi.getCellRanges();
-    
+
     if (selectedRanges && selectedRanges.length > 0) {
       // Copiar rangos seleccionados
       const range = selectedRanges[0];
       const rows: string[] = [];
-      
+
       // Obtener todas las columnas usando columnApi
       const allColumns = this.gridColumnApi?.getAllColumns() || [];
       if (allColumns.length === 0) {
@@ -1570,10 +1633,10 @@ export class VentasComponent implements OnInit, OnChanges {
       const startColId = range.startColumn?.getColId() || '';
       const columns = range.columns || [];
       const endColId = columns.length > 0 ? columns[columns.length - 1]?.getColId() : startColId;
-      
+
       let startColIndex = -1;
       let endColIndex = -1;
-      
+
       allColumns.forEach((col: any, index: number) => {
         const colId = col.getColId();
         if (colId === startColId && startColIndex === -1) {
@@ -1587,7 +1650,7 @@ export class VentasComponent implements OnInit, OnChanges {
       for (let rowIndex = startRowIndex; rowIndex <= endRowIndex; rowIndex++) {
         const row: string[] = [];
         const node = this.gridApi.getDisplayedRowAtIndex(rowIndex);
-        
+
         if (node && startColIndex >= 0 && endColIndex >= 0) {
           allColumns.forEach((column: any, colIndex: number) => {
             if (colIndex >= startColIndex && colIndex <= endColIndex) {
@@ -1597,12 +1660,12 @@ export class VentasComponent implements OnInit, OnChanges {
             }
           });
         }
-        
+
         if (row.length > 0) {
           rows.push(row.join('\t'));
         }
       }
-      
+
       if (rows.length > 0) {
         this.copiarAlPortapapeles(rows.join('\n'));
       }
@@ -1613,7 +1676,7 @@ export class VentasComponent implements OnInit, OnChanges {
         const headers = this.ventasPorProductoColumnDefs
           .map(col => col.headerName || col.field)
           .join('\t');
-        
+
         const rows = selectedRows
           .filter((row: any) => !row.isTotal)
           .map((row: any) => {
@@ -1624,7 +1687,7 @@ export class VentasComponent implements OnInit, OnChanges {
               })
               .join('\t');
           });
-        
+
         const texto = [headers, ...rows].join('\n');
         this.copiarAlPortapapeles(texto);
       } else {
@@ -1633,7 +1696,7 @@ export class VentasComponent implements OnInit, OnChanges {
         const headers = this.ventasPorProductoColumnDefs
           .map(col => col.headerName || col.field)
           .join('\t');
-        
+
         this.gridApi.forEachNodeAfterFilterAndSort((node: any) => {
           if (!node.data?.isTotal) {
             const row = this.ventasPorProductoColumnDefs
@@ -1645,7 +1708,7 @@ export class VentasComponent implements OnInit, OnChanges {
             allRows.push(row);
           }
         });
-        
+
         const texto = [headers, ...allRows].join('\n');
         this.copiarAlPortapapeles(texto);
       }
@@ -1787,11 +1850,11 @@ export class VentasComponent implements OnInit, OnChanges {
         if (!v.fecha) return false;
         const fecha = new Date(v.fecha);
         const mesIndex = fecha.getMonth();
-        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         const mesNombre = meses[mesIndex];
         return mesNombre.toLowerCase() === this.filtrosInteractivos.mes?.toLowerCase() ||
-               mesNombre === this.filtrosInteractivos.mes;
+          mesNombre === this.filtrosInteractivos.mes;
       });
     }
     if (this.filtrosInteractivos.categoria) {
@@ -1870,9 +1933,56 @@ export class VentasComponent implements OnInit, OnChanges {
     });
   }
 
+  get tieneCambiosOtrosFiltros(): boolean {
+    return !(
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdSucursalTodasImplicitas,
+        this.filtroAdSucursalSeleccionadas,
+        this.filtroAdSucursalTodasImplicitasAplicado,
+        this.filtroAdSucursalSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdEstadoTodasImplicitas,
+        this.filtroAdEstadoSeleccionadas,
+        this.filtroAdEstadoTodasImplicitasAplicado,
+        this.filtroAdEstadoSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdCanalTodasImplicitas,
+        this.filtroAdCanalSeleccionadas,
+        this.filtroAdCanalTodasImplicitasAplicado,
+        this.filtroAdCanalSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdClienteTodasImplicitas,
+        this.filtroAdClienteSeleccionadas,
+        this.filtroAdClienteTodasImplicitasAplicado,
+        this.filtroAdClienteSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdVendedorTodasImplicitas,
+        this.filtroAdVendedorSeleccionadas,
+        this.filtroAdVendedorTodasImplicitasAplicado,
+        this.filtroAdVendedorSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroCatTodasImplicitas,
+        this.filtroCatSeleccionadas,
+        this.filtroCatTodasImplicitasAplicado,
+        this.filtroCatSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroProdTodasImplicitas,
+        this.filtroProdSeleccionadas,
+        this.filtroProdTodasImplicitasAplicado,
+        this.filtroProdSeleccionadasAplicado,
+      )
+    );
+  }
+
   recalcularVentasPorCanal(ventas: any[]): void {
     const ventasPorCanal: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       const canal = v.canal || 'Sin canal';
       ventasPorCanal[canal] = (ventasPorCanal[canal] || 0) + (v.monto || 0);
@@ -1885,7 +1995,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularVentasPorVendedor(ventas: any[]): void {
     const ventasPorVendedor: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       const vendedor = v.vendedor || 'Sin vendedor';
       ventasPorVendedor[vendedor] = (ventasPorVendedor[vendedor] || 0) + (v.monto || 0);
@@ -1911,7 +2021,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularVentasPorFormaPago(ventas: any[]): void {
     const ventasPorFormaPago: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       const formaPago = v.formaPago || 'Sin forma de pago';
       ventasPorFormaPago[formaPago] = (ventasPorFormaPago[formaPago] || 0) + (v.monto || 0);
@@ -1940,7 +2050,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularVentasPorCategoria(ventas: any[]): void {
     const ventasPorCategoria: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       const categoria = v.categoria || 'Sin categoría';
       ventasPorCategoria[categoria] = (ventasPorCategoria[categoria] || 0) + (v.monto || 0);
@@ -1953,7 +2063,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularTopProductos(ventas: any[]): void {
     const ventasPorProducto: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       const producto = v.producto || 'Sin producto';
       ventasPorProducto[producto] = (ventasPorProducto[producto] || 0) + (v.monto || 0);
@@ -1967,7 +2077,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularTopClientes(ventas: any[]): void {
     const ventasPorCliente: { [key: string]: { ventas: number; transacciones: number; ultimaVenta: string } } = {};
-    
+
     ventas.forEach((v: any) => {
       const cliente = v.cliente || 'Sin cliente';
       if (!ventasPorCliente[cliente]) {
@@ -1987,10 +2097,10 @@ export class VentasComponent implements OnInit, OnChanges {
   }
 
   recalcularVentasPorMes(ventas: any[]): void {
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const ventasPorMes: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       if (v.fecha) {
         const fecha = new Date(v.fecha);
@@ -2015,7 +2125,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularVentasPorProducto(ventas: any[]): void {
     const ventasPorProductoMap: { [key: string]: any } = {};
-    
+
     ventas.forEach((v: any) => {
       const prodKey =
         v.idProducto != null && String(v.idProducto).trim() !== ''
@@ -2048,7 +2158,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularVentasPorCliente(ventas: any[]): void {
     const ventasPorClienteMap: { [key: string]: any } = {};
-    
+
     ventas.forEach((v: any) => {
       const cliente = v.cliente || 'Sin cliente';
       if (!ventasPorClienteMap[cliente]) {
@@ -2057,11 +2167,17 @@ export class VentasComponent implements OnInit, OnChanges {
           ultimaVenta: v.fecha || '',
           dias: 0,
           transacciones: 0,
+          ventasSinIva: 0,
+          ventasConIva: 0,
           ventas: 0
         };
       }
       ventasPorClienteMap[cliente].transacciones += 1;
-      ventasPorClienteMap[cliente].ventas += (v.monto || 0);
+      const montoConIva = v.monto || 0;
+      const montoSinIva = v.ventasSinIva || v.ventasSinIVA || (montoConIva / 1.12);
+      ventasPorClienteMap[cliente].ventasSinIva += montoSinIva;
+      ventasPorClienteMap[cliente].ventasConIva += montoConIva;
+      ventasPorClienteMap[cliente].ventas += montoConIva;
       if (v.fecha && v.fecha > ventasPorClienteMap[cliente].ultimaVenta) {
         ventasPorClienteMap[cliente].ultimaVenta = v.fecha;
       }
