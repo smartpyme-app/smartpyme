@@ -1077,6 +1077,106 @@ export class VentasComponent implements OnInit, OnChanges {
     this.emitirFiltrosAlPadre();
   }
 
+  get hayFiltrosAdicionalesActivos(): boolean {
+    const hayAdicionalesEnBorrador =
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdSucursalTodasImplicitas,
+        this.filtroAdSucursalSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdEstadoTodasImplicitas,
+        this.filtroAdEstadoSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdCanalTodasImplicitas,
+        this.filtroAdCanalSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdClienteTodasImplicitas,
+        this.filtroAdClienteSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdVendedorTodasImplicitas,
+        this.filtroAdVendedorSeleccionadas
+      );
+    const hayAdicionalesAplicados =
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdSucursalTodasImplicitasAplicado,
+        this.filtroAdSucursalSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdEstadoTodasImplicitasAplicado,
+        this.filtroAdEstadoSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdCanalTodasImplicitasAplicado,
+        this.filtroAdCanalSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdClienteTodasImplicitasAplicado,
+        this.filtroAdClienteSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdVendedorTodasImplicitasAplicado,
+        this.filtroAdVendedorSeleccionadasAplicado
+      );
+    const hayCatProd =
+      this.filtroAdicionalEstaActivo(
+        this.filtroCatTodasImplicitas,
+        this.filtroCatSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroProdTodasImplicitas,
+        this.filtroProdSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroCatTodasImplicitasAplicado,
+        this.filtroCatSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroProdTodasImplicitasAplicado,
+        this.filtroProdSeleccionadasAplicado
+      );
+    return hayAdicionalesEnBorrador || hayAdicionalesAplicados || hayCatProd || this.tieneFiltrosInteractivos();
+  }
+
+  limpiarFiltrosAdicionales(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.limpiarFiltrosInteractivos();
+
+    this.filtroAdSucursalTodasImplicitas = true;
+    this.filtroAdSucursalSeleccionadas = [];
+    this.filtroAdEstadoTodasImplicitas = true;
+    this.filtroAdEstadoSeleccionadas = [];
+    this.filtroAdCanalTodasImplicitas = true;
+    this.filtroAdCanalSeleccionadas = [];
+    this.filtroAdClienteTodasImplicitas = true;
+    this.filtroAdClienteSeleccionadas = [];
+    this.filtroAdVendedorTodasImplicitas = true;
+    this.filtroAdVendedorSeleccionadas = [];
+    this.filtroCatTodasImplicitas = true;
+    this.filtroCatSeleccionadas = [];
+    this.filtroProdTodasImplicitas = true;
+    this.filtroProdSeleccionadas = [];
+    this.filtroAdSucursalTodasImplicitasAplicado = true;
+    this.filtroAdSucursalSeleccionadasAplicado = [];
+    this.filtroAdEstadoTodasImplicitasAplicado = true;
+    this.filtroAdEstadoSeleccionadasAplicado = [];
+    this.filtroAdCanalTodasImplicitasAplicado = true;
+    this.filtroAdCanalSeleccionadasAplicado = [];
+    this.filtroAdClienteTodasImplicitasAplicado = true;
+    this.filtroAdClienteSeleccionadasAplicado = [];
+    this.filtroAdVendedorTodasImplicitasAplicado = true;
+    this.filtroAdVendedorSeleccionadasAplicado = [];
+    this.filtroCatTodasImplicitasAplicado = true;
+    this.filtroCatSeleccionadasAplicado = [];
+    this.filtroProdTodasImplicitasAplicado = true;
+    this.filtroProdSeleccionadasAplicado = [];
+    this.emitirFiltrosAlPadre();
+  }
+
   /** Recarga datos con año/mes actuales y los filtros adicionales ya confirmados (sin leer el borrador). */
   refrescarDatosPorFecha(): void {
     this.emitirFiltrosAlPadre();
@@ -1791,6 +1891,8 @@ export class VentasComponent implements OnInit, OnChanges {
   }
 
   onMesClick(event: { name: string; value: any; index: number }): void {
+    console.log('Mes clickeado:', event); // Verifica que event.name sea 'Enero', 'Febrero', etc.
+
     if (this.filtrosInteractivos.mes === event.name) {
       delete this.filtrosInteractivos.mes;
     } else {
@@ -1846,17 +1948,26 @@ export class VentasComponent implements OnInit, OnChanges {
       ventasFiltradas = ventasFiltradas.filter((v: any) => v.cliente === this.filtrosInteractivos.cliente);
     }
     if (this.filtrosInteractivos.mes) {
+      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
       ventasFiltradas = ventasFiltradas.filter((v: any) => {
         if (!v.fecha) return false;
-        const fecha = new Date(v.fecha);
-        const mesIndex = fecha.getMonth();
-        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        const mesNombre = meses[mesIndex];
-        return mesNombre.toLowerCase() === this.filtrosInteractivos.mes?.toLowerCase() ||
-          mesNombre === this.filtrosInteractivos.mes;
+
+        // Parsear fecha en formato DD/MM/YYYY
+        const partes = v.fecha.split('/');
+        if (partes.length !== 3) return false;
+
+        const mesNum = parseInt(partes[1], 10) - 1; // Meses van de 0 a 11
+        if (mesNum < 0 || mesNum > 11) return false;
+
+        const mesNombre = meses[mesNum];
+
+        // Comparar ignorando mayúsculas/minúsculas
+        return mesNombre.toLowerCase() === this.filtrosInteractivos.mes?.toLowerCase();
       });
     }
+
     if (this.filtrosInteractivos.categoria) {
       ventasFiltradas = ventasFiltradas.filter((v: any) => v.categoria === this.filtrosInteractivos.categoria);
     }

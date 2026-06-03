@@ -88,6 +88,19 @@
                             <button type="button" class="btn btn-outline-primary" (click)="toggleFiltrosAdicionales()">
                                 <i class="fas fa-filter me-1"></i> Ver otros filtros
                             </button>
+                            <button type="button" class="btn btn-outline-primary" tooltip="Limpiar otros filtros"
+                                (click)="limpiarFiltrosAdicionales()" *ngIf="hayFiltrosAdicionalesActivos">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                    <path
+                                        d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" />
+                                    <path d="M22 22l-5 -5" />
+                                    <path d="M17 22l5 -5" />
+                                </svg>
+                            </button>
                             <button type="button" class="btn btn-primary" tooltip="Aplicar filtros"
                                 *ngIf="mostrarBotonAplicarOtrosFiltrosVentas" (click)="confirmarOtrosFiltrosVentas()">
                                 <i class="fa fa-check"></i> Aplicar
@@ -105,6 +118,7 @@
                                     <path d="M17 22l5 -5" />
                                 </svg>
                             </button>
+
                         </div>
                     </div>
 
@@ -162,20 +176,6 @@
                                 (click)="cambiarVistaMetricas('anio')">
                                 vs Año anterior
                             </button>
-                            <!-- Indicador de filtros activos -->
-                            <div *ngIf="tieneFiltrosInteractivos()"
-                                class="mt-2 p-2 d-flex justify-content-between align-items-center"
-                                style="background-color: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
-                                <small class="text-dark fw-medium">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Filtros activos: {{ getFiltrosInteractivosTexto() }}
-                                </small>
-                                <button type="button" class="btn btn-sm btn-outline-warning"
-                                    (click)="limpiarFiltrosInteractivos()" title="Limpiar filtros interactivos">
-                                    <i class="fas fa-times me-1"></i>
-                                    Limpiar
-                                </button>
-                            </div>
                         </div>
 
                         <!-- Cards de métricas a la derecha (bloque crítico) -->
@@ -326,9 +326,18 @@
                                     *ngIf="tieneCambiosOtrosFiltros" (click)="confirmarOtrosFiltrosVentas()">
                                     <i class="fa fa-check me-1"></i> Aplicar
                                 </button>
-                                <button type="button" class="btn btn-outline-primary px-3" tooltip="Limpiar filtros"
+                                <button type="button" class="btn btn-outline-primary" tooltip="Limpiar filtros"
                                     (click)="limpiarFiltros()" *ngIf="puedeLimpiarFiltrosVentas">
-                                    <i class="fas fa-times me-1"></i> Limpiar
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                        <path
+                                            d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" />
+                                        <path d="M22 22l-5 -5" />
+                                        <path d="M17 22l5 -5" />
+                                    </svg>
                                 </button>
                             </div>
                         </div>
@@ -376,9 +385,12 @@
                         <div class="col-12">
                             <div class="card">
                                 <div class="card-header bg-white border-0 py-3">
-                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                                        <h5 class="mb-0 fw-bold text-center text-md-start">Detalle de ventas por producto</h5>
-                                        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center justify-content-md-end">
+                                    <div
+                                        class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                        <h5 class="mb-0 fw-bold text-center text-md-start">Detalle de ventas por
+                                            producto</h5>
+                                        <div
+                                            class="d-flex flex-wrap gap-2 align-items-center justify-content-center justify-content-md-end">
                                             <!-- Buscador global -->
                                             <div class="input-group" style="width: 250px;">
                                                 <span class="input-group-text bg-white border-end-0">
@@ -461,9 +473,12 @@
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
                                 <div class="card-header bg-white border-0 py-3">
-                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                                        <h5 class="mb-0 fw-bold text-center text-md-start">Detalle de ventas por cliente</h5>
-                                        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center justify-content-md-end">
+                                    <div
+                                        class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                        <h5 class="mb-0 fw-bold text-center text-md-start">Detalle de ventas por cliente
+                                        </h5>
+                                        <div
+                                            class="d-flex flex-wrap gap-2 align-items-center justify-content-center justify-content-md-end">
                                             <!-- Buscador global -->
                                             <div class="input-group" style="width: 250px;">
                                                 <span class="input-group-text bg-white border-end-0">
@@ -474,12 +489,12 @@
                                                     (input)="onQuickFilterClienteChange()">
                                             </div>
                                             <!-- Botones de exportación -->
-                                            <button class="btn btn-sm btn-outline-primary" (click)="exportarClientesCSV()"
-                                                title="Exportar a CSV">
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                (click)="exportarClientesCSV()" title="Exportar a CSV">
                                                 <i class="fas fa-file-csv me-1"></i> CSV
                                             </button>
-                                            <button class="btn btn-sm btn-outline-success" (click)="exportarClientesExcel()"
-                                                title="Exportar a Excel">
+                                            <button class="btn btn-sm btn-outline-success"
+                                                (click)="exportarClientesExcel()" title="Exportar a Excel">
                                                 <i class="fas fa-file-excel me-1"></i> Excel
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary"
