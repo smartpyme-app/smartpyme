@@ -9,7 +9,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Admin\Empresa;
-use App\Services\ConversionInventarioService;
+use App\Services\Inventario\ConversionInventarioService;
 
 class Entrada extends Model {
 
