@@ -192,8 +192,8 @@
                         <!-- Top-left: Ventas totales por mes (cambia según el botón seleccionado) -->
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
-                                <div class="card-header bg-white border-0">
-                                    <h5 class="mb-0 fw-bold">{{ getTituloGraficoVentas() }}</h5>
+                                <div class="card-header bg-white border-0 text-center">
+                                    <div class="ventas-card-title mb-0">{{ getTituloGraficoVentas() }}</div>
                                 </div>
                                 <div class="card-body">
                                     <ng-container *ngIf="vistaMetricas === 'mes'">
@@ -221,8 +221,8 @@
                         <!-- Top-right: Ventas por canal -->
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
-                                <div class="card-header bg-white border-0 py-3">
-                                    <h5 class="mb-0 fw-bold">Ventas por canal</h5>
+                                <div class="card-header bg-white border-0 py-3 text-center">
+                                    <div class="ventas-card-title mb-0">Ventas por canal</div>
                                 </div>
                                 <div class="card-body">
                                     <ng-container
@@ -239,8 +239,8 @@
                         <!-- Bottom-left: Ventas por vendedor -->
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
-                                <div class="card-header bg-white border-0 py-3">
-                                    <h5 class="mb-0 fw-bold">Ventas por vendedor</h5>
+                                <div class="card-header bg-white border-0 py-3 text-center">
+                                    <div class="ventas-card-title mb-0">Ventas por vendedor</div>
                                 </div>
                                 <div class="card-body">
                                     <app-bar-chart
@@ -255,8 +255,8 @@
                         <!-- Bottom-right: Ventas totales por forma de pago -->
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
-                                <div class="card-header bg-white border-0 py-3">
-                                    <h5 class="mb-0 fw-bold">Ventas totales por forma de pago</h5>
+                                <div class="card-header bg-white border-0 py-3 text-center">
+                                    <div class="ventas-card-title mb-0">Ventas totales por forma de pago</div>
                                 </div>
                                 <div class="card-body">
                                     <app-treemap-chart
@@ -348,8 +348,8 @@
                         <!-- Ventas totales por categoría -->
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
-                                <div class="card-header bg-white border-0 py-3">
-                                    <h5 class="mb-0 fw-bold">Ventas totales por categoría</h5>
+                                <div class="card-header bg-white border-0 py-3 text-center">
+                                    <div class="ventas-card-title mb-0">Ventas totales por categoría</div>
                                 </div>
                                 <div class="card-body">
                                     <ng-container
@@ -365,8 +365,8 @@
                         <!-- Top 15 productos más vendidos -->
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
-                                <div class="card-header bg-white border-0 py-3">
-                                    <h5 class="mb-0 fw-bold">Top 15 productos más vendidos</h5>
+                                <div class="card-header bg-white border-0 py-3 text-center">
+                                    <div class="ventas-card-title mb-0">Top 15 productos más vendidos</div>
                                 </div>
                                 <div class="card-body">
                                     <ng-container
@@ -386,11 +386,10 @@
                             <div class="card">
                                 <div class="card-header bg-white border-0 py-3">
                                     <div
-                                        class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                                        <h5 class="mb-0 fw-bold text-center text-md-start">Detalle de ventas por
-                                            producto</h5>
+                                        class="d-flex flex-column justify-content-between gap-2">
+                                        <div class="ventas-card-title mb-0 text-center">Detalle de ventas por producto</div>
                                         <div
-                                            class="d-flex flex-wrap gap-2 align-items-center justify-content-center justify-content-md-end">
+                                            class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
                                             <!-- Buscador global -->
                                             <div class="input-group" style="width: 250px;">
                                                 <span class="input-group-text bg-white border-end-0">
@@ -456,8 +455,8 @@
                         <!-- Top 25 clientes -->
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
-                                <div class="card-header bg-primary text-white border-0 py-2">
-                                    <h5 class="mb-0 fw-bold text-center">Top 25 clientes</h5>
+                                <div class="card-header bg-primary text-white border-0 py-2 text-center">
+                                    <div class="ventas-card-title text-white mb-0">Top 25 clientes</div>
                                 </div>
                                 <div class="card-body">
                                     <ng-container *ngIf="datos.topClientes !== undefined; else ventasListPlaceholder">
@@ -474,11 +473,10 @@
                             <div class="card h-100">
                                 <div class="card-header bg-white border-0 py-3">
                                     <div
-                                        class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                                        <h5 class="mb-0 fw-bold text-center text-md-start">Detalle de ventas por cliente
-                                        </h5>
+                                        class="d-flex flex-column justify-content-between gap-2">
+                                        <div class="ventas-card-title mb-0 text-center">Detalle de ventas por cliente</div>
                                         <div
-                                            class="d-flex flex-wrap gap-2 align-items-center justify-content-center justify-content-md-end">
+                                            class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
                                             <!-- Buscador global -->
                                             <div class="input-group" style="width: 250px;">
                                                 <span class="input-group-text bg-white border-end-0">

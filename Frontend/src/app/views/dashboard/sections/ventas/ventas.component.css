@@ -351,3 +351,13 @@
     min-width: 155px;
     max-width: 100%;
 }
+
+.ventas-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.ventas-card-title.text-white {
+    color: #ffffff !important;
+}

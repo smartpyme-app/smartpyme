@@ -99,7 +99,7 @@
             <div class="row">
                 <ng-container
                     *ngIf="datos.cuentasPorCobrar !== undefined && datos.cuentasPorPagar !== undefined; else resultadosListLoader">
-                    <div class="col-md-6 mb-4">
+                    <div class="col-md-6 mb-2">
                         <div class="card">
                             <div class="card-body">
                                 <app-accounts-list title="Cuentas por cobrar clientes"
@@ -184,13 +184,12 @@
                     </div>
                 </div>
                 <div class="row" *ngIf="datos.cashflow as cf">
-                    <div class="col-md-6 mb-4">
+                    <div class="col-md-6 mb-2">
                         <div class="card">
                             <div class="card-body p-0">
-                                <div
-                                    class="d-flex flex-column align-items-center p-3 border-bottom gap-2">
-                                    <h6 class="card-title mb-0 fw-bold text-center">Ventas del mes</h6>
-                                    <div class="d-flex gap-2 align-items-center flex-wrap justify-content-center">
+                                <div class="d-flex flex-column p-3 border-bottom gap-2">
+                                    <div class="cashflow-card-title mb-0 text-center">Ventas del mes</div>
+                                    <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end w-100">
                                         <div class="input-group" style="width: 220px;">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="fas fa-search text-muted"></i>
@@ -224,13 +223,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 mb-4">
+                    <div class="col-md-6 mb-2">
                         <div class="card">
                             <div class="card-body p-0">
-                                <div
-                                    class="d-flex flex-column align-items-center p-3 border-bottom gap-2">
-                                    <h6 class="card-title mb-0 fw-bold text-center">Gastos del mes</h6>
-                                    <div class="d-flex gap-2 align-items-center flex-wrap justify-content-center">
+                                <div class="d-flex flex-column p-3 border-bottom gap-2">
+                                    <div class="cashflow-card-title mb-0 text-center">Gastos del mes</div>
+                                    <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end w-100">
                                         <div class="input-group" style="width: 220px;">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="fas fa-search text-muted"></i>
@@ -270,13 +268,12 @@
             <!-- Tablas Abonos CxC / CxP -->
             <ng-container *ngIf="datos.abonos !== undefined; else resultadosListLoader">
                 <div class="row" *ngIf="datos.abonos">
-                    <div class="col-md-6 mb-4">
+                    <div class="col-md-6 mb-2">
                         <div class="card">
                             <div class="card-body p-0">
-                                <div
-                                    class="d-flex flex-column align-items-center p-3 border-bottom gap-2">
-                                    <h6 class="card-title mb-0 fw-bold text-center">Abonos recibidos CxC</h6>
-                                    <div class="d-flex gap-2 align-items-center flex-wrap justify-content-center">
+                                <div class="d-flex flex-column p-3 border-bottom gap-2">
+                                    <div class="cashflow-card-title mb-0 text-center">Abonos recibidos CxC</div>
+                                    <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end w-100">
                                         <div class="input-group" style="width: 220px;">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="fas fa-search text-muted"></i>
@@ -306,13 +303,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 mb-4">
+                    <div class="col-md-6 mb-2">
                         <div class="card">
                             <div class="card-body p-0">
-                                <div
-                                    class="d-flex flex-column align-items-center p-3 border-bottom gap-2">
-                                    <h6 class="card-title mb-0 fw-bold text-center">Abonos realizados CxP</h6>
-                                    <div class="d-flex gap-2 align-items-center flex-wrap justify-content-center">
+                                <div class="d-flex flex-column p-3 border-bottom gap-2">
+                                    <div class="cashflow-card-title mb-0 text-center">Abonos realizados CxP</div>
+                                    <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end w-100">
                                         <div class="input-group" style="width: 220px;">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="fas fa-search text-muted"></i>
