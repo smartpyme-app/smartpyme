@@ -1,4 +1,5 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ApiService } from '@services/api.service';
 import {
   DashboardFiltrosCatalogoService,
@@ -20,7 +21,7 @@ import { MetricCard } from '../../models/chart-config.model';
   styleUrls: ['./ventas.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class VentasComponent implements OnInit, OnChanges {
+export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<FiltrosConsultaVentasDashboard>();
 
@@ -263,7 +264,8 @@ export class VentasComponent implements OnInit, OnChanges {
   constructor(
     private cdr: ChangeDetectorRef,
     private apiService: ApiService,
-    private filtrosCatalogo: DashboardFiltrosCatalogoService
+    private filtrosCatalogo: DashboardFiltrosCatalogoService,
+    private dashboardDataService: DashboardDataService
   ) { }
 
   private inicializado: boolean = false;
@@ -315,22 +317,69 @@ export class VentasComponent implements OnInit, OnChanges {
   });
 
   ngOnInit(): void {
+    const savedState = this.dashboardDataService.obtenerFiltrosUI('Ventas');
+    const tieneEstadoGuardado = !!savedState;
+    if (savedState) {
+      Object.assign(this, savedState);
+    }
+
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridClientes();
     // Guardar datos originales si existen
     if (this.datos && Object.keys(this.datos).length > 0) {
       this.datosOriginales = this.clonarDatos(this.datos);
-      this.datosFiltrados = this.clonarDatos(this.datos);
-      // Asegurar que los arrays estén ordenados de mayor a menor
-      this.ordenarArraysIniciales();
-      this.recalcularRowsCache();
+      if (Object.keys(this.filtrosInteractivos).length > 0) {
+        this.aplicarFiltrosInteractivos();
+      } else {
+        this.datosFiltrados = this.clonarDatos(this.datos);
+        this.ordenarArraysIniciales();
+        this.datos = this.datosFiltrados;
+        this.recalcularRowsCache();
+      }
     }
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
       this.cdr.markForCheck();
     }, 100);
+  }
+
+  ngOnDestroy(): void {
+    this.dashboardDataService.guardarFiltrosUI('Ventas', {
+      anio: this.anio,
+      mes: this.mes,
+      filtroAdSucursalTodasImplicitas: this.filtroAdSucursalTodasImplicitas,
+      filtroAdSucursalSeleccionadas: this.filtroAdSucursalSeleccionadas,
+      filtroAdEstadoTodasImplicitas: this.filtroAdEstadoTodasImplicitas,
+      filtroAdEstadoSeleccionadas: this.filtroAdEstadoSeleccionadas,
+      filtroAdCanalTodasImplicitas: this.filtroAdCanalTodasImplicitas,
+      filtroAdCanalSeleccionadas: this.filtroAdCanalSeleccionadas,
+      filtroAdClienteTodasImplicitas: this.filtroAdClienteTodasImplicitas,
+      filtroAdClienteSeleccionadas: this.filtroAdClienteSeleccionadas,
+      filtroAdVendedorTodasImplicitas: this.filtroAdVendedorTodasImplicitas,
+      filtroAdVendedorSeleccionadas: this.filtroAdVendedorSeleccionadas,
+      filtroCatTodasImplicitas: this.filtroCatTodasImplicitas,
+      filtroCatSeleccionadas: this.filtroCatSeleccionadas,
+      filtroProdTodasImplicitas: this.filtroProdTodasImplicitas,
+      filtroProdSeleccionadas: this.filtroProdSeleccionadas,
+      filtroAdSucursalTodasImplicitasAplicado: this.filtroAdSucursalTodasImplicitasAplicado,
+      filtroAdSucursalSeleccionadasAplicado: this.filtroAdSucursalSeleccionadasAplicado,
+      filtroAdEstadoTodasImplicitasAplicado: this.filtroAdEstadoTodasImplicitasAplicado,
+      filtroAdEstadoSeleccionadasAplicado: this.filtroAdEstadoSeleccionadasAplicado,
+      filtroAdCanalTodasImplicitasAplicado: this.filtroAdCanalTodasImplicitasAplicado,
+      filtroAdCanalSeleccionadasAplicado: this.filtroAdCanalSeleccionadasAplicado,
+      filtroAdClienteTodasImplicitasAplicado: this.filtroAdClienteTodasImplicitasAplicado,
+      filtroAdClienteSeleccionadasAplicado: this.filtroAdClienteSeleccionadasAplicado,
+      filtroAdVendedorTodasImplicitasAplicado: this.filtroAdVendedorTodasImplicitasAplicado,
+      filtroAdVendedorSeleccionadasAplicado: this.filtroAdVendedorSeleccionadasAplicado,
+      filtroCatTodasImplicitasAplicado: this.filtroCatTodasImplicitasAplicado,
+      filtroCatSeleccionadasAplicado: this.filtroCatSeleccionadasAplicado,
+      filtroProdTodasImplicitasAplicado: this.filtroProdTodasImplicitasAplicado,
+      filtroProdSeleccionadasAplicado: this.filtroProdSeleccionadasAplicado,
+      filtrosInteractivos: this.filtrosInteractivos,
+      vistaMetricas: this.vistaMetricas
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -358,7 +407,7 @@ export class VentasComponent implements OnInit, OnChanges {
       if (v == null || v === '') return '';
       const n = Number(v);
       if (Number.isNaN(n)) return '';
-      return this.currencyFormatter.format(n);
+      return this.formatCurrency(n);
     };
 
     this.ventasPorProductoColumnDefs = [
@@ -636,30 +685,33 @@ export class VentasComponent implements OnInit, OnChanges {
   cargarOpcionesFiltros(): void {
     this.categoriasProductos = [];
 
+    const tieneEstadoGuardado = !!this.dashboardDataService.obtenerFiltrosUI('Ventas');
     this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
       next: (items) => {
         this.sucursales = items;
-        const user = this.apiService.auth_user();
-        if (items.length === 0) {
-          this.filtroAdSucursalSeleccionadas = [];
-          this.filtroAdSucursalTodasImplicitas = true;
-          this.filtroAdSucursalSeleccionadasAplicado = [];
-          this.filtroAdSucursalTodasImplicitasAplicado = true;
-        } else if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
-          this.filtroAdSucursalTodasImplicitas = false;
-          this.filtroAdSucursalSeleccionadas = [String(user.id_sucursal)];
-          this.filtroAdSucursalTodasImplicitasAplicado = false;
-          this.filtroAdSucursalSeleccionadasAplicado = [String(user.id_sucursal)];
-          setTimeout(() => {
-            if (this.inicializado) {
-              this.refrescarDatosPorFecha();
-            }
-          }, 150);
-        } else if (user?.tipo === 'Administrador') {
-          this.filtroAdSucursalSeleccionadas = [];
-          this.filtroAdSucursalTodasImplicitas = true;
-          this.filtroAdSucursalSeleccionadasAplicado = [];
-          this.filtroAdSucursalTodasImplicitasAplicado = true;
+        if (!tieneEstadoGuardado) {
+          const user = this.apiService.auth_user();
+          if (items.length === 0) {
+            this.filtroAdSucursalSeleccionadas = [];
+            this.filtroAdSucursalTodasImplicitas = true;
+            this.filtroAdSucursalSeleccionadasAplicado = [];
+            this.filtroAdSucursalTodasImplicitasAplicado = true;
+          } else if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
+            this.filtroAdSucursalTodasImplicitas = false;
+            this.filtroAdSucursalSeleccionadas = [String(user.id_sucursal)];
+            this.filtroAdSucursalTodasImplicitasAplicado = false;
+            this.filtroAdSucursalSeleccionadasAplicado = [String(user.id_sucursal)];
+            setTimeout(() => {
+              if (this.inicializado) {
+                this.refrescarDatosPorFecha();
+              }
+            }, 150);
+          } else if (user?.tipo === 'Administrador') {
+            this.filtroAdSucursalSeleccionadas = [];
+            this.filtroAdSucursalTodasImplicitas = true;
+            this.filtroAdSucursalSeleccionadasAplicado = [];
+            this.filtroAdSucursalTodasImplicitasAplicado = true;
+          }
         }
         this.cdr.markForCheck();
       },
@@ -1325,7 +1377,36 @@ export class VentasComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(value: number): string {
-    return this.currencyFormatter.format(value);
+    if (value === null || value === undefined) {
+      value = 0;
+    }
+    const user = this.apiService.auth_user();
+    const empresa = user?.empresa;
+    const currencyCode = empresa?.moneda || 'USD';
+    const currencySymbol = empresa?.currency?.currency_symbol;
+
+    const options: Intl.NumberFormatOptions = {
+      style: 'currency',
+      currency: currencyCode,
+    };
+
+    if (currencySymbol) {
+      options.style = 'decimal';
+      options.minimumFractionDigits = 2;
+      options.maximumFractionDigits = 2;
+    }
+
+    let formattedValue = new Intl.NumberFormat('en-US', options).format(Math.abs(value));
+
+    if (currencySymbol) {
+      formattedValue = `${currencySymbol}${formattedValue}`;
+    }
+
+    if (value < 0) {
+      return `(${formattedValue})`;
+    }
+
+    return formattedValue;
   }
 
   /**

@@ -1,4 +1,5 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 import { ApiService } from '@services/api.service';
 import {
@@ -16,7 +17,7 @@ import {
   styleUrls: ['./control-cuentas.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ControlCuentasComponent implements OnInit, OnChanges {
+export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
 
@@ -120,6 +121,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     private cdr: ChangeDetectorRef,
     private apiService: ApiService,
     private filtrosCatalogo: DashboardFiltrosCatalogoService,
+    private dashboardDataService: DashboardDataService
   ) {}
 
   /**
@@ -291,6 +293,12 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   ngOnInit(): void {
+    const savedState = this.dashboardDataService.obtenerFiltrosUI('Control de cuentas');
+    const tieneEstadoGuardado = !!savedState;
+    if (savedState) {
+      Object.assign(this, savedState);
+    }
+
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridResumenPagar();
@@ -306,6 +314,38 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       this.filtrosListosParaEmitir = true;
       this.cdr.markForCheck();
     }, 100);
+  }
+
+  ngOnDestroy(): void {
+    this.dashboardDataService.guardarFiltrosUI('Control de cuentas', {
+      anio: this.anio,
+      mes: this.mes,
+      filtroCxcSucTodasImplicitas: this.filtroCxcSucTodasImplicitas,
+      filtroCxcSucSeleccionadas: this.filtroCxcSucSeleccionadas,
+      filtroCxcCliTodasImplicitas: this.filtroCxcCliTodasImplicitas,
+      filtroCxcCliSeleccionadas: this.filtroCxcCliSeleccionadas,
+      filtroCxcVigTodasImplicitas: this.filtroCxcVigTodasImplicitas,
+      filtroCxcVigSeleccionadas: this.filtroCxcVigSeleccionadas,
+      filtroCxpProvTodasImplicitas: this.filtroCxpProvTodasImplicitas,
+      filtroCxpProvSeleccionadas: this.filtroCxpProvSeleccionadas,
+      filtroCxpVigTodasImplicitas: this.filtroCxpVigTodasImplicitas,
+      filtroCxpVigSeleccionadas: this.filtroCxpVigSeleccionadas,
+      filtroCxpCatTodasImplicitas: this.filtroCxpCatTodasImplicitas,
+      filtroCxpCatSeleccionadas: this.filtroCxpCatSeleccionadas,
+      filtroCxcSucTodasImplicitasAplicado: this.filtroCxcSucTodasImplicitasAplicado,
+      filtroCxcSucSeleccionadasAplicado: this.filtroCxcSucSeleccionadasAplicado,
+      filtroCxcCliTodasImplicitasAplicado: this.filtroCxcCliTodasImplicitasAplicado,
+      filtroCxcCliSeleccionadasAplicado: this.filtroCxcCliSeleccionadasAplicado,
+      filtroCxcVigTodasImplicitasAplicado: this.filtroCxcVigTodasImplicitasAplicado,
+      filtroCxcVigSeleccionadasAplicado: this.filtroCxcVigSeleccionadasAplicado,
+      filtroCxpProvTodasImplicitasAplicado: this.filtroCxpProvTodasImplicitasAplicado,
+      filtroCxpProvSeleccionadasAplicado: this.filtroCxpProvSeleccionadasAplicado,
+      filtroCxpVigTodasImplicitasAplicado: this.filtroCxpVigTodasImplicitasAplicado,
+      filtroCxpVigSeleccionadasAplicado: this.filtroCxpVigSeleccionadasAplicado,
+      filtroCxpCatTodasImplicitasAplicado: this.filtroCxpCatTodasImplicitasAplicado,
+      filtroCxpCatSeleccionadasAplicado: this.filtroCxpCatSeleccionadasAplicado,
+      filtrosInteractivos: this.filtrosInteractivos
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -328,16 +368,19 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   cargarOpcionesFiltros(): void {
+    const tieneEstadoGuardado = !!this.dashboardDataService.obtenerFiltrosUI('Control de cuentas');
     this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
       next: (items) => {
         this.sucursales = items;
-        this.aplicarRestriccionSucursalCxcPorRol();
-        this.copiarTodoFiltrosAdicionalesBorradorAAplicado();
-        setTimeout(() => {
-          if (this.filtrosListosParaEmitir) {
-            this.aplicarFiltros();
-          }
-        }, 150);
+        if (!tieneEstadoGuardado) {
+          this.aplicarRestriccionSucursalCxcPorRol();
+          this.copiarTodoFiltrosAdicionalesBorradorAAplicado();
+          setTimeout(() => {
+            if (this.filtrosListosParaEmitir) {
+              this.aplicarFiltros();
+            }
+          }, 150);
+        }
         this.cdr.markForCheck();
       },
     });
@@ -837,7 +880,36 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(value: number): string {
-    return this.currencyFormatter.format(value);
+    if (value === null || value === undefined) {
+      value = 0;
+    }
+    const user = this.apiService.auth_user();
+    const empresa = user?.empresa;
+    const currencyCode = empresa?.moneda || 'USD';
+    const currencySymbol = empresa?.currency?.currency_symbol;
+
+    const options: Intl.NumberFormatOptions = {
+      style: 'currency',
+      currency: currencyCode,
+    };
+
+    if (currencySymbol) {
+      options.style = 'decimal';
+      options.minimumFractionDigits = 2;
+      options.maximumFractionDigits = 2;
+    }
+
+    let formattedValue = new Intl.NumberFormat('en-US', options).format(Math.abs(value));
+
+    if (currencySymbol) {
+      formattedValue = `${currencySymbol}${formattedValue}`;
+    }
+
+    if (value < 0) {
+      return `(${formattedValue})`;
+    }
+
+    return formattedValue;
   }
 
   // Métodos para filtros interactivos

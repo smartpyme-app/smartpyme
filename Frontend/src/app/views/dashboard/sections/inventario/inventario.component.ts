@@ -1,4 +1,6 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { DashboardDataService } from '../../services/dashboard-data.service';
+import { ApiService } from '@services/api.service';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 
 @Component({
@@ -7,7 +9,7 @@ import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
   styleUrls: ['./inventario.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class InventarioComponent implements OnInit, OnChanges {
+export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
 
@@ -81,7 +83,11 @@ export class InventarioComponent implements OnInit, OnChanges {
 
   private inicializado: boolean = false;
 
-  constructor(private cdr: ChangeDetectorRef) { }
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private dashboardDataService: DashboardDataService,
+    private apiService: ApiService
+  ) { }
 
   /**
    * Método eficiente de clonación profunda
@@ -135,6 +141,12 @@ export class InventarioComponent implements OnInit, OnChanges {
   });
 
   ngOnInit(): void {
+    const savedState = this.dashboardDataService.obtenerFiltrosUI('Inventario');
+    const tieneEstadoGuardado = !!savedState;
+    if (savedState) {
+      Object.assign(this, savedState);
+    }
+
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridEntradasSalidas();
@@ -152,6 +164,22 @@ export class InventarioComponent implements OnInit, OnChanges {
       this.inicializado = true;
       this.cdr.markForCheck();
     }, 100);
+  }
+
+  ngOnDestroy(): void {
+    this.dashboardDataService.guardarFiltrosUI('Inventario', {
+      anio: this.anio,
+      mes: this.mes,
+      filtroCategoria: this.filtroCategoria,
+      filtroProducto: this.filtroProducto,
+      filtroSucursal: this.filtroSucursal,
+      filtroProveedor: this.filtroProveedor,
+      filtroCategoriaAplicado: this.filtroCategoriaAplicado,
+      filtroProductoAplicado: this.filtroProductoAplicado,
+      filtroSucursalAplicado: this.filtroSucursalAplicado,
+      filtroProveedorAplicado: this.filtroProveedorAplicado,
+      filtrosInteractivos: this.filtrosInteractivos
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -276,7 +304,36 @@ export class InventarioComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(value: number): string {
-    return this.currencyFormatter.format(value);
+    if (value === null || value === undefined) {
+      value = 0;
+    }
+    const user = this.apiService.auth_user();
+    const empresa = user?.empresa;
+    const currencyCode = empresa?.moneda || 'USD';
+    const currencySymbol = empresa?.currency?.currency_symbol;
+
+    const options: Intl.NumberFormatOptions = {
+      style: 'currency',
+      currency: currencyCode,
+    };
+
+    if (currencySymbol) {
+      options.style = 'decimal';
+      options.minimumFractionDigits = 2;
+      options.maximumFractionDigits = 2;
+    }
+
+    let formattedValue = new Intl.NumberFormat('en-US', options).format(Math.abs(value));
+
+    if (currencySymbol) {
+      formattedValue = `${currencySymbol}${formattedValue}`;
+    }
+
+    if (value < 0) {
+      return `(${formattedValue})`;
+    }
+
+    return formattedValue;
   }
 
   formatNumber(value: number): string {

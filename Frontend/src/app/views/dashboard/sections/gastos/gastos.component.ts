@@ -1,4 +1,5 @@
-import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ApiService } from '@services/api.service';
@@ -17,7 +18,7 @@ import {
   styleUrls: ['./gastos.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class GastosComponent implements OnInit, OnChanges {
+export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
 
@@ -149,6 +150,7 @@ export class GastosComponent implements OnInit, OnChanges {
     private cdr: ChangeDetectorRef,
     private apiService: ApiService,
     private filtrosCatalogo: DashboardFiltrosCatalogoService,
+    private dashboardDataService: DashboardDataService
   ) { }
 
   /**
@@ -198,6 +200,12 @@ export class GastosComponent implements OnInit, OnChanges {
   });
 
   ngOnInit(): void {
+    const savedState = this.dashboardDataService.obtenerFiltrosUI('Gastos');
+    const tieneEstadoGuardado = !!savedState;
+    if (savedState) {
+      Object.assign(this, savedState);
+    }
+
     // Configurar AG Grid
     this.configurarAGGrid();
     this.cargarOpcionesFiltros();
@@ -212,20 +220,48 @@ export class GastosComponent implements OnInit, OnChanges {
     }, 100);
   }
 
+  ngOnDestroy(): void {
+    this.dashboardDataService.guardarFiltrosUI('Gastos', {
+      anio: this.anio,
+      mes: this.mes,
+      filtroGastoSucTodasImplicitas: this.filtroGastoSucTodasImplicitas,
+      filtroGastoSucSeleccionadas: this.filtroGastoSucSeleccionadas,
+      filtroGastoProvTodasImplicitas: this.filtroGastoProvTodasImplicitas,
+      filtroGastoProvSeleccionadas: this.filtroGastoProvSeleccionadas,
+      filtroGastoTipoTodasImplicitas: this.filtroGastoTipoTodasImplicitas,
+      filtroGastoTipoSeleccionadas: this.filtroGastoTipoSeleccionadas,
+      filtroGastoEstTodasImplicitas: this.filtroGastoEstTodasImplicitas,
+      filtroGastoEstSeleccionadas: this.filtroGastoEstSeleccionadas,
+      filtroGastoSucTodasImplicitasAplicado: this.filtroGastoSucTodasImplicitasAplicado,
+      filtroGastoSucSeleccionadasAplicado: this.filtroGastoSucSeleccionadasAplicado,
+      filtroGastoProvTodasImplicitasAplicado: this.filtroGastoProvTodasImplicitasAplicado,
+      filtroGastoProvSeleccionadasAplicado: this.filtroGastoProvSeleccionadasAplicado,
+      filtroGastoTipoTodasImplicitasAplicado: this.filtroGastoTipoTodasImplicitasAplicado,
+      filtroGastoTipoSeleccionadasAplicado: this.filtroGastoTipoSeleccionadasAplicado,
+      filtroGastoEstTodasImplicitasAplicado: this.filtroGastoEstTodasImplicitasAplicado,
+      filtroGastoEstSeleccionadasAplicado: this.filtroGastoEstSeleccionadasAplicado,
+      filtrosInteractivos: this.filtrosInteractivos,
+      vistaMetricas: this.vistaMetricas
+    });
+  }
+
   /**
    * Sucursales (Laravel); proveedores, tipos y estados de gasto (Go dimensiones).
    */
   cargarOpcionesFiltros(): void {
+    const tieneEstadoGuardado = !!this.dashboardDataService.obtenerFiltrosUI('Gastos');
     this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
       next: (items) => {
         this.sucursales = items;
-        this.aplicarRestriccionSucursalGastosPorRol();
-        this.copiarFiltrosAdicionalesGastosBorradorAAplicado();
-        setTimeout(() => {
-          if (this.filtrosListosParaEmitir) {
-            this.aplicarFiltros();
-          }
-        }, 150);
+        if (!tieneEstadoGuardado) {
+          this.aplicarRestriccionSucursalGastosPorRol();
+          this.copiarFiltrosAdicionalesGastosBorradorAAplicado();
+          setTimeout(() => {
+            if (this.filtrosListosParaEmitir) {
+              this.aplicarFiltros();
+            }
+          }, 150);
+        }
         this.cdr.markForCheck();
       },
     });
@@ -637,7 +673,36 @@ export class GastosComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(value: number): string {
-    return this.currencyFormatter.format(value);
+    if (value === null || value === undefined) {
+      value = 0;
+    }
+    const user = this.apiService.auth_user();
+    const empresa = user?.empresa;
+    const currencyCode = empresa?.moneda || 'USD';
+    const currencySymbol = empresa?.currency?.currency_symbol;
+
+    const options: Intl.NumberFormatOptions = {
+      style: 'currency',
+      currency: currencyCode,
+    };
+
+    if (currencySymbol) {
+      options.style = 'decimal';
+      options.minimumFractionDigits = 2;
+      options.maximumFractionDigits = 2;
+    }
+
+    let formattedValue = new Intl.NumberFormat('en-US', options).format(Math.abs(value));
+
+    if (currencySymbol) {
+      formattedValue = `${currencySymbol}${formattedValue}`;
+    }
+
+    if (value < 0) {
+      return `(${formattedValue})`;
+    }
+
+    return formattedValue;
   }
 
   tieneFiltrosInteractivos(): boolean {

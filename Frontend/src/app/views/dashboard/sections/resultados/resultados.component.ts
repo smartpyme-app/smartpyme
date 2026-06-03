@@ -9,7 +9,9 @@ import {
   EventEmitter,
   ChangeDetectorRef,
   ChangeDetectionStrategy,
+  OnDestroy,
 } from '@angular/core';
+import { DashboardDataService } from '../../services/dashboard-data.service';
 import { CashFlowItem } from '../../models/chart-config.model';
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
@@ -25,7 +27,7 @@ import { ColDef, GridOptions, GridApi } from 'ag-grid-community';
   styleUrls: ['./resultados.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ResultadosComponent implements OnInit, OnChanges {
+export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
 
@@ -306,7 +308,8 @@ export class ResultadosComponent implements OnInit, OnChanges {
   constructor(
     private cdr: ChangeDetectorRef,
     private apiService: ApiService,
-    private filtrosCatalogo: DashboardFiltrosCatalogoService
+    private filtrosCatalogo: DashboardFiltrosCatalogoService,
+    private dashboardDataService: DashboardDataService
   ) { }
 
   private cargarSucursales(): void {
@@ -314,20 +317,23 @@ export class ResultadosComponent implements OnInit, OnChanges {
       next: (items) => {
         this.sucursales = items;
         const user = this.apiService.auth_user();
-        if (items.length === 0) {
-          this.sucursalesSeleccionadas = [];
-          this.sucursalesTodasImplicitas = true;
-        } else if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
-          this.sucursalesTodasImplicitas = false;
-          this.sucursalesSeleccionadas = [String(user.id_sucursal)];
-          setTimeout(() => {
-            if (this.inicializado) {
-              this.aplicarFiltros();
-            }
-          }, 150);
-        } else if (user?.tipo === 'Administrador') {
-          this.sucursalesSeleccionadas = [];
-          this.sucursalesTodasImplicitas = true;
+        const tieneEstadoGuardado = !!this.dashboardDataService.obtenerFiltrosUI('Resultados');
+        if (!tieneEstadoGuardado) {
+          if (items.length === 0) {
+            this.sucursalesSeleccionadas = [];
+            this.sucursalesTodasImplicitas = true;
+          } else if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
+            this.sucursalesTodasImplicitas = false;
+            this.sucursalesSeleccionadas = [String(user.id_sucursal)];
+            setTimeout(() => {
+              if (this.inicializado) {
+                this.aplicarFiltros();
+              }
+            }, 150);
+          } else if (user?.tipo === 'Administrador') {
+            this.sucursalesSeleccionadas = [];
+            this.sucursalesTodasImplicitas = true;
+          }
         }
         this.cdr.markForCheck();
       },
@@ -530,18 +536,38 @@ export class ResultadosComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.configurarAGGrid();
+    
+    const savedState = this.dashboardDataService.obtenerFiltrosUI('Resultados');
+    const tieneEstadoGuardado = !!savedState;
+    if (savedState) {
+      Object.assign(this, savedState);
+    }
+
     // Recalcular cache si hay datos
     if (this.datos && Object.keys(this.datos).length > 0) {
       this.recalcularRowsCache();
     }
-    this.aplicarDefectoMesFlujoEfectivo();
+    if (!tieneEstadoGuardado) {
+      this.aplicarDefectoMesFlujoEfectivo();
+    }
     this.cargarSucursales();
     // Marcar como inicializado después de un pequeño delay
     setTimeout(() => {
       this.inicializado = true;
-      this.aplicarFiltros();
+      if (!tieneEstadoGuardado) {
+        this.aplicarFiltros();
+      }
       this.cdr.markForCheck();
     }, 100);
+  }
+
+  ngOnDestroy(): void {
+    this.dashboardDataService.guardarFiltrosUI('Resultados', {
+      anioSeleccionado: this.anioSeleccionado,
+      mesFlujoEfectivo: this.mesFlujoEfectivo,
+      sucursalesSeleccionadas: this.sucursalesSeleccionadas,
+      sucursalesTodasImplicitas: this.sucursalesTodasImplicitas
+    });
   }
 
   /**
@@ -653,7 +679,36 @@ export class ResultadosComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(value: number): string {
-    return this.currencyFormatter.format(value);
+    if (value === null || value === undefined) {
+      value = 0;
+    }
+    const user = this.apiService.auth_user();
+    const empresa = user?.empresa;
+    const currencyCode = empresa?.moneda || 'USD';
+    const currencySymbol = empresa?.currency?.currency_symbol;
+
+    const options: Intl.NumberFormatOptions = {
+      style: 'currency',
+      currency: currencyCode,
+    };
+
+    if (currencySymbol) {
+      options.style = 'decimal';
+      options.minimumFractionDigits = 2;
+      options.maximumFractionDigits = 2;
+    }
+
+    let formattedValue = new Intl.NumberFormat('en-US', options).format(Math.abs(value));
+
+    if (currencySymbol) {
+      formattedValue = `${currencySymbol}${formattedValue}`;
+    }
+
+    if (value < 0) {
+      return `(${formattedValue})`;
+    }
+
+    return formattedValue;
   }
 
   ventasColumns = [

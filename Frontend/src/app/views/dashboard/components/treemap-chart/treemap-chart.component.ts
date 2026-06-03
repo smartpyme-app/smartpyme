@@ -88,9 +88,7 @@ export class TreemapChartComponent implements OnInit, OnChanges {
         trigger: 'item',
         formatter: (params: any) => {
           const value = params.value || params.data?.value || 0;
-          const formattedValue = new Intl.NumberFormat('es-GT', {
-            style: 'currency',
-            currency: 'USD',
+          const formattedValue = '$' + new Intl.NumberFormat('es-GT', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
           }).format(value);
@@ -112,9 +110,7 @@ export class TreemapChartComponent implements OnInit, OnChanges {
             formatter: (params: any) => {
               const name = params.name || '';
               const value = params.value || params.data?.value || 0;
-              const formattedValue = new Intl.NumberFormat('es-GT', {
-                style: 'currency',
-                currency: 'USD',
+              const formattedValue = '$' + new Intl.NumberFormat('es-GT', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
               }).format(value);

@@ -77,4 +77,14 @@ export class DashboardDataService {
   obtenerInventario(filtros: any): Observable<any> {
     return this.inventarioData.obtenerInventario(filtros);
   }
+
+  private filtrosUI: { [seccion: string]: any } = {};
+
+  guardarFiltrosUI(seccion: string, filtros: any): void {
+    this.filtrosUI[seccion] = filtros;
+  }
+
+  obtenerFiltrosUI(seccion: string): any {
+    return this.filtrosUI[seccion];
+  }
 }
