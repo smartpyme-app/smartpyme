@@ -165,6 +165,41 @@ export class VentaDetallesV2Component implements OnInit {
         this.sumTotal.emit();
     }
 
+    /** Asegura lista de tarifas (v1/v2) para mostrar selector cuando hay más de un precio. */
+    private normalizarListaPreciosDetalle(detalle: any): void {
+        const pctDet = this.obtenerPorcentajeIvaDetalle(detalle);
+        const precioLinea = parseFloat(String(detalle.precio ?? 0)) || 0;
+        const itemPrecio = (sin: number, src?: any) => {
+            const con = pctDet > 0 ? sin * (1 + pctDet / 100) : sin;
+            return {
+                ...(src || {}),
+                precio: sin.toFixed(4),
+                precio_sin_iva: sin,
+                precio_con_iva: con.toFixed(4),
+            };
+        };
+        let lista = Array.isArray(detalle.precios) ? [...detalle.precios] : [];
+        if (!lista.length) {
+            detalle.precios = [itemPrecio(precioLinea)];
+            detalle.precio = precioLinea.toFixed(4);
+            return;
+        }
+        const eq = (a: number, b: number) => Math.abs(a - b) <= 5e-4;
+        lista = lista.map((p: any) =>
+            itemPrecio(parseFloat(String(p.precio_sin_iva ?? p.precio ?? 0)) || 0, p)
+        );
+        const idxBase = lista.findIndex((p: any) =>
+            eq(parseFloat(String(p.precio_sin_iva ?? p.precio)), precioLinea)
+        );
+        if (idxBase < 0) {
+            lista.unshift(itemPrecio(precioLinea));
+        } else {
+            lista[idxBase] = itemPrecio(precioLinea, lista[idxBase]);
+        }
+        detalle.precios = lista;
+        detalle.precio = precioLinea.toFixed(4);
+    }
+
     /** Tras activar o desactivar "Con IVA" en la cabecera, recalcula IVA y total_iva por línea. */
     public sincronizarIvasDetalles(): void {
         if (!this.venta?.detalles?.length) {
@@ -408,6 +443,7 @@ export class VentaDetallesV2Component implements OnInit {
                 this.detalle.porcentaje_impuesto,
                 ivaEmpresa
             );
+            this.normalizarListaPreciosDetalle(this.detalle);
 
             const pctDet = this.obtenerPorcentajeIvaDetalle(this.detalle);
             const precioSinIvaLinea = parseFloat(this.detalle.precio || 0);
