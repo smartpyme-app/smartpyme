@@ -195,19 +195,47 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
         return { pctImpuesto, porcentajeImpuesto, precioSinIva, precioConIva };
     }
 
+    /** Lista de tarifas del producto (sin IVA) + precio de la fila, como en facturación v1. */
+    private armarListaPreciosDetalleV2(producto: any, precioSinIva: number, pctImpuesto: number): any[] {
+        const lista = producto.precios
+            ? producto.precios.map((p: any) => {
+                const sinIvaLista = parseFloat(p.precio);
+                const conIva = pctImpuesto > 0
+                    ? sinIvaLista * (1 + pctImpuesto / 100)
+                    : sinIvaLista;
+                return {
+                    ...p,
+                    precio: sinIvaLista.toFixed(4),
+                    precio_sin_iva: sinIvaLista,
+                    precio_con_iva: conIva.toFixed(4),
+                };
+            })
+            : [];
+        const conIvaBase = pctImpuesto > 0
+            ? precioSinIva * (1 + pctImpuesto / 100)
+            : precioSinIva;
+        lista.unshift({
+            precio: precioSinIva.toFixed(4),
+            precio_sin_iva: precioSinIva,
+            precio_con_iva: conIvaBase.toFixed(4),
+        });
+        return lista;
+    }
+
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
         this.detalle.descripcion    = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
 
         const esPlanoBuscador = producto.nombre_mostrar != null;
-        const { porcentajeImpuesto, precioSinIva, precioConIva } =
+        const { pctImpuesto, porcentajeImpuesto, precioSinIva, precioConIva } =
             this.armarPreciosDetalleV2(producto);
 
         this.detalle.porcentaje_impuesto = porcentajeImpuesto;
         this.detalle.precio_iva          = precioConIva.toFixed(4);
         this.detalle.precio              = precioSinIva.toFixed(4);
         this.detalle.precio_base         = precioSinIva;
+        this.detalle.precios             = this.armarListaPreciosDetalleV2(producto, precioSinIva, pctImpuesto);
 
         if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
             this.detalle.costo = parseFloat(producto.costo_promedio);
@@ -224,26 +252,10 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
             this.detalle.stock             = producto.tipo === 'Servicio'
                 ? null
                 : (producto.stock_base_actual ?? null);
-            this.detalle.precios           = [{
-                precio: precioSinIva.toFixed(4),
-                precio_sin_iva: precioSinIva,
-            }];
         } else {
             this.detalle.id_producto       = producto.id;
             this.detalle.id_presentacion   = null;
             this.detalle.factor_conversion = 1;
-            this.detalle.precios           = producto.precios ? producto.precios.map((p: any) => {
-                const sinIvaLista = parseFloat(p.precio);
-                return {
-                    ...p,
-                    precio: sinIvaLista.toFixed(4),
-                    precio_sin_iva: sinIvaLista,
-                };
-            }) : [];
-            this.detalle.precios.unshift({
-                precio: precioSinIva.toFixed(4),
-                precio_sin_iva: precioSinIva,
-            });
 
             if (producto.tipo == 'Compuesto') {
                 producto.composiciones.forEach((composicion:any) => {
